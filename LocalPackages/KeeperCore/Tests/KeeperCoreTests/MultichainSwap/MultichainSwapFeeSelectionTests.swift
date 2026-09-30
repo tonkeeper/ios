@@ -49,6 +49,22 @@ final class MultichainSwapFeeSelectionTests: XCTestCase {
         )
     }
 
+    /// Battery stays the first offer on a TRON swap, and GRAM is what the picker falls to once the
+    /// wallet's own switches take battery away.
+    func testGramIsPreselectedWhenItLeadsTheOffer() {
+        assertResolves([gram(), native()], picked: nil, to: .gram)
+        assertResolves([battery(), gram(), native()], picked: nil, to: .battery)
+    }
+
+    func testKeepsPickedGram() {
+        assertResolves([battery(), gram(), native()], picked: .gram, to: .gram)
+    }
+
+    /// The chain's own coin is still the sanest fallback, even when another relayed method is listed.
+    func testFallsBackToNativeWhenGramCannotPay() {
+        assertResolves([gram(isInsufficient: true), native()], picked: .gram, to: .native)
+    }
+
     func testResolvesNilWithoutOptions() {
         XCTAssertNil(MultichainSwapFeeSelection.resolve(options: [], picked: .battery))
     }
@@ -73,6 +89,12 @@ private extension MultichainSwapFeeSelectionTests {
     func battery(charges: Int = 3, isInsufficient: Bool = false) -> MultichainSwapFeeOption {
         MultichainSwapFeeOption(
             cost: .batteryCharges(count: charges, excess: nil, isInsufficient: isInsufficient)
+        )
+    }
+
+    func gram(isInsufficient: Bool = false) -> MultichainSwapFeeOption {
+        MultichainSwapFeeOption(
+            cost: .gram(amountNano: 12_000_000, isInsufficient: isInsufficient)
         )
     }
 

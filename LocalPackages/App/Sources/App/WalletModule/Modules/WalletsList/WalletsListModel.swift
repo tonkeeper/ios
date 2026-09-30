@@ -3,7 +3,7 @@ import KeeperCore
 
 struct WalletsListModelState {
     let wallets: [Wallet]
-    let selectedWallet: Int?
+    let selectedWalletIdentifier: String?
 }
 
 protocol WalletsListModel: AnyObject {
@@ -48,13 +48,13 @@ final class WalletsPickerListModel: WalletsListModel {
         guard let activeWallet = try? state.activeWallet else {
             return WalletsListModelState(
                 wallets: [],
-                selectedWallet: nil
+                selectedWalletIdentifier: nil
             )
         }
 
         return WalletsListModelState(
             wallets: state.wallets,
-            selectedWallet: state.wallets.firstIndex(of: activeWallet)
+            selectedWalletIdentifier: activeWallet.id
         )
     }
 
@@ -81,7 +81,7 @@ final class WalletsPickerListModel: WalletsListModel {
         didUpdateState?(
             WalletsListModelState(
                 wallets: state.wallets,
-                selectedWallet: state.wallets.firstIndex(of: activeWallet)
+                selectedWalletIdentifier: activeWallet.id
             )
         )
     }
@@ -117,15 +117,15 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
         guard let _ = try? state.activeWallet else {
             return WalletsListModelState(
                 wallets: [],
-                selectedWallet: nil
+                selectedWalletIdentifier: nil
             )
         }
 
         let wallets = state.wallets.filter { $0.isTonconnectAvailable }
         guard let activeWallet = (wallets.first(where: { $0 == selectedWallet }) ?? wallets.first) else {
-            return WalletsListModelState(wallets: wallets, selectedWallet: nil)
+            return WalletsListModelState(wallets: wallets, selectedWalletIdentifier: nil)
         }
-        return WalletsListModelState(wallets: wallets, selectedWallet: wallets.firstIndex(of: activeWallet))
+        return WalletsListModelState(wallets: wallets, selectedWalletIdentifier: activeWallet.id)
     }
 
     func selectWallet(wallet: Wallet) {

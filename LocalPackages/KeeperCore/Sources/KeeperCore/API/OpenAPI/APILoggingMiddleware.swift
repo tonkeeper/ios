@@ -3,11 +3,11 @@ import HTTPTypes
 import OpenAPIRuntime
 import TKLogging
 
-/// Records the generated-client calls worth recording — a failure, an error status, an unusual
-/// wait — where the request, the status and the server's error body are all still available.
-/// Everything downstream — the per-API error enums, the view models — narrows what it keeps, so
-/// this is the only place the whole picture exists. A prompt, usable response says nothing a
-/// reader needs, and one line per request would bury what does.
+/// Records the generated-client calls — a failure, an error status or an unusual wait as a
+/// warning or notice, carrying the request, the status and the server's error body; everything
+/// else at debug, which a release build's severity drops. Everything downstream — the per-API
+/// error enums, the view models — narrows what it keeps, so this is the only place the whole
+/// picture exists.
 struct APILoggingMiddleware: ClientMiddleware {
     private let domain: LogDomain
     private let slowRequestThreshold: TimeInterval
@@ -55,6 +55,8 @@ struct APILoggingMiddleware: ClientMiddleware {
         guard status >= 400 else {
             if Date().timeIntervalSince(startedAt) >= slowRequestThreshold {
                 domain.i("\(message("\(status)")) - slow")
+            } else {
+                domain.d(message("\(status)"))
             }
             return (response, responseBody)
         }

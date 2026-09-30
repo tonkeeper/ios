@@ -24,7 +24,7 @@ env:
       # which sits between the screen title and the settings row.
       - copyTextFrom:
           text: "[0-9]+ charge[s]?"
-          below: Tonkeeper Battery
+          below: Keeper Battery
           above: Battery Settings
       - evalScript: ${output.batteryCharges = parseInt(maestro.copiedText.replace(/[^0-9]/g, ""), 10)}
 

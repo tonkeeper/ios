@@ -70,12 +70,12 @@ final class AptabaseDispatcherTests: XCTestCase {
 
     func test_requestMatchesTheIngestionApiContract() async throws {
         let session = StubAptabaseURLSession(responses: [.status(200)])
-        let dispatcher = try XCTUnwrap(AptabaseDispatcher(
-            endpoint: "https://analytics.example.com",
+        let dispatcher = AptabaseDispatcher(
+            endpointProvider: { "https://analytics.example.com" },
             appKey: "A-SH-0000000000",
             environment: makeEnvironment(),
             session: session
-        ))
+        )
 
         _ = await dispatcher.send([makeEvent()])
 
@@ -98,16 +98,69 @@ final class AptabaseDispatcherTests: XCTestCase {
         XCTAssertEqual(systemProps["sdkVersion"] as? String, AptabaseEnvironment.sdkVersion)
         XCTAssertEqual(systemProps["appBuildNumber"] as? String, "1")
     }
+
+    func test_endpointIsReadOnEverySend() async {
+        // The dispatcher is built at launch and the boot configuration answers later, so a host
+        // captured at init would pin the whole run to the one compiled into the bundle.
+        let endpoint = EndpointBox("https://bundled.example.com")
+        let session = StubAptabaseURLSession(responses: [.status(200)])
+        let dispatcher = AptabaseDispatcher(
+            endpointProvider: { endpoint.value },
+            appKey: "A-SH-0000000000",
+            environment: makeEnvironment(),
+            session: session
+        )
+
+        _ = await dispatcher.send([makeEvent()])
+        endpoint.value = "https://moved.example.com"
+        _ = await dispatcher.send([makeEvent()])
+
+        let urls = await session.requests.map(\.url?.absoluteString)
+        XCTAssertEqual(urls, [
+            "https://bundled.example.com/api/v0/events",
+            "https://moved.example.com/api/v0/events",
+        ])
+    }
+
+    func test_onlyAnAbsoluteHttpHostIsAcceptedFromTheConfiguration() {
+        XCTAssertEqual(
+            AptabaseConfigurator.usableEndpoint("https://block-analytics.tonkeeper.com"),
+            "https://block-analytics.tonkeeper.com"
+        )
+        XCTAssertEqual(AptabaseConfigurator.usableEndpoint("http://localhost:3000"), "http://localhost:3000")
+        // Everything below parses as a URL, which is why the check cannot just be `URL(string:)`.
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint("not a url"))
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint("block-analytics.tonkeeper.com"))
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint("/api/v0/events"))
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint("wss://block-analytics.tonkeeper.com"))
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint(""))
+        XCTAssertNil(AptabaseConfigurator.usableEndpoint(nil))
+    }
+}
+
+/// Moves the host between sends the way the boot configuration does at runtime.
+private final class EndpointBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: String
+
+    init(_ value: String) {
+        stored = value
+    }
+
+    var value: String {
+        get { lock.withLock { stored } }
+        set { lock.withLock { stored = newValue } }
+    }
 }
 
 private extension AptabaseDispatcherTests {
     func makeDispatcher(responses: [StubAptabaseURLSession.Response]) -> AptabaseDispatcher {
         AptabaseDispatcher(
-            endpoint: "https://analytics.example.com",
+            endpointProvider: { "https://analytics.example.com" },
             appKey: "A-SH-0000000000",
             environment: makeEnvironment(),
             session: StubAptabaseURLSession(responses: responses)
-        )!
+        )
     }
 
     func makeEnvironment() -> AptabaseEnvironment {

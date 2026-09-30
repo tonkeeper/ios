@@ -1,21 +1,19 @@
 import Foundation
+import TKFeatureFlags
 
 public final class TonkeeperAPIAssembly {
     private let appInfoProvider: AppInfoProvider
     private let coreAssembly: CoreAssembly
-    private let configuration: Configuration
-    private let isMultichainEnabled: @Sendable () -> Bool
+    private let tkAppSettings: TKAppSettings
 
     init(
         appInfoProvider: AppInfoProvider,
         coreAssembly: CoreAssembly,
-        configuration: Configuration,
-        isMultichainEnabled: @escaping @Sendable () -> Bool
+        tkAppSettings: TKAppSettings
     ) {
         self.appInfoProvider = appInfoProvider
         self.coreAssembly = coreAssembly
-        self.configuration = configuration
-        self.isMultichainEnabled = isMultichainEnabled
+        self.tkAppSettings = tkAppSettings
     }
 
     public var api: TonkeeperAPI {
@@ -28,8 +26,7 @@ public final class TonkeeperAPIAssembly {
                 }
             ),
             appInfoProvider: appInfoProvider,
-            configuration: configuration,
-            isMultichainEnabled: isMultichainEnabled
+            isNewUser: { [tkAppSettings] in tkAppSettings.raffleIsNewUser ?? false }
         )
     }
 

@@ -4,7 +4,7 @@
 #
 # Full scan, matching how the baseline was recorded:
 #   make compile QUIET=1                       # app targets -> index store
-#   xcodebuild -scheme TonkeeperUnitTests \    # test bundles -> same store
+#   xcodebuild -scheme KeeperUnitTests \    # test bundles -> same store
 #     -derivedDataPath build/DerivedData ... build-for-testing
 #   INCLUDE_TESTS=1 scripts/periphery/gen_file_targets.sh
 #   periphery scan --baseline .periphery.baseline.json

@@ -406,7 +406,7 @@ public struct Client: APIProtocol {
     }
     /// Search the swappable asset catalog
     ///
-    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
+    /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -479,6 +479,13 @@ public struct Client: APIProtocol {
                     explode: true,
                     name: "show_perps",
                     value: input.query.show_perps
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "omit_swappable",
+                    value: input.query.omit_swappable
                 )
                 try converter.setHeaderFieldAsURI(
                     in: &request.headerFields,
@@ -2750,6 +2757,13 @@ public struct Client: APIProtocol {
                     explode: true,
                     name: "hide_dust",
                     value: input.query.hide_dust
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "show_perps",
+                    value: input.query.show_perps
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,

@@ -65,20 +65,23 @@ public struct AssetAvatarView: View {
     let shape: Shape
     let chainIconPosition: ChainIconPosition
     let chainIconBackgroundColor: Color
+    let imageBackgroundColor: TKColor
 
     public init(
         imageSource: AssetAvatarViewImageSource,
         size: Size? = nil,
         shape: Shape? = nil,
         chainIconPosition: ChainIconPosition? = nil,
-        chainIconBackgroundColor: Color? = nil
+        chainIconBackgroundColor: Color? = nil,
+        imageBackgroundColor: TKColor = .backgroundContentTint
     ) {
         self.init(
             imageSource: imageSource,
             configuration: (size ?? .small).configuration,
             shape: shape,
             chainIconPosition: chainIconPosition,
-            chainIconBackgroundColor: chainIconBackgroundColor
+            chainIconBackgroundColor: chainIconBackgroundColor,
+            imageBackgroundColor: imageBackgroundColor
         )
     }
 
@@ -87,13 +90,15 @@ public struct AssetAvatarView: View {
         configuration: Configuration,
         shape: Shape? = nil,
         chainIconPosition: ChainIconPosition? = nil,
-        chainIconBackgroundColor: Color? = nil
+        chainIconBackgroundColor: Color? = nil,
+        imageBackgroundColor: TKColor = .backgroundContentTint
     ) {
         self.imageSource = imageSource
         self.configuration = configuration
         self.shape = shape ?? .circle
         self.chainIconPosition = chainIconPosition ?? .trailing
         self.chainIconBackgroundColor = chainIconBackgroundColor ?? .clear
+        self.imageBackgroundColor = imageBackgroundColor
     }
 
     struct AvatarShape: SwiftUI.Shape {
@@ -193,7 +198,7 @@ public struct AssetAvatarView: View {
     private var contentView: some View {
         AssetAvatarContentView(imageSource: imageSource, size: size)
             .frame(width: size, height: size)
-            .background(.backgroundContentTint)
+            .background(imageBackgroundColor)
     }
 }
 

@@ -21,21 +21,24 @@
 # store because scripts/spm_build.sh builds every package against the app
 # lockfile, so the pins are identical and the app graph is a superset.
 #
-# Usage: scripts/provision_spm_deps.sh <store-dir-relative-to-repo-root>
+# Usage: scripts/provision_spm_deps.sh <store-dir-relative-to-ios/>
 #   e.g. build/SourcePackages          (xcodebuild -clonedSourcePackagesDirPath)
 #        LocalPackages/App/.build      (swift build scratch dir)
 set -eu
 
-# An empty path must not fall through: it would resolve to the repo root and stage a
+# An empty path must not fall through: it would resolve to the project root and stage a
 # full clone of the store beside the working tree.
-[ "$#" -eq 1 ] && [ -n "$1" ] || { echo "usage: scripts/provision_spm_deps.sh <store-dir-relative-to-repo-root>" >&2; exit 1; }
+[ "$#" -eq 1 ] && [ -n "$1" ] || { echo "usage: scripts/provision_spm_deps.sh <store-dir-relative-to-ios/>" >&2; exit 1; }
 APP_STORE_REL="build/SourcePackages"
 MARKER="workspace-state.json"
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
+# The iOS project lives in ios/ of the repository; roots here are project roots. Both are
+# derived from the cwd (not $0) so a main-tree stand-in copy of this script, run by the
+# checkout hooks, still operates on the tree it was started in.
+REPO_ROOT="$(git rev-parse --show-toplevel)/ios"
 # --git-common-dir points at the shared `.git`; its parent is the main working tree.
 COMMON_GIT_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
-MAIN_ROOT="$(dirname "$COMMON_GIT_DIR")"
+MAIN_ROOT="$(dirname "$COMMON_GIT_DIR")/ios"
 
 # Callers pass the path they have — the make targets hand over ./build/SourcePackages
 # through BUILD_DIR — while workspace-state.json records normalized paths. A `./` left

@@ -49,13 +49,13 @@ appId: com.jbig.tonkeeper
 
 # Fee modal: Battery is listed but needs a top-up.
 - runFlow: "../../../steps/battery/open_network_fee_picker.yaml"
-- assertVisible: Tonkeeper Battery
+- assertVisible: Keeper Battery
 - assertVisible: Deposit
 - tapOn: Deposit
 - waitForAnimationToEnd:
     timeout: 5000
 - extendedWaitUntil:
-    visible: Tonkeeper Battery
+    visible: Keeper Battery
     timeout: 30000
 
 # Crypto recharge from the refill screen opened via Deposit (already on Battery).
@@ -97,7 +97,7 @@ appId: com.jbig.tonkeeper
     visible: Network fee
     timeout: 180000
 - runFlow: "../../../steps/battery/open_network_fee_picker.yaml"
-- assertVisible: Tonkeeper Battery
+- assertVisible: Keeper Battery
 
 # Recharge settlement can take a few minutes. Stop once Battery no longer offers Deposit;
 # do not select the fee method or sign the transfer.

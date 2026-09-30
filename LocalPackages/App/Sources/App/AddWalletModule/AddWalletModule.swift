@@ -5,7 +5,6 @@ import TKLocalize
 import TKUIKit
 import TonSwift
 import TonTransport
-import TONWalletKit
 import UIKit
 
 @MainActor
@@ -54,9 +53,6 @@ struct AddWalletModule {
         mode: CreateWalletCoordinator.Mode = .regular,
         analyticsContext: WalletFlowAnalyticsContext
     ) -> CreateWalletCoordinator {
-        let mode = dependencies.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
-            ? mode
-            : .regular
         return CreateWalletCoordinator(
             router: router,
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
@@ -318,10 +314,7 @@ private extension AddWalletModule {
 
 extension AddWalletModule {
     func makeWalletFlowAnalyticsContext(from: AddWalletSource) -> WalletFlowAnalyticsContext {
-        WalletFlowAnalyticsContext(
-            from: from,
-            multichainEnabled: dependencies.configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
-        )
+        WalletFlowAnalyticsContext(from: from)
     }
 }
 

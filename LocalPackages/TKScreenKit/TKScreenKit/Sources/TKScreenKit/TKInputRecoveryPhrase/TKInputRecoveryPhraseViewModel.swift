@@ -161,6 +161,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 
         var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
         continueButtonConfiguration.content.title = .plainString(continueButtonTitle)
+        continueButtonConfiguration.isEnabled = false
         self.continueButtonConfiguration = continueButtonConfiguration
     }
 }
@@ -241,9 +242,13 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
         wordValidationTasks.removeAll()
         suggestsTasks.values.forEach { $0.cancel() }
         suggestsTasks.removeAll()
+        continueValidationTask?.cancel()
+        continueValidationTask = nil
+        continueButtonConfiguration.showsLoader = false
         phrase = Array(repeating: "", count: mode.wordsCount)
         setupSeedPhraseModeSegmentedControl()
         setupInputFields()
+        updateContinueButtonAvailability()
     }
 
     func didUpdateText(_ text: String, index: Int) {
@@ -252,6 +257,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
         updateSuggests(index: index)
         let isHidden = phrase.map { !$0.isEmpty }.reduce(into: false) { $0 = $0 || $1 }
         didUpdatePasteButtonIsHidden?(isHidden)
+        updateContinueButtonAvailability()
     }
 
     func didBeginEditing(index: Int) {
@@ -306,6 +312,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
             self.phrase[index] = word
         }
         didUpdatePasteButtonIsHidden?(true)
+        updateContinueButtonAvailability()
 
         for (index, word) in phrase.enumerated() {
             self.didUpdateText?(index, word)
@@ -320,6 +327,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
                 for (index, _) in phrase.enumerated() {
                     self.didUpdateInputValidationState?(index, validation[index])
                 }
+                self.updateContinueButtonAvailability()
                 if phrase.count == wordsCount {
                     self.didPastePhrase?()
                 } else {
@@ -352,6 +360,8 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     }
 
     func didTapContinueButton() {
+        guard isPhraseReadyToContinue else { return }
+
         continueButtonConfiguration.showsLoader = true
 
         formValidationTask?.cancel()
@@ -373,12 +383,14 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
                     for (index, isValid) in wordsValidation.enumerated() {
                         self.didUpdateInputValidationState?(index, isValid)
                     }
+                    self.updateContinueButtonAvailability()
                     self.didFailPhraseValidation?(phrase)
                 }
             case .multiaccount:
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.continueButtonConfiguration.showsLoader = false
+                    self.updateContinueButtonAvailability()
                     self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.multiaccountError))
                 }
             case .valid:
@@ -386,10 +398,21 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
                     guard !Task.isCancelled else { return }
                     self.didInputRecoveryPhrase?(phrase) {
                         self.continueButtonConfiguration.showsLoader = false
+                        self.updateContinueButtonAvailability()
                     }
                 }
             }
         })
+    }
+
+    var isPhraseReadyToContinue: Bool {
+        phrase.allSatisfy { !$0.isEmpty && validator.validateWord($0) }
+    }
+
+    func updateContinueButtonAvailability() {
+        let isEnabled = isPhraseReadyToContinue
+        guard continueButtonConfiguration.isEnabled != isEnabled else { return }
+        continueButtonConfiguration.isEnabled = isEnabled
     }
 
     func updateSuggests(index: Int) {
@@ -417,6 +440,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     func setSuggest(suggest: String, index: Int) {
         phrase[index] = suggest
         didUpdateText?(index, suggest)
+        updateContinueButtonAvailability()
         if index < mode.wordsCount - 1 {
             didPaste?(index + 1)
         } else {

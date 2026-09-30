@@ -14,6 +14,13 @@ enum MultichainActivityPresentationKind: Equatable {
     case dnsRenew
     case incomingFallback
     case outgoingFallback
+    case perpsOpened(MultichainPerpsSide?)
+    case perpsClosed(MultichainPerpsSide?)
+    case perpsLiquidated(MultichainPerpsSide?)
+    case perpsTakeProfit
+    case perpsStopLoss
+    case perpsDeposit
+    case perpsWithdrawal
 
     enum AmountSide {
         case incoming
@@ -39,6 +46,23 @@ enum MultichainActivityPresentationKind: Equatable {
             self = .burn
         case .dnsRenew:
             self = .dnsRenew
+        case .perpsPositionOpened:
+            self = .perpsOpened(activity.perps?.side)
+        case .perpsPositionClosed:
+            switch activity.perps?.closeReason {
+            case .liquidation:
+                self = .perpsLiquidated(activity.perps?.side)
+            case .takeProfit:
+                self = .perpsTakeProfit
+            case .stopLoss:
+                self = .perpsStopLoss
+            case .manual, nil:
+                self = .perpsClosed(activity.perps?.side)
+            }
+        case .perpsBalanceDeposit:
+            self = .perpsDeposit
+        case .perpsBalanceWithdrawal:
+            self = .perpsWithdrawal
         case .approve, .revoke, .bridge, .claim, .wrap, .unwrap, .deploy, .contractCall,
              .nftPurchase, .auctionBid, .subscribe, .unsubscribe, .freeze,
              .unfreeze, .delegate, .undelegate, .vote, .supply, .withdraw, .borrow,
@@ -63,6 +87,41 @@ enum MultichainActivityPresentationKind: Equatable {
             return TKLocales.ActionTypes.burned
         case .dnsRenew:
             return TKLocales.ActionTypes.domainRenew
+        case let .perpsOpened(side):
+            switch side {
+            case .long:
+                return TKLocales.MultichainHistory.Perps.openedLong
+            case .short:
+                return TKLocales.MultichainHistory.Perps.openedShort
+            case nil:
+                return TKLocales.MultichainHistory.Perps.opened
+            }
+        case let .perpsClosed(side):
+            switch side {
+            case .long:
+                return TKLocales.MultichainHistory.Perps.closedLong
+            case .short:
+                return TKLocales.MultichainHistory.Perps.closedShort
+            case nil:
+                return TKLocales.MultichainHistory.Perps.closed
+            }
+        case let .perpsLiquidated(side):
+            switch side {
+            case .long:
+                return TKLocales.MultichainHistory.Perps.liquidatedLong
+            case .short:
+                return TKLocales.MultichainHistory.Perps.liquidatedShort
+            case nil:
+                return TKLocales.MultichainHistory.Perps.liquidated
+            }
+        case .perpsTakeProfit:
+            return TKLocales.MultichainHistory.Perps.takeProfitExecuted
+        case .perpsStopLoss:
+            return TKLocales.MultichainHistory.Perps.stopLossExecuted
+        case .perpsDeposit:
+            return TKLocales.Perps.deposit
+        case .perpsWithdrawal:
+            return TKLocales.Perps.withdraw
         }
     }
 
@@ -82,6 +141,9 @@ enum MultichainActivityPresentationKind: Equatable {
             return TKLocales.ActionTypes.burning
         case .dnsRenew:
             return TKLocales.ActionTypes.domainRenewing
+        case .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit,
+             .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
+            return title
         }
     }
 
@@ -99,6 +161,18 @@ enum MultichainActivityPresentationKind: Equatable {
             return .TKUIKit.Icons.Size28.swapHorizontalAlternative
         case .dnsRenew:
             return .TKUIKit.Icons.Size28.renew
+        case .perpsOpened, .perpsClosed:
+            return .TKUIKit.Icons.Size28.lock
+        case .perpsLiquidated:
+            return .TKUIKit.Icons.Size28.fire
+        case .perpsTakeProfit:
+            return .TKUIKit.Icons.Size28.arrowDownOutline
+        case .perpsStopLoss:
+            return .TKUIKit.Icons.Size28.arrowUpOutline
+        case .perpsDeposit:
+            return .TKUIKit.Icons.Size28.trayArrowDown
+        case .perpsWithdrawal:
+            return .TKUIKit.Icons.Size28.trayArrowUp
         }
     }
 
@@ -125,9 +199,10 @@ enum MultichainActivityPresentationKind: Equatable {
 
     private var preferredAmountSide: AmountSide {
         switch self {
-        case .send, .outgoingFallback, .stake, .burn, .dnsRenew:
+        case .send, .outgoingFallback, .stake, .burn, .dnsRenew, .perpsWithdrawal:
             return .outgoing
-        case .receive, .incomingFallback, .unstake, .mint:
+        case .receive, .incomingFallback, .unstake, .mint, .perpsDeposit,
+             .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit, .perpsStopLoss:
             return .incoming
         case .swap:
             return .both
@@ -157,6 +232,9 @@ enum MultichainActivityPresentationKind: Equatable {
             return TKLocales.EventDetails.unstakeOn(date)
         case .dnsRenew:
             return TKLocales.EventDetails.renewedOn(date)
+        case .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit,
+             .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
+            return date
         }
     }
 }

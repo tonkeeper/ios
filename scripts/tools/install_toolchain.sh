@@ -12,7 +12,7 @@ set -eu
 # that needs them — so skip the install there, as the hooks build phase already does.
 [ -z "${CI:-}" ] || exit 0
 
-cd "$(git rev-parse --show-toplevel)"
+cd "$(git rev-parse --show-toplevel)/ios"
 
 if ! command -v mise >/dev/null 2>&1; then
 	if ! command -v brew >/dev/null 2>&1; then

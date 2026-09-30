@@ -29,6 +29,10 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
 
     private var notificationToken: NSObjectProtocol?
 
+    /// A dApp toggle mutates a backend subscription, so two opposite taps must not be in
+    /// flight together — see `SerialRequestQueue`.
+    private let dappSyncQueue = SerialRequestQueue<String>()
+
     // MARK: - Dependencies
 
     private let wallet: Wallet
@@ -37,6 +41,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     private let tonConnectAppsStore: TonConnectAppsStore
     private let urlOpener: URLOpener
     private let pushTokenProvider: PushNotificationTokenProvider
+    private let appSettings: AppSettings
 
     // MARK: - Init
 
@@ -46,7 +51,8 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
         notificationsService: NotificationsService,
         tonConnectAppsStore: TonConnectAppsStore,
         urlOpener: URLOpener,
-        pushTokenProvider: PushNotificationTokenProvider
+        pushTokenProvider: PushNotificationTokenProvider,
+        appSettings: AppSettings
     ) {
         self.wallet = wallet
         self.walletNotificationStore = walletNotificationStore
@@ -54,6 +60,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
         self.tonConnectAppsStore = tonConnectAppsStore
         self.urlOpener = urlOpener
         self.pushTokenProvider = pushTokenProvider
+        self.appSettings = appSettings
 
         notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
             self?.updateIsPushAvailable()
@@ -168,55 +175,99 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     }
 
     private func createConnectedAppItem(_ app: TonConnectApp, isOn: Bool) -> SettingsListItem {
-        let action: (Bool) -> Void = { [weak self, wallet] isOn in
-            guard let self else { return }
-            Task { [weak self] in
-                guard let self else { return }
-                guard let token = await pushTokenProvider.getToken() else {
-                    await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
-                    return
-                }
-                if isOn {
-                    let result = (try? await notificationsService.turnOnDappNotifications(
-                        wallet: wallet,
-                        manifest: app.manifest,
-                        sessionId: app.clientId,
-                        token: token
-                    )) ?? false
-                    if !result {
-                        await MainActor.run {
-                            ToastPresenter.showToast(configuration: .failed)
-                        }
-                        await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
-                    }
-                } else {
-                    let result = (try? await notificationsService.turnOffDappNotifications(
-                        wallet: wallet,
-                        manifest: app.manifest,
-                        sessionId: app.clientId,
-                        token: token
-                    )) ?? false
-                    if !result {
-                        await MainActor.run {
-                            ToastPresenter.showToast(configuration: .failed)
-                        }
-                        await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
-                    }
-                }
-            }
-        }
-
-        return SettingsListItem(
+        SettingsListItem(
             id: app.manifest.host,
             icon: .url(app.manifest.iconUrl),
             title: SettingsListItemTitle(app.manifest.name),
             accessory: .toggle(
                 SettingsListItemToggleAccessory(
                     isOn: isOn,
-                    onToggle: action
+                    isEnabled: isOn || isPushAvailable,
+                    onToggle: { [weak self] isOn in
+                        self?.setDappNotificationsIsOn(isOn, app: app)
+                    }
                 )
             )
         )
+    }
+
+    private func setDappNotificationsIsOn(_ isOn: Bool, app: TonConnectApp) {
+        dappSyncQueue.enqueue(app.manifest.host) { [weak self] in
+            guard let self else { return }
+            if isOn {
+                guard await self.ensurePushAuthorized() else { return }
+            }
+            let didSync = await OptimisticToggleSync.run(
+                isOn: isOn,
+                currentIsOn: {
+                    self.walletNotificationStore
+                        .getState()[self.wallet]?
+                        .dapps[app.manifest.host] ?? false
+                },
+                setIsOn: { value in
+                    await self.walletNotificationStore.setNotificationsIsOn(
+                        value,
+                        wallet: self.wallet,
+                        dappHost: app.manifest.host
+                    )
+                },
+                sync: {
+                    guard let token = await self.resolvePushToken() else { return false }
+                    return await self.syncDappNotifications(isOn, app: app, token: token)
+                }
+            )
+            if !didSync {
+                await MainActor.run {
+                    ToastPresenter.showToast(configuration: .failed)
+                }
+            }
+        }
+    }
+
+    private func resolvePushToken() async -> String? {
+        guard let token = await pushTokenProvider.getToken() else {
+            return appSettings.fcmToken
+        }
+        appSettings.fcmToken = token
+        return token
+    }
+
+    private func syncDappNotifications(_ isOn: Bool, app: TonConnectApp, token: String) async -> Bool {
+        do {
+            if isOn {
+                return try await notificationsService.turnOnDappNotifications(
+                    wallet: wallet,
+                    manifest: app.manifest,
+                    sessionId: app.clientId,
+                    token: token
+                )
+            }
+            return try await notificationsService.turnOffDappNotifications(
+                wallet: wallet,
+                manifest: app.manifest,
+                sessionId: app.clientId,
+                token: token
+            )
+        } catch {
+            return false
+        }
+    }
+
+    /// A dApp subscription rides on this device's push token, so turning one on without permission
+    /// would leave the toggle claiming a subscription nothing can deliver.
+    private func ensurePushAuthorized() async -> Bool {
+        let center = UNUserNotificationCenter.current()
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .notDetermined else {
+            return status.isPushAuthorized
+        }
+        let isGranted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+        if isGranted {
+            await UIApplication.shared.registerForRemoteNotifications()
+        }
+        // Answering the prompt is not a foreground transition, so the observer above does not run.
+        updateIsPushAvailable()
+        return isGranted
     }
 
     private func updateIsPushAvailable() {

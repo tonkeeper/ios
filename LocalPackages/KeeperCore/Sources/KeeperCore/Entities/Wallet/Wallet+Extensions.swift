@@ -89,7 +89,7 @@ public extension Wallet {
             let publicKey = try publicKey
             let contractVersion = try contractVersion
 
-            let networkRawValue = network.walletNetworkGlobalId
+            let networkRawValue = network.rawValue
 
             switch contractVersion {
             case .v3R1:

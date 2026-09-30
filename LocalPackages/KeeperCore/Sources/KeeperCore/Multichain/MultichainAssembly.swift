@@ -54,12 +54,6 @@ public final class MultichainAssembly {
 
     public private(set) lazy var walletAddressesEnricher: MultichainWalletEnricher = MultichainWalletEnricherImplementation(
         dependencies: MultichainWalletEnricherDependencies(
-            isFeatureEnabled: { [configuration] in
-                configuration.featureEnabled(.multichainEnabled)
-            },
-            isImportEnrichmentEnabled: { [configuration] in
-                configuration.featureEnabled(.importMultichainEnabled)
-            },
             supportedChains: Set(supportedChains),
             getWallets: { [walletsStore] in
                 walletsStore.wallets
@@ -78,12 +72,6 @@ public final class MultichainAssembly {
 
     public private(set) lazy var walletSyncController: MultichainWalletSyncController = MultichainWalletSyncControllerImplementation(
         dependencies: MultichainWalletSyncControllerDependencies(
-            isFeatureEnabled: { [configuration] in
-                configuration.featureEnabled(.importMultichainEnabled)
-            },
-            isBindingsReconcileEnabled: { [configuration] in
-                configuration.featureEnabled(.multichainEnabled)
-            },
             getWallets: { [walletsStore] in
                 walletsStore.wallets
             },
@@ -161,11 +149,12 @@ public final class MultichainAssembly {
         )
         let manager = MultichainRealtimeManager(
             walletsStore: walletsStore,
-            isRealtimeEnabled: { [configuration] in
-                configuration.featureEnabled(.realtimeEnabled)
-            },
-            transport: transport
+            transport: transport,
+            endpointProvider: { [configuration] in
+                configuration.value(\.multichain.realtime) ?? BootConfiguration.defaultMultichainRealtimeURL
+            }
         )
+        configuration.addUpdateObserver(manager) { $0.configurationDidChange() }
         manager.start()
         return manager
     }()
@@ -198,9 +187,7 @@ public final class MultichainAssembly {
             sessionProvider: ChainKitSessionTokenProvider(deviceAuth: deviceAuthService)
         )
         return CryptoKitClient(
-            netModule: ModuleNetModule(netConfig: networkConfig),
-            perpetualKeyStore: nil,
-            perpetualEnvironment: LighterEnvironment.Mainnet.shared
+            netModule: ModuleNetModule(netConfig: networkConfig)
         )
     }()
 

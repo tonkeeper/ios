@@ -21,6 +21,7 @@ struct TransactionConfirmationAssembly {
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             ratesService: keeperCoreMainAssembly.servicesAssembly.ratesService(),
             balanceService: keeperCoreMainAssembly.servicesAssembly.balanceService(),
+            multichainAssetBalanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
             batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation,
             configurationAssembly: keeperCoreMainAssembly.configurationAssembly,
             transactionSentNotificationPatch: transactionSentNotificationPatch,

@@ -154,8 +154,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             update(with: loadingModel)
 
             let redSession = RedAnalyticsSessionHolder(
-                analytics: analyticsProvider,
-                configurationAssembly: configurationAssembly
+                analytics: analyticsProvider
             )
             redSession.start(
                 flow: .swap,
@@ -491,8 +490,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             guard let self else { return }
 
             let redSession = RedAnalyticsSessionHolder(
-                analytics: analyticsProvider,
-                configurationAssembly: configurationAssembly
+                analytics: analyticsProvider
             )
             redSession.start(
                 flow: .swap,
@@ -531,12 +529,15 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                     error: error,
                     stage: "send"
                 )
-                analyticsProvider.log(event: .NativeSwap.failed(
-                    from: model.fromToken.analyticsSymbol,
-                    to: model.toToken.analyticsSymbol,
-                    feeProvider: getFeePaidIn(transaction: transaction),
-                    error: error
-                ))
+                analyticsProvider.log(
+                    event: .NativeSwap.failed(
+                        from: model.fromToken.analyticsSymbol,
+                        to: model.toToken.analyticsSymbol,
+                        feeProvider: getFeePaidIn(transaction: transaction),
+                        error: error
+                    ),
+                    utm: model.utm
+                )
                 state = .failed
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 guard !Task.isCancelled else { return }
@@ -570,7 +571,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                         from: model.fromToken.analyticsSymbol,
                         to: model.toToken.analyticsSymbol,
                         feeProvider: getFeePaidIn(transaction: transaction)
-                    )
+                    ),
+                    utm: model.utm
                 )
                 analyticsProvider.logSwapCompleted()
             }
@@ -591,11 +593,14 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 return .cancelledByUser
             }
         }
-        analyticsProvider.log(event: .NativeSwap.confirm(
-            from: model.fromToken.analyticsSymbol,
-            to: model.toToken.analyticsSymbol,
-            feeProvider: getFeePaidIn(transaction: transaction)
-        ))
+        analyticsProvider.log(
+            event: .NativeSwap.confirm(
+                from: model.fromToken.analyticsSymbol,
+                to: model.toToken.analyticsSymbol,
+                feeProvider: getFeePaidIn(transaction: transaction)
+            ),
+            utm: model.utm
+        )
         do {
             try await self.fundsValidator.validateFundsIfNeeded(
                 wallet: self.wallet,

@@ -1,8 +1,8 @@
 # Maestro UI tests
 
 iOS UI tests run with [Maestro](https://maestro.mobile.dev) against the Tonkeeper
-app on the iOS Simulator, sharded and orchestrated by
-`.github/workflows/maestro-ui-tests.yml`.
+app on the iOS Simulator — one multichain-enabled build, sharded by section and
+orchestrated by `.github/workflows/maestro-ui-tests.yml`.
 
 This README is the fast-context map: **where things live, how the pipeline is
 wired, and where to change X**. Update it as the setup evolves.
@@ -14,61 +14,70 @@ wired, and where to change X**. Update it as the setup evolves.
 | I want to… | Go to |
 | --- | --- |
 | Rename the native token ticker (TON → GRAM …) | `ci/native_token_env.sh` (`NATIVE_TOKEN_DISPLAY_TEXT`, `NATIVE_TOKEN_SHORT_TEXT`) |
-| Add/adjust a test flow | `flows/<cluster>/<section>/<name>.yaml` |
-| Add a new shard (section) | create `flows/<cluster>/<section>/`, add `flows/<cluster>/<section>/*` to `config.yaml` |
-| Add / reconfigure a cluster (gating, feature flags, artifact) | `config.yaml` (+ build wiring in the workflow for a brand-new cluster) |
+| Add/adjust a test flow | `flows/multichain/<section>/<name>.yaml` |
+| Add a new shard (section) | create `flows/multichain/<section>/`, add `flows/multichain/<section>/*` to `config.yaml`; a TON-seed section is named `ton_<section>` and listed in `ton_wallet_shards` |
+| Change the build's feature flags / artifact | `config.yaml` + `ci/multichain-flags.json` |
 | Share steps between flows | `steps/**` (referenced via relative `runFlow`) |
-| Change the shared HTTP helper for API scripts | `scripts/api/_api_runtime.js`, then `make maestro_api_sync` |
+| Change the shared HTTP helper for API scripts | `scripts/api/_api_runtime.js`, then `make -C ios maestro_api_sync` |
 | Add an API assertion (query TonAPI, compare on-chain state) | `scripts/api/**` + a `service/**` subflow |
 | Skip a flaky/broken flow but keep it green | wrap its body in `runFlow: { when: { true: "${false}" } }` |
-| Enable multichain locally | `Tonkeeper/Resources/FlagsOverride.json` → `featureFlags.multichainEnabled` (a dev override outranks the keys/all gate, so the boot flag is not needed). CI merges `maestro_ui_tests/ci/multichain-flags.json` onto the secret |
+| Run the suite's build locally | `ios/Keeper/Resources/FlagsOverride.json`, seeded from `ios/maestro_ui_tests/ci/multichain-flags.json`. CI merges that file onto the secret `MAESTRO_FEATURE_FLAG_OVERRIDES` |
 | Explore the app / write a flow against the live simulator | the **maestro** MCP server (see *Authoring flows with the Maestro MCP*) |
 | Stop running a whole section in CI | comment its line out of `config.yaml` `flows:` (see `swap_pairs`), and drop it from `skip_auto_rerun` |
-| Understand CI pass/fail gating | `pipeline-gate` job (ton-state **and** multichain) |
+| Understand CI pass/fail gating | `pipeline-gate` job (build, both canaries, every shard, auto-rerun) |
 | File a task / name a branch for autotest work | *Task & branch workflow for autotest fixes* below |
 
 ---
 
-## Clusters (`config.yaml`)
+## Shards & wallets (`config.yaml`)
 
-Tests are grouped into **clusters**; each cluster builds its own app artifact and
-runs its shards independently.
+There is one cluster, `multichain`, and one simulator build (CI merges the secret
+`MAESTRO_FEATURE_FLAG_OVERRIDES` with `ci/multichain-flags.json` into
+`FlagsOverride.json`). `ci/multichain-flags.json` forces
+`disable_battery_crypto_recharge_module=false`, which `DefaultBootConfiguration.json`
+ships `true` and which hides the crypto recharge entry the `ton_battery` flows drive.
 
 ```yaml
 clusters:
-  ton-state:
-    gate_pipeline: true
-    build_artifact: maestro-ios-tonkeeper-app
-    flows: [ flows/ton-state/<section>/* , ... ]
   multichain:
     gate_pipeline: true
     build_artifact: maestro-ios-tonkeeper-app-multichain
     feature_flags_file: ci/multichain-flags.json
-    flows: [ flows/multichain/<section>/* ]
+    ton_wallet_shards: [ ton_battery, ton_browser, … ]
+    flows: [ flows/multichain/<section>/* , ... ]
 ```
 
-- **ton-state** — the classic suite. Red here ⇒ the whole run is red. Carries
-  `ci/ton-state-flags.json` (`bootConfigurationFlags.disable_battery_crypto_recharge_module`
-  forced `false`, since `DefaultBootConfiguration.json` ships it `true`).
-- **multichain** — built with the same `FlagsOverride.json` mechanism as
-  `disable_swap` / `disable_battery`: secret `MAESTRO_FEATURE_FLAG_OVERRIDES`
-  plus `ci/multichain-flags.json` (`featureFlags.multichainEnabled`).
-  `ensure-multichain-enabled` then forces that flag on; it outranks keys/all in
-  a non-App-Store build, so a missing/false `multichain_enabled` cannot disable
-  the suite. Gates the pipeline the same way as ton-state: a failed shard
-  reddens the run.
-- Optional `skip_auto_rerun: [<section>, …]` under a cluster — those shards still
-  run the first attempt (+ in-shard per-flow retry) but are excluded from
-  `maestro-rerun-failed-shards`. Used for long pair matrices.
-- **`swap_pairs` is parked** — the section is commented out of the multichain `flows`
-  list, so CI does not run it. The flows stay on disk; re-add the `flows/multichain/swap_pairs/*`
+- A **shard** = one section folder `flows/multichain/<section>/`; shard id = the bare
+  section name (`backup`, `send`, `ton_staking`). Every listed folder **must exist on
+  disk** or discovery fails.
+- A shard runs on **one funded wallet**: `run_maestro_shard.sh` primes the simulator
+  pasteboard once per shard and `launch_app_ensure_*` imports once, then every flow of
+  the shard reuses that wallet. Two seeds exist:
+  - **multichain seed** (`MAESTRO_MC_WALLET_MONEY*`) — the default; preamble
+    `steps/launch_app_ensure_multichain_wallet.yaml`. Sections: `backup`, `portfolio`,
+    `wallet`, `import`, `battery`, `swap_common`, `send`, `trade`, `staking`.
+  - **TON seed** (`MAESTRO_WALLET_WITH_MONEY*`) — a legacy TON wallet imported on the
+    same multichain build (`steps/launch_app_ensure_ton_wallet.yaml`: same import
+    entry, `Choose wallet → TON wallet`). Sections carry the `ton_` prefix and are
+    listed under `ton_wallet_shards`: `ton_battery`, `ton_browser`, `ton_collectibles`,
+    `ton_staking`, `ton_tonconnect`, `ton_trade`, `ton_transactions`.
+  Discovery emits the choice as `wallet: ton | multichain` in the matrix and the
+  workflow maps the secrets per shard, so a flow always reads its own wallet as
+  `WALLET_WITH_MONEY` / `WALLET_WITH_MONEY_ADDR`. Never mix seeds inside one section.
+- The same-named `tonstakers_*` flows in `staking` and `ton_staking` are both kept on
+  purpose: the multichain versions were rewritten for the multichain home (different
+  locators, no API asserts), the TON versions check the same screens on a legacy wallet.
+- **Create wallet creates a multichain wallet.** `steps/wallet/create_multichain_wallet.yaml`
+  is the only create step; there is no TON-only create path anymore.
+- Optional `skip_auto_rerun: [<section>, …]` — those shards still run the first attempt
+  (+ in-shard per-flow retry) but are excluded from `maestro-rerun-failed-shards`. Used
+  for long pair matrices.
+- **`swap_pairs` is parked** — the section is commented out of the `flows` list, so CI
+  does not run it. The flows stay on disk; re-add the `flows/multichain/swap_pairs/*`
   line together with `skip_auto_rerun: [swap_pairs]` to bring it back.
-- A **shard** = one section folder under a cluster. Shard id:
-  - ton-state → bare section name, e.g. `backup`
-  - multichain → `multichain-<section>`, e.g. `multichain-wallet`
 - `scripts/ci/discover_maestro_clusters.py` parses this file into the GHA matrix
-  (shard `id` / `path` / `cluster` / `label` / `skip_auto_rerun`, build targets,
-  feature-flag overlay). Every listed folder **must exist on disk** or discovery fails.
+  (shard `id` / `path` / `label` / `wallet` / `skip_auto_rerun`, build artifact,
+  feature-flag overlay).
 
 ---
 
@@ -76,16 +85,18 @@ clusters:
 
 ```
 maestro_ui_tests/
-├── config.yaml                # cluster / shard definitions (source of the CI matrix)
+├── config.yaml                # shard definitions + wallet per shard (source of the CI matrix)
 ├── flows/                     # the actual test cases, one *.yaml per case
-│   ├── ton-state/<section>/   # gating suite (backup, battery, browser, collectibles,
-│   │                          #   transactions, staking, trade, tonconnect)
-│   └── multichain/<section>/  # gating suite (wallet, portfolio, import,
-│                              #   battery, swap_common, send, trade, staking;
-│                              #   swap_pairs on disk but parked out of config.yaml)
+│   ├── multichain/<section>/  # multichain-seed shards (backup, wallet, portfolio, import,
+│   │                          #   battery, swap_common, send, trade, staking;
+│   │                          #   swap_pairs on disk but parked out of config.yaml)
+│   ├── multichain/ton_<section>/ # TON-seed shards (ton_battery, ton_browser, ton_collectibles,
+│   │                          #   ton_staking, ton_tonconnect, ton_trade, ton_transactions)
+│   └── canary/<wallet>/       # one import-to-home smoke per seed; gates the matrix, not a shard
 ├── steps/                     # reusable subflows (runFlow targets), e.g.
-│   ├── launch_app_ensure_wallet.yaml
-│   ├── import_wallet.yaml / import_wallet_multichain.yaml
+│   ├── launch_app_ensure_multichain_wallet.yaml / launch_app_ensure_ton_wallet.yaml
+│   ├── import_wallet_multichain.yaml / import_wallet_ton.yaml (+ import_wallet_ton_v3/v4 for the import shard)
+│   ├── wallet/create_multichain_wallet.yaml   # the only create-wallet path
 │   ├── close_home_overlays.yaml       # dismiss stories + home banners (unblocks scroll)
 │   └── password/, mnemonic/, history/, wallet/, trade/, …
 ├── service/                   # on-chain assertion subflows (runScript + assert)
@@ -97,7 +108,7 @@ maestro_ui_tests/
 │   └── ci/                    # runner-side helpers (Python + one shell):
 │       ├── maestro_log_parse.py            # shared log-parsing module (imported by the rest)
 │       ├── test_maestro_log_parse.py       # unittest; the discover job runs it
-│       ├── discover_maestro_clusters.py    # config.yaml → GHA matrix
+│       ├── discover_maestro_clusters.py    # config.yaml → GHA matrix (shards + wallet)
 │       ├── sync_api_runtime.py             # stamp shared HTTP runtime into api/*.js
 │       ├── write_maestro_flags_override.py # merge feature-flag JSON for a build
 │       ├── list_failed_*.py / *_summary.py / write_maestro_github_retry_state.py
@@ -124,13 +135,13 @@ simulator pasteboard, then calls `maestro test <FLOW_DIR>` with these `-e` varia
 | `PASSWORD_KEY=5` | literal | passcode digit taps |
 | `NATIVE_TOKEN_DISPLAY_TEXT` / `NATIVE_TOKEN_SHORT_TEXT` | `ci/native_token_env.sh` | token name assertions (GRAM …) |
 | `MNEMONIC_PHRASE` | `MAESTRO_MNEMONIC_PHRASE` | wallet import |
-| `WALLET_WITH_MONEY` / `WALLET_WITH_MONEY_ADDR` | `MAESTRO_WALLET_WITH_MONEY*` | funded wallet (multichain job maps `MAESTRO_MC_WALLET_MONEY*`) |
+| `WALLET_WITH_MONEY` / `WALLET_WITH_MONEY_ADDR` | `MAESTRO_MC_WALLET_MONEY*`, or `MAESTRO_WALLET_WITH_MONEY*` for `ton_wallet_shards` | the shard's funded wallet (mapped per shard by `matrix.wallet`) |
 | `auth` | `MAESTRO_AUTH` | TonAPI bearer token for `scripts/api/**` |
 | `RECIEVE_WALLET`, `TESTNET_MNEM` | secrets | receive/testnet flows |
-| `TON_v4` | `MAESTRO_TON_V4` | multichain import v3/v4 TON wallet phrase (import shard primes UIPasteboard with this; Maestro `setClipboard` is not enough on iOS) |
+| `TON_v4` | `MAESTRO_TON_V4` | `import` shard: v3/v4 TON wallet phrase (that shard primes UIPasteboard with this; Maestro `setClipboard` is not enough on iOS) |
 
 Flows reference shared steps with **relative** `runFlow`, e.g. from
-`flows/<cluster>/<section>/x.yaml` the steps dir is `../../../steps/…`.
+`flows/multichain/<section>/x.yaml` the steps dir is `../../../steps/…`.
 
 **Locators:** prefer stable `accessibilityIdentifier` ids over visible text.
 Add missing ids in the app rather than guessing on-screen text or geometry.
@@ -205,7 +216,7 @@ Branches follow the repo-wide `author/TASK/description` scheme enforced by the
 - `TASK` — the Linear id (`TK-….`); `NOISSUE-0000` only for changes that genuinely have
   no ticket;
 - the hook prefixes every commit message with the task id from the branch name, so never
-  add it by hand. If it stops being appended, rerun `make hooks`.
+  add it by hand. If it stops being appended, rerun `make -C ios hooks`.
 
 Do not use Linear's suggested `feature/tk-…` branch name — the hook rejects any branch
 that is not three `/`-separated segments.
@@ -216,10 +227,10 @@ that is not three `/`-separated segments.
 `maestro mcp` (Maestro 2.4+) exposes the device to an agent, so a flow can be written
 against the *real* view hierarchy instead of guessed locators. It is declared in
 `.mcp.json` / `.cursor/mcp.json` / `.codex/config.toml` as
-`scripts/tools/maestro.sh mcp --working-dir=maestro_ui_tests`, so every flow path is
-written the same way as in `config.yaml` (`flows/<cluster>/<section>/x.yaml`,
+`ios/scripts/tools/maestro.sh mcp --working-dir=ios/maestro_ui_tests`, so every flow path is
+written the same way as in `config.yaml` (`flows/multichain/<section>/x.yaml`,
 `steps/…`). It talks to whatever simulator is already booted — it does not build the
-app; use `make compile` (or an existing build) and install it first.
+app; use `make -C ios compile` (or an existing build) and install it first.
 
 Authoring loop:
 1. `list_devices` → the iOS `device_id`. **Always pass it explicitly**: with an Android
@@ -243,6 +254,12 @@ Notes:
 - `Failed to connect to /127.0.0.1:<port>` means a stale iOS driver: another Maestro
   client (Maestro Studio, an orphaned `xcodebuild test-without-building`) owns the
   port. One plain `maestro test` re-establishes it; don't retry the MCP call in a loop.
+- A local import that leaves the phrase fields empty after `Paste` is almost always the
+  simulator pasteboard being re-synced from the Mac clipboard between `simctl pbcopy`
+  and the tap (copying anything on the host is enough). Turn the sync off for local runs:
+  `defaults write com.apple.iphonesimulator PasteboardAutomaticSync -bool false`, then
+  restart Simulator.app. A driver that dies mid-run with `isScreenStatic … code: 500` is
+  the same stale-driver story as above — usually Maestro Studio running alongside.
 - The MCP is for authoring and spot-checks only. A flow is done when it passes through
   the CI entrypoints (`ci/run_maestro_shard.sh`), which own the `-e` wiring and retries.
 
@@ -271,57 +288,43 @@ Instead:
 Workflow:
 ```sh
 # edit scripts/api/_api_runtime.js, then:
-make maestro_api_sync    # stamp into all consumers
-make maestro_api_check   # verify in sync (CI runs this in discover-maestro-clusters)
+make -C ios maestro_api_sync    # stamp into all consumers
+make -C ios maestro_api_check   # verify in sync (CI runs this in discover-maestro-clusters)
 ```
 
 ---
 
 ## CI pipeline (`.github/workflows/maestro-ui-tests.yml`)
 
-Nightly `schedule` + manual dispatch. Jobs:
+Nightly `schedule` + manual dispatch (no inputs). Jobs:
 
-Manual `workflow_dispatch` has a **clusters** choice (`all` / `ton-state` /
-`multichain`, default `all`). Cron ignores it and always runs both. Discover
-filters the matrix accordingly (`--clusters`), so unused build/test jobs are
-skipped.
-
-1. **discover-maestro-clusters** — parse `config.yaml` → matrix (honors
-   `MAESTRO_CLUSTERS`); also runs `sync_api_runtime.py --check`.
-2. **maestro-build** — one compile serves both clusters, because their only
-   difference is `FlagsOverride.json`, a plain bundle resource the app
-   JSON-decodes at runtime. The job builds the **multichain** variant (secret
-   `MAESTRO_FEATURE_FLAG_OVERRIDES` + `ci/multichain-flags.json`,
-   `multichainEnabled` forced **on**), then repacks the **ton-state** artifact
-   from the same build: regenerate the JSON with `ci/ton-state-flags.json` and
-   `multichainEnabled` forced **off**, swap it inside `Keeper.app`, re-seal
-   the signature ad hoc, zip. Either way the override outranks keys/all, so
-   `multichain_enabled` from the backend does not decide the suite. Composite
-   actions in `.github/actions/*maestro*` do checkout → keys → build →
-   artifacts.
+1. **discover-maestro-shards** — parse `config.yaml` → matrix (`shards`,
+   `build_artifact`); also runs `sync_api_runtime.py --check` and the CI tooling
+   unit tests.
+2. **maestro-build** — one compile of the simulator app with `FlagsOverride.json`
+   built from the secret `MAESTRO_FEATURE_FLAG_OVERRIDES` + `ci/multichain-flags.json`.
+   Composite actions in `.github/actions/*maestro*` do checkout → keys → build →
+   artifact.
 3. **unit-tests** — reuses `.github/workflows/unit-tests.yml` with
    `non_blocking: true` (runs in parallel, does **not** gate).
-4. **maestro-canary-ton-state** / **maestro-canary-multichain** — one
-   import-to-home smoke per cluster (`flows/canary/<cluster>/`, deliberately
-   outside the `config.yaml` globs so it never becomes a shard). Gates that
-   cluster's shard matrix: an app-wide wallet-setup breakage fails one cheap
-   job instead of burning every shard's timeout budget. The canary is checked
-   by the pipeline gate explicitly, because its failure *skips* the matrix and
-   skipped jobs otherwise count as pass.
-5. **maestro-ui-tests-ton-state** / **maestro-ui-tests-multichain** — matrix of
-   shards; job names render as `[ton] – <label>` / `[multichain] – <label>`.
+4. **maestro-canary** — a two-entry matrix (`canary – multichain`, `canary – ton`),
+   one import-to-home smoke per seed (`flows/canary/<wallet>/`, deliberately outside
+   the `config.yaml` globs so it never becomes a shard). Two entries because the
+   pasteboard is primed once per shard run, so one job cannot import both seeds. Gates
+   the shard matrix: an app-wide wallet-setup breakage fails one cheap job instead of
+   burning every shard's timeout budget. The canary is checked by the pipeline gate
+   explicitly, because its failure *skips* the matrix and skipped jobs otherwise count
+   as pass.
+5. **maestro-ui-tests** — matrix of shards; job names render as `shard – <label>`.
+   `matrix.wallet` maps `MAESTRO_WALLET_WITH_MONEY*` to the TON or multichain seed.
    Each shard does first attempt + per-flow retry (`run_maestro_shard.sh`).
-6. **discover-failed-shards** (`if: always()`) — collect failures from both
-   clusters into the rerun matrix (id/path/cluster/artifact). When **more than
-   half** of the discovered shards failed, the failure is systemic and the
-   auto-rerun is skipped entirely — a rerun cannot fix an app-wide breakage,
-   it only doubles the bill.
-7. **maestro-rerun-failed-shards** — auto-rerun failed shards (cluster-aware
-   artifact + wallet).
-8. **pipeline-gate** — the single required status; **gates on both clusters**
-   (skipped jobs count as pass when that cluster was not selected).
-9. **maestro-slack-notify** — posts a status message split into `ton-state`
-   and `multichain` blocks (both gate the pipeline) + unit tests.
+6. **discover-failed-shards** (`if: always()`) — collect failures into the rerun
+   matrix (id/path/wallet). When **more than half** of the discovered shards failed,
+   the failure is systemic and the auto-rerun is skipped entirely — a rerun cannot fix
+   an app-wide breakage, it only doubles the bill.
+7. **maestro-rerun-failed-shards** — auto-rerun failed shards (wallet-aware secrets).
+8. **pipeline-gate** — the single required status.
+9. **maestro-slack-notify** — posts a status message with every shard + unit tests.
 
 **Retry layers:** per-flow retry inside a shard → auto-rerun job across failed
 shards → GitHub's own workflow re-run (prior failed state is downloaded and reused).
@@ -332,23 +335,17 @@ is a failure to debug.
 
 ---
 
-## Multichain locally
+## The suite's build locally
 
-```jsonc
-// Tonkeeper/Resources/FlagsOverride.json
-{
-  "featureFlags": { "multichainEnabled": true }
-}
-```
-`featureEnabled(.multichainEnabled)` takes a dev override over the keys/all
-gate, so this alone is enough. Add `bootConfigurationFlags.multichain_enabled`
-only to exercise the gate itself — with no override, it defaults to `true`
-when the key is absent.
-Keep the local change from being committed:
+The app is unconditionally multichain now, so no `FlagsOverride.json` override
+is needed for that. To reproduce a CI-only override locally (e.g.
+`disable_battery_crypto_recharge_module`), copy the relevant key from
+`ci/multichain-flags.json` into `ios/Keeper/Resources/FlagsOverride.json` and
+keep the local change from being committed:
 ```sh
-git update-index --skip-worktree Tonkeeper/Resources/FlagsOverride.json
+git update-index --skip-worktree ios/Keeper/Resources/FlagsOverride.json
 # undo before a pull that touches the file:
-git update-index --no-skip-worktree Tonkeeper/Resources/FlagsOverride.json
+git update-index --no-skip-worktree ios/Keeper/Resources/FlagsOverride.json
 ```
 
 ---

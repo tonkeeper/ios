@@ -1,5 +1,9 @@
-appId: com.example.app
+appId: com.jbig.tonkeeper
 ---
+# Create New Wallet on the multichain build creates a multichain (bip39) wallet with a
+# 12-word phrase. After the passcode the onboarding pushes the backup intro (header Skip)
+# and then the push-permission step; both are skipped so the flow lands on Customize.
+# The intro title carries a non-breaking space before "phrase".
 - tapOn: Create New Wallet
 - assertVisible: Create passcode
 - repeat:
@@ -13,8 +17,28 @@ appId: com.example.app
     commands:
       - tapOn: ${PASSWORD_KEY}
 
-- tapOn: Later
+- extendedWaitUntil:
+    visible: "Back up your recovery\u00a0phrase"
+    timeout: 10000
+    optional: true
+- runFlow:
+    when:
+      visible: "Back up your recovery\u00a0phrase"
+    commands:
+      - tapOn: Skip
+      - waitForAnimationToEnd:
+          timeout: 3000
 
-- assertVisible: Customize your Wallet
+- runFlow: ../skip_notifications_onboarding.yaml
+
+- extendedWaitUntil:
+    visible: Customize your Wallet
+    timeout: 10000
 - assertVisible: Wallet
 - tapOn: "Continue"
+# Continue spins while the multichain accounts are created and synced over the network;
+# the next screen is only there once Customize is gone. Above the 15s house limit for
+# that reason.
+- extendedWaitUntil:
+    notVisible: Customize your Wallet
+    timeout: 60000

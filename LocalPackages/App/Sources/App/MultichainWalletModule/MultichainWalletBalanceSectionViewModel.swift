@@ -67,9 +67,9 @@ final class MultichainWalletBalanceSectionViewModel: ObservableObject {
         // screen's own listing, so the store is what the section follows.
         portfolioStore.addObserver(self) { observer, event in
             switch event {
-            case let .didUpdatePortfolioTotal(wallet):
+            case let .didUpdatePortfolio(wallet):
                 Task { @MainActor in
-                    observer.didUpdatePortfolioTotal(wallet: wallet)
+                    observer.didUpdatePortfolio(wallet: wallet)
                 }
             }
         }
@@ -137,7 +137,7 @@ final class MultichainWalletBalanceSectionViewModel: ObservableObject {
 
     /// The store is only written when a listing answered for the wallet, so its update is what
     /// makes the amount current again.
-    private func didUpdatePortfolioTotal(wallet: Wallet) {
+    private func didUpdatePortfolio(wallet: Wallet) {
         guard self.wallet == wallet else { return }
         freshnessModel.markFresh()
         update()

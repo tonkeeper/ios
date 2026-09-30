@@ -137,8 +137,7 @@ private func marketsStoreTestMetadata(id: Int64, symbol: String, lastTradePrice:
         fundingRatePercent: nil,
         priceDecimals: 2,
         sizeDecimals: 2,
-        minBaseSize: 0,
-        takerFee: 0
+        minBaseSize: 0
     )
 }
 

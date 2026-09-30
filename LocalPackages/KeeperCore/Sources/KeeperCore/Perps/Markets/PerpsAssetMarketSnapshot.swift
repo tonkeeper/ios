@@ -116,18 +116,14 @@ extension PerpsAssetMarketSnapshot {
 }
 
 public enum PerpsMarketMath {
-    public static func double(_ string: String) -> Double {
-        guard let decimal = Decimal(string: string) else { return 0 }
-        return NSDecimalNumber(decimal: decimal).doubleValue
+    public static func double(_ string: String?) -> Double {
+        optionalDouble(string) ?? 0
     }
 
     public static func optionalDouble(_ string: String?) -> Double? {
         guard let string else { return nil }
-        return optionalDouble(string)
-    }
-
-    public static func optionalDouble(_ string: String) -> Double? {
-        guard let decimal = Decimal(string: string) else { return nil }
+        let trimmed = string.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, let decimal = Decimal(string: trimmed) else { return nil }
         return NSDecimalNumber(decimal: decimal).doubleValue
     }
 

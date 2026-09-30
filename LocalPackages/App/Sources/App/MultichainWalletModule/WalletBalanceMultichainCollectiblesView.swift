@@ -5,19 +5,24 @@ import TKUIKit
 struct WalletBalanceMultichainCollectiblesView: View {
     @ObservedObject var viewModel: WalletBalanceMultichainCollectiblesViewModel
     var body: some View {
-        if viewModel.isSectionVisible {
-            VStack(alignment: .leading, spacing: 0) {
-                sectionHeader
-
-                switch viewModel.contentState {
-                case .items:
-                    cardsRow
-                case .allHidden:
-                    allHiddenRow
-                case .empty:
-                    EmptyView()
-                }
+        switch viewModel.state {
+        case let .items(content):
+            section {
+                cardsRow(content)
             }
+        case .allHidden:
+            section {
+                allHiddenRow
+            }
+        case .empty:
+            EmptyView()
+        }
+    }
+
+    private func section(@ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionHeader
+            content()
         }
     }
 
@@ -33,9 +38,11 @@ struct WalletBalanceMultichainCollectiblesView: View {
         ).padding(.horizontal, Layout.horizontalInset)
     }
 
-    private var cardsRow: some View {
+    private func cardsRow(
+        _ content: WalletBalanceMultichainCollectiblesViewModel.Content
+    ) -> some View {
         horizontalCardsScroll {
-            ForEach(viewModel.items) { item in
+            ForEach(content.items) { item in
                 NFTCard(
                     content: NFTCardContent(
                         id: item.id,
@@ -53,7 +60,7 @@ struct WalletBalanceMultichainCollectiblesView: View {
                 )
             }
 
-            if viewModel.showsSeeAllButton {
+            if content.showsSeeAllButton {
                 seeAllButton
             }
         }

@@ -2,8 +2,31 @@ import Foundation
 import KeeperCore
 
 struct TokenPickerLoadResult: Equatable {
-    let assets: [MultichainAsset]
+    enum Item: Equatable {
+        case asset(MultichainAsset)
+        case perp(PerpsMarketSummary)
+    }
+
+    let items: [Item]
     let nextCursor: String?
+
+    init(items: [Item], nextCursor: String?) {
+        self.items = items
+        self.nextCursor = nextCursor
+    }
+
+    init(assets: [MultichainAsset], nextCursor: String?) {
+        self.init(items: assets.map { .asset($0) }, nextCursor: nextCursor)
+    }
+
+    var assets: [MultichainAsset] {
+        items.compactMap { item in
+            if case let .asset(asset) = item {
+                return asset
+            }
+            return nil
+        }
+    }
 }
 
 protocol TokenPickerV2Model: AnyObject {
@@ -22,12 +45,21 @@ protocol TokenPickerV2Model: AnyObject {
     var showsCatalogSortControl: Bool { get }
     var catalogSearchSort: MultichainAssetSearchSort { get }
     func setCatalogSearchSort(_ sort: MultichainAssetSearchSort)
+
+    var perpsSearchSort: PerpsMarketsSort { get }
+    func setPerpsSearchSort(_ sort: PerpsMarketsSort)
 }
 
 extension TokenPickerV2Model {
     func loadFilters() async throws(MultichainServiceError) -> [TokenPickerV2ChainFilter]? {
         nil
     }
+
+    var perpsSearchSort: PerpsMarketsSort {
+        .volume
+    }
+
+    func setPerpsSearchSort(_ sort: PerpsMarketsSort) {}
 }
 
 struct TokenPickerV2ModelState {

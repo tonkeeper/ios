@@ -94,6 +94,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
     private let resolveJettonInfo: (TonSwift.Address, Network) async throws -> JettonInfo
     private let tokenizedAssetResolver: NativeSwapTokenizedAssetResolver
     private let transactionSentNotificationPatch: (inout [String: Any]) -> Void
+    private let utm: UtmParameters
 
     /// Helper services
     private let rateFormatter: RateFormatter
@@ -201,6 +202,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         self.resolveJettonInfo = swapDependencies.resolveJettonInfo
         self.tokenizedAssetResolver = tokenizedAssetResolver
         self.transactionSentNotificationPatch = nativeSwapContext.transactionSentNotificationPatch
+        self.utm = nativeSwapContext.utm
 
         // Initialize helper services
         self.rateFormatter = RateFormatter(amountFormatter: amountFormatter)
@@ -245,10 +247,13 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         let receiveSymbol = model.toToken.name
         let receiveFormatted = "\(TKLocales.Common.Numbers.approximate) \(receiveInput) \(receiveSymbol)"
 
-        analyticsProvider.log(event: .NativeSwap.click(
-            from: model.fromToken.analyticsSymbol,
-            to: model.toToken.analyticsSymbol
-        ))
+        analyticsProvider.log(
+            event: .NativeSwap.click(
+                from: model.fromToken.analyticsSymbol,
+                to: model.toToken.analyticsSymbol
+            ),
+            utm: utm
+        )
 
         didTapContinue?(
             NativeSwapTransactionConfirmationModel(
@@ -264,7 +269,8 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
                     toToken: model.toToken
                 ),
                 confirmation: confirmation,
-                transactionSentNotificationPatch: transactionSentNotificationPatch
+                transactionSentNotificationPatch: transactionSentNotificationPatch,
+                utm: utm
             )
         )
     }
@@ -297,8 +303,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
 
                 streamTask?.cancel()
                 let redSession = RedAnalyticsSessionHolder(
-                    analytics: analyticsProvider,
-                    configurationAssembly: configurationAssembly
+                    analytics: analyticsProvider
                 )
                 redSession.start(
                     flow: .swap,
@@ -326,7 +331,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         updateViewState(.success)
         fetchAssets()
         requestInitialRates()
-        analyticsProvider.log(event: .NativeSwap.open())
+        analyticsProvider.log(event: .NativeSwap.open(), utm: utm)
     }
 
     private func requestInitialRates() {

@@ -2,6 +2,13 @@ appId: com.jbig.tonkeeper
 ---
 - launchApp
 
+# A cold first launch on CI can still be on the splash when the conditions below are
+# sampled; wait for whichever screen the app settles on before branching.
+- extendedWaitUntil:
+    visible: "Enter passcode|Import Existing Wallet"
+    timeout: 30000
+    optional: true
+
 - runFlow:
     when:
       visible: Enter passcode

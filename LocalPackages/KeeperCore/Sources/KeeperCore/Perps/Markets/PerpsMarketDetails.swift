@@ -32,7 +32,6 @@ extension PerpsMarketMetadata {
         guard let marketId = Int64(exactly: value.market_index),
               let symbol = value.symbol.nilIfEmpty,
               let minBaseSize = PerpsMarketMath.optionalDouble(value.min_size_base),
-              let takerFeePercent = PerpsMarketMath.optionalDouble(value.taker_fee_pct),
               value.price_decimals >= 0,
               value.size_decimals >= 0,
               value.max_leverage > 0,
@@ -54,8 +53,7 @@ extension PerpsMarketMetadata {
             fundingRatePercent: PerpsMarketMath.optionalDouble(value.funding_rate_hourly).map { $0 * 100 },
             priceDecimals: value.price_decimals,
             sizeDecimals: value.size_decimals,
-            minBaseSize: minBaseSize,
-            takerFee: takerFeePercent / 100
+            minBaseSize: minBaseSize
         )
     }
 }

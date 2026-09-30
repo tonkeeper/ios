@@ -7,25 +7,16 @@ import XCTest
 /// path: the contours have different kill switches, so a wallet routed to a disabled one is left
 /// with no subscription at all.
 final class PushContourRoutingTests: XCTestCase {
-    func test_multichainWallet_usesV2WhenItIsEnabled() {
+    func test_multichainWallet_usesV2() {
         let wallet = makeWallet(multichain: .multichain(makeState()))
 
-        XCTAssertTrue(wallet.usesMultichainPush(isMultichainEnabled: true))
-    }
-
-    /// Import-only rollout: `importMultichainEnabled` turns an imported wallet into a multichain
-    /// one while the v2 kill switch is still off, and v2 refuses to sync anything in that state.
-    /// The wallet has to stay on v1 until the main flag is turned on.
-    func test_multichainWallet_staysOnV1WhileV2IsOff() {
-        let wallet = makeWallet(multichain: .multichain(makeState()))
-
-        XCTAssertFalse(wallet.usesMultichainPush(isMultichainEnabled: false))
+        XCTAssertTrue(wallet.usesMultichainPush())
     }
 
     func test_walletEnrichmentRuledOutOfMultichain_usesV1() {
         let wallet = makeWallet(multichain: .unavailable)
 
-        XCTAssertFalse(wallet.usesMultichainPush(isMultichainEnabled: true))
+        XCTAssertFalse(wallet.usesMultichainPush())
     }
 
     /// A wallet is added before enrichment classifies it, so it takes v1 in the meantime — the
@@ -33,7 +24,7 @@ final class PushContourRoutingTests: XCTestCase {
     func test_unclassifiedWallet_usesV1() {
         let wallet = makeWallet(multichain: nil)
 
-        XCTAssertFalse(wallet.usesMultichainPush(isMultichainEnabled: true))
+        XCTAssertFalse(wallet.usesMultichainPush())
     }
 
     func test_nonRegularWallet_usesV1() {
@@ -43,7 +34,7 @@ final class PushContourRoutingTests: XCTestCase {
             multichain: .multichain(makeState())
         )
 
-        XCTAssertFalse(wallet.usesMultichainPush(isMultichainEnabled: true))
+        XCTAssertFalse(wallet.usesMultichainPush())
     }
 
     func test_notificationsOff_cleansV1WithoutWaitingForBinding() {
@@ -51,7 +42,6 @@ final class PushContourRoutingTests: XCTestCase {
 
         XCTAssertTrue(
             wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: true,
                 isNotificationsOn: false,
                 confirmedMultichainPushWalletIds: []
             )
@@ -63,7 +53,6 @@ final class PushContourRoutingTests: XCTestCase {
 
         XCTAssertFalse(
             wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: true,
                 isNotificationsOn: true,
                 confirmedMultichainPushWalletIds: []
             )
@@ -77,7 +66,6 @@ final class PushContourRoutingTests: XCTestCase {
 
         XCTAssertFalse(
             wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: true,
                 isNotificationsOn: true,
                 confirmedMultichainPushWalletIds: ["mc-1"]
             )
@@ -91,7 +79,6 @@ final class PushContourRoutingTests: XCTestCase {
 
         XCTAssertFalse(
             wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: true,
                 isNotificationsOn: true,
                 confirmedMultichainPushWalletIds: ["mc-1"]
             )
@@ -103,20 +90,7 @@ final class PushContourRoutingTests: XCTestCase {
 
         XCTAssertTrue(
             wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: true,
                 isNotificationsOn: true,
-                confirmedMultichainPushWalletIds: ["mc-1"]
-            )
-        )
-    }
-
-    func test_v2Disabled_keepsV1() {
-        let wallet = makeWallet(multichain: .multichain(makeState()))
-
-        XCTAssertFalse(
-            wallet.needsLegacyPushCleanup(
-                isMultichainEnabled: false,
-                isNotificationsOn: false,
                 confirmedMultichainPushWalletIds: ["mc-1"]
             )
         )

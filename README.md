@@ -1,5 +1,7 @@
 # Tonkeeper iOS
 
+This directory is the iOS app; every command below runs from `ios/` (`cd ios`, or `make -C ios <target>` from the repository root).
+
 ## Setup
 
 ```sh
@@ -31,6 +33,6 @@ echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
 ## Environment
 
 If you use Codex skills, ensure required environment values and dependencies are configured first. 
-Create a repo-root `.env` file with:
+Create a `.env` file at the repository root (one level above `ios/`) with:
 - a non-empty `LINEAR_API_KEY` for the Linear skill. (see https://linear.app/developers)
 - install `gh` (`brew install gh`) and call `gh auth login` for `tondocs` and `pr` skill

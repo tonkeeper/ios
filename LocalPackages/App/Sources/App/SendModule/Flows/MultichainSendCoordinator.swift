@@ -475,8 +475,7 @@ private extension MultichainSendCoordinator {
             guard let self else { return }
             self.nativeFeeShortagePopupPresenter.startNewFeeCalculation()
             let redSession = RedAnalyticsSessionHolder(
-                analytics: self.analyticsProvider,
-                configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
+                analytics: self.analyticsProvider
             )
             redSession.start(
                 flow: .transfer,
@@ -509,8 +508,7 @@ private extension MultichainSendCoordinator {
             let feeAsset = self.feeAsset(model: model, context: analyticsContext)
             let metadata = self.transferRedMetadata(context: analyticsContext, feePaidIn: feeAsset.rawValue)
             let redSession = RedAnalyticsSessionHolder(
-                analytics: self.analyticsProvider,
-                configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
+                analytics: self.analyticsProvider
             )
             redSession.start(
                 flow: .transfer,
@@ -548,7 +546,7 @@ private extension MultichainSendCoordinator {
                 model: model,
                 origin: self.sendSource.transactionOrigin
             ) {
-                self.analyticsProvider.log(event)
+                self.analyticsProvider.log(event, utm: self.sendSource.utm)
             }
             self.didSendSuccessfully?(self)
         }
@@ -646,7 +644,7 @@ private extension MultichainSendCoordinator {
 
 private extension MultichainSendCoordinator {
     func logSendOpen() {
-        analyticsProvider.log(SendOpen(from: sendSource.sendOpenFrom))
+        analyticsProvider.log(SendOpen(from: sendSource.sendOpenFrom), utm: sendSource.utm)
     }
 
     func logSendClick(sendData: SendData) {
@@ -655,7 +653,7 @@ private extension MultichainSendCoordinator {
             from: context.source.sendClickFrom,
             asset: context.asset,
             amount: context.amount
-        ))
+        ), utm: context.source.utm)
     }
 
     func logSendConfirm(model: TransactionConfirmationModel, context: MultichainSendAnalyticsContext?) {
@@ -667,7 +665,7 @@ private extension MultichainSendCoordinator {
             amount: context.amount,
             feeAsset: feeAsset,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func logSendSuccess(
@@ -682,7 +680,7 @@ private extension MultichainSendCoordinator {
             amount: context.amount,
             feeAsset: feeAsset,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func logSendFailed(
@@ -700,7 +698,7 @@ private extension MultichainSendCoordinator {
             errorCode: error.code,
             errorMessage: error.message,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func makeSendAnalyticsContext(sendData: SendData) -> MultichainSendAnalyticsContext? {

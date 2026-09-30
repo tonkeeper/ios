@@ -360,6 +360,14 @@ components:
         minLength: 32
         maxLength: 64
         pattern: "^([a-f0-9]{64}|[a-z2-7]{32}|[a-z2-7]{36})$"
+    IsNewUserQuery:
+      name: is_new
+      in: query
+      required: false
+      description: "Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one"
+      schema:
+        type: boolean
+        default: false
 
   schemas:
     ErrorResponse:
@@ -2289,6 +2297,16 @@ components:
       properties:
         route_id:
           type: string
+        provider_route_id:
+          type: string
+          description: |
+            The aggregator's own identifier for this route, as the built
+            transaction carries it. For swapsxyz this is the `txId` that
+            `/getAction` minted, which is the id its own dashboards and
+            `/getStatus` know the swap by; a quote that was not prepared
+            inline carries an id of ours instead, so this is where the
+            upstream one first appears. Omitted when the provider exposes
+            none.
         aggregator:
           $ref: '#/components/schemas/CrossSwapAggregator'
         payloads:
@@ -3455,6 +3473,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/WalletIdHeader'
         - $ref: '#/components/parameters/FirebaseUserHeader'
+        - $ref: '#/components/parameters/IsNewUserQuery'
       requestBody:
         $ref: '#/components/requestBodies/CrossSwapQuote'
       responses:
@@ -3478,6 +3497,7 @@ paths:
         - $ref: '#/components/parameters/CrossSwapRouteIDPath'
         - $ref: '#/components/parameters/WalletIdHeader'
         - $ref: '#/components/parameters/FirebaseUserHeader'
+        - $ref: '#/components/parameters/IsNewUserQuery'
       requestBody:
         $ref: '#/components/requestBodies/CrossSwapPrepare'
       responses:

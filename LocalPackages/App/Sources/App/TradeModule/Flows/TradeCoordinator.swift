@@ -109,7 +109,6 @@ extension TradeCoordinator {
             favoriteAssetsService: favoriteAssetsService,
             perpsShelfMarketsLoader: perpsShelfMarketsLoader,
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
-            isMysteryRaffleEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
             signedAmountFormatter: signedAmountFormatter,
             onOpenAssetList: { [weak self] category, initialCatalogSearchSort in
                 guard let self else { return }
@@ -227,13 +226,21 @@ extension TradeCoordinator {
         multichainState: MultichainWalletState,
         on navigationController: UINavigationController
     ) {
+        let perpsRepository: PerpsMarketsRepository?
+        if output.onOpenPerpsMarket != nil {
+            perpsRepository = keeperCoreMainAssembly.perpsAssembly.marketsRepository
+        } else {
+            perpsRepository = nil
+        }
         let model = SendTokenV2PickerModel(
             multichainState: multichainState,
             displayMode: .includingMarketData,
             searchBehavior: .catalog,
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-            initialCatalogSearchSort: initialCatalogSearchSort
+            initialCatalogSearchSort: initialCatalogSearchSort,
+            catalogSearching: perpsRepository,
+            perpsSearching: perpsRepository
         )
         let module = TokenPickerV2Assembly.module(
             title: assetListTitle(for: initialCategory),
@@ -256,6 +263,9 @@ extension TradeCoordinator {
                 on: navigationController,
                 source: assetDetailsSource
             )
+        }
+        module.output.didSelectPerpMarket = { [weak self, weak navigationController] marketID in
+            self?.output.onOpenPerpsMarket?(marketID, navigationController)
         }
 
         module.output.didFinish = { [weak navigationController] in
@@ -333,7 +343,6 @@ extension TradeCoordinator {
         if let multichainState {
             historySource = .multichain(
                 TradeAssetDetailsMultichainHistoryViewModel(
-                    walletId: multichainState.walletId,
                     assetId: preview.assetID,
                     multichainState: multichainState,
                     multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
@@ -348,6 +357,7 @@ extension TradeCoordinator {
                     typedAssetId: typedAssetId,
                     historyService: keeperCoreMainAssembly.servicesAssembly.historyService(),
                     tronUSDTHistoryService: keeperCoreMainAssembly.servicesAssembly.tronUSDTHistoryService(),
+                    tronTRXHistoryService: keeperCoreMainAssembly.servicesAssembly.tronTRXHistoryService(),
                     tronUsdtApi: keeperCoreMainAssembly.servicesAssembly.tronUsdtApi(),
                     accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
                     dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
@@ -591,10 +601,6 @@ extension TradeCoordinator {
             .tabBarHostNavigationController
         let module = historyListModule(for: context)
 
-        module.view.title = TKLocales.Trade.AssetDetails.History.title
-        module.view.navigationItem.largeTitleDisplayMode = .never
-        module.view.adjustsContentTopPaddingToNavigationBar = true
-
         module.output.didSelectEvent = { [weak self, weak presentingNavigationController] event in
             guard let self else {
                 return
@@ -613,8 +619,14 @@ extension TradeCoordinator {
             }
         }
 
-        presentingNavigationController.setNavigationBarHidden(false, animated: true)
-        presentingNavigationController.pushViewController(module.view, animated: true)
+        let viewController = TradeAssetHistoryViewController(
+            listViewController: module.view,
+            onBack: { [weak presentingNavigationController] in
+                presentingNavigationController?.popViewController(animated: true)
+            }
+        )
+        viewController.navigationItem.hidesBackButton = true
+        presentingNavigationController.pushViewController(viewController, animated: true)
     }
 
     func openMultichainAssetHistory(
@@ -874,12 +886,14 @@ private extension TradeCoordinator {
             )
         case let .tronUSDT(wallet):
             return historyModule.createTronUSDTHistoryListModule(wallet: wallet)
+        case let .tronTRX(wallet):
+            return historyModule.createTronTRXHistoryListModule(wallet: wallet)
         }
     }
 
     func wallet(for context: TradeAssetHistoryContext) -> Wallet {
         switch context {
-        case let .ton(wallet), let .tronUSDT(wallet), let .jetton(wallet, _):
+        case let .ton(wallet), let .tronUSDT(wallet), let .tronTRX(wallet), let .jetton(wallet, _):
             return wallet
         }
     }

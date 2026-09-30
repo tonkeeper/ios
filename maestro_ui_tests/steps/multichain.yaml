@@ -1,9 +1,0 @@
-appId: com.jbig.tonkeeper
----
-- tapOn: "Import Existing Wallet"
-- tapOn: "Import your existing TON or multichain wallet"
-- tapOn: "12 words"
-- tapOn: "Paste"
-- tapOn: "Allow Paste"
-- tapOn: "Continue"
-- tapOn: "Continue"

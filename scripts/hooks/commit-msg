@@ -7,6 +7,12 @@ if [ -z "${repo_root}" ] || [ ! -d "${repo_root}" ]; then
   exit 1
 fi
 
+# The iOS project lives in ios/. The installed hook is shared by every working tree of
+# this repository, so a tree still on a branch with the project at the root keeps its
+# tooling reachable.
+ios_root="${repo_root}/ios"
+[ -d "${ios_root}/scripts" ] || ios_root="${repo_root}"
+
 add_task_prefix_to_commit_message() {
   msg_file="$1"
   if [ -z "$msg_file" ] || [ ! -f "$msg_file" ]; then
@@ -76,7 +82,7 @@ run_swiftformat() {
 $staged_swift_files
 EOF
 
-  "${repo_root}/scripts/tools/tool.sh" swiftformat --quiet --config "${repo_root}/.swiftformat" "$@"
+  "${ios_root}/scripts/tools/tool.sh" swiftformat --quiet --config "${ios_root}/.swiftformat" "$@"
 
   formatted_changed=""
   while IFS= read -r file; do
@@ -110,8 +116,8 @@ run_swiftlint() {
 $staged_swift_files
 EOF
 
-  "${repo_root}/scripts/tools/tool.sh" swiftlint lint --quiet --force-exclude \
-    --config "${repo_root}/.swiftlint.yml" "$@" || true
+  "${ios_root}/scripts/tools/tool.sh" swiftlint lint --quiet --force-exclude \
+    --config "${ios_root}/.swiftlint.yml" "$@" || true
 }
 
 add_task_prefix_to_commit_message "$1"

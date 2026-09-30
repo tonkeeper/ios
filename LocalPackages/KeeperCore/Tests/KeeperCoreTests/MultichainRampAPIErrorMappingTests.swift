@@ -60,7 +60,7 @@ final class MultichainRampAPIErrorMappingTests: XCTestCase {
 
     private func failure(of api: MultichainRampAPI) async -> MultichainRampAPIError? {
         do {
-            _ = try await api.getOnrampAsset(assetId: "asset", walletId: nil)
+            _ = try await api.getOnrampAsset(assetId: "asset", fiat: nil, walletId: nil)
             XCTFail("expected the request to fail")
             return nil
         } catch let error as MultichainRampAPIError {

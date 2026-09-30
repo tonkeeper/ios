@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Tonkeeper Multichain Backend
+  title: Keeper Multichain Backend
   version: 0.1.0
 
 servers: [ ]
@@ -234,6 +234,25 @@ components:
       schema:
         type: boolean
         default: false
+    ShowPerpsActivitiesQuery:
+      name: show_perps
+      in: query
+      required: false
+      description: >-
+        Include Lighter perps activities (`perps.*` types) in the history. They are hidden
+        when the parameter is absent or false.
+      schema:
+        type: boolean
+        default: false
+    OmitSwappableQuery:
+      name: omit_swappable
+      in: query
+      required: false
+      description: >-
+        Skip the `swap` capability filter and search the whole catalog.
+      schema:
+        type: boolean
+        default: false
     ShowAllQuery:
       name: show_all
       in: query
@@ -257,7 +276,7 @@ components:
       description: >-
         Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet
         assets that is the fiat value of the held balance, on activities the larger of the
-        incoming and outgoing amount value.
+        incoming and outgoing amount value. Only send and receive activities are filtered.
       schema:
         type: boolean
         default: false
@@ -304,9 +323,9 @@ components:
       name: activity_type
       in: query
       required: false
-      description: "Filter by activity type"
+      description: "Filter by activity type. `perps` selects every `perps.*` kind."
       schema:
-        $ref: '#/components/schemas/ActivityType'
+        $ref: '#/components/schemas/ActivityTypeFilter'
     IfNoneMatch:
       name: If-None-Match
       in: header
@@ -709,8 +728,15 @@ components:
           enum: [ complete, in_progress, queued ]
           description: "Deep-history catch-up state; clients poll until `complete`."
     ActivityType:
+      # Free-form for the same reason as `AssetCapability`: the generator emits a closed
+      # `@frozen enum` with no unknown case, so a kind added upstream — as the `perps.*` ones
+      # were — fails the decoding of the whole activities page rather than of one row.
+      # `MultichainActivityType` falls back to `.unknown` instead.
       type: string
-      description: "Classified activity kind emitted by the indexer. Kept as a closed enum so clients can build exhaustive rendering / filters; new values require a coordinated backend release."
+      description: "Classified activity kind emitted by the indexer. The `perps.*` kinds only appear with `show_perps=true` or `activity_type=perps`."
+    ActivityTypeFilter:
+      type: string
+      description: "Same as `ActivityType` plus the `perps` umbrella, which selects every `perps.*` kind. Filter only: no activity is returned with that value."
       enum:
         - send
         - receive
@@ -742,6 +768,11 @@ components:
         - borrow
         - repay
         - airdrop
+        - perps.position_opened
+        - perps.position_closed
+        - perps.balance_deposit
+        - perps.balance_withdrawal
+        - perps
     ActivityStatus:
       type: string
       enum: [ pending, confirmed, failed, dropped ]
@@ -750,7 +781,7 @@ components:
       enum: [ in, out, self ]
     ActivityFeeType:
       type: string
-      description: "How the fee was paid: the chain's native coin, a gasless relayer, or Tonkeeper Battery. Defaults to native."
+      description: "How the fee was paid: the chain's native coin, a gasless relayer, or Keeper Battery. Defaults to native."
       enum: [ gasless, native, battery ]
     ActivityFee:
       type: object
@@ -777,9 +808,12 @@ components:
           type: integer
           format: int64
         from_chain:
-          $ref: '#/components/schemas/Chain'
+          # Free-form rather than `Chain`: a `perps.*` row carries `lighter`, which the backend
+          # deliberately keeps out of that enum so it stays invalid as a `chain` filter and as a
+          # wallet account. `MultichainActivity` resolves what it knows and leaves the rest nil.
+          type: string
         to_chain:
-          $ref: '#/components/schemas/Chain'
+          type: string
         wallet_address:
           type: string
         direction:
@@ -833,7 +867,7 @@ components:
           $ref: '#/components/schemas/ActivityFee'
         protocol:
           type: string
-          description: "DEX/bridge protocol name (uniswap_v3, stargate, etc.)"
+          description: "Bridge/DeFi protocol name (stargate, etc.). Always empty for swap activities."
         tx_ids:
           type: array
           items:
@@ -859,7 +893,14 @@ components:
             TRON transaction cost its sender in resources. Energy and bandwidth are
             resource units, the two fees are sun of the TRX fee spent on each. A sender
             with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of
-            0 is the normal case there and this object is the real cost.
+            0 is the normal case there and this object is the real cost;
+            `perps` — on a Lighter perps row (chain `lighter`, activity types
+            `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`.
+            `side` is the side of the position, `long` or `short`, not the direction of
+            the trade. `reason` is set on `perps.position_closed` only: `manual`,
+            `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's
+            catalog asset (`lighter/<network>/<market_id>`); `account_index` is the
+            Lighter account; `settled_at` is when a deposit arrived.
     PendingTransaction:
       type: object
       description: "A locally-broadcast transaction, recorded as pending until the indexer observes it on-chain"
@@ -2008,7 +2049,7 @@ paths:
     get:
       operationId: searchAssets
       summary: Search the swappable asset catalog
-      description: Only assets with the `swap` capability are returned. Lighter perps are exempt.
+      description: Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
       tags:
         - assets
       parameters:
@@ -2020,6 +2061,7 @@ paths:
         - $ref: '#/components/parameters/CursorQuery'
         - $ref: '#/components/parameters/VerifiedOnlyQuery'
         - $ref: '#/components/parameters/ShowPerpsQuery'
+        - $ref: '#/components/parameters/OmitSwappableQuery'
         - $ref: '#/components/parameters/FirebaseUserHeader'
       responses:
         '200':
@@ -2442,6 +2484,7 @@ paths:
         - $ref: '#/components/parameters/IsSpamOptQuery'
         - $ref: '#/components/parameters/CurrenciesOptQuery'
         - $ref: '#/components/parameters/HideDustQuery'
+        - $ref: '#/components/parameters/ShowPerpsActivitiesQuery'
       responses:
         '200':
           $ref: '#/components/responses/Activities'

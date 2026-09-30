@@ -1,25 +1,21 @@
-import ChainKit
 import Foundation
 @testable import KeeperCore
 import TonSwift
 import XCTest
 
 final class PerpsAccountStoreRecoveryTests: XCTestCase {
-    func testActiveSessionRecoversImmediatelyAndAfterTransactionUpdate() async {
+    func testActiveSessionRecoversImmediately() async {
         let wallet = makeWallet()
-        let service = RecoveryAccountReading()
         let recorder = RecoveryRecorder()
         let store = PerpsAccountStore(
-            service: service,
+            service: RecoveryAccountReading(),
             wallet: wallet,
             recoverOperations: { recorder.record() }
         )
 
         store.resolveIfNeeded()
 
-        await fulfillment(of: [service.firstWatchOpened, recorder.initialRecovery], timeout: 2)
-        service.emitTransactionUpdate()
-        await fulfillment(of: [recorder.updateRecovery], timeout: 2)
+        await fulfillment(of: [recorder.initialRecovery], timeout: 2)
     }
 
     func testWalletScopedStoresRecoverIndependently() async {
@@ -43,17 +39,15 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
 
         firstStore.resolveIfNeeded()
         secondStore.resolveIfNeeded()
+
         await fulfillment(
-            of: [service.firstWatchOpened, service.secondWatchOpened, recorder.firstRecovery, recorder.secondRecovery],
+            of: [recorder.firstRecovery, recorder.secondRecovery],
             timeout: 2,
             enforceOrder: false
         )
-
-        service.emitTransactionUpdate(walletId: firstWallet.id)
-        await fulfillment(of: [recorder.firstUpdateRecovery, recorder.secondUnexpectedRecovery], timeout: 1.0)
     }
 
-    func testStopOperationRecoveryIgnoresLateTransactionUpdate() async {
+    func testStoppedRecoveryDoesNotRunAgain() async {
         let wallet = makeWallet()
         let service = RecoveryAccountReading()
         let recorder = RecoveryRecorder()
@@ -64,13 +58,31 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         )
 
         store.resolveIfNeeded()
-        await fulfillment(of: [service.firstWatchOpened, recorder.initialRecovery], timeout: 2)
+        await fulfillment(of: [recorder.initialRecovery], timeout: 2)
 
-        store.beginActivation()
-        await fulfillment(of: [service.watchCancelled], timeout: 2)
+        service.setStatus(.noAccount(ethAddress: "0xabc"))
         let noFurtherRecovery = recorder.expectNoFurtherRecovery()
-        service.emitTransactionUpdate()
+        store.refresh()
+
         await fulfillment(of: [noFurtherRecovery], timeout: 0.5)
+    }
+
+    func testAccountWithoutTradingKeyStillResolvesToActive() async {
+        let wallet = makeWallet()
+        let service = RecoveryAccountReading()
+        let store = PerpsAccountStore(service: service, wallet: wallet)
+
+        store.resolveIfNeeded()
+
+        for _ in 0 ..< 200 {
+            if case let .active(account) = store.currentWalletState() {
+                XCTAssertEqual(account.accountIndex, 42)
+                XCTAssertEqual(account.availableBalance, "100")
+                return
+            }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("store never resolved to active")
     }
 }
 
@@ -89,14 +101,13 @@ private extension PerpsAccountStoreRecoveryTests {
 
 private final class RecoveryRecorder: @unchecked Sendable {
     let initialRecovery = XCTestExpectation(description: "initial operation recovery")
-    let updateRecovery = XCTestExpectation(description: "transaction update recovery")
 
     private let lock = NSLock()
     private var count = 0
     private var furtherRecovery: XCTestExpectation?
 
     func expectNoFurtherRecovery() -> XCTestExpectation {
-        let expectation = XCTestExpectation(description: "stopped recovery ignores late transaction update")
+        let expectation = XCTestExpectation(description: "stopped scope runs no further recovery")
         expectation.isInverted = true
         lock.withLock { furtherRecovery = expectation }
         return expectation
@@ -109,100 +120,47 @@ private final class RecoveryRecorder: @unchecked Sendable {
         }
         if current == 1 {
             initialRecovery.fulfill()
-        } else if current == 2 {
-            updateRecovery.fulfill()
         }
         further?.fulfill()
     }
 }
 
 private final class RecoveryAccountReading: PerpsAccountReading, @unchecked Sendable {
-    let firstWatchOpened = XCTestExpectation(description: "first transaction updates watch opened")
-    let secondWatchOpened = XCTestExpectation(description: "second transaction updates watch opened")
-    let watchCancelled = XCTestExpectation(description: "transaction updates watch cancelled")
-
     private let lock = NSLock()
-    private var transactionUpdates = [String: @Sendable () -> Void]()
-    private var watchCount = 0
-    private var didReportCancellation = false
+    private var statusResult: PerpsAccountStatus = .account(accountIndex: 42)
 
-    func status(wallet _: Wallet) async -> LighterPerpsStatus {
-        .active(accountIndex: 42, apiKeyIndex: 3)
+    func setStatus(_ status: PerpsAccountStatus) {
+        lock.withLock { statusResult = status }
     }
 
-    func portfolio(wallet _: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
-        PerpsPortfolio(
-            accountIndex: accountIndex,
-            collateral: "100",
-            availableBalance: "100",
-            totalAssetValue: "100",
-            positions: []
-        )
+    func status(wallet _: Wallet) async -> PerpsAccountStatus {
+        lock.withLock { statusResult }
+    }
+
+    func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
+        PerpsAccountSnapshot(availableBalance: "100")
     }
 
     func watchPositions(
         wallet _: Wallet,
-        accountIndex _: Int64,
         onUpdate _: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting _: @escaping @Sendable () -> Void
+        onInterrupted _: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }
 
-    func watchTransactionUpdates(
-        wallet: Wallet,
-        onUpdate: @escaping @Sendable () -> Void,
-        onReconnecting _: @escaping @Sendable () -> Void
-    ) async throws -> PerpsTransactionUpdatesWatch? {
-        let currentWatchCount = lock.withLock {
-            transactionUpdates[wallet.id] = onUpdate
-            watchCount += 1
-            return watchCount
-        }
-        if currentWatchCount == 1 {
-            firstWatchOpened.fulfill()
-        } else if currentWatchCount == 2 {
-            secondWatchOpened.fulfill()
-        }
-        return PerpsTransactionUpdatesWatch { [weak self] in
-            guard let self else { return }
-            let shouldReport = self.lock.withLock {
-                guard !self.didReportCancellation else { return false }
-                self.didReportCancellation = true
-                return true
-            }
-            if shouldReport { self.watchCancelled.fulfill() }
-        }
+    func tradingSnapshot(wallet _: Wallet, marketId _: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func activeTriggerOrders(
-        wallet _: Wallet,
-        accountIndex _: Int64,
-        marketId _: Int64
-    ) async throws -> [PerpsTriggerOrderSummary] {
+    func recentActivity(wallet _: Wallet, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
         []
-    }
-
-    func recentActivity(
-        wallet _: Wallet,
-        accountIndex _: Int64,
-        marketId _: Int64,
-        limit _: Int
-    ) async throws -> [PerpsActivityItem] {
-        []
-    }
-
-    func emitTransactionUpdate(walletId: String = "recovery-wallet") {
-        let update = lock.withLock { transactionUpdates[walletId] }
-        update?()
     }
 }
 
 private final class WalletRecoveryRecorder: @unchecked Sendable {
     let firstRecovery = XCTestExpectation(description: "first wallet recovered")
     let secondRecovery = XCTestExpectation(description: "second wallet recovered")
-    let firstUpdateRecovery = XCTestExpectation(description: "first wallet update recovered")
-    let secondUnexpectedRecovery = XCTestExpectation(description: "first wallet update does not recover second wallet")
 
     private let lock = NSLock()
     private let firstWalletId: String
@@ -213,27 +171,35 @@ private final class WalletRecoveryRecorder: @unchecked Sendable {
     init(firstWalletId: String, secondWalletId: String) {
         self.firstWalletId = firstWalletId
         self.secondWalletId = secondWalletId
-        secondUnexpectedRecovery.isInverted = true
     }
 
     func record(walletId: String) {
         let action = lock.withLock { () -> Int in
             if walletId == firstWalletId {
                 firstRecoveryCount += 1
-                return firstRecoveryCount == 1 ? 1 : 3
+                return firstRecoveryCount == 1 ? 1 : 0
             }
             if walletId == secondWalletId {
                 secondRecoveryCount += 1
-                return secondRecoveryCount == 1 ? 2 : 4
+                return secondRecoveryCount == 1 ? 2 : 0
             }
             return 0
         }
         switch action {
         case 1: firstRecovery.fulfill()
         case 2: secondRecovery.fulfill()
-        case 3: firstUpdateRecovery.fulfill()
-        case 4: secondUnexpectedRecovery.fulfill()
         default: break
         }
     }
+}
+
+extension PerpsTradingFlags {
+    static let testAllEnabled: PerpsTradingFlags? = PerpsTradingFlags(
+        openEnabled: true,
+        closeEnabled: true,
+        cancelEnabled: true,
+        addMarginEnabled: true,
+        removeMarginEnabled: true,
+        autoCloseEnabled: true
+    )
 }

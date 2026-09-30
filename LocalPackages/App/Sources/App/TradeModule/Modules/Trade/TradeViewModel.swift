@@ -116,7 +116,6 @@ final class TradeViewModel: ObservableObject {
         favoriteAssetsService: TradingFavoriteAssetsService,
         perpsShelfMarketsLoader: (() async throws -> [PerpsMarketSummary])? = nil,
         raffleStore: RaffleStore? = nil,
-        isMysteryRaffleEnabled: Bool = false,
         signedAmountFormatter: AmountFormatter,
         onOpenAssetList: @escaping (TradingAssetCategory, MultichainAssetSearchSort) -> Void,
         onOpenPerps: (() -> Void)?,
@@ -139,8 +138,7 @@ final class TradeViewModel: ObservableObject {
         self.onOpenRaffle = onOpenRaffle
         self.signedAmountFormatter = signedAmountFormatter
         raffleObserver = MysteryRafflePresentationObserver(
-            raffleStore: raffleStore,
-            isFeatureEnabled: isMysteryRaffleEnabled
+            raffleStore: raffleStore
         ) { [weak self] presentation in
             self?.rafflePresentation = presentation
         }

@@ -41,7 +41,7 @@ struct TradeAssetDetailsScreenMapper {
             currencyProvider: currencyProvider
         )
         self.initialHeader = TradeAssetDetailsHeaderViewData(
-            title: preview.title ?? "",
+            title: Self.headerTitle(assetId: preview.assetID, title: preview.title, symbol: preview.symbol),
             imageSource: AssetIdResolver.imageSource(
                 for: preview.assetID,
                 imageUrl: preview.imageURL,
@@ -54,6 +54,14 @@ struct TradeAssetDetailsScreenMapper {
             showsVerificationCheckmark: preview.isTrusted == true,
             earnText: nil
         )
+    }
+
+    /// The trading API names the TRON coin after its network, so the header shows the ticker instead.
+    private static func headerTitle(assetId: String, title: String?, symbol: String?) -> String {
+        if case .tronTrx = TradingAssetToken(assetId: assetId), let symbol {
+            return symbol
+        }
+        return title ?? ""
     }
 
     func map(
@@ -76,7 +84,7 @@ struct TradeAssetDetailsScreenMapper {
         let earnText = valueFormatter.earnApyButtonFormatter(assetInfo.earnAPY)
 
         let header = TradeAssetDetailsHeaderViewData(
-            title: assetInfo.title,
+            title: Self.headerTitle(assetId: assetInfo.assetId, title: assetInfo.title, symbol: assetInfo.symbol),
             imageSource: AssetIdResolver.imageSource(
                 for: assetInfo.assetId,
                 imageUrl: assetInfo.imageURL,

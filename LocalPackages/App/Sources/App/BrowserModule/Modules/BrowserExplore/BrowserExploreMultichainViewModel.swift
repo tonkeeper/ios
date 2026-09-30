@@ -85,7 +85,7 @@ final class BrowserExploreMultichainViewModelImplementation: ObservableObject, B
 
     var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)?
     var didSelectDapp: ((DappOpenIntent) -> Void)?
-    var didOpenDeeplink: ((Deeplink) -> Void)?
+    var didOpenDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var didUpdateExploreTabVisible: ((Bool) -> Void)?
 
     // MARK: - State
@@ -214,7 +214,7 @@ final class BrowserExploreMultichainViewModelImplementation: ObservableObject, B
                     string: url.absoluteString,
                     source: .browser
                 )
-                didOpenDeeplink?(deeplink)
+                didOpenDeeplink?(deeplink, UtmParameters(link: url.absoluteString))
             } catch where error.isSilent {
                 break
             } catch {

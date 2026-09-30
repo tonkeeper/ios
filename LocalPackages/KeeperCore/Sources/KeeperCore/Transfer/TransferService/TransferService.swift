@@ -197,64 +197,96 @@ public struct TransferService {
             throw .certain(.nothingToSend)
         }
 
-        if signedTransactions.count == 1 {
-            let boc = signedTransactions[0]
-            switch transferType {
-            case .default:
-                do {
-                    try await sendService.sendTransaction(
-                        boc: boc,
-                        wallet: wallet
-                    )
-                } catch {
-                    throw .certain(
-                        .sendFailed(message: "failed to single \(transferType.analyticsName) send due to error: \(error.localizedDescription)")
-                    )
-                }
-            case .battery, .gasless:
-                do {
-                    try await batteryService.sendTransaction(
-                        wallet: wallet,
-                        boc: boc,
-                        proof: signedTransactions.batterySendProof(for: boc)
-                    )
-                } catch {
-                    throw .certain(
-                        .sendFailed(message: error.localizedDescription)
-                    )
-                }
-            }
-        } else {
-            switch transferType {
-            case .default:
-                do {
-                    try await sendService.sendTransactions(
-                        batch: signedTransactions.bocs,
-                        wallet: wallet
-                    )
-                } catch {
-                    throw .certain(
-                        .sendFailed(message: "failed to batch \(transferType.analyticsName) send due to error: \(error.localizedDescription)")
-                    )
-                }
-            case .battery, .gasless:
-                for boc in signedTransactions {
-                    do {
-                        try await batteryService.sendTransaction(
-                            wallet: wallet,
-                            boc: boc,
-                            proof: signedTransactions.batterySendProof(for: boc)
-                        )
-                    } catch {
-                        throw .certain(
-                            .sendFailed(message: error.localizedDescription)
-                        )
-                    }
-                }
-            }
+        let route = Self.broadcastRoute(transfer: transfer, transferType: transferType)
+        do {
+            try await broadcast(
+                signedTransactions,
+                wallet: wallet,
+                route: route,
+                transferType: transferType
+            )
+        } catch {
+            throw .certain(error)
         }
 
         return signedTransactions
+    }
+
+    enum BroadcastRoute: Equatable {
+        case tonAPI
+        case batteryRelay
+        case batteryTransport
+    }
+
+    static func broadcastRoute(
+        transfer: Transfer,
+        transferType: TransferType
+    ) -> BroadcastRoute {
+        switch transferType {
+        case .battery, .gasless:
+            return .batteryRelay
+        case .default:
+            return transfer.broadcastsThroughBattery ? .batteryTransport : .tonAPI
+        }
+    }
+
+    private func broadcast(
+        _ signedTransactions: SignedTransactions,
+        wallet: Wallet,
+        route: BroadcastRoute,
+        transferType: TransferType
+    ) async throws(TransferError) {
+        switch route {
+        case .tonAPI:
+            try await broadcastThroughTonAPI(signedTransactions, wallet: wallet, transferType: transferType)
+        case .batteryRelay:
+            do {
+                try await broadcastThroughBattery(signedTransactions, wallet: wallet)
+            } catch {
+                throw .sendFailed(message: error.localizedDescription)
+            }
+        case .batteryTransport:
+            do {
+                try await broadcastThroughBattery(signedTransactions, wallet: wallet)
+            } catch is BatteryAuthorizationError {
+                Log.w("battery transport: no battery authorization, broadcasting through TONAPI")
+                try await broadcastThroughTonAPI(signedTransactions, wallet: wallet, transferType: transferType)
+            } catch {
+                throw .sendFailed(message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func broadcastThroughTonAPI(
+        _ signedTransactions: SignedTransactions,
+        wallet: Wallet,
+        transferType: TransferType
+    ) async throws(TransferError) {
+        do {
+            if signedTransactions.count == 1 {
+                try await sendService.sendTransaction(boc: signedTransactions[0], wallet: wallet)
+            } else {
+                try await sendService.sendTransactions(batch: signedTransactions.bocs, wallet: wallet)
+            }
+        } catch {
+            let kind = signedTransactions.count == 1 ? "single" : "batch"
+            throw .sendFailed(
+                message: "failed to \(kind) \(transferType.analyticsName) send due to error: \(error.localizedDescription)"
+            )
+        }
+    }
+
+    private func broadcastThroughBattery(
+        _ signedTransactions: SignedTransactions,
+        wallet: Wallet
+    ) async throws {
+        for boc in signedTransactions {
+            try await batteryService.sendTransaction(
+                wallet: wallet,
+                boc: boc,
+                proof: signedTransactions.batterySendProof(for: boc)
+            )
+        }
     }
 
     public func emulate(
@@ -463,7 +495,7 @@ public struct TransferService {
             return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable
         case .stonfiSwap, .nativeSwap, .multichainSwap:
             return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable
-        case let .signRaw(_, isForceRelayer):
+        case let .signRaw(_, isForceRelayer, _):
             return isForceRelayer
         }
     }
@@ -799,7 +831,7 @@ public struct TransferService {
                 )
             }
             return transferData
-        case let .signRaw(signRawRequest, _):
+        case let .signRaw(signRawRequest, _, _):
             let transferData: TransferData
             do {
                 transferData = try TransferData(

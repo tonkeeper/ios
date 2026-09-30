@@ -83,128 +83,43 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         )
     }
 
-    // MARK: Position summary mapper (ChainKit -> Core)
+    // MARK: Position and activity derivations
 
-    func test_positionSummary_mapsFields_andDerivesLeverageAndRoe() {
-        let summary = PerpsPositionSummary(position: makePosition(
-            side: .long_, size: "0.5", avgEntryPrice: "66541.7", positionValue: "540",
-            unrealizedPnl: "0.5", liquidationPrice: "64141.75", allocatedMargin: "20"
-        ))
-        let position = try? XCTUnwrap(summary)
-        XCTAssertEqual(position?.side, .long)
-        XCTAssertEqual(position?.notionalUsd ?? .nan, 540, accuracy: 1e-9)
-        XCTAssertEqual(position?.marginUsd ?? .nan, 20, accuracy: 1e-9)
-        // Leverage = notional / margin = 27x; ROE = pnl / margin = 2.5%.
-        XCTAssertEqual(position?.leverage ?? .nan, 27, accuracy: 1e-9)
-        XCTAssertEqual(position?.unrealizedPnlPercent ?? .nan, 2.5, accuracy: 1e-9)
-    }
+    func test_positionSummary_carriesVenueLeverageAndRoiRatherThanDerivingThem() {
+        let position = makeSummary(notionalUsd: 540, marginUsd: 20, leverage: 27, roiPercent: 2.5)
+        XCTAssertEqual(position.leverage ?? .nan, 27, accuracy: 1e-9)
+        XCTAssertEqual(position.roiPercent ?? .nan, 2.5, accuracy: 1e-9)
 
-    func test_positionSummary_zeroSize_mapsToNil() {
-        // A flat position the SDK can still list during teardown is not a position.
-        XCTAssertNil(PerpsPositionSummary(position: makePosition(size: "0")))
-    }
+        let drifted = makeSummary(notionalUsd: 594, marginUsd: 20, leverage: 27, roiPercent: 2.5)
+        XCTAssertEqual(drifted.leverage ?? .nan, 27, accuracy: 1e-9)
+        XCTAssertEqual(drifted.roiPercent ?? .nan, 2.5, accuracy: 1e-9)
 
-    func test_positionSummary_zeroMargin_leverageAndRoeNil() {
-        let summary = PerpsPositionSummary(position: makePosition(size: "1", allocatedMargin: "0"))
-        XCTAssertNil(summary?.leverage)
-        XCTAssertNil(summary?.unrealizedPnlPercent)
-    }
-
-    // MARK: TP/SL order + activity mappers
-
-    func test_triggerOrder_classifiesTakeProfitAndStopLoss() {
-        XCTAssertEqual(PerpsTriggerOrderSummary(order: makeOrder(type: "TakeProfitOrder", triggerPrice: "68000"))?.kind, .takeProfit)
-        XCTAssertEqual(PerpsTriggerOrderSummary(order: makeOrder(type: "stop_loss_limit", triggerPrice: "60000"))?.kind, .stopLoss)
-        XCTAssertEqual(PerpsTriggerOrderSummary(order: makeOrder(type: "take-profit", triggerPrice: "68000"))?.kind, .takeProfit)
-        XCTAssertEqual(PerpsTriggerOrderSummary(order: makeOrder(type: "stop-loss", triggerPrice: "60000"))?.kind, .stopLoss)
-    }
-
-    func test_triggerOrder_exposesVenueExpiry() {
-        let order = makeOrder(type: "TakeProfitOrder", triggerPrice: "68000", expiresAtSeconds: 1_800_000_000)
-        XCTAssertEqual(PerpsTriggerOrderSummary(order: order)?.expiresAtSeconds, 1_800_000_000)
-    }
-
-    func test_triggerOrder_dropsNonTriggerAndZeroPrice() {
-        XCTAssertNil(PerpsTriggerOrderSummary(order: makeOrder(type: "limit", triggerPrice: "0")))
-        XCTAssertNil(PerpsTriggerOrderSummary(order: makeOrder(type: "market", triggerPrice: "0")))
-        // Recognized TP type but no usable trigger price -> dropped.
-        XCTAssertNil(PerpsTriggerOrderSummary(order: makeOrder(type: "TakeProfitOrder", triggerPrice: "0")))
-    }
-
-    func test_triggerOrder_keepsPositionTiedZeroBaseAndClientIdentity() {
-        let summary = PerpsTriggerOrderSummary(order: makeOrder(
-            type: "TakeProfitOrder",
-            triggerPrice: "68000",
-            remainingBaseAmount: "0",
-            clientOrderIndex: 42
-        ))
-
-        XCTAssertEqual(summary?.baseAmount, 0)
-        XCTAssertEqual(summary?.clientOrderIndex, 42)
-        XCTAssertEqual(summary?.cancelKey, 42)
-    }
-
-    func test_limitOrder_mapsStandaloneEntryOrder() {
-        let order = makeOrder(
-            type: "limit",
-            triggerPrice: "0",
-            side: .long_,
-            remainingBaseAmount: "0.25",
-            price: "64000",
-            reduceOnly: false
-        )
-
-        let summary = PerpsLimitOrderSummary(order: order)
-
-        XCTAssertEqual(summary?.side, .long)
-        XCTAssertEqual(summary?.limitPrice ?? .nan, 64000, accuracy: 1e-9)
-        XCTAssertEqual(summary?.remainingBaseAmount ?? .nan, 0.25, accuracy: 1e-9)
-    }
-
-    func test_limitOrder_rejectsTriggerAndReduceOnlyOrders() {
-        XCTAssertNil(PerpsLimitOrderSummary(order: makeOrder(
-            type: "take_profit_limit",
-            triggerPrice: "68000",
-            price: "68000",
-            reduceOnly: true
-        )))
-        XCTAssertNil(PerpsLimitOrderSummary(order: makeOrder(
-            type: "limit",
-            triggerPrice: "0",
-            price: "64000",
-            reduceOnly: true
-        )))
+        let withheld = makeSummary(notionalUsd: 540, marginUsd: 0, leverage: nil, roiPercent: nil)
+        XCTAssertNil(withheld.leverage)
+        XCTAssertNil(withheld.roiPercent)
     }
 
     func test_triggerProjection_signedByPositionDirection() {
-        let long = PerpsPositionSummary(
-            position: makePosition(side: .long_, size: "1", avgEntryPrice: "100", positionValue: "100", allocatedMargin: "20")
-        )
-        // Long profits above entry: (110-100)*1 = +10; ROE = 10/20 = +50%.
-        let longTP = long?.triggerProjection(triggerPrice: 110, baseAmount: 1)
-        XCTAssertEqual(longTP?.pnlUsd ?? .nan, 10, accuracy: 1e-9)
-        XCTAssertEqual(longTP?.roePercent ?? .nan, 50, accuracy: 1e-9)
+        let long = makeSummary(side: .long, entryPrice: 100, notionalUsd: 100, marginUsd: 20)
+        let longTP = long.triggerProjection(triggerPrice: 110, baseAmount: 1)
+        XCTAssertEqual(longTP.pnlUsd, 10, accuracy: 1e-9)
+        XCTAssertEqual(longTP.roePercent ?? .nan, 50, accuracy: 1e-9)
 
-        let short = PerpsPositionSummary(
-            position: makePosition(side: .short_, size: "1", avgEntryPrice: "100", positionValue: "100", allocatedMargin: "20")
-        )
-        // Short loses when price rises above entry.
-        XCTAssertEqual(short?.triggerProjection(triggerPrice: 110, baseAmount: 1).pnlUsd ?? .nan, -10, accuracy: 1e-9)
+        let short = makeSummary(side: .short, entryPrice: 100, notionalUsd: 100, marginUsd: 20)
+        XCTAssertEqual(short.triggerProjection(triggerPrice: 110, baseAmount: 1).pnlUsd, -10, accuracy: 1e-9)
+    }
+
+    func test_triggerOrder_cancelsByClientIndexWhenItHasOne() {
+        XCTAssertEqual(makeTrigger(orderIndex: 7, clientOrderIndex: 42).cancelKey, 42)
+        XCTAssertEqual(makeTrigger(orderIndex: 7, clientOrderIndex: 0).cancelKey, 7)
     }
 
     func test_activityOutcome_inferredFromKindAndRealizedPnl() {
-        XCTAssertEqual(PerpsActivityItem(activity: makeActivity(kind: .trade, marketId: 1)).outcome, .opened)
-        XCTAssertEqual(PerpsActivityItem(activity: makeActivity(kind: .trade, marketId: 1, realizedPnl: "5")).outcome, .closed)
-        XCTAssertEqual(PerpsActivityItem(activity: makeActivity(kind: .liquidation, marketId: 1)).outcome, .liquidated)
-        XCTAssertEqual(PerpsActivityItem(activity: makeActivity(kind: .fundingPayment, marketId: 1)).outcome, .funding)
-    }
-
-    func test_activityItem_mapsKindSideAndPnl() {
-        let item = PerpsActivityItem(activity: makeActivity(kind: .liquidation, marketId: 1, side: .short_, realizedPnl: "-10.25"))
-        XCTAssertEqual(item.kind, .liquidation)
-        XCTAssertEqual(item.side, .short)
-        XCTAssertEqual(item.realizedPnl ?? .nan, -10.25, accuracy: 1e-9)
-        XCTAssertEqual(item.marketId, 1)
+        XCTAssertEqual(makeActivity(kind: .trade).outcome, .opened)
+        XCTAssertEqual(makeActivity(kind: .trade, realizedPnl: 5).outcome, .closed)
+        XCTAssertEqual(makeActivity(kind: .liquidation).outcome, .liquidated)
+        XCTAssertEqual(makeActivity(kind: .funding).outcome, .funding)
+        XCTAssertEqual(makeActivity(kind: .deposit).outcome, .other)
     }
 
     // MARK: View model — load via shared store
@@ -251,7 +166,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         await client.emit([("BTC/USD", "200")])
 
         await waitUntil(viewModel, timeout: 3) { viewModel.state.ready?.priceText == PerpsFormatting.usd(200) }
-        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.compactUsd(snapshot.volume24h))
+        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.usd(snapshot.volume24h))
         viewModel.onDisappear()
     }
 
@@ -270,7 +185,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.state.ready != nil }
         XCTAssertEqual(viewModel.state.ready?.priceText, "")
-        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.compactUsd(1000))
+        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.usd(1000))
         XCTAssertEqual(viewModel.state.ready?.actions, .longShort(enabled: true))
         viewModel.onDisappear()
     }
@@ -313,8 +228,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
             store: marketsStore,
             marketDetailsStore: detailsStore,
             accountStore: accountStore,
-            openPositionFlow: PerpsOpenPositionFlow(),
-            isTestnet: false
+            openPositionFlow: PerpsOpenPositionFlow()
         )
         trackedViewModels.append(viewModel)
 
@@ -344,28 +258,176 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     // MARK: View model — state mapping (pure `reduce`, no live stores)
 
     func test_flatLifecycle_showsLongShort() {
-        let ready = reduceReady(lifecycle: .flat)
+        let ready = reduceReady(lifecycle: .flat, extras: extras(flags: flags()))
         XCTAssertNil(ready?.position)
         XCTAssertEqual(ready?.actions, .longShort(enabled: true))
     }
 
     func test_inactiveMarket_disablesLongShort() {
-        XCTAssertEqual(reduceReady(lifecycle: .flat, tradingEnabled: false)?.actions, .longShort(enabled: false))
+        XCTAssertEqual(
+            reduceReady(lifecycle: .flat, tradingEnabled: false, isAccountActive: false)?.actions,
+            .longShort(enabled: false)
+        )
     }
 
     func test_openPositionSubmitting_disablesLongShort() {
-        XCTAssertEqual(reduceReady(lifecycle: .flat, isOpenPositionSubmitting: true)?.actions, .longShort(enabled: false))
+        XCTAssertEqual(
+            reduceReady(lifecycle: .flat, extras: extras(flags: flags()), isOpenPositionSubmitting: true)?.actions,
+            .longShort(enabled: false)
+        )
     }
 
     func test_openLongPosition_rendersBlockAndEditCashOut() {
         // notional 540 / margin 20 = 27x; +PnL.
-        let ready = reduceReady(lifecycle: .open(summary(side: .long, notionalUsd: 540, marginUsd: 20, unrealizedPnlUsd: 0.5)))
+        let ready = reduceReady(
+            lifecycle: .open(summary(side: .long, notionalUsd: 540, marginUsd: 20, unrealizedPnlUsd: 0.5)),
+            extras: extras(flags: flags())
+        )
         let block = ready?.position
         XCTAssertEqual(block?.isLong, true)
         XCTAssertEqual(block?.sideText, TKLocales.Perps.Asset.long.uppercased())
         XCTAssertEqual(block?.leverageText, PerpsFormatting.leverage(27).uppercased())
         XCTAssertTrue(block?.isPnlPositive ?? false)
-        XCTAssertEqual(ready?.actions, .editCashOut(enabled: true))
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: true, cashOutEnabled: true))
+    }
+
+    // MARK: Backend action flags
+
+    func test_openPosition_withoutFlags_refusesEveryAction() {
+        let ready = reduceReady(lifecycle: .open(summary()), extras: extras(flags: nil))
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
+        XCTAssertEqual(ready?.canAdjustMargin, false)
+        XCTAssertEqual(ready?.canEditAutoClose, false)
+        XCTAssertEqual(ready?.canCancelOrders, false)
+    }
+
+    func test_flatMarket_withoutAnActiveAccount_stillFollowsTheCatalog() {
+        XCTAssertEqual(
+            reduceReady(lifecycle: .flat, extras: nil, isAccountActive: false)?.actions,
+            .longShort(enabled: true)
+        )
+        XCTAssertEqual(
+            reduceReady(lifecycle: .flat, extras: nil, isAccountActive: true)?.actions,
+            .longShort(enabled: false)
+        )
+    }
+
+    func test_unreadableAutoCloseLegs_areNotOfferedAsAbsent() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(), autoCloseKnown: false)
+        )
+        XCTAssertEqual(ready?.autoClose, PerpsAssetPageViewModel.AutoCloseAffordance.none)
+
+        let readable = reduceReady(lifecycle: .open(summary()), extras: extras(flags: flags()))
+        XCTAssertEqual(readable?.autoClose, .setAutoClose)
+    }
+
+    func test_closeDisabledByBackend_disablesCashOutButKeepsEdit() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(closeEnabled: false))
+        )
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: true, cashOutEnabled: false))
+    }
+
+    func test_openDisabledByBackend_disablesLongShort_evenOnAnActiveMarket() {
+        let ready = reduceReady(
+            lifecycle: .flat,
+            extras: extras(flags: flags(openEnabled: false)),
+            tradingEnabled: true
+        )
+        XCTAssertEqual(ready?.actions, .longShort(enabled: false))
+    }
+
+    func test_marginAndAutoCloseFlags_gateTheManageRows() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(addMarginEnabled: false, removeMarginEnabled: false, autoCloseEnabled: false))
+        )
+        XCTAssertEqual(ready?.canAdjustMargin, false)
+        XCTAssertEqual(ready?.canEditAutoClose, false)
+    }
+
+    func test_oneMarginDirectionDisabled_stillOffersTheRow() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(removeMarginEnabled: false))
+        )
+        XCTAssertEqual(ready?.canAdjustMargin, true)
+    }
+
+    func test_aPartialFlagsBlock_refusesTheUnsaidCapabilities() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(
+                openEnabled: nil,
+                closeEnabled: nil,
+                cancelEnabled: true,
+                addMarginEnabled: nil,
+                removeMarginEnabled: nil,
+                autoCloseEnabled: nil
+            ))
+        )
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
+        XCTAssertEqual(ready?.canAdjustMargin, false)
+        XCTAssertEqual(ready?.canEditAutoClose, false)
+        XCTAssertEqual(ready?.canCancelOrders, true)
+    }
+
+    func test_bothTradeDirectionsDisabled_disablesEditToo() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(openEnabled: false, closeEnabled: false))
+        )
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
+    }
+
+    func test_editDirections_followTheSameFlagsAsTheActionBar() {
+        let snapshot = makeSnapshot()
+        XCTAssertEqual(
+            PerpsAssetPageViewModel.editDirections(snapshot: snapshot, flags: flags(), isAccountActive: true),
+            [.add, .reduce]
+        )
+        XCTAssertEqual(
+            PerpsAssetPageViewModel.editDirections(
+                snapshot: snapshot,
+                flags: flags(openEnabled: false),
+                isAccountActive: true
+            ),
+            [.reduce]
+        )
+        XCTAssertEqual(
+            PerpsAssetPageViewModel.editDirections(
+                snapshot: snapshot,
+                flags: flags(closeEnabled: false),
+                isAccountActive: true
+            ),
+            [.add]
+        )
+        XCTAssertEqual(
+            PerpsAssetPageViewModel.editDirections(
+                snapshot: snapshot,
+                flags: flags(openEnabled: false, closeEnabled: false),
+                isAccountActive: true
+            ),
+            []
+        )
+    }
+
+    func test_editDirections_withoutFlags_offerNothing() {
+        XCTAssertEqual(
+            PerpsAssetPageViewModel.editDirections(snapshot: makeSnapshot(), flags: nil, isAccountActive: true),
+            []
+        )
+    }
+
+    func test_cancelDisabledByBackend_marksOrdersUncancellable() {
+        let ready = reduceReady(
+            lifecycle: .open(summary()),
+            extras: extras(flags: flags(cancelEnabled: false))
+        )
+        XCTAssertEqual(ready?.canCancelOrders, false)
     }
 
     func test_shortPosition_mapsSideAndNegativePnl() {
@@ -388,7 +450,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let closing = summary(notionalUsd: 540, marginUsd: 20)
         let ready = reduceReady(lifecycle: .closing(closing))
         XCTAssertNotNil(ready?.position)
-        XCTAssertEqual(ready?.actions, .editCashOut(enabled: false))
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
         guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.closing(closing)) else {
             return XCTFail("expected progress toast while closing")
         }
@@ -403,7 +465,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let adjusting = summary(notionalUsd: 540, marginUsd: 20)
         let ready = reduceReady(lifecycle: .adjusting(adjusting, .add))
         XCTAssertNotNil(ready?.position)
-        XCTAssertEqual(ready?.actions, .editCashOut(enabled: false))
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
         guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.adjusting(adjusting, .add)) else {
             return XCTFail("expected progress toast while adjusting")
         }
@@ -421,10 +483,10 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     func test_reduce_keepsLastReadyDuringTransientFailure() {
         let previous = reduceReady(lifecycle: .flat).map(PerpsAssetPageViewModel.State.ready) ?? .loading
         // A failed/notFound market input must not blank a page that already had content.
-        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .failed, lifecycle: .flat, extras: nil, isOpenPositionSubmitting: false, previous: previous).ready)
-        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isOpenPositionSubmitting: false, previous: previous).ready)
+        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .failed, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: previous).ready)
+        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: previous).ready)
         // From no content, notFound stays a distinct empty state.
-        XCTAssertEqual(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isOpenPositionSubmitting: false, previous: .loading), .notFound)
+        XCTAssertEqual(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: .loading), .notFound)
     }
 
     // MARK: View model — Orders + Auto Close + history mapping
@@ -483,7 +545,8 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
                 remainingBaseAmount: 0.25
             )],
             triggerOrders: [],
-            recentActivity: []
+            recentActivity: [],
+            flags: flags()
         )
 
         let ready = reduceReady(lifecycle: .flat, extras: extras)
@@ -531,7 +594,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
             recentActivity: [PerpsActivityItem(id: "a1", kind: .trade, marketId: 1, side: .long, baseSize: 1, price: 66000, usdAmount: nil, realizedPnl: 10.25, date: Date(timeIntervalSince1970: 0))]
         )
         let row = reduceReady(lifecycle: .open(summary()), extras: extras)?.history.first
-        XCTAssertEqual(row?.title, TKLocales.Perps.Asset.activityClosed(TKLocales.Perps.Asset.long))
+        XCTAssertEqual(row?.title, TKLocales.Perps.Asset.activityClosed(TKLocales.Perps.Asset.short))
         XCTAssertEqual(row?.isAmountPositive, true)
     }
 
@@ -576,7 +639,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     @MainActor
     func test_long_routesMarketIdAndSide() {
         let (viewModel, _) = makeViewModel(service: MarketsReadingSpy(), marketId: 1)
-        var captured: (Int64, App.PerpsTradeSide)?
+        var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
         viewModel.long()
         XCTAssertEqual(captured?.0, 1)
@@ -586,7 +649,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     @MainActor
     func test_short_routesMarketIdAndSide() {
         let (viewModel, _) = makeViewModel(service: MarketsReadingSpy(), marketId: 1)
-        var captured: (Int64, App.PerpsTradeSide)?
+        var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
         viewModel.short()
         XCTAssertEqual(captured?.0, 1)
@@ -613,7 +676,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         var cashOut: Int64?
         var adjustMargin: Int64?
         var autoClose: Int64?
-        viewModel.onEdit = { edit = $0 }
+        viewModel.onEdit = { marketId, _ in edit = marketId }
         viewModel.onCashOut = { cashOut = $0 }
         viewModel.onAdjustMargin = { adjustMargin = $0 }
         viewModel.onAutoClose = { autoClose = $0 }
@@ -704,8 +767,7 @@ private extension PerpsAssetPageViewModelTests {
                 error: tradingError
             ),
             accountStore: accountStore,
-            openPositionFlow: openPositionFlow ?? PerpsOpenPositionFlow(),
-            isTestnet: false
+            openPositionFlow: openPositionFlow ?? PerpsOpenPositionFlow()
         )
         trackedViewModels.append(viewModel)
         return (viewModel, accountStore)
@@ -730,15 +792,45 @@ private extension PerpsAssetPageViewModelTests {
         extras: PerpsMarketExtras? = nil,
         markPrice: Double = 66141,
         tradingEnabled: Bool = true,
+        isAccountActive: Bool = true,
         isOpenPositionSubmitting: Bool = false
     ) -> PerpsAssetPageViewModel.Ready? {
         PerpsAssetPageViewModel.reduce(
             market: .ready(snapshot: makeSnapshot(tradingEnabled: tradingEnabled), markPrice: markPrice, sizeDecimals: 2),
             lifecycle: lifecycle,
             extras: extras,
+            isAccountActive: isAccountActive,
             isOpenPositionSubmitting: isOpenPositionSubmitting,
             previous: .loading
         ).ready
+    }
+
+    func flags(
+        openEnabled: Bool? = true,
+        closeEnabled: Bool? = true,
+        cancelEnabled: Bool? = true,
+        addMarginEnabled: Bool? = true,
+        removeMarginEnabled: Bool? = true,
+        autoCloseEnabled: Bool? = true
+    ) -> PerpsTradingFlags {
+        PerpsTradingFlags(
+            openEnabled: openEnabled,
+            closeEnabled: closeEnabled,
+            cancelEnabled: cancelEnabled,
+            addMarginEnabled: addMarginEnabled,
+            removeMarginEnabled: removeMarginEnabled,
+            autoCloseEnabled: autoCloseEnabled
+        )
+    }
+
+    func extras(flags: PerpsTradingFlags?, autoCloseKnown: Bool = true) -> PerpsMarketExtras {
+        PerpsMarketExtras(
+            limitOrders: [],
+            triggerOrders: [],
+            recentActivity: [],
+            flags: flags,
+            autoCloseKnown: autoCloseKnown
+        )
     }
 
     func makeSnapshot(tradingEnabled: Bool = true) -> PerpsAssetMarketSnapshot {
@@ -759,16 +851,23 @@ private extension PerpsAssetPageViewModelTests {
         baseSize: Double = 1,
         notionalUsd: Double = 540,
         marginUsd: Double = 20,
+        equityUsd: Double = 20.5,
+        leverage: Double? = 27,
+        roiPercent: Double? = 2.5,
         entryPrice: Double = 66541.7,
         liquidationPrice: Double = 64141.75,
         unrealizedPnlUsd: Double = 0.5,
-        fundingPaidUsd: Double? = 0
+        fundingPaidUsd: Double? = 0,
+        liquidationDistancePercent: Double? = -3.02
     ) -> PerpsPositionSummary {
         PerpsPositionSummary(
+            positionId: "lighter:\(marketId)",
             marketId: marketId, symbol: symbol, side: side, baseSize: baseSize,
-            notionalUsd: notionalUsd, marginUsd: marginUsd, entryPrice: entryPrice,
+            notionalUsd: notionalUsd, marginUsd: marginUsd, equityUsd: equityUsd,
+            leverage: leverage, roiPercent: roiPercent, entryPrice: entryPrice,
             liquidationPrice: liquidationPrice, unrealizedPnlUsd: unrealizedPnlUsd,
-            realizedPnlUsd: 0, fundingPaidUsd: fundingPaidUsd
+            realizedPnlUsd: 0, fundingPaidUsd: fundingPaidUsd,
+            liquidationDistancePercent: liquidationDistancePercent
         )
     }
 
@@ -794,87 +893,61 @@ private extension PerpsAssetPageViewModelTests {
             fundingRatePercent: fundingRatePercent,
             priceDecimals: 2,
             sizeDecimals: 2,
-            minBaseSize: 0,
-            takerFee: 0
+            minBaseSize: 0
         )
     }
 
-    func makePosition(
-        marketId: Int64 = 1,
-        symbol: String = "BTC",
-        side: LighterTradeSide = .long_,
-        size: String = "0.5",
-        avgEntryPrice: String = "66541.7",
-        positionValue: String = "540",
-        unrealizedPnl: String = "0.5",
-        realizedPnl: String = "0",
-        liquidationPrice: String = "64141.75",
-        allocatedMargin: String = "20",
-        fundingPaid: String? = "0"
-    ) -> PerpsPosition {
-        PerpsPosition(
-            marketId: marketId,
-            symbol: symbol,
-            side: side,
-            size: size,
-            avgEntryPrice: avgEntryPrice,
-            positionValue: positionValue,
-            unrealizedPnl: unrealizedPnl,
-            realizedPnl: realizedPnl,
-            liquidationPrice: liquidationPrice,
-            marginMode: 0,
-            allocatedMargin: allocatedMargin,
-            fundingPaid: fundingPaid
-        )
-    }
-
-    func makeOrder(
-        type: String,
-        triggerPrice: String,
-        side: LighterTradeSide = .short_,
-        remainingBaseAmount: String = "1",
-        clientOrderIndex: Int64 = 1,
-        expiresAtSeconds: Int64 = 0,
-        price: String = "0",
-        reduceOnly: Bool = true
-    ) -> PerpsOrder {
-        PerpsOrder(
-            orderIndex: 1,
-            clientOrderIndex: clientOrderIndex,
+    func makeSummary(
+        side: PerpsTradeSide = .long,
+        entryPrice: Double = 66541.7,
+        notionalUsd: Double = 540,
+        marginUsd: Double = 20,
+        equityUsd: Double = 20.5,
+        leverage: Double? = 27,
+        roiPercent: Double? = 2.5,
+        unrealizedPnlUsd: Double = 0.5
+    ) -> PerpsPositionSummary {
+        PerpsPositionSummary(
+            positionId: "lighter:1",
             marketId: 1,
+            symbol: "BTC",
             side: side,
-            type: type,
-            status: "open",
-            triggerStatus: "active",
-            price: price,
-            triggerPrice: triggerPrice,
-            initialBaseAmount: remainingBaseAmount,
-            remainingBaseAmount: remainingBaseAmount,
-            filledBaseAmount: "0",
-            reduceOnly: reduceOnly,
-            expiresAtSeconds: expiresAtSeconds,
-            parentOrderIndex: 0
+            baseSize: 0.5,
+            notionalUsd: notionalUsd,
+            marginUsd: marginUsd,
+            equityUsd: equityUsd,
+            leverage: leverage,
+            roiPercent: roiPercent,
+            entryPrice: entryPrice,
+            liquidationPrice: 64141.75,
+            unrealizedPnlUsd: unrealizedPnlUsd,
+            realizedPnlUsd: 0,
+            fundingPaidUsd: 0
         )
     }
 
-    func makeActivity(
-        kind: PerpsActivityKind,
-        marketId: Int64?,
-        side: LighterTradeSide? = nil,
-        realizedPnl: String? = nil
-    ) -> PerpsActivity {
-        PerpsActivity(
+    func makeTrigger(orderIndex: Int64, clientOrderIndex: Int64) -> PerpsTriggerOrderSummary {
+        PerpsTriggerOrderSummary(
+            orderIndex: orderIndex,
+            clientOrderIndex: clientOrderIndex,
+            kind: .takeProfit,
+            side: .short,
+            triggerPrice: 68000,
+            baseAmount: 0
+        )
+    }
+
+    func makeActivity(kind: PerpsActivityItem.Kind, realizedPnl: Double? = nil) -> PerpsActivityItem {
+        PerpsActivityItem(
             id: "act-1",
             kind: kind,
-            timestampMillis: 0,
-            marketId: marketId.map { KotlinLong(value: $0) },
-            side: side,
-            size: "1",
-            price: "66000",
+            marketId: 1,
+            side: .short,
+            baseSize: 1,
+            price: 66000,
             usdAmount: nil,
             realizedPnl: realizedPnl,
-            status: "filled",
-            l1TxHash: nil
+            date: Date(timeIntervalSince1970: 0)
         )
     }
 
@@ -973,27 +1046,26 @@ private final class LivePositionsAccountSpy: PerpsAccountReading, @unchecked Sen
     let watchOpened = XCTestExpectation(description: "positions watch opened")
     private(set) var capturedOnUpdate: (@Sendable ([PerpsPositionSummary]) -> Void)?
 
-    func status(wallet: Wallet) async -> LighterPerpsStatus {
-        .active(accountIndex: accountIndex, apiKeyIndex: 0)
+    func status(wallet: Wallet) async -> PerpsAccountStatus {
+        .account(accountIndex: accountIndex)
     }
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
-        PerpsPortfolio(accountIndex: accountIndex, collateral: "1000", availableBalance: "1000", totalAssetValue: "1000", positions: [])
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot? {
+        PerpsAccountSnapshot(availableBalance: "1000")
     }
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         capturedOnUpdate = onUpdate
         watchOpened.fulfill()
@@ -1005,27 +1077,26 @@ private final class LivePositionsAccountSpy: PerpsAccountReading, @unchecked Sen
 /// resolves to inactive). Position/lifecycle behaviour is covered by the pure
 /// `reduce` tests, so the spy no longer needs to vend portfolios/orders/activity.
 private final class AccountReadingSpy: PerpsAccountReading, @unchecked Sendable {
-    func status(wallet: Wallet) async -> LighterPerpsStatus {
+    func status(wallet: Wallet) async -> PerpsAccountStatus {
         .noAccount(ethAddress: "0x0")
     }
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot? {
         nil
     }
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }

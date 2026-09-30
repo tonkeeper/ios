@@ -16,6 +16,8 @@ final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private let wallet: Wallet
     private let fromToken: String?
     private let toToken: String?
+    private let initiatedBy: InitiatedBy
+    private let utm: UtmParameters
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
@@ -23,6 +25,8 @@ final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
         wallet: Wallet,
         fromToken: String?,
         toToken: String?,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -30,6 +34,8 @@ final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
         self.wallet = wallet
         self.fromToken = fromToken
         self.toToken = toToken
+        self.initiatedBy = initiatedBy
+        self.utm = utm
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         super.init(router: router)
@@ -86,7 +92,8 @@ private extension WebSwapCoordinator {
             transferProvider: { .stonfiSwap(signRequest) },
             resultHandler: ResultHandler(completion: completion),
             sendFrom: .tonconnectRemote,
-            initiatedBy: .user,
+            initiatedBy: initiatedBy,
+            utm: utm,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in

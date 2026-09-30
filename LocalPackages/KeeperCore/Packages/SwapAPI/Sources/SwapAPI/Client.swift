@@ -2546,6 +2546,13 @@ public struct Client: APIProtocol {
                     name: "F",
                     value: input.headers.F
                 )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "is_new",
+                    value: input.query.is_new
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -2667,6 +2674,13 @@ public struct Client: APIProtocol {
                     in: &request.headerFields,
                     name: "F",
                     value: input.headers.F
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "is_new",
+                    value: input.query.is_new
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,

@@ -8,7 +8,7 @@ struct DappAssembly {
     static func module(
         dapp: Dapp,
         analyticsSession: DappOpenAnalyticsSession,
-        deeplinkHandler: @escaping ((_ deeplink: Deeplink) -> Void),
+        deeplinkHandler: @escaping ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void),
         deeplinkParser: DeeplinkParser,
         messageHandler: DappMessageHandler,
         wallet: Wallet?,

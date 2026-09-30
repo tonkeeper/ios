@@ -77,8 +77,7 @@ private func makeMetadata(
         fundingRatePercent: fundingRatePercent,
         priceDecimals: 2,
         sizeDecimals: 4,
-        minBaseSize: 0.001,
-        takerFee: 0.0005
+        minBaseSize: 0.001
     )
 }
 

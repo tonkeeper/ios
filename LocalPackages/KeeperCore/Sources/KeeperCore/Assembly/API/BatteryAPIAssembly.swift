@@ -14,7 +14,6 @@ final class BatteryAPIAssembly {
             switch network {
             case .mainnet: return api
             case .testnet: return testnetAPI
-            case .tetra: return nil
             }
         }
     }

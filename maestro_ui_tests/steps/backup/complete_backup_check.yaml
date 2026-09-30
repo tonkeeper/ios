@@ -1,7 +1,7 @@
 appId: com.jbig.tonkeeper
 ---
 # Backup check: 3 random phrase positions, 3 options each — tap the correct word per row.
-# Requires output.captured[0..23] from the recovery phrase screen (1-based index → captured[i - 1]).
+# Requires output.captured[] from the recovery phrase screen (1-based index → captured[i - 1]).
 - tapOn: "Check Backup"
 - extendedWaitUntil:
     visible: "Backup check"

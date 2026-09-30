@@ -138,6 +138,8 @@ private struct WalletAuthTokenProviderStub: WalletAuthTokenProviding {
         return "signed(\(walletId),\(accessToken))"
     }
 
+    func invalidateToken(walletId _: String) async {}
+
     func hasPersistentAppKey(walletId _: String) async -> Bool {
         isWarm
     }

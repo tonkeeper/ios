@@ -22,13 +22,7 @@ enum WalletMigrationTransactionSigner {
         signer: WalletTransferSigner
     ) throws -> String {
         let unsignedBody = try resolveUnsignedBody(transaction: transaction, wallet: wallet)
-        var hash = unsignedBody.hash()
-        if wallet.network == .tetra {
-            hash = TransferSignaturePrefixedHash.prefixedHash(
-                prefixId: Int32(Network.tetra.rawValue),
-                hash: hash
-            )
-        }
+        let hash = unsignedBody.hash()
 
         let signature: Data
         do {

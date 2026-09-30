@@ -32,8 +32,8 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     ) -> Void)?
     var didTapBackup: ((Wallet) -> Void)?
     var didTapBattery: ((Wallet) -> Void)?
-    var didRequestDeeplinkHandling: ((Deeplink) -> Void)?
-    var didRequestBannerDeeplinkHandling: ((Deeplink) -> Void)?
+    var didRequestDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
+    var didRequestBannerDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var didTapOpenCryptoAssets: (() -> Void)?
     var collectiblesDidOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
     var collectiblesDidRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
@@ -210,19 +210,15 @@ private extension WalletCoordinator {
             await self?.getPasscode()
         }
 
-        let collectiblesViewModel = module.output.collectiblesViewModel
-        collectiblesViewModel.onTapOpenCollectibles = { [weak self] in
+        module.output.didTapOpenCollectibles = { [weak self] in
             self?.openCollectibles()
         }
-        collectiblesViewModel.onSelectNFT = { [weak self] nft in
-            guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
-                return
-            }
+        module.output.didSelectNFT = { [weak self] wallet, nft in
             self?.openNFTDetails(wallet: wallet, nft: nft)
         }
 
-        module.output.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
-            self?.didRequestBannerDeeplinkHandling?(deeplink)
+        module.output.didRequestBannerDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.didRequestBannerDeeplinkHandling?(deeplink, utm)
         }
 
         return module
@@ -238,8 +234,8 @@ private extension WalletCoordinator {
         collectiblesCoordinator.didOpenDapp = { [weak self] url, title in
             self?.collectiblesDidOpenDapp?(url, title)
         }
-        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.didRequestDeeplinkHandling?(deeplink)
+        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.didRequestDeeplinkHandling?(deeplink, utm)
         }
         collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
             self?.collectiblesDidRequestOpenBuySell?(isInternalPurchasing, wallet)
@@ -298,8 +294,8 @@ private extension WalletCoordinator {
             self?.collectiblesDetailsCoordinator = nil
         }
 
-        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.didRequestDeeplinkHandling?(deeplink)
+        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.didRequestDeeplinkHandling?(deeplink, utm)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in

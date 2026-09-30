@@ -32,20 +32,37 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
         walletScope.tradingService
     }
 
+    private static let fallbackPriceDecimals = 2
+
     private weak var assetPageViewModel: PerpsAssetPageViewModel?
     private weak var assetPageViewController: UIViewController?
     private var didPushFlowRoot = false
+    private var didAttemptAccountBinding = false
     private weak var tradeNavigationController: UINavigationController?
     private weak var shareBottomSheet: TKBottomSheetViewController?
     private var shareRenderTask: Task<Void, Never>?
+    private var autoClosePrepareTask: Task<Void, Never>?
+    private var autoClosePrepareGeneration: UUID?
 
     private let openPositionFlow = PerpsOpenPositionFlow()
 
+    /// A position action in flight. The attempt is the identity: an answer that
+    /// arrives after the user closed the screen — or closed and reopened it — belongs
+    /// to an attempt that is no longer current, and is dropped.
     private enum PositionActionFlow<Prepared> {
+        final class Attempt {}
+
         case idle
-        case preparing
-        case confirming(Prepared)
+        case preparing(Attempt)
+        case confirming(Attempt, Prepared)
         case submitting
+
+        func isCurrent(_ attempt: Attempt) -> Bool {
+            switch self {
+            case let .preparing(current), let .confirming(current, _): current === attempt
+            case .idle, .submitting: false
+            }
+        }
     }
 
     private var cashOutFlow: PositionActionFlow<PerpsPreparedCloseAction> = .idle
@@ -53,27 +70,19 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private var sizeChangeSession: PerpsSizeChangeSession?
     private var sizeChangePrepareTask: Task<Void, Never>?
 
-    /// Bumped whenever the margin screen is (re)opened or closed, so a
-    /// prepare that outlives its screen can't push a confirm with a stale intent
-    /// onto whatever flow the user opened next.
-    private var marginChangeGeneration: UInt = 0
-
-    /// Auto close has no designed pending state, so unlike the other flows it
-    /// leaves the store lifecycle `.open` while its submit reconciles — this
-    /// set is what serializes the market's signed actions for that window.
-    private var autoCloseSubmitting: Set<Int64> = []
-    private var limitOrderSubmitting: Set<Int64> = []
-    private var limitOrderSubmittingMarkets: Set<Int64> = []
+    /// Auto close and resting-order edits have no designed pending state, so unlike
+    /// the other flows they leave the store lifecycle `.open` while their submit
+    /// reconciles — this is what serializes a market's signed actions for that window.
+    private var marketsInFlight: Set<Int64> = []
 
     private func openPositionSummary(marketId: Int64) -> PerpsPositionSummary? {
         guard case let .open(summary) = walletScope.accountStore.lifecycle(marketId: marketId),
-              !autoCloseSubmitting.contains(marketId),
-              !limitOrderSubmittingMarkets.contains(marketId) else { return nil }
+              !isMarketBusy(marketId) else { return nil }
         return summary
     }
 
     private func isMarketBusy(_ marketId: Int64) -> Bool {
-        autoCloseSubmitting.contains(marketId) || limitOrderSubmittingMarkets.contains(marketId)
+        marketsInFlight.contains(marketId)
     }
 
     override func start() {
@@ -81,6 +90,7 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
     }
 
     func start(marketID: Int64?) {
+        observeAccountBinding()
         if let marketID {
             openAssetPage(marketId: marketID)
             return
@@ -88,16 +98,12 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
         let viewModel = PerpsViewModel(
             marketsStore: perpsAssembly.marketsStore,
-            accountStore: walletScope.accountStore,
-            isTestnet: walletScope.activationService.isTestnet
+            accountStore: walletScope.accountStore
         )
         let viewController = PerpsViewController(viewModel: viewModel)
 
         viewModel.onBack = { [weak viewController] in
             viewController?.navigationController?.popViewController(animated: true)
-        }
-        viewModel.onActivate = { [weak self] in
-            self?.activate()
         }
         viewModel.onLearnBasics = { [weak self] in
             self?.openPlaceholder(title: TKLocales.Perps.learnBasics)
@@ -111,6 +117,9 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
         viewModel.onDeposit = { [weak self] in
             self?.openPlaceholder(title: TKLocales.Perps.deposit)
         }
+        viewModel.onWithdraw = { [weak self] in
+            self?.openPlaceholder(title: TKLocales.Perps.withdraw)
+        }
         viewModel.onSelectMarket = { [weak self] marketId in
             self?.openAssetPage(marketId: marketId)
         }
@@ -120,33 +129,57 @@ final class PerpsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 }
 
 private extension PerpsCoordinator {
-    func activate() {
+    func observeAccountBinding() {
         let accountStore = walletScope.accountStore
-        let service = walletScope.activationService
-        accountStore.beginActivation()
+        accountStore.addObserver(self) { observer, _ in
+            Task { @MainActor in observer.bindAccountIfNeeded() }
+        }
+        accountStore.resolveIfNeeded()
+        Task { @MainActor [weak self] in self?.bindAccountIfNeeded() }
+    }
+
+    @MainActor
+    func bindAccountIfNeeded() {
+        guard !didAttemptAccountBinding,
+              case .unbound = walletScope.accountStore.currentWalletState()
+        else {
+            return
+        }
+        didAttemptAccountBinding = true
+        let accountStore = walletScope.accountStore
+        let service = walletScope.accountService
         Task { [weak self] in
             guard let self else { return }
-            let passcode = await PasscodeInputCoordinator.getPasscode(
+            guard let passcode = await PasscodeInputCoordinator.getPasscode(
                 parentCoordinator: self,
                 parentRouter: self.router,
                 mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
                 securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
                 analyticsProvider: self.analyticsProvider
-            )
-            let outcome: LighterActivationOutcome
-            if let passcode {
-                outcome = await service.activate(wallet: self.walletScope.wallet, passcode: passcode)
-            } else {
-                outcome = .canceled
+            ) else {
+                Log.i("🪵 Perps bind: passcode canceled")
+                self.didAttemptAccountBinding = false
+                return
             }
-            await accountStore.applyActivation(outcome)
-            if case let .failed(error) = outcome {
-                let message = PerpsTradingErrorText.message(for: error)
-                ToastPresenter.showToast(
-                    configuration: .init(title: message.isEmpty ? TKLocales.Perps.Error.generic : message)
-                )
+            switch await service.bind(wallet: self.walletScope.wallet, passcode: passcode) {
+            case let .bound(accountIndex):
+                Log.i("🪵 Perps bind: done account=\(String(describing: accountIndex))")
+                accountStore.refresh()
+            case let .addressMismatch(expected, bound):
+                Log.w("🪵 Perps bind: bound to a different address expected=\(expected) bound=\(bound)")
+                self.showBindFailureToast()
+            case let .takenByAnotherWallet(reason):
+                Log.w("🪵 Perps bind: address or account already held elsewhere reason=\(reason)")
+                self.showBindFailureToast()
+            case let .failed(error):
+                Log.w("🪵 Perps bind: failed \(error)")
+                self.showBindFailureToast()
             }
         }
+    }
+
+    func showBindFailureToast() {
+        ToastPresenter.showToast(configuration: .init(title: TKLocales.Perps.Error.generic))
     }
 
     func openPlaceholder(title: String) {
@@ -193,8 +226,7 @@ private extension PerpsCoordinator {
             store: perpsAssembly.marketsStore,
             marketDetailsStore: perpsAssembly.makeMarketDetailsStore(),
             accountStore: walletScope.accountStore,
-            openPositionFlow: openPositionFlow,
-            isTestnet: walletScope.activationService.isTestnet
+            openPositionFlow: openPositionFlow
         )
         let chartViewModel = PerpsChartViewModel(
             marketId: marketId,
@@ -214,8 +246,8 @@ private extension PerpsCoordinator {
         viewModel.onTrade = { [weak self] marketId, side in
             self?.openOpenPosition(marketId: marketId, side: side)
         }
-        viewModel.onEdit = { [weak self] marketId in
-            self?.openEditPositionSheet(marketId: marketId)
+        viewModel.onEdit = { [weak self] marketId, directions in
+            self?.openEditPositionSheet(marketId: marketId, directions: directions)
         }
         viewModel.onCashOut = { [weak self] marketId in
             self?.openCashOut(marketId: marketId)
@@ -260,11 +292,9 @@ private extension PerpsCoordinator {
             accountStore: walletScope.accountStore,
             initialLeverage: Self.defaultInitialLeverage
         )
-        let viewController = PerpsAmountFormViewController(viewModel: viewModel)
-        let navigationController = TKNavigationController(rootViewController: viewController)
-        navigationController.setNavigationBarHidden(true, animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
-        tradeNavigationController = navigationController
+        let navigationController = makeTradeNavigationController(
+            rootViewController: PerpsAmountFormViewController(viewModel: viewModel)
+        )
 
         viewModel.onClose = { [weak self] in
             self?.closeOpenPositionFlow()
@@ -299,6 +329,9 @@ private extension PerpsCoordinator {
         viewModel.onOpenLeverage = { [weak self, weak viewModel] context in
             self?.openLeverageSheet(
                 context,
+                reviewLiquidation: { leverage in
+                    viewModel?.reviewedLiquidation(forLeverage: leverage) ?? nil
+                },
                 onWillPresent: { viewModel?.suppressAmountFocus() },
                 onDismiss: { viewModel?.requestAmountFocus() },
                 onApply: { viewModel?.applyLeverage($0) }
@@ -361,11 +394,12 @@ private extension PerpsCoordinator {
 
     func openLeverageSheet(
         _ context: PerpsLeverageSheetContext,
+        reviewLiquidation: @escaping (Double) -> Double?,
         onWillPresent: @escaping () -> Void,
         onDismiss: @escaping () -> Void,
         onApply: @escaping (Double) -> Void
     ) {
-        let viewModel = PerpsLeverageSheetViewModel(context: context, service: tradingService)
+        let viewModel = PerpsLeverageSheetViewModel(context: context, reviewLiquidation: reviewLiquidation)
         let bottomSheet = makeSheet(title: TKLocales.Perps.OpenPosition.leverage) {
             PerpsLeverageSheetView(viewModel: viewModel)
         }
@@ -394,13 +428,13 @@ private extension PerpsCoordinator {
         onApply: @escaping (PerpsAutoClose?) -> Void
     ) {
         let viewModel = PerpsAutoCloseSheetViewModel(context: context)
-        let subtitle = "\(TKLocales.Perps.OpenPosition.price) \(PerpsFormatting.usd(context.entryPrice))"
+        let subtitle = "\(TKLocales.Perps.OpenPosition.price) \(PerpsFormatting.usd(context.referencePrice))"
         let bottomSheet = makeSheet(title: TKLocales.Perps.OpenPosition.autoCloseTitle, subtitle: subtitle) {
             PerpsAutoCloseSheetView(viewModel: viewModel)
         }
         bottomSheet.keyboardObserver = TKBottomSheetKeyboardObserver(bottomSheet: bottomSheet)
         bottomSheet.didClose = { _ in onDismiss() }
-        viewModel.onApply = { [weak bottomSheet] autoClose in
+        viewModel.onApply = .draft { [weak bottomSheet] autoClose in
             guard let bottomSheet else {
                 onApply(autoClose)
                 onDismiss()
@@ -417,29 +451,62 @@ private extension PerpsCoordinator {
         presentSheet(bottomSheet, onWillPresent: onWillPresent)
     }
 
+    func openLiveAutoCloseSheet(
+        _ context: PerpsAutoCloseSheetContext,
+        marketId: Int64,
+        onWillPresent: @escaping () -> Void,
+        onDismiss: @escaping () -> Void,
+        onApply: @escaping (PerpsAutoClose?) -> Void
+    ) {
+        guard let session = sizeChangeSession else { return }
+        autoClosePrepareTask?.cancel()
+        let generation = UUID()
+        autoClosePrepareGeneration = generation
+        autoClosePrepareTask = Task { @MainActor [weak self, weak session] in
+            defer {
+                if let self, self.autoClosePrepareGeneration == generation {
+                    self.autoClosePrepareTask = nil
+                    self.autoClosePrepareGeneration = nil
+                }
+            }
+            guard let self else { return }
+            let mark = await perpsAssembly.marketsStore.price(marketId: marketId)
+            guard !Task.isCancelled, self.sizeChangeSession === session else { return }
+            openAutoCloseSheet(
+                mark.map(context.replacingReferencePrice) ?? context,
+                onWillPresent: onWillPresent,
+                onDismiss: onDismiss,
+                onApply: onApply
+            )
+        }
+    }
+
     // MARK: - Edit Position (TK-1578)
 
-    func openEditPositionSheet(marketId: Int64) {
+    func openEditPositionSheet(marketId: Int64, directions: Set<PerpsSizeChangeDirection>) {
         guard let summary = openPositionSummary(marketId: marketId) else { return }
-        let viewModel = PerpsEditPositionSheetViewModel(side: summary.side)
-        let bottomSheet = makeSheet(title: TKLocales.Perps.EditPosition.title) {
-            PerpsEditPositionSheetView(viewModel: viewModel)
+        guard directions.count > 1 else {
+            guard let direction = directions.first else { return }
+            Task { @MainActor in
+                await self.openSizeChange(marketId: marketId, direction: direction)
+            }
+            return
         }
-        viewModel.onAdd = { [weak self, weak bottomSheet] in
-            Self.dismissSheet(bottomSheet) {
+        presentChoiceSheet(
+            title: TKLocales.Perps.EditPosition.title,
+            content: { choose in
+                PerpsEditPositionSheetView(
+                    side: summary.side,
+                    onAdd: { choose(.add) },
+                    onReduce: { choose(.reduce) }
+                )
+            },
+            onChoice: { [weak self] (direction: PerpsSizeChangeDirection) in
                 Task { @MainActor in
-                    await self?.openSizeChange(marketId: marketId, direction: .add)
+                    await self?.openSizeChange(marketId: marketId, direction: direction)
                 }
             }
-        }
-        viewModel.onReduce = { [weak self, weak bottomSheet] in
-            Self.dismissSheet(bottomSheet) {
-                Task { @MainActor in
-                    await self?.openSizeChange(marketId: marketId, direction: .reduce)
-                }
-            }
-        }
-        presentSheet(bottomSheet, onWillPresent: {})
+        )
     }
 
     @MainActor
@@ -452,6 +519,7 @@ private extension PerpsCoordinator {
         let session = PerpsSizeChangeSession(
             marketId: marketId,
             direction: direction,
+            priceDecimals: market.map(\.priceDecimals) ?? Self.fallbackPriceDecimals,
             restingTriggerOrders: walletScope.accountStore.marketExtras(marketId: marketId)?.triggerOrders ?? []
         )
         sizeChangeSession = session
@@ -462,11 +530,9 @@ private extension PerpsCoordinator {
             sizeDecimals: market.map { Int($0.sizeDecimals) } ?? 2,
             accountStore: walletScope.accountStore
         )
-        let viewController = PerpsAmountFormViewController(viewModel: viewModel)
-        let navigationController = TKNavigationController(rootViewController: viewController)
-        navigationController.setNavigationBarHidden(true, animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
-        tradeNavigationController = navigationController
+        let navigationController = makeTradeNavigationController(
+            rootViewController: PerpsAmountFormViewController(viewModel: viewModel)
+        )
 
         viewModel.onClose = { [weak self] in
             guard let self, sizeChangeSession === session else { return }
@@ -477,8 +543,9 @@ private extension PerpsCoordinator {
             self?.openTradePlaceholder(title: TKLocales.Perps.deposit)
         }
         viewModel.onOpenAutoClose = { [weak self, weak viewModel] context in
-            self?.openAutoCloseSheet(
+            self?.openLiveAutoCloseSheet(
                 context,
+                marketId: marketId,
                 onWillPresent: { viewModel?.suppressAmountFocus() },
                 onDismiss: { viewModel?.requestAmountFocus() },
                 onApply: { viewModel?.applyAutoClose($0) }
@@ -499,46 +566,13 @@ private extension PerpsCoordinator {
         guard sizeChangeSession === session,
               let request = session.beginPreparation()
         else { return }
-        sizeChangePrepareTask?.cancel()
-        sizeChangePrepareTask = Task { @MainActor [weak self, weak session] in
-            guard let self, let session else { return }
-            defer {
-                if sizeChangeSession === session {
-                    sizeChangePrepareTask = nil
-                }
-            }
-            let result = await tradingService.prepareSizeChange(request.intent, passcodeProvider: makePasscodeProvider())
-            guard !Task.isCancelled,
-                  sizeChangeSession === session
-            else {
-                session.cancelPreparation(request)
-                return
-            }
-            switch result {
-            case let .success(prepared):
-                guard let tradeNavigationController, tradeNavigationController.presentingViewController != nil else {
-                    session.failPreparation(request, warning: nil)
-                    return
-                }
-                guard session.acceptPreparation(prepared, for: request) else { return }
-                await pushSizeChangeConfirm(
-                    session: session,
-                    in: tradeNavigationController,
-                    formViewModel: formViewModel
-                )
-            case let .failure(error):
-                if case .activationCanceled = error {
-                    session.cancelPreparation(request)
-                    return
-                }
-                let failure = changePrepareFailure(error)
-                guard session.failPreparation(request, warning: failure.warning) else { return }
-                if failure.shouldCloseTrade {
-                    finishSizeChangeSession(session)
-                    dismissTrade()
-                    refreshAfterTrade()
-                }
-            }
+        prepareSizeChange(session: session, request: request) { [weak formViewModel] navigationController in
+            guard let formViewModel else { return }
+            await self.pushSizeChangeConfirm(
+                session: session,
+                in: navigationController,
+                formViewModel: formViewModel
+            )
         }
     }
 
@@ -550,6 +584,26 @@ private extension PerpsCoordinator {
         guard sizeChangeSession === session,
               let request = session.beginRepreparation(desiredAutoClose: desiredAutoClose)
         else { return }
+        prepareSizeChange(
+            session: session,
+            request: request,
+            onPrepared: { _ in onPrepared() },
+            onFailureKeepingTrade: { navigationController in
+                navigationController.popViewController(animated: true)
+            }
+        )
+    }
+
+    /// One preparation loop for both the first review and a re-review from the confirm
+    /// screen: the session owns the state transitions, and this owns cancelling the
+    /// previous attempt and refusing an answer that no longer belongs to the screen
+    /// the user is looking at.
+    private func prepareSizeChange(
+        session: PerpsSizeChangeSession,
+        request: PerpsSizeChangeSession.PreparationRequest,
+        onPrepared: @escaping @MainActor (UINavigationController) async -> Void,
+        onFailureKeepingTrade: @escaping @MainActor (UINavigationController) -> Void = { _ in }
+    ) {
         sizeChangePrepareTask?.cancel()
         sizeChangePrepareTask = Task { @MainActor [weak self, weak session] in
             guard let self, let session else { return }
@@ -560,15 +614,17 @@ private extension PerpsCoordinator {
             }
             let result = await tradingService.prepareSizeChange(request.intent, passcodeProvider: makePasscodeProvider())
             guard !Task.isCancelled,
-                  sizeChangeSession === session
+                  sizeChangeSession === session,
+                  let navigationController = tradeNavigationController,
+                  navigationController.presentingViewController != nil
             else {
                 session.cancelPreparation(request)
                 return
             }
             switch result {
-            case let .success(newPrepared):
-                guard session.acceptPreparation(newPrepared, for: request) else { return }
-                onPrepared()
+            case let .success(prepared):
+                guard session.acceptPreparation(prepared, for: request) else { return }
+                await onPrepared(navigationController)
             case .failure(.activationCanceled):
                 session.cancelPreparation(request)
             case let .failure(error):
@@ -578,9 +634,9 @@ private extension PerpsCoordinator {
                     finishSizeChangeSession(session)
                     dismissTrade()
                     refreshAfterTrade()
-                    return
+                } else {
+                    onFailureKeepingTrade(navigationController)
                 }
-                tradeNavigationController?.popViewController(animated: true)
             }
         }
     }
@@ -643,8 +699,12 @@ private extension PerpsCoordinator {
         let sheetContext = PerpsAutoCloseSheetContext(
             side: prepared.review.side,
             entryPrice: referencePrice,
-            leverage: prepared.review.leverage ?? 0,
+            referencePrice: referencePrice,
+            leverage: prepared.review.leverage
+                ?? openPositionSummary(marketId: prepared.marketId)?.effectiveLeverage
+                ?? 0,
             liquidationPrice: prepared.review.liquidationPrice,
+            priceDecimals: session.priceDecimals,
             draft: session.preparedAutoClose
         )
         openAutoCloseSheet(
@@ -681,16 +741,10 @@ private extension PerpsCoordinator {
             }
             await settleSubmit(
                 marketId: prepared.marketId,
-                failureFallback: TKLocales.Perps.Toast.adjustFailed,
-                submit: { await self.tradingService.submit(prepared) },
-                resolve: { pending, claimSuccess in
-                    await self.resolveChangeOverlay(
-                        pending: pending,
-                        reloadExtras: true,
-                        successToast: claimSuccess ? self.adjustedToastText(review: prepared.review) : nil,
-                        reconcile: { await self.tradingService.reconcileSizeChange($0) }
-                    )
-                }
+                submitFallback: TKLocales.Perps.Toast.adjustFailed,
+                reloadExtras: true,
+                successToast: adjustedToastText(review: prepared.review),
+                submit: { await self.tradingService.submit(prepared) }
             )
         }
     }
@@ -710,30 +764,53 @@ private extension PerpsCoordinator {
     /// prepares and submits in one go, shows the designed loading state, and
     /// the sheet closes only on a confirmed trigger-order delta.
     func openPositionAutoClose(marketId: Int64) {
-        guard let summary = openPositionSummary(marketId: marketId) else { return }
-        // The asset page holds the extras subscription open, so the resting legs
-        // behind the prefill are the warm cache the row itself was drawn from.
-        let resting = walletScope.accountStore.marketExtras(marketId: marketId)?.triggerOrders ?? []
-        let context = PerpsAutoCloseSheetContext(
-            side: summary.side,
-            entryPrice: summary.entryPrice,
-            leverage: summary.leverage ?? 0,
-            liquidationPrice: summary.liquidationPrice > 0 ? summary.liquidationPrice : nil,
-            draft: PerpsAutoClose(triggerOrders: resting)
-        )
-        let viewModel = PerpsAutoCloseSheetViewModel(context: context)
-        let subtitle = "\(TKLocales.Perps.OpenPosition.price) \(PerpsFormatting.usd(context.entryPrice))"
-        let bottomSheet = makeSheet(title: TKLocales.Perps.OpenPosition.autoCloseTitle, subtitle: subtitle) {
-            PerpsAutoCloseSheetView(viewModel: viewModel)
+        guard openPositionSummary(marketId: marketId) != nil,
+              let page = assetPageViewController
+        else { return }
+        autoClosePrepareTask?.cancel()
+        let generation = UUID()
+        autoClosePrepareGeneration = generation
+        autoClosePrepareTask = Task { @MainActor [weak self, weak page] in
+            defer {
+                if let self, self.autoClosePrepareGeneration == generation {
+                    self.autoClosePrepareTask = nil
+                    self.autoClosePrepareGeneration = nil
+                }
+            }
+            guard let self else { return }
+            let mark = await perpsAssembly.marketsStore.price(marketId: marketId)
+            guard !Task.isCancelled,
+                  self.assetPageViewController === page,
+                  openPositionSummary(marketId: marketId) != nil
+            else { return }
+            guard let summary = openPositionSummary(marketId: marketId) else { return }
+            // The asset page holds the extras subscription open, so the resting legs
+            // behind the prefill are the warm cache the row itself was drawn from.
+            let resting = walletScope.accountStore.marketExtras(marketId: marketId)?.triggerOrders ?? []
+            let context = PerpsAutoCloseSheetContext(
+                side: summary.side,
+                entryPrice: summary.entryPrice,
+                referencePrice: mark ?? summary.entryPrice,
+                leverage: summary.effectiveLeverage ?? 0,
+                liquidationPrice: summary.liquidationPrice > 0 ? summary.liquidationPrice : nil,
+                priceDecimals: assetPageViewModel?.priceDecimals ?? Self.fallbackPriceDecimals,
+                draft: PerpsAutoClose(triggerOrders: resting)
+            )
+            let viewModel = PerpsAutoCloseSheetViewModel(context: context)
+            let subtitle = "\(TKLocales.Perps.OpenPosition.price) \(PerpsFormatting.usd(context.referencePrice))"
+            let bottomSheet = makeSheet(title: TKLocales.Perps.OpenPosition.autoCloseTitle, subtitle: subtitle) {
+                PerpsAutoCloseSheetView(viewModel: viewModel)
+            }
+            bottomSheet.keyboardObserver = TKBottomSheetKeyboardObserver(bottomSheet: bottomSheet)
+            viewModel.onApply = .submit { [weak self, weak bottomSheet] target in
+                guard let self else { return .finished }
+                return await submitAutoCloseChange(marketId: marketId, target: target, bottomSheet: bottomSheet)
+            }
+            viewModel.onClose = { [weak bottomSheet] in
+                Self.dismissSheet(bottomSheet, completion: {})
+            }
+            presentSheet(bottomSheet, onWillPresent: {})
         }
-        bottomSheet.keyboardObserver = TKBottomSheetKeyboardObserver(bottomSheet: bottomSheet)
-        viewModel.onSubmit = { [weak self, weak bottomSheet] target in
-            await self?.submitAutoCloseChange(marketId: marketId, target: target, bottomSheet: bottomSheet)
-        }
-        viewModel.onClose = { [weak bottomSheet] in
-            Self.dismissSheet(bottomSheet, completion: {})
-        }
-        presentSheet(bottomSheet, onWillPresent: {})
     }
 
     // MARK: - Resting limit orders
@@ -743,8 +820,7 @@ private extension PerpsCoordinator {
         order: PerpsLimitOrderSummary,
         presenter: UIViewController
     ) {
-        guard !limitOrderSubmitting.contains(order.orderIndex),
-              !isMarketBusy(marketId) else { return }
+        guard !isMarketBusy(marketId) else { return }
         let alert = UIAlertController(
             title: TKLocales.Perps.OrderType.limit,
             message: "\(TKLocales.Perps.OpenPosition.price) \(PerpsFormatting.usd(order.limitPrice))",
@@ -778,10 +854,9 @@ private extension PerpsCoordinator {
     @MainActor
     func openLimitOrderEditor(marketId: Int64, order: PerpsLimitOrderSummary) async {
         let market = await perpsAssembly.marketsStore.snapshot(marketId: marketId)
-        guard !limitOrderSubmitting.contains(order.orderIndex),
-              !isMarketBusy(marketId) else { return }
+        guard !isMarketBusy(marketId) else { return }
         let referencePrice = market.flatMap { $0.hasPrice ? $0.price : nil } ?? order.limitPrice
-        let priceDecimals = market.map(\.priceDecimals) ?? 2
+        let priceDecimals = market.map(\.priceDecimals) ?? Self.fallbackPriceDecimals
         let side: PerpsTradeSide = order.side == .long ? .long : .short
         let context = PerpsSetLimitPriceContext(
             marketId: marketId,
@@ -819,15 +894,10 @@ private extension PerpsCoordinator {
         intent: PerpsLimitOrderChangeIntent
     ) {
         let marketId = intent.marketId
-        guard !isMarketBusy(marketId),
-              limitOrderSubmitting.insert(order.orderIndex).inserted else { return }
-        limitOrderSubmittingMarkets.insert(marketId)
+        guard marketsInFlight.insert(marketId).inserted else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            defer {
-                self.limitOrderSubmitting.remove(order.orderIndex)
-                self.limitOrderSubmittingMarkets.remove(marketId)
-            }
+            defer { self.marketsInFlight.remove(marketId) }
             let prepared: PerpsPreparedLimitOrderChangeAction
             switch await tradingService.prepareLimitOrderChange(intent, passcodeProvider: makePasscodeProvider()) {
             case let .success(value):
@@ -855,7 +925,7 @@ private extension PerpsCoordinator {
                 return
             }
 
-            let result = await awaitLimitOrderChangeReconciled(pending)
+            let result = await awaitReconciled(pending)
             walletScope.accountStore.loadMarketExtras(marketId: marketId)
             switch result {
             case .confirmed:
@@ -868,33 +938,23 @@ private extension PerpsCoordinator {
         }
     }
 
-    func awaitLimitOrderChangeReconciled(
-        _ pending: PerpsPendingTradingAction
-    ) async -> PerpsLimitOrderChangeReconcileResult {
-        for attempt in 0 ..< Self.reconcileAttempts {
-            let result = await tradingService.reconcileLimitOrderChange(pending)
-            if case .pending = result {
-                if attempt < Self.reconcileAttempts - 1 {
-                    try? await Task.sleep(nanoseconds: Self.reconcileIntervalNanos)
-                }
-            } else {
-                return result
-            }
-        }
-        return .pending
-    }
-
     /// Returns the inline error text for the sheet; nil closes it (confirmed).
     func submitAutoCloseChange(
         marketId: Int64,
         target: PerpsAutoClose?,
         bottomSheet: TKBottomSheetViewController?
-    ) async -> String? {
+    ) async -> PerpsAutoCloseSheetViewModel.ApplyResult {
         let target = target ?? PerpsAutoClose(takeProfit: nil, stopLoss: nil)
-        let resting = walletScope.accountStore.marketExtras(marketId: marketId)?.triggerOrders ?? []
-        if PerpsAutoCloseChangePlanner.matches(target: target, resting: resting) {
-            Self.dismissSheet(bottomSheet, completion: {})
-            return nil
+        if let summary = openPositionSummary(marketId: marketId),
+           let mark = await perpsAssembly.marketsStore.price(marketId: marketId),
+           let warning = PerpsAutoCloseValidation.warning(
+               side: summary.side,
+               referencePrice: mark,
+               liquidationPrice: summary.liquidationPrice > 0 ? summary.liquidationPrice : nil,
+               autoClose: target
+           )
+        {
+            return .failed(warning.message)
         }
         let intent = PerpsAutoCloseChangeIntent(marketId: marketId, target: target)
         let prepared: PerpsPreparedAutoCloseChangeAction
@@ -902,97 +962,83 @@ private extension PerpsCoordinator {
         case let .success(value):
             prepared = value
         case .failure(.activationCanceled):
-            return ""
+            return .finished
         case .failure(.nothingToChange):
             walletScope.accountStore.loadMarketExtras(marketId: marketId)
             Self.dismissSheet(bottomSheet, completion: {})
-            return nil
+            return .finished
         case .failure(.positionNotFound):
             Self.dismissSheet(bottomSheet, completion: {})
             refreshAfterTrade()
-            return ""
+            return .finished
         case let .failure(error):
-            return PerpsTradingErrorText.message(for: error)
+            return .failed(PerpsTradingErrorText.message(for: error))
         }
 
         // Nothing is submitted yet, so a sheet dismissed during prepare is a cancel.
-        guard let bottomSheet, bottomSheet.presentingViewController != nil else { return "" }
-        guard !limitOrderSubmittingMarkets.contains(marketId) else {
-            return TKLocales.Perps.Toast.adjustFailed
+        guard let bottomSheet, bottomSheet.presentingViewController != nil else { return .finished }
+        guard marketsInFlight.insert(marketId).inserted else {
+            return .failed(TKLocales.Perps.Toast.adjustFailed)
         }
-
-        autoCloseSubmitting.insert(marketId)
-        defer { autoCloseSubmitting.remove(marketId) }
+        defer { marketsInFlight.remove(marketId) }
 
         switch await tradingService.submit(prepared) {
         case let .failed(error):
             // A single tx either landed or it didn't, but the venue may have
             // rejected for a reason the page should reflect — reload the orders.
             walletScope.accountStore.loadMarketExtras(marketId: marketId)
-            let message = PerpsTradingErrorText.message(for: error)
-            return message.isEmpty ? TKLocales.Perps.Toast.adjustFailed : message
+            return .failed(PerpsTradingErrorText.message(for: error, fallback: TKLocales.Perps.Toast.adjustFailed))
         case let .submitted(pending), let .submitUnknown(pending):
-            switch await awaitAutoCloseReconciled(pending: pending) {
+            switch await awaitReconciled(pending) {
             case .confirmed:
                 walletScope.accountStore.loadMarketExtras(marketId: marketId)
                 Self.dismissSheet(bottomSheet, completion: {})
                 assetPageViewModel?.retry()
-                return nil
+                return .finished
             case let .failed(error):
                 walletScope.accountStore.loadMarketExtras(marketId: marketId)
-                let message = PerpsTradingErrorText.message(for: error)
-                return message.isEmpty ? TKLocales.Perps.Toast.adjustFailed : message
+                return .failed(PerpsTradingErrorText.message(for: error, fallback: TKLocales.Perps.Toast.adjustFailed))
             case .pending:
                 walletScope.accountStore.loadMarketExtras(marketId: marketId)
-                return TKLocales.Perps.Toast.statusUnknown
+                return .failed(TKLocales.Perps.Toast.statusUnknown)
             }
         }
-    }
-
-    func awaitAutoCloseReconciled(pending: PerpsPendingTradingAction) async -> PerpsAutoCloseReconcileResult {
-        for attempt in 0 ..< Self.closeReconcileAttempts {
-            let result = await tradingService.reconcileAutoCloseChange(pending)
-            if case .pending = result {
-                if attempt < Self.closeReconcileAttempts - 1 {
-                    try? await Task.sleep(nanoseconds: Self.closeReconcileIntervalNanos)
-                }
-            } else {
-                return result
-            }
-        }
-        return .pending
     }
 
     // MARK: - Adjust Margin (TK-1579)
 
     func openAdjustMarginSheet(marketId: Int64) {
         guard openPositionSummary(marketId: marketId) != nil else { return }
-        let viewModel = PerpsAdjustMarginSheetViewModel()
-        let bottomSheet = makeSheet(title: TKLocales.Perps.AdjustMargin.title) {
-            PerpsAdjustMarginSheetView(viewModel: viewModel)
+        let flags = walletScope.accountStore.marketExtras(marketId: marketId)?.flags
+        let canAdd = flags?.addMarginEnabled ?? false
+        let canReduce = flags?.removeMarginEnabled ?? false
+        guard canAdd, canReduce else {
+            guard canAdd || canReduce else { return }
+            Task { @MainActor in
+                await self.openMarginChange(marketId: marketId, direction: canAdd ? .add : .reduce)
+            }
+            return
         }
-        viewModel.onAdd = { [weak self, weak bottomSheet] in
-            Self.dismissSheet(bottomSheet) {
+        presentChoiceSheet(
+            title: TKLocales.Perps.AdjustMargin.title,
+            content: { choose in
+                PerpsAdjustMarginSheetView(
+                    onAdd: { choose(.add) },
+                    onReduce: { choose(.reduce) }
+                )
+            },
+            onChoice: { [weak self] (direction: PerpsMarginChangeDirection) in
                 Task { @MainActor in
-                    await self?.openMarginChange(marketId: marketId, direction: .add)
+                    await self?.openMarginChange(marketId: marketId, direction: direction)
                 }
             }
-        }
-        viewModel.onReduce = { [weak self, weak bottomSheet] in
-            Self.dismissSheet(bottomSheet) {
-                Task { @MainActor in
-                    await self?.openMarginChange(marketId: marketId, direction: .reduce)
-                }
-            }
-        }
-        presentSheet(bottomSheet, onWillPresent: {})
+        )
     }
 
     @MainActor
     func openMarginChange(marketId: Int64, direction: PerpsMarginChangeDirection) async {
         let market = await perpsAssembly.marketsStore.snapshot(marketId: marketId)
         guard let summary = openPositionSummary(marketId: marketId) else { return }
-        marginChangeGeneration += 1
         marginChangeFlow = .idle
         let lastTradePrice = market.map { $0.price > 0 ? $0.price : 0 } ?? 0
         let viewModel = PerpsMarginChangeViewModel(
@@ -1002,14 +1048,11 @@ private extension PerpsCoordinator {
             accountStore: walletScope.accountStore,
             tradingService: tradingService
         )
-        let viewController = PerpsAmountFormViewController(viewModel: viewModel)
-        let navigationController = TKNavigationController(rootViewController: viewController)
-        navigationController.setNavigationBarHidden(true, animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
-        tradeNavigationController = navigationController
+        let navigationController = makeTradeNavigationController(
+            rootViewController: PerpsAmountFormViewController(viewModel: viewModel)
+        )
 
         viewModel.onClose = { [weak self] in
-            self?.marginChangeGeneration += 1
             self?.marginChangeFlow = .idle
             self?.dismissTrade()
         }
@@ -1025,19 +1068,19 @@ private extension PerpsCoordinator {
 
     func reviewMarginChange(intent: PerpsMarginChangeIntent, formViewModel: PerpsMarginChangeViewModel?) {
         guard case .idle = marginChangeFlow else { return }
-        marginChangeFlow = .preparing
-        let generation = marginChangeGeneration
+        let attempt = PositionActionFlow<PerpsPreparedMarginChangeAction>.Attempt()
+        marginChangeFlow = .preparing(attempt)
         Task { @MainActor [weak self] in
             guard let self else { return }
             let result = await tradingService.prepareMarginChange(intent, passcodeProvider: makePasscodeProvider())
-            guard generation == marginChangeGeneration else { return }
+            guard marginChangeFlow.isCurrent(attempt) else { return }
             switch result {
             case let .success(prepared):
                 guard let tradeNavigationController, tradeNavigationController.presentingViewController != nil else {
                     marginChangeFlow = .idle
                     return
                 }
-                marginChangeFlow = .confirming(prepared)
+                marginChangeFlow = .confirming(attempt, prepared)
                 pushMarginChangeConfirm(prepared, in: tradeNavigationController)
             case let .failure(error):
                 marginChangeFlow = .idle
@@ -1062,7 +1105,6 @@ private extension PerpsCoordinator {
         if case .activationCanceled = error {
             return ChangePrepareFailure(warning: nil, shouldCloseTrade: false)
         }
-        let message = PerpsTradingErrorText.message(for: error)
         let shouldCloseTrade: Bool
         if case .positionNotFound = error {
             shouldCloseTrade = true
@@ -1070,7 +1112,7 @@ private extension PerpsCoordinator {
             shouldCloseTrade = false
         }
         return ChangePrepareFailure(
-            warning: message.isEmpty ? TKLocales.Perps.Toast.adjustFailed : message,
+            warning: PerpsTradingErrorText.message(for: error, fallback: TKLocales.Perps.Toast.adjustFailed),
             shouldCloseTrade: shouldCloseTrade
         )
     }
@@ -1098,7 +1140,7 @@ private extension PerpsCoordinator {
     }
 
     func submitMarginChange() {
-        guard case let .confirming(prepared) = marginChangeFlow else { return }
+        guard case let .confirming(_, prepared) = marginChangeFlow else { return }
         marginChangeFlow = .submitting
         walletScope.accountStore.beginAdjustingMargin(
             marketId: prepared.marketId,
@@ -1112,22 +1154,14 @@ private extension PerpsCoordinator {
             defer { self.marginChangeFlow = .idle }
             await settleSubmit(
                 marketId: prepared.marketId,
-                failureFallback: TKLocales.Perps.Toast.adjustFailed,
-                submit: { await self.tradingService.submit(prepared) },
-                resolve: { pending, claimSuccess in
-                    await self.resolveChangeOverlay(
-                        pending: pending,
-                        reloadExtras: false,
-                        successToast: claimSuccess
-                            ? PerpsAssetPageViewModel.marginToastText(
-                                direction: prepared.review.direction,
-                                amountUsd: prepared.review.amountUsd,
-                                isDone: true
-                            )
-                            : nil,
-                        reconcile: { await self.tradingService.reconcileMarginChange($0) }
-                    )
-                }
+                submitFallback: TKLocales.Perps.Toast.adjustFailed,
+                reloadExtras: false,
+                successToast: PerpsAssetPageViewModel.marginToastText(
+                    direction: prepared.review.direction,
+                    amountUsd: prepared.review.amountUsd,
+                    isDone: true
+                ),
+                submit: { await self.tradingService.submit(prepared) }
             )
         }
     }
@@ -1174,6 +1208,33 @@ private extension PerpsCoordinator {
         presenter.present(activityViewController, animated: true)
     }
 
+    /// A sheet whose choices each dismiss it and then act, so the dismissal and the
+    /// weak reference it needs are written once.
+    func presentChoiceSheet<Choice>(
+        title: String,
+        content: (_ choose: @escaping (Choice) -> Void) -> some View,
+        onChoice: @escaping (Choice) -> Void
+    ) {
+        weak var sheet: TKBottomSheetViewController?
+        let bottomSheet = makeSheet(title: title) {
+            content { choice in
+                Self.dismissSheet(sheet) { onChoice(choice) }
+            }
+        }
+        sheet = bottomSheet
+        presentSheet(bottomSheet, onWillPresent: {})
+    }
+
+    /// The full-screen container every trade form and confirm is presented in, and
+    /// the one place `tradeNavigationController` is set.
+    func makeTradeNavigationController(rootViewController: UIViewController) -> TKNavigationController {
+        let navigationController = TKNavigationController(rootViewController: rootViewController)
+        navigationController.setNavigationBarHidden(true, animated: false)
+        navigationController.modalPresentationStyle = .fullScreen
+        tradeNavigationController = navigationController
+        return navigationController
+    }
+
     func makeSheet(title: String, subtitle: String? = nil, @ViewBuilder content: () -> some View) -> TKBottomSheetViewController {
         let contentViewController = PerpsBottomSheetScrollContentViewController(title: title, subtitle: subtitle, content: content)
         return TKBottomSheetViewController(contentViewController: contentViewController)
@@ -1195,9 +1256,9 @@ private extension PerpsCoordinator {
             self?.closeOpenPositionFlow()
         }
         viewModel.onConfirm = { [weak self, weak viewModel, weak openFormViewModel] in
-            guard let context = viewModel?.openConfirmContext else { return }
+            guard let viewModel, let context = viewModel.openConfirmContext else { return }
             Task { @MainActor in
-                await self?.handleOpenConfirm(context: context, openFormViewModel: openFormViewModel)
+                await self?.handleOpenConfirm(context: context, openFormViewModel: openFormViewModel, viewModel: viewModel)
             }
         }
         viewModel.onEditAutoClose = { [weak self, weak viewModel, weak openFormViewModel] in
@@ -1227,8 +1288,10 @@ private extension PerpsCoordinator {
         let sheetContext = PerpsAutoCloseSheetContext(
             side: context.intent.side,
             entryPrice: referencePrice,
+            referencePrice: referencePrice,
             leverage: context.intent.leverage,
             liquidationPrice: context.review.liquidationPrice,
+            priceDecimals: context.priceDecimals,
             draft: context.intent.autoClose
         )
         openAutoCloseSheet(
@@ -1243,9 +1306,13 @@ private extension PerpsCoordinator {
     }
 
     @MainActor
-    func handleOpenConfirm(context: PerpsConfirmContext, openFormViewModel: PerpsOpenPositionViewModel?) async {
+    func handleOpenConfirm(
+        context: PerpsConfirmContext,
+        openFormViewModel: PerpsOpenPositionViewModel?,
+        viewModel: PerpsTradeConfirmViewModel
+    ) async {
         guard let autoClose = context.intent.autoClose, !autoClose.isEmpty else {
-            submit(context: context)
+            submit(context: context, confirmationViewModel: viewModel)
             return
         }
         let marketPrice = await perpsAssembly.marketsStore.price(marketId: context.intent.marketId)
@@ -1255,38 +1322,30 @@ private extension PerpsCoordinator {
             ?? 0
         let invalid = PerpsAutoCloseValidation.invalidLegs(
             side: context.intent.side,
-            entryPrice: referencePrice,
+            referencePrice: referencePrice,
             liquidationPrice: context.review.liquidationPrice,
             autoClose: autoClose
         )
         guard let kind = invalid.confirmStaleKind else {
-            submit(context: context)
+            submit(context: context, confirmationViewModel: viewModel)
             return
         }
         presentAutoCloseStaleAlert(
             kind: kind,
-            onContinueWithout: { [weak self, weak openFormViewModel] in
+            onContinueWithout: { [weak self, weak openFormViewModel, weak viewModel] in
                 let stripped = PerpsAutoCloseValidation.stripping(autoClose, removing: invalid)
                 openFormViewModel?.applyAutoClose(stripped.isEmpty ? nil : stripped)
-                let intent = PerpsOpenMarketIntent(
-                    marketId: context.intent.marketId,
-                    side: context.intent.side,
-                    marginUsd: context.intent.marginUsd,
-                    leverage: context.intent.leverage,
-                    maxSlippage: context.intent.maxSlippage,
-                    autoClose: stripped.isEmpty ? nil : stripped,
-                    limitPrice: context.intent.limitPrice
+                self?.submit(
+                    context: context.replacingAutoClose(stripped.isEmpty ? nil : stripped),
+                    confirmationViewModel: viewModel
                 )
-                self?.submit(context: PerpsConfirmContext(
-                    intent: intent,
-                    sizeDecimals: context.sizeDecimals,
-                    review: context.review
-                ))
             },
-            onUpdate: { [weak self, weak openFormViewModel] in
+            onUpdate: { [weak self, weak openFormViewModel, weak viewModel] in
+                viewModel?.restoreConfirmation()
                 self?.tradeNavigationController?.popViewController(animated: true)
                 openFormViewModel?.openAutoClose()
-            }
+            },
+            onClose: { [weak viewModel] in viewModel?.restoreConfirmation() }
         )
     }
 
@@ -1308,7 +1367,7 @@ private extension PerpsCoordinator {
         guard sizeChangeSession === session, session.prepared?.operationId == prepared.operationId else { return }
         let invalid = PerpsAutoCloseValidation.invalidLegs(
             side: prepared.review.side,
-            entryPrice: referencePrice,
+            referencePrice: referencePrice,
             liquidationPrice: prepared.review.liquidationPrice,
             autoClose: autoClose
         )
@@ -1346,6 +1405,9 @@ private extension PerpsCoordinator {
         }
         sizeChangePrepareTask?.cancel()
         sizeChangePrepareTask = nil
+        autoClosePrepareTask?.cancel()
+        autoClosePrepareTask = nil
+        autoClosePrepareGeneration = nil
         session.finish()
         sizeChangeSession = nil
     }
@@ -1353,7 +1415,8 @@ private extension PerpsCoordinator {
     func presentAutoCloseStaleAlert(
         kind: PerpsAutoCloseValidation.ConfirmStaleKind,
         onContinueWithout: @escaping () -> Void,
-        onUpdate: @escaping () -> Void
+        onUpdate: @escaping () -> Void,
+        onClose: (() -> Void)? = nil
     ) {
         let copy = Self.autoCloseStaleCopy(kind: kind)
         var continueButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
@@ -1363,12 +1426,18 @@ private extension PerpsCoordinator {
 
         let viewController = InfoPopupBottomSheetViewController()
         let bottomSheet = TKBottomSheetViewController(contentViewController: viewController)
+        var actionHandled = false
+        bottomSheet.didClose = { _ in
+            if !actionHandled { onClose?() }
+        }
         continueButton.action = { [weak bottomSheet] in
+            actionHandled = true
             bottomSheet?.dismiss {
                 onContinueWithout()
             }
         }
         updateButton.action = { [weak bottomSheet] in
+            actionHandled = true
             bottomSheet?.dismiss {
                 onUpdate()
             }
@@ -1419,12 +1488,18 @@ private extension PerpsCoordinator {
         }
     }
 
-    static let reconcileAttempts = 4
-    static let reconcileIntervalNanos: UInt64 = 500_000_000
+    static let reconcileIntervalNanos: UInt64 = 1_000_000_000
+    /// Only a stop for a pending nothing can answer — a send that failed before
+    /// its first step was signed journals no order key, and that state would
+    /// otherwise poll for the life of the process.
+    static let reconcileCeiling = 15
 
-    func submit(context: PerpsConfirmContext) {
+    func submit(context: PerpsConfirmContext, confirmationViewModel: PerpsTradeConfirmViewModel? = nil) {
         let descriptor = openingDescriptor(context: context)
-        guard openPositionFlow.beginSubmitting(descriptor) else { return }
+        guard openPositionFlow.beginSubmitting(descriptor) else {
+            confirmationViewModel?.restoreConfirmation()
+            return
+        }
         dismissTrade()
         walletScope.accountStore.beginOpening(descriptor)
         Task { @MainActor [weak self] in
@@ -1455,83 +1530,45 @@ private extension PerpsCoordinator {
                 await resolveOpeningOverlay(pending: pending, successToast: nil)
             case let .failed(error):
                 walletScope.accountStore.clearPending(marketId: context.intent.marketId)
-                let message = PerpsTradingErrorText.message(for: error)
-                assetPageViewModel?.showTradeResult(.failure(message.isEmpty ? TKLocales.Perps.Toast.openFailed : message))
+                assetPageViewModel?.showTradeResult(
+                    .failure(PerpsTradingErrorText.message(for: error, fallback: TKLocales.Perps.Toast.openFailed))
+                )
             }
         }
     }
 
     func resolveOpeningOverlay(pending: PerpsPendingTradingAction, successToast: String?) async {
-        // Limit orders never optimistically open; drop the overlay and let the resting
-        // order surface through extras after reconcile confirms.
-        guard pending.limitPrice == nil else {
+        // A limit order never optimistically opens, so its overlay goes now and the
+        // resting order surfaces through extras once reconcile confirms. A market fill
+        // settles within ~a second, so that overlay stays `.opening` (actions hidden)
+        // until the position exists, rather than flashing Long/Short and inviting a
+        // double-open; the live positions stream is the other path to `.open`.
+        let isLimit: Bool
+        if case .open(nil) = pending.payload {
+            isLimit = false
+        } else {
+            isLimit = true
             walletScope.accountStore.clearPending(marketId: pending.marketId)
-            let result = await awaitReconciled(
-                attempts: Self.reconcileAttempts,
-                intervalNanos: Self.reconcileIntervalNanos
-            ) {
-                await self.tradingService.reconcileOpenMarket(pending)
-            }
-            switch result {
-            case let .confirmed(positions, availableBalance):
-                walletScope.accountStore.applyReconciledPositions(positions, availableBalance: availableBalance)
-                walletScope.accountStore.loadMarketExtras(marketId: pending.marketId)
-                if let successToast {
-                    assetPageViewModel?.showTradeResult(.success(successToast))
-                }
-                assetPageViewModel?.retry()
-            case let .failed(error):
-                refreshAfterTrade()
-                let message = PerpsTradingErrorText.message(for: error)
-                assetPageViewModel?.showTradeResult(
-                    .failure(message.isEmpty ? TKLocales.Perps.Toast.openFailed : message)
-                )
-            case .pending:
-                refreshAfterTrade()
-                assetPageViewModel?.showTradeResult(.failure(TKLocales.Perps.Toast.statusUnknown))
-            }
-            return
         }
-        // A market fill settles within ~a second. Re-read the venue a few times so the
-        // overlay stays `.opening` (actions hidden) until the position exists, rather than
-        // flashing Long/Short and inviting a double-open; the live positions stream is the
-        // other path to `.open`. Only clear once the fill genuinely never landed.
-        let result = await awaitReconciled(attempts: Self.reconcileAttempts, intervalNanos: Self.reconcileIntervalNanos) {
-            await self.tradingService.reconcileOpenMarket(pending)
-        }
-        switch result {
-        case let .confirmed(positions, availableBalance):
-            walletScope.accountStore.applyReconciledPositions(positions, availableBalance: availableBalance)
-            if let successToast {
-                assetPageViewModel?.showTradeResult(.success(successToast))
-            }
-            assetPageViewModel?.retry()
-        case let .failed(error):
-            walletScope.accountStore.clearPending(marketId: pending.marketId)
-            refreshAfterTrade()
-            let message = PerpsTradingErrorText.message(for: error)
-            assetPageViewModel?.showTradeResult(
-                .failure(message.isEmpty ? TKLocales.Perps.Toast.openFailed : message)
-            )
-        case .pending:
-            walletScope.accountStore.clearPending(marketId: pending.marketId)
-            refreshAfterTrade()
-            assetPageViewModel?.showTradeResult(.failure(TKLocales.Perps.Toast.statusUnknown))
-        }
+        await settleOnPage(
+            pending: pending,
+            successToast: successToast,
+            failureFallback: TKLocales.Perps.Toast.openFailed,
+            reloadExtras: isLimit
+        )
     }
 
-    /// Polls until the venue supplies a terminal domain outcome. A rejection is
-    /// returned immediately instead of being collapsed into a timeout.
-    func awaitReconciled(
-        attempts: Int,
-        intervalNanos: UInt64,
-        _ reconcile: () async -> PerpsReconcileResult
-    ) async -> PerpsReconcileResult {
-        for attempt in 0 ..< attempts {
-            let result = await reconcile()
+    /// Polls until tk-perps states an outcome: an order it has not heard about
+    /// yet is not a failure, and giving up after a second or two is what used to
+    /// report a filled trade as unknown. A cancelled task leaves the pending
+    /// journalled for the next launch to finish.
+    func awaitReconciled(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
+        for attempt in 0 ..< Self.reconcileCeiling {
+            guard !Task.isCancelled else { break }
+            let result = await tradingService.reconcile(pending)
             if case .pending = result {
-                if attempt < attempts - 1 {
-                    try? await Task.sleep(nanoseconds: intervalNanos)
+                if attempt < Self.reconcileCeiling - 1 {
+                    try? await Task.sleep(nanoseconds: Self.reconcileIntervalNanos)
                 }
             } else {
                 return result
@@ -1540,38 +1577,54 @@ private extension PerpsCoordinator {
         return .pending
     }
 
+    /// Submit, then let the page follow the outcome. A refused submission is the
+    /// only case that never reaches polling, so it carries its own wording.
     private func settleSubmit(
         marketId: Int64,
-        failureFallback: String,
-        submit: () async -> PerpsSubmitResult,
-        resolve: (PerpsPendingTradingAction, _ claimSuccess: Bool) async -> Void
+        submitFallback: String,
+        reloadExtras: Bool,
+        successToast: String,
+        submit: () async -> PerpsSubmitResult
     ) async {
-        switch await submit() {
-        case let .submitted(pending):
-            await resolve(pending, true)
-        case let .submitUnknown(pending):
+        let result = await submit()
+        let pending: PerpsPendingTradingAction
+        let toast: String?
+        switch result {
+        case let .submitted(value):
+            pending = value
+            toast = successToast
+        case let .submitUnknown(value):
             assetPageViewModel?.showTradeResult(.failure(TKLocales.Perps.Toast.statusUnknown))
-            await resolve(pending, false)
+            pending = value
+            toast = nil
         case let .failed(error):
             walletScope.accountStore.clearPending(marketId: marketId)
-            let message = PerpsTradingErrorText.message(for: error)
-            assetPageViewModel?.showTradeResult(.failure(message.isEmpty ? failureFallback : message))
+            assetPageViewModel?.showTradeResult(
+                .failure(PerpsTradingErrorText.message(for: error, fallback: submitFallback))
+            )
             refreshAfterTrade()
+            return
         }
+        await settleOnPage(
+            pending: pending,
+            successToast: toast,
+            failureFallback: TKLocales.Perps.Toast.statusUnknown,
+            reloadExtras: reloadExtras
+        )
     }
 
-    private func resolveChangeOverlay(
+    /// The tail every signed action shares: poll until tk-perps states an outcome,
+    /// then put that outcome on the page. Anything but a confirmation drops the
+    /// optimistic overlay, since the market is no longer mid-change.
+    func settleOnPage(
         pending: PerpsPendingTradingAction,
-        reloadExtras: Bool,
         successToast: String?,
-        reconcile: (PerpsPendingTradingAction) async -> PerpsReconcileResult
+        failureFallback: String,
+        reloadExtras: Bool
     ) async {
-        let result = await awaitReconciled(attempts: Self.closeReconcileAttempts, intervalNanos: Self.closeReconcileIntervalNanos) {
-            await reconcile(pending)
-        }
-        switch result {
-        case let .confirmed(positions, availableBalance):
-            walletScope.accountStore.applyReconciledPositions(positions, availableBalance: availableBalance)
+        switch await awaitReconciled(pending) {
+        case .confirmed:
+            walletScope.accountStore.refresh()
             if reloadExtras {
                 walletScope.accountStore.loadMarketExtras(marketId: pending.marketId)
             }
@@ -1580,16 +1633,15 @@ private extension PerpsCoordinator {
             }
             assetPageViewModel?.retry()
         case let .failed(error):
-            let message = PerpsTradingErrorText.message(for: error)
+            walletScope.accountStore.clearPending(marketId: pending.marketId)
+            refreshAfterTrade()
             assetPageViewModel?.showTradeResult(
-                .failure(message.isEmpty ? TKLocales.Perps.Toast.statusUnknown : message)
+                .failure(PerpsTradingErrorText.message(for: error, fallback: failureFallback))
             )
-            walletScope.accountStore.clearPending(marketId: pending.marketId)
-            refreshAfterTrade()
         case .pending:
-            assetPageViewModel?.showTradeResult(.failure(TKLocales.Perps.Toast.statusUnknown))
             walletScope.accountStore.clearPending(marketId: pending.marketId)
             refreshAfterTrade()
+            assetPageViewModel?.showTradeResult(.failure(TKLocales.Perps.Toast.statusUnknown))
         }
     }
 
@@ -1600,7 +1652,8 @@ private extension PerpsCoordinator {
         // The store guards the position side: `.flat`/`.opening` have nothing to cash
         // out, and a stale `.closing` self-heals from venue reads.
         guard openPositionSummary(marketId: marketId) != nil else { return }
-        cashOutFlow = .preparing
+        let attempt = PositionActionFlow<PerpsPreparedCloseAction>.Attempt()
+        cashOutFlow = .preparing(attempt)
         let originPage = assetPageViewController
         Task { @MainActor [weak self, weak originPage] in
             guard let self else { return }
@@ -1609,12 +1662,15 @@ private extension PerpsCoordinator {
             case let .success(prepared):
                 // Nothing is submitted yet, so if the user left the asset page while
                 // prepare ran, abort instead of presenting the confirm out of context.
-                guard let originPage, originPage.navigationController != nil else {
+                guard cashOutFlow.isCurrent(attempt),
+                      let originPage,
+                      originPage.navigationController != nil
+                else {
                     cashOutFlow = .idle
                     return
                 }
-                cashOutFlow = .confirming(prepared)
-                await presentCashOutConfirm(prepared)
+                cashOutFlow = .confirming(attempt, prepared)
+                await presentCashOutConfirm(prepared, attempt: attempt)
             case let .failure(error):
                 cashOutFlow = .idle
                 let message = PerpsTradingErrorText.message(for: error)
@@ -1629,19 +1685,20 @@ private extension PerpsCoordinator {
     }
 
     @MainActor
-    func presentCashOutConfirm(_ prepared: PerpsPreparedCloseAction) async {
+    private func presentCashOutConfirm(
+        _ prepared: PerpsPreparedCloseAction,
+        attempt: PositionActionFlow<PerpsPreparedCloseAction>.Attempt
+    ) async {
         let sizeDecimals = await perpsAssembly.marketsStore.snapshot(marketId: prepared.marketId)
             .map(\.sizeDecimals) ?? 2
-        guard case let .confirming(current) = cashOutFlow, current.operationId == prepared.operationId else { return }
+        guard cashOutFlow.isCurrent(attempt) else { return }
         let viewModel = PerpsTradeConfirmViewModel(
             closeContext: PerpsCloseConfirmContext(sizeDecimals: sizeDecimals, review: prepared.review),
             iconURL: assetPageViewModel?.state.ready?.iconURL
         )
-        let viewController = PerpsTradeConfirmViewController(viewModel: viewModel)
-        let navigationController = TKNavigationController(rootViewController: viewController)
-        navigationController.setNavigationBarHidden(true, animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
-        tradeNavigationController = navigationController
+        let navigationController = makeTradeNavigationController(
+            rootViewController: PerpsTradeConfirmViewController(viewModel: viewModel)
+        )
 
         viewModel.onBack = { [weak self] in
             self?.cancelCashOut()
@@ -1663,7 +1720,7 @@ private extension PerpsCoordinator {
     }
 
     func submitCashOut() {
-        guard case let .confirming(prepared) = cashOutFlow else { return }
+        guard case let .confirming(_, prepared) = cashOutFlow else { return }
         cashOutFlow = .submitting
         // Design pill semantics: «Closing …» covers the submitted close, so the
         // `.closing` overlay starts at swipe, not at the Cash Out tap.
@@ -1674,24 +1731,13 @@ private extension PerpsCoordinator {
             defer { self.cashOutFlow = .idle }
             await settleSubmit(
                 marketId: prepared.marketId,
-                failureFallback: TKLocales.Perps.Toast.closeFailed,
-                submit: { await self.tradingService.submit(prepared) },
-                resolve: { pending, claimSuccess in
-                    await self.resolveChangeOverlay(
-                        pending: pending,
-                        reloadExtras: false,
-                        successToast: claimSuccess ? self.closedToastText(review: prepared.review) : nil,
-                        reconcile: { await self.tradingService.reconcileClose($0) }
-                    )
-                }
+                submitFallback: TKLocales.Perps.Toast.closeFailed,
+                reloadExtras: false,
+                successToast: closedToastText(review: prepared.review),
+                submit: { await self.tradingService.submit(prepared) }
             )
         }
     }
-
-    // A market close is an IOC order: staging fills + venue reads can lag ~5s,
-    // so the close window is longer than the open one.
-    static let closeReconcileAttempts = 8
-    static let closeReconcileIntervalNanos: UInt64 = 750_000_000
 
     func closedToastText(review: PerpsCloseReview) -> String {
         PerpsAssetPageViewModel.closeToastText(
@@ -1713,6 +1759,9 @@ private extension PerpsCoordinator {
     }
 
     func dismissTrade(completion: (() -> Void)? = nil) {
+        autoClosePrepareTask?.cancel()
+        autoClosePrepareTask = nil
+        autoClosePrepareGeneration = nil
         guard let tradeNavigationController else {
             completion?()
             return

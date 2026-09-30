@@ -34,7 +34,6 @@ final class PushNotificationManager {
     private let tonConnectAppsStore: TonConnectAppsStore
     private let tonProofTokenService: TonProofTokenService
     private let multichainAuthService: MultichainAuthService
-    private let isMultichainEnabled: Bool
 
     init(
         appSettings: AppSettings,
@@ -45,8 +44,7 @@ final class PushNotificationManager {
         walletsStore: WalletsStore,
         tonConnectAppsStore: TonConnectAppsStore,
         tonProofTokenService: TonProofTokenService,
-        multichainAuthService: MultichainAuthService,
-        isMultichainEnabled: Bool
+        multichainAuthService: MultichainAuthService
     ) {
         self.appSettings = appSettings
         self.uniqueIdProvider = uniqueIdProvider
@@ -57,7 +55,6 @@ final class PushNotificationManager {
         self.tonConnectAppsStore = tonConnectAppsStore
         self.tonProofTokenService = tonProofTokenService
         self.multichainAuthService = multichainAuthService
-        self.isMultichainEnabled = isMultichainEnabled
     }
 
     deinit {
@@ -168,7 +165,6 @@ final class PushNotificationManager {
             let confirmedWalletIds = Set(self.appSettings.multichainPushWalletIds ?? [])
             let wallets = self.walletsStore.wallets.filter { wallet in
                 wallet.needsLegacyPushCleanup(
-                    isMultichainEnabled: self.isMultichainEnabled,
                     isNotificationsOn: notificationState[wallet]?.isOn ?? false,
                     confirmedMultichainPushWalletIds: confirmedWalletIds
                 )
@@ -353,7 +349,6 @@ final class PushNotificationManager {
     private func makeMultichainPushSynchronizer() -> MultichainPushSynchronizer {
         MultichainPushSynchronizer(
             dependencies: MultichainPushSynchronizerDependencies(
-                isFeatureEnabled: { [isMultichainEnabled] in isMultichainEnabled },
                 desiredWalletIds: { [weak self] in self?.multichainEnabledWalletIds() ?? [] },
                 loadState: { [appSettings] in
                     MultichainPushSyncState(
@@ -407,7 +402,7 @@ final class PushNotificationManager {
 
     private func usesMultichainPush(_ wallet: Wallet) -> Bool {
         let current = walletsStore.getWallet(id: wallet.id) ?? wallet
-        return current.usesMultichainPush(isMultichainEnabled: isMultichainEnabled)
+        return current.usesMultichainPush()
     }
 
     /// Every v1 mutation of a wallet goes through its own serial tail, so a correction and a fresh
@@ -507,23 +502,19 @@ final class PushNotificationManager {
 
 extension Wallet {
     /// Push v2 owns every multichain wallet, bound or not: v1 keys on the TON address and would
-    /// double-subscribe the same wallet once the binding lands. It can only own one while the v2
-    /// contour is switched on, though — `importMultichainEnabled` turns imported wallets into
-    /// multichain wallets on its own, and with the v2 kill switch off v1 is the only contour left
-    /// to serve them.
-    func usesMultichainPush(isMultichainEnabled: Bool) -> Bool {
-        guard isMultichainEnabled, kind == .regular, case .multichain = multichain else {
+    /// double-subscribe the same wallet once the binding lands.
+    func usesMultichainPush() -> Bool {
+        guard kind == .regular, case .multichain = multichain else {
             return false
         }
         return true
     }
 
     func needsLegacyPushCleanup(
-        isMultichainEnabled: Bool,
         isNotificationsOn: Bool,
         confirmedMultichainPushWalletIds: Set<String>
     ) -> Bool {
-        guard usesMultichainPush(isMultichainEnabled: isMultichainEnabled) else { return false }
+        guard usesMultichainPush() else { return false }
         guard isNotificationsOn else { return true }
         guard let walletId = boundMultichainPushWalletId else { return false }
         return confirmedMultichainPushWalletIds.contains(walletId)

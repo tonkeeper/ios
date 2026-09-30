@@ -22,33 +22,18 @@ final class WalletMigrationVisibilityTests: XCTestCase {
         XCTAssertTrue(
             WalletMigrationVisibility.shouldShowMigrationSection(
                 wallet: multichainWallet,
-                wallets: [legacyWallet, multichainWallet],
-                multichainEnabled: true,
-                migrationEnabled: true
+                wallets: [legacyWallet, multichainWallet]
             )
         )
     }
 
-    func test_migrationSectionIsHiddenWhenFeatureIsDisabled() {
+    func test_migrationSectionIsHiddenForNonMultichainWallet() {
         let legacyWallet = makeWallet(id: "legacy", multichain: .unavailable)
-        let multichainWallet = makeWallet(
-            id: "multichain",
-            multichain: .multichain(
-                MultichainWalletState(
-                    walletId: "multichain",
-                    addresses: [
-                        MultichainWalletAddress(chain: .ton, address: "ton-address"),
-                    ]
-                )
-            )
-        )
 
         XCTAssertFalse(
             WalletMigrationVisibility.shouldShowMigrationSection(
-                wallet: multichainWallet,
-                wallets: [legacyWallet, multichainWallet],
-                multichainEnabled: true,
-                migrationEnabled: false
+                wallet: legacyWallet,
+                wallets: [legacyWallet]
             )
         )
     }

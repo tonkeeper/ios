@@ -201,7 +201,7 @@ private extension NativeSwapAssetClassification {
 private extension Network {
     var tradeAssetNetworkIdentifier: String {
         switch self {
-        case .mainnet, .tetra:
+        case .mainnet:
             return "mainnet"
         case .testnet:
             return "testnet"

@@ -139,7 +139,7 @@ extension RampOnActionKind {
             icon: .init(
                 image: .TKUIKit.Icons.Size28.qrCode,
                 tintColor: .accentBlue,
-                backgroundColor: .accentBlue.opacity(0.12)
+                backgroundColor: .accentBlue.opacity(0.16)
             ),
             title: TKLocales.Ramp.Deposit.receiveTokens,
             titleTextStyle: .label1,

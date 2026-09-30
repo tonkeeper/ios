@@ -1,4 +1,3 @@
-import ChainKit
 import Foundation
 
 public extension PerpsAutoClose {
@@ -56,35 +55,6 @@ public struct PerpsTriggerOrderSummary: Equatable, Sendable {
     }
 }
 
-extension PerpsTriggerOrderSummary {
-    init?(order: PerpsOrder) {
-        guard let kind = PerpsTriggerOrderSummary.classify(type: order.type) else { return nil }
-        let triggerPrice = PerpsMarketMath.double(order.triggerPrice)
-        guard triggerPrice > 0 else { return nil }
-        // Position-tied TP/SL legs use a zero base amount because the venue sizes
-        // them from the live position.
-        let baseAmount = abs(PerpsMarketMath.double(order.remainingBaseAmount))
-        self.init(
-            orderIndex: order.orderIndex,
-            clientOrderIndex: order.clientOrderIndex,
-            kind: kind,
-            side: PerpsTradeSideMapper.fromChainKit(order.side),
-            triggerPrice: triggerPrice,
-            baseAmount: baseAmount,
-            expiresAtSeconds: order.expiresAtSeconds
-        )
-    }
-
-    private static func classify(type: String) -> Kind? {
-        // The venue spells order types inconsistently across deployments
-        // ("take_profit", "take-profit"); compare letters only.
-        let normalized = type.lowercased().filter(\.isLetter)
-        if normalized.contains("takeprofit") { return .takeProfit }
-        if normalized.contains("stoploss") { return .stopLoss }
-        return nil
-    }
-}
-
 public struct PerpsLimitOrderSummary: Equatable, Sendable {
     public let orderIndex: Int64
     public let clientOrderIndex: Int64
@@ -113,32 +83,6 @@ public struct PerpsLimitOrderSummary: Equatable, Sendable {
     }
 }
 
-extension PerpsLimitOrderSummary {
-    init?(order: PerpsOrder) {
-        let type = order.type
-            .lowercased()
-            .filter(\.isLetter)
-        guard type == "limit" || type == "limitorder",
-              !order.reduceOnly,
-              order.parentOrderIndex == 0
-        else {
-            return nil
-        }
-        let price = PerpsMarketMath.double(order.price)
-        let remaining = abs(PerpsMarketMath.double(order.remainingBaseAmount))
-        guard price > 0, remaining > 0 else { return nil }
-        self.init(
-            orderIndex: order.orderIndex,
-            clientOrderIndex: order.clientOrderIndex,
-            side: PerpsTradeSideMapper.fromChainKit(order.side),
-            limitPrice: price,
-            remainingBaseAmount: remaining,
-            filledBaseAmount: abs(PerpsMarketMath.double(order.filledBaseAmount)),
-            expiresAtSeconds: order.expiresAtSeconds
-        )
-    }
-}
-
 public struct PerpsActiveOrders: Equatable, Sendable {
     public let limitOrders: [PerpsLimitOrderSummary]
     public let triggerOrders: [PerpsTriggerOrderSummary]
@@ -146,6 +90,41 @@ public struct PerpsActiveOrders: Equatable, Sendable {
     public init(limitOrders: [PerpsLimitOrderSummary], triggerOrders: [PerpsTriggerOrderSummary]) {
         self.limitOrders = limitOrders
         self.triggerOrders = triggerOrders
+    }
+}
+
+public struct PerpsTradingFlags: Equatable, Sendable {
+    public let openEnabled: Bool?
+    public let closeEnabled: Bool?
+    public let cancelEnabled: Bool?
+    public let addMarginEnabled: Bool?
+    public let removeMarginEnabled: Bool?
+    public let autoCloseEnabled: Bool?
+
+    public init(
+        openEnabled: Bool?,
+        closeEnabled: Bool?,
+        cancelEnabled: Bool?,
+        addMarginEnabled: Bool?,
+        removeMarginEnabled: Bool?,
+        autoCloseEnabled: Bool?
+    ) {
+        self.openEnabled = openEnabled
+        self.closeEnabled = closeEnabled
+        self.cancelEnabled = cancelEnabled
+        self.addMarginEnabled = addMarginEnabled
+        self.removeMarginEnabled = removeMarginEnabled
+        self.autoCloseEnabled = autoCloseEnabled
+    }
+}
+
+public struct PerpsTradingSnapshot: Sendable {
+    public let flags: PerpsTradingFlags?
+    public let orders: PerpsActiveOrders?
+
+    public init(flags: PerpsTradingFlags?, orders: PerpsActiveOrders?) {
+        self.flags = flags
+        self.orders = orders
     }
 }
 
@@ -186,6 +165,14 @@ public struct PerpsActivityItem: Equatable, Sendable {
         }
     }
 
+    public var positionSide: PerpsTradeSide? {
+        guard let side else { return nil }
+        switch outcome {
+        case .closed, .liquidated: return side == .long ? .short : .long
+        case .opened, .funding, .other: return side
+        }
+    }
+
     public init(
         id: String,
         kind: Kind,
@@ -209,45 +196,24 @@ public struct PerpsActivityItem: Equatable, Sendable {
     }
 }
 
-extension PerpsActivityItem {
-    init(activity: PerpsActivity) {
-        self.init(
-            id: activity.id,
-            kind: PerpsActivityItem.Kind(activity.kind),
-            marketId: activity.marketId?.int64Value,
-            side: activity.side.map(PerpsTradeSideMapper.fromChainKit),
-            baseSize: activity.size.flatMap { PerpsMarketMath.optionalDouble($0) },
-            price: activity.price.flatMap { PerpsMarketMath.optionalDouble($0) },
-            usdAmount: activity.usdAmount.flatMap { PerpsMarketMath.optionalDouble($0) },
-            realizedPnl: activity.realizedPnl.flatMap { PerpsMarketMath.optionalDouble($0) },
-            date: Date(timeIntervalSince1970: TimeInterval(activity.timestampMillis) / 1000)
-        )
-    }
-}
-
-private extension PerpsActivityItem.Kind {
-    init(_ kind: PerpsActivityKind) {
-        if kind === PerpsActivityKind.trade { self = .trade }
-        else if kind === PerpsActivityKind.liquidation { self = .liquidation }
-        else if kind === PerpsActivityKind.fundingPayment { self = .funding }
-        else if kind === PerpsActivityKind.deposit { self = .deposit }
-        else if kind === PerpsActivityKind.withdrawal { self = .withdrawal }
-        else { self = .other }
-    }
-}
-
 public struct PerpsMarketExtras: Equatable, Sendable {
     public let limitOrders: [PerpsLimitOrderSummary]
     public let triggerOrders: [PerpsTriggerOrderSummary]
     public let recentActivity: [PerpsActivityItem]
+    public let flags: PerpsTradingFlags?
+    public let autoCloseKnown: Bool
 
     public init(
         limitOrders: [PerpsLimitOrderSummary] = [],
         triggerOrders: [PerpsTriggerOrderSummary],
-        recentActivity: [PerpsActivityItem]
+        recentActivity: [PerpsActivityItem],
+        flags: PerpsTradingFlags? = nil,
+        autoCloseKnown: Bool = true
     ) {
         self.limitOrders = limitOrders
         self.triggerOrders = triggerOrders
         self.recentActivity = recentActivity
+        self.flags = flags
+        self.autoCloseKnown = autoCloseKnown
     }
 }

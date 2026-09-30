@@ -12,4 +12,5 @@ struct NativeSwapTransactionConfirmationModel {
     var rateFormatted = ""
     var confirmation: SwapConfirmation
     var transactionSentNotificationPatch: (inout [String: Any]) -> Void
+    var utm: UtmParameters
 }

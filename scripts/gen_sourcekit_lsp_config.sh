@@ -7,6 +7,12 @@
 # Xcode-version-specific, so the file is generated locally and gitignored rather
 # than committed (no hardcoded absolute paths in the repo).
 #
+# sourcekit-lsp reads the file from the workspace folder an editor or the swift-lsp
+# plugin opened, and since the project moved into ios/ that folder is either the
+# repository root (agents, whose config lives there) or ios/ (an editor opened on the
+# project). Both are written and kept in sync, so the one that is actually read never
+# holds an SDK path left behind by an Xcode upgrade.
+#
 # Usage: scripts/gen_sourcekit_lsp_config.sh
 #   IOS_MIN   override the iOS deployment target used for the triple (default 15.0)
 
@@ -19,9 +25,10 @@ IOS_MIN="${IOS_MIN:-15.0}"
 TRIPLE="arm64-apple-ios${IOS_MIN}-simulator"
 SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
 
-mkdir -p "$REPO_ROOT/.sourcekit-lsp"
-CONFIG="$REPO_ROOT/.sourcekit-lsp/config.json"
-cat >"$CONFIG" <<EOF
+for root in "$(git rev-parse --show-toplevel)" "$REPO_ROOT"; do
+	mkdir -p "$root/.sourcekit-lsp"
+	CONFIG="$root/.sourcekit-lsp/config.json"
+	cat >"$CONFIG" <<EOF
 {
   "swiftPM": {
     "triple": "$TRIPLE",
@@ -30,5 +37,5 @@ cat >"$CONFIG" <<EOF
   }
 }
 EOF
-
-echo "wrote $CONFIG (triple=$TRIPLE)"
+	echo "wrote $CONFIG (triple=$TRIPLE)"
+done

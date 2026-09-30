@@ -1,6 +1,6 @@
-# Multichain Battery: TON-chain jetton (USD₮) self-transfer paid with Tonkeeper Battery.
+# Multichain Battery: TON-chain jetton (USD₮) self-transfer paid with Keeper Battery.
 # Native GRAM/TON transfers cannot use Battery. Requires Battery Settings → Token transfers ON
-# and enough charges (picker must list Tonkeeper Battery without Deposit).
+# and enough charges (picker must list Keeper Battery without Deposit).
 appId: com.jbig.tonkeeper
 ---
 - runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"

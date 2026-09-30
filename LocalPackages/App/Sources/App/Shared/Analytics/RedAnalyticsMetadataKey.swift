@@ -11,7 +11,6 @@ public extension RedAnalyticsMetadataKey {
     static let asset: RedAnalyticsMetadataKey = "asset"
     static let appId: RedAnalyticsMetadataKey = "app_id"
     static let dappUrl: RedAnalyticsMetadataKey = "dapp_url"
-    static let isWalletKitEnabled: RedAnalyticsMetadataKey = "is_wallet_kit_enabled"
     static let source: RedAnalyticsMetadataKey = "source"
     static let connectionType: RedAnalyticsMetadataKey = "connection_type"
     static let dappHost: RedAnalyticsMetadataKey = "dapp_host"

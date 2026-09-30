@@ -4,19 +4,22 @@ import KeeperCore
 import XCTest
 
 final class TradeAssetDetailsFormattersTests: XCTestCase {
-    func test_formatTradingAmount_truncatesNearNextAbbreviationThreshold() {
+    /// Abbreviation belongs to `.compact` itself: M/B/T from 1e6 up, grouped digits below it.
+    func test_formatTradingAmount_abbreviatesFromOneMillion() {
         let formatter = makeDisplayFormatter()
 
-        XCTAssertEqual(formatter.formatTradingAmount("999995"), "$999.99K")
-        XCTAssertEqual(formatter.formatTradingAmount("999999"), "$999.99K")
-        XCTAssertEqual(formatter.formatTradingAmount("999999000"), "$999.99M")
+        XCTAssertEqual(formatter.formatTradingAmount("999995"), "$999 995")
+        XCTAssertEqual(formatter.formatTradingAmount("999999"), "$999 999")
+        XCTAssertEqual(formatter.formatTradingAmount("1234567"), "$1.23M")
+        XCTAssertEqual(formatter.formatTradingAmount("1234567890"), "$1.23B")
     }
 
-    func test_formatTradingAmount_doesNotGroupAbbreviatedValues() {
+    /// Digits are cut, not rounded, so a value just under a tier stays on the tier below it.
+    func test_formatTradingAmount_doesNotCarryIntoNextAbbreviation() {
         let formatter = makeDisplayFormatter()
 
-        XCTAssertEqual(formatter.formatTradingAmount("999994"), "$999.99K")
-        XCTAssertEqual(formatter.formatTradingAmount("1234567"), "$1.23M")
+        XCTAssertEqual(formatter.formatTradingAmount("999999000"), "$999.99M")
+        XCTAssertEqual(formatter.formatTradingAmount("999999999999"), "$999.99B")
     }
 }
 

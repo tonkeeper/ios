@@ -190,7 +190,6 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize28SwapHorizontalOutline
     case iconsSize28Telegram
     case iconsSize28TestnetOutline
-    case iconsSize28TetraOutline
     case iconsSize28Ticket
     case iconsSize28Ton
     case iconsSize28Trade
@@ -615,8 +614,6 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/telegram"
         case .iconsSize28TestnetOutline:
             return "Icons/Size28/testnet-outline"
-        case .iconsSize28TetraOutline:
-            return "Icons/Size28/tetra-outline"
         case .iconsSize28Ticket:
             return "Icons/Size28/ticket"
         case .iconsSize28Ton:
@@ -1323,9 +1320,6 @@ public extension UIImage {
             }
             public static var testnetOutline: UIImage {
                 .from(asset: .iconsSize28TestnetOutline)
-            }
-            public static var tetraOutline: UIImage {
-                .from(asset: .iconsSize28TetraOutline)
             }
             public static var ticket: UIImage {
                 .from(asset: .iconsSize28Ticket)
@@ -2099,9 +2093,6 @@ public extension SwiftUI.Image {
             }
             public static var testnetOutline: SwiftUI.Image {
                 .from(asset: .iconsSize28TestnetOutline)
-            }
-            public static var tetraOutline: SwiftUI.Image {
-                .from(asset: .iconsSize28TetraOutline)
             }
             public static var ticket: SwiftUI.Image {
                 .from(asset: .iconsSize28Ticket)

@@ -34,11 +34,18 @@ public struct TransactionOrigin {
     public let initiatedBy: InitiatedBy
     public let appId: String?
     public let dappUrl: String?
+    public let utm: UtmParameters
 
-    public init(initiatedBy: InitiatedBy, appId: String? = nil, dappUrl: String? = nil) {
+    public init(
+        initiatedBy: InitiatedBy,
+        appId: String? = nil,
+        dappUrl: String? = nil,
+        utm: UtmParameters = .empty
+    ) {
         self.initiatedBy = initiatedBy
         self.appId = appId
         self.dappUrl = dappUrl
+        self.utm = utm
     }
 }
 
@@ -218,6 +225,8 @@ public extension FeeAsset {
             self = .coin
         case .battery:
             self = .batteryCharges
+        case .gram:
+            self = .batteryTonInstantFee
         }
     }
 

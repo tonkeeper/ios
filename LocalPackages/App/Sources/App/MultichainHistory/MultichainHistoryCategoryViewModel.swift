@@ -3,9 +3,10 @@ import KeeperCore
 
 @MainActor
 final class MultichainHistoryCategoryViewModel {
-    private let walletId: String
+    private let multichainState: MultichainWalletState
     private let category: MultichainHistoryCategory
     private let hidesDustTransactions: Bool
+    private let showsPerps: Bool
     private let multichainService: MultichainService
     private let amountFormatter: AmountFormatter
     private let dateFormatter: DateFormatter
@@ -16,9 +17,10 @@ final class MultichainHistoryCategoryViewModel {
     private var cachedQueryViewModel: MultichainHistoryQueryViewModel?
 
     init(
-        walletId: String,
+        multichainState: MultichainWalletState,
         category: MultichainHistoryCategory,
         hidesDustTransactions: Bool,
+        showsPerps: Bool,
         multichainService: MultichainService,
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
@@ -26,9 +28,10 @@ final class MultichainHistoryCategoryViewModel {
         currentDateProvider: @escaping () -> Date,
         onAddFunds: @escaping () -> Void
     ) {
-        self.walletId = walletId
+        self.multichainState = multichainState
         self.category = category
         self.hidesDustTransactions = hidesDustTransactions
+        self.showsPerps = showsPerps
         self.multichainService = multichainService
         self.amountFormatter = amountFormatter
         self.dateFormatter = dateFormatter
@@ -43,9 +46,10 @@ final class MultichainHistoryCategoryViewModel {
         }
 
         let queryViewModel = MultichainHistoryQueryViewModel(
-            walletId: walletId,
+            multichainState: multichainState,
             category: category,
             hidesDustTransactions: hidesDustTransactions,
+            showsPerps: showsPerps,
             multichainService: multichainService,
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,

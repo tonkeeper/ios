@@ -97,6 +97,7 @@ final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
     private let manifest: TonConnectManifest
     private let showWalletPicker: Bool
     private let isSilentConnect: Bool
+    private let injectedDappDomainProvider: (() -> String?)?
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
@@ -111,13 +112,15 @@ final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
         showWalletPicker: Bool,
         isSilentConnect: Bool,
         coreAssembly: TKCore.CoreAssembly,
-        keeperCoreMainAssembly: KeeperCore.MainAssembly
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        injectedDappDomainProvider: (() -> String?)? = nil
     ) {
         self.connector = connector
         self.parameters = parameters
         self.manifest = manifest
         self.showWalletPicker = showWalletPicker
         self.isSilentConnect = isSilentConnect
+        self.injectedDappDomainProvider = injectedDappDomainProvider
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.flow = flow
@@ -256,8 +259,9 @@ private extension TonConnectConnectCoordinator {
             let wallet = parameters.wallet
             let address = try wallet.address
             let timestamp = UInt64(Date().timeIntervalSince1970)
+            let domain = try self.tonProofDomain(manifest: parameters.manifest)
 
-            let signatureData: TonConnect.SignatureData = .init(address: address, domain: .init(domain: parameters.manifest.host), timestamp: timestamp, payload: payload)
+            let signatureData: TonConnect.SignatureData = .init(address: address, domain: .init(domain: domain), timestamp: timestamp, payload: payload)
 
             switch wallet.identity.kind {
             case let .Ledger(_, _, ledgerDevice):
@@ -363,12 +367,7 @@ private extension TonConnectConnectCoordinator {
     }
 
     var redAttemptSource: RedAnalyticsAttemptSource {
-        switch connector {
-        case _ as TONWalletKitCoordinatorConnector:
-            .tonconnectRemote
-        default:
-            .tonconnectLocal
-        }
+        .tonconnectLocal
     }
 
     func connectOutcome(for error: Error) -> OpTerminal.Outcome {
@@ -385,15 +384,24 @@ private extension TonConnectConnectCoordinator {
 
     func makeConnectAttemptTracker() -> TonConnectConnectAttemptTracker {
         TonConnectConnectAttemptTracker(
-            makeSession: { [coreAssembly, keeperCoreMainAssembly] in
+            makeSession: { [coreAssembly] in
                 RedAnalyticsSessionHolder(
-                    analytics: coreAssembly.analyticsProvider,
-                    configurationAssembly: keeperCoreMainAssembly.configurationAssembly
+                    analytics: coreAssembly.analyticsProvider
                 )
             },
             attemptSource: redAttemptSource,
             isSafeMode: flow == .deeplink
         )
+    }
+
+    func tonProofDomain(manifest: TonConnectManifest) throws -> String {
+        guard let injectedDappDomainProvider else {
+            return manifest.host
+        }
+        guard let domain = injectedDappDomainProvider(), !domain.isEmpty else {
+            throw ConnectError.unknown
+        }
+        return domain
     }
 
     func handleKeystoneSign(
@@ -557,17 +565,11 @@ private extension TonConnectConnectCoordinator {
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
         )
-        let multichainEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.multichainEnabled)
-
         let coordinator = module.createAddWalletCoordinator(
             options: [
-                multichainEnabled ? .createMultichain : .createRegular,
+                .createMultichain,
                 .importRegular,
                 .importWatchOnly,
-                .importTetra,
                 .signer,
             ],
             router: router,

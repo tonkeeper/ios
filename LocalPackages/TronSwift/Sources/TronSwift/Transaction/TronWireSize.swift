@@ -3,9 +3,6 @@ import Foundation
 /// Size of a `Transaction.raw_data` derived from the protobuf layout, so a bandwidth estimate does
 /// not need the node to build a throwaway transaction first.
 public enum TronWireSize {
-    static let transferContractTypeUrl = "type.googleapis.com/protocol.TransferContract"
-    static let transferContractType: UInt64 = 1
-
     private static let addressLength = 21
     private static let refBlockBytesLength = 2
     private static let refBlockHashLength = 8
@@ -26,8 +23,8 @@ public enum TronWireSize {
         return rawDataLength(
             expiration: now,
             timestamp: now,
-            contractType: transferContractType,
-            typeUrlLength: transferContractTypeUrl.utf8.count,
+            contractType: TronContractType.transfer.rawValue,
+            typeUrlLength: TronContractType.transfer.typeURL.utf8.count,
             contractValueLength: transferContract,
             feeLimit: nil
         )
@@ -37,6 +34,15 @@ public enum TronWireSize {
     /// two bytes once `raw_data` passes 127 — every transfer does.
     public static func rawDataEnvelopeLength(rawDataLength: Int) -> Int {
         lengthDelimitedField(fieldNumber: 1, payloadLength: rawDataLength) - rawDataLength
+    }
+
+    /// `fee_limit` as field 18 of `raw_data`. A `triggerconstantcontract` probe never carries it
+    /// while the signed transaction built from `triggersmartcontract` always does, so an estimate
+    /// measured on the probe has to add it back. Zero is not on the wire at all — protobuf omits a
+    /// scalar left at its default, which `test_verify_acceptsAnOmittedZeroFeeLimit` pins.
+    public static func feeLimitFieldLength(feeLimit: UInt64) -> Int {
+        guard feeLimit > 0 else { return 0 }
+        return varintField(fieldNumber: 18, value: feeLimit)
     }
 
     static func rawDataLength(

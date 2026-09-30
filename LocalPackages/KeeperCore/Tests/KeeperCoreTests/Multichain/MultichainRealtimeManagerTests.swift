@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import TonSwift
 import XCTest
 
 final class MultichainRealtimeManagerTests: XCTestCase {
@@ -151,6 +152,91 @@ final class MultichainRealtimeManagerTests: XCTestCase {
         XCTAssertEqual(observed, [context.walletId, nil])
     }
 
+    func test_configurationChangeReconnectsActiveWalletAndIgnoresUnchangedEndpoint() async throws {
+        let initial = expectation(description: "initial connection")
+        let changed = expectation(description: "new endpoint")
+        let disconnected = expectation(description: "background disconnect")
+        let endpoint = RealtimeEndpointBox()
+        let transport = FakeRealtimeTransport(onConnect: { url in
+            if url == BootConfiguration.defaultMultichainRealtimeURL {
+                initial.fulfill()
+            } else {
+                changed.fulfill()
+            }
+        }, onDisconnect: { count in
+            if count == 2 { disconnected.fulfill() }
+        })
+        let context = makeContext(transport: transport, endpointProvider: { endpoint.value })
+        await context.walletsStore.addWallets([makeWallet(walletId: context.walletId)])
+        context.manager.setForeground(true)
+        await fulfillment(of: [initial], timeout: 1)
+
+        endpoint.value = try XCTUnwrap(URL(string: "wss://moved.example.com/connection/websocket"))
+        context.manager.configurationDidChange()
+        await fulfillment(of: [changed], timeout: 1)
+        context.manager.configurationDidChange()
+        context.manager.setForeground(false)
+        await fulfillment(of: [disconnected], timeout: 1)
+
+        XCTAssertEqual(transport.connections, [
+            BootConfiguration.defaultMultichainRealtimeURL,
+            endpoint.value,
+        ])
+        XCTAssertEqual(transport.disconnectCount, 2)
+    }
+
+    func test_replacedConnectionCannotUnsubscribeOrDisableCurrentConnection() async throws {
+        let initial = expectation(description: "initial")
+        let changed = expectation(description: "changed")
+        let currentPublication = expectation(description: "current publication")
+        let endpoint = RealtimeEndpointBox()
+        let transport = FakeRealtimeTransport(onConnect: { url in
+            (url == BootConfiguration.defaultMultichainRealtimeURL ? initial : changed).fulfill()
+        })
+        let context = makeContext(transport: transport, endpointProvider: { endpoint.value })
+        await context.walletsStore.addWallets([makeWallet(walletId: context.walletId)])
+        context.manager.setForeground(true)
+        await fulfillment(of: [initial], timeout: 1)
+        let oldSignal = try XCTUnwrap(transport.signalHandler)
+        let oldDisabled = try XCTUnwrap(transport.disabledHandler)
+
+        endpoint.value = try XCTUnwrap(URL(string: "wss://moved.example.com/connection/websocket"))
+        context.manager.configurationDidChange()
+        await fulfillment(of: [changed], timeout: 1)
+        let currentSignal = try XCTUnwrap(transport.signalHandler)
+        context.manager.addBalanceChangeObserver(self) { _, _ in currentPublication.fulfill() }
+        currentSignal(.subscribed(walletId: context.walletId, resubscribed: false))
+        oldSignal(.unsubscribed(walletId: context.walletId))
+        oldDisabled()
+        currentSignal(.publication(
+            walletId: context.walletId,
+            payload: envelopeJSON(event: "balance.hint", walletId: context.walletId, seq: 1)
+        ))
+        await fulfillment(of: [currentPublication], timeout: 2)
+        XCTAssertTrue(context.manager.isSubscribed(walletId: context.walletId))
+        XCTAssertEqual(transport.disconnectCount, 1)
+    }
+
+    func test_configurationChangeInBackgroundWaitsForForeground() async throws {
+        let connected = expectation(description: "foreground connection")
+        let disconnected = expectation(description: "background disconnect")
+        let endpoint = RealtimeEndpointBox()
+        let transport = FakeRealtimeTransport(onConnect: { _ in connected.fulfill() }, onDisconnect: { _ in
+            disconnected.fulfill()
+        })
+        let context = makeContext(transport: transport, endpointProvider: { endpoint.value })
+        await context.walletsStore.addWallets([makeWallet(walletId: context.walletId)])
+        endpoint.value = try XCTUnwrap(URL(string: "wss://moved.example.com/connection/websocket"))
+        context.manager.configurationDidChange()
+        context.manager.setForeground(true)
+        await fulfillment(of: [connected], timeout: 1)
+        context.manager.setForeground(false)
+        await fulfillment(of: [disconnected], timeout: 1)
+
+        XCTAssertEqual(transport.connections, [endpoint.value])
+        XCTAssertEqual(transport.disconnectCount, 1)
+    }
+
     func test_tokenSource_mapsForbiddenAndDisabled() async {
         let forbiddenAPI = RealtimeTokenClientAPIStub(error: .forbidden(message: "wrong wallet"))
         let forbiddenSource = RealtimeTokenSource(clientAPI: forbiddenAPI)
@@ -168,18 +254,33 @@ private extension MultichainRealtimeManagerTests {
     struct Context {
         let walletId: String
         let manager: MultichainRealtimeManager
+        let walletsStore: WalletsStore
     }
 
-    func makeContext(transport: FakeRealtimeTransport) -> Context {
+    func makeContext(
+        transport: FakeRealtimeTransport,
+        endpointProvider: @escaping () -> URL = { BootConfiguration.defaultMultichainRealtimeURL }
+    ) -> Context {
         let walletId = "aia3n6aaiisrysg6tgismssvepwp7ozumgba"
         let walletsStore = WalletsStore(keeperInfoStore: KeeperInfoStore(keeperInfoRepository: EmptyKeeperInfoRepository()))
         let manager = MultichainRealtimeManager(
             walletsStore: walletsStore,
-            isRealtimeEnabled: { true },
-            transport: transport
+            transport: transport,
+            endpointProvider: endpointProvider
         )
         manager.start()
-        return Context(walletId: walletId, manager: manager)
+        return Context(walletId: walletId, manager: manager, walletsStore: walletsStore)
+    }
+
+    func makeWallet(walletId: String) -> Wallet {
+        Wallet(
+            id: "wallet",
+            identity: .init(network: .mainnet, kind: .Regular(PublicKey(data: Data(repeating: 1, count: 32)), .v4R2)),
+            metaData: .init(label: "Test", tintColor: .defaultColor, icon: .icon(.wallet)),
+            setupSettings: .init(isSetupFinished: true),
+            batterySettings: .init(),
+            multichain: .multichain(.init(walletId: walletId, addresses: [.init(chain: .tron, address: "tron-address")]))
+        )
     }
 
     func envelopeJSON(event: String, walletId: String, seq: Int64) -> Data {
@@ -191,21 +292,66 @@ private extension MultichainRealtimeManagerTests {
     }
 }
 
-private final class FakeRealtimeTransport: MultichainRealtimeTransport {
-    private(set) var connectedWalletId: String?
-    private(set) var disconnectCount = 0
+private final class RealtimeEndpointBox {
+    private let lock = NSLock()
+    private var endpoint = BootConfiguration.defaultMultichainRealtimeURL
 
-    func connect(walletId: String) {
-        connectedWalletId = walletId
+    var value: URL {
+        get { lock.withLock { endpoint } }
+        set { lock.withLock { endpoint = newValue } }
+    }
+}
+
+private final class FakeRealtimeTransport: MultichainRealtimeTransport {
+    private let lock = NSLock()
+    private var storedConnections = [URL]()
+    private var storedDisconnectCount = 0
+    private var storedSignalHandler: ((MultichainRealtimeSignal) -> Void)?
+    private var storedDisabledHandler: (() -> Void)?
+    private let onConnect: (URL) -> Void
+    private let onDisconnect: (Int) -> Void
+
+    init(onConnect: @escaping (URL) -> Void = { _ in }, onDisconnect: @escaping (Int) -> Void = { _ in }) {
+        self.onConnect = onConnect
+        self.onDisconnect = onDisconnect
+    }
+
+    var connections: [URL] {
+        lock.withLock { storedConnections }
+    }
+
+    var disconnectCount: Int {
+        lock.withLock { storedDisconnectCount }
+    }
+
+    func connect(walletId _: String, endpoint: URL) {
+        lock.withLock { storedConnections.append(endpoint) }
+        onConnect(endpoint)
     }
 
     func disconnect() {
-        connectedWalletId = nil
-        disconnectCount += 1
+        let count = lock.withLock {
+            storedDisconnectCount += 1
+            return storedDisconnectCount
+        }
+        onDisconnect(count)
     }
 
-    func setSignalHandler(_: @escaping (MultichainRealtimeSignal) -> Void) {}
-    func setDisabledByBackendHandler(_: @escaping () -> Void) {}
+    var signalHandler: ((MultichainRealtimeSignal) -> Void)? {
+        lock.withLock { storedSignalHandler }
+    }
+
+    var disabledHandler: (() -> Void)? {
+        lock.withLock { storedDisabledHandler }
+    }
+
+    func setSignalHandler(_ handler: @escaping (MultichainRealtimeSignal) -> Void) {
+        lock.withLock { storedSignalHandler = handler }
+    }
+
+    func setDisabledByBackendHandler(_ handler: @escaping () -> Void) {
+        lock.withLock { storedDisabledHandler = handler }
+    }
 }
 
 private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
@@ -260,7 +406,8 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         throw error

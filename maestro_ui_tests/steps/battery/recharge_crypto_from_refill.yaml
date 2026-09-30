@@ -3,7 +3,7 @@
 appId: com.jbig.tonkeeper
 ---
 - extendedWaitUntil:
-    visible: Tonkeeper Battery
+    visible: Keeper Battery
     timeout: 30000
 
 - scrollUntilVisible:

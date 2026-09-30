@@ -17,6 +17,7 @@ final class SignRawPresenter {
         appId: String? = nil,
         initiatedBy: InitiatedBy,
         dappUrl: String? = nil,
+        utm: UtmParameters = .empty,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -36,6 +37,7 @@ final class SignRawPresenter {
             appId: appId,
             initiatedBy: initiatedBy,
             dappUrl: dappUrl,
+            utm: utm,
             redAnalyticsConfiguration: redAnalyticsConfiguration,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly

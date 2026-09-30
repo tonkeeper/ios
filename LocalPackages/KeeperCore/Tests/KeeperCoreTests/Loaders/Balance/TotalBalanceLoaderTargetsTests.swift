@@ -25,7 +25,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     func test_freshTotalOfOneWalletDoesNotSuppressItsSibling() {
         let targets = portfolioTargets(
             wallets: [wallet, siblingWallet],
-            portfolioTotals: [wallet: MultichainPortfolioTotal(fiatPrice: ["usd": "20"], date: now)],
+            portfolioTotals: [wallet: Self.makePortfolio(date: now)],
             currencyCode: "usd",
             now: now
         )
@@ -37,10 +37,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
         let targets = portfolioTargets(
             wallets: [wallet],
             portfolioTotals: [
-                wallet: MultichainPortfolioTotal(
-                    fiatPrice: ["usd": "20"],
-                    date: now.addingTimeInterval(-61)
-                ),
+                wallet: Self.makePortfolio(date: now.addingTimeInterval(-61)),
             ],
             currencyCode: "usd",
             now: now
@@ -52,7 +49,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     func test_freshTotalMissingDisplayCurrencyIsRequestedAgain() {
         let targets = portfolioTargets(
             wallets: [wallet],
-            portfolioTotals: [wallet: MultichainPortfolioTotal(fiatPrice: ["usd": "20"], date: now)],
+            portfolioTotals: [wallet: Self.makePortfolio(date: now)],
             currencyCode: "eur",
             now: now
         )
@@ -63,7 +60,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     func test_freshTotalWithDifferentDustFilterIsRequestedAgain() {
         let targets = portfolioTargets(
             wallets: [wallet],
-            portfolioTotals: [wallet: MultichainPortfolioTotal(fiatPrice: ["usd": "20"], date: now)],
+            portfolioTotals: [wallet: Self.makePortfolio(date: now)],
             currencyCode: "usd",
             hidesDustBalances: true,
             now: now
@@ -100,7 +97,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     func test_aFreshTotalDoesNotSuppressTheBalanceBesideIt() {
         let targets = targets(
             wallets: [wallet],
-            portfolioTotals: [wallet: MultichainPortfolioTotal(fiatPrice: ["usd": "20"], date: now)],
+            portfolioTotals: [wallet: Self.makePortfolio(date: now)],
             currencyCode: "usd",
             now: now
         )
@@ -137,7 +134,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     private func portfolioTargets(
         wallets: [Wallet],
         balanceStates: [Wallet: WalletBalanceState] = [:],
-        portfolioTotals: [Wallet: MultichainPortfolioTotal] = [:],
+        portfolioTotals: [Wallet: MultichainPortfolio] = [:],
         currencyCode: String,
         hidesDustBalances: Bool = false,
         now: Date
@@ -156,7 +153,7 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
     private func targets(
         wallets: [Wallet],
         balanceStates: [Wallet: WalletBalanceState] = [:],
-        portfolioTotals: [Wallet: MultichainPortfolioTotal] = [:],
+        portfolioTotals: [Wallet: MultichainPortfolio] = [:],
         currencyCode: String,
         hidesDustBalances: Bool = false,
         now: Date
@@ -168,6 +165,17 @@ final class TotalBalanceLoaderTargetsTests: XCTestCase {
             currencyCode: currencyCode,
             hidesDustBalances: hidesDustBalances,
             now: now
+        )
+    }
+
+    private static func makePortfolio(date: Date) -> MultichainPortfolio {
+        MultichainPortfolio(
+            fiatPrice: ["usd": "20"],
+            assets: [],
+            accountsIdentifier: "accounts",
+            currencyCode: "usd",
+            hidesDustBalances: false,
+            date: date
         )
     }
 

@@ -18,7 +18,6 @@ public final class MainAssembly {
     public let knownAccountsAssembly: KnownAccountsAssembly
     public let batteryAssembly: BatteryAssembly
     public let tonConnectAssembly: TonConnectAssembly
-    public let tonWalletKitAssembly: TONWalletKitAssembly
     public let loadersAssembly: LoadersAssembly
     public let backgroundUpdateAssembly: BackgroundUpdateAssembly
     public let apiAssembly: APIAssembly
@@ -48,7 +47,6 @@ public final class MainAssembly {
         knownAccountsAssembly: KnownAccountsAssembly,
         batteryAssembly: BatteryAssembly,
         tonConnectAssembly: TonConnectAssembly,
-        tonWalletKitAssembly: TONWalletKitAssembly,
         apiAssembly: APIAssembly,
         tonkeeperAPIAssembly: TonkeeperAPIAssembly,
         loadersAssembly: LoadersAssembly,
@@ -76,7 +74,6 @@ public final class MainAssembly {
         self.knownAccountsAssembly = knownAccountsAssembly
         self.batteryAssembly = batteryAssembly
         self.tonConnectAssembly = tonConnectAssembly
-        self.tonWalletKitAssembly = tonWalletKitAssembly
         self.apiAssembly = apiAssembly
         self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
         self.loadersAssembly = loadersAssembly
@@ -112,7 +109,13 @@ public final class MainAssembly {
         tradingAPI: tradingAssembly.api,
         tradingRequestContextProvider: tradingAssembly.requestContextProvider,
         mnemonicAccess: secureAssembly.mnemonicAccess,
-        keychainVault: coreAssembly.keychainVault
+        keychainVault: coreAssembly.keychainVault,
+        apiAssembly: apiAssembly,
+        appInfoProvider: appInfoProvider,
+        walletAuth: { [multichainAssembly] in
+            multichainAssembly.walletAuthDependencies()
+        },
+        chainKitClient: multichainAssembly.chainKitClient
     )
 
     public var perpsChartService: PerpsChartProviding {
@@ -123,7 +126,7 @@ public final class MainAssembly {
         servicesAssembly.visibilityChangesController
     }
 
-    /// Lives here rather than in `MultichainAssembly` because a battery fee method needs both
+    /// Lives here rather than in `MultichainAssembly` because a relayed fee method needs both
     /// halves of the graph: the ChainKit swap pipeline and the TON transfer/battery services.
     public private(set) lazy var multichainSwapExecutionService: MultichainSwapExecutionService =
         MultichainSwapExecutionServiceImplementation(
@@ -141,8 +144,10 @@ public final class MainAssembly {
                         chainKitService: multichainAssembly.chainKitService,
                         mnemonicAccess: secureAssembly.mnemonicAccess
                     ),
-                    MultichainSwapTronBatteryFeeEngine(
+                    MultichainSwapTronRelayedFeeEngine(
                         tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+                        sendService: servicesAssembly.sendService(),
+                        balanceService: servicesAssembly.balanceService(),
                         batteryService: batteryAssembly.batteryService(),
                         batteryCalculation: batteryAssembly.batteryCalculation,
                         configuration: configurationAssembly.configuration,
@@ -165,7 +170,6 @@ public final class MainAssembly {
             homeBannersLoader: loadersAssembly.homeBannersLoader,
             walletInfoLoader: loadersAssembly.walletInfoLoader,
             tronUSDTFeesService: servicesAssembly.tronUSDTFeesService,
-            configurationAssembly: configurationAssembly,
             multichainRealtimeManager: multichainAssembly.realtimeManager
         )
     }
@@ -180,11 +184,7 @@ public final class MainAssembly {
             lighterCredentialsCleanup: { [perpsAssembly] wallet in
                 perpsAssembly.clearLighterCredentials(wallet: wallet)
             },
-            multichainBindingCleanup: { [multichainAssembly, storesAssembly, configurationAssembly] wallets in
-                // The detach authenticates with the device JWT, so the feature kill switch has to
-                // gate it too. A binding left behind is picked up by the stale-binding reconcile
-                // once the feature is back on.
-                guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else { return }
+            multichainBindingCleanup: { [multichainAssembly, storesAssembly] wallets in
                 // Wallets differing only in TON contract version share a multichain walletId,
                 // so a binding is only stale once no local wallet maps to it.
                 let remaining = Set(storesAssembly.walletsStore.wallets.compactMap { $0.multichainWalletState?.walletId })

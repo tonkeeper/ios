@@ -20,6 +20,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
     private let appId: String?
     private let initiatedBy: InitiatedBy
     private let dappUrl: String?
+    private let utm: UtmParameters
     private let redAnalyticsConfiguration: RedAnalyticsConfiguration?
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
@@ -35,6 +36,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
         appId: String?,
         initiatedBy: InitiatedBy,
         dappUrl: String?,
+        utm: UtmParameters = .empty,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
@@ -46,6 +48,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
         self.appId = appId
         self.initiatedBy = initiatedBy
         self.dappUrl = dappUrl
+        self.utm = utm
         self.redAnalyticsConfiguration = redAnalyticsConfiguration
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
@@ -94,8 +97,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
         router.window.makeKeyAndVisible()
         let redSession = redAnalyticsConfiguration.map { _ in
             RedAnalyticsSessionHolder(
-                analytics: coreAssembly.analyticsProvider,
-                configurationAssembly: keeperCoreMainAssembly.configurationAssembly
+                analytics: coreAssembly.analyticsProvider
             )
         }
 
@@ -112,7 +114,8 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
                 origin: TransactionOrigin(
                     initiatedBy: initiatedBy,
                     appId: resolvedAppId,
-                    dappUrl: dappUrl
+                    dappUrl: dappUrl,
+                    utm: utm
                 ),
                 redSession: redSession,
                 wallet: wallet
@@ -260,7 +263,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
     }
 
     private func logSendOpen() {
-        coreAssembly.analyticsProvider.log(SendOpen(from: sendFrom))
+        coreAssembly.analyticsProvider.log(SendOpen(from: sendFrom), utm: utm)
     }
 
     private func logSendConfirm(payload: SignRawSendAnalyticsPayload) {
@@ -270,7 +273,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
             amount: payload.amount,
             feeAsset: feeAsset(payload.feePaidIn),
             appId: resolvedAppId
-        ))
+        ), utm: utm)
     }
 
     private func openInfoPopup(title: String, caption: String) {
@@ -381,10 +384,10 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
                 amount: payload.amount,
                 feeAsset: feeAsset(payload.feePaidIn),
                 appId: resolvedAppId
-            ))
+            ), utm: origin.utm)
         }
         if let event = transactionSentEvent() {
-            analyticsProvider.log(event)
+            analyticsProvider.log(event, utm: origin.utm)
         }
         redSession?.finish(
             outcome: .success,
@@ -403,7 +406,7 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
                 errorCode: error.code,
                 errorMessage: error.message,
                 appId: resolvedAppId
-            ))
+            ), utm: origin.utm)
         }
         redSession?.finish(
             outcome: .fail,

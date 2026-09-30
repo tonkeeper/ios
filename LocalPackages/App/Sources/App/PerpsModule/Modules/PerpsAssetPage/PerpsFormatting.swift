@@ -30,16 +30,6 @@ enum PerpsFormatting {
         signedAmountFormatter.format(decimal: Decimal(value), style: .percent)
     }
 
-    static func compactUsd(_ value: Double) -> String {
-        let decimalValue = Decimal(value)
-        let magnitude = decimalValue < 0 ? -decimalValue : decimalValue
-        for (threshold, suffix) in abbreviations where magnitude >= threshold {
-            let shortened = decimalValue / threshold
-            return abbreviatedFormatter.format(decimal: shortened, accessory: .fiat(Currency.USD), style: .compact) + suffix
-        }
-        return amountFormatter.format(decimal: decimalValue, accessory: .fiat(Currency.USD), style: .compact)
-    }
-
     static func funding(percent value: Double) -> String {
         let formatted = fundingFormatter.format(decimal: rounded(Decimal(value), scale: 8), style: .exactValue)
         return formatted + String.Symbol.shortSpace + "%"
@@ -102,17 +92,8 @@ enum PerpsFormatting {
 
     private static let signSpace = " "
 
-    private static let abbreviations: [(Decimal, String)] = [
-        (1_000_000_000_000_000, "Q"),
-        (1_000_000_000_000, "T"),
-        (1_000_000_000, "B"),
-        (1_000_000, "M"),
-        (1000, "K"),
-    ]
-
     private static let exactFormatter = AmountFormatter(configuration: .init())
     private static let amountFormatter = AmountFormatter(configuration: .init())
     private static let signedAmountFormatter = AmountFormatter(configuration: .init(signPolicy: .always))
     private static let fundingFormatter = AmountFormatter(configuration: .init(signPolicy: .negativeOnly))
-    private static let abbreviatedFormatter = AmountFormatter(configuration: .init(groupDigits: false))
 }

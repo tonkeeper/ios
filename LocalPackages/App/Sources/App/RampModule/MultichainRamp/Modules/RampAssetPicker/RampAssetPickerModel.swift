@@ -137,7 +137,7 @@ private extension RampAssetPickerModel {
 
     func apiChain(for filter: TokenPickerV2ChainFilter) -> MultichainChain? {
         switch filter {
-        case .all:
+        case .all, .perpetuals:
             return nil
         case let .chain(chain):
             return chain

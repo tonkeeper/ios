@@ -14,12 +14,16 @@ struct WebSwapModule {
         wallet: Wallet,
         fromToken: String? = nil,
         toToken: String? = nil,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         router: NavigationControllerRouter
     ) -> WebSwapCoordinator {
         return WebSwapCoordinator(
             wallet: wallet,
             fromToken: fromToken,
             toToken: toToken,
+            initiatedBy: initiatedBy,
+            utm: utm,
             router: router,
             coreAssembly: dependencies.coreAssembly,
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly

@@ -8,7 +8,7 @@ typealias DepositAddFundsOption = AddFundsOption
 extension RampSource {
     var depositOpen: DepositOpen.From {
         switch self {
-        case .walletScreen: .walletScreen
+        case .walletScreen, .historyScreen, .browser, .collectibles: .walletScreen
         case .jettonScreen: .jettonScreen
         case .deepLink: .deepLink
         case .qrCode: .qrCode
@@ -17,7 +17,7 @@ extension RampSource {
 
     var depositClickReceiveTokens: DepositClickReceiveTokens.From {
         switch self {
-        case .walletScreen: .walletScreen
+        case .walletScreen, .historyScreen, .browser, .collectibles: .walletScreen
         case .jettonScreen: .jettonScreen
         case .deepLink: .deepLink
         case .qrCode: .qrCode
@@ -35,6 +35,7 @@ extension RampSource {
 
 struct DepositFlowContext {
     let source: DepositAnalyticsSource
+    let utm: UtmParameters
     var addFundsOption: DepositAddFundsOption?
     var buyAsset: String?
     var sellAsset: String?

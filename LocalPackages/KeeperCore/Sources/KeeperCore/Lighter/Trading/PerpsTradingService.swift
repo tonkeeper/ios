@@ -1,6 +1,7 @@
 import ChainKit
 import Foundation
 import TKLogging
+import TKPerpsAPI
 
 public struct PerpsTradingConfig: Sendable {
     public let defaultLeverage: Double
@@ -38,7 +39,7 @@ public protocol PerpsTradingService: AnyObject {
 
     func submit(_ prepared: PerpsPreparedTradingAction) async -> PerpsSubmitResult
 
-    func reconcileOpenMarket(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
+    func reconcile(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
 
     func prepareClose(
         _ intent: PerpsCloseIntent,
@@ -47,16 +48,12 @@ public protocol PerpsTradingService: AnyObject {
 
     func submit(_ prepared: PerpsPreparedCloseAction) async -> PerpsSubmitResult
 
-    func reconcileClose(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
-
     func prepareSizeChange(
         _ intent: PerpsSizeChangeIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedSizeChangeAction, PerpsTradingError>
 
     func submit(_ prepared: PerpsPreparedSizeChangeAction) async -> PerpsSubmitResult
-
-    func reconcileSizeChange(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
 
     func prepareMarginChange(
         _ intent: PerpsMarginChangeIntent,
@@ -65,16 +62,12 @@ public protocol PerpsTradingService: AnyObject {
 
     func submit(_ prepared: PerpsPreparedMarginChangeAction) async -> PerpsSubmitResult
 
-    func reconcileMarginChange(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
-
     func prepareAutoCloseChange(
         _ intent: PerpsAutoCloseChangeIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedAutoCloseChangeAction, PerpsTradingError>
 
     func submit(_ prepared: PerpsPreparedAutoCloseChangeAction) async -> PerpsSubmitResult
-
-    func reconcileAutoCloseChange(_ pending: PerpsPendingTradingAction) async -> PerpsAutoCloseReconcileResult
 
     func prepareLimitOrderChange(
         _ intent: PerpsLimitOrderChangeIntent,
@@ -83,47 +76,43 @@ public protocol PerpsTradingService: AnyObject {
 
     func submit(_ prepared: PerpsPreparedLimitOrderChangeAction) async -> PerpsSubmitResult
 
-    func reconcileLimitOrderChange(_ pending: PerpsPendingTradingAction) async -> PerpsLimitOrderChangeReconcileResult
+    /// Reads the market once and hands back something that reviews trades over that
+    /// read, synchronously. Submitting re-plans from a fresh read of its own, so a
+    /// reviewer shows figures and never sends them.
+    func loadReviewer(for intent: PerpsOpenMarketIntent) async -> Result<any PerpetualReviewer, PerpsTradingError>
 
-    func previewLiquidation(
-        side: PerpsTradeSide,
-        marginUsd: Double,
-        leverage: Double,
-        openingFeeRate: Double,
-        entryPrice: Double,
-        markPrice: Double,
-        maintenanceFraction: Double
-    ) -> PerpsLiquidationPreview
-
-    func previewPositionLiquidation(
-        side: PerpsTradeSide,
-        baseSize: Double,
-        entryPrice: Double,
-        markPrice: Double,
-        maintenanceFraction: Double,
-        collateralUsd: Double
-    ) -> PerpsLiquidationPreview
+    func loadReviewer(for intent: PerpsMarginChangeIntent) async -> Result<any PerpetualReviewer, PerpsTradingError>
 }
 
-final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable {
-    private let activationService: LighterActivationService
+final class PerpsTkTradingService: PerpsTradingService, @unchecked Sendable {
+    private let accountService: PerpsAccountService
     private let wallet: Wallet
+    private let perpsAPI: PerpsAPI
     private let markPriceProvider: @Sendable (Int64) async -> Double?
     private let marketProvider: @Sendable (Int64) async -> PerpsMarketMetadata?
     private let config: PerpsTradingConfig
+    private let intents: PerpsChainIntents
+    private let host: PerpsPlannerHost
+    private let nonceCoordinator: PerpsNonceCoordinator
 
     init(
-        activationService: LighterActivationService,
+        accountService: PerpsAccountService,
         wallet: Wallet,
+        perpsAPI: PerpsAPI,
         markPriceProvider: @escaping @Sendable (Int64) async -> Double?,
         marketProvider: @escaping @Sendable (Int64) async -> PerpsMarketMetadata?,
         config: PerpsTradingConfig = PerpsTradingConfig()
     ) {
-        self.activationService = activationService
+        self.accountService = accountService
         self.wallet = wallet
+        self.perpsAPI = perpsAPI
         self.markPriceProvider = markPriceProvider
         self.marketProvider = marketProvider
         self.config = config
+        intents = PerpsChainIntents(config: config)
+        let nonceCoordinator = PerpsNonceCoordinator()
+        self.nonceCoordinator = nonceCoordinator
+        host = PerpsPlannerHost(api: perpsAPI, nonceCoordinator: nonceCoordinator)
     }
 
     func openMarketContext(marketId: Int64, side: PerpsTradeSide) async -> PerpsOpenMarketContext? {
@@ -132,13 +121,7 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
             return nil
         }
         let maxLeverage = max(config.minLeverage, market.maxLeverage)
-        var maintenanceFraction: Double?
-        if let meta = try? await marketMeta(wallet: wallet, marketId: marketId) {
-            maintenanceFraction = meta.maintenanceFraction
-        }
-
         let displayPrice = await markPriceProvider(marketId) ?? market.displayPrice
-
         return PerpsOpenMarketContext(
             marketId: marketId,
             side: side,
@@ -149,46 +132,28 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
             leverageBounds: PerpsLeverageBounds(min: config.minLeverage, max: maxLeverage),
             defaultLeverage: min(max(config.defaultLeverage, config.minLeverage), maxLeverage),
             maxSlippage: config.maxSlippage,
-            maintenanceFraction: maintenanceFraction,
-            minBaseSize: market.minBaseSize,
-            takerFee: market.takerFee
+            minBaseSize: market.minBaseSize
         )
     }
 
     func previewOpenMarket(
         _ intent: PerpsOpenMarketIntent
     ) async -> Result<PerpsOpenOrderReview, PerpsTradingError> {
-        let session: LighterSession
-        do {
-            guard let value = try await activationService.tradingSession(wallet: wallet) else {
-                return .failure(.activationRequired)
+        await attempt {
+            guard let margin = PerpsMarketMath.optionalDouble(intent.marginUsd), margin > 0 else {
+                throw PerpsTradingError.validation("amount is empty or invalid")
             }
-            session = value
-        } catch {
-            return .failure(PerpsTradingErrorMapper.map(error))
-        }
-        guard let request = await makeOpenOrderRequest(intent: intent) else {
-            Log.w("🪵 Perps: preview rejected — empty/invalid amount (market=\(intent.marketId))")
-            return .failure(.validation("amount is empty or invalid"))
-        }
-
-        do {
-            let review: LighterOrderReview
-            switch request.chainKitIntent {
-            case let .limit(limitIntent):
-                review = try await bridgeKotlin { completion in
-                    session.trading.previewOpenLimit(intent: limitIntent, completionHandler: completion)
-                }
-            case let .market(openIntent):
-                review = try await bridgeKotlin { completion in
-                    session.trading.previewOpenMarket(intent: openIntent, completionHandler: completion)
-                }
+            let context = try await reviewContext(marketId: intent.marketId)
+            let chainIntent = try intents.open(intent, context: context, operationId: UUID().uuidString)
+            let planned = try await host.plan(intent: chainIntent, context: context)
+            guard let review = planned.plan.review as? PerpetualReview.Open else {
+                throw PerpsTradingError.protocolFailure("unexpected open review")
             }
-            return .success(PerpsOpenOrderReviewMapper.map(review: review, marginUsd: request.marginUsd))
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: preview failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
+            return PerpsPlannerMapping.openReview(
+                review,
+                symbol: await resolvedSymbol(context, marketId: intent.marketId),
+                marginUsd: margin
+            )
         }
     }
 
@@ -196,122 +161,230 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
         _ intent: PerpsOpenMarketIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedTradingAction, PerpsTradingError> {
-        guard let request = await makeOpenOrderRequest(intent: intent) else {
-            Log.w("🪵 Perps: prepare rejected — empty/invalid amount (market=\(intent.marketId))")
-            return .failure(.validation("amount is empty or invalid"))
-        }
-        Log.i("🪵 Perps: prepare start market=\(intent.marketId) side=\(intent.side) lev=\(intent.leverage)x notional=\(request.notionalUsd)")
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-        let trading = session.trading
-
-        do {
-            let review: LighterOrderReview
-            switch request.chainKitIntent {
-            case let .limit(limitIntent):
-                review = try await bridgeKotlin { completion in
-                    trading.previewOpenLimit(intent: limitIntent, completionHandler: completion)
-                }
-            case let .market(openIntent):
-                review = try await bridgeKotlin { completion in
-                    trading.previewOpenMarket(intent: openIntent, completionHandler: completion)
-                }
-            }
-
-            let prepared = PerpsPreparedTradingAction(
-                operationId: UUID().uuidString,
+        await attempt {
+            let planned = try await planOpen(intent, passcodeProvider: passcodeProvider)
+            return PerpsPreparedTradingAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
                 intent: intent,
-                review: PerpsOpenOrderReviewMapper.map(
-                    review: review,
-                    marginUsd: request.marginUsd
-                )
+                review: planned.review
             )
-            Log.i("🪵 Perps: prepare preview ok market=\(intent.marketId)")
-            return .success(prepared)
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: prepare failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
         }
     }
 
     func submit(_ prepared: PerpsPreparedTradingAction) async -> PerpsSubmitResult {
-        await submitOpenMarket(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planOpen(
+                prepared.intent,
+                session: session,
+                operationId: prepared.operationId
+            )
+            return Submission(
+                pending: pending(
+                    prepared,
+                    side: prepared.intent.side,
+                    payload: .open(limitPrice: prepared.intent.limitPrice),
+                    expectedBaseSize: planned.review.baseSize
+                ),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func submit(_ prepared: PerpsPreparedCloseAction) async -> PerpsSubmitResult {
-        await submitClose(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planClose(marketId: prepared.marketId, session: session, operationId: prepared.operationId)
+            guard PerpsPlannerMapping.tradeSide(planned.side) == prepared.review.side,
+                  planned.baseAmount == prepared.positionBaseAmount
+            else {
+                throw PerpsTradingError.stalePreparedTransaction
+            }
+            return Submission(
+                pending: pending(
+                    prepared,
+                    side: prepared.review.side,
+                    payload: .close,
+                    expectedBaseSize: PerpsScaled.double(
+                        planned.baseAmount,
+                        decimals: planned.planned.context.rules.scale.baseDecimals
+                    ),
+                    positionBaseSizeBefore: PerpsScaled.double(
+                        planned.baseAmount,
+                        decimals: planned.planned.context.rules.scale.baseDecimals
+                    )
+                ),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func submit(_ prepared: PerpsPreparedSizeChangeAction) async -> PerpsSubmitResult {
-        await submitSizeChange(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planSizeChange(
+                prepared.intent,
+                session: session,
+                operationId: prepared.operationId,
+                normalizedAutoClose: prepared.normalizedAutoClose
+            )
+            return Submission(
+                pending: pending(
+                    prepared,
+                    side: PerpsPlannerMapping.tradeSide(planned.side),
+                    payload: .sizeChange(
+                        PerpsPendingSizeChange(
+                            direction: prepared.intent.direction,
+                            baseSizeBefore: PerpsScaled.double(
+                                planned.baseAmount,
+                                decimals: planned.planned.context.rules.scale.baseDecimals
+                            ),
+                            expectedBaseDelta: abs(planned.review.baseSize.new - planned.review.baseSize.old)
+                        ),
+                        autoClose: planned.pendingAutoClose
+                    )
+                ),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func submit(_ prepared: PerpsPreparedMarginChangeAction) async -> PerpsSubmitResult {
-        await submitMarginChange(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planMarginChange(
+                prepared.intent,
+                session: session,
+                operationId: prepared.operationId
+            )
+            if prepared.intent.direction == .reduce, planned.isImmediateRisk {
+                throw PerpsTradingError.immediateLiquidationRisk
+            }
+            return Submission(
+                pending: pending(
+                    prepared,
+                    side: PerpsPlannerMapping.tradeSide(planned.side),
+                    payload: .marginChange(PerpsPendingMarginChange(
+                        direction: prepared.intent.direction,
+                        allocatedMarginBefore: PerpsScaled.double(
+                            planned.allocatedBefore,
+                            decimals: planned.planned.context.rules.scale.quoteDecimals
+                        ),
+                        amountUsd: planned.amount
+                    ))
+                ),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func submit(_ prepared: PerpsPreparedAutoCloseChangeAction) async -> PerpsSubmitResult {
-        await submitAutoCloseChange(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planAutoCloseChange(
+                prepared.intent,
+                session: session,
+                operationId: prepared.operationId
+            )
+            return Submission(
+                pending: pending(prepared, side: planned.review.side, payload: .autoCloseChange(PerpsPendingAutoCloseChange(
+                    target: planned.review.new,
+                    restingOrderIndexes: planned.cancelIndexes
+                ))),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func submit(_ prepared: PerpsPreparedLimitOrderChangeAction) async -> PerpsSubmitResult {
-        await submitLimitOrderChange(prepared)
+        await submitAction(prepared) { session in
+            let planned = try await self.planLimitOrderChange(
+                prepared.intent,
+                session: session,
+                operationId: prepared.operationId
+            )
+            guard PerpsLimitOrderChangeSettlement.pricesMatch(
+                planned.review.order.limitPrice,
+                prepared.review.order.limitPrice
+            ) else {
+                throw PerpsTradingError.stalePreparedTransaction
+            }
+            return Submission(
+                pending: pending(prepared, side: planned.review.order.side, payload: .limitOrderChange(PerpsPendingLimitOrderChange(
+                    orderIndex: planned.review.order.orderIndex,
+                    kind: planned.review.kind,
+                    limitPrice: planned.review.limitPrice
+                ))),
+                execute: { execution in
+                    try await self.host.execute(
+                        planned: planned.planned,
+                        signingKey: await self.signingKey(
+                            accountIndex: session.accountIndex,
+                            apiKeyIndex: session.apiKeyIndex
+                        ),
+                        execution: execution
+                    )
+                }
+            )
+        }
     }
 
     func prepareClose(
         _ intent: PerpsCloseIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedCloseAction, PerpsTradingError> {
-        Log.i("🪵 Perps: prepareClose start market=\(intent.marketId)")
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-        let trading = session.trading
-
-        do {
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                trading.currentPosition(marketId: intent.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                Log.w("🪵 Perps: prepareClose rejected — no open position (market=\(intent.marketId))")
-                return .failure(.positionNotFound)
-            }
-
-            let closeIntent = CloseIntent(
-                marketId: intent.marketId,
-                portion: 1.0,
-                maxSlippage: config.closeMaxSlippage,
-                clientOrderIndex: 0,
-                markPrice: await markPriceProvider(intent.marketId).map { KotlinDouble(value: $0) }
-            )
-            let review: LighterOrderReview = try await bridgeKotlin { completion in
-                trading.previewClose(intent: closeIntent, completionHandler: completion)
-            }
-
-            let prepared = PerpsPreparedCloseAction(
-                operationId: UUID().uuidString,
+        await attempt {
+            let session = try await requireSession(passcodeProvider: passcodeProvider)
+            let planned = try await planClose(marketId: intent.marketId, session: session)
+            return PerpsPreparedCloseAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
-                review: PerpsCloseReviewMapper.map(review: review, position: position)
+                positionBaseAmount: planned.baseAmount,
+                review: planned.review
             )
-            Log.i("🪵 Perps: prepareClose ok market=\(intent.marketId)")
-            return .success(prepared)
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: prepareClose failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
         }
     }
 
@@ -319,102 +392,17 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
         _ intent: PerpsSizeChangeIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedSizeChangeAction, PerpsTradingError> {
-        guard let marginDelta = decimalDouble(intent.marginDeltaUsd), marginDelta > 0 else {
-            Log.w("🪵 Perps: prepareSizeChange rejected — empty/invalid amount (market=\(intent.marketId))")
-            return .failure(.validation("amount is empty or invalid"))
-        }
-        Log.i("🪵 Perps: prepareSizeChange start market=\(intent.marketId) direction=\(intent.direction.rawValue)")
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-        let trading = session.trading
-
-        do {
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                trading.currentPosition(marketId: intent.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                Log.w("🪵 Perps: prepareSizeChange rejected — no open position (market=\(intent.marketId))")
-                return .failure(.positionNotFound)
-            }
-            let markPrice = await markPriceProvider(intent.marketId).map { KotlinDouble(value: $0) }
-
-            let review: LighterOrderReview
-            switch intent.direction {
-            case .add:
-                guard let leverage = positionLeverage(position), leverage > 0 else {
-                    Log.w("🪵 Perps: prepareSizeChange rejected — leverage unavailable (market=\(intent.marketId))")
-                    return .failure(.validation("position leverage unavailable"))
-                }
-                review = try await bridgeKotlin { completion in
-                    trading.previewAddToPosition(
-                        marketId: intent.marketId,
-                        amount: LighterAmountQuote(usd: marginDelta * leverage),
-                        maxSlippage: config.maxSlippage,
-                        markPrice: markPrice,
-                        marginUsd: KotlinDouble(value: marginDelta),
-                        completionHandler: completion
-                    )
-                }
-            case .reduce:
-                let margin = position.allocatedMargin
-                guard margin > 0, marginDelta < margin else {
-                    Log.w("🪵 Perps: prepareSizeChange rejected — reduce ≥ position margin (market=\(intent.marketId))")
-                    return .failure(.validation("amount exceeds position margin"))
-                }
-                review = try await bridgeKotlin { completion in
-                    trading.previewClose(
-                        intent: CloseIntent(
-                            marketId: intent.marketId,
-                            portion: marginDelta / margin,
-                            maxSlippage: config.closeMaxSlippage,
-                            clientOrderIndex: 0,
-                            markPrice: markPrice
-                        ),
-                        completionHandler: completion
-                    )
-                }
-            }
-
-            var normalizedAutoClose: PerpsAutoClose?
-            if case let .replace(autoClose) = intent.autoCloseUpdate,
-               let tpSl = tpSl(from: autoClose)
-            {
-                guard let projectedPosition = review.positionAfter else {
-                    return .failure(.validation("position change does not leave a position for auto-close"))
-                }
-                let tpSlReview: LighterTpSlReview = try await bridgeKotlin { completion in
-                    trading.previewTpSl(tpSl: tpSl, position: projectedPosition, completionHandler: completion)
-                }
-                normalizedAutoClose = PerpsAutoCloseChangeReviewMapper.map(
-                    review: tpSlReview,
-                    position: position
-                ).new
-            }
-
-            let prepared = PerpsPreparedSizeChangeAction(
-                operationId: UUID().uuidString,
+        await attempt {
+            let session = try await requireSession(passcodeProvider: passcodeProvider)
+            let planned = try await planSizeChange(intent, session: session)
+            return PerpsPreparedSizeChangeAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
                 intent: intent,
-                review: PerpsSizeChangeReviewMapper.map(
-                    direction: intent.direction,
-                    review: review,
-                    position: position,
-                    marginDeltaUsd: marginDelta
-                ),
-                normalizedAutoClose: normalizedAutoClose
+                review: planned.review,
+                normalizedAutoClose: planned.normalizedAutoClose
             )
-            Log.i("🪵 Perps: prepareSizeChange preview ok market=\(intent.marketId)")
-            return .success(prepared)
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: prepareSizeChange failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
         }
     }
 
@@ -422,72 +410,19 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
         _ intent: PerpsMarginChangeIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedMarginChangeAction, PerpsTradingError> {
-        guard let amount = decimalDouble(intent.amountUsd), amount > 0 else {
-            Log.w("🪵 Perps: prepareMarginChange rejected — empty/invalid amount (market=\(intent.marketId))")
-            return .failure(.validation("amount is empty or invalid"))
-        }
-        Log.i("🪵 Perps: prepareMarginChange start market=\(intent.marketId) direction=\(intent.direction.rawValue)")
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-        let trading = session.trading
-
-        do {
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                trading.currentPosition(marketId: intent.marketId, completionHandler: $0)
+        await attempt {
+            let session = try await requireSession(passcodeProvider: passcodeProvider)
+            let planned = try await planMarginChange(intent, session: session)
+            if intent.direction == .reduce, planned.isImmediateRisk {
+                throw PerpsTradingError.immediateLiquidationRisk
             }
-            guard let position, abs(position.size) > 0 else {
-                Log.w("🪵 Perps: prepareMarginChange rejected — no open position (market=\(intent.marketId))")
-                return .failure(.positionNotFound)
-            }
-            if intent.direction == .reduce {
-                guard amount < position.allocatedMargin else {
-                    Log.w("🪵 Perps: prepareMarginChange rejected — reduce ≥ allocated margin (market=\(intent.marketId))")
-                    return .failure(.validation("amount exceeds position margin"))
-                }
-            }
-
-            let markPrice = await markPriceProvider(intent.marketId).map { KotlinDouble(value: $0) }
-            let review: LighterMarginReview
-            switch intent.direction {
-            case .add:
-                review = try await bridgeKotlin { completion in
-                    trading.previewAddMargin(marketId: intent.marketId, usdc: amount, markPrice: markPrice, completionHandler: completion)
-                }
-            case .reduce:
-                review = try await bridgeKotlin { completion in
-                    trading.previewReduceMargin(marketId: intent.marketId, usdc: amount, markPrice: markPrice, completionHandler: completion)
-                }
-            }
-            let mapped = PerpsMarginChangeReviewMapper.map(
-                direction: intent.direction,
-                review: review,
-                position: position
-            )
-            // Withdrawing collateral into immediate risk is never right; adding
-            // margin is allowed even when the flag stays set — it only helps.
-            if intent.direction == .reduce, mapped.isImmediateRisk {
-                Log.w("🪵 Perps: prepareMarginChange rejected — immediate risk after reduce (market=\(intent.marketId))")
-                return .failure(.immediateLiquidationRisk)
-            }
-
-            let prepared = PerpsPreparedMarginChangeAction(
-                operationId: UUID().uuidString,
+            return PerpsPreparedMarginChangeAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
                 intent: intent,
-                review: mapped
+                review: planned.review
             )
-            Log.i("🪵 Perps: prepareMarginChange ok market=\(intent.marketId)")
-            return .success(prepared)
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: prepareMarginChange failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
         }
     }
 
@@ -495,60 +430,16 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
         _ intent: PerpsAutoCloseChangeIntent,
         passcodeProvider: @escaping @Sendable () async -> String?
     ) async -> Result<PerpsPreparedAutoCloseChangeAction, PerpsTradingError> {
-        Log.i("🪵 Perps: prepareAutoCloseChange start market=\(intent.marketId)")
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-        let trading = session.trading
-
-        do {
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                trading.currentPosition(marketId: intent.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                Log.w("🪵 Perps: prepareAutoCloseChange rejected — no open position (market=\(intent.marketId))")
-                return .failure(.positionNotFound)
-            }
-            let resting = try await activationService.activeTriggerOrders(
-                wallet: wallet,
-                accountIndex: session.accountIndex,
-                marketId: intent.marketId
-            )
-
-            let review: PerpsAutoCloseChangeReview
-            switch PerpsAutoCloseChangePlanner.plan(target: intent.target, resting: resting) {
-            case .noChange:
-                Log.w("🪵 Perps: prepareAutoCloseChange rejected — nothing to change (market=\(intent.marketId))")
-                return .failure(.nothingToChange)
-            case let .replace(target, _):
-                guard let tpSl = tpSl(from: target) else {
-                    return .failure(.validation("no auto-close change to submit"))
-                }
-                let tpSlReview: LighterTpSlReview = try await bridgeKotlin { completion in
-                    trading.previewTpSl(marketId: intent.marketId, tpSl: tpSl, completionHandler: completion)
-                }
-                review = PerpsAutoCloseChangeReviewMapper.map(review: tpSlReview, position: position)
-            case .clear:
-                review = PerpsAutoCloseChangeReviewMapper.mapCancel(position: position)
-            }
-
-            let prepared = PerpsPreparedAutoCloseChangeAction(
-                operationId: UUID().uuidString,
+        await attempt {
+            let session = try await requireSession(passcodeProvider: passcodeProvider)
+            let planned = try await planAutoCloseChange(intent, session: session)
+            return PerpsPreparedAutoCloseChangeAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
                 intent: intent,
-                review: review
+                review: planned.review
             )
-            Log.i("🪵 Perps: prepareAutoCloseChange ok market=\(intent.marketId)")
-            return .success(prepared)
-        } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: prepareAutoCloseChange failed market=\(intent.marketId) — \(mapped)")
-            return .failure(mapped)
         }
     }
 
@@ -564,430 +455,702 @@ final class LighterPerpsTradingService: PerpsTradingService, @unchecked Sendable
         case .cancel:
             break
         }
-
-        let session: LighterSession
-        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
-        case let .success(value): session = value
-        case let .failure(error): return .failure(error)
-        }
-
-        do {
-            guard let order = try await activeLimitOrder(
-                wallet: wallet,
-                accountIndex: session.accountIndex,
-                marketId: intent.marketId,
-                orderIndex: intent.orderIndex
-            ) else {
-                return .failure(.stalePreparedTransaction)
-            }
-
-            let normalizedPrice: Double?
-            switch intent.kind {
-            case .modify:
-                let review: LighterModifyOrderReview = try await bridgeKotlin { completion in
-                    session.trading.previewModifyLimitOrder(
-                        intent: ModifyLimitOrderIntent(
-                            marketId: intent.marketId,
-                            orderIndex: intent.orderIndex,
-                            limitPrice: intent.limitPrice ?? 0,
-                            size: nil
-                        ),
-                        completionHandler: completion
-                    )
-                }
-                guard !PerpsLimitOrderChangeSettlement.pricesMatch(review.priceHuman, order.limitPrice) else {
-                    return .failure(.nothingToChange)
-                }
-                normalizedPrice = review.priceHuman
-            case .cancel:
-                normalizedPrice = nil
-            }
-
-            return .success(PerpsPreparedLimitOrderChangeAction(
-                operationId: UUID().uuidString,
+        return await attempt {
+            let session = try await requireSession(passcodeProvider: passcodeProvider)
+            let planned = try await planLimitOrderChange(intent, session: session)
+            return PerpsPreparedLimitOrderChangeAction(
+                operationId: planned.operationId,
                 walletId: wallet.id,
-                isTestnet: activationService.isTestnet,
                 marketId: intent.marketId,
                 intent: intent,
-                review: PerpsLimitOrderChangeReview(
-                    order: order,
-                    kind: intent.kind,
-                    limitPrice: normalizedPrice
-                )
-            ))
-        } catch {
-            return .failure(PerpsTradingErrorMapper.map(error))
+                review: planned.review
+            )
         }
     }
 
-    func reconcileLimitOrderChange(
-        _ pending: PerpsPendingTradingAction
-    ) async -> PerpsLimitOrderChangeReconcileResult {
-        guard let change = pending.limitOrderChange,
-              wallet.id == pending.walletId
-        else {
-            return .pending
-        }
-        let accountIndex: Int64
-        switch await activationService.status(wallet: wallet) {
-        case let .active(index, _), let .accountExists(index): accountIndex = index
-        default: return .pending
-        }
-
-        do {
-            let active = try await activationService.activeOrders(
-                wallet: wallet,
-                accountIndex: accountIndex,
-                marketId: pending.marketId
-            )
-            if let order = active.first(where: { $0.orderIndex == change.orderIndex }) {
-                if PerpsLimitOrderChangeSettlement.activeOrderConfirms(
-                    change: change,
-                    price: PerpsMarketMath.double(order.price)
-                ) {
-                    guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                    return .confirmed
-                }
-                return .pending
+    /// One entry point for every operation: what to look at is in the payload, so
+    /// no caller has to pick a method that matches the record it already holds.
+    func reconcile(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
+        guard wallet.id == pending.walletId else { return .pending }
+        switch pending.payload {
+        case let .open(limitPrice):
+            return await reconcileByState(pending, label: "open") { state in
+                PerpsTkReconcile.open(
+                    state: state,
+                    isLimit: limitPrice != nil,
+                    expectedBaseSize: pending.expectedBaseSize
+                )
             }
-
-            let inactive = try await activationService.inactiveOrders(
-                wallet: wallet,
-                accountIndex: accountIndex,
-                marketId: pending.marketId
-            )
-            guard let order = inactive.first(where: { $0.orderIndex == change.orderIndex }) else {
-                return .pending
+        case .close:
+            return await reconcileByState(pending, label: "close") { state in
+                PerpsTkReconcile.close(
+                    state: state,
+                    expectedBaseSize: pending.expectedBaseSize ?? pending.positionBaseSizeBefore
+                )
             }
-
-            let succeeded = PerpsLimitOrderChangeSettlement.inactiveOrderConfirms(
+        case let .sizeChange(change, autoClose):
+            let position = await reconcileSizeChange(
+                pending,
                 change: change,
-                price: PerpsMarketMath.double(order.price),
-                isCanceled: order.isCanceled
+                resolveOperation: autoClose == nil
             )
-            if succeeded {
-                guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
+            guard let autoClose, case .confirmed = position else { return position }
+            return await reconcileAutoClose(pending, change: autoClose)
+        case let .marginChange(change):
+            return await reconcileMargin(pending, change: change)
+        case let .autoCloseChange(change):
+            return await reconcileAutoClose(pending, change: change)
+        case let .limitOrderChange(change):
+            return await reconcileLimitOrder(pending, change: change)
+        }
+    }
+
+    func reconcileLimitOrder(
+        _ pending: PerpsPendingTradingAction,
+        change: PerpsPendingLimitOrderChange
+    ) async -> PerpsReconcileResult {
+        await settle(pending, label: "limitOrderChange") {
+            let screen = try await loadTradingScreen(marketId: pending.marketId)
+            return PerpsTkReconcile.limitChange(
+                change: change,
+                ordersVisible: PerpsBackendMapping.ordersVisible(screen.flags),
+                matching: PerpsBackendMapping.matchingOrder(
+                    screen.open_orders ?? [],
+                    orderIndex: change.orderIndex
+                )
+            )
+        }
+    }
+
+    func reconcileSizeChange(
+        _ pending: PerpsPendingTradingAction,
+        change: PerpsPendingSizeChange,
+        resolveOperation: Bool
+    ) async -> PerpsReconcileResult {
+        guard pending.positionOrderRef != nil else {
+            return await settle(pending, label: "sizeChange") {
+                pending.hasOnlyAcceptedSignedSteps ? .notSubmitted : .pending
+            }
+        }
+        return await settle(pending, label: "sizeChange", resolveOnConfirm: resolveOperation) {
+            let state = try await loadPositionState(
+                marketId: pending.marketId,
+                clientOrderIndex: pending.positionOrderRef?.clientOrderIndex
+            )
+            let filled = state.orders.contains(where: PerpsBackendMapping.isFilled)
+            if let canceled = state.orders.first(where: PerpsBackendMapping.isCanceled) {
+                let filledBase = state.orders
+                    .map { PerpsMarketMath.double($0.filled_base) }
+                    .max() ?? 0
+                return .failed(filled && filledBase > 0 ? "partial_fill" : canceled.status)
+            }
+            let filledBase = state.orders
+                .map { PerpsMarketMath.double($0.filled_base) }
+                .max() ?? 0
+            if let expected = change.expectedBaseDelta {
+                let tolerance = max(0.000000001, abs(expected) * 1e-9)
+                guard filledBase + tolerance >= expected else {
+                    return filledBase > 0 ? .failed("partial_fill") : .pending
+                }
+            } else {
+                guard filled else { return .pending }
+            }
+
+            let positions = try await loadAccountSnapshot().positions
+            guard let current = positions.first(where: { $0.marketId == pending.marketId }) else {
+                return .failed("position_gone")
+            }
+            if PerpsChangeSettlement.sizeMoved(
+                current: current.baseSize,
+                before: change.baseSizeBefore,
+                direction: change.direction,
+                expectedDelta: change.expectedBaseDelta
+            ) {
                 return .confirmed
             }
-
-            guard await resolveFailed(pending, wallet: wallet, message: order.status) else {
-                return .pending
-            }
-            return .failed(.serverRejected(order.status))
-        } catch {
-            Log.w("🪵 Perps: reconcile(limitOrderChange) read failed market=\(pending.marketId) — \(error)")
             return .pending
         }
     }
 
-    /// Confirms by the trigger-order delta, not the position: the reloaded
-    /// active orders are compared against the pending target (or the cleared
-    /// indexes) via `PerpsAutoCloseChangePlanner.isConfirmed`.
-    func reconcileAutoCloseChange(_ pending: PerpsPendingTradingAction) async -> PerpsAutoCloseReconcileResult {
-        guard let change = pending.autoCloseChange else { return .pending }
-        guard wallet.id == pending.walletId else { return .pending }
-        let accountIndex: Int64
-        switch await activationService.status(wallet: wallet) {
-        case let .active(index, _), let .accountExists(index): accountIndex = index
-        default: return .pending
-        }
-        do {
-            let orders = try await activationService.activeTriggerOrders(
-                wallet: wallet,
-                accountIndex: accountIndex,
-                marketId: pending.marketId
-            )
-            if PerpsAutoCloseChangePlanner.isConfirmed(pending: change, orders: orders) {
-                guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                Log.i("🪵 Perps: reconcile(autoClose) confirmed market=\(pending.marketId)")
-                return .confirmed(orders)
-            }
-            if let portfolio = try await activationService.portfolio(wallet: wallet, accountIndex: accountIndex),
-               !portfolio.positions.contains(where: { $0.marketId == pending.marketId })
-            {
-                // Once the protected position is gone, no resting TP/SL target is
-                // applicable. This also covers a trigger firing during reconciliation.
-                guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                return .confirmed(orders)
-            }
-            let clientOrderIndexes = try await operationOrderIndexes(pending, wallet: wallet)
-            if !clientOrderIndexes.isEmpty {
-                let inactive = try await activationService.inactiveOrders(
-                    wallet: wallet,
-                    accountIndex: accountIndex,
-                    marketId: pending.marketId
+    /// Each leg is asked about by its own key, since the state endpoint answers
+    /// for one order at a time. A cancel creates no order, so there the resting
+    /// book is the only signal there is.
+    func reconcileAutoClose(
+        _ pending: PerpsPendingTradingAction,
+        change: PerpsPendingAutoCloseChange
+    ) async -> PerpsReconcileResult {
+        await settle(pending, label: "autoClose") {
+            let refs = pending.triggerOrderRefs
+            for ref in refs {
+                let state = try await loadPositionState(
+                    marketId: pending.marketId,
+                    clientOrderIndex: ref.clientOrderIndex
                 )
-                if let rejected = inactive.first(where: {
-                    clientOrderIndexes.contains($0.clientOrderIndex) && $0.isExecutionRejected
-                }) {
-                    guard await resolveFailed(pending, wallet: wallet, message: rejected.status) else {
-                        return .pending
-                    }
-                    return .failed(.serverRejected(rejected.status))
-                }
+                let leg = PerpsTkReconcile.autoCloseLeg(state: state)
+                guard case .confirmed = leg else { return leg }
             }
-            Log.i("🪵 Perps: reconcile(autoClose) still pending market=\(pending.marketId)")
-            return .pending
-        } catch {
-            Log.w("🪵 Perps: reconcile(autoClose) read failed market=\(pending.marketId) — \(error)")
-            return .pending
-        }
-    }
-
-    func reconcileOpenMarket(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
-        guard wallet.id == pending.walletId else { return .pending }
-        let accountIndex: Int64
-        switch await activationService.status(wallet: wallet) {
-        case let .active(index, _), let .accountExists(index): accountIndex = index
-        default: return .pending
-        }
-
-        do {
-            guard let portfolio = try await activationService.portfolio(wallet: wallet, accountIndex: accountIndex) else {
+            let screen = try await loadTradingScreen(marketId: pending.marketId)
+            if PerpsBackendMapping.ordersVisible(screen.flags) {
+                let orders = PerpsBackendMapping.triggerOrders(screen.open_orders)
+                return PerpsAutoCloseChangePlanner.isConfirmed(pending: change, orders: orders) ? .confirmed : .pending
+            }
+            if !refs.isEmpty {
+                return .confirmed
+            }
+            guard let detail = try await loadOpenPositionDetail(marketId: pending.marketId),
+                  detail.auto_close_known == true
+            else {
                 return .pending
             }
-            let positions = portfolio.positions.compactMap(PerpsPositionSummary.init(position:))
-            if let position = positions.first(where: {
-                $0.marketId == pending.marketId && $0.side == pending.side
-            }) {
-                let moved = pending.positionBaseSizeBefore.map { position.baseSize > $0 } ?? true
-                if moved {
-                    guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                    return .confirmed(positions: positions, availableBalance: portfolio.availableBalance)
-                }
-            }
-
-            guard let clientOrderIndex = try await operationOrderIndexes(pending, wallet: wallet).first else {
-                return .pending
-            }
-
-            let active = try await activationService.activeOrders(
-                wallet: wallet,
-                accountIndex: accountIndex,
-                marketId: pending.marketId
+            let orders = PerpsBackendMapping.triggerOrders(
+                autoClose: detail.auto_close?.value1,
+                side: pending.side
             )
-            if pending.limitPrice != nil,
-               active.contains(where: { $0.clientOrderIndex == clientOrderIndex })
-            {
-                guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                return .confirmed(positions: positions, availableBalance: portfolio.availableBalance)
-            }
-
-            let inactive = try await activationService.inactiveOrders(
-                wallet: wallet,
-                accountIndex: accountIndex,
-                marketId: pending.marketId
-            )
-            if let order = inactive.first(where: { $0.clientOrderIndex == clientOrderIndex }) {
-                if order.isFilled {
-                    guard await resolveSucceeded(pending, wallet: wallet) else { return .pending }
-                    return .confirmed(positions: positions, availableBalance: portfolio.availableBalance)
-                }
-                if order.isExecutionRejected {
-                    guard await resolveFailed(pending, wallet: wallet, message: order.status) else { return .pending }
-                    return .failed(.serverRejected(order.status))
-                }
-            }
-            return .pending
-        } catch {
-            Log.w("🪵 Perps: reconcile(open) read failed market=\(pending.marketId) — \(error)")
-            return .pending
+            return PerpsAutoCloseChangePlanner.isConfirmed(pending: change, orders: orders) ? .confirmed : .pending
         }
     }
 
-    /// A reduce-only IOC close is confirmed when the original-side position is
-    /// absent or smaller than its durable pre-submit baseline. This resolves both
-    /// complete and legitimate partial fills without letting an unchanged canceled
-    /// order unblock the nonce lane.
-    func reconcileClose(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
-        await reconcile(pending, label: "close") { positions in
-            guard let position = positions.first(where: { $0.marketId == pending.marketId }) else {
-                return true
-            }
-            guard position.side == pending.side else { return true }
-            guard let before = pending.positionBaseSizeBefore else { return false }
-            return PerpsChangeSettlement.closeMoved(current: position.baseSize, before: before)
-        }
-    }
-
-    /// A vanished position still confirms a reduce — a liquidation or full fill that
-    /// raced the order leaves the size lower either way; an add with no position
-    /// stays pending until the authoritative snapshot explains it.
-    func reconcileSizeChange(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
-        let positionResult = await reconcile(
-            pending,
-            label: "sizeChange",
-            resolveOperation: pending.autoCloseChange == nil
-        ) { positions in
-            guard let sizeChange = pending.sizeChange else { return false }
+    /// A margin move has no order to ask about, and a vanished position never
+    /// confirms: a liquidation racing the change is a different outcome.
+    func reconcileMargin(
+        _ pending: PerpsPendingTradingAction,
+        change: PerpsPendingMarginChange
+    ) async -> PerpsReconcileResult {
+        await settle(pending, label: "marginChange") {
+            let positions = try await loadAccountSnapshot().positions
             guard let current = positions.first(where: { $0.marketId == pending.marketId }) else {
-                return sizeChange.direction == .reduce
+                return .failed("position_gone")
             }
-            return PerpsChangeSettlement.sizeMoved(
-                current: current.baseSize,
-                before: sizeChange.baseSizeBefore,
-                direction: sizeChange.direction
-            )
-        }
-        guard pending.autoCloseChange != nil else { return positionResult }
-        guard case .confirmed = positionResult else { return positionResult }
-        switch await reconcileAutoCloseChange(pending) {
-        case .confirmed: return positionResult
-        case let .failed(error): return .failed(error)
-        case .pending: return .pending
-        }
-    }
-
-    /// A vanished position never confirms: a liquidation racing the margin
-    /// change is a different outcome and must not read as success.
-    func reconcileMarginChange(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult {
-        await reconcile(pending, label: "marginChange") { positions in
-            guard let marginChange = pending.marginChange else { return false }
-            guard let current = positions.first(where: { $0.marketId == pending.marketId }) else {
-                return false
-            }
-            return PerpsChangeSettlement.marginMoved(
+            guard PerpsChangeSettlement.marginMoved(
                 current: current.marginUsd,
-                before: marginChange.allocatedMarginBefore,
-                amountUsd: marginChange.amountUsd,
-                direction: marginChange.direction
-            )
+                before: change.allocatedMarginBefore,
+                amountUsd: change.amountUsd,
+                direction: change.direction
+            ) else {
+                return .pending
+            }
+            return .confirmed
         }
     }
 
     func recoverInterruptedOperations() async {
         guard !Task.isCancelled else { return }
         do {
-            guard let session = try await activationService.tradingSession(wallet: wallet) else { return }
-            guard !Task.isCancelled else { return }
-            try await recoverInterruptedOperations(
-                wallet: wallet,
-                session: session,
-                excluding: nil
-            )
+            try await recoverLocalPending(excluding: nil)
         } catch {
             let mapped = PerpsTradingErrorMapper.map(error)
             Log.w("🪵 Perps: background operation recovery paused — \(mapped)")
         }
     }
 
-    func previewLiquidation(
-        side: PerpsTradeSide,
-        marginUsd: Double,
-        leverage: Double,
-        openingFeeRate: Double,
-        entryPrice: Double,
-        markPrice: Double,
-        maintenanceFraction: Double
-    ) -> PerpsLiquidationPreview {
-        guard entryPrice > 0 else {
-            return PerpsLiquidationPreview(price: nil, isImmediateRisk: false, unavailableReason: .missingMark)
+    func loadReviewer(
+        for intent: PerpsOpenMarketIntent
+    ) async -> Result<any PerpetualReviewer, PerpsTradingError> {
+        await loadReviewer(marketId: intent.marketId) { context in
+            try self.intents.open(intent, context: context, operationId: UUID().uuidString)
         }
-        let baseSize = (marginUsd * leverage) / entryPrice
-        let openingFeeUsd = marginUsd * leverage * max(openingFeeRate, 0)
-        return previewPositionLiquidation(
-            side: side,
-            baseSize: baseSize,
-            entryPrice: entryPrice,
-            markPrice: markPrice,
-            maintenanceFraction: maintenanceFraction,
-            collateralUsd: marginUsd - openingFeeUsd
-        )
     }
 
-    func previewPositionLiquidation(
-        side: PerpsTradeSide,
-        baseSize: Double,
-        entryPrice: Double,
-        markPrice: Double,
-        maintenanceFraction: Double,
-        collateralUsd: Double
-    ) -> PerpsLiquidationPreview {
-        let estimate = LighterRisk.shared.isolatedLiquidation(
-            side: PerpsTradeSideMapper.toChainKit(side),
-            baseSize: baseSize,
-            entryPrice: entryPrice,
-            markPrice: markPrice,
-            maintenanceFraction: maintenanceFraction,
-            collateralUsd: collateralUsd
-        )
-        return PerpsLiquidationPreview(
-            price: estimate.price?.doubleValue,
-            isImmediateRisk: estimate.isImmediateRisk,
-            unavailableReason: estimate.price == nil
-                ? PerpsLiquidationReasonMapper.map(estimate.unavailableReason)
-                : nil
-        )
+    func loadReviewer(
+        for intent: PerpsMarginChangeIntent
+    ) async -> Result<any PerpetualReviewer, PerpsTradingError> {
+        await loadReviewer(marketId: intent.marketId) { context in
+            try self.intents.margin(
+                intent,
+                context: context,
+                present: context.requirePosition(),
+                operationId: UUID().uuidString
+            )
+        }
     }
 }
 
-private extension LighterPerpsTradingService {
-    struct OpenOrderRequest {
-        let marginUsd: Double
-        let notionalUsd: Double
-        let chainKitIntent: ChainKitOpenOrderIntent
+private extension PerpsTkTradingService {
+    struct Submission {
+        let pending: PerpsPendingTradingAction
+        let execute: (_ execution: PerpsExecutionDelegate) async throws -> Void
     }
 
-    enum ChainKitOpenOrderIntent {
-        case limit(OpenLimitIntent)
-        case market(OpenMarketIntent)
+    struct PlannedOpen {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsOpenOrderReview
     }
 
-    func marketMeta(wallet: Wallet, marketId: Int64) async throws -> LighterMarketMeta? {
-        guard let session = try await activationService.tradingSession(wallet: wallet) else { return nil }
-        return try await bridgeKotlinOptional { session.trading.marketMeta(marketId: marketId, completionHandler: $0) }
+    struct PlannedClose {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsCloseReview
+        let side: PerpsSide
+        let baseAmount: Int64
     }
 
-    func makeOpenOrderRequest(intent: PerpsOpenMarketIntent) async -> OpenOrderRequest? {
-        guard let notionalUsd = notional(marginUsd: intent.marginUsd, leverage: intent.leverage),
-              notionalUsd > 0
-        else {
-            return nil
+    struct PlannedSizeChange {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsSizeChangeReview
+        let side: PerpsSide
+        let baseAmount: Int64
+        let normalizedAutoClose: PerpsAutoClose?
+        let pendingAutoClose: PerpsPendingAutoCloseChange?
+    }
+
+    struct PlannedMarginChange {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsMarginChangeReview
+        let side: PerpsSide
+        let allocatedBefore: Int64
+        let amount: Double
+        let isImmediateRisk: Bool
+    }
+
+    struct PlannedAutoClose {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsAutoCloseChangeReview
+        let cancelIndexes: [Int64]
+    }
+
+    struct PlannedLimitChange {
+        let operationId: String
+        let planned: PerpsPlannedTrade
+        let review: PerpsLimitOrderChangeReview
+    }
+
+    var environmentName: String {
+        "mainnet"
+    }
+
+    var chainId: Int32 {
+        304
+    }
+
+    func format2WalletId() -> String? {
+        wallet.multichainWalletState?.walletId
+    }
+
+    func requireWalletId() throws -> String {
+        guard let walletId = format2WalletId(), !walletId.isEmpty else {
+            throw PerpsTradingError.activationRequired
         }
-        let marginUsdValue = decimalDouble(intent.marginUsd) ?? 0
-        let markPriceArg = await markPriceProvider(intent.marketId).map { KotlinDouble(value: $0) }
-        let side = PerpsTradeSideMapper.toChainKit(intent.side)
-        let amount = LighterAmountQuote(usd: notionalUsd)
-        let autoClose = tpSl(from: intent.autoClose)
-        let chainKitIntent: ChainKitOpenOrderIntent
-        if let limitPrice = intent.limitPrice, limitPrice > 0 {
-            chainKitIntent = .limit(OpenLimitIntent(
+        return walletId
+    }
+
+    func requireSession(
+        passcodeProvider: @escaping @Sendable () async -> String?
+    ) async throws -> PerpsAccountSession {
+        switch await resolveSession(wallet: wallet, passcodeProvider: passcodeProvider) {
+        case let .success(session): return session
+        case let .failure(error): throw error
+        }
+    }
+
+    func makeScope(accountIndex: Int64, apiKeyIndex: Int32) async throws -> PerpsScope {
+        let key = try await signingKey(accountIndex: accountIndex, apiKeyIndex: apiKeyIndex)
+        return try PerpsScope(
+            walletId: requireWalletId(),
+            venue: PerpsPlannerMapping.venue,
+            chainId: chainId,
+            environment: environmentName,
+            accountIndex: accountIndex,
+            apiKeyIndex: apiKeyIndex,
+            keyBindingId: "\(accountIndex)/\(apiKeyIndex)",
+            expectedPublicKey: key.publicKeyHex
+        )
+    }
+
+    func signingKey(accountIndex: Int64, apiKeyIndex: Int32) async throws -> PerpsSigningKey {
+        guard let hex = try await accountService.loadL2PrivateKeyHex(wallet: wallet), !hex.isEmpty else {
+            throw PerpsTradingError.credentialsRevoked
+        }
+        return try host.signingKey(
+            privateKeyHex: hex,
+            accountIndex: accountIndex,
+            apiKeyIndex: apiKeyIndex,
+            chainId: chainId
+        )
+    }
+
+    func resolvedSymbol(_ context: PerpsMarketContext, marketId: Int64) async -> String {
+        if let symbol = context.symbol, !symbol.isEmpty {
+            return symbol
+        }
+        return await marketProvider(marketId)?.symbol ?? ""
+    }
+
+    func marketContext(session: PerpsAccountSession, marketId: Int64) async throws -> PerpsMarketContext {
+        try await host.context(
+            walletId: requireWalletId(),
+            marketId: marketId,
+            scope: await makeScope(accountIndex: session.accountIndex, apiKeyIndex: session.apiKeyIndex),
+            environment: environmentName,
+            liveMark: await markPriceProvider(marketId)
+        )
+    }
+
+    /// The one place a thrown error becomes a domain failure, so every entry point
+    /// that can throw reads as the work it does rather than as its error tail.
+    func attempt<T>(_ body: () async throws -> T) async -> Result<T, PerpsTradingError> {
+        do {
+            return try .success(await body())
+        } catch let error as PerpsTradingError {
+            return .failure(error)
+        } catch {
+            Log.w("🪵 Perps: trading request failed", error: error)
+            return .failure(PerpsTradingErrorMapper.map(error))
+        }
+    }
+
+    func reviewContext(marketId: Int64) async throws -> PerpsMarketContext {
+        let walletId = try requireWalletId()
+        return try await host.context(
+            walletId: walletId,
+            marketId: marketId,
+            scope: PerpsScope.companion.review(
+                walletId: walletId,
+                venue: PerpsPlannerMapping.venue,
+                chainId: chainId,
+                environment: environmentName,
+                accountIndex: 0
+            ),
+            environment: environmentName,
+            liveMark: await markPriceProvider(marketId)
+        )
+    }
+
+    func loadReviewer(
+        marketId: Int64,
+        intent: @escaping (PerpsMarketContext) throws -> PerpsTradeIntent
+    ) async -> Result<any PerpetualReviewer, PerpsTradingError> {
+        await attempt {
+            let context = try await reviewContext(marketId: marketId)
+            let tradeIntent = try intent(context)
+            let planned = try await host.plan(intent: tradeIntent, context: context)
+            let inputs = PerpsReviewInputs(
+                context: planned.context,
+                marketSnapshot: planned.marketSnapshot,
+                symbol: await resolvedSymbol(context, marketId: marketId)
+            )
+            return PerpsSnapshotReviewer(host: host, intents: intents, inputs: inputs)
+        }
+    }
+
+    func planOpen(
+        _ intent: PerpsOpenMarketIntent,
+        passcodeProvider: @escaping @Sendable () async -> String?
+    ) async throws -> PlannedOpen {
+        try await planOpen(intent, session: requireSession(passcodeProvider: passcodeProvider))
+    }
+
+    func planOpen(
+        _ intent: PerpsOpenMarketIntent,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString
+    ) async throws -> PlannedOpen {
+        guard let margin = PerpsMarketMath.optionalDouble(intent.marginUsd), margin > 0 else {
+            throw PerpsTradingError.validation("amount is empty or invalid")
+        }
+        let context = try await marketContext(session: session, marketId: intent.marketId)
+        let chainIntent = try intents.open(intent, context: context, operationId: operationId)
+        let planned = try await host.plan(intent: chainIntent, context: context)
+        guard let review = planned.plan.review as? PerpetualReview.Open else {
+            throw PerpsTradingError.protocolFailure("unexpected open review")
+        }
+        let symbol = await resolvedSymbol(context, marketId: intent.marketId)
+        return PlannedOpen(
+            operationId: operationId,
+            planned: planned,
+            review: PerpsPlannerMapping.openReview(review, symbol: symbol, marginUsd: margin)
+        )
+    }
+
+    func planClose(
+        marketId: Int64,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString
+    ) async throws -> PlannedClose {
+        let context = try await marketContext(session: session, marketId: marketId)
+        let now = PerpsPlannerMapping.nowUnixMs()
+        let present = try context.requirePosition()
+        let chainIntent = try PerpsTradeIntent.Close(
+            operationId: operationId,
+            scope: context.scope,
+            marketId: marketId,
+            positionId: present.positionId,
+            side: present.side,
+            positionBaseAmount: present.baseAmount,
+            baseAmount: nil,
+            maxSlippagePpm: KotlinLong(value: PerpsPlannerMapping.slippagePpm(config.closeMaxSlippage)),
+            clientOrderIndex: PerpsPlannerMapping.clientOrderIndex(nowUnixMs: now),
+            autoClose: nil
+        )
+        let planned = try await host.plan(intent: chainIntent, context: context)
+        guard let review = planned.plan.review as? PerpetualReview.Close else {
+            throw PerpsTradingError.protocolFailure("unexpected close review")
+        }
+        let symbol = await resolvedSymbol(context, marketId: marketId)
+        let leverage = context.leverage
+        return PlannedClose(
+            operationId: operationId,
+            planned: planned,
+            review: PerpsPlannerMapping.closeReview(review, symbol: symbol, leverage: leverage),
+            side: present.side,
+            baseAmount: present.baseAmount
+        )
+    }
+
+    func planSizeChange(
+        _ intent: PerpsSizeChangeIntent,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString,
+        normalizedAutoClose: PerpsAutoClose? = nil
+    ) async throws -> PlannedSizeChange {
+        guard let marginDelta = PerpsMarketMath.optionalDouble(intent.marginDeltaUsd), marginDelta > 0 else {
+            throw PerpsTradingError.validation("amount is empty or invalid")
+        }
+        let context = try await marketContext(session: session, marketId: intent.marketId)
+        let present = try context.requirePosition()
+        let now = PerpsPlannerMapping.nowUnixMs()
+        let scale = context.rules.scale
+        let legs = try intents.autoCloseLegs(intent.autoCloseUpdate, context: context, now: now)
+        let chainIntent: PerpsTradeIntent
+        switch intent.direction {
+        case .add:
+            guard let known = context.accountSnapshot.marginSettings as? PerpsMarginSettings.Known else {
+                throw PerpsTradingError.validation("position leverage unavailable")
+            }
+            let marginQuote = try PerpsScaled.parse(intent.marginDeltaUsd, decimals: scale.quoteDecimals)
+            chainIntent = try PerpsTradeIntent.Add(
+                operationId: operationId,
+                scope: context.scope,
                 marketId: intent.marketId,
-                side: side,
-                amount: amount,
-                limitPrice: limitPrice,
-                postOnly: false,
-                tpSl: autoClose,
-                orderExpiry: nil,
-                clientOrderIndex: 0,
-                markPrice: markPriceArg,
-                marginUsd: KotlinDouble(value: marginUsdValue)
-            ))
+                positionId: present.positionId,
+                side: present.side,
+                marginBudgetQuote: marginQuote,
+                initialMarginBps: known.initialMarginBps,
+                clientOrderIndex: PerpsPlannerMapping.clientOrderIndex(nowUnixMs: now),
+                order: PerpsOrderSpec.Market(
+                    maxSlippagePpm: KotlinLong(value: PerpsPlannerMapping.slippagePpm(config.maxSlippage)),
+                    slippageUtilizationPpm: 0,
+                    marginSafetyBufferPpm: 0
+                ),
+                autoClose: legs.spec
+            )
+        case .reduce:
+            guard present.allocatedMarginQuote > 0 else {
+                throw PerpsTradingError.validation("amount exceeds position margin")
+            }
+            let delta = try PerpsScaled.parse(intent.marginDeltaUsd, decimals: scale.quoteDecimals)
+            guard delta < present.allocatedMarginQuote else {
+                throw PerpsTradingError.validation("amount exceeds position margin")
+            }
+            let (product, overflow) = present.baseAmount.multipliedReportingOverflow(by: delta)
+            guard !overflow else {
+                throw PerpsTradingError.validation("position size is too large")
+            }
+            let closeBase = product / present.allocatedMarginQuote
+            guard closeBase > 0 else {
+                throw PerpsTradingError.validation("amount is too small to reduce the position")
+            }
+            chainIntent = try PerpsTradeIntent.Close(
+                operationId: operationId,
+                scope: context.scope,
+                marketId: intent.marketId,
+                positionId: present.positionId,
+                side: present.side,
+                positionBaseAmount: present.baseAmount,
+                baseAmount: KotlinLong(value: closeBase),
+                maxSlippagePpm: KotlinLong(value: PerpsPlannerMapping.slippagePpm(config.closeMaxSlippage)),
+                clientOrderIndex: PerpsPlannerMapping.clientOrderIndex(nowUnixMs: now),
+                autoClose: legs.spec
+            )
+        }
+        let planned = try await host.plan(intent: chainIntent, context: context)
+        let symbol = await resolvedSymbol(context, marketId: intent.marketId)
+        let oldNotionalUsd = PerpsScaled.double(present.baseAmount, decimals: scale.baseDecimals)
+            * PerpsScaled.double(present.entryPrice, decimals: scale.priceDecimals)
+        let review: PerpsSizeChangeReview
+        if let add = planned.plan.review as? PerpetualReview.Add {
+            review = PerpsPlannerMapping.addReview(
+                add,
+                symbol: symbol,
+                direction: .add,
+                marginDeltaUsd: marginDelta,
+                oldBase: present.baseAmount,
+                oldEntry: present.entryPrice,
+                oldNotionalUsd: oldNotionalUsd
+            )
+        } else if let close = planned.plan.review as? PerpetualReview.Close {
+            review = PerpsPlannerMapping.closeSizeReview(
+                close,
+                symbol: symbol,
+                direction: .reduce,
+                marginDeltaUsd: marginDelta,
+                leverage: context.leverage,
+                oldBase: present.baseAmount,
+                oldEntry: present.entryPrice,
+                oldNotionalUsd: oldNotionalUsd
+            )
         } else {
-            chainKitIntent = .market(OpenMarketIntent(
-                marketId: intent.marketId,
-                side: side,
-                amount: amount,
-                maxSlippage: intent.maxSlippage,
-                tpSl: autoClose,
-                clientOrderIndex: 0,
-                markPrice: markPriceArg,
-                marginUsd: KotlinDouble(value: marginUsdValue)
-            ))
+            throw PerpsTradingError.protocolFailure("unexpected size-change review")
         }
-        return OpenOrderRequest(
-            marginUsd: marginUsdValue,
-            notionalUsd: notionalUsd,
-            chainKitIntent: chainKitIntent
+        return PlannedSizeChange(
+            operationId: operationId,
+            planned: planned,
+            review: review,
+            side: present.side,
+            baseAmount: present.baseAmount,
+            normalizedAutoClose: normalizedAutoClose ?? legs.target,
+            pendingAutoClose: legs.pending
+        )
+    }
+
+    func planMarginChange(
+        _ intent: PerpsMarginChangeIntent,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString
+    ) async throws -> PlannedMarginChange {
+        guard let amount = PerpsMarketMath.optionalDouble(intent.amountUsd), amount > 0 else {
+            throw PerpsTradingError.validation("amount is empty or invalid")
+        }
+        let context = try await marketContext(session: session, marketId: intent.marketId)
+        let present = try context.requirePosition()
+        let chainIntent = try intents.margin(
+            intent,
+            context: context,
+            present: present,
+            operationId: operationId
+        )
+        let planned = try await host.plan(intent: chainIntent, context: context)
+        guard let review = planned.plan.review as? PerpetualReview.Margin else {
+            throw PerpsTradingError.protocolFailure("unexpected margin review")
+        }
+        let mapped = PerpsPlannerMapping.marginReview(
+            review,
+            symbol: await resolvedSymbol(context, marketId: intent.marketId),
+            direction: intent.direction,
+            side: PerpsPlannerMapping.tradeSide(present.side),
+            leverage: context.leverage,
+            allocatedBefore: present.allocatedMarginQuote,
+            liquidationBefore: present.liquidationPrice?.int64Value
+        )
+        return PlannedMarginChange(
+            operationId: operationId,
+            planned: planned,
+            review: mapped,
+            side: present.side,
+            allocatedBefore: present.allocatedMarginQuote,
+            amount: amount,
+            isImmediateRisk: mapped.isImmediateRisk
+        )
+    }
+
+    func planAutoCloseChange(
+        _ intent: PerpsAutoCloseChangeIntent,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString
+    ) async throws -> PlannedAutoClose {
+        let context = try await marketContext(session: session, marketId: intent.marketId)
+        let present = try context.requirePosition()
+        let legs = try intents.autoCloseLegs(
+            PerpsAutoCloseUpdate(
+                desired: intent.target,
+                resting: PerpsAutoClose(triggerOrders: intents.restingTriggerOrders(context))
+            ),
+            context: context,
+            now: PerpsPlannerMapping.nowUnixMs()
+        )
+        guard let pending = legs.pending else {
+            throw PerpsTradingError.nothingToChange
+        }
+        let chainIntent = PerpsTradeIntent.AutoClose(
+            operationId: operationId,
+            scope: context.scope,
+            marketId: intent.marketId,
+            positionId: present.positionId,
+            side: present.side,
+            autoClose: legs.spec
+        )
+        let planned = try await host.plan(intent: chainIntent, context: context)
+        guard let review = planned.plan.review as? PerpetualReview.AutoClose else {
+            throw PerpsTradingError.protocolFailure("unexpected auto-close review")
+        }
+        return PlannedAutoClose(
+            operationId: operationId,
+            planned: planned,
+            review: PerpsPlannerMapping.autoCloseReview(review, scale: context.rules.scale),
+            cancelIndexes: pending.restingOrderIndexes
+        )
+    }
+
+    func planLimitOrderChange(
+        _ intent: PerpsLimitOrderChangeIntent,
+        session: PerpsAccountSession,
+        operationId: String = UUID().uuidString
+    ) async throws -> PlannedLimitChange {
+        guard let order = try await activeLimitOrder(
+            marketId: intent.marketId,
+            orderIndex: intent.orderIndex
+        ) else {
+            throw PerpsTradingError.stalePreparedTransaction
+        }
+        let context = try await marketContext(session: session, marketId: intent.marketId)
+        let chainIntent: PerpsTradeIntent
+        let normalizedPrice: Double?
+        switch intent {
+        case let .modify(_, _, limitPrice):
+            let scaled = try PerpsScaled.scale(limitPrice, decimals: context.rules.scale.priceDecimals)
+            guard let resting = context.accountSnapshot.restingOrders.first(where: { $0.orderIndex == intent.orderIndex }) else {
+                throw PerpsTradingError.stalePreparedTransaction
+            }
+            let remaining = resting.remainingBaseAmount
+            chainIntent = PerpsTradeIntent.OrderModify(
+                operationId: operationId,
+                scope: context.scope,
+                marketId: intent.marketId,
+                orderIndex: intent.orderIndex,
+                baseAmount: remaining,
+                price: scaled,
+                triggerPrice: nil
+            )
+            let planned = try await host.plan(intent: chainIntent, context: context)
+            guard let review = planned.plan.review as? PerpetualReview.OrderModify else {
+                throw PerpsTradingError.protocolFailure("unexpected modify review")
+            }
+            normalizedPrice = PerpsScaled.double(review.price, decimals: context.rules.scale.priceDecimals)
+            guard let price = normalizedPrice,
+                  !PerpsLimitOrderChangeSettlement.pricesMatch(price, order.limitPrice)
+            else {
+                throw PerpsTradingError.nothingToChange
+            }
+            return PlannedLimitChange(
+                operationId: operationId,
+                planned: planned,
+                review: PerpsLimitOrderChangeReview(order: order, kind: .modify, limitPrice: normalizedPrice)
+            )
+        case .cancel:
+            chainIntent = PerpsTradeIntent.OrderCancel(
+                operationId: operationId,
+                scope: context.scope,
+                marketId: intent.marketId,
+                orderIndex: intent.orderIndex
+            )
+            normalizedPrice = nil
+        }
+        return try PlannedLimitChange(
+            operationId: operationId,
+            planned: await host.plan(intent: chainIntent, context: context),
+            review: PerpsLimitOrderChangeReview(order: order, kind: intent.kind, limitPrice: normalizedPrice)
         )
     }
 
     func resolveSession(
         wallet: Wallet,
         passcodeProvider: @escaping @Sendable () async -> String?
-    ) async -> Result<LighterSession, PerpsTradingError> {
+    ) async -> Result<PerpsAccountSession, PerpsTradingError> {
         do {
-            if let session = try await activationService.tradingSession(wallet: wallet) {
+            if let session = try await accountService.tradingSession(wallet: wallet) {
                 return .success(session)
             }
         } catch {
@@ -997,11 +1160,11 @@ private extension LighterPerpsTradingService {
         guard let passcode = await passcodeProvider() else {
             return .failure(.activationCanceled)
         }
-        let outcome = await activationService.activate(wallet: wallet, passcode: passcode)
+        let outcome = await accountService.activate(wallet: wallet, passcode: passcode)
         switch outcome {
         case .active:
             do {
-                if let session = try await activationService.tradingSession(wallet: wallet) {
+                if let session = try await accountService.tradingSession(wallet: wallet) {
                     return .success(session)
                 }
                 return .failure(.activationRequired)
@@ -1017,618 +1180,41 @@ private extension LighterPerpsTradingService {
         }
     }
 
-    func positionLeverage(_ position: LighterOpenPosition) -> Double? {
-        if let leverage = position.leverage?.doubleValue { return leverage }
-        guard position.allocatedMargin > 0 else { return nil }
-        return abs(position.size) * position.avgEntryPrice / position.allocatedMargin
-    }
-
-    func leverageNeedsUpdate(position: LighterOpenPosition?, leverage: Double) -> Bool {
-        guard let position else { return true }
-        let isIsolated = Int32(position.marginMode) == LighterConstants.shared.IsolatedMargin
-        let currentLeverage = position.leverage?.doubleValue
-        let sameLeverage = currentLeverage.map { abs($0 - leverage) < 0.0001 } ?? false
-        return !(isIsolated && sameLeverage)
-    }
-
-    func tpSl(from autoClose: PerpsAutoClose?) -> LighterTpSl? {
-        guard let autoClose, !autoClose.isEmpty else { return nil }
-        return LighterTpSl(
-            takeProfit: autoClose.takeProfit.map {
-                LighterAutoClose(
-                    triggerPrice: $0.triggerPrice,
-                    maxSlippage: config.maxSlippage
-                )
-            },
-            stopLoss: autoClose.stopLoss.map {
-                LighterAutoClose(
-                    triggerPrice: $0.triggerPrice,
-                    maxSlippage: config.maxSlippage
-                )
-            }
+    func pending(
+        _ prepared: some PerpsPreparedAction,
+        side: PerpsTradeSide,
+        payload: PerpsPendingPayload,
+        expectedBaseSize: Double? = nil,
+        positionBaseSizeBefore: Double? = nil
+    ) -> PerpsPendingTradingAction {
+        PerpsPendingTradingAction(
+            operationId: prepared.operationId,
+            walletId: prepared.walletId,
+            marketId: prepared.marketId,
+            side: side,
+            payload: payload,
+            expiresAtMillis: payload.leavesRestingOrder
+                ? intents.orderExpiryUnixMs(now: PerpsPlannerMapping.nowUnixMs())
+                : nil,
+            expectedBaseSize: expectedBaseSize,
+            positionBaseSizeBefore: positionBaseSizeBefore
         )
-    }
-
-    func reconcile(
-        _ pending: PerpsPendingTradingAction,
-        label: String,
-        resolveOperation: Bool = true,
-        isConfirmed: ([PerpsPositionSummary]) -> Bool
-    ) async -> PerpsReconcileResult {
-        guard wallet.id == pending.walletId else {
-            return .pending
-        }
-        let status = await activationService.status(wallet: wallet)
-        let accountIndex: Int64
-        switch status {
-        case let .active(index, _), let .accountExists(index): accountIndex = index
-        default: return .pending
-        }
-        do {
-            guard let portfolio = try await activationService.portfolio(wallet: wallet, accountIndex: accountIndex) else {
-                return .pending
-            }
-            let positions = portfolio.positions.compactMap(PerpsPositionSummary.init(position:))
-            if isConfirmed(positions) {
-                if resolveOperation,
-                   !(await resolveSucceeded(pending, wallet: wallet))
-                {
-                    return .pending
-                }
-                Log.i("🪵 Perps: reconcile(\(label)) confirmed market=\(pending.marketId) side=\(pending.side)")
-                return .confirmed(positions: positions, availableBalance: portfolio.availableBalance)
-            }
-            if let rejected = try await canceledPrimaryOrder(
-                pending,
-                wallet: wallet,
-                accountIndex: accountIndex
-            ) {
-                guard await resolveFailed(pending, wallet: wallet, message: rejected.status) else {
-                    return .pending
-                }
-                return .failed(.serverRejected(rejected.status))
-            }
-            Log.i("🪵 Perps: reconcile(\(label)) still pending market=\(pending.marketId) side=\(pending.side)")
-            return .pending
-        } catch {
-            Log.w("🪵 Perps: reconcile(\(label)) read failed market=\(pending.marketId) — \(error)")
-            return .pending
-        }
-    }
-
-    /// Client-order indexes are ordered exactly as the signed transaction. The
-    /// first non-empty step's first index is the primary position/order leg;
-    /// grouped TP/SL children follow it and must never confirm the parent action.
-    func operationOrderIndexes(
-        _ pending: PerpsPendingTradingAction,
-        wallet: Wallet
-    ) async throws -> [Int64] {
-        guard let session = try await activationService.tradingSession(wallet: wallet),
-              let operation: LighterOperation = try await bridgeKotlinOptional({
-                  session.operations.operation(operationId: pending.operationId, completionHandler: $0)
-              })
-        else {
-            return []
-        }
-        return operation.steps.flatMap { step in
-            step.clientOrderIndexes.map(\.int64Value)
-        }
-    }
-
-    func canceledPrimaryOrder(
-        _ pending: PerpsPendingTradingAction,
-        wallet: Wallet,
-        accountIndex: Int64
-    ) async throws -> PerpsOrder? {
-        guard let clientOrderIndex = try await operationOrderIndexes(pending, wallet: wallet).first else {
-            return nil
-        }
-        let inactive = try await activationService.inactiveOrders(
-            wallet: wallet,
-            accountIndex: accountIndex,
-            marketId: pending.marketId
-        )
-        return inactive.first {
-            $0.clientOrderIndex == clientOrderIndex && $0.isExecutionRejected
-        }
-    }
-
-    func resolveSucceeded(_ pending: PerpsPendingTradingAction, wallet: Wallet) async -> Bool {
-        do {
-            guard let session = try await activationService.tradingSession(wallet: wallet) else {
-                return false
-            }
-            let _: LighterOperation = try await bridgeKotlin { completion in
-                session.operations.resolve(
-                    operationId: pending.operationId,
-                    resolution: LighterOperationResolution.succeeded,
-                    failureMessage: nil,
-                    completionHandler: completion
-                )
-            }
-            try? await activationService.operationStore(wallet: wallet)
-                .removePending(operationId: pending.operationId)
-            return true
-        } catch {
-            Log.w("🪵 Perps: operation resolve failed id=\(pending.operationId) — \(error)")
-            return false
-        }
-    }
-
-    func resolveFailed(_ pending: PerpsPendingTradingAction, wallet: Wallet, message: String) async -> Bool {
-        do {
-            guard let session = try await activationService.tradingSession(wallet: wallet) else {
-                return false
-            }
-            let _: LighterOperation = try await bridgeKotlin { completion in
-                session.operations.resolve(
-                    operationId: pending.operationId,
-                    resolution: LighterOperationResolution.failed,
-                    failureMessage: message,
-                    completionHandler: completion
-                )
-            }
-            try? await activationService.operationStore(wallet: wallet)
-                .removePending(operationId: pending.operationId)
-            return true
-        } catch {
-            Log.w("🪵 Perps: operation failure resolve failed id=\(pending.operationId) — \(error)")
-            return false
-        }
-    }
-
-    struct Submission {
-        let pending: PerpsPendingTradingAction
-        let execute: () async throws -> LighterOperation
-    }
-
-    func submitOpenMarket(_ prepared: PerpsPreparedTradingAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { _, session in
-            guard let request = await self.makeOpenOrderRequest(intent: prepared.intent) else {
-                throw PerpsTradingError.validation("amount is empty or invalid")
-            }
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                session.trading.currentPosition(marketId: prepared.marketId, completionHandler: $0)
-            }
-            let needsLeverage = self.leverageNeedsUpdate(position: position, leverage: prepared.intent.leverage)
-            let leverage: KotlinDouble? = needsLeverage ? KotlinDouble(value: prepared.intent.leverage) : nil
-            let execute: () async throws -> LighterOperation
-            switch request.chainKitIntent {
-            case let .limit(intent):
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeOpenLimit(
-                            operationId: prepared.operationId,
-                            intent: intent,
-                            leverage: leverage,
-                            marginMode: LighterConstants.shared.IsolatedMargin,
-                            completionHandler: completion
-                        )
-                    }
-                }
-            case let .market(intent):
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeOpenMarket(
-                            operationId: prepared.operationId,
-                            intent: intent,
-                            leverage: leverage,
-                            marginMode: LighterConstants.shared.IsolatedMargin,
-                            completionHandler: completion
-                        )
-                    }
-                }
-            }
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .open,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: prepared.intent.side,
-                    limitPrice: prepared.intent.limitPrice,
-                    positionBaseSizeBefore: position.flatMap {
-                        PerpsTradeSideMapper.fromChainKit($0.side) == prepared.intent.side ? abs($0.size) : nil
-                    }
-                ),
-                execute: execute
-            )
-        }
-    }
-
-    func submitClose(_ prepared: PerpsPreparedCloseAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { _, session in
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                session.trading.currentPosition(marketId: prepared.marketId, completionHandler: $0)
-            }
-            guard let position else { throw PerpsTradingError.positionNotFound }
-            guard PerpsTradeSideMapper.fromChainKit(position.side) == prepared.review.side else {
-                throw PerpsTradingError.stalePreparedTransaction
-            }
-            let markPrice = await self.markPriceProvider(prepared.marketId).map { KotlinDouble(value: $0) }
-            let intent = CloseIntent(
-                marketId: prepared.marketId,
-                portion: 1,
-                maxSlippage: self.config.closeMaxSlippage,
-                clientOrderIndex: 0,
-                markPrice: markPrice
-            )
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .close,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: prepared.review.side,
-                    positionBaseSizeBefore: abs(position.size)
-                ),
-                execute: {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeClose(
-                            operationId: prepared.operationId,
-                            intent: intent,
-                            completionHandler: completion
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    func submitSizeChange(_ prepared: PerpsPreparedSizeChangeAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { wallet, session in
-            guard let marginDelta = self.decimalDouble(prepared.intent.marginDeltaUsd), marginDelta > 0 else {
-                throw PerpsTradingError.validation("amount is empty or invalid")
-            }
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                session.trading.currentPosition(marketId: prepared.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                throw PerpsTradingError.positionNotFound
-            }
-
-            var replacement: LighterTpSl?
-            var indexesToCancel: [Int64] = []
-            var pendingAutoClose: PerpsPendingAutoCloseChange?
-            switch prepared.intent.autoCloseUpdate {
-            case .unchanged:
-                break
-            case .clear, .replace:
-                let target: PerpsAutoClose
-                if case .clear = prepared.intent.autoCloseUpdate {
-                    target = PerpsAutoClose(takeProfit: nil, stopLoss: nil)
-                } else if let normalized = prepared.normalizedAutoClose {
-                    target = normalized
-                } else {
-                    throw PerpsTradingError.validation("auto-close preview is unavailable")
-                }
-                let resting = try await self.activationService.activeTriggerOrders(
-                    wallet: wallet,
-                    accountIndex: session.accountIndex,
-                    marketId: prepared.marketId
-                )
-                switch PerpsAutoCloseChangePlanner.plan(target: target, resting: resting) {
-                case .noChange:
-                    break
-                case let .replace(normalized, staleOrderIndexes):
-                    guard let tpSl = self.tpSl(from: normalized) else {
-                        throw PerpsTradingError.validation("auto-close target is empty")
-                    }
-                    replacement = tpSl
-                    indexesToCancel = staleOrderIndexes
-                    pendingAutoClose = PerpsPendingAutoCloseChange(
-                        target: normalized,
-                        restingOrderIndexes: staleOrderIndexes
-                    )
-                case let .clear(orderIndexes):
-                    indexesToCancel = orderIndexes
-                    pendingAutoClose = PerpsPendingAutoCloseChange(
-                        target: nil,
-                        restingOrderIndexes: orderIndexes
-                    )
-                }
-            }
-
-            let execute: () async throws -> LighterOperation
-            let markPrice = await self.markPriceProvider(prepared.marketId).map { KotlinDouble(value: $0) }
-            switch prepared.intent.direction {
-            case .add:
-                guard let leverage = self.positionLeverage(position), leverage > 0 else {
-                    throw PerpsTradingError.validation("position leverage unavailable")
-                }
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeAddToPosition(
-                            operationId: prepared.operationId,
-                            marketId: prepared.marketId,
-                            amount: LighterAmountQuote(usd: marginDelta * leverage),
-                            maxSlippage: self.config.maxSlippage,
-                            markPrice: markPrice,
-                            marginUsd: KotlinDouble(value: marginDelta),
-                            tpSl: replacement,
-                            orderIndexesToCancel: indexesToCancel.map { KotlinLong(value: $0) },
-                            completionHandler: completion
-                        )
-                    }
-                }
-            case .reduce:
-                guard position.allocatedMargin > 0, marginDelta < position.allocatedMargin else {
-                    throw PerpsTradingError.validation("amount exceeds position margin")
-                }
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeReducePosition(
-                            operationId: prepared.operationId,
-                            marketId: prepared.marketId,
-                            portion: marginDelta / position.allocatedMargin,
-                            maxSlippage: self.config.closeMaxSlippage,
-                            markPrice: markPrice,
-                            tpSl: replacement,
-                            orderIndexesToCancel: indexesToCancel.map { KotlinLong(value: $0) },
-                            completionHandler: completion
-                        )
-                    }
-                }
-            }
-
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .sizeChange,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: PerpsTradeSideMapper.fromChainKit(position.side),
-                    sizeChange: PerpsPendingSizeChange(
-                        direction: prepared.intent.direction,
-                        baseSizeBefore: abs(position.size)
-                    ),
-                    autoCloseChange: pendingAutoClose
-                ),
-                execute: execute
-            )
-        }
-    }
-
-    func submitMarginChange(_ prepared: PerpsPreparedMarginChangeAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { _, session in
-            guard let amount = self.decimalDouble(prepared.intent.amountUsd), amount > 0 else {
-                throw PerpsTradingError.validation("amount is empty or invalid")
-            }
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                session.trading.currentPosition(marketId: prepared.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                throw PerpsTradingError.positionNotFound
-            }
-            if prepared.intent.direction == .reduce, amount >= position.allocatedMargin {
-                throw PerpsTradingError.validation("amount exceeds position margin")
-            }
-            let markPrice = await self.markPriceProvider(prepared.marketId).map { KotlinDouble(value: $0) }
-            let direction: LighterMarginDirection
-            switch prepared.intent.direction {
-            case .add:
-                direction = LighterMarginDirection.add
-            case .reduce:
-                let review: LighterMarginReview = try await bridgeKotlin { completion in
-                    session.trading.previewReduceMargin(
-                        marketId: prepared.marketId,
-                        usdc: amount,
-                        markPrice: markPrice,
-                        completionHandler: completion
-                    )
-                }
-                if review.isImmediateRisk {
-                    throw PerpsTradingError.immediateLiquidationRisk
-                }
-                direction = LighterMarginDirection.remove
-            }
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .marginChange,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: PerpsTradeSideMapper.fromChainKit(position.side),
-                    marginChange: PerpsPendingMarginChange(
-                        direction: prepared.intent.direction,
-                        allocatedMarginBefore: position.allocatedMargin,
-                        amountUsd: amount
-                    )
-                ),
-                execute: {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeMarginUpdate(
-                            operationId: prepared.operationId,
-                            marketId: prepared.marketId,
-                            usdc: amount,
-                            direction: direction,
-                            markPrice: markPrice,
-                            completionHandler: completion
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    func submitAutoCloseChange(_ prepared: PerpsPreparedAutoCloseChangeAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { wallet, session in
-            let position: LighterOpenPosition? = try await bridgeKotlinOptional {
-                session.trading.currentPosition(marketId: prepared.marketId, completionHandler: $0)
-            }
-            guard let position, abs(position.size) > 0 else {
-                throw PerpsTradingError.positionNotFound
-            }
-            let resting = try await self.activationService.activeTriggerOrders(
-                wallet: wallet,
-                accountIndex: session.accountIndex,
-                marketId: prepared.marketId
-            )
-
-            let replacement: LighterTpSl?
-            let indexesToCancel: [Int64]
-            let target: PerpsAutoClose?
-            let normalizedTarget = prepared.review.new
-                ?? PerpsAutoClose(takeProfit: nil, stopLoss: nil)
-            switch PerpsAutoCloseChangePlanner.plan(target: normalizedTarget, resting: resting) {
-            case .noChange:
-                throw PerpsTradingError.nothingToChange
-            case let .replace(normalized, staleOrderIndexes):
-                guard let tpSl = self.tpSl(from: normalized) else {
-                    throw PerpsTradingError.validation("auto-close target is empty")
-                }
-                replacement = tpSl
-                indexesToCancel = staleOrderIndexes
-                target = prepared.review.new
-            case let .clear(orderIndexes):
-                replacement = nil
-                indexesToCancel = orderIndexes
-                target = nil
-            }
-
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .autoCloseChange,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: PerpsTradeSideMapper.fromChainKit(position.side),
-                    autoCloseChange: PerpsPendingAutoCloseChange(
-                        target: target,
-                        restingOrderIndexes: indexesToCancel
-                    )
-                ),
-                execute: {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeTpSlChange(
-                            operationId: prepared.operationId,
-                            marketId: prepared.marketId,
-                            tpSl: replacement,
-                            orderIndexesToCancel: indexesToCancel.map { KotlinLong(value: $0) },
-                            completionHandler: completion
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    func submitLimitOrderChange(_ prepared: PerpsPreparedLimitOrderChangeAction) async -> PerpsSubmitResult {
-        await submitAction(
-            operationId: prepared.operationId,
-            walletId: prepared.walletId,
-            isTestnet: prepared.isTestnet,
-            marketId: prepared.marketId
-        ) { wallet, session in
-            guard let order = try await self.activeLimitOrder(
-                wallet: wallet,
-                accountIndex: session.accountIndex,
-                marketId: prepared.marketId,
-                orderIndex: prepared.intent.orderIndex
-            ), PerpsLimitOrderChangeSettlement.pricesMatch(
-                order.limitPrice,
-                prepared.review.order.limitPrice
-            ) else {
-                throw PerpsTradingError.stalePreparedTransaction
-            }
-
-            let execute: () async throws -> LighterOperation
-            switch prepared.review.kind {
-            case .modify:
-                guard let limitPrice = prepared.review.limitPrice else {
-                    throw PerpsTradingError.validation("normalized limit price is unavailable")
-                }
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeModifyLimitOrder(
-                            operationId: prepared.operationId,
-                            intent: ModifyLimitOrderIntent(
-                                marketId: prepared.marketId,
-                                orderIndex: order.orderIndex,
-                                limitPrice: limitPrice,
-                                size: nil
-                            ),
-                            completionHandler: completion
-                        )
-                    }
-                }
-            case .cancel:
-                execute = {
-                    try await bridgeKotlin { completion in
-                        session.trading.executeCancelOrder(
-                            operationId: prepared.operationId,
-                            marketId: prepared.marketId,
-                            orderIndex: order.orderIndex,
-                            completionHandler: completion
-                        )
-                    }
-                }
-            }
-
-            return Submission(
-                pending: PerpsPendingTradingAction(
-                    operationId: prepared.operationId,
-                    kind: .limitOrderChange,
-                    walletId: prepared.walletId,
-                    isTestnet: prepared.isTestnet,
-                    marketId: prepared.marketId,
-                    side: order.side,
-                    limitOrderChange: PerpsPendingLimitOrderChange(
-                        orderIndex: order.orderIndex,
-                        kind: prepared.review.kind,
-                        limitPrice: prepared.review.limitPrice
-                    )
-                ),
-                execute: execute
-            )
-        }
     }
 
     func submitAction(
-        operationId: String,
-        walletId: String,
-        isTestnet: Bool,
-        marketId: Int64,
-        build: (Wallet, LighterSession) async throws -> Submission
+        _ prepared: some PerpsPreparedAction,
+        build: (PerpsAccountSession) async throws -> Submission
     ) async -> PerpsSubmitResult {
-        guard wallet.id == walletId, activationService.isTestnet == isTestnet else {
-            Log.w("🪵 Perps: submit stale — wallet/env changed (market=\(marketId))")
+        let operationId = prepared.operationId
+        let marketId = prepared.marketId
+        guard wallet.id == prepared.walletId else {
+            Log.w("🪵 Perps: submit stale — wallet changed (market=\(marketId))")
             return .failed(.stalePreparedTransaction)
         }
 
-        let session: LighterSession
+        let session: PerpsAccountSession
         do {
-            guard let resolved = try await activationService.tradingSession(wallet: wallet) else {
+            guard let resolved = try await accountService.tradingSession(wallet: wallet) else {
                 return .failed(.activationRequired)
             }
             session = resolved
@@ -1638,31 +1224,54 @@ private extension LighterPerpsTradingService {
             return .failed(mapped)
         }
 
+        // A plan is validated against the read it was built from, so planning belongs in
+        // the same lane as the signing it feeds: two operations that both plan before
+        // either one sends would each build on the state before the other's orders.
+        let scope = PerpsExecutionLock.Scope(accountIndex: session.accountIndex, apiKeyIndex: session.apiKeyIndex)
         do {
-            try await recoverInterruptedOperations(
-                wallet: wallet,
-                session: session,
-                excluding: operationId
-            )
+            return try await PerpsExecutionLock.shared.withScope(scope) {
+                do {
+                    if try await recoverLocalPendingInLane(excluding: operationId) {
+                        Log.w("🪵 Perps: unresolved pending blocks submit (market=\(marketId))")
+                        return .failed(.operationInProgress)
+                    }
+                } catch {
+                    let mapped = PerpsTradingErrorMapper.map(error)
+                    Log.w("🪵 Perps: pending recovery failed before submit \(mapped) (market=\(marketId))")
+                    return .failed(mapped)
+                }
+                return await submitInLane(session: session, marketId: marketId, build: build)
+            }
+        } catch is CancellationError {
+            return .failed(.operationInProgress)
         } catch {
-            let mapped = PerpsTradingErrorMapper.map(error)
-            Log.w("🪵 Perps: unresolved operation blocks submit \(mapped) (market=\(marketId))")
-            return .failed(mapped)
+            return .failed(PerpsTradingErrorMapper.map(error))
         }
+    }
 
+    private func submitInLane(
+        session: PerpsAccountSession,
+        marketId: Int64,
+        build: (PerpsAccountSession) async throws -> Submission
+    ) async -> PerpsSubmitResult {
         let submission: Submission
         do {
-            submission = try await build(wallet, session)
+            submission = try await build(session)
         } catch {
             let mapped = PerpsTradingErrorMapper.map(error)
             Log.w("🪵 Perps: submit prepare failed before network submit \(mapped) (market=\(marketId))")
             return .failed(mapped)
         }
 
-        let store = activationService.operationStore(wallet: wallet)
+        let store = accountService.pendingJournal(wallet: wallet)
         let pending: PerpsPendingTradingAction
         do {
-            pending = try await store.savePendingIfAbsent(submission.pending)
+            let result = try await store.savePendingIfAbsentWithStatus(submission.pending)
+            guard result.inserted else {
+                Log.w("🪵 Perps: duplicate submit blocked operation=\(result.pending.operationId) market=\(marketId)")
+                return .failed(.operationInProgress)
+            }
+            pending = result.pending
         } catch {
             let mapped = PerpsTradingErrorMapper.map(error)
             Log.w("🪵 Perps: pending journal failed before signing \(mapped) (market=\(marketId))")
@@ -1670,120 +1279,261 @@ private extension LighterPerpsTradingService {
         }
 
         Log.i("🪵 Perps: submit start operation=\(pending.operationId) market=\(marketId)")
+        var orderRefs = [PerpsPendingOrderRef]()
+        var signedSteps = [PerpsPendingSignedStep]()
+        func journaled() -> PerpsPendingTradingAction {
+            var value = pending
+            if !orderRefs.isEmpty { value.orderRefs = orderRefs }
+            if !signedSteps.isEmpty { value.signedSteps = signedSteps }
+            return value
+        }
+        let execution = PerpsExecutionRelay(
+            api: perpsAPI,
+            nonceCoordinator: nonceCoordinator,
+            persistState: { signed, state in
+                let refs = PerpsPlannerMapping.orderRefs(signed)
+                for ref in refs where !orderRefs.contains(ref) {
+                    orderRefs.append(ref)
+                }
+                let persisted = PerpsPendingSignedStep(
+                    stepId: signed.stepId,
+                    attemptId: signed.attemptId,
+                    nonce: signed.nonce,
+                    transactionExpiryUnixMs: signed.transactionExpiryUnixMs,
+                    txType: signed.txType,
+                    txInfo: signed.txInfo,
+                    txHash: signed.txHash,
+                    state: state
+                )
+                if let index = signedSteps.firstIndex(where: { $0.stepId == persisted.stepId }) {
+                    signedSteps[index] = persisted
+                } else {
+                    signedSteps.append(persisted)
+                }
+                try await store.appendSignedStep(
+                    operationId: pending.operationId,
+                    step: persisted,
+                    refs: refs
+                )
+            }
+        )
         do {
-            _ = try await submission.execute()
+            try await submission.execute(execution)
             Log.i("🪵 Perps: submit accepted operation=\(pending.operationId) market=\(marketId)")
-            return .submitted(pending)
+            return .submitted(journaled())
         } catch {
-            let operation: LighterOperation? = try? await bridgeKotlinOptional {
-                session.operations.operation(operationId: pending.operationId, completionHandler: $0)
+            let mapped = PerpsTradingErrorMapper.map(error)
+            if case .offline = mapped {
+                return .submitUnknown(journaled())
             }
-            if let operation, operation.state !== LighterOperationState.failed {
-                Log.w("🪵 Perps: submit outcome unknown operation=\(pending.operationId) state=\(operation.state)")
-                return .submitUnknown(pending)
+            if case .timeout = mapped {
+                return .submitUnknown(journaled())
             }
-            if let blocked = PerpsTradingErrorMapper.operationBlockedException(from: error),
-               blocked.blockingOperationId == pending.operationId
-            {
-                return .submitUnknown(pending)
+            if case .serverUnavailable = mapped {
+                return .submitUnknown(journaled())
+            }
+            if case .unknown = mapped {
+                return .submitUnknown(journaled())
+            }
+            if !signedSteps.isEmpty {
+                return .submitUnknown(journaled())
+            }
+            if !orderRefs.isEmpty {
+                return .submitUnknown(journaled())
             }
             try? await store.removePending(operationId: pending.operationId)
-            let mapped: PerpsTradingError
-            if let failure = operation?.failure {
-                mapped = PerpsTradingErrorMapper.map(failure)
-            } else {
-                mapped = PerpsTradingErrorMapper.map(error)
-            }
             Log.w("🪵 Perps: submit failed \(mapped) operation=\(pending.operationId) market=\(marketId)")
             return .failed(mapped)
         }
     }
 
-    func recoverInterruptedOperations(
-        wallet: Wallet,
-        session: LighterSession,
-        excluding operationId: String?
-    ) async throws {
-        let store = activationService.operationStore(wallet: wallet)
-        try await store.cleanupPending()
-        let operations: [LighterOperation] = try await bridgeKotlin { completion in
-            session.operations.unresolvedOperations(completionHandler: completion)
-        }
-        for operation in operations {
-            if let operationId, operation.operationId == operationId { continue }
-            let resumed: LighterOperation
-            do {
-                resumed = try await bridgeKotlin { completion in
-                    session.operations.resume(operationId: operation.operationId, completionHandler: completion)
+    func reconcileByState(
+        _ pending: PerpsPendingTradingAction,
+        label: String,
+        resolveOperation: Bool = true,
+        decide: (Components.Schemas.PositionState) -> PerpsTkReconcile.Decision
+    ) async -> PerpsReconcileResult {
+        guard wallet.id == pending.walletId else { return .pending }
+        return await settle(pending, label: label, resolveOnConfirm: resolveOperation) {
+            // Without the exact client order key, a position snapshot cannot answer
+            // this operation. Reading the unfiltered snapshot would accept a sibling
+            // order from the same market as proof that this one filled.
+            guard pending.positionOrderRef != nil else {
+                if pending.hasOnlyAcceptedSignedSteps {
+                    return .notSubmitted
                 }
-            } catch {
-                let current: LighterOperation? = try? await bridgeKotlinOptional {
-                    session.operations.operation(operationId: operation.operationId, completionHandler: $0)
+                if pending.signedSteps?.isEmpty == false {
+                    return .pending
                 }
-                if let current, current.state === LighterOperationState.failed {
-                    try? await store.removePending(operationId: operation.operationId)
-                    continue
-                }
-                throw PerpsTradingError.operationInProgress
+                Log.w("🪵 Perps: reconcile(\(label)) has no order key market=\(pending.marketId)")
+                return .notSubmitted
             }
-
-            guard let pending = try await store.pending(operationId: operation.operationId) else {
-                if !resumed.isTerminal {
-                    throw PerpsTradingError.operationInProgress
-                }
-                continue
-            }
-            _ = await reconcilePersisted(pending)
-            let current: LighterOperation? = try? await bridgeKotlinOptional {
-                session.operations.operation(operationId: operation.operationId, completionHandler: $0)
-            }
-            if current?.isTerminal != true {
-                throw PerpsTradingError.operationInProgress
-            }
+            let state = try await loadPositionState(
+                marketId: pending.marketId,
+                clientOrderIndex: pending.positionOrderRef?.clientOrderIndex
+            )
+            return decide(state)
         }
     }
 
-    func reconcilePersisted(_ pending: PerpsPendingTradingAction) async -> Bool {
-        switch pending.kind {
-        case .open:
-            if case .confirmed = await reconcileOpenMarket(pending) { return true }
-        case .close:
-            if case .confirmed = await reconcileClose(pending) { return true }
-        case .sizeChange:
-            if case .confirmed = await reconcileSizeChange(pending) { return true }
-        case .marginChange:
-            if case .confirmed = await reconcileMarginChange(pending) { return true }
-        case .autoCloseChange:
-            if case .confirmed = await reconcileAutoCloseChange(pending) { return true }
-        case .limitOrderChange:
-            if case .confirmed = await reconcileLimitOrderChange(pending) { return true }
+    /// The one place a reconciliation decision turns into a result: a settled pending
+    /// leaves the journal, a refusal is reported, and a read that failed is simply not
+    /// an answer yet.
+    func settle(
+        _ pending: PerpsPendingTradingAction,
+        label: String,
+        resolveOnConfirm: Bool = true,
+        decide: () async throws -> PerpsTkReconcile.Decision
+    ) async -> PerpsReconcileResult {
+        do {
+            switch try await decide() {
+            case .confirmed:
+                if resolveOnConfirm {
+                    await resolveSettled(pending)
+                }
+                Log.i("🪵 Perps: reconcile(\(label)) confirmed market=\(pending.marketId) side=\(pending.side)")
+                return .confirmed
+            case let .failed(message):
+                await resolveSettled(pending)
+                Log.w("🪵 Perps: reconcile(\(label)) refused market=\(pending.marketId) — \(message)")
+                return .failed(.serverRejected(message))
+            case .notSubmitted:
+                await resolveSettled(pending)
+                return .failed(.stalePreparedTransaction)
+            case .pending:
+                Log.i("🪵 Perps: reconcile(\(label)) still pending market=\(pending.marketId)")
+                return .pending
+            }
+        } catch {
+            Log.w("🪵 Perps: reconcile(\(label)) read failed market=\(pending.marketId) — \(error)")
+            return .pending
         }
+    }
+
+    func loadAccountSnapshot() async throws -> PerpsAccountSnapshot {
+        let walletId = try requireWalletId()
+        async let screen = perpsAPI.portfolioScreen(walletId: walletId)
+        async let page = perpsAPI.listOpenPositions(walletId: walletId)
+        return try await PerpsBackendMapping.snapshot(
+            availableBalance: screen.balance?.available_balance ?? "0",
+            positions: page.positions
+        )
+    }
+
+    func loadTradingScreen(marketId: Int64) async throws -> Components.Schemas.TradingScreen {
+        try await perpsAPI.tradingScreen(walletId: requireWalletId(), marketId: marketId)
+    }
+
+    func loadOpenPositionDetail(marketId: Int64) async throws -> Components.Schemas.OpenPositionDetail? {
+        do {
+            return try await perpsAPI.getOpenPosition(
+                walletId: requireWalletId(),
+                id: PerpsPlannerMapping.tkPositionId(marketId: marketId)
+            )
+        } catch PerpsAPIError.notFound {
+            return nil
+        }
+    }
+
+    func loadPositionState(
+        marketId: Int64,
+        clientOrderIndex: Int64?
+    ) async throws -> Components.Schemas.PositionState {
+        try await perpsAPI.positionState(
+            walletId: requireWalletId(),
+            id: PerpsPlannerMapping.tkPositionId(marketId: marketId),
+            clientOrderIndex: clientOrderIndex
+        )
+    }
+
+    func resolveSettled(_ pending: PerpsPendingTradingAction) async {
+        try? await accountService.pendingJournal(wallet: wallet)
+            .removePending(operationId: pending.operationId)
+    }
+
+    @discardableResult
+    func recoverLocalPending(excluding operationId: String?) async throws -> Bool {
+        guard let session = try await accountService.tradingSession(wallet: wallet) else {
+            return false
+        }
+        let scope = PerpsExecutionLock.Scope(
+            accountIndex: session.accountIndex,
+            apiKeyIndex: session.apiKeyIndex
+        )
+        return try await PerpsExecutionLock.shared.withScope(scope) {
+            try await recoverLocalPendingInLane(excluding: operationId)
+        }
+    }
+
+    @discardableResult
+    private func recoverLocalPendingInLane(excluding operationId: String?) async throws -> Bool {
+        try Task.checkCancellation()
+        let store = accountService.pendingJournal(wallet: wallet)
+        try await store.cleanupPending()
+        let pendings = try await store.allPending()
+        var hasUnresolved = false
+        for pending in pendings where pending.operationId != operationId {
+            try Task.checkCancellation()
+            if let sending = pending.signedSteps?.first(where: { $0.state == .sending }) {
+                // SENDING is the crash window: the request may already have reached
+                // the venue, so recovery must reconcile it, never send it again.
+                try? await store.appendSignedStep(
+                    operationId: pending.operationId,
+                    step: sending.withState(.unknown),
+                    refs: pending.orderRefs ?? []
+                )
+            }
+            if let signed = pending.signedSteps?.first(where: { $0.state == .signed }) {
+                do {
+                    try Task.checkCancellation()
+                    try await store.appendSignedStep(
+                        operationId: pending.operationId,
+                        step: signed.withState(.sending),
+                        refs: pending.orderRefs ?? []
+                    )
+                    try Task.checkCancellation()
+                    let relay = PerpsExecutionRelay(api: perpsAPI, nonceCoordinator: nonceCoordinator) { _ in }
+                    try await relay.submitPersisted(
+                        walletId: pending.walletId,
+                        txType: signed.txType,
+                        txInfo: signed.txInfo,
+                        expectedTxHash: signed.txHash
+                    )
+                    try await store.appendSignedStep(
+                        operationId: pending.operationId,
+                        step: signed.withState(.accepted),
+                        refs: pending.orderRefs ?? []
+                    )
+                } catch {
+                    try? await store.appendSignedStep(
+                        operationId: pending.operationId,
+                        step: signed.withState(.unknown),
+                        refs: pending.orderRefs ?? []
+                    )
+                    hasUnresolved = true
+                    continue
+                }
+            }
+            let current = (try? await store.pending(operationId: pending.operationId)) ?? pending
+            if await reconcilePersisted(current) == false {
+                hasUnresolved = true
+            }
+        }
+        return hasUnresolved
+    }
+
+    func reconcilePersisted(_ pending: PerpsPendingTradingAction) async -> Bool {
+        if case .confirmed = await reconcile(pending) { return true }
         return false
     }
 
     func activeLimitOrder(
-        wallet: Wallet,
-        accountIndex: Int64,
         marketId: Int64,
         orderIndex: Int64
     ) async throws -> PerpsLimitOrderSummary? {
-        try await activationService.activeOrders(
-            wallet: wallet,
-            accountIndex: accountIndex,
-            marketId: marketId
-        )
-        .first(where: { $0.orderIndex == orderIndex })
-        .flatMap(PerpsLimitOrderSummary.init(order:))
-    }
-
-    func notional(marginUsd: String, leverage: Double) -> Double? {
-        guard let margin = decimalDouble(marginUsd), margin > 0, leverage > 0 else { return nil }
-        return margin * leverage
-    }
-
-    func decimalDouble(_ string: String) -> Double? {
-        let trimmed = string.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, let decimal = Decimal(string: trimmed) else { return nil }
-        return NSDecimalNumber(decimal: decimal).doubleValue
+        let screen = try await loadTradingScreen(marketId: marketId)
+        guard PerpsBackendMapping.ordersVisible(screen.flags) else { return nil }
+        return PerpsBackendMapping.limitOrders(screen.open_orders)
+            .first { $0.orderIndex == orderIndex }
     }
 }

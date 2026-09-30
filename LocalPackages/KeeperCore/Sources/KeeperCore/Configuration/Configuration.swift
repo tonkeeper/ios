@@ -20,12 +20,6 @@ public final class Configuration {
         }
     }
 
-    public var tetraHost: String {
-        get async {
-            await loadConfigurations().tetra.tonapiV2Endpoint
-        }
-    }
-
     public func tonAPISSEEndpointV2(network: Network) async -> String? {
         _ = await loadConfigurations()
         return configuration(for: network).tonAPISSEEndpointV2
@@ -95,14 +89,6 @@ public final class Configuration {
 
     public var isConfirmButtonInsteadSlider: Bool {
         tkAppSettings.isConfirmButtonInsteadSlider
-    }
-
-    public var isTetraWalletEnabled: Bool {
-        tkAppSettings.isTetraWalletEnabled
-    }
-
-    public var lighterAPIEnvironment: LighterAPIEnvironment {
-        tkAppSettings.lighterAPIEnvironment
     }
 
     public var multichainHelpUrl: URL? {
@@ -206,7 +192,7 @@ public final class Configuration {
                     _configurations = configuration
                     return configuration
                 }
-                return BootConfigurations(mainnet: .empty, testnet: .empty, tetra: .empty)
+                return BootConfigurations(mainnet: .empty, testnet: .empty)
             }
         }
         set {
@@ -255,31 +241,14 @@ public final class Configuration {
     }
 
     public func featureEnabled(_ feature: FeatureFlag) -> Bool {
-        switch feature {
-        case .importMultichainEnabled:
-            resolveFeatureFlag(.importMultichainEnabled) || resolveFeatureFlag(.multichainEnabled)
-        default:
-            resolveFeatureFlag(feature)
-        }
+        resolveFeatureFlag(feature)
     }
 
     private func resolveFeatureFlag(_ feature: FeatureFlag) -> Bool {
         if let devOverride = featureFlags.devOverride(for: feature) {
             return devOverride
         }
-        if isFeatureFlagDisabledByBootConfiguration(feature) {
-            return false
-        }
         return featureFlags[feature]
-    }
-
-    public func isFeatureFlagDisabledByBootConfiguration(_ feature: FeatureFlag) -> Bool {
-        switch feature {
-        case .multichainEnabled, .importMultichainEnabled:
-            !flag(\.multichainEnabled, network: .mainnet)
-        default:
-            false
-        }
     }
 
     private func configuration(for network: Network) -> BootConfiguration {
@@ -288,8 +257,6 @@ public final class Configuration {
             return self.configurations.mainnet
         case .testnet:
             return self.configurations.testnet
-        case .tetra:
-            return self.configurations.tetra
         }
     }
 
@@ -310,6 +277,12 @@ public final class Configuration {
         do {
             return try await task.value
         } catch {
+            // Retry failures without clearing a replacement started by another caller.
+            lock.withLock {
+                if self.loadTask == task {
+                    self.loadTask = nil
+                }
+            }
             return self.configurations
         }
     }
@@ -322,7 +295,9 @@ public final class Configuration {
         let observerClosure: () -> Void = { [weak self, weak observer] in
             guard let self else { return }
             guard let observer else {
-                self.observers.removeValue(forKey: id)
+                self.lock.withLock {
+                    _ = self.observers.removeValue(forKey: id)
+                }
                 return
             }
             closure(observer)

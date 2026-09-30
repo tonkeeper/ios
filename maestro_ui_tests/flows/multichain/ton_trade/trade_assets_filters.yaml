@@ -1,0 +1,31 @@
+# regress_EN [Trading UI]: filters All, Crypto, Stocks, ETFs (regress says "tokens" → UI label Crypto).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000
+- runFlow: "../../../steps/ensure_trade_tab_or_relaunch.yaml"
+- runFlow: "../../../steps/trade/open_trade_tab.yaml"
+- runFlow: "../../../steps/trade/open_trade_search.yaml"
+
+- assertVisible: All
+- tapOn: Crypto
+- tapOn: "Search by ticker or name"
+- inputText: ${NATIVE_TOKEN_SHORT_TEXT}
+- extendedWaitUntil:
+    visible: ${NATIVE_TOKEN_SHORT_TEXT}
+    timeout: 120000
+
+- tapOn: Stocks
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn: ETFs
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn: All
+- extendedWaitUntil:
+    visible: ${NATIVE_TOKEN_SHORT_TEXT}
+    timeout: 120000

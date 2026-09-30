@@ -8,7 +8,7 @@ let package = Package(
         .iOS(.v15),
     ],
     products: [
-        // Dynamic so the wallet stack — ChainKit, yttrium, TonAPI, TONWalletKit, secp256k1,
+        // Dynamic so the wallet stack — ChainKit, yttrium, TonAPI, secp256k1,
         // the OpenAPI clients — is embedded once in the app and shared with
         // `TonkeeperWidgetExtension` / `TonkeeperIntents` over
         // `@executable_path/../../Frameworks`, instead of being statically linked into all
@@ -36,7 +36,6 @@ let package = Package(
         .package(path: "../TKFeatureFlags"),
         .package(path: "../TKAppInfo"),
         .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.1")),
-        .package(url: "https://github.com/ton-org/kit-ios.git", exact: "1.0.0"),
         // Imported directly by the targets below; previously satisfied transitively because
         // everything ended up statically linked into the app binary. Versions mirror what
         // ton-swift already resolves to, so the dependency graph is unchanged.
@@ -54,7 +53,7 @@ let package = Package(
         .package(url: "https://github.com/tonkeeper/ton-api-swift", exact: "0.8.0"),
         .package(url: "https://github.com/tonkeeper/battery-api-swift", exact: "4.0.1"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
-        .package(url: "https://github.com/tonkeeper/chainkit-swift", exact: "0.1.26"),
+        .package(url: "https://github.com/tonkeeper/chainkit-swift", exact: "0.1.28"),
         .package(url: "https://github.com/reown-com/reown-swift.git", exact: "2.2.9"),
         .package(url: "https://github.com/Flight-School/AnyCodable", .upToNextMajor(from: "0.6.1")),
         .package(url: "https://github.com/centrifugal/centrifuge-swift", exact: "0.9.0"),
@@ -133,7 +132,6 @@ let package = Package(
                 .target(name: "TKTonkeeperAPI"),
                 .target(name: "KeeperCoreComponents"),
                 .product(name: "TKLogging", package: "TKLogging"),
-                .product(name: "TONWalletKit", package: "kit-ios"),
                 .product(name: "TKAppInfo", package: "TKAppInfo"),
                 .product(name: "TKCryptoKit", package: "TronSwift"),
                 .product(name: "BigInt", package: "BigInt"),

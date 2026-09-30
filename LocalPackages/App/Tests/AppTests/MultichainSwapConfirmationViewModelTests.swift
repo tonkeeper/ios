@@ -1218,6 +1218,68 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         XCTAssertEqual(depositedAssetIds, [networkFee().asset.assetId])
     }
 
+    /// The TRON send screen shows the relayer's instant fee as a GRAM amount, and the swap row has to
+    /// read the same way for the same asset.
+    @MainActor
+    func test_gramFeeRowReadsLikeTheSendScreen() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(
+                    makeExecutionPlan(
+                        fees: [networkFee()],
+                        feeOptions: [gramOption(), nativeOption()]
+                    )
+                ),
+            ]
+        )
+        let viewModel = makeViewModel(executionService: executionService)
+
+        viewModel.viewDidLoad()
+        await waitUntil { executionService.executionPlanCallCount == 1 }
+
+        XCTAssertEqual(viewModel.selectedFeeOption?.method, .gram)
+        XCTAssertEqual(
+            viewModel.display.networkFeeMethod,
+            TransactionConfirmationModel.ExtraType.default.feeRowMethodTitle
+        )
+        XCTAssertTrue(
+            viewModel.display.networkFeeValue.hasSuffix(MultichainAssetDetails.gram.symbol),
+            viewModel.display.networkFeeValue
+        )
+    }
+
+    /// GRAM is not charges, so an unaffordable row leads to a TON deposit rather than to the battery
+    /// refill the charges row opens.
+    @MainActor
+    func test_insufficientGramOpensTheTonDeposit() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(
+                    makeExecutionPlan(
+                        fees: [networkFee()],
+                        feeOptions: [gramOption(isInsufficient: true), nativeOption()]
+                    )
+                ),
+            ]
+        )
+        var depositedAssetIds = [String]()
+        var refillRequests = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onRefillBattery: { _ in refillRequests += 1 },
+            onDepositNativeFee: { depositedAssetIds.append($0.assetId) }
+        )
+
+        viewModel.viewDidLoad()
+        await waitUntil { executionService.executionPlanCallCount == 1 }
+
+        viewModel.selectFeeOption(gramOption(isInsufficient: true))
+
+        XCTAssertEqual(depositedAssetIds, [MultichainAssetDetails.gram.assetId])
+        XCTAssertEqual(refillRequests, 0)
+        XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
+    }
+
     @MainActor
     func test_nativeFeeShortageIsSilentWhileARelayedMethodPays() async {
         let executionService = ConfirmationExecutionServiceSpy(
@@ -1829,6 +1891,13 @@ private extension MultichainSwapConfirmationViewModelTests {
         isInsufficient: Bool = false
     ) -> MultichainSwapFeeOption {
         MultichainSwapFeeOption(cost: .batteryCharges(count: charges, excess: nil, isInsufficient: isInsufficient))
+    }
+
+    func gramOption(
+        amountNano: BigUInt = 12_000_000,
+        isInsufficient: Bool = false
+    ) -> MultichainSwapFeeOption {
+        MultichainSwapFeeOption(cost: .gram(amountNano: amountNano, isInsufficient: isInsufficient))
     }
 
     func nativeOption(

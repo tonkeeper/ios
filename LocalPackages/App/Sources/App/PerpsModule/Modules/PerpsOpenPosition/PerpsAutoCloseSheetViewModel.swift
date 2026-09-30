@@ -9,6 +9,28 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
         case stopLoss
     }
 
+    /// What Set means on this sheet. The open and size-change flows edit a
+    /// draft the owner keeps; a live position submits to the venue, which is
+    /// the only case with a loading state and an inline failure.
+    enum Apply {
+        case draft((PerpsAutoClose?) -> Void)
+        case submit((PerpsAutoClose?) async -> ApplyResult)
+    }
+
+    /// `finished` means the form has nothing left to show: the owner closed the
+    /// sheet, or the user backed out of the confirmation.
+    enum ApplyResult {
+        case finished
+        case failed(String)
+
+        var failureText: String? {
+            switch self {
+            case .finished: nil
+            case let .failed(message): message
+            }
+        }
+    }
+
     @Published var takeProfitPercentText: String = ""
     @Published var takeProfitPriceText: String = ""
     @Published var stopLossPercentText: String = ""
@@ -16,36 +38,33 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
     @Published private(set) var isSubmitting = false
     @Published private(set) var submitErrorText: String?
 
-    let side: KeeperCore.PerpsTradeSide
+    let side: PerpsTradeSide
     let entryPrice: Double
+    let referencePrice: Double
     let leverage: Double
     let liquidationPrice: Double?
+    let priceDecimals: Int
 
     let takeProfitPresets: [Double] = [10, 20, 50, 100]
     let stopLossPresets: [Double] = [5, 10, 25, 50]
 
-    var onApply: ((PerpsAutoClose?) -> Void)?
+    var onApply: Apply?
     var onClose: (() -> Void)?
-    /// Live-position mode: Set submits to the venue and awaits it (designed
-    /// loading state on the button); the handler returns an inline error text,
-    /// or nil when the coordinator closed the sheet. The open flow leaves this
-    /// nil and applies drafts instantly via `onApply`.
-    var onSubmit: ((PerpsAutoClose?) async -> String?)?
 
     init(context: PerpsAutoCloseSheetContext) {
         side = context.side
         entryPrice = context.entryPrice
+        referencePrice = context.referencePrice
         leverage = context.leverage
         liquidationPrice = context.liquidationPrice
+        priceDecimals = context.priceDecimals
         hadDraft = context.draft != nil
-        // Prefill keeps the full trigger precision: on fine-tick markets a
-        // 2-decimal render would make an untouched Set move the resting legs.
         if let tp = context.draft?.takeProfit?.triggerPrice {
-            takeProfitPriceText = exactText(tp)
+            takeProfitPriceText = priceText(tp)
             takeProfitPercentText = percentText(fromPrice: tp)
         }
         if let sl = context.draft?.stopLoss?.triggerPrice {
-            stopLossPriceText = exactText(sl)
+            stopLossPriceText = priceText(sl)
             stopLossPercentText = percentText(fromPrice: sl)
         }
     }
@@ -61,7 +80,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
     var takeProfitWarningText: String? {
         PerpsAutoCloseValidation.warning(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             takeProfitPrice: takeProfitPrice,
             stopLossPrice: nil
@@ -71,7 +90,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
     var stopLossWarningText: String? {
         PerpsAutoCloseValidation.warning(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             takeProfitPrice: nil,
             stopLossPrice: stopLossPrice
@@ -87,7 +106,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
     /// that Set is the clear action. The open flow keeps empty-Set as "no draft".
     var isApplyEnabled: Bool {
         guard isValid else { return false }
-        guard onSubmit != nil else { return true }
+        guard case .some(.submit) = onApply else { return true }
         return takeProfitPrice != nil || stopLossPrice != nil || hadDraft
     }
 
@@ -96,31 +115,31 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
     // MARK: - Input (each field keeps its sibling in sync)
 
     func setTakeProfitPercent(_ text: String) {
-        takeProfitPercentText = sanitize(text)
+        takeProfitPercentText = sanitizePercent(text)
         takeProfitPriceText = priceText(fromPercentText: takeProfitPercentText, leg: .takeProfit)
     }
 
     func setTakeProfitPrice(_ text: String) {
-        takeProfitPriceText = sanitize(text)
+        takeProfitPriceText = sanitizePrice(text)
         takeProfitPercentText = percentText(fromPriceText: takeProfitPriceText)
     }
 
     func setStopLossPercent(_ text: String) {
-        stopLossPercentText = sanitize(text)
+        stopLossPercentText = sanitizePercent(text)
         stopLossPriceText = priceText(fromPercentText: stopLossPercentText, leg: .stopLoss)
     }
 
     func setStopLossPrice(_ text: String) {
-        stopLossPriceText = sanitize(text)
+        stopLossPriceText = sanitizePrice(text)
         stopLossPercentText = percentText(fromPriceText: stopLossPriceText)
     }
 
     func applyTakeProfitPreset(_ percent: Double) {
-        setTakeProfitPercent(trimmed(percent))
+        setTakeProfitPercent(percentText(percent))
     }
 
     func applyStopLossPreset(_ percent: Double) {
-        setStopLossPercent(trimmed(percent))
+        setStopLossPercent(percentText(percent))
     }
 
     func apply() {
@@ -128,17 +147,19 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
         let tp = takeProfitPrice.map { PerpsAutoCloseTrigger(triggerPrice: $0) }
         let sl = stopLossPrice.map { PerpsAutoCloseTrigger(triggerPrice: $0) }
         let autoClose = (tp == nil && sl == nil) ? nil : PerpsAutoClose(takeProfit: tp, stopLoss: sl)
-        guard let onSubmit else {
-            onApply?(autoClose)
-            return
-        }
-        submitErrorText = nil
-        isSubmitting = true
-        Task { @MainActor [weak self] in
-            let error = await onSubmit(autoClose)
-            guard let self else { return }
-            isSubmitting = false
-            submitErrorText = (error?.isEmpty == false) ? error : nil
+        guard let onApply else { return }
+        switch onApply {
+        case let .draft(apply):
+            apply(autoClose)
+        case let .submit(submit):
+            submitErrorText = nil
+            isSubmitting = true
+            Task { @MainActor [weak self] in
+                let result = await submit(autoClose)
+                guard let self else { return }
+                isSubmitting = false
+                submitErrorText = result.failureText
+            }
         }
     }
 
@@ -162,7 +183,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
 
     private func priceText(fromPercentText text: String, leg: Leg) -> String {
         guard let roi = parse(text), let price = price(fromROI: roi, leg: leg) else { return "" }
-        return trimmed(price)
+        return priceText(price)
     }
 
     private func percentText(fromPriceText text: String) -> String {
@@ -172,7 +193,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
 
     private func percentText(fromPrice price: Double) -> String {
         guard let roi = roi(fromPrice: price) else { return "" }
-        return trimmed(roi)
+        return percentText(roi)
     }
 
     private func parse(_ text: String) -> Double? {
@@ -180,29 +201,21 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject {
         return value
     }
 
-    private func sanitize(_ text: String) -> String {
-        AmountInputFormatter.normalizedString(
-            text,
-            decimalSeparator: ".",
-            maximumFractionDigits: 2,
-            interpretsLeadingZeroAsFractionalShortcut: false
-        ) ?? ""
+    // MARK: - Precision (a trigger is a market price, a percent is ROI on margin)
+
+    private func sanitizePrice(_ text: String) -> String {
+        PerpsDecimalInput.sanitize(text, decimals: priceDecimals)
     }
 
-    private func trimmed(_ value: Double) -> String {
-        PerpsDecimalInput.inputText(from: value)
+    private func sanitizePercent(_ text: String) -> String {
+        PerpsDecimalInput.sanitize(text, decimals: 2)
     }
 
-    private func exactText(_ value: Double) -> String {
-        // Swift's Double description is the shortest round-tripping form —
-        // exact without binary-noise tails; expand the rare scientific form.
-        let text = "\(value)"
-        guard text.lowercased().contains("e") else { return text }
-        var expanded = String(format: "%.12f", value)
-        while expanded.hasSuffix("0") {
-            expanded.removeLast()
-        }
-        if expanded.hasSuffix(".") { expanded.removeLast() }
-        return expanded
+    private func priceText(_ value: Double) -> String {
+        PerpsDecimalInput.text(value, decimals: priceDecimals)
+    }
+
+    private func percentText(_ value: Double) -> String {
+        PerpsDecimalInput.percentText(value)
     }
 }

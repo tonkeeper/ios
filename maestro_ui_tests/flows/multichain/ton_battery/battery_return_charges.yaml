@@ -1,0 +1,8 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: ../../../steps/launch_app_ensure_ton_wallet.yaml
+- runFlow: ../../../service/account/compare_ton_balance.yaml
+
+# Balance check leaves the screen scrolled to the asset list — open_battery scrolls back up.
+- runFlow: ../../../steps/battery/open_battery.yaml
+- runFlow: ../../../steps/battery/return_charges.yaml

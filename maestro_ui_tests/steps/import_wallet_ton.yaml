@@ -1,0 +1,89 @@
+appId: com.jbig.tonkeeper
+---
+# Import the TON funded wallet (WALLET_WITH_MONEY, primed into UIPasteboard by CI) on the
+# multichain build: same import entry as a multichain phrase, but "Choose wallet" gets
+# "TON wallet". The version chooser screens keep their default selection, exactly like the
+# import on the former TON-only build.
+- evalScript: ${output.importAttempt = 0; output.importPasteOk = false}
+
+- repeat:
+    while:
+      true: ${output.importAttempt < 3 && !output.importPasteOk}
+    commands:
+      - evalScript: ${output.importAttempt = output.importAttempt + 1}
+      - launchApp:
+          stopApp: true
+      - extendedWaitUntil:
+          visible: "Import Existing Wallet"
+          timeout: 45000
+      - tapOn: Import Existing Wallet
+      - extendedWaitUntil:
+          visible: "Import your existing TON or multichain wallet"
+          timeout: 30000
+      - tapOn: "Import your existing TON or multichain wallet"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn: Paste
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          text: Allow Paste
+          optional: true
+      - tapOn: Continue
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose wallet"
+          commands:
+            - tapOn: "TON wallet"
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose wallet version"
+          commands:
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose Wallets"
+          commands:
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: Create passcode
+          commands:
+            - evalScript: ${output.importPasteOk = true}
+
+- assertVisible: Create passcode
+
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- assertVisible: Re-enter passcode
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- runFlow: skip_notifications_onboarding.yaml
+
+- tapOn:
+    text: Continue
+    waitToSettleTimeoutMs: 15000
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    id: stories_close
+    optional: true

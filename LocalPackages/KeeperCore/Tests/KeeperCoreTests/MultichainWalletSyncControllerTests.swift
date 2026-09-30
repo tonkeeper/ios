@@ -186,27 +186,6 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
         XCTAssertEqual(mnemonicsSpy.requestedWalletIds, [])
     }
 
-    func test_needsStartupAppKeyWarm_isFalseWhenFeatureDisabled() async {
-        let synced = makeWallet(
-            id: "synced",
-            multichain: .multichain(makeState(walletId: "synced-state", syncState: .synced))
-        )
-        let appKeySpy = MultichainAppKeySpy(missingWalletIds: ["synced-state"])
-        let controller = makeController(
-            isFeatureEnabled: false,
-            wallets: [synced],
-            mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [:]),
-            syncSpy: MultichainWalletSyncSpy(),
-            persistenceSpy: MultichainSyncPersistenceSpy(),
-            appKeySpy: appKeySpy
-        )
-
-        let needsWarm = await controller.needsStartupAppKeyWarm()
-        XCTAssertFalse(needsWarm)
-        await controller.warmMissingAppKeys(passcode: "1234")
-        XCTAssertEqual(appKeySpy.warmedWalletIds, [])
-    }
-
     func test_syncPendingWallets_skipsNonRetryableWallets() async {
         let publicKey = makePublicKey(id: "signer")
         let wallets = [
@@ -423,80 +402,6 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
         XCTAssertEqual(bindingsSpy.unregisteredWalletIds, [])
     }
 
-    func test_reconcileBindings_doesNothingWhenFeatureDisabled() async {
-        let wallet = makeWallet(
-            id: "wallet",
-            multichain: .multichain(makeState(walletId: "wallet-state", syncState: .synced))
-        )
-        let bindingsSpy = MultichainBindingsSpy()
-        let controller = makeController(
-            isFeatureEnabled: false,
-            wallets: [wallet],
-            mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [:]),
-            syncSpy: MultichainWalletSyncSpy(),
-            persistenceSpy: MultichainSyncPersistenceSpy(),
-            bindingsSpy: bindingsSpy
-        )
-
-        await controller.reconcileBindings()
-
-        XCTAssertEqual(bindingsSpy.requestedWalletIds, [])
-    }
-
-    /// Import-only multichain never runs the enrichment sweep, so a legacy wallet stays without
-    /// state and would keep the pass reporting unfinished on every foreground trigger.
-    func test_reconcileBindings_reportsDoneWhenOnlyImportSyncIsEnabled() async {
-        let importedWallet = makeWallet(
-            id: "imported-wallet",
-            multichain: .multichain(makeState(walletId: "imported-state", syncState: .synced))
-        )
-        let legacyWallet = makeWallet(id: "legacy-wallet")
-        let bindingsSpy = MultichainBindingsSpy()
-        let controller = makeController(
-            isFeatureEnabled: true,
-            isBindingsReconcileEnabled: false,
-            wallets: [importedWallet, legacyWallet],
-            mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [:]),
-            syncSpy: MultichainWalletSyncSpy(),
-            persistenceSpy: MultichainSyncPersistenceSpy(),
-            bindingsSpy: bindingsSpy
-        )
-
-        let didReconcile = await controller.reconcileBindings()
-
-        XCTAssertTrue(didReconcile)
-        XCTAssertEqual(bindingsSpy.requestedWalletIds, [])
-    }
-
-    func test_needsStartupSync_isFalseWhenFeatureDisabled() async {
-        let wallet = makeWallet(
-            id: "wallet",
-            multichain: .multichain(makeState(walletId: "wallet-state", syncState: .pending))
-        )
-        let mnemonicsSpy = MultichainSyncMnemonicsSpy(
-            mnemonics: [
-                wallet.id: makeMnemonic(word: "abandon"),
-            ]
-        )
-        let syncSpy = MultichainWalletSyncSpy()
-        let persistenceSpy = MultichainSyncPersistenceSpy()
-        let controller = makeController(
-            isFeatureEnabled: false,
-            wallets: [wallet],
-            mnemonicsSpy: mnemonicsSpy,
-            syncSpy: syncSpy,
-            persistenceSpy: persistenceSpy
-        )
-
-        XCTAssertFalse(controller.needsStartupSync)
-
-        await controller.syncPendingWallets(passcode: "1234")
-
-        XCTAssertEqual(mnemonicsSpy.requestedWalletIds, [])
-        XCTAssertEqual(syncSpy.syncedWalletIds, [])
-        XCTAssertEqual(persistenceSpy.savedWalletIds, [])
-    }
-
     func test_reconcileBindings_waitsForAnInFlightSync() async {
         let wallet = makeWallet(
             id: "pending",
@@ -535,7 +440,6 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
             id: "pending",
             multichain: .multichain(makeState(walletId: "pending-state", syncState: .pending))
         )
-        let featureFlag = MutableFeatureFlag(true)
         let syncSpy = MultichainWalletSyncSpy()
         syncSpy.blockGate = MultichainSyncGate()
         let bindingsSpy = MultichainBindingsSpy()
@@ -544,8 +448,7 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
             mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [wallet.id: makeMnemonic(word: "abandon")]),
             syncSpy: syncSpy,
             persistenceSpy: MultichainSyncPersistenceSpy(),
-            bindingsSpy: bindingsSpy,
-            isFeatureEnabledProvider: { featureFlag.value }
+            bindingsSpy: bindingsSpy
         )
 
         let sync = Task { await controller.syncPendingWallets(passcode: "1234") }
@@ -555,51 +458,16 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
             await controller.reconcileBindings()
             didFinishReconcile.fulfill()
         }
+        // Nothing holds the reconcile back except the gate, so by now it is parked there.
         for _ in 0 ..< 64 {
-            guard featureFlag.readCount < 3 else { break }
             await Task.yield()
         }
-        XCTAssertGreaterThanOrEqual(featureFlag.readCount, 3, "reconcile did not reach the gate")
         reconcile.cancel()
         await fulfillment(of: [didFinishReconcile], timeout: 1)
         await reconcile.value
 
         syncSpy.blockGate?.open()
         await sync.value
-
-        XCTAssertEqual(bindingsSpy.requestedWalletIds, [])
-    }
-
-    func test_reconcileBindings_rechecksFeatureFlagAfterWaitingForSync() async {
-        let wallet = makeWallet(
-            id: "pending",
-            multichain: .multichain(makeState(walletId: "pending-state", syncState: .pending))
-        )
-        let featureFlag = MutableFeatureFlag(true)
-        let syncSpy = MultichainWalletSyncSpy()
-        syncSpy.blockGate = MultichainSyncGate()
-        let bindingsSpy = MultichainBindingsSpy()
-        let controller = makeController(
-            wallets: [wallet],
-            mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [wallet.id: makeMnemonic(word: "abandon")]),
-            syncSpy: syncSpy,
-            persistenceSpy: MultichainSyncPersistenceSpy(),
-            bindingsSpy: bindingsSpy,
-            isFeatureEnabledProvider: { featureFlag.value }
-        )
-
-        let sync = Task { await controller.syncPendingWallets(passcode: "1234") }
-        await syncSpy.didStartSync.wait()
-        let reconcile = Task { await controller.reconcileBindings() }
-        for _ in 0 ..< 64 {
-            guard featureFlag.readCount < 3 else { break }
-            await Task.yield()
-        }
-        XCTAssertGreaterThanOrEqual(featureFlag.readCount, 3, "reconcile did not reach the gate")
-        featureFlag.value = false
-        syncSpy.blockGate?.open()
-        await sync.value
-        await reconcile.value
 
         XCTAssertEqual(bindingsSpy.requestedWalletIds, [])
     }
@@ -1000,49 +868,18 @@ private final class MultichainSyncPersistenceSpy {
     }
 }
 
-private final class MutableFeatureFlag: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storedValue: Bool
-    private var storedReadCount = 0
-
-    var value: Bool {
-        get {
-            lock.withLock {
-                storedReadCount += 1
-                return storedValue
-            }
-        }
-        set { lock.withLock { storedValue = newValue } }
-    }
-
-    var readCount: Int {
-        lock.withLock { storedReadCount }
-    }
-
-    init(_ value: Bool) {
-        storedValue = value
-    }
-}
-
 private extension MultichainWalletSyncControllerTests {
     func makeController(
-        isFeatureEnabled: Bool = true,
-        isBindingsReconcileEnabled: Bool? = nil,
         wallets: [Wallet],
         mnemonicsSpy: MultichainSyncMnemonicsSpy,
         syncSpy: MultichainWalletSyncSpy,
         persistenceSpy: MultichainSyncPersistenceSpy,
         bindingsSpy: MultichainBindingsSpy = MultichainBindingsSpy(),
         appKeySpy: MultichainAppKeySpy = MultichainAppKeySpy(),
-        isFeatureEnabledProvider: (() -> Bool)? = nil,
         getWalletsProvider: (() -> [Wallet])? = nil
     ) -> MultichainWalletSyncControllerImplementation {
         MultichainWalletSyncControllerImplementation(
             dependencies: MultichainWalletSyncControllerDependencies(
-                isFeatureEnabled: { isFeatureEnabledProvider?() ?? isFeatureEnabled },
-                isBindingsReconcileEnabled: {
-                    isBindingsReconcileEnabled ?? (isFeatureEnabledProvider?() ?? isFeatureEnabled)
-                },
                 getWallets: { getWalletsProvider?() ?? wallets },
                 getMnemonics: mnemonicsSpy.getMnemonics,
                 syncWallet: syncSpy.syncWallet,

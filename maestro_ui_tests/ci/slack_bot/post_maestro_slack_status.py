@@ -237,10 +237,6 @@ def _unit_tests_line(
     return f"{header}\n{body}"
 
 
-def _cluster_of(flow_group: str) -> str:
-    return "multichain" if flow_group.startswith("multichain-") else "ton-state"
-
-
 def _shard_line(
     status: FinalShardStatus,
     urls: dict[str, str],
@@ -317,8 +313,6 @@ def _build_main_text(
         return "\n".join(parts)
 
     urls = artifact_urls or {}
-    ton_state = [s for s in statuses if _cluster_of(s.flow_group) == "ton-state"]
-    multichain = [s for s in statuses if _cluster_of(s.flow_group) == "multichain"]
 
     lines = [f"*{platform} Maestro UI tests*"]
     if rerun.ran:
@@ -329,12 +323,8 @@ def _build_main_text(
             f"across {len(rerun.shards)} shard(s)"
         )
 
-    if ton_state:
-        lines.append("")
-        lines.extend(_cluster_block("ton-state", ton_state, urls, run_id))
-    if multichain:
-        lines.append("")
-        lines.extend(_cluster_block("multichain", multichain, urls, run_id))
+    lines.append("")
+    lines.extend(_cluster_block("multichain", statuses, urls, run_id))
 
     if unit_line:
         lines.append("")

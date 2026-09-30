@@ -65,7 +65,11 @@ struct BatteryRechargeSignRawBuilder {
             messagesVariants: nil
         )
 
-        return .signRaw(request, forceRelayer: isForceRelayer)
+        return .signRaw(
+            request,
+            forceRelayer: isForceRelayer,
+            broadcast: wallet.isMultichain ? .battery : .tonAPI
+        )
     }
 
     private func createMessages(

@@ -1,4 +1,4 @@
-# Multichain Swap: token picker search finds USDT (adapted from ton-state swap_token_picker_search_test).
+# Multichain Swap: token picker search finds USDT (adapted from ton_transactions/swap_token_picker_search_test).
 appId: com.jbig.tonkeeper
 ---
 - runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"

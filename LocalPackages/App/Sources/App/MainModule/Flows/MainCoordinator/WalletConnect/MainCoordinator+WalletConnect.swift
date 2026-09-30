@@ -31,7 +31,6 @@ enum WalletConnectEventsLoop {
 extension MainCoordinator {
     func setupWalletConnectIfNeeded() {
         guard walletConnectState.eventsLoop == nil else { return }
-        guard isWalletConnectAvailable else { return }
 
         let readiness = Task { [weak self] () -> AsyncStream<WalletConnectServiceEvent>? in
             guard let self else {
@@ -73,9 +72,6 @@ extension MainCoordinator {
 
     func handleWalletConnectDeeplink(_ payload: WalletConnectDeeplink) -> Bool {
         switch walletConnectAvailability.deeplinkDecision {
-        case .featureUnavailable:
-            Log.walletConnect.i("WalletConnect deeplink ignored: multichain is disabled")
-            return false
         case .activeWalletNotMultichain:
             Log.walletConnect.i("WalletConnect deeplink ignored: active wallet is not multichain")
             ToastPresenter.hideAll()
@@ -114,28 +110,14 @@ extension MainCoordinator {
 }
 
 private extension MainCoordinator {
-    var isWalletConnectAvailable: Bool {
-        keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.multichainEnabled)
-    }
-
     var walletConnectAvailability: WalletConnectAvailability {
         WalletConnectAvailability(
-            isMultichainEnabled: isWalletConnectAvailable,
             isActiveWalletMultichain: isActiveWalletMultichain
         )
     }
 
     @MainActor
     func handleWalletConnectEvent(_ event: WalletConnectServiceEvent) async {
-        guard walletConnectAvailability.canHandleEvents else {
-            clearWalletConnectPairingLoaders()
-            Log.walletConnect.i("WalletConnect event ignored because multichain is disabled")
-            return
-        }
-
         switch event {
         case let .pairingStarted(pairingTopic, _):
             handleWalletConnectPairingStarted(pairingTopic: pairingTopic)

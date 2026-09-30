@@ -17,6 +17,8 @@ final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRout
 
     private let wallet: Wallet
     private let jettonMasterAddress: Address?
+    private let initiatedBy: InitiatedBy
+    private let utm: UtmParameters
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let promocodeStore: BatteryPromocodeStore
@@ -26,11 +28,15 @@ final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRout
         router: NavigationControllerRouter,
         wallet: Wallet,
         jettonMasterAddress: Address?,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) {
         self.wallet = wallet
         self.jettonMasterAddress = jettonMasterAddress
+        self.initiatedBy = initiatedBy
+        self.utm = utm
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
@@ -187,7 +193,8 @@ private extension BatteryRefillCoordinator {
                 }
             ),
             sendFrom: .tonconnectRemote,
-            initiatedBy: .user,
+            initiatedBy: initiatedBy,
+            utm: utm,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in

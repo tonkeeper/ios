@@ -1,0 +1,13 @@
+# regress_EN: Browser internal browser — dapp deeplink opens the service.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- openLink: "https://app.tonkeeper.com/dapp/ston.fi"
+- tapOn:
+    text: Open
+    optional: true
+
+- extendedWaitUntil:
+    visible: "ston.fi"
+    timeout: 60000

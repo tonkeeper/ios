@@ -164,7 +164,6 @@ private extension ImportWalletCoordinator {
                 Log.w("\(error)")
                 analyticsProvider.logWalletImportError(
                     mnemonic: mnemonic,
-                    multichainEnabled: isMultichainImportEnabled,
                     from: analyticsContext.from,
                     error: error
                 )
@@ -214,7 +213,6 @@ private extension ImportWalletCoordinator {
         guard !activeWalletModels.isEmpty else {
             analyticsProvider.logWalletImportError(
                 mnemonic: mnemonic,
-                multichainEnabled: isMultichainImportEnabled,
                 from: analyticsContext.from,
                 errorMessage: TKLocales.ImportWallet.incorrectPhrase
             )
@@ -237,7 +235,6 @@ private extension ImportWalletCoordinator {
 
     var isWalletKindSelectionEnabled: Bool {
         network == .mainnet
-            && configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
     }
 
     func resolveDerivationType(phrase: [String]) -> DerivationType {
@@ -556,7 +553,6 @@ private extension ImportWalletCoordinator {
                     ])
                     self.analyticsProvider.logWalletImportError(
                         mnemonic: request.mnemonic,
-                        multichainEnabled: self.isMultichainImportEnabled,
                         from: self.analyticsContext.from,
                         error: error
                     )
@@ -592,13 +588,8 @@ private extension ImportWalletCoordinator {
         )
         analyticsProvider.logWalletImportSuccess(
             mnemonic: request.mnemonic,
-            multichainEnabled: isMultichainImportEnabled,
             from: analyticsContext.from
         )
-    }
-
-    var isMultichainImportEnabled: Bool {
-        configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
     }
 
     func makePasscodeBiometryEnabler() -> PasscodeBiometryEnabler? {

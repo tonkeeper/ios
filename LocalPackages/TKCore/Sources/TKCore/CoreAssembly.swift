@@ -1,10 +1,3 @@
-//
-//  CoreAssembly.swift
-//
-//
-//  Created by Grigory on 29.9.23..
-//
-
 import KeeperCore
 import TKAppInfo
 import TKFeatureFlags
@@ -43,6 +36,7 @@ public final class CoreAssembly {
     }
 
     public lazy var analyticsProvider: AnalyticsProvider = {
+        let configuration = keeperCoreAssembly.configurationAssembly.configuration
         let aptabaseService = AptabaseConfigurator.configurator.makeAnalyticsService(
             persistentCacheEnabled: featureFlags[.analyticsPersistentCache],
             cohortSource: AptabaseCohortSource(
@@ -51,8 +45,17 @@ public final class CoreAssembly {
             ),
             installId: uniqueIdProvider.uniqueInstallId.uuidString,
             sendStatsImmediately: TKAppPreferences.sendStatsImmediately,
-            reachabilityTracker: reachabilityTracker
+            reachabilityTracker: reachabilityTracker,
+            remoteEndpoint: { [weak configuration] in configuration?.value(\.aptabaseEndpoint) }
         )
+        if aptabaseService is AptabaseService {
+            configuration.addUpdateObserver(AptabaseConfigurator.configurator) { [weak configuration] configurator in
+                configurator.retarget { configuration?.value(\.aptabaseEndpoint) }
+            }
+            AptabaseConfigurator.configurator.retarget { [weak configuration] in
+                configuration?.value(\.aptabaseEndpoint)
+            }
+        }
         let analyticsServices: [AnalyticsService]
         #if DEBUG
             analyticsServices = [ConsoleAnalyticsLogger(), aptabaseService]

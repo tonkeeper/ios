@@ -1,4 +1,4 @@
-# Selects Tonkeeper Battery as the network fee method when the wallet has enough charges.
+# Selects Keeper Battery as the network fee method when the wallet has enough charges.
 # Prerequisite: confirmation screen is visible (Network fee / Fee row).
 #
 # Sets output.batteryFeeSelected so the caller can tell the two outcomes apart:
@@ -11,7 +11,7 @@ appId: com.jbig.tonkeeper
 - runFlow: open_network_fee_picker.yaml
 
 - extendedWaitUntil:
-    visible: Tonkeeper Battery
+    visible: Keeper Battery
     timeout: 30000
 
 - evalScript: ${output.batteryFeeSelected = false}
@@ -19,7 +19,7 @@ appId: com.jbig.tonkeeper
     when:
       notVisible: Deposit
     commands:
-      - tapOn: Tonkeeper Battery
+      - tapOn: Keeper Battery
       - waitForAnimationToEnd:
           timeout: 3000
       # Fee value switches to charges once Battery is selected.

@@ -1,4 +1,4 @@
-import BigInt
+@preconcurrency import BigInt
 import Foundation
 
 public struct WalletMigrationPrepareResult: Sendable {

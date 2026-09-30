@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Source from which a dapp was opened. Shared by dapp_app_click and dapp_app_loaded so the two stay in lockstep.  */
+/** Source from which a dapp was opened. Shared by dapp_app_click and dapp_app_loaded so the two stay in lockstep. - banner: in-app banner - browser / browser_search / browser_connected: Browser / Discover   surfaces - push: push notification that opens a dapp URL - sidebar: desktop sidebar - deep_link: tonkeeper:// / https:// dapp deep link - history: history event details (explorer / transaction link) - collectibles: collectibles / NFT surface - tonconnect: after a TonConnect (or WalletKit) connect flow, when the   client opens the connected dapp&#39;s URL  */
 public enum DappAppFrom: String, Codable, CaseIterable {
     case banner = "banner"
     case browser = "browser"
@@ -19,5 +19,8 @@ public enum DappAppFrom: String, Codable, CaseIterable {
     case push = "push"
     case sidebar = "sidebar"
     case deepLink = "deep_link"
+    case history = "history"
+    case collectibles = "collectibles"
+    case tonconnect = "tonconnect"
 }
 

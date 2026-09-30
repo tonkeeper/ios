@@ -22,10 +22,16 @@ protocol MultichainSwapAPI {
 final class MultichainSwapAPIImplementation: MultichainSwapAPI {
     private let client: SwapAPI.Client
     private let firebaseUserIdProvider: @Sendable () -> String?
+    private let isNewUser: @Sendable () -> Bool
 
-    init(swapAPIClient: SwapAPI.Client, firebaseUserIdProvider: @escaping @Sendable () -> String?) {
+    init(
+        swapAPIClient: SwapAPI.Client,
+        firebaseUserIdProvider: @escaping @Sendable () -> String?,
+        isNewUser: @escaping @Sendable () -> Bool
+    ) {
         client = swapAPIClient
         self.firebaseUserIdProvider = firebaseUserIdProvider
+        self.isNewUser = isNewUser
     }
 
     func listCrossSwapAssets(query: MultichainSwapAssetsQuery) async throws(MultichainSwapAPIError) -> [MultichainSwapAsset] {
@@ -101,6 +107,7 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
         let output = try await apiCall(
             await client.createCrossSwapQuote(
                 .init(
+                    query: .init(is_new: isNewUser()),
                     headers: .init(
                         X_hyphen_Wallet_hyphen_ID: walletId,
                         F: firebaseUserIdProvider()
@@ -132,6 +139,7 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
             await client.prepareCrossSwapRoute(
                 .init(
                     path: path,
+                    query: .init(is_new: isNewUser()),
                     headers: .init(
                         X_hyphen_Wallet_hyphen_ID: walletId,
                         F: firebaseUserIdProvider()

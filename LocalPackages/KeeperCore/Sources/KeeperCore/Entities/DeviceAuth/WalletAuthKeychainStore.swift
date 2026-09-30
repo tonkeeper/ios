@@ -67,6 +67,12 @@ final class WalletAuthKeychainStore: @unchecked Sendable {
         }
     }
 
+    /// Drops the minted credential but keeps the app key, so the next request signs a fresh one
+    /// without a passcode.
+    func deleteToken(walletId: String) {
+        try? keychainVault.delete(query(walletId: walletId, item: .token))
+    }
+
     func delete(walletId: String) {
         try? keychainVault.delete(query(walletId: walletId, item: .appKey))
         try? keychainVault.delete(query(walletId: walletId, item: .token))

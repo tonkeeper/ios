@@ -646,7 +646,8 @@ private extension ChainKitServiceImplementation {
             energy: feeAsset,
             isMax: isMaxAmount,
             to: recipientAddress,
-            meta: comment
+            memo: comment,
+            payload: nil
         )
         return (transfer, feeAsset, chain.asChainKitChain.network.type)
     }
@@ -666,7 +667,8 @@ extension ChainKitServiceImplementation {
             energy: transfer.energy,
             isMax: true,
             to: transfer.to,
-            meta: transfer.meta
+            memo: transfer.memo,
+            payload: transfer.payload
         )
     }
 }

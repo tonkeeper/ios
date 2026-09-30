@@ -1,0 +1,33 @@
+appId: com.jbig.tonkeeper
+---
+
+- launchApp:
+    clearState: true
+
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- runFlow: "../../../steps/backup/open_backup_show_recovery_phrase.yaml"
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- extendedWaitUntil:
+    visible: "Recovery phrase"
+    timeout: 15000
+
+- runScript:
+    file: ../../../scripts/utils/parse_mnemonic.js
+    env:
+      phrase: ${WALLET_WITH_MONEY}
+
+- evalScript: ${output.i = 0}
+
+- repeat:
+    while:
+      true: ${output.i < output.word.length}
+    commands:
+      - copyTextFrom:
+          id: "mnemonic.word.${output.i}"
+      - assertTrue:
+          condition: ${maestro.copiedText == output.word[output.i]}
+          label: "Backup word ${output.i} should equal imported phrase word"
+      - evalScript: ${output.i = output.i + 1}

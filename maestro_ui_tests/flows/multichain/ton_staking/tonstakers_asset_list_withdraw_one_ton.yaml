@@ -1,0 +1,55 @@
+# Tonstakers from main asset list → Unstake → withdraw 1 TON (sign in UI).
+# Preconditions: English UI; Tonstakers row on wallet list; ≥1 TON equivalent staked (e.g. after tonstakers_asset_list_deposit_one_ton in the same shard).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../service/account/compare_ton_balance.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# centerElement + visibilityPercentage:100 stop the scroll only once the row is fully
+# on-screen and centered, so the tap can't land on a bottom-edge sliver. The trailing
+# waitForAnimationToEnd lets the async balance/price finish loading into the row before
+# the tap, otherwise the cell reflows after the scroll and the tap misses.
+- scrollUntilVisible:
+    element: "Tonstakers"
+    direction: DOWN
+    centerElement: true
+    visibilityPercentage: 100
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn: "Tonstakers"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_balance_unstake"
+    timeout: 30000
+- tapOn:
+    id: "staking_balance_unstake"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_amount_input"
+    timeout: 30000
+- tapOn:
+    id: "staking_amount_input"
+- inputText: "1"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_continue"
+    timeout: 30000
+- tapOn:
+    id: "staking_deposit_continue"
+
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- runFlow: "../../../service/history/last_tonstakers_stake_withdraw_assert.yaml"

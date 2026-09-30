@@ -3,32 +3,9 @@ import TKTradingAPI
 import XCTest
 
 final class TradingAssetDetailsServiceEndpointSelectionTests: XCTestCase {
-    func test_loadAssetDetails_whenMultichainDisabled_callsV1Endpoint() async {
+    func test_loadAssetDetails_callsV2Endpoint() async {
         let api = TradingAPISpy()
-        let service = makeService(
-            api: api,
-            isMultichainEnabled: false
-        )
-
-        await assertNetworkError {
-            _ = try await service.loadAssetDetails(id: "ton/mainnet/jetton/0:asset")
-        }
-        let calls = await api.calls()
-
-        XCTAssertEqual(
-            calls,
-            [
-                .getAssetsDetails(assetId: "ton/mainnet/jetton/0:asset"),
-            ]
-        )
-    }
-
-    func test_loadAssetDetails_whenMultichainEnabled_callsV2Endpoint() async {
-        let api = TradingAPISpy()
-        let service = makeService(
-            api: api,
-            isMultichainEnabled: true
-        )
+        let service = makeService(api: api)
 
         await assertNetworkError {
             _ = try await service.loadAssetDetails(id: "ton/mainnet/jetton/0:asset")
@@ -46,14 +23,12 @@ final class TradingAssetDetailsServiceEndpointSelectionTests: XCTestCase {
 
 private extension TradingAssetDetailsServiceEndpointSelectionTests {
     func makeService(
-        api: TradingAPI,
-        isMultichainEnabled: Bool
+        api: TradingAPI
     ) -> TradingAssetDetailsServiceImplementation {
         TradingAssetDetailsServiceImplementation(
             api: api,
             cache: InMemoryKeyedCache<String, TradingAssetDetails>(),
-            requestContextProvider: TradingRequestContextProviderStub(),
-            isMultichainEnabled: isMultichainEnabled
+            requestContextProvider: TradingRequestContextProviderStub()
         )
     }
 
@@ -78,7 +53,6 @@ private extension TradingAssetDetailsServiceEndpointSelectionTests {
 
 private actor TradingAPISpy: TradingAPI {
     enum Call: Equatable {
-        case getAssetsDetails(assetId: String)
         case getAssetsDetailsV2(assetId: String)
     }
 
@@ -128,7 +102,10 @@ private actor TradingAPISpy: TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps _: Bool?,
+        chain _: String?,
+        filter _: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         throw .unknown(underlying: nil)
     }
@@ -138,14 +115,6 @@ private actor TradingAPISpy: TradingAPI {
         ids: [String]
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         throw .unknown(underlying: nil)
-    }
-
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
-        recordedCalls.append(.getAssetsDetails(assetId: assetId))
-        throw .transportError(underlying: nil)
     }
 
     func getAssetsDetailsV2(

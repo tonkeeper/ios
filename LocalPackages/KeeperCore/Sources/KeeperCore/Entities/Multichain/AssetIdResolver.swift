@@ -61,7 +61,7 @@ public enum AssetId {
 private extension Network {
     var assetIdNetworkIdentifier: String {
         switch self {
-        case .mainnet, .tetra: "mainnet"
+        case .mainnet: "mainnet"
         case .testnet: "testnet"
         }
     }

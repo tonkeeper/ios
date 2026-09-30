@@ -1,25 +1,21 @@
 import Foundation
-import TKFeatureFlags
 
 final class TradingAssembly {
     private let tradingAPIAssembly: TradingAPIAssembly
     private let appInfoProvider: AppInfoProvider
     private let repositoriesAssembly: RepositoriesAssembly
     private let coreAssembly: CoreAssembly
-    private let configuration: Configuration
 
     init(
         tradingAPIAssembly: TradingAPIAssembly,
         appInfoProvider: AppInfoProvider,
         repositoriesAssembly: RepositoriesAssembly,
-        coreAssembly: CoreAssembly,
-        configuration: Configuration
+        coreAssembly: CoreAssembly
     ) {
         self.tradingAPIAssembly = tradingAPIAssembly
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
         self.coreAssembly = coreAssembly
-        self.configuration = configuration
     }
 
     private(set) lazy var shelvesService: TradingShelvesService = TradingShelvesServiceImplementation(
@@ -38,8 +34,7 @@ final class TradingAssembly {
     private(set) lazy var assetDetailsService: TradingAssetDetailsService = TradingAssetDetailsServiceImplementation(
         api: tradingAPIAssembly.api,
         cache: assetDetailsCache,
-        requestContextProvider: requestContextProvider,
-        isMultichainEnabled: configuration.featureEnabled(.multichainEnabled)
+        requestContextProvider: requestContextProvider
     )
 
     private(set) lazy var favoriteAssetsService: TradingFavoriteAssetsService = TradingFavoriteAssetsServiceImplementation(

@@ -17,18 +17,21 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
 
     private let wallet: Wallet
     private let model: NativeSwapTransactionConfirmationModel
+    private let initiatedBy: InitiatedBy
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
 
     init(
         wallet: Wallet,
         model: NativeSwapTransactionConfirmationModel,
+        initiatedBy: InitiatedBy,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter
     ) {
         self.wallet = wallet
         self.model = model
+        self.initiatedBy = initiatedBy
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
 
@@ -108,10 +111,10 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
                 toToken: model.toToken,
                 amount: model.fromAmount,
                 feeAsset: feeAsset,
-                origin: .user,
+                origin: TransactionOrigin(initiatedBy: initiatedBy, utm: model.utm),
                 isMax: confirmationModel.isMax
             ) {
-                coreAssembly.analyticsProvider.log(event)
+                coreAssembly.analyticsProvider.log(event, utm: model.utm)
             }
             didClose?()
         }

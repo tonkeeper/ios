@@ -15,6 +15,8 @@ extension MultichainSwapFeeOption {
                 return .default
             }
             return .multichain(token: asset)
+        case .gram:
+            return .default
         }
     }
 
@@ -33,6 +35,13 @@ extension MultichainSwapFeeOption {
                     style: .compact
                 )
             }.joined(separator: " · ")
+        case let .gram(amountNano, _):
+            return amountFormatter.format(
+                amount: amountNano,
+                fractionDigits: MultichainAssetDetails.gram.decimals,
+                accessory: .tokenSymbol(MultichainAssetDetails.gram.symbol),
+                style: .compact
+            )
         }
     }
 }

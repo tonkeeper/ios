@@ -4,7 +4,7 @@ public protocol MultichainRampService {
     func getLayoutCards(flow: String, currency: String?) async throws -> OnRampLayoutCards
     func getOnrampChains(query: OnRampChainsQuery, walletId: String?) async throws -> OnRampChains
     func getOnrampConfiguration(query: OnRampConfigurationQuery, walletId: String?) async throws -> OnRampConfiguration
-    func getOnrampAsset(assetId: String, walletId: String?) async throws -> OnRampAssetDetail
+    func getOnrampAsset(assetId: String, fiat: String?, walletId: String?) async throws -> OnRampAssetDetail
     func onrampQuote(request: OnRampQuoteRequest, walletId: String?) async throws -> OnRampQuotesResult
     func createOnrampOrder(request: OnRampCreateOrderRequest, walletId: String?) async throws -> OnRampOrder
     func getOnrampOrder(orderId: String) async throws -> OnRampOrder
@@ -47,8 +47,8 @@ final class MultichainRampServiceImplementation: MultichainRampService {
         try await multichainRampAPI.getOnrampOrder(orderId: orderId)
     }
 
-    func getOnrampAsset(assetId: String, walletId: String?) async throws -> OnRampAssetDetail {
-        try await multichainRampAPI.getOnrampAsset(assetId: assetId, walletId: walletId)
+    func getOnrampAsset(assetId: String, fiat: String?, walletId: String?) async throws -> OnRampAssetDetail {
+        try await multichainRampAPI.getOnrampAsset(assetId: assetId, fiat: fiat, walletId: walletId)
     }
 
     func getOfframpConfiguration(query: OffRampConfigurationQuery) async throws -> OffRampConfiguration {

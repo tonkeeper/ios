@@ -119,7 +119,16 @@ struct TonkeeperDeeplinkParser {
             resolvingAgainstBaseURL: true
         )
 
-        let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "asset_id", "exp", "success_ret"]
+        let validQueryItems = Set<String>([
+            "amount",
+            "text",
+            "bin",
+            "init",
+            "jetton",
+            "asset_id",
+            "exp",
+            "success_ret",
+        ]).union(UtmParameters.queryItemNames)
 
         if let queryItems = components?.queryItems {
             for item in queryItems {

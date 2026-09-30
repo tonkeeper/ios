@@ -69,10 +69,8 @@ public final class WalletDeleteController {
 }
 
 private extension WalletDeleteController {
-    /// Drops the wallet's app key and credential. Not gated on `.multichainEnabled`: a local secret
-    /// has to go with the wallet whatever the kill switch says. Wallets differing only in TON
-    /// contract version share a multichain walletId, so a key is only stale once no remaining wallet
-    /// maps to it.
+    /// Drops the wallet's app key and credential. Wallets differing only in TON contract version
+    /// share a multichain walletId, so a key is only stale once no remaining wallet maps to it.
     func forgetWalletAuth(deleted: [Wallet], remaining: WalletsStore.State) async {
         let remainingWalletIds = Set(remaining.wallets.compactMap { $0.multichainWalletState?.walletId })
         let walletIds = Set(deleted.compactMap { $0.multichainWalletState?.walletId })

@@ -8,6 +8,10 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
     private enum Constants {
         static let pageSize = 30
         static let loadMoreThreshold = 5
+        /// A page can come back with nothing to show — every activity filtered out as spam or as
+        /// the sibling TON account's — and the list then advances on its own. The budget bounds
+        /// that chain, so one load cannot walk the whole history; it is refilled by the next load.
+        static let maxAutoAdvancedPages = 10
     }
 
     struct RowData: Equatable {
@@ -60,9 +64,10 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
 
-    private let walletId: String
+    private let multichainState: MultichainWalletState
     private let category: MultichainHistoryCategory
     private let hideDust: Bool?
+    private let showsPerps: Bool
     private let multichainService: MultichainService
     private let dateFormatter: DateFormatter
     private let currentDateProvider: () -> Date
@@ -73,11 +78,13 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
     private var nftResolutionTask: Task<Void, Never>?
     private var nftResolutionObservation: AnyCancellable?
+    private var autoAdvancedPages = 0
 
     init(
-        walletId: String,
+        multichainState: MultichainWalletState,
         category: MultichainHistoryCategory,
         hidesDustTransactions: Bool = false,
+        showsPerps: Bool = false,
         multichainService: MultichainService,
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
@@ -86,9 +93,10 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         onAddFunds: @escaping () -> Void = {}
     ) {
         let hideDust = hidesDustTransactions && !category.isSpamCategory ? true : nil
-        self.walletId = walletId
+        self.multichainState = multichainState
         self.category = category
         self.hideDust = hideDust
+        self.showsPerps = showsPerps
         self.multichainService = multichainService
         self.dateFormatter = dateFormatter
         self.currentDateProvider = currentDateProvider
@@ -105,10 +113,11 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             isSpamCategory: category.isSpamCategory
         )
         self.paginationViewModel = MultichainHistoryPaginationViewModel(
-            walletId: walletId,
+            multichainState: multichainState,
             limit: Constants.pageSize,
             category: category,
             hideDust: hideDust,
+            showsPerps: showsPerps,
             multichainService: multichainService
         )
         self.nftResolutionObservation = nftResolver.$revision
@@ -224,6 +233,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         case .idle:
             startFirstPageLoad(fallbackData: .initial)
         case let .loaded(rowData) where rowData.items.isEmpty && rowData.hasNextPage:
+            autoAdvancedPages = 0
             state = .loadingMore(
                 rowData: rowData,
                 task: startLoadingNextPage(fallbackData: rowData)
@@ -291,6 +301,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             return
         }
 
+        autoAdvancedPages = 0
         state = .loadingMore(
             rowData: rowData,
             task: startLoadingNextPage(fallbackData: rowData)
@@ -322,6 +333,7 @@ private extension MultichainHistoryQueryViewModel {
 
     @discardableResult
     func startFirstPageLoad(fallbackData: RowData) -> Task<Void, Never> {
+        autoAdvancedPages = 0
         let task = Task { [weak self] in
             guard let self else {
                 return
@@ -428,10 +440,11 @@ private extension MultichainHistoryQueryViewModel {
     func loadPage(cursor: String?) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         try await category.fetchActivities(
             using: multichainService,
-            walletId: walletId,
+            state: multichainState,
             limit: Constants.pageSize,
             cursor: cursor,
-            hideDust: hideDust
+            hideDust: hideDust,
+            showsPerps: showsPerps
         )
     }
 
@@ -453,6 +466,10 @@ private extension MultichainHistoryQueryViewModel {
         guard rowData.items.count <= previousItemCount, rowData.hasNextPage else {
             return
         }
+        guard autoAdvancedPages < Constants.maxAutoAdvancedPages else {
+            return
+        }
+        autoAdvancedPages += 1
         state = .loadingMore(
             rowData: rowData,
             task: startLoadingNextPage(fallbackData: rowData)

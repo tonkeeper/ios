@@ -3,10 +3,11 @@ import KeeperCore
 
 @MainActor
 final class MultichainHistoryPaginationViewModel {
-    private let walletId: String
+    private let multichainState: MultichainWalletState
     private let limit: Int
     private let category: MultichainHistoryCategory
     private let hideDust: Bool?
+    private let showsPerps: Bool
     private let multichainService: MultichainService
 
     private var activeTask: Task<Void, Never>?
@@ -14,16 +15,18 @@ final class MultichainHistoryPaginationViewModel {
     private var nextGeneration = 0
 
     init(
-        walletId: String,
+        multichainState: MultichainWalletState,
         limit: Int,
         category: MultichainHistoryCategory,
         hideDust: Bool? = nil,
+        showsPerps: Bool = false,
         multichainService: MultichainService
     ) {
-        self.walletId = walletId
+        self.multichainState = multichainState
         self.limit = limit
         self.category = category
         self.hideDust = hideDust
+        self.showsPerps = showsPerps
         self.multichainService = multichainService
     }
 
@@ -77,10 +80,11 @@ private extension MultichainHistoryPaginationViewModel {
         do {
             page = try await category.fetchActivities(
                 using: multichainService,
-                walletId: walletId,
+                state: multichainState,
                 limit: limit,
                 cursor: cursor,
-                hideDust: hideDust
+                hideDust: hideDust,
+                showsPerps: showsPerps
             )
         } catch {
             guard isCurrent(generation), !Task.isCancelled, !isCancelled(error) else {

@@ -1,6 +1,6 @@
 import TronSwift
 
-public enum TronToken: Equatable, Hashable {
+public enum TronToken: String, Codable, Equatable, Hashable {
     case usdt
     case trx
 

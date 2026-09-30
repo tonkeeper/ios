@@ -3,6 +3,7 @@ import Foundation
 import KeeperCore
 import SwiftUI
 import TKLocalize
+import TKLogging
 import TKUIKit
 import TonSwift
 import TronSwift
@@ -12,6 +13,7 @@ enum TradeAssetHistoryContext {
     case ton(wallet: Wallet)
     case jetton(wallet: Wallet, jettonMasterAddress: TonSwift.Address)
     case tronUSDT(wallet: Wallet)
+    case tronTRX(wallet: Wallet)
 }
 
 enum TradeAssetHistorySelection {
@@ -49,6 +51,7 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject, TradeAssetDetai
     private let typedAssetId: TradingAssetToken?
     private let historyService: HistoryService
     private let tronUSDTHistoryService: HistoryService
+    private let tronTRXHistoryService: HistoryService
     private let tronUsdtApi: TronUSDTAPI
     private let accountEventMapper: AccountEventMapper
     private let dateFormatter: DateFormatter
@@ -67,6 +70,7 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject, TradeAssetDetai
         typedAssetId: TradingAssetToken?,
         historyService: HistoryService,
         tronUSDTHistoryService: HistoryService,
+        tronTRXHistoryService: HistoryService,
         tronUsdtApi: TronUSDTAPI,
         accountEventMapper: AccountEventMapper,
         dateFormatter: DateFormatter,
@@ -78,6 +82,7 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject, TradeAssetDetai
         self.typedAssetId = typedAssetId
         self.historyService = historyService
         self.tronUSDTHistoryService = tronUSDTHistoryService
+        self.tronTRXHistoryService = tronTRXHistoryService
         self.tronUsdtApi = tronUsdtApi
         self.accountEventMapper = accountEventMapper
         self.dateFormatter = dateFormatter
@@ -152,8 +157,12 @@ private extension TradeAssetDetailsHistoryViewModel {
                 historyService: historyService
             ).getCache(wallet: wallet)) ?? []
         case let .tronUSDT(wallet):
-            events = (try? HistoryListTronUSDTEventsCacheProvider(
+            events = (try? HistoryListTronEventsCacheProvider(
                 historyService: tronUSDTHistoryService
+            ).getCache(wallet: wallet)) ?? []
+        case let .tronTRX(wallet):
+            events = (try? HistoryListTronEventsCacheProvider(
+                historyService: tronTRXHistoryService
             ).getCache(wallet: wallet)) ?? []
         }
 
@@ -185,8 +194,9 @@ private extension TradeAssetDetailsHistoryViewModel {
             return .jetton(wallet: wallet, jettonMasterAddress: jettonMasterAddress)
         case .tronUsdt:
             return .tronUSDT(wallet: wallet)
-        // The legacy TRON feed carries USDT transfers only, so it says nothing about TRX.
-        case .tronTrx, nil:
+        case .tronTrx:
+            return .tronTRX(wallet: wallet)
+        case nil:
             return nil
         }
     }
@@ -229,8 +239,25 @@ private extension TradeAssetDetailsHistoryViewModel {
                 finishTimestamp: nil
             )
             let historyEvents = tronEvents.map(HistoryEvent.tronEvent)
-            try? HistoryListTronUSDTEventsCacheProvider(historyService: tronUSDTHistoryService)
+            try? HistoryListTronEventsCacheProvider(historyService: tronUSDTHistoryService)
                 .setCache(events: historyEvents, wallet: wallet)
+            return historyEvents
+        case let .tronTRX(wallet):
+            guard let tronAddress = wallet.tron?.address else {
+                return []
+            }
+            let transfers = try await tronUsdtApi.loadTRXTransfers(
+                address: tronAddress,
+                limit: Constants.loadLimit,
+                startTimestamp: nil
+            )
+            let historyEvents = transfers.map(HistoryEvent.tronEvent)
+            do {
+                try HistoryListTronEventsCacheProvider(historyService: tronTRXHistoryService)
+                    .setCache(events: historyEvents, wallet: wallet)
+            } catch {
+                Log.w("TRX history cache write failed: \(error)")
+            }
             return historyEvents
         }
     }
@@ -298,7 +325,8 @@ private extension TradeAssetDetailsHistoryViewModel {
                         break
                     }
                 }
-            case let (.tronEvent(tronTransaction), .tronUSDT(wallet)):
+            case let (.tronEvent(tronTransaction), .tronUSDT(wallet)),
+                 let (.tronEvent(tronTransaction), .tronTRX(wallet)):
                 if let item = mapTronPreviewItem(
                     event: tronTransaction,
                     wallet: wallet
@@ -418,8 +446,8 @@ private extension TradeAssetDetailsHistoryViewModel {
         let dateText = formattedDate(for: Date(timeIntervalSince1970: TimeInterval(event.timestamp)))
         let amountText = signedAmountFormatter.format(
             amount: event.amount,
-            fractionDigits: TronSwift.USDT.fractionDigits,
-            accessory: .tokenSymbol(TronSwift.USDT.symbol),
+            fractionDigits: event.token.fractionDigits,
+            accessory: .tokenSymbol(event.token.symbol),
             isNegative: eventType == .send
         )
 

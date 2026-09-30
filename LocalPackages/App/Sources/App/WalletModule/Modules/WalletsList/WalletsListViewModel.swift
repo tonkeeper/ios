@@ -52,7 +52,7 @@ struct WalletsListRaffleBanner {
 protocol WalletsListViewModel: AnyObject {
     var didUpdateSnapshot: ((_ snapshot: WalletsListViewController.Snapshot) -> Void)? { get set }
     var didUpdateWaletCellConfiguration: ((_ item: WalletsListViewController.Item, _ configuration: TKListItemCell.Configuration) -> Void)? { get set }
-    var selectedWalletIndex: Int? { get }
+    var selectedWalletIdentifier: String? { get }
     var didUpdateIsEditing: ((Bool) -> Void)? { get set }
     var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration) -> Void)? { get set }
 
@@ -165,7 +165,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         return homeRaffleBanner.map(WalletsListRaffleBanner.init(homeBanner:))
     }
 
-    var selectedWalletIndex: Int?
+    var selectedWalletIdentifier: String?
 
     // MARK: - Dependencies
 
@@ -194,7 +194,6 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         homeBannersStore: HomeBannersStore,
         walletsStore: WalletsStore,
         raffleStore: RaffleStore? = nil,
-        isMysteryRaffleEnabled: Bool = false,
         analyticsProvider: AnalyticsProvider? = nil
     ) {
         self.model = model
@@ -209,17 +208,16 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         self.analyticsProvider = analyticsProvider
 
         raffleObserver = MysteryRafflePresentationObserver(
-            raffleStore: raffleStore,
-            isFeatureEnabled: isMysteryRaffleEnabled
+            raffleStore: raffleStore
         ) { [weak self] presentation in
             self?.rafflePresentation = presentation
             self?.refreshSnapshot()
         }
 
         homeBannersStore.addObserver(self) { [weak self] _, _ in
-            self?.refreshRaffleBanner(isFeatureEnabled: isMysteryRaffleEnabled)
+            self?.refreshRaffleBanner()
         } onRegistered: { [weak self] in
-            self?.refreshRaffleBanner(isFeatureEnabled: isMysteryRaffleEnabled)
+            self?.refreshRaffleBanner()
         }
 
         // The deck is answered per wallet, so the banner this list shows belongs to whichever
@@ -227,7 +225,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         walletsStore.addObserver(self) { observer, event in
             switch event {
             case .didChangeActiveWallet, .didUpdateWalletMultichain:
-                observer.refreshRaffleBanner(isFeatureEnabled: isMysteryRaffleEnabled)
+                observer.refreshRaffleBanner()
             default:
                 break
             }
@@ -242,10 +240,10 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         }
     }
 
-    private func refreshRaffleBanner(isFeatureEnabled: Bool) {
+    private func refreshRaffleBanner() {
         let banners = activeWalletBanners()
         Task { @MainActor in
-            self.applyRaffleBanner(from: banners, isFeatureEnabled: isFeatureEnabled)
+            self.applyRaffleBanner(from: banners)
         }
     }
 
@@ -272,7 +270,7 @@ private extension WalletsListViewModelImplementation {
         let isSecureMode = appSettingsStore.getState().isSecureMode
         let (snapshot, cellConfigurations) = updateList(wallets: state.wallets, totalBalanceState: totalBalanceState, isSecureMode: isSecureMode)
         self.walletCellsConfigurations = cellConfigurations
-        self.selectedWalletIndex = state.selectedWallet
+        self.selectedWalletIdentifier = state.selectedWalletIdentifier
         self.didUpdateSnapshot?(snapshot)
     }
 
@@ -345,8 +343,8 @@ private extension WalletsListViewModelImplementation {
         return (snapshot, cellConfigurations)
     }
 
-    func applyRaffleBanner(from banners: [HomeBanner], isFeatureEnabled: Bool) {
-        homeRaffleBanner = isFeatureEnabled ? banners.first(where: \.isMysteryRaffleBanner) : nil
+    func applyRaffleBanner(from banners: [HomeBanner]) {
+        homeRaffleBanner = banners.first(where: \.isMysteryRaffleBanner)
         refreshSnapshot()
     }
 
@@ -386,7 +384,7 @@ private extension WalletsListViewModelImplementation {
     private func createWalletCellConfiguration(
         wallet: Wallet,
         totalBalanceState: TotalBalanceState?,
-        portfolioTotal: MultichainPortfolioTotal?,
+        portfolioTotal: MultichainPortfolio?,
         isSecure: Bool
     ) -> TKListItemCell.Configuration {
         let titleViewConfiguration = TKListItemTitleView.Configuration(
@@ -470,7 +468,7 @@ private extension WalletsListViewModelImplementation {
         let totalBalancesState = totalBalancesStore.getState()
         let isSecureMode = appSettingsStore.getState().isSecureMode
         let (snapshot, cellConfigurations) = updateList(wallets: walletsState.wallets, totalBalanceState: totalBalancesState, isSecureMode: isSecureMode)
-        selectedWalletIndex = walletsState.selectedWallet
+        selectedWalletIdentifier = walletsState.selectedWalletIdentifier
         walletCellsConfigurations = cellConfigurations
         didUpdateSnapshot?(snapshot)
     }
@@ -485,7 +483,7 @@ private extension WalletsListViewModelImplementation {
 
     func didGetMultichainPortfolioStoreEvent(_ event: MultichainPortfolioStore.Event) {
         switch event {
-        case let .didUpdatePortfolioTotal(wallet):
+        case let .didUpdatePortfolio(wallet):
             let wallets = model.getState().wallets
             guard let wallet = wallets.first(where: { $0.id == wallet.id }) else { return }
             refreshWalletCellConfiguration(wallet: wallet)

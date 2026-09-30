@@ -29,7 +29,6 @@ struct AddWalletOptionPickerItem: Identifiable {
 enum AddWalletOptionPickerSectionType: CaseIterable, Hashable {
     case main
     case other
-    case developer
 
     var header: String? {
         switch self {
@@ -37,8 +36,6 @@ enum AddWalletOptionPickerSectionType: CaseIterable, Hashable {
             nil
         case .other:
             TKLocales.AddWallet.Sections.otherOptions
-        case .developer:
-            TKLocales.AddWallet.Sections.forDevelopers
         }
     }
 
@@ -48,8 +45,6 @@ enum AddWalletOptionPickerSectionType: CaseIterable, Hashable {
             [.createRegular, .createMultichain, .importRegular]
         case .other:
             [.ledger, .keystone, .signer, .importWatchOnly]
-        case .developer:
-            [.importTetra]
         }
     }
 }
@@ -59,7 +54,6 @@ enum AddWalletOption: String, Hashable {
     case createMultichain
     case importRegular
     case importWatchOnly
-    case importTetra
     case signer
     case keystone
     case ledger
@@ -74,8 +68,6 @@ enum AddWalletOption: String, Hashable {
             return TKLocales.AddWallet.Items.ExistingWallet.title
         case .importWatchOnly:
             return TKLocales.AddWallet.Items.WatchOnly.title
-        case .importTetra:
-            return TKLocales.AddWallet.Items.Tetra.title
         case .signer:
             return TKLocales.AddWallet.Items.PairSigner.title
         case .keystone:
@@ -95,8 +87,6 @@ enum AddWalletOption: String, Hashable {
             return TKLocales.AddWallet.Items.ExistingWallet.subtitle
         case .importWatchOnly:
             return TKLocales.AddWallet.Items.WatchOnly.subtitle
-        case .importTetra:
-            return TKLocales.AddWallet.Items.Tetra.subtitle
         case .signer:
             return TKLocales.AddWallet.Items.PairSigner.subtitle
         case .keystone:
@@ -116,8 +106,6 @@ enum AddWalletOption: String, Hashable {
             return .TKUIKit.Icons.Size28.importWalletOutline
         case .importWatchOnly:
             return .TKUIKit.Icons.Size28.magnifyingGlassOutline
-        case .importTetra:
-            return .TKUIKit.Icons.Size28.tetraOutline
         case .signer:
             return .TKUIKit.Icons.Size28.signer
         case .keystone:
@@ -131,7 +119,7 @@ enum AddWalletOption: String, Hashable {
         switch self {
         case .createMultichain:
             WalletMultichainPresentation.badgeTagSwiftUIConfiguration
-        case .createRegular, .importRegular, .importWatchOnly, .importTetra, .signer, .keystone, .ledger:
+        case .createRegular, .importRegular, .importWatchOnly, .signer, .keystone, .ledger:
             nil
         }
     }

@@ -41,6 +41,7 @@ public struct Client: APIProtocol {
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
+    /// This is also what a client polls while it waits for an account to exist: the index is resolved against Lighter live for as long as the binding has none, so not_registered turns into an account as soon as there is one. A wallet with no binding at all is answered not_registered too, and stays so until POST /account/bind records one -- a deposit made outside this service tells us nothing by itself.
     ///
     /// - Remark: HTTP `GET /account`.
     /// - Remark: Generated from `#/paths//account/get(getAccount)`.
@@ -164,6 +165,225 @@ public struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .forbidden(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// Bind the caller's wallet to its L1 address
+    ///
+    /// Records which L1 (Ethereum) address a wallet owns, and the Lighter account that address holds when there is one. It is the only endpoint whose whole job is that binding; everywhere else it is a side effect of a write that needed it anyway.
+    /// A caller whose Lighter account was funded outside this service has no other way in. Every read here answers from the binding, so until one exists its account is invisible to us, and so is every event Lighter reports about it. A caller that deposited through this service is already bound by that deposit, and calls this only to have the account index recorded once there is one.
+    /// The address is never taken from the caller. It is recovered from the signature, and afterwards read back from what that recovered, so deadline and signature are read only while the wallet has proved nothing. Send them anyway: whether they are needed depends on what this service has recorded, which the caller cannot know, and by the time a refusal came back the vault would be locked again. This is what keeps the passcode prompt to once per wallet.
+    /// The account index is Lighter's to say, and it is asked for on every call. A wallet whose account does not exist yet is bound to its address alone and answered not_registered, which is not a failure but where every wallet starts: poll GET /account and continue as soon as account_index is set. It is filled in by whichever write learns it first, this one included.
+    /// Not knowing is not the same as not having, so when Lighter cannot say what the address owns the request is refused with 503 and nothing is recorded -- a not_registered on a timeout would report a state this service never established. The reads answer the same way. Retrying inside the signature's deadline needs no new signature, so the refusal costs no second prompt.
+    /// A 503 says nothing was learned, never that something was undone. The binding is written before the account is read, so a refusal can arrive with the row already recorded -- and the answer is to call again rather than to report a failed registration. The repeat is free: the address is read back from the row, so no signature is needed for it, and re-binding what is recorded writes nothing.
+    /// The answer names l1_address either way, and that is worth reading: the address was recovered from a signature rather than sent, so a wallet bound to one it did not expect would otherwise find out only when a later proof, signed over the address it believes in, is refused.
+    /// A binding never moves, and there is nothing here with which to redirect it: a bound wallet is served the address it recorded whatever it signs now, so re-binding is accepted and changes nothing, which is the ordinary case.
+    /// A 409 therefore reports a collision with another wallet rather than a caller changing its mind: l1_address_taken when that address is already held elsewhere, lighter_account_taken when the account behind it is. The usual cause is one wallet re-imported under a new wallet_id, while the old id still holds the row; somebody has to remove it, which is not something this endpoint can do. wallet_already_bound is the third and is all but unreachable -- it needs two first binds for one wallet to race each other, or Lighter to name a different account for an address it has already placed.
+    /// A proof made over some other address is not a conflict but a refused proof, 401: it was signed for a statement this service is not making. Read l1_address in the answer above, or from GET /account, to see which address that is.
+    ///
+    /// - Remark: HTTP `POST /account/bind`.
+    /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)`.
+    public func bindAccount(_ input: Operations.bindAccount.Input) async throws -> Operations.bindAccount.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.bindAccount.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/account/bind",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.bindAccount.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.Account.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
                 case 500:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.InternalError.Body
@@ -813,14 +1033,199 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Store the caller's Lighter read-only token
+    /// Partner-attribution values the caller signs into its Lighter transactions
     ///
+    /// What the client copies, unchanged, into the transactions it signs. Two of them consume these values: an order takes integrator_account_index and the two fees, while ApproveIntegrator -- signed once, before the first order that carries a fee -- takes the account index and the four maximums, with an expiry of now plus approval_ttl_ms.
+    /// Fees are millionths of a fill's notional, Lighter's own unit, so 900 is 9 basis points. A zero account index means attribution is off and the client signs no integrator fields at all; that is also the answer while this service has no integrator account configured.
+    /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
+    /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    ///
+    /// - Remark: HTTP `GET /integrator`.
+    /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
+    public func getIntegrator(_ input: Operations.getIntegrator.Input) async throws -> Operations.getIntegrator.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getIntegrator.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/integrator",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getIntegrator.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.Integrator.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// Store the caller's Lighter read-only token (deprecated)
+    ///
+    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
+    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
     /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
     /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
     /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- its first deposit, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
     ///
     /// - Remark: HTTP `POST /account/ro-token`.
     /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
+    @available(*, deprecated)
     public func saveRoToken(_ input: Operations.saveRoToken.Input) async throws -> Operations.saveRoToken.Output {
         try await client.send(
             input: input,
@@ -1005,10 +1410,224 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// Mint the caller's Lighter read-only token and store it
+    ///
+    /// Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
+    /// What the caller supplies is lighter_auth: the short-lived credential its Lighter L2 key produced locally. It is a bearer credential and not a signature over this request, so it authorises anything Lighter accepts it for until it expires, and it is passed straight through without being stored or logged. The L2 private key itself never travels.
+    /// The account is not named by the caller. It is the one the wallet's proved L1 address owns, which is also what the token is minted against, so a wallet with no Lighter account yet -- one whose first deposit has not been credited -- has nothing to mint for and is answered 409.
+    /// The token's expiry and its reach are this service's to set, not the caller's, and are therefore absent from the body: it is minted long-lived, because the private reads this service makes on the caller's behalf run on it and nothing renews it, and scoped to the main account, because a wallet maps to exactly one.
+    /// Minting supersedes whatever token the account had. Superseded tokens are revoked at Lighter on a best-effort basis, in this request and only here: revoking takes the same short-lived authorization the mint did, so once this request ends nothing can revoke them any more.
+    ///
+    /// - Remark: HTTP `POST /account/ro-token/issue`.
+    /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)`.
+    public func issueRoToken(_ input: Operations.issueRoToken.Input) async throws -> Operations.issueRoToken.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.issueRoToken.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/account/ro-token/issue",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.issueRoToken.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.IssuedRoToken.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
     /// The caller's open positions
     ///
     /// Every position the wallet currently holds, one per venue and market, with the numbers a position card renders. Only open ones: Lighter keeps a row for every market an account has ever traded, and on a long-lived account the closed rows outnumber the open ones many times over, so a zero size is filtered here rather than on the client.
-    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no X-Lighter-Auth is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need that token.
+    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no read-only token is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need one.
     /// Neither paginated nor filtered on purpose. One position per market caps the list at the number of active markets, and the upstream snapshot is unpaginated anyway, so a cursor would add failure modes without bounding anything.
     /// A wallet with no account yet, and an account with nothing open, both get an empty list rather than an error: that is what a client renders before the first position.
     ///
@@ -1392,6 +2011,789 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// What became of a market's position, and of the order just sent
+    ///
+    /// Answers the question a client has right after submitting an order: did anything happen. It reads this service's own record and nothing else, so it is cheap to poll -- no Lighter call, no read-only token, no markets snapshot.
+    /// Two things are answered. `open` is the position the market holds now, and `last_closed` is the one that ended most recently; a client that closed a position needs the second, because an absent position alone cannot tell "it closed" from "there never was one". Both are episodes: one life of a position, from the fill that opened it to the fill that closed it. Lighter keeps only the current size, so a closed position leaves no trace there at all -- `/positions/{id}` answers 404 for a market whose position closed a minute ago.
+    /// `orders` is what the venue said about the orders carrying `client_order_index`, and it is empty until an order event arrives. An empty list therefore means "nothing heard yet", which is the state to keep polling on; a client knows it submitted, so this service does not repeat that back. Several entries are a legitimate answer: nothing makes that number unique, and a client that reused it is told about every order rather than being handed a guess. Without the parameter the list is empty and only the position halves are answered.
+    /// A market this wallet has never traded is `open: null`, `last_closed: null`, `orders: []` -- not a 404. The question "what is the state" always has an answer, and "nothing" is one.
+    ///
+    /// - Remark: HTTP `GET /positions/{id}/state`.
+    /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)`.
+    public func getPositionState(_ input: Operations.getPositionState.Input) async throws -> Operations.getPositionState.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getPositionState.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/positions/{}/state",
+                    parameters: [
+                        input.path.id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "client_order_index",
+                    value: input.query.client_order_index
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getPositionState.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.PositionState.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// Balance, open positions and open orders
+    ///
+    /// Everything the portfolio section renders in one read: the account balance, every open position with the numbers a position card needs, and the orders resting on the book. Replaces /screens/portfolio, which carries a thinner position and no orders at all.
+    /// Balance and positions come from the account snapshot Lighter serves by index, and mark prices from the cached markets snapshot; neither needs a token. open_orders does, and this service uses the read-only token it stored for the wallet rather than asking the caller.
+    /// open_orders_known says whether the orders were read at all. False means the section could not be filled -- no stored token, an expired one, one Vault would not decrypt, or an upstream that did not answer -- and open_orders is then empty because nothing was seen, not because nothing is resting. Render "temporarily unavailable" on false, never "no open orders". Orders never turn this endpoint into a 503: the balance and the positions are an answer of their own.
+    /// Take-profit and stop-loss legs are not here. They belong to a position and are served with it by /positions/{id}.
+    /// A wallet with no account yet gets empty sections rather than an error.
+    ///
+    /// - Remark: HTTP `GET /portfolio`.
+    /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)`.
+    public func getPortfolio(_ input: Operations.getPortfolio.Input) async throws -> Operations.getPortfolio.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getPortfolio.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/portfolio",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getPortfolio.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.Portfolio.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// The caller's open orders
+    ///
+    /// Every order resting on the book across all markets. An unfilled order is not a position -- it holds no entry price, no PnL and no liquidation price -- so it appears here and never in /positions.
+    /// Take-profit and stop-loss legs are filtered out: they are attached to a position and are served with it by /positions/{id}, and listing them here would show the same leg twice.
+    /// Reading orders needs the wallet's stored read-only token, so unlike /positions this endpoint depends on Vault. orders_known carries that: false means the list could not be read and is empty for that reason alone. It is a 200, not a 503 -- a wallet without an active token is a state that no retry changes, and the client renders its unavailable block from the flag. A genuine upstream failure is still a 503.
+    /// Neither paginated nor filtered: an account's resting orders are bounded by what it can afford to place.
+    ///
+    /// - Remark: HTTP `GET /orders`.
+    /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)`.
+    public func listOpenOrders(_ input: Operations.listOpenOrders.Input) async throws -> Operations.listOpenOrders.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.listOpenOrders.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/orders",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.listOpenOrders.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.OpenOrdersPage.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// One order, resting or finished, with its fills
+    ///
+    /// The order the id names, wherever it is now. Resting orders are read from the book; one that has left it -- filled, cancelled or expired -- is looked up in the account's order history, which is walked page by page because the venue offers no lookup by order id. `resting` says which of the two answered.
+    /// The history walk is bounded. An order older than the walk reaches is a 404, which is therefore "not found within the window this endpoint looks at" rather than a claim that it never existed.
+    /// `fills` is the execution broken down into trades, which the order itself does not carry -- it holds only the filled totals. That lookup is walked and bounded like the one above, so fills_known is false both when it failed and when the cap cut it short with pages still to come. Only under a true flag does an empty list mean the order has not traded.
+    ///
+    /// - Remark: HTTP `GET /orders/{id}`.
+    /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)`.
+    public func getOrder(_ input: Operations.getOrder.Input) async throws -> Operations.getOrder.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getOrder.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/orders/{}",
+                    parameters: [
+                        input.path.id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getOrder.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.OrderDetail.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 404:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.NotFound.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .notFound(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
     /// Markets list screen
     ///
     /// Aggregates the markets-list screen in a single call by merging Lighter orderBookDetails, assetDetails, and funding-rates into screen-shaped market rows. Supports free-text search, a coarse filter, and sorting so the client renders the list without further requests.
@@ -1563,7 +2965,8 @@ public struct Client: APIProtocol {
     /// Trading screen bootstrap
     ///
     /// Single-call bootstrap for the trading screen: contract metadata for the market, the caller's current position, open orders, balance, and the action flags that drive UI affordances. Live orderbook and candles are delivered out-of-band over the Hermes WebSocket and are NOT part of this payload.
-    /// The market data is public; the private sections are the wallet's. X-Lighter-Auth is optional: without it, and for a wallet whose address owns no Lighter account yet, the position, open orders and private balance details are empty rather than an error.
+    /// The market data is public; the private sections are the wallet's, and the caller carries no credential for them: the read-only token comes from this service's own store.
+    /// The two absences differ. A wallet whose address owns no Lighter account yet, or one Lighter would not name an account for, gets the market and empty private sections throughout. A wallet with an account but no usable stored token keeps its position and balance, which come from the account snapshot and need no token, and loses only open_orders and what is derived from it -- position.auto_close and flags.cancel_enabled. Neither is an error.
     ///
     /// - Remark: HTTP `GET /screens/trading`.
     /// - Remark: Generated from `#/paths//screens/trading/get(getTradingScreen)`.
@@ -1769,12 +3172,14 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Portfolio screen
+    /// Portfolio screen (deprecated)
     ///
+    /// Superseded by /portfolio, which carries the same balance, a fuller position -- with id, mark price, margin, equity and ROI -- and the open orders this one has no room for. Frozen: it keeps answering exactly as it does today and gains nothing further.
     /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
     ///
     /// - Remark: HTTP `GET /screens/portfolio`.
     /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
+    @available(*, deprecated)
     public func getPortfolioScreen(_ input: Operations.getPortfolioScreen.Input) async throws -> Operations.getPortfolioScreen.Output {
         try await client.send(
             input: input,
@@ -2160,7 +3565,7 @@ public struct Client: APIProtocol {
     /// Account activity timeline
     ///
     /// Merged, cursor-paginated timeline of fills, funding payments, deposits, and withdrawals. Uses an opaque keyset cursor and returns last_sort_ts so the client can detect ranking shifts between polls. Deposits appear from the moment they are registered, as items of type deposit with status pending; the one Lighter reports once the money lands is the same item under the same id, with a new status, so the client updates a row rather than replacing it. A deposit that is never confirmed leaves the feed when it is closed, and its outcome is then only on /funding/deposit/{deposit_id}.
-    /// The feed belongs to the wallet. Everything Lighter holds needs X-Lighter-Auth as well; without it -- or for a wallet whose address owns no Lighter account yet -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account, and which then covers a deposit that was credited before the client had a token. A wallet that has proved no address gets an empty page rather than an error.
+    /// The feed belongs to the wallet, and the caller carries no credential for it -- everything Lighter holds is read with the token this service keeps. Without a usable one -- or for a wallet whose address owns no Lighter account yet, or one Lighter will not name an account for right now -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account. A wallet that has proved no address gets an empty page rather than an error, and so does an outage this service can still read its own rows through.
     ///
     /// - Remark: HTTP `GET /activity`.
     /// - Remark: Generated from `#/paths//activity/get(getActivity)`.
@@ -2735,6 +4140,406 @@ public struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .notFound(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// Quote a deposit from another asset
+    ///
+    /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
+    /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
+    /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why expected_amount and min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
+    /// The quote is good for the seconds expires_at says. The aggregator revalidates at fill time, so a stale one is refunded rather than filled at a worse price -- ask again instead of signing an old one.
+    /// The wallet's L1 address is destination_address, and the two must agree once the wallet has proved one: a quote for somebody else's account is refused. A wallet that has proved nothing yet -- the first deposit is what creates the account -- is quoted for the address it names, and proves it when it records the deposit.
+    /// What this does not do yet: it does not initialise the Lighter account's signing key. A first deposit creates the account, and registering a key on it is a separate step the client takes once the account exists.
+    ///
+    /// - Remark: HTTP `POST /funding/quote`.
+    /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)`.
+    public func quoteDeposit(_ input: Operations.quoteDeposit.Input) async throws -> Operations.quoteDeposit.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.quoteDeposit.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/funding/quote",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.quoteDeposit.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.DepositQuote.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
+                case 500:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.InternalError.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .internalServerError(.init(body: body))
+                case 503:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.ServiceUnavailable.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .serviceUnavailable(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
+    /// Follow a quoted deposit through the aggregator
+    ///
+    /// Reports where a cross-chain deposit is, by the execution_id its quote returned: whether the aggregator has seen the source transaction, filled on Ethereum, failed, or refunded. The execution lives at swaps-backend, which follows the fill by the id the aggregator quoted it under, so nothing has to be submitted there first: the wallet broadcasts on its own and polls.
+    /// This is how a client that paid from another chain learns the Ethereum transaction hash: the aggregator's fill is the transaction that called the gateway, so once status is success the first entry of tx_hashes is what POST /funding/deposit takes as l1_tx_hash. Until then there is nothing to record.
+    /// Poll while status is pending. success, failure and refund are final. unknown means the aggregator has no such execution, which is also what an expired, never-broadcast quote looks like.
+    ///
+    /// - Remark: HTTP `GET /funding/status/{execution_id}`.
+    /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)`.
+    public func getFundingStatus(_ input: Operations.getFundingStatus.Input) async throws -> Operations.getFundingStatus.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getFundingStatus.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/funding/status/{}",
+                    parameters: [
+                        input.path.execution_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Id",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Id
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-Authorization",
+                    value: input.headers.X_hyphen_Wallet_hyphen_Authorization
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getFundingStatus.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.FundingStatus.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                case 401:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Unauthorized.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Forbidden.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
                 case 500:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.InternalError.Body

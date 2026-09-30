@@ -44,7 +44,7 @@ final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
         self.walletAddController = walletAddController
         self.analyticsProvider = analyticsProvider
         self.analyticsContext = analyticsContext
-        self.options = Self.filterOptions(options, configurationAssembly: configurationAssembly)
+        self.options = options.unique
         self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
         self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
         self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
@@ -72,37 +72,11 @@ final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
 }
 
 private extension AddWalletCoordinator {
-    static func filterOptions(
-        _ options: [AddWalletOption],
-        configurationAssembly: ConfigurationAssembly
-    ) -> [AddWalletOption] {
-        options
-            .map { option in
-                switch option {
-                case .createMultichain where !configurationAssembly.configuration.featureEnabled(.multichainEnabled):
-                    return .createRegular
-                default:
-                    return option
-                }
-            }
-            .filter { option in
-                switch option {
-                case .importTetra where !configurationAssembly.configuration.isTetraWalletEnabled:
-                    return false
-                default:
-                    return true
-                }
-            }
-            .unique
-    }
-
     func openAddWalletOptionPicker() {
         analyticsProvider.log(AddWalletMenuView(from: analyticsContext.from))
         let module = AddWalletOptionPickerAssembly.module(
             options: options,
-            multichainImportChains: configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
-                ? multichainSupportedChains
-                : []
+            multichainImportChains: multichainSupportedChains
         )
 
         module.output.didSelectOption = { [weak self, weak viewController = module.view] option in
@@ -140,8 +114,6 @@ private extension AddWalletCoordinator {
             openAddWallet(network: .mainnet)
         case .importWatchOnly:
             openAddWatchOnlyWallet()
-        case .importTetra:
-            openAddWallet(network: .tetra)
         case .signer:
             openPairSigner()
         case .keystone:
@@ -156,7 +128,7 @@ private extension AddWalletCoordinator {
         let walletMode: WalletMode
 
         switch option {
-        case .createRegular, .createMultichain, .importRegular, .importTetra:
+        case .createRegular, .createMultichain, .importRegular:
             return
         case .importWatchOnly:
             walletSource = .watchonly
@@ -180,9 +152,6 @@ private extension AddWalletCoordinator {
     }
 
     func openCreateMultichainWallet(router: ViewControllerRouter) {
-        guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
-            return openCreateRegularWallet(router: router)
-        }
         openCreateWallet(router: router, mode: .multichain)
     }
 

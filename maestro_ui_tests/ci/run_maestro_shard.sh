@@ -29,11 +29,12 @@ maestro --version
 
 mkdir -p "$ART" "$RUNNER_TEMP/maestro-test-output" "$RUNNER_TEMP/maestro-test-output-retry"
 
-# Import shard pastes TON_v4 (TON-only v3/v4). Everything else pastes the funded wallet.
+# Import shard pastes TON_v4 (TON-only v3/v4). Everything else pastes the shard's funded
+# wallet — the workflow maps MAESTRO_WALLET_WITH_MONEY* to the TON or multichain seed per shard.
 # Maestro setClipboard cannot feed the app Paste button on iOS — only UIPasteboard works.
 prime_simulator_pasteboard() {
   local phrase
-  if [[ "$SHARD_ID" == *"-import" || "$FLOW_DIR" == */import ]]; then
+  if [[ "$SHARD_ID" == "import" || "$FLOW_DIR" == */import ]]; then
     phrase="${MAESTRO_TON_V4:-}"
     if [[ -z "$phrase" ]]; then
       echo "::error::MAESTRO_TON_V4 is required for import shard (${SHARD_ID})"

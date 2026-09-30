@@ -21,12 +21,16 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         let viewModel = PerpsMarginChangeViewModel(
             direction: direction,
             summary: PerpsPositionSummary(
+                positionId: "lighter:1",
                 marketId: 1,
                 symbol: "BTC",
                 side: .long,
                 baseSize: 0.008,
                 notionalUsd: 540,
                 marginUsd: 20,
+                equityUsd: 20.5,
+                leverage: 27,
+                roiPercent: 2.5,
                 entryPrice: 66000,
                 liquidationPrice: 64141.75,
                 unrealizedPnlUsd: 0.5,
@@ -38,7 +42,7 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
             tradingService: service
         )
         viewModel.onAppear()
-        await waitUntil { viewModel.maintenanceFraction != nil }
+        await waitUntil { viewModel.availableBalance != nil }
         return (viewModel, service)
     }
 
@@ -52,33 +56,21 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         XCTAssertNil(reduce.balanceRow)
     }
 
-    func test_liquidationRow_showsOldOnly_untilProjectionAvailable() async {
+    func test_liquidationRow_showsOldOnly_untilTheReviewAnswers() async {
         let (viewModel, service) = await makeViewModel(direction: .add)
         let row = { viewModel.optionRows.first { $0.id == "liquidation" } }
         XCTAssertNil(row()?.action)
         XCTAssertEqual(row()?.value, PerpsFormatting.usd(64141.75))
 
-        // Preview without a price (unavailable) keeps the plain old value.
+        // A review that names no price keeps the plain old value.
         viewModel.setAmount("20")
         XCTAssertEqual(row()?.value, PerpsFormatting.usd(64141.75))
 
-        service.liquidationPreview = PerpsLiquidationPreview(price: 63639.99, isImmediateRisk: false, unavailableReason: nil)
+        service.reviewer.marginReview = Self.marginReview(new: 63639.99)
         viewModel.setAmount("20")
+        await waitUntil { row()?.value != PerpsFormatting.usd(64141.75) }
+
         XCTAssertEqual(row()?.value, "\(PerpsFormatting.usd(64141.75)) → \(PerpsFormatting.usd(63639.99))")
-    }
-
-    func test_projectionCollateral_isMarginPlusOrMinusAmount() async {
-        let (add, addService) = await makeViewModel(direction: .add)
-        addService.liquidationPreview = PerpsLiquidationPreview(price: 63639.99, isImmediateRisk: false, unavailableReason: nil)
-        add.setAmount("20")
-        _ = add.optionRows
-        XCTAssertEqual(addService.positionLiquidationPreviews.last, 40)
-
-        let (reduce, reduceService) = await makeViewModel(direction: .reduce)
-        reduceService.liquidationPreview = PerpsLiquidationPreview(price: 64700, isImmediateRisk: false, unavailableReason: nil)
-        reduce.setAmount("5")
-        _ = reduce.optionRows
-        XCTAssertEqual(reduceService.positionLiquidationPreviews.last, 15)
     }
 
     func test_reduceAtOrAboveMargin_disablesReviewWithWarning() async {
@@ -92,10 +84,32 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.warningText, TKLocales.Perps.EditPosition.reduceExceedsMargin(PerpsFormatting.usd(20)))
     }
 
+    func test_staleMarketRead_isReplacedOnTheNextChange() async {
+        let (viewModel, service) = await makeViewModel(direction: .add)
+        service.reviewer.marginReview = Self.marginReview(new: 63639.99)
+
+        viewModel.setAmount("20")
+        await waitUntil { service.reviewerLoads == 1 }
+        let afterFirstRead = service.reviewerLoads
+
+        // A read within its lifetime is reused: typing does not ask again.
+        viewModel.setAmount("21")
+        XCTAssertEqual(service.reviewerLoads, afterFirstRead)
+
+        service.reviewer.isStale = true
+        viewModel.setAmount("22")
+
+        await waitUntil { service.reviewerLoads > afterFirstRead }
+        XCTAssertGreaterThan(service.reviewerLoads, afterFirstRead)
+    }
+
     func test_reduceIntoImmediateRisk_disablesReviewWithWarning() async {
         let (viewModel, service) = await makeViewModel(direction: .reduce)
-        service.liquidationPreview = PerpsLiquidationPreview(price: 66100, isImmediateRisk: true, unavailableReason: nil)
+        service.reviewer.marginReview = Self.marginReview(new: 66100, isImmediateRisk: true)
+
         viewModel.setAmount("15")
+        await waitUntil { viewModel.warningText != nil }
+
         XCTAssertFalse(viewModel.isReviewEnabled)
         XCTAssertEqual(viewModel.warningText, TKLocales.Perps.AdjustMargin.reduceRisk)
     }
@@ -112,6 +126,20 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         XCTAssertEqual(intents.last?.direction, .add)
         XCTAssertEqual(intents.last?.marketId, 1)
         XCTAssertEqual(intents.last?.amountUsd, "20.5")
+    }
+
+    private static func marginReview(new: Double, isImmediateRisk: Bool = false) -> PerpsMarginChangeReview {
+        PerpsMarginChangeReview(
+            symbol: "BTC",
+            direction: .add,
+            side: .long,
+            leverage: 10,
+            amountUsd: 20,
+            allocatedMargin: PerpsValueChange(old: 20, new: 40),
+            liquidationPrice: PerpsValueChange(old: 64141.75, new: new),
+            liquidationUnavailableReason: nil,
+            isImmediateRisk: isImmediateRisk
+        )
     }
 
     private func waitUntil(
@@ -143,33 +171,26 @@ private extension Wallet {
 }
 
 private final class MarginChangeAccountReadingSpy: PerpsAccountReading, @unchecked Sendable {
-    func status(wallet: Wallet) async -> LighterPerpsStatus {
-        .active(accountIndex: 1, apiKeyIndex: 0)
+    func status(wallet: Wallet) async -> PerpsAccountStatus {
+        .account(accountIndex: 1)
     }
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
-        PerpsPortfolio(
-            accountIndex: 1,
-            collateral: "0",
-            availableBalance: "712.56",
-            totalAssetValue: "712.56",
-            positions: []
-        )
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot? {
+        PerpsAccountSnapshot(availableBalance: "712.56")
     }
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }

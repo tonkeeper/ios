@@ -522,8 +522,7 @@ private extension LegacySendTokenCoordinator {
         module.output.didStartEmulation = { [weak self] in
             guard let self else { return }
             let redSession = RedAnalyticsSessionHolder(
-                analytics: self.analyticsProvider,
-                configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
+                analytics: self.analyticsProvider
             )
             redSession.start(
                 flow: .transfer,
@@ -556,8 +555,7 @@ private extension LegacySendTokenCoordinator {
             let feeAsset = FeeAsset(extraState: model.extraState, asset: analyticsContext?.asset)
             let metadata = self.transferRedMetadata(context: analyticsContext, feePaidIn: feeAsset.rawValue)
             let redSession = RedAnalyticsSessionHolder(
-                analytics: self.analyticsProvider,
-                configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
+                analytics: self.analyticsProvider
             )
             redSession.start(
                 flow: .transfer,
@@ -603,7 +601,7 @@ private extension LegacySendTokenCoordinator {
                 model: model,
                 origin: self.sendSource.transactionOrigin
             ) {
-                self.analyticsProvider.log(event)
+                self.analyticsProvider.log(event, utm: self.sendSource.utm)
             }
             self.didSendSuccessfully?(self)
         }
@@ -704,7 +702,7 @@ private extension LegacySendTokenCoordinator {
 
 private extension LegacySendTokenCoordinator {
     func logSendOpen() {
-        analyticsProvider.log(SendOpen(from: sendSource.sendOpenFrom))
+        analyticsProvider.log(SendOpen(from: sendSource.sendOpenFrom), utm: sendSource.utm)
     }
 
     func logSendClick(sendData: LegacySendData) {
@@ -713,7 +711,7 @@ private extension LegacySendTokenCoordinator {
             from: context.source.sendClickFrom,
             asset: context.asset,
             amount: context.amount
-        ))
+        ), utm: context.source.utm)
     }
 
     func logSendConfirm(model: TransactionConfirmationModel, context: SendAnalyticsContext?) {
@@ -725,7 +723,7 @@ private extension LegacySendTokenCoordinator {
             amount: context.amount,
             feeAsset: feeAsset,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func logWithdrawSendConfirm(model: TransactionConfirmationModel, context: WithdrawAnalyticsContext?) {
@@ -739,7 +737,7 @@ private extension LegacySendTokenCoordinator {
             buyAsset: context.buyAsset,
             amount: context.amount,
             feeAsset: feeAsset
-        ))
+        ), utm: sendSource.utm)
     }
 
     func logSendSuccess(
@@ -754,7 +752,7 @@ private extension LegacySendTokenCoordinator {
             amount: context.amount,
             feeAsset: feeAsset,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func logWithdrawSendSuccess(
@@ -771,7 +769,7 @@ private extension LegacySendTokenCoordinator {
             buyAsset: context.buyAsset,
             amount: context.amount,
             feeAsset: feeAsset
-        ))
+        ), utm: sendSource.utm)
     }
 
     func logSendFailed(
@@ -789,7 +787,7 @@ private extension LegacySendTokenCoordinator {
             errorCode: error.code,
             errorMessage: error.message,
             appId: context.source.appId
-        ))
+        ), utm: context.source.utm)
     }
 
     func makeSendAnalyticsContext(sendData: LegacySendData) -> SendAnalyticsContext {
@@ -887,7 +885,16 @@ private extension LegacySendTokenCoordinator {
 
 extension SendAnalyticsSource {
     var transactionOrigin: TransactionOrigin {
-        TransactionOrigin(initiatedBy: initiatedBy, appId: appId)
+        TransactionOrigin(initiatedBy: initiatedBy, appId: appId, utm: utm)
+    }
+
+    var utm: UtmParameters {
+        switch self {
+        case let .deepLink(utm):
+            return utm
+        case .walletScreen, .jettonScreen, .tonconnectLocal, .tonconnectRemote, .qrCode:
+            return .empty
+        }
     }
 
     var initiatedBy: InitiatedBy {

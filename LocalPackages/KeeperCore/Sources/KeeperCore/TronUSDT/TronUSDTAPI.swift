@@ -47,7 +47,16 @@ public struct TronUSDTAPI {
             finishTimestamp: finishTimestamp.map { $0 * 1000 }
         )
 
-        return Array(Set(batteryEvents).union(Set(events)))
+        return Self.mergeDeduplicatingByTxID(batteryEvents, events)
+    }
+
+    static func mergeDeduplicatingByTxID(
+        _ lhs: [TronTransaction],
+        _ rhs: [TronTransaction]
+    ) -> [TronTransaction] {
+        var seenTxIDs = Set<String>()
+        let merged = (lhs + rhs).filter { seenTxIDs.insert($0.txID).inserted }
+        return merged.sorted { $0.timestamp > $1.timestamp }
     }
 
     public func loadBatteryTronEvents(
@@ -108,6 +117,37 @@ public struct TronUSDTAPI {
             return nil
         }
         return fingerprint
+    }
+
+    /// TRX transfers are a sliver of a USDT-heavy account's feed and keyless TronGrid allows under
+    /// one request a second, so a page is the largest TronGrid serves.
+    static let accountTransactionsPageSize = 200
+
+    public func loadTRXTransfers(
+        address: Address,
+        limit: Int,
+        startTimestamp: Int64?
+    ) async throws -> [TronTransaction] {
+        var transfers = [TronTransaction]()
+        var fingerprint: String?
+        while transfers.count < limit {
+            let page = try await tronApi.getTronAccountTransactions(
+                address: address,
+                limit: Self.accountTransactionsPageSize,
+                maxTimestamp: startTimestamp.map { $0 * 1000 },
+                fingerprint: fingerprint
+            )
+            transfers += page.data.compactMap(TronTransaction.init(accountTransaction:))
+            guard let nextFingerprint = Self.nextTronHistoryFingerprint(
+                pageCount: page.data.count,
+                limit: Self.accountTransactionsPageSize,
+                fingerprint: page.fingerprint
+            ), nextFingerprint != fingerprint else {
+                break
+            }
+            fingerprint = nextFingerprint
+        }
+        return transfers
     }
 
     public func estimateTransferFees(
@@ -520,7 +560,7 @@ public struct TronUSDTAPI {
     }
 
     public func getSendTransaction(address: Address, method: ContractMethod) async throws -> Transaction {
-        try await tronApi.getTransferTransaction(owner: address, method: method, feeLimit: 150_000_000)
+        try await tronApi.getTransferTransaction(owner: address, method: method)
     }
 
     public func isAccountActivated(address: Address) async throws -> Bool {

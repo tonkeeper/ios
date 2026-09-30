@@ -1,20 +1,13 @@
 import Foundation
-import KeeperCore
 import TKCore
-import TKFeatureFlags
 import TKLogging
 
 final class RedAnalyticsSessionHolder {
     private let analytics: AnalyticsProvider
-    private let configurationAssembly: ConfigurationAssembly
     private var session: RedAnalyticsSession?
 
-    init(
-        analytics: AnalyticsProvider,
-        configurationAssembly: ConfigurationAssembly
-    ) {
+    init(analytics: AnalyticsProvider) {
         self.analytics = analytics
-        self.configurationAssembly = configurationAssembly
     }
 
     func start(
@@ -26,7 +19,7 @@ final class RedAnalyticsSessionHolder {
         guard session == nil else {
             return Log.w("cannot start red session which is already started")
         }
-        let metadata = prepareMetadata(otherMetadata)
+        let metadata = otherMetadata ?? [:]
         let session = RedAnalyticsSession(
             operationId: UUID().uuidString,
             flow: flow,
@@ -60,7 +53,7 @@ final class RedAnalyticsSessionHolder {
         }
         let finishedAtMs = nowMs()
         let error = outcome == .fail ? error : nil
-        let metadata = prepareMetadata(otherMetadata)
+        let metadata = otherMetadata ?? [:]
 
         analytics.log(
             OpTerminal(
@@ -78,12 +71,6 @@ final class RedAnalyticsSessionHolder {
             )
         )
         self.session = nil
-    }
-
-    private func prepareMetadata(_ metadata: RedAnalyticsMetadata?) -> RedAnalyticsMetadata {
-        var metadata = metadata ?? [:]
-        metadata[.isWalletKitEnabled] = configurationAssembly.configuration.featureEnabled(.walletKitEnabled)
-        return metadata
     }
 
     private func nowMs() -> Int {

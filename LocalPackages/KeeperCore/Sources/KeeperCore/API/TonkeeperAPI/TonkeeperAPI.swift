@@ -50,21 +50,18 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     private let urlSession: URLSession
     private let hostProvider: APIHostProvider
     private let appInfoProvider: AppInfoProvider
-    private let configuration: Configuration
-    private let isMultichainEnabled: @Sendable () -> Bool
+    private let isNewUser: @Sendable () -> Bool
 
     init(
         urlSession: URLSession,
         hostProvider: APIHostProvider,
         appInfoProvider: AppInfoProvider,
-        configuration: Configuration,
-        isMultichainEnabled: @escaping @Sendable () -> Bool
+        isNewUser: @escaping @Sendable () -> Bool
     ) {
         self.urlSession = urlSession
         self.hostProvider = hostProvider
         self.appInfoProvider = appInfoProvider
-        self.configuration = configuration
-        self.isMultichainEnabled = isMultichainEnabled
+        self.isNewUser = isNewUser
     }
 
     func loadFiatMethods(countryCode: String?, walletId: String?) async throws(TonkeeperAPIError) -> FiatMethods {
@@ -83,10 +80,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                     sim_country: nil,
                     timezone: context.timezone,
                     is_vpn_active: context.isVPNActive,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: isMultichainEnabled(),
-                        walletId: walletId
-                    )
+                    wallet_id: walletId
                 )
             )
         )
@@ -152,7 +146,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     }
 
     func loadBanners(walletId: String?) async throws -> [HomeBanner] {
-        let features = await enabledFeatures()
+        let features = enabledFeatures()
         let client = try await apiClient()
         let context = await requestContext()
         let response = try await apiCall(
@@ -166,11 +160,9 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                     sim_country: nil,
                     timezone: context.timezone,
                     is_vpn_active: context.isVPNActive,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: !features.isEmpty,
-                        walletId: walletId
-                    ),
-                    features: features.isEmpty ? nil : features.joined(separator: ",")
+                    wallet_id: walletId,
+                    features: features.joined(separator: ","),
+                    is_new: isNewUser()
                 )
             )
         )
@@ -205,10 +197,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                     platform: context.platform,
                     build: context.build,
                     lang: context.language,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: isMultichainEnabled(),
-                        walletId: walletId
-                    )
+                    wallet_id: walletId
                 )
             )
         )
@@ -235,7 +224,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     }
 
     func loadStory(storyId: String, walletId: String?) async throws(TonkeeperAPIError) -> Story {
-        let features = await enabledFeatures()
+        let features = enabledFeatures()
         let client = try await apiClient()
         let context = await requestContext()
         let response = try await apiCall(
@@ -250,11 +239,9 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                     sim_country: nil,
                     timezone: context.timezone,
                     is_vpn_active: context.isVPNActive,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: !features.isEmpty,
-                        walletId: walletId
-                    ),
-                    features: features.isEmpty ? nil : features.joined(separator: ",")
+                    wallet_id: walletId,
+                    features: features.joined(separator: ","),
+                    is_new: isNewUser()
                 )
             )
         )
@@ -286,7 +273,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     }
 
     func loadStories(storyIds: [String], walletId: String?) async throws(TonkeeperAPIError) -> [Story] {
-        let features = await enabledFeatures()
+        let features = enabledFeatures()
         let client = try await apiClient()
         let context = await requestContext()
         let response = try await apiCall(
@@ -301,11 +288,9 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                     sim_country: nil,
                     timezone: context.timezone,
                     is_vpn_active: context.isVPNActive,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: !features.isEmpty,
-                        walletId: walletId
-                    ),
-                    features: features.isEmpty ? nil : features.joined(separator: ",")
+                    wallet_id: walletId,
+                    features: features.joined(separator: ","),
+                    is_new: isNewUser()
                 )
             )
         )
@@ -373,10 +358,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
                 query: .init(
                     address: address,
                     lang: context.language,
-                    wallet_id: walletIdForWalletScopedContent(
-                        isMultichainEnabled: isMultichainEnabled(),
-                        walletId: walletId
-                    )
+                    wallet_id: walletId
                 )
             )
         )
@@ -421,9 +403,8 @@ private extension TonkeeperAPIImplementation {
         let isVPNActive: Bool?
     }
 
-    func enabledFeatures() async -> [String] {
-        _ = await configuration.loadConfigurations()
-        return configuration.featureEnabled(.multichainEnabled) ? ["multichain"] : []
+    func enabledFeatures() -> [String] {
+        ["multichain"]
     }
 
     func apiClient() async throws(TonkeeperAPIError) -> TKTonkeeperAPI.Client {

@@ -265,11 +265,11 @@ private extension AptabaseQueueClientTests {
         let client = AptabaseQueueClient(
             store: store,
             dispatcher: AptabaseDispatcher(
-                endpoint: "https://analytics.example.com",
+                endpointProvider: { "https://analytics.example.com" },
                 appKey: "A-SH-0000000000",
                 environment: environment,
                 session: session
-            )!,
+            ),
             environment: environment,
             // Long enough that only the explicit flushes in these tests hit the network.
             flushInterval: 3600,

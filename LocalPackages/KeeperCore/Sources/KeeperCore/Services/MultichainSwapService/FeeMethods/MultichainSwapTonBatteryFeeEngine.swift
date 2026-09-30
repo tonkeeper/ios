@@ -3,7 +3,7 @@ import Foundation
 import TKLogging
 import TonSwift
 
-struct MultichainSwapTonBatteryFeeEngine: MultichainSwapBatteryFeeEngine {
+struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
     private let transferService: TransferService
     private let balanceService: BalanceService
     private let batteryChargesReader: BatteryChargesReader
@@ -35,9 +35,9 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapBatteryFeeEngine {
 
     let chain = MultichainChain.ton
 
-    func option(context: MultichainSwapFeeContext) async -> MultichainSwapFeeOption? {
+    func options(context: MultichainSwapFeeContext) async -> [MultichainSwapFeeOption] {
         guard let prepared = await preparedTransfer(context: context) else {
-            return nil
+            return []
         }
         let emulation = prepared.emulation
         let requiredCharges = batteryCalculation.calculateCharges(tonAmount: emulation.amount)
@@ -50,21 +50,26 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapBatteryFeeEngine {
                 "availableCharges": availableCharges.logValue,
             ]
         )
-        return MultichainSwapBatteryFeeRules.option(
-            charges: requiredCharges,
-            excessCharges: emulation.excess.flatMap {
-                batteryCalculation.calculateCharges(tonAmount: $0)
-            },
-            availableCharges: availableCharges
-        )
+        return [
+            MultichainSwapBatteryFeeRules.option(
+                charges: requiredCharges,
+                excessCharges: emulation.excess.flatMap {
+                    batteryCalculation.calculateCharges(tonAmount: $0)
+                },
+                availableCharges: availableCharges
+            ),
+        ]
     }
 
     func send(
         context: MultichainSwapFeeContext,
-        confirmedCharges: Int,
+        confirmed: MultichainSwapRelayedFee,
         passcodeProvider: @escaping () async -> String?
     ) async throws(MultichainSwapExecutionFailure) -> String {
         let payloadId = context.payloadId
+        guard case let .batteryCharges(confirmedCharges) = confirmed else {
+            throw .internal(reason: "a ton swap can only be relayed against battery charges")
+        }
         guard let prepared = await preparedTransfer(context: context) else {
             throw .internal(reason: "battery cannot pay for swap payload \(payloadId)")
         }
@@ -133,12 +138,14 @@ private extension MultichainSwapTonBatteryFeeEngine {
     func preparedTransfer(context: MultichainSwapFeeContext) async -> PreparedTransfer? {
         let isBatteryEnabled = await configuration.isBatteryEnable(network: context.wallet.network)
         let isBatterySendEnabled = await configuration.isBatterySendEnable(network: context.wallet.network)
-        guard case .tonJetton = MultichainSwapBatteryFeeRules.relayedAsset(
+        guard MultichainSwapBatteryFeeRules.isBatteryAllowed(
+            wallet: context.wallet,
+            isBatteryEnabled: isBatteryEnabled,
+            isBatterySendEnabled: isBatterySendEnabled
+        ), case .tonJetton = MultichainSwapBatteryFeeRules.relayedAsset(
             wallet: context.wallet,
             sourceAsset: context.sourceAsset,
             requiresApproval: context.requiresApproval,
-            isBatteryEnabled: isBatteryEnabled,
-            isBatterySendEnabled: isBatterySendEnabled,
             isTRXOnlyRegion: configuration.isTRXOnlyRegion(network: context.wallet.network)
         ) else {
             Log.multichainSwap.i(

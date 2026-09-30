@@ -222,15 +222,6 @@ private extension MultichainSwapTokenPickerModel {
 }
 
 private extension TokenPickerV2ChainFilter {
-    var chain: MultichainChain? {
-        switch self {
-        case .all:
-            return nil
-        case let .chain(chain):
-            return chain
-        }
-    }
-
     var crossSwapChainId: String? {
         guard let chain else {
             return nil

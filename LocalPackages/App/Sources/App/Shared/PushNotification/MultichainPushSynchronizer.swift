@@ -10,7 +10,6 @@ struct MultichainPushSyncState: Equatable {
 }
 
 struct MultichainPushSynchronizerDependencies {
-    var isFeatureEnabled: () -> Bool
     var desiredWalletIds: () -> [String]
     var loadState: () -> MultichainPushSyncState
     var saveState: (MultichainPushSyncState) -> Void
@@ -45,13 +44,8 @@ final class MultichainPushSynchronizer {
         self.dependencies = dependencies
     }
 
-    /// Returns the scheduled sync so a caller can await the settled state; `nil` when the feature
-    /// is off.
     @discardableResult
     func schedule(token: String? = nil, requireAuthorization: Bool) -> Task<Outcome, Never>? {
-        // The flag is the kill switch for the whole multichain feature, and v2 push authenticates
-        // with the device JWT: with it off the app must not touch the v2 contour at all.
-        guard dependencies.isFeatureEnabled() else { return nil }
         return queue.sync {
             generation += 1
             let generation = generation

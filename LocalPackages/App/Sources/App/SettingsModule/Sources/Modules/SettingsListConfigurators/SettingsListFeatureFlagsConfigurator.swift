@@ -28,20 +28,12 @@ final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
     private func createState() -> SettingsListState {
         let sortedFlags = FeatureFlag.allCases
             .sorted(by: { $0.localKey < $1.localKey })
-        let enabledFlags = sortedFlags.filter { !configurationAssembly.configuration.isFeatureFlagDisabledByBootConfiguration($0) }
-        let disabledFlags = sortedFlags.filter { configurationAssembly.configuration.isFeatureFlagDisabledByBootConfiguration($0) }
 
         let sections: [SettingsListSection] = [
             .items(
                 SettingsListItemsSection(
-                    items: enabledFlags.compactMap(createFlagItem).map(SettingsListItemsSectionItem.listItem),
+                    items: sortedFlags.compactMap(createFlagItem).map(SettingsListItemsSectionItem.listItem),
                     header: SettingsListSectionHeader(title: "Allowed by keys/all")
-                )
-            ),
-            .items(
-                SettingsListItemsSection(
-                    items: disabledFlags.compactMap(createFlagItem).map(SettingsListItemsSectionItem.listItem),
-                    header: SettingsListSectionHeader(title: "Disabled by keys/all")
                 )
             ),
         ]
@@ -58,15 +50,13 @@ final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
         }
         let bundleValue = value.bundleValue
         let localValue = value.localValue
-        let isVetoedByBootConfig = configurationAssembly.configuration
-            .isFeatureFlagDisabledByBootConfiguration(flag) && bundleValue == nil && localValue == nil
         let remoteValue = value.remoteValue
         let defaultValue = value.defaultValue
         let resolvedValue = configurationAssembly.configuration.featureEnabled(flag)
 
-        let titleColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textPrimary
-        let detailsColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textSecondary
-        let localValueColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textPrimary
+        let titleColor: TKColor = .textPrimary
+        let detailsColor: TKColor = .textSecondary
+        let localValueColor: TKColor = .textPrimary
 
         var captions = [
             SettingsListItemCaption("remote: \(remoteValue.displayText)", color: detailsColor),

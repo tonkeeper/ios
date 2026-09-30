@@ -11,7 +11,9 @@ appId: com.jbig.tonkeeper
 - runScript: ../../scripts/utils/formatter.js
 
 - evalScript: ${output.lastSentJettonPrimaryLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonOutcomeLine(output.lastSentJettonTransferPrimary.amount, output.lastSentJettonTransferPrimary.jetton.decimals, output.lastSentJettonTransferPrimary.jetton.symbol))}
-- evalScript: ${output.lastSentJettonFeeLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonOutcomeLine(output.lastSentJettonTransferFee.amount, output.lastSentJettonTransferFee.jetton.decimals, output.lastSentJettonTransferFee.jetton.symbol))}
+# The relayer fee is a GasRelay action: History renders it as the relayed TON amount sent to
+# the relayer wallet ("TONAPI gas proxy"), not as a jetton row with a relayer comment.
+- evalScript: ${output.lastSentJettonFeeLine = output.formatter.toExactVisiblePattern(output.formatter.formatSignedCompactTonWithTokenSuffix(output.lastSentJettonTransferGasRelay.amount, true))}
 
 - extendedWaitUntil:
     visible: History
@@ -28,4 +30,4 @@ appId: com.jbig.tonkeeper
     direction: DOWN
     timeout: 120000
 - assertVisible: ${output.lastSentJettonFeeLine}
-- assertVisible: "Call: TonkeeperRelayerFee"
+- assertVisible: ${output.lastSentJettonTransferGasRelay.relayer.name}

@@ -23,6 +23,26 @@ final class TronWireSizeTests: XCTestCase {
         )
     }
 
+    /// The `triggerconstantcontract` probe is the same `raw_data` without its trailing `fee_limit`
+    /// field, and the estimate is measured on the probe — so adding the field back has to land on
+    /// the length the node produced for the transaction that is actually signed.
+    func test_feeLimitFieldLength_closesTheGapBetweenTheProbeAndTheSignedTransaction() throws {
+        let signedRawData = try XCTUnwrap(Data(strictHex: Self.traceRawDataHex))
+        let probeRawData = signedRawData.dropLast(TronWireSize.feeLimitFieldLength(feeLimit: 150_000_000))
+
+        XCTAssertEqual(probeRawData.count, 205)
+        XCTAssertEqual(
+            probeRawData.count + TronWireSize.feeLimitFieldLength(feeLimit: 150_000_000),
+            signedRawData.count
+        )
+        XCTAssertEqual(TronApi.bandwidth(rawDataLength: signedRawData.count), 345)
+    }
+
+    func test_feeLimitFieldLength_isZeroForAFieldProtobufOmits() {
+        XCTAssertEqual(TronWireSize.feeLimitFieldLength(feeLimit: 0), 0)
+        XCTAssertEqual(TronWireSize.feeLimitFieldLength(feeLimit: 1), 3)
+    }
+
     func test_nativeTransferRawDataLength_matchesTheLayout() {
         // 4 (ref_block_bytes) + 10 (ref_block_hash) + 7 (expiration) + 105 (contract) + 7 (timestamp)
         XCTAssertEqual(

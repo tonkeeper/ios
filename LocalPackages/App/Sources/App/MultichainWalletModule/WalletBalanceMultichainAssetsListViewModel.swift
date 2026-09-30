@@ -13,7 +13,65 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         static let moreButtonThreshold = collapsedVisibleCount + 1
     }
 
-    private enum RowSelection {
+    struct RowData {
+        let assets: [MultichainAsset]
+        let rows: [AssetBalanceRowCellContent]
+        let isMoreAssetsExpanded: Bool
+        let hidesDustBalances: Bool
+
+        fileprivate let selections: [String: RowSelection]
+
+        static let initial = RowData(
+            assets: [],
+            rows: [],
+            isMoreAssetsExpanded: false,
+            hidesDustBalances: false,
+            selections: [:]
+        )
+
+        func settingMoreAssetsExpanded() -> RowData {
+            RowData(
+                assets: assets,
+                rows: rows,
+                isMoreAssetsExpanded: true,
+                hidesDustBalances: hidesDustBalances,
+                selections: selections
+            )
+        }
+    }
+
+    enum State {
+        case idle
+        case loading(previous: Answer?, task: Task<Void, Never>)
+        case answered(Answer)
+
+        enum Answer {
+            case rows(RowData)
+            case failed
+        }
+    }
+
+    enum Presentation: Equatable {
+        case rows([Row])
+        case allAssetsHidden
+        case error
+    }
+
+    enum Row: Equatable, Identifiable {
+        case asset(AssetBalanceRowCellContent)
+        case moreAssets(previewAvatars: [AssetAvatarViewImageSource])
+
+        var id: String {
+            switch self {
+            case let .asset(row):
+                row.id
+            case .moreAssets:
+                "more-assets"
+            }
+        }
+    }
+
+    fileprivate enum RowSelection {
         case asset(MultichainAsset)
         case staking(
             pool: StackingPoolInfo,
@@ -35,28 +93,25 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
     private let multichainFormatter = MultichainPortfolioAmountFormatting()
     private let rateConverter = RateConverter()
     private let stakingCommentMapper: StakingItemCommentMapper
+    private var isActive = true
+    private var needsPresentationRefresh = false
 
-    private var allRows: [AssetBalanceRowCellContent] = []
-    private var rowSelections: [String: RowSelection] = [:]
-    private var isMoreAssetsExpanded = false
-    private var currentWallet: Wallet?
-    private var lastLoadedHidesDustBalances = false
-    private var loadGeneration = 0
-    private var appliedGeneration = 0
-    private var loadTask: Task<Void, Never>?
+    @Published private(set) var state: State = .idle
 
-    @Published private(set) var rows: [AssetBalanceRowCellContent] = []
+    var presentation: Presentation {
+        switch state {
+        case .idle:
+            return .rows([])
+        case let .loading(previous, _):
+            return previous.map(Self.presentation(for:)) ?? .rows([])
+        case let .answered(answer):
+            return Self.presentation(for: answer)
+        }
+    }
 
-    @Published private(set) var showsMoreAssetsButton = false
-    @Published private(set) var moreAssetsPreviewAvatars: [AssetAvatarViewImageSource] = []
+    let canManage: Bool
 
-    @Published private(set) var showsAllAssetsHidden = false
-    @Published private(set) var showsError = false
-
-    /// Visible assets from the latest response, before staking presentation is applied.
-    private(set) var lastLoadedAssets: [MultichainAsset] = []
-
-    @Published private(set) var canManage: Bool
+    private(set) var wallet: Wallet
 
     var onSelectAsset: ((MultichainAsset) -> Void)?
     var onSelectStakingItem: ((
@@ -72,8 +127,10 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
     var onTapOpenAssets: (() -> Void)?
     var onTapManage: (() -> Void)?
     var onRetry: (() -> Void)?
+    var onNeedsReload: (() -> Void)?
 
     init(
+        wallet: Wallet,
         multichainService: MultichainService,
         multichainAssetBalanceProvider: MultichainAssetBalanceProvider,
         currencyStore: CurrencyStore,
@@ -86,6 +143,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         tonStakingAPYTextFormatter: @escaping (Decimal?) -> String?,
         canManage: Bool
     ) {
+        self.wallet = wallet
         self.multichainService = multichainService
         self.multichainAssetBalanceProvider = multichainAssetBalanceProvider
         self.currencyStore = currencyStore
@@ -107,8 +165,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
                 }
             case .didUpdateBalanceFilter:
                 Task { @MainActor in
-                    guard let wallet = observer.currentWallet else { return }
-                    await observer.loadAssets(for: wallet)
+                    observer.onNeedsReload?()
                 }
             case .didUpdateSearchEngine, .didUpdateHistoryFilter:
                 break
@@ -116,8 +173,13 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         }
     }
 
+    func adopt(wallet: Wallet) {
+        guard self.wallet == wallet else { return }
+        self.wallet = wallet
+    }
+
     func selectAsset(row: AssetBalanceRowCellContent) {
-        guard let selection = rowSelections[row.id] else {
+        guard let selection = state.rowData?.selections[row.id] else {
             return
         }
 
@@ -125,45 +187,58 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         case let .asset(asset):
             onSelectAsset?(asset)
         case let .staking(pool, info, _):
-            guard let currentWallet else { return }
-            onSelectStakingItem?(currentWallet, pool, info)
+            onSelectStakingItem?(wallet, pool, info)
         }
     }
 
     func commentAction(for row: AssetBalanceRowCellContent) -> (() -> Void)? {
-        guard case let .staking(pool, info, isCollectable) = rowSelections[row.id], isCollectable else {
+        guard case let .staking(pool, info, isCollectable) = state.rowData?.selections[row.id], isCollectable else {
             return nil
         }
         return { [weak self] in
-            guard let self, let currentWallet else { return }
-            onSelectCollectStakingItem?(currentWallet, pool, info)
+            guard let self else { return }
+            onSelectCollectStakingItem?(wallet, pool, info)
         }
     }
 
     func expandMoreAssets() {
-        guard showsMoreAssetsButton else { return }
-        isMoreAssetsExpanded = true
-        updateDisplayedRows()
+        guard let rowData = state.rowData, !rowData.isMoreAssetsExpanded else { return }
+        state = state.settingRowData(rowData.settingMoreAssetsExpanded())
+    }
+
+    func setActive(_ isActive: Bool) {
+        guard self.isActive != isActive else { return }
+        self.isActive = isActive
+        guard isActive, needsPresentationRefresh else { return }
+        refreshPresentation()
     }
 
     func refreshPresentation() {
-        guard !lastLoadedAssets.isEmpty else { return }
-        let displayCurrency = currencyStore.getState()
-        _ = applyAssets(lastLoadedAssets, displayCurrency: displayCurrency)
+        guard isActive else {
+            needsPresentationRefresh = true
+            return
+        }
+        needsPresentationRefresh = false
+        guard let rowData = state.rowData, !rowData.assets.isEmpty else { return }
+        state = state.settingRowData(
+            makeRowData(
+                assets: rowData.assets,
+                displayCurrency: currencyStore.getState(),
+                isMoreAssetsExpanded: rowData.isMoreAssetsExpanded,
+                hidesDustBalances: rowData.hidesDustBalances
+            )
+        )
     }
 
     func applyVisibilityUpdate(_ update: TokenManagementVisibilityUpdate) {
         guard !update.changes.isEmpty else { return }
 
-        // The optimistic delta runs on lastLoadedAssets, which is only valid while the active
-        // dust filter still matches the one that list was loaded under. If it diverged (the filter
-        // was toggled in the same Manage session), skip the optimistic write — the coordinator's
-        // follow-up reloadAssetsList refetches under the current filter.
-        let appSettings = appSettingsStore.getState()
-        guard appSettings.hidesDustBalances == lastLoadedHidesDustBalances else { return }
+        let rowData = state.rowData ?? .initial
+        guard appSettingsStore.getState().hidesDustBalances == rowData.hidesDustBalances else {
+            return
+        }
 
-        loadGeneration += 1
-        appliedGeneration = loadGeneration
+        state.task?.cancel()
 
         let hideIDs = Set(
             update.changes
@@ -176,9 +251,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
                 .map(\.assetId)
         )
 
-        // Apply hide/show deltas onto the already-loaded balance list so a
-        // partially loaded Manage Crypto session cannot truncate portfolio assets.
-        var assets = lastLoadedAssets.compactMap { asset -> MultichainAsset? in
+        var assets = rowData.assets.compactMap { asset -> MultichainAsset? in
             hideIDs.contains(asset.asset.assetId) ? nil : asset
         }
         let existingIDs = Set(assets.map(\.asset.assetId))
@@ -191,26 +264,67 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         }
 
         let displayCurrency = currencyStore.getState()
-        let sorted = applyAssets(assets, displayCurrency: displayCurrency)
-        let fiatTotal = portfolioFiatTotal(from: sorted, displayCurrency: displayCurrency)
-        if let currentWallet {
-            // An empty price is how "nothing left to add up" reaches the store: hiding the last
-            // asset has to move the total the header renders, not leave the previous one standing.
-            portfolioStore.setPortfolioTotal(
-                fiatTotal.map { [$0.currency.code.lowercased(): "\($0.amount)"] } ?? [:],
-                wallet: currentWallet,
-                hidesDustBalances: lastLoadedHidesDustBalances
-            )
-        }
+        let updated = makeRowData(
+            assets: assets,
+            displayCurrency: displayCurrency,
+            isMoreAssetsExpanded: rowData.isMoreAssetsExpanded,
+            hidesDustBalances: rowData.hidesDustBalances
+        )
+        let hadAnswer = state.answer != nil
+        state = .answered(.rows(updated))
+        guard hadAnswer, case let .multichain(multichainState) = wallet.multichain else { return }
+
+        let fiatTotal = portfolioFiatTotal(from: updated.assets, displayCurrency: displayCurrency)
+        portfolioStore.setPortfolio(
+            MultichainPortfolio(
+                fiatPrice: fiatTotal.map { [$0.currency.code.lowercased(): "\($0.amount)"] } ?? [:],
+                assets: updated.assets,
+                accountsIdentifier: multichainState.accountsIdentifier,
+                currencyCode: displayCurrency.code.lowercased(),
+                hidesDustBalances: updated.hidesDustBalances
+            ),
+            wallet: wallet
+        )
     }
 
-    func loadAssets(for wallet: Wallet?) async {
-        loadTask?.cancel()
+    @discardableResult
+    func restoreCachedAssets() -> Bool {
+        guard state.answer == nil,
+              case let .multichain(multichainState) = wallet.multichain
+        else {
+            return false
+        }
+        let displayCurrency = currencyStore.getState()
+        guard let portfolio = portfolioStore.getState()[wallet],
+              portfolio.accountsIdentifier == multichainState.accountsIdentifier,
+              portfolio.hidesDustBalances == appSettingsStore.getState().hidesDustBalances,
+              portfolio.currencyCode == displayCurrency.code.lowercased()
+        else {
+            return false
+        }
+        multichainAssetBalanceProvider.restoreCache(
+            assets: portfolio.assets,
+            multichainState: multichainState
+        )
+        state = state.settingRowData(
+            makeRowData(
+                assets: portfolio.assets,
+                displayCurrency: displayCurrency,
+                isMoreAssetsExpanded: false,
+                hidesDustBalances: portfolio.hidesDustBalances
+            )
+        )
+        return true
+    }
+
+    func loadAssets() async {
+        let previous = state.answer
+        state.task?.cancel()
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
-            await self.performLoadAssets(for: wallet)
+            await performLoadAssets()
         }
-        loadTask = task
+        state = .loading(previous: previous, task: task)
         await withTaskCancellationHandler {
             await task.value
         } onCancel: {
@@ -218,22 +332,11 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         }
     }
 
-    private func performLoadAssets(for wallet: Wallet?) async {
-        guard let wallet, case let .multichain(state) = wallet.multichain else {
-            currentWallet = nil
-            resetAssetsList()
+    private func performLoadAssets() async {
+        guard case let .multichain(multichainState) = wallet.multichain else {
+            state = .idle
             return
         }
-
-        let previousWallet = currentWallet
-        currentWallet = wallet
-
-        if previousWallet?.id != wallet.id {
-            resetAssetsList()
-        }
-
-        loadGeneration += 1
-        let generation = loadGeneration
 
         let displayCurrency = currencyStore.getState()
         var currencyCodes = [displayCurrency.code.lowercased()]
@@ -245,7 +348,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         let requestToken = portfolioStore.makeRequestToken()
         do {
             let page = try await multichainService.getAllWalletAssets(
-                state: state,
+                state: multichainState,
                 currencies: currencyCodes,
                 capabilities: nil,
                 chain: nil,
@@ -255,57 +358,76 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
                 hideDust: appSettings.hidesDustBalances ? true : nil
             )
             guard !Task.isCancelled else { return }
-            guard generation > appliedGeneration else { return }
-            appliedGeneration = generation
 
             let visibleAssets = page.assets.filter { !$0.isHidden }
-            lastLoadedHidesDustBalances = appSettings.hidesDustBalances
             multichainAssetBalanceProvider.primeCache(
                 assets: visibleAssets,
-                multichainState: state
+                multichainState: multichainState
             )
-            _ = applyAssets(visibleAssets, displayCurrency: displayCurrency)
-            portfolioStore.setPortfolioTotal(
-                page.fiatPrice,
+            let rowData = makeRowData(
+                assets: visibleAssets,
+                displayCurrency: displayCurrency,
+                isMoreAssetsExpanded: state.rowData?.isMoreAssetsExpanded ?? false,
+                hidesDustBalances: appSettings.hidesDustBalances
+            )
+            state = .answered(.rows(rowData))
+            portfolioStore.setPortfolio(
+                MultichainPortfolio(
+                    fiatPrice: page.fiatPrice,
+                    assets: rowData.assets,
+                    accountsIdentifier: multichainState.accountsIdentifier,
+                    currencyCode: displayCurrency.code.lowercased(),
+                    hidesDustBalances: appSettings.hidesDustBalances
+                ),
                 wallet: wallet,
-                hidesDustBalances: appSettings.hidesDustBalances,
                 requestToken: requestToken
             )
         } catch {
-            guard !Task.isCancelled else { return }
-            guard generation > appliedGeneration else { return }
-            // A cancelled request must not consume the generation: a still-inflight
-            // earlier request would otherwise get its successful result discarded.
-            if error.isCancellation {
+            guard !Task.isCancelled, !error.isCancellation else { return }
+            guard let rowData = state.rowData, !rowData.rows.isEmpty else {
+                state = .answered(.failed)
                 return
             }
-            appliedGeneration = generation
-            if allRows.isEmpty {
-                setShowsError(true)
-            }
+            state = .answered(.rows(rowData))
         }
     }
 
-    private func resetAssetsList() {
-        appliedGeneration = loadGeneration
-        allRows = []
-        rowSelections = [:]
-        lastLoadedAssets = []
-        lastLoadedHidesDustBalances = false
-        isMoreAssetsExpanded = false
-        setShowsAllAssetsHidden(false)
-        setShowsError(false)
-        updateDisplayedRows()
+    private static func presentation(for answer: State.Answer) -> Presentation {
+        switch answer {
+        case let .rows(rowData):
+            let rows = displayRows(from: rowData)
+            return rows.isEmpty ? .allAssetsHidden : .rows(rows)
+        case .failed:
+            return .error
+        }
     }
 
-    private func applyAssets(
-        _ assets: [MultichainAsset],
-        displayCurrency: Currency
-    ) -> [MultichainAsset] {
+    private static func displayRows(from rowData: RowData) -> [Row] {
+        guard !rowData.isMoreAssetsExpanded,
+              rowData.rows.count > AssetsListLayout.moreButtonThreshold
+        else {
+            return rowData.rows.map(Row.asset)
+        }
+
+        let previewAvatars = rowData.rows
+            .dropFirst(AssetsListLayout.collapsedVisibleCount)
+            .prefix(2)
+            .map { previewAvatarSource(from: $0.avatarImageSource) }
+        return rowData.rows
+            .prefix(AssetsListLayout.collapsedVisibleCount)
+            .map(Row.asset)
+            + [.moreAssets(previewAvatars: previewAvatars)]
+    }
+
+    private func makeRowData(
+        assets: [MultichainAsset],
+        displayCurrency: Currency,
+        isMoreAssetsExpanded: Bool,
+        hidesDustBalances: Bool
+    ) -> RowData {
         let visibleAssets = assets.filter {
             $0.asset.chain != nil
         }
-        lastLoadedAssets = visibleAssets
 
         let isSecureMode = appSettingsStore.getState().isSecureMode
         let tonstakersAssets = visibleAssets.filter(isTonstakersLiquidStakingJetton)
@@ -347,12 +469,13 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
             selections[row.id] = .asset(asset)
         }
 
-        allRows = rows
-        rowSelections = selections
-        setShowsAllAssetsHidden(visibleAssets.isEmpty)
-        setShowsError(false)
-        updateDisplayedRows()
-        return visibleAssets
+        return RowData(
+            assets: visibleAssets,
+            rows: rows,
+            isMoreAssetsExpanded: isMoreAssetsExpanded,
+            hidesDustBalances: hidesDustBalances,
+            selections: selections
+        )
     }
 
     private func makeTonstakersStakingPresentation(
@@ -361,7 +484,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         displayCurrency: Currency,
         isSecureMode: Bool
     ) -> (row: AssetBalanceRowCellContent, selection: RowSelection)? {
-        guard let wallet = currentWallet, !assets.isEmpty else {
+        guard !assets.isEmpty else {
             return nil
         }
 
@@ -505,46 +628,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         return (total, displayCurrency)
     }
 
-    private func updateDisplayedRows() {
-        let rows: [AssetBalanceRowCellContent]
-        let showsMoreAssetsButton: Bool
-        let moreAssetsPreviewAvatars: [AssetAvatarViewImageSource]
-
-        if isMoreAssetsExpanded || allRows.count <= AssetsListLayout.moreButtonThreshold {
-            rows = allRows
-            showsMoreAssetsButton = false
-            moreAssetsPreviewAvatars = []
-        } else {
-            rows = Array(allRows.prefix(AssetsListLayout.collapsedVisibleCount))
-            showsMoreAssetsButton = true
-            moreAssetsPreviewAvatars = allRows
-                .dropFirst(AssetsListLayout.collapsedVisibleCount)
-                .prefix(2)
-                .map { previewAvatarSource(from: $0.avatarImageSource) }
-        }
-
-        if self.rows != rows {
-            self.rows = rows
-        }
-        if self.showsMoreAssetsButton != showsMoreAssetsButton {
-            self.showsMoreAssetsButton = showsMoreAssetsButton
-        }
-        if self.moreAssetsPreviewAvatars != moreAssetsPreviewAvatars {
-            self.moreAssetsPreviewAvatars = moreAssetsPreviewAvatars
-        }
-    }
-
-    private func setShowsAllAssetsHidden(_ value: Bool) {
-        guard showsAllAssetsHidden != value else { return }
-        showsAllAssetsHidden = value
-    }
-
-    private func setShowsError(_ value: Bool) {
-        guard showsError != value else { return }
-        showsError = value
-    }
-
-    private func previewAvatarSource(from source: AssetAvatarViewImageSource) -> AssetAvatarViewImageSource {
+    private static func previewAvatarSource(from source: AssetAvatarViewImageSource) -> AssetAvatarViewImageSource {
         switch source {
         case let .url(url, _):
             return .url(url)
@@ -640,10 +724,10 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
     }
 
     private func apyText(for assetId: String) -> String? {
-        guard let currentWallet, case .ton = TradingAssetToken(assetId: assetId) else {
+        guard case .ton = TradingAssetToken(assetId: assetId) else {
             return nil
         }
-        return tonStakingAPYTextFormatter(tonStakingAPYProvider(currentWallet))
+        return tonStakingAPYTextFormatter(tonStakingAPYProvider(wallet))
     }
 
     private func isTonstakersLiquidStakingJetton(_ asset: MultichainAsset) -> Bool {
@@ -658,6 +742,44 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
             return true
         }
         return false
+    }
+}
+
+private extension WalletBalanceMultichainAssetsListViewModel.State {
+    var answer: Answer? {
+        switch self {
+        case .idle:
+            nil
+        case let .loading(previous, _):
+            previous
+        case let .answered(answer):
+            answer
+        }
+    }
+
+    var rowData: WalletBalanceMultichainAssetsListViewModel.RowData? {
+        answer?.rowData
+    }
+
+    var task: Task<Void, Never>? {
+        guard case let .loading(_, task) = self else { return nil }
+        return task
+    }
+
+    func settingRowData(_ rowData: WalletBalanceMultichainAssetsListViewModel.RowData) -> Self {
+        switch self {
+        case let .loading(_, task):
+            .loading(previous: .rows(rowData), task: task)
+        case .idle, .answered:
+            .answered(.rows(rowData))
+        }
+    }
+}
+
+private extension WalletBalanceMultichainAssetsListViewModel.State.Answer {
+    var rowData: WalletBalanceMultichainAssetsListViewModel.RowData? {
+        guard case let .rows(rowData) = self else { return nil }
+        return rowData
     }
 }
 

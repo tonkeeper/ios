@@ -156,7 +156,6 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         let prepared = PerpsPreparedSizeChangeAction(
             operationId: "normalized",
             walletId: "wallet",
-            isTestnet: false,
             marketId: 1,
             intent: request.intent,
             review: FakePerpsTradingService.makeSizeChangeReview(direction: .reduce),
@@ -176,7 +175,6 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         let mismatched = PerpsPreparedSizeChangeAction(
             operationId: "mismatched",
             walletId: "wallet",
-            isTestnet: false,
             marketId: 1,
             intent: PerpsSizeChangeIntent(
                 marketId: 1,
@@ -225,6 +223,7 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         PerpsSizeChangeSession(
             marketId: 1,
             direction: .reduce,
+            priceDecimals: 2,
             restingTriggerOrders: triggerOrders(from: resting)
         )
     }
@@ -236,7 +235,6 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         PerpsPreparedSizeChangeAction(
             operationId: operationId,
             walletId: "wallet",
-            isTestnet: false,
             marketId: 1,
             intent: request.intent,
             review: FakePerpsTradingService.makeSizeChangeReview(direction: .reduce),

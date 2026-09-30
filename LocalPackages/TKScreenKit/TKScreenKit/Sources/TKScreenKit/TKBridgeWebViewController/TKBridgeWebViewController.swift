@@ -20,8 +20,9 @@ open class TKBridgeWebViewController: UIViewController {
 
     public var isHeaderHidden = false {
         didSet {
-            setupWebViewConstraints()
+            guard isViewLoaded else { return }
             navigationBar.isHidden = isHeaderHidden
+            setupWebViewConstraints()
         }
     }
 
@@ -29,6 +30,10 @@ open class TKBridgeWebViewController: UIViewController {
     public var didTapShare: ((URL) -> Void)?
 
     public var didLoadInitialURLHandler: (() -> Void)?
+
+    public var didCommitLoad: ((URL) -> Void)?
+    public var didFinishLoad: ((URL) -> Void)?
+    public var didFailLoad: (() -> Void)?
 
     public var currentURL: URL? {
         webView.url
@@ -356,12 +361,54 @@ open class TKBridgeWebViewController: UIViewController {
 }
 
 extension TKBridgeWebViewController: WKNavigationDelegate {
+    public func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard let url = webView.url else { return }
+        didCommitLoad?(url)
+    }
+
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard let url = webView.url else { return }
         if !didLoadInitialURL {
             didLoadInitialURL = true
         }
         self.url = url
+        didFinishLoad?(url)
+    }
+
+    public func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        handleLoadFailure(error: error)
+    }
+
+    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        handleLoadFailure(error: error)
+    }
+
+    public func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse
+    ) async -> WKNavigationResponsePolicy {
+        if navigationResponse.isForMainFrame,
+           let response = navigationResponse.response as? HTTPURLResponse,
+           response.statusCode >= 400
+        {
+            handleLoadFailure(error: nil)
+        }
+        return .allow
+    }
+
+    public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        handleLoadFailure(error: nil)
+    }
+
+    private func handleLoadFailure(error: Error?) {
+        if let error, (error as NSError).code == NSURLErrorCancelled {
+            return
+        }
+        didFailLoad?()
     }
 
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {

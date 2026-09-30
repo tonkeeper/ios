@@ -1,0 +1,15 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../steps/browser/open_browser_tab.yaml"
+
+- tapOn: "Search or enter address"
+- inputText: "ston.fi"
+- extendedWaitUntil:
+    visible: "Open link"
+    timeout: 30000
+- tapOn: "Open link"
+
+- extendedWaitUntil:
+    visible: "ston.fi"
+    timeout: 60000

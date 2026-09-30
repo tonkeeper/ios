@@ -1,0 +1,70 @@
+# Tonstakers from main asset list → Stake → deposit 1 TON (sign in UI).
+# Preconditions: English UI; Tonstakers row visible on wallet list (tsTON / staking position);
+# free TON balance covers amount + fees; pool min stake allows 1 TON (raise amount if your pool min is higher).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../service/account/compare_ton_balance.yaml"
+
+# The Tonstakers row only carries its staking position once the balance has loaded; scrolling
+# for it while the list is still filling in finds a row that then reflows out from under the tap.
+# Above the 15s house limit because it waits on the first balance load on a cold simulator.
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+# centerElement + visibilityPercentage:100 stop the scroll only once the row is fully
+# on-screen and centered, so the tap can't land on a bottom-edge sliver. The trailing
+# waitForAnimationToEnd lets the async balance/price finish loading into the row before
+# the tap, otherwise the cell reflows after the scroll and the tap misses.
+- scrollUntilVisible:
+    element: "Tonstakers"
+    direction: DOWN
+    centerElement: true
+    visibilityPercentage: 100
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "Tonstakers"
+    waitToSettleTimeoutMs: 4000
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_balance_stake"
+    timeout: 30000
+- tapOn:
+    id: "staking_balance_stake"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_amount_input"
+    timeout: 30000
+- tapOn:
+    id: "staking_amount_input"
+- inputText: "1"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_continue"
+    timeout: 30000
+- tapOn:
+    id: "staking_deposit_continue"
+
+# Confirmation popup appears only after async fee emulation — wait for the slider.
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 30000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- runFlow: "../../../service/history/last_tonstakers_stake_deposit_assert.yaml"
+

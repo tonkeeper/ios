@@ -16,12 +16,13 @@ final class WalletBalanceHomeBannersContainerView: UIView {
     }
 
     func configure(viewModel: WalletBalanceHomeBannersViewModel) {
-        hostingView.setContent {
+        hostingView.setContent(id: viewModel.wallet.id) {
             WalletBalanceHomeBannersUIKitView(viewModel: viewModel)
         }
     }
 
     private func setup() {
+        clipsToBounds = true
         addSubview(hostingView)
         hostingView.snp.makeConstraints { make in
             make.edges.equalToSuperview()

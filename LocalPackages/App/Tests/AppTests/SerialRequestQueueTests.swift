@@ -71,6 +71,56 @@ final class SerialRequestQueueTests: XCTestCase {
     }
 }
 
+final class OptimisticToggleSyncTests: XCTestCase {
+    func test_failedSync_restoresValueReadWhenPassStarted() async {
+        let state = LockedBool(true)
+
+        let didSync = await OptimisticToggleSync.run(
+            isOn: false,
+            currentIsOn: { state.value },
+            setIsOn: { state.value = $0 },
+            sync: { false }
+        )
+
+        XCTAssertFalse(didSync)
+        XCTAssertTrue(state.value)
+    }
+
+    func test_failedQueuedIntent_doesNotInvertEarlierRollback() async {
+        let queue = SerialRequestQueue<String>()
+        let state = LockedBool(true)
+        let firstSyncStarted = AsyncGate()
+        let finishFirstSync = AsyncGate()
+
+        queue.enqueue("dapp") {
+            _ = await OptimisticToggleSync.run(
+                isOn: false,
+                currentIsOn: { state.value },
+                setIsOn: { state.value = $0 },
+                sync: {
+                    firstSyncStarted.open()
+                    await finishFirstSync.wait()
+                    return false
+                }
+            )
+        }
+        await firstSyncStarted.wait()
+        let second = queue.enqueue("dapp") {
+            _ = await OptimisticToggleSync.run(
+                isOn: true,
+                currentIsOn: { state.value },
+                setIsOn: { state.value = $0 },
+                sync: { false }
+            )
+        }
+
+        finishFirstSync.open()
+        await second.value
+
+        XCTAssertTrue(state.value)
+    }
+}
+
 // MARK: -
 
 private final class Recorder: @unchecked Sendable {
@@ -132,5 +182,23 @@ private final class AsyncGate: @unchecked Sendable {
         continuations = []
         lock.unlock()
         pending.forEach { $0.resume() }
+    }
+}
+
+private final class LockedBool: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedValue: Bool
+
+    init(_ value: Bool) {
+        storedValue = value
+    }
+
+    var value: Bool {
+        get {
+            lock.withLock { storedValue }
+        }
+        set {
+            lock.withLock { storedValue = newValue }
+        }
     }
 }

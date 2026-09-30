@@ -86,12 +86,7 @@ public extension Transaction {
     }
 }
 
-private extension Transaction {
-    static let expirationFieldNumber: UInt32 = 8
-
-    /// `range` is `nil` when the record is absent and has to be appended.
-    typealias EncodedExpiration = (value: UInt64, range: Range<Int>?)
-
+extension Transaction {
     func rawDataBytes() throws -> [UInt8] {
         do {
             return try ProtobufWire.decodeHex(rawDataHex)
@@ -99,6 +94,13 @@ private extension Transaction {
             throw WireFormatError.malformedRawData
         }
     }
+}
+
+private extension Transaction {
+    static let expirationFieldNumber: UInt32 = 8
+
+    /// `range` is `nil` when the record is absent and has to be appended.
+    typealias EncodedExpiration = (value: UInt64, range: Range<Int>?)
 
     func encodedExpiration(in bytes: [UInt8]) throws -> EncodedExpiration {
         let fields: [ProtobufWire.Field]

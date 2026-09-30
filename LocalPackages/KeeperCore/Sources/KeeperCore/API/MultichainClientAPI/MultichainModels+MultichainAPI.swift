@@ -100,11 +100,11 @@ extension MultichainPendingTransaction {
 extension MultichainPendingTransaction.ActivityType {
     func toAPISchemaActivityType() -> MultichainAPI.Components.Schemas.ActivityType {
         switch self {
-        case .send: .send
-        case .swap: .swap
-        case .stake: .stake
-        case .unstake: .unstake
-        case .contractCall: .contract_call
+        case .send: MultichainActivityType.send.rawValue
+        case .swap: MultichainActivityType.swap.rawValue
+        case .stake: MultichainActivityType.stake.rawValue
+        case .unstake: MultichainActivityType.unstake.rawValue
+        case .contractCall: MultichainActivityType.contractCall.rawValue
         }
     }
 
@@ -118,6 +118,7 @@ extension MultichainPendingTransaction.ActivityType {
         ]
         if let quote = details.quote {
             values["aggregator"] = quote.aggregator
+            values["route_id"] = quote.routeId
             if let providerRouteId = quote.providerRouteId {
                 values["provider_route_id"] = providerRouteId
             }
@@ -357,12 +358,13 @@ extension MultichainChainSyncStatus.Reason {
 
 extension MultichainActivity {
     init?(api: MultichainAPI.Components.Schemas.Activity) {
-        guard let fromChain = MultichainChain(api: api.from_chain),
-              let toChain = MultichainChain(api: api.to_chain)
-        else {
+        let fromChain = MultichainChain(rawValue: api.from_chain)
+        let toChain = MultichainChain(rawValue: api.to_chain)
+        let isPerps = api.activity_type.hasPrefix(MultichainActivityType.perpsRawValuePrefix)
+        guard isPerps || (fromChain != nil && toChain != nil) else {
             return nil
         }
-        let activityType = MultichainActivityType(rawValue: api.activity_type.rawValue) ?? .unknown
+        let activityType = MultichainActivityType(rawValue: api.activity_type) ?? .unknown
         let feeType = MultichainActivityFeeType(api: api.fee?._type ?? api.fee_type)
         self.init(
             activityType: activityType,
@@ -394,7 +396,8 @@ extension MultichainActivity {
             feeType: feeType,
             batteryCharges: feeType == .battery
                 ? Self.chargesCount(api.fee?.amount ?? api.fee_amount)
-                : nil
+                : nil,
+            perps: api.meta?.perps
         )
     }
 
@@ -427,12 +430,37 @@ extension MultichainActivityFeeType {
     }
 }
 
+private let iso8601FractionalFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+}()
+
+private let iso8601Formatter = ISO8601DateFormatter()
+
 private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
     var comment: String? {
         guard let value = additionalProperties.value["comment"] else {
             return nil
         }
         return value as? String
+    }
+
+    var perps: MultichainActivityPerpsMeta? {
+        guard let value = additionalProperties.value["perps"],
+              let payload = value as? [String: (any Sendable)?]
+        else {
+            return nil
+        }
+        return MultichainActivityPerpsMeta(
+            symbol: payload["symbol"].flatMap { $0 as? String },
+            assetId: payload["asset_id"].flatMap { $0 as? String },
+            side: payload["side"].flatMap { $0 as? String }.flatMap(MultichainPerpsSide.init(rawValue:)),
+            closeReason: payload["reason"].flatMap { $0 as? String }
+                .flatMap(MultichainPerpsCloseReason.init(rawValue:)),
+            accountIndex: Self.int64Value(payload["account_index"] ?? nil),
+            settledAt: payload["settled_at"].flatMap { $0 as? String }.flatMap(Self.date(fromISO8601:))
+        )
     }
 
     var tronResource: MultichainTronResource? {
@@ -447,6 +475,10 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
             return nil
         }
         return MultichainTronResource(energy: energy, bandwidth: bandwidth)
+    }
+
+    static func date(fromISO8601 value: String) -> Date? {
+        iso8601FractionalFormatter.date(from: value) ?? iso8601Formatter.date(from: value)
     }
 
     static func int64Value(_ value: (any Sendable)?) -> Int64? {

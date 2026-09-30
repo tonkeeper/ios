@@ -13,15 +13,34 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
     }
 
     struct Item: Identifiable, Equatable {
-        let asset: MultichainAsset
-        let row: AssetBalanceRowCellContent
-
-        var id: String {
-            row.id
+        enum Payload: Equatable {
+            case asset(MultichainAsset, row: AssetBalanceRowCellContent)
+            case perp(PerpsMarketRowItem)
         }
 
-        static func == (lhs: Item, rhs: Item) -> Bool {
-            lhs.asset == rhs.asset && lhs.row.id == rhs.row.id
+        let payload: Payload
+
+        var id: String {
+            switch payload {
+            case let .asset(_, row):
+                row.id
+            case let .perp(market):
+                "perp_\(market.id)"
+            }
+        }
+
+        var asset: MultichainAsset? {
+            if case let .asset(asset, _) = payload {
+                return asset
+            }
+            return nil
+        }
+
+        var assetRow: AssetBalanceRowCellContent? {
+            if case let .asset(_, row) = payload {
+                return row
+            }
+            return nil
         }
     }
 
@@ -251,7 +270,7 @@ private extension TokenPickerV2QueryViewModel {
             return
         }
 
-        let assets = result.assets
+        let assets = result.items
         state = .loaded(
             rowData: RowData(
                 items: deduplicated(assets.map(makeItem)),
@@ -288,7 +307,7 @@ private extension TokenPickerV2QueryViewModel {
         let mergedItems = deduplicated(
             merged(
                 current: fallbackData.items,
-                next: result.assets.map(makeItem)
+                next: result.items.map(makeItem)
             )
         )
         state = .loaded(
@@ -343,27 +362,34 @@ private extension TokenPickerV2QueryViewModel {
         return result
     }
 
-    func makeItem(asset: MultichainAsset) -> Item {
-        let badge = category == .all
-            ? AssetIdResolver.tag(for: asset.asset.assetId, multichainEnabled: true)
-            : nil
+    func makeItem(asset: TokenPickerLoadResult.Item) -> Item {
+        switch asset {
+        case let .perp(market):
+            return Item(payload: .perp(PerpsMarketRowMapping.item(from: market)))
+        case let .asset(asset):
+            let badge = category == .all
+                ? AssetIdResolver.tag(for: asset.asset.assetId, multichainEnabled: true)
+                : nil
 
-        return Item(
-            asset: asset,
-            row: AssetBalanceRowCellContent(
-                id: asset.asset.assetId,
-                title: title(for: asset),
-                badge: badge,
-                displayMode: rowDisplayMode(for: asset),
-                avatarImageSource: AssetIdResolver.imageSource(
-                    for: asset.asset.assetId,
-                    imageUrl: URL(string: asset.asset.image),
-                    multichainEnabled: true
-                ),
-                showsVerificationCheckmark: asset.asset.isTrusted,
-                accessibilityIdentifier: accessibilityIdentifier(for: asset)
+            return Item(
+                payload: .asset(
+                    asset,
+                    row: AssetBalanceRowCellContent(
+                        id: asset.asset.assetId,
+                        title: title(for: asset),
+                        badge: badge,
+                        displayMode: rowDisplayMode(for: asset),
+                        avatarImageSource: AssetIdResolver.imageSource(
+                            for: asset.asset.assetId,
+                            imageUrl: URL(string: asset.asset.image),
+                            multichainEnabled: true
+                        ),
+                        showsVerificationCheckmark: asset.asset.isTrusted,
+                        accessibilityIdentifier: accessibilityIdentifier(for: asset)
+                    )
+                )
             )
-        )
+        }
     }
 
     func title(for asset: MultichainAsset) -> String {

@@ -81,20 +81,17 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
     private let popularAppsService: PopularAppsService
     private let appSettingsStore: AppSettingsStore
     private let searchEngineService: SearchEngineServiceProtocol
-    private let isMultichainEnabled: Bool
 
     // MARK: - Init
 
     init(
         popularAppsService: PopularAppsService,
         appSettingsStore: AppSettingsStore,
-        searchEngineService: SearchEngineServiceProtocol,
-        isMultichainEnabled: Bool
+        searchEngineService: SearchEngineServiceProtocol
     ) {
         self.popularAppsService = popularAppsService
         self.appSettingsStore = appSettingsStore
         self.searchEngineService = searchEngineService
-        self.isMultichainEnabled = isMultichainEnabled
     }
 
     deinit {
@@ -227,7 +224,7 @@ private extension BrowserSearchViewModelImplementation {
         didSelectDapp?(.popularApp(
             source: .browserSearch,
             app: app,
-            catalogMode: isMultichainEnabled ? .multichain : .ton
+            catalogMode: .multichain
         ))
     }
 

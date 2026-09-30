@@ -22,7 +22,7 @@ struct MultichainRealtimeEnvelope: Decodable, Equatable {
 
 public final class MultichainRealtimeManager {
     private let walletsStore: WalletsStore
-    private let isRealtimeEnabled: () -> Bool
+    private let endpointProvider: () -> URL
     private let transport: MultichainRealtimeTransport
 
     private let balanceChangeObservers = LockedObserverStore<String>()
@@ -38,16 +38,18 @@ public final class MultichainRealtimeManager {
     private var balanceHintTask: Task<Void, Never>?
     private var activityHintTask: Task<Void, Never>?
     private var connectedWalletId: String?
+    private var connectedEndpoint: URL?
+    private var connectionID = UUID()
     private var subscribedWalletId: String?
 
     init(
         walletsStore: WalletsStore,
-        isRealtimeEnabled: @escaping () -> Bool,
-        transport: MultichainRealtimeTransport
+        transport: MultichainRealtimeTransport,
+        endpointProvider: @escaping () -> URL
     ) {
         self.walletsStore = walletsStore
-        self.isRealtimeEnabled = isRealtimeEnabled
         self.transport = transport
+        self.endpointProvider = endpointProvider
     }
 
     /// Delivery is not bound to an executor; observers enter their own isolation domain.
@@ -90,16 +92,6 @@ public final class MultichainRealtimeManager {
             guard let self, !self.didStart else { return }
             self.didStart = true
 
-            self.transport.setSignalHandler { [weak self] signal in
-                guard let self else { return }
-                self.syncQueue.async {
-                    self.handleSignal(signal)
-                }
-            }
-            self.transport.setDisabledByBackendHandler { [weak self] in
-                self?.markDisabledByBackend()
-            }
-
             self.walletsStore.addObserver(self) { observer, event in
                 switch event {
                 case .didChangeActiveWallet, .didUpdateWalletMultichain, .didDeleteWallet, .didDeleteAll:
@@ -122,15 +114,22 @@ public final class MultichainRealtimeManager {
         }
     }
 
+    func configurationDidChange() {
+        syncQueue.async { [weak self] in
+            self?.reconcileConnection()
+        }
+    }
+
     func handleSignalForTesting(_ signal: MultichainRealtimeSignal) {
         syncQueue.async { [weak self] in
             self?.handleSignal(signal)
         }
     }
 
-    private func markDisabledByBackend() {
+    private func markDisabledByBackend(connectionID: UUID) {
         syncQueue.async { [weak self] in
             guard let self else { return }
+            guard self.connectionID == connectionID else { return }
             self.isDisabledByBackend = true
             self.reconcileConnection()
         }
@@ -138,28 +137,37 @@ public final class MultichainRealtimeManager {
 
     private func reconcileConnection() {
         let walletId = desiredWalletId()
-        let previous = connectedWalletId
-        connectedWalletId = walletId
-
-        if walletId != previous {
-            setSubscribedWalletId(nil)
-            balanceHintTask?.cancel()
-            activityHintTask?.cancel()
-        }
-
-        if let walletId {
-            if previous != walletId {
-                transport.connect(walletId: walletId)
-            }
-        } else if previous != nil {
+        let endpoint = walletId.map { _ in endpointProvider() }
+        guard walletId != connectedWalletId || endpoint != connectedEndpoint else { return }
+        if connectedWalletId != nil {
             transport.disconnect()
+        }
+        connectionID = UUID()
+        connectedWalletId = walletId
+        connectedEndpoint = endpoint
+        setSubscribedWalletId(nil)
+        balanceHintTask?.cancel()
+        activityHintTask?.cancel()
+
+        if let walletId, let endpoint {
+            let connectionID = self.connectionID
+            transport.setSignalHandler { [weak self] signal in
+                guard let self else { return }
+                self.syncQueue.async {
+                    guard self.connectionID == connectionID else { return }
+                    self.handleSignal(signal)
+                }
+            }
+            transport.setDisabledByBackendHandler { [weak self] in
+                self?.markDisabledByBackend(connectionID: connectionID)
+            }
+            transport.connect(walletId: walletId, endpoint: endpoint)
         }
     }
 
     private func desiredWalletId() -> String? {
         guard isForeground,
               !isDisabledByBackend,
-              isRealtimeEnabled(),
               let wallet = try? walletsStore.activeWallet,
               let walletId = wallet.multichainWalletState?.walletId
         else {

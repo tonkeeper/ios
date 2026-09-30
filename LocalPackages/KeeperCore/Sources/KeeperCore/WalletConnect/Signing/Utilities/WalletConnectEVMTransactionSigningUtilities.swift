@@ -123,7 +123,8 @@ struct WalletConnectEVMTransactionSigningUtilities {
                 energy: feeAsset,
                 isMax: false,
                 to: toAddress,
-                meta: nil
+                memo: nil,
+                payload: nil
             )
         } else {
             guard let to = payload.to,
@@ -166,10 +167,10 @@ struct WalletConnectEVMTransactionSigningUtilities {
                     return
                 }
                 guard let value = result?.getOrNull() else {
-                    let error = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
+                    let reason = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
                     continuation.resume(
                         returning: .failure(
-                            .failedToCalculateFee(reason: "chainkit failed to calculate fee: \(error.logDescription)")
+                            .failedToCalculateFee(reason: "chainkit failed to calculate fee: \(reason)")
                         )
                     )
                     return
@@ -206,10 +207,10 @@ struct WalletConnectEVMTransactionSigningUtilities {
                     return
                 }
                 guard let value = result?.getOrNull() else {
-                    let error = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
+                    let reason = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
                     continuation.resume(
                         returning: .failure(
-                            .failedToEstimateNonce(reason: "chainkit failed to estimate nonce: \(error.logDescription)")
+                            .failedToEstimateNonce(reason: "chainkit failed to estimate nonce: \(reason)")
                         )
                     )
                     return
@@ -242,10 +243,10 @@ struct WalletConnectEVMTransactionSigningUtilities {
                     return
                 }
                 guard let value = result?.getOrNull() else {
-                    let error = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
+                    let reason = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
                     continuation.resume(
                         returning: .failure(
-                            .failedToSign(reason: "chainkit failed to sign transaction: \(error.logDescription)")
+                            .failedToSign(reason: "chainkit failed to sign transaction: \(reason)")
                         )
                     )
                     return
@@ -279,10 +280,10 @@ struct WalletConnectEVMTransactionSigningUtilities {
                     return
                 }
                 guard let txHash = result?.getOrNull() else {
-                    let error = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
+                    let reason = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
                     continuation.resume(
                         returning: .failure(
-                            .failedToSend(reason: "chainkit failed to send transaction: \(error.logDescription)")
+                            .failedToSend(reason: "chainkit failed to send transaction: \(reason)")
                         )
                     )
                     return

@@ -18,6 +18,25 @@ final class MultichainAssetBalanceProviderPrimeCacheTests: XCTestCase {
         XCTAssertEqual(cached?.balance, 7_180_000)
     }
 
+    func test_restoredAsset_isReadableWithoutLoading() {
+        let provider = makeProvider()
+
+        provider.restoreCache(assets: [makeAsset(balance: 7_180_000)], multichainState: state)
+
+        XCTAssertEqual(provider.cachedAsset(for: assetId, multichainState: state)?.balance, 7_180_000)
+    }
+
+    func test_restoreCache_doesNotOverwriteKnownAssetOrVisibility() {
+        let provider = makeProvider()
+        provider.primeCache(assets: [makeAsset(balance: 500, isHidden: true)], multichainState: state)
+
+        provider.restoreCache(assets: [makeAsset(balance: 1)], multichainState: state)
+
+        let cached = provider.cachedAsset(for: assetId, multichainState: state)
+        XCTAssertEqual(cached?.balance, 500)
+        XCTAssertEqual(cached?.isHidden, true)
+    }
+
     func test_primeCache_doesNotOverwriteKnownAsset() {
         let provider = makeProvider()
 

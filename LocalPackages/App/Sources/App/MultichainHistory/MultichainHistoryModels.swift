@@ -22,6 +22,7 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
     case send
     case receive
     case swap
+    case perps
     case spam
 
     var title: String {
@@ -34,12 +35,14 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
             return TKLocales.History.Tab.received
         case .swap:
             return TKLocales.ActionTypes.Future.swap
+        case .perps:
+            return TKLocales.History.Tab.perpetuals
         case .spam:
             return TKLocales.History.Tab.spam
         }
     }
 
-    var apiActivityType: MultichainActivityType? {
+    var apiActivityTypeFilter: MultichainActivityTypeFilter? {
         switch self {
         case .all, .spam:
             return nil
@@ -49,6 +52,17 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
             return .receive
         case .swap:
             return .swap
+        case .perps:
+            return .perps
+        }
+    }
+
+    var admitsPerps: Bool {
+        switch self {
+        case .all, .perps:
+            return true
+        case .send, .receive, .swap, .spam:
+            return false
         }
     }
 }
@@ -72,30 +86,33 @@ extension MultichainHistoryCategory {
 
     func fetchActivities(
         using service: MultichainService,
-        walletId: String,
+        state: MultichainWalletState,
         limit: Int,
         cursor: String?,
-        hideDust: Bool?
+        hideDust: Bool?,
+        showsPerps: Bool
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         switch self {
         case let .chain(chainFilter, typeFilter):
             return try await service.getWalletActivities(
-                walletId: walletId,
+                state: state,
                 limit: limit,
                 cursor: cursor,
                 chain: chainFilter.apiChain,
                 assetId: nil,
-                activityType: typeFilter.apiActivityType,
+                activityTypeFilter: typeFilter.apiActivityTypeFilter,
+                showPerps: showsPerps && typeFilter.admitsPerps ? true : nil,
                 hideDust: hideDust
             )
         case let .asset(assetId, typeFilter):
             return try await service.getWalletActivities(
-                walletId: walletId,
+                state: state,
                 limit: limit,
                 cursor: cursor,
                 chain: nil,
                 assetId: assetId,
-                activityType: typeFilter.apiActivityType,
+                activityTypeFilter: typeFilter.apiActivityTypeFilter,
+                showPerps: showsPerps && typeFilter.admitsPerps ? true : nil,
                 hideDust: hideDust
             )
         }
@@ -125,8 +142,8 @@ struct MultichainHistoryActivityIdentity: Hashable {
     let txIds: [String]
     let activityType: MultichainActivityType
     let direction: MultichainActivityDirection
-    let fromChain: MultichainChain
-    let toChain: MultichainChain
+    let fromChain: MultichainChain?
+    let toChain: MultichainChain?
     let walletAddress: String?
     let fromAddress: String?
     let toAddress: String?

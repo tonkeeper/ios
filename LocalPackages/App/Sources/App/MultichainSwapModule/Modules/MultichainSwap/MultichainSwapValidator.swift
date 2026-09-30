@@ -15,9 +15,7 @@ struct MultichainSwapValidator {
             return .emptyAmount
         }
         guard let amount = calculator.sourceAmount(
-            text: inputs.sendAmount,
-            mode: inputs.sendAmountInputMode,
-            asset: inputs.sendAsset,
+            inputs: inputs,
             usdFiatRate: usdFiatRate
         ), amount > 0 else {
             return .invalidAmount

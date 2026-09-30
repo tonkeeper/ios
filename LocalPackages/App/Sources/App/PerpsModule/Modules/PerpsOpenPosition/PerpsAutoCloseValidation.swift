@@ -34,14 +34,14 @@ enum PerpsAutoCloseValidation {
     }
 
     static func warning(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         autoClose: PerpsAutoClose
     ) -> Warning? {
         warning(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             takeProfitPrice: autoClose.takeProfit?.triggerPrice,
             stopLossPrice: autoClose.stopLoss?.triggerPrice
@@ -49,28 +49,28 @@ enum PerpsAutoCloseValidation {
     }
 
     static func warning(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         takeProfitPrice: Double?,
         stopLossPrice: Double?
     ) -> Warning? {
         let invalid = invalidLegs(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             takeProfitPrice: takeProfitPrice,
             stopLossPrice: stopLossPrice
         )
         if invalid.takeProfit, let takeProfitPrice,
-           let warning = takeProfitWarning(side: side, entryPrice: entryPrice, price: takeProfitPrice)
+           let warning = takeProfitWarning(side: side, referencePrice: referencePrice, price: takeProfitPrice)
         {
             return warning
         }
         if invalid.stopLoss, let stopLossPrice,
            let warning = stopLossWarning(
                side: side,
-               entryPrice: entryPrice,
+               referencePrice: referencePrice,
                liquidationPrice: liquidationPrice,
                price: stopLossPrice
            )
@@ -81,14 +81,14 @@ enum PerpsAutoCloseValidation {
     }
 
     static func invalidLegs(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         autoClose: PerpsAutoClose
     ) -> InvalidLegs {
         invalidLegs(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             takeProfitPrice: autoClose.takeProfit?.triggerPrice,
             stopLossPrice: autoClose.stopLoss?.triggerPrice
@@ -96,22 +96,22 @@ enum PerpsAutoCloseValidation {
     }
 
     static func invalidLegs(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         takeProfitPrice: Double?,
         stopLossPrice: Double?
     ) -> InvalidLegs {
-        guard entryPrice > 0 else {
+        guard referencePrice > 0 else {
             return InvalidLegs(takeProfit: false, stopLoss: false)
         }
         let takeProfitInvalid = takeProfitPrice.map {
-            takeProfitWarning(side: side, entryPrice: entryPrice, price: $0) != nil
+            takeProfitWarning(side: side, referencePrice: referencePrice, price: $0) != nil
         } ?? false
         let stopLossInvalid = stopLossPrice.map {
             stopLossWarning(
                 side: side,
-                entryPrice: entryPrice,
+                referencePrice: referencePrice,
                 liquidationPrice: liquidationPrice,
                 price: $0
             ) != nil
@@ -120,14 +120,14 @@ enum PerpsAutoCloseValidation {
     }
 
     static func confirmStaleKind(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         autoClose: PerpsAutoClose
     ) -> ConfirmStaleKind? {
         invalidLegs(
             side: side,
-            entryPrice: entryPrice,
+            referencePrice: referencePrice,
             liquidationPrice: liquidationPrice,
             autoClose: autoClose
         ).confirmStaleKind
@@ -141,18 +141,18 @@ enum PerpsAutoCloseValidation {
     }
 
     private static func takeProfitWarning(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         price: Double
     ) -> Warning? {
         switch side {
         case .long:
-            return price > entryPrice ? nil : Warning(
+            return price > referencePrice ? nil : Warning(
                 leg: .takeProfit,
                 message: TKLocales.Perps.OpenPosition.takeProfitMustBeAboveCurrentPrice
             )
         case .short:
-            return price < entryPrice ? nil : Warning(
+            return price < referencePrice ? nil : Warning(
                 leg: .takeProfit,
                 message: TKLocales.Perps.OpenPosition.takeProfitMustBeBelowCurrentPrice
             )
@@ -160,14 +160,14 @@ enum PerpsAutoCloseValidation {
     }
 
     private static func stopLossWarning(
-        side: KeeperCore.PerpsTradeSide,
-        entryPrice: Double,
+        side: PerpsTradeSide,
+        referencePrice: Double,
         liquidationPrice: Double?,
         price: Double
     ) -> Warning? {
         switch side {
         case .long:
-            if price >= entryPrice {
+            if price >= referencePrice {
                 return Warning(
                     leg: .stopLoss,
                     message: TKLocales.Perps.OpenPosition.stopLossMustBeBelowCurrentPrice
@@ -180,7 +180,7 @@ enum PerpsAutoCloseValidation {
                 )
             }
         case .short:
-            if price <= entryPrice {
+            if price <= referencePrice {
                 return Warning(
                     leg: .stopLoss,
                     message: TKLocales.Perps.OpenPosition.stopLossMustBeAboveCurrentPrice

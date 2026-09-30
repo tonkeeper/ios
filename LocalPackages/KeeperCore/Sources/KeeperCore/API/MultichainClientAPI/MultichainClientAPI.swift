@@ -57,7 +57,8 @@ protocol MultichainClientAPI {
         cursor: String?,
         chain: MultichainChain?,
         assetId: String?,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
+        showPerps: Bool?,
         hideDust: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage
     func getWalletChallenge() async throws(MultichainClientAPIError) -> MultichainWalletChallenge
@@ -251,7 +252,8 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         cursor: String?,
         chain: MultichainChain?,
         assetId: String?,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
+        showPerps: Bool?,
         hideDust: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         let path = MultichainAPI.Operations.getWalletActivities.Input.Path(wallet_id: walletId)
@@ -259,11 +261,12 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             limit: limit,
             cursor: cursor,
             chain: chain.map { $0.toAPISchemaChain() },
-            activity_type: activityType.flatMap {
-                MultichainAPI.Components.Schemas.ActivityType(rawValue: $0.rawValue)
+            activity_type: activityTypeFilter.flatMap {
+                MultichainAPI.Components.Schemas.ActivityTypeFilter(rawValue: $0.rawValue)
             },
             asset_id: assetId,
-            hide_dust: hideDust
+            hide_dust: hideDust,
+            show_perps: showPerps
         )
         let output = try await apiCall(await walletScopedAPIClient(walletId).getWalletActivities(path: path, query: query))
         return try mapWalletActivitiesOutput(output)

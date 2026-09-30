@@ -435,6 +435,9 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         }
     }
 
+    /// Applies `multichain` to the wallet already on disk, not the caller's snapshot. Enrichment
+    /// and push auto-enable race on create: the enricher holds a pre-enable wallet and would
+    /// otherwise rewrite `notificationSettings.isOn` back to false while attaching multichain.
     public func setWalletMultichain(
         wallet: Wallet,
         multichain: MultichainWallet?,
@@ -442,7 +445,10 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     ) {
         keeperInfoStore.updateKeeperInfo { keeperInfo in
             guard let keeperInfo else { return nil }
-            return keeperInfo.updateWallet(wallet, multichain: multichain).keeperInfo
+            guard let stored = keeperInfo.wallets.first(where: { $0.id == wallet.id }) else {
+                return keeperInfo
+            }
+            return keeperInfo.updateWallet(stored, multichain: multichain).keeperInfo
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
             updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in

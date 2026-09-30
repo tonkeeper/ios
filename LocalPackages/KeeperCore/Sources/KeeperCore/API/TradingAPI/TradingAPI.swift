@@ -34,7 +34,10 @@ protocol TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps: Bool?,
+        chain: String?,
+        filter: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse
 
     func getAssets(
@@ -42,15 +45,37 @@ protocol TradingAPI {
         ids: [String]
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse
 
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse
-
     func getAssetsDetailsV2(
         requestContext: TradingRequestContext,
         assetId: String
     ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse
+}
+
+extension TradingAPI {
+    func getAssetsCatalogV2(
+        requestContext: TradingRequestContext,
+        tab: Components.Schemas.AssetsTab,
+        query: String?,
+        sort: Components.Schemas.AssetsSort?,
+        order: Components.Schemas.AssetsOrder?,
+        cursor: String?,
+        pageSize: Int?,
+        sourceShelf: String?
+    ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
+        try await getAssetsCatalogV2(
+            requestContext: requestContext,
+            tab: tab,
+            query: query,
+            sort: sort,
+            order: order,
+            cursor: cursor,
+            pageSize: pageSize,
+            sourceShelf: sourceShelf,
+            showPerps: nil,
+            chain: nil,
+            filter: nil
+        )
+    }
 }
 
 struct TradingAPIImplementation {
@@ -339,7 +364,10 @@ extension TradingAPIImplementation: TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps: Bool?,
+        chain: String?,
+        filter: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         let client = try await apiClient()
         let response = try await apiCall(
@@ -353,8 +381,11 @@ extension TradingAPIImplementation: TradingAPI {
                     is_vpn_active: requestContext.isVPNActive,
                     tab: tab,
                     q: query,
+                    show_perps: showPerps,
+                    chain: chain,
                     sort: sort,
                     order: order,
+                    filter: filter,
                     source_shelf: sourceShelf,
                     cursor: cursor,
                     page_size: pageSize
@@ -440,56 +471,6 @@ extension TradingAPIImplementation: TradingAPI {
             throw try .badStatus(
                 message: decodeResponse(internalServerError.body.json).message
             )
-        case let .undocumented(statusCode, _):
-            throw .badStatus(
-                message: "undocumented status code: \(statusCode)"
-            )
-        }
-    }
-
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
-        let client = try await apiClient()
-        let response = try await apiCall(
-            await client.getAssetDetails(
-                path: .init(assetId: assetId),
-                query: .init(
-                    currency: requestContext.currency.code.lowercased(),
-                    store_country_code: requestContext.storeCountryCode,
-                    sim_country: requestContext.simCountryCode,
-                    device_country_code: requestContext.deviceCountryCode,
-                    timezone: requestContext.timezoneIdentifier,
-                    is_vpn_active: requestContext.isVPNActive
-                ),
-                headers: .init(
-                    User_hyphen_Agent: requestContext.userAgent,
-                    X_hyphen_Lang: requestContext.language
-                )
-            )
-        )
-        switch response {
-        case let .ok(ok):
-            return try decodeResponse(ok.body.json)
-        case let .badRequest(badRequest):
-            throw try .badStatus(
-                message: decodeResponse(badRequest.body.json).message
-            )
-        case let .unauthorized(unauthorized):
-            throw try .badStatus(
-                message: decodeResponse(unauthorized.body.json).message
-            )
-        case let .tooManyRequests(tooManyRequests):
-            throw try .badStatus(
-                message: decodeResponse(tooManyRequests.body.json).message
-            )
-        case let .internalServerError(internalServerError):
-            throw try .badStatus(
-                message: decodeResponse(internalServerError.body.json).message
-            )
-        case .notFound:
-            throw .notFound
         case let .undocumented(statusCode, _):
             throw .badStatus(
                 message: "undocumented status code: \(statusCode)"

@@ -8,12 +8,7 @@ public enum TransferSigner {
         seqno: UInt64,
         signer: WalletTransferSigner
     ) throws -> Cell {
-        let signed = try walletTransfer.signMessage(
-            signer: signer,
-            hashModifier: wallet.network == .tetra
-                ? { TransferSignaturePrefixedHash.prefixedHash(prefixId: Int32(Network.tetra.rawValue), hash: $0) }
-                : nil
-        )
+        let signed = try walletTransfer.signMessage(signer: signer)
         let body = Builder()
 
         switch walletTransfer.signaturePosition {

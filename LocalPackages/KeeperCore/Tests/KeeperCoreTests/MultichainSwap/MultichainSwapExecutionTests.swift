@@ -296,7 +296,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
                         MultichainPendingTransaction.SwapDetails(
                             fromAssetId: "eth/mainnet/coin",
                             toAssetId: "eth/mainnet/erc20/0xabc",
-                            quote: .init(aggregator: "swapkit", providerRouteId: "provider-route")
+                            quote: .init(aggregator: "swapkit", routeId: "route", providerRouteId: "provider-route")
                         )
                     )
                 ),
@@ -337,7 +337,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
                         MultichainPendingTransaction.SwapDetails(
                             fromAssetId: "eth/mainnet/coin",
                             toAssetId: "base/mainnet/coin",
-                            quote: .init(aggregator: "swapkit", providerRouteId: "provider-route")
+                            quote: .init(aggregator: "swapkit", routeId: "route", providerRouteId: "provider-route")
                         )
                     )
                 ),
@@ -399,7 +399,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: "eth/mainnet/coin",
                         toAssetId: "base/mainnet/coin",
-                        quote: .init(aggregator: "omniston")
+                        quote: .init(aggregator: "omniston", routeId: "route")
                     )
                 ),
             ]
@@ -407,8 +407,9 @@ final class MultichainSwapExecutionTests: XCTestCase {
     }
 
     /// `provider` collapses `swapsxyz` and `omniston`, so the aggregator the backend needs to
-    /// interpret `providerRouteId` can only come from the quote itself.
-    func test_prepareExecutionPlan_carriesAggregatorAndProviderRouteIdFromTheQuote() async throws {
+    /// interpret `providerRouteId` can only come from the quote itself; with inline payloads no
+    /// prepare call happens, so the quote is the only source of the id as well.
+    func test_prepareExecutionPlan_carriesAggregatorAndProviderRouteIdFromTheQuoteWithInlinePayloads() async throws {
         let swapPipeline = StubChainKitSwapPipeline(
             emulationResults: ["main": makeFee(1, assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)]
         )
@@ -428,6 +429,101 @@ final class MultichainSwapExecutionTests: XCTestCase {
         XCTAssertEqual(executionPlan.aggregator, .omniston)
         XCTAssertEqual(executionPlan.providerRouteId, "quote-id")
         XCTAssertEqual(executionPlan.provider, .swapXyz)
+    }
+
+    /// A quote without payloads only carries an id of ours; the aggregator's own id is minted
+    /// when the route is built, so the prepare response wins over the quote.
+    func test_prepareExecutionPlan_prefersProviderRouteIdFromPrepare() async throws {
+        let swapService = StubMultichainSwapService(
+            prepare: MultichainSwapPrepare(
+                routeId: "route",
+                providerRouteId: "prepare-tx-id",
+                payloads: [makePayload(id: "main", kind: "main")]
+            )
+        )
+        let swapPipeline = StubChainKitSwapPipeline(
+            emulationResults: ["main": makeFee(1, assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)]
+        )
+        let service = makeExecutionService(swapService: swapService, swapPipeline: swapPipeline)
+
+        let executionPlan = try await service.prepareExecutionPlan(
+            wallet: makeWallet(),
+            sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
+            destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
+            route: makeRoute(aggregator: "swapsxyz", providerRouteId: "quote-id")
+        )
+
+        XCTAssertEqual(swapService.prepareCallCount, 1)
+        XCTAssertEqual(executionPlan.providerRouteId, "prepare-tx-id")
+    }
+
+    func test_prepareExecutionPlan_fallsBackToQuoteProviderRouteIdWhenPrepareOmitsIt() async throws {
+        let swapService = StubMultichainSwapService(
+            prepare: MultichainSwapPrepare(routeId: "route", payloads: [makePayload(id: "main", kind: "main")])
+        )
+        let swapPipeline = StubChainKitSwapPipeline(
+            emulationResults: ["main": makeFee(1, assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)]
+        )
+        let service = makeExecutionService(swapService: swapService, swapPipeline: swapPipeline)
+
+        let executionPlan = try await service.prepareExecutionPlan(
+            wallet: makeWallet(),
+            sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
+            destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
+            route: makeRoute(providerRouteId: "quote-id")
+        )
+
+        XCTAssertEqual(executionPlan.providerRouteId, "quote-id")
+    }
+
+    func test_execute_reportsProviderRouteIdFromPrepare() async throws {
+        let pendingTransactionsService = PendingTransactionsServiceFake()
+        let swapService = StubMultichainSwapService(
+            prepare: MultichainSwapPrepare(
+                routeId: "route",
+                providerRouteId: "prepare-tx-id",
+                payloads: [makePayload(id: "main", kind: "main")]
+            )
+        )
+        let swapPipeline = StubChainKitSwapPipeline(
+            emulationResults: ["main": makeFee(1, assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)],
+            executionResult: MultichainSwapBroadcastResult(txHash: "main-hash", broadcastedPayloads: [])
+        )
+        let service = makeExecutionService(
+            swapService: swapService,
+            swapPipeline: swapPipeline,
+            pendingTransactionsService: pendingTransactionsService
+        )
+        let sourceAsset = makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)
+        let destinationAsset = makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18)
+
+        let executionPlan = try await service.prepareExecutionPlan(
+            wallet: makeWallet(),
+            sourceAsset: sourceAsset,
+            destinationAsset: destinationAsset,
+            route: makeRoute(aggregator: "swapsxyz", providerRouteId: "quote-id")
+        )
+        _ = try await service.execute(
+            passcodeProvider: { "passcode" },
+            wallet: makeWallet(),
+            sourceAsset: sourceAsset,
+            destinationAsset: destinationAsset,
+            executionPlan: executionPlan
+        )
+
+        let reported = await pendingTransactionsService.reported
+        XCTAssertEqual(
+            reported.map(\.activityType),
+            [
+                .swap(
+                    MultichainPendingTransaction.SwapDetails(
+                        fromAssetId: "eth/mainnet/coin",
+                        toAssetId: "base/mainnet/coin",
+                        quote: .init(aggregator: "swapsxyz", routeId: "route", providerRouteId: "prepare-tx-id")
+                    )
+                ),
+            ]
+        )
     }
 
     func test_prepareExecutionPlan_usesInlineRoutePayloadsAndSkipsPrepareCall() async throws {

@@ -131,14 +131,23 @@ final class DappBrowserAnalyticsTests: XCTestCase {
             localeRegionCode: "us"
         )
 
-        controller.logBrowserOpen(from: .wallet, tab: .explore)
+        controller.logBrowserOpen(
+            from: .wallet,
+            tab: .explore,
+            utm: UtmParameters(link: "tonkeeper://browser?utm_source=campaign")
+        )
         controller.logBrowserOpen(from: .story, tab: .connected)
 
         XCTAssertEqual(service.calls.map(\.name), ["dapp_browser_open", "dapp_browser_open"])
         XCTAssertEqual(service.calls[0].args[DappBrowserOpen.CodingKeys.type.rawValue] as? String, "explore")
         XCTAssertEqual(service.calls[0].args[DappBrowserOpen.CodingKeys.location.rawValue] as? String, "GB")
+        XCTAssertEqual(
+            service.calls[0].args[AnalyticsEventMobileNative.CodingKeys.utmSource.rawValue] as? String,
+            "campaign"
+        )
         XCTAssertEqual(service.calls[1].args[DappBrowserOpen.CodingKeys.type.rawValue] as? String, "connected")
         XCTAssertEqual(service.calls[1].args[DappBrowserOpen.CodingKeys.from.rawValue] as? String, "story")
+        XCTAssertNil(service.calls[1].args[AnalyticsEventMobileNative.CodingKeys.utmSource.rawValue])
     }
 
     func testBrowserTabClickUsesProvidedTabAndLocation() {
@@ -200,6 +209,32 @@ final class DappBrowserAnalyticsTests: XCTestCase {
         XCTAssertEqual(service.calls[1].args[DappAppLoaded.CodingKeys.url.rawValue] as? String, "dapp.example")
         XCTAssertEqual(service.calls[1].args[DappAppLoaded.CodingKeys.appId.rawValue] as? String, "dapp.example")
         XCTAssertEqual(service.calls[1].args[DappAppLoaded.CodingKeys.location.rawValue] as? String, "PL")
+    }
+
+    func testTaggedSessionCarriesUtmOnEveryEventOfItsFlow() {
+        let service = AnalyticsServiceSpy()
+        let controller = makeController(service: service)
+        let request = controller.directOpenRequest(
+            source: .deepLink,
+            dapp: makeDapp(url: "https://dedust.io"),
+            utm: UtmParameters(link: "tonkeeper://dapp?url=https://dedust.io&utm_source=campaign")
+        )
+
+        request.analyticsSession.logClick()
+        request.analyticsSession.logLoaded()
+        request.analyticsSession.logSharingCopy(from: .copyLink)
+
+        XCTAssertEqual(
+            service.calls.map(\.name),
+            ["dapp_app_click", "dapp_app_loaded", "dapp_sharing_copy"]
+        )
+        for call in service.calls {
+            XCTAssertEqual(
+                call.args[AnalyticsEventMobileNative.CodingKeys.utmSource.rawValue] as? String,
+                "campaign",
+                call.name
+            )
+        }
     }
 
     func testSearchOpenLogsTargetImmediately() throws {

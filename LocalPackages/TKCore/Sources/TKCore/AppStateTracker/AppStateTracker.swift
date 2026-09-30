@@ -1,10 +1,3 @@
-//
-//  AppStateTracker.swift
-//  Tonkeeper
-//
-//  Created by Grigory on 20.9.23..
-//
-
 import UIKit
 
 public protocol AppStateTrackerObserver: AnyObject {

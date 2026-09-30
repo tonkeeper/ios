@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-cd "$(git rev-parse --show-toplevel)"
+cd "$(git rev-parse --show-toplevel)/ios"
 
 ./scripts/tools/install_toolchain.sh
 sh ./scripts/hooks/setup_hooks.sh

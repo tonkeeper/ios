@@ -1,0 +1,99 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- scrollUntilVisible:
+    element: "Collectibles"
+- tapOn: "Collectibles"
+# Full-screen collectibles modal — wait for navbar chrome before scrolling the list.
+- extendedWaitUntil:
+    visible:
+      id: header_action
+    timeout: 30000
+- scrollUntilVisible:
+    element: "ZarGates Scratch Cards"
+    direction: DOWN
+    timeout: 60000
+# Navbar hides when the list is scrolled down — return to the top for the filter button.
+- scrollUntilVisible:
+    element:
+      id: header_action
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: "header_action"
+- repeat:
+    while:
+      visible:
+        id: "filter_minus"
+    commands:
+      - tapOn:
+          id: "filter_minus"
+      - waitForAnimationToEnd:
+          timeout: 1000
+# The filter screen carries the same "Collectibles" title as the list behind it, so leaving it
+# needs the header back button — matching on the title would silently stay on the filter screen.
+- tapOn:
+    id: "header_back"
+- extendedWaitUntil:
+    visible:
+      id: header_action
+    timeout: 10000
+- assertNotVisible: "ZarGates Scratch Cards"
+# Second back leaves the collectibles modal for Wallet, where the hidden state has its own row.
+# Wallet reopens scrolled to the top and the collectibles section sits below the fold there,
+# so scroll for the row instead of waiting for it in place.
+- tapOn:
+    id: "header_back"
+- scrollUntilVisible:
+    element: "All collectibles are hidden."
+    direction: DOWN
+    timeout: 20000
+- assertNotVisible: "ZarGates Scratch Cards"
+
+- launchApp
+- runFlow: "../../../steps/unlock_passcode_if_needed.yaml"
+- assertNotVisible: "ZarGates Scratch Cards"
+- scrollUntilVisible:
+    element: "All collectibles are hidden."
+    timeout: 30000
+- tapOn: "All collectibles are hidden."
+- extendedWaitUntil:
+    visible:
+      id: header_action
+    timeout: 30000
+- assertNotVisible: "ZarGates Scratch Cards"
+- tapOn:
+    id: "header_action"
+- repeat:
+    while:
+      visible:
+        id: "filter_plus"
+    commands:
+      - tapOn:
+          id: "filter_plus"
+      - waitForAnimationToEnd:
+          timeout: 1000
+# Leave the filter and the collectibles modal so the next flow in the shard starts on Wallet
+# with the collectibles restored.
+- tapOn:
+    id: "header_back"
+- extendedWaitUntil:
+    visible:
+      id: header_action
+    timeout: 10000
+- scrollUntilVisible:
+    element: "ZarGates Scratch Cards"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: header_action
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: "header_back"
+- scrollUntilVisible:
+    element: "Collectibles"
+    direction: DOWN
+    timeout: 20000

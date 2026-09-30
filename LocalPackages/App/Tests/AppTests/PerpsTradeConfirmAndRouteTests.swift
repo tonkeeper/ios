@@ -117,7 +117,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let autoClose = viewModel.rows.first { $0.id == .autoClose }
         XCTAssertEqual(
             autoClose?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.compactUsd(68141))"
+            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(68141))"
         )
         XCTAssertEqual(autoClose?.showsChevron, true)
         XCTAssertEqual(autoClose?.valueParts?.map(\.tone), [.neutral])
@@ -155,7 +155,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let autoClose = viewModel.rows.first { $0.id == .autoClose }
         XCTAssertEqual(
             autoClose?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.compactUsd(70000))"
+            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(70000))"
         )
     }
 
@@ -221,7 +221,6 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let prepared = PerpsPreparedSizeChangeAction(
             operationId: "reprepared",
             walletId: "wallet",
-            isTestnet: false,
             marketId: 1,
             intent: request.intent,
             review: review,
@@ -229,13 +228,13 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         )
         XCTAssertTrue(session.acceptPreparation(prepared, for: request))
         await Task.yield()
+        XCTAssertTrue(viewModel.isConfirmationEnabled)
         viewModel.confirm()
 
-        XCTAssertTrue(viewModel.isConfirmationEnabled)
         XCTAssertTrue(confirmed)
         XCTAssertEqual(
             viewModel.rows.first { $0.id == .autoClose }?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.compactUsd(70000))"
+            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(70000))"
         )
     }
 
@@ -325,10 +324,9 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: PerpsAccountStore.makeStub(),
-            openPositionFlow: PerpsOpenPositionFlow(),
-            isTestnet: true
+            openPositionFlow: PerpsOpenPositionFlow()
         )
-        var captured: (Int64, App.PerpsTradeSide)?
+        var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
         viewModel.long()
         XCTAssertEqual(captured?.0, 42)
@@ -341,10 +339,9 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: PerpsAccountStore.makeStub(),
-            openPositionFlow: PerpsOpenPositionFlow(),
-            isTestnet: true
+            openPositionFlow: PerpsOpenPositionFlow()
         )
-        var captured: (Int64, App.PerpsTradeSide)?
+        var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
         viewModel.short()
         XCTAssertEqual(captured?.1, .short)
@@ -359,8 +356,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: accountStore,
-            openPositionFlow: PerpsOpenPositionFlow(),
-            isTestnet: true
+            openPositionFlow: PerpsOpenPositionFlow()
         )
         // The opening progress is driven by the store lifecycle, not the view model,
         // so it survives leaving the Asset Page. The store notifies asynchronously.
@@ -384,8 +380,9 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
     /// pills' "symbol side · leverage" pattern — locked to the design nodes.
     func test_marginLifecycleToast_usesAmountBasedCopy() {
         let summary = PerpsPositionSummary(
+            positionId: "lighter:1",
             marketId: 1, symbol: "BTC", side: .long, baseSize: 0.008, notionalUsd: 540,
-            marginUsd: 20, entryPrice: 66000, liquidationPrice: 64141.75,
+            marginUsd: 20, equityUsd: 20.5, leverage: 27, roiPercent: 2.5, entryPrice: 66000, liquidationPrice: 64141.75,
             unrealizedPnlUsd: 0.5, realizedPnlUsd: 0, fundingPaidUsd: nil
         )
         XCTAssertEqual(
@@ -464,27 +461,26 @@ private func makeConfirmRouteWallet() -> Wallet {
 }
 
 private final class NoopAccountReading: PerpsAccountReading {
-    func status(wallet _: Wallet) async -> LighterPerpsStatus {
+    func status(wallet _: Wallet) async -> PerpsAccountStatus {
         .noAccount(ethAddress: "0x0")
     }
 
-    func portfolio(wallet _: Wallet, accountIndex _: Int64) async throws -> PerpsPortfolio? {
+    func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
         nil
     }
 
-    func activeTriggerOrders(wallet _: Wallet, accountIndex _: Int64, marketId _: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet _: Wallet, marketId _: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet _: Wallet, accountIndex _: Int64, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet _: Wallet, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet _: Wallet,
-        accountIndex _: Int64,
         onUpdate _: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting _: @escaping @Sendable () -> Void
+        onInterrupted _: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }

@@ -137,7 +137,10 @@ private actor TradingShelvesAPISpy: TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps _: Bool?,
+        chain _: String?,
+        filter _: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         throw .unknown(underlying: nil)
     }
@@ -146,13 +149,6 @@ private actor TradingShelvesAPISpy: TradingAPI {
         requestContext: TradingRequestContext,
         ids: [String]
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
-        throw .unknown(underlying: nil)
-    }
-
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
         throw .unknown(underlying: nil)
     }
 

@@ -374,7 +374,8 @@ private extension TKKeychainBiometryAccess {
 private extension MnemonicAccess {
     func derivationType(words: [String], wallet: Wallet) -> DerivationType {
         do {
-            return try .resolveByWords(words, publicKey: wallet.publicKey)
+            let publicKey = try wallet.publicKey
+            return DerivationType.resolveByWords(words, publicKey: publicKey)
         } catch {
             Log.w("🪵 failed to read wallet public key for mnemonic type resolution. id=\(wallet.id), error=\(error)")
             return .guessByWords(words)

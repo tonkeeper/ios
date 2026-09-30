@@ -51,6 +51,35 @@ public actor PerpsMarketsRepository {
         return PerpsMarketsPage(items: items, nextCursor: response.next_cursor?.nilIfEmpty)
     }
 
+    public func catalogSearch(
+        query: String?,
+        chain: String?,
+        showPerps: Bool,
+        sort: MultichainAssetSearchSort,
+        cursor: String?,
+        pageSize: Int
+    ) async throws -> TradingCatalogPage {
+        let requestContext = await requestContextProvider.makeRequestContext()
+        let tradingSort = sort.tradingCatalogSort
+        let response = try await api.getAssetsCatalogV2(
+            requestContext: requestContext,
+            tab: .all,
+            query: query?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            sort: tradingSort.0,
+            order: tradingSort.1,
+            cursor: cursor,
+            pageSize: pageSize,
+            sourceShelf: nil,
+            showPerps: (showPerps && chain == nil) ? true : nil,
+            chain: chain,
+            filter: nil
+        )
+        return TradingCatalogPage(
+            rows: response.items.compactMap(TradingCatalogRow.init(item:)),
+            nextCursor: response.next_cursor?.nilIfEmpty
+        )
+    }
+
     func marketDetails(marketId: Int64) async throws -> PerpsMarketDetails {
         let cached = detailsById[marketId]
         if let cached,
@@ -124,4 +153,4 @@ public actor PerpsMarketsRepository {
     }
 }
 
-extension PerpsMarketsRepository: PerpsMarketsReading, PerpsMarketsSearching {}
+extension PerpsMarketsRepository: PerpsMarketsReading, PerpsMarketsSearching, TradingCatalogSearching {}

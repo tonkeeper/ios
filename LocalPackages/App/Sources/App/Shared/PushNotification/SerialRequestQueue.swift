@@ -8,39 +8,36 @@ import Foundation
 /// newest intent instead — every pass starts only after the previous one is done and re-reads the
 /// state it is about to push.
 final class SerialRequestQueue<Key: Hashable> {
+    private final class TailToken {}
+
+    private struct Tail {
+        let token: TailToken
+        let task: Task<Void, Never>
+    }
+
     private let queue = DispatchQueue(label: "SerialRequestQueue")
-    private var tails = [Key: Task<Void, Never>]()
-    private var outstanding = [Key: Int]()
+    private var tails = [Key: Tail]()
 
     @discardableResult
     func enqueue(_ key: Key, _ operation: @escaping () async -> Void) -> Task<Void, Never> {
         queue.sync {
-            let previous = tails[key]
-            outstanding[key, default: 0] += 1
+            let previous = tails[key]?.task
+            let token = TailToken()
             let task = Task { [weak self] in
                 await previous?.value
                 await operation()
-                self?.didFinish(key)
+                self?.didFinish(key, token: token)
             }
-            tails[key] = task
+            tails[key] = Tail(token: token, task: task)
             return task
         }
     }
 
-    /// A settled chain is dropped rather than kept as an empty tail: the keys are wallet ids, and
-    /// a finished task per wallet would be retained for the life of the process. The count is what
-    /// makes that safe — clearing the slot on its own would also drop a newer task that later
-    /// callers are already chained behind, and they would then run alongside it.
-    private func didFinish(_ key: Key) {
+    private func didFinish(_ key: Key, token: TailToken) {
         queue.async { [weak self] in
             guard let self else { return }
-            let remaining = (outstanding[key] ?? 1) - 1
-            guard remaining > 0 else {
-                outstanding[key] = nil
-                tails[key] = nil
-                return
-            }
-            outstanding[key] = remaining
+            guard tails[key]?.token === token else { return }
+            tails[key] = nil
         }
     }
 }

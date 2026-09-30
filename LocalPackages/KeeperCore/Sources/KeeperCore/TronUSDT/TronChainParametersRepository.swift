@@ -25,7 +25,7 @@ actor TronChainParametersRepositoryImplementation: TronChainParametersRepository
 
     init(
         lifetime: TimeInterval = TronChainParametersRepositoryImplementation.cacheLifetime,
-        now: @escaping @Sendable () -> Date = Date.init
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.lifetime = lifetime
         self.now = now

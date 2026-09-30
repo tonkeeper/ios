@@ -1,0 +1,75 @@
+# regress_EN: Ton Connect 2.0 + Browser — connect STON.fi from in-app browser, verify UI, disconnect from Connected, reconnect.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../steps/browser/open_browser_tab.yaml"
+
+- runFlow: "../../../steps/browser/open_stonfi_from_address_bar.yaml"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# The site shows its notice sheet a moment after the host label appears; the Connect
+# button underneath is inert until it is dismissed.
+- extendedWaitUntil:
+    visible: "Confirm and agree"
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: "Confirm and agree"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# The site's header button reads "Connect" on phone widths and "Connect wallet" on wider
+# ones; wait for it — the page keeps loading after ston.fi's title appears.
+- extendedWaitUntil:
+    visible: "Connect( wallet)?"
+    timeout: 15000
+- tapOn: "Connect( wallet)?"
+- tapOn: "Ton Connect Connect"
+- extendedWaitUntil:
+    visible: "Allow Notifications"
+    timeout: 60000
+- tapOn:
+    text: "Connect wallet"
+    index: 1
+
+- runFlow:
+    when:
+      visible: Enter passcode
+    file: ../../../steps/password/enter_password.yaml
+
+- tapOn:
+    id: close
+- waitForAnimationToEnd:
+    timeout: 3000
+# Closing a page opened from the address bar lands back in the search state; leave it
+# to reach the Explore / Connected chips.
+- tapOn:
+    text: Cancel
+    optional: true
+- extendedWaitUntil:
+    visible: Connected
+    timeout: 10000
+- tapOn: Connected
+- extendedWaitUntil:
+    visible: "STON.fi"
+    timeout: 30000
+
+- longPressOn: "STON.fi"
+- extendedWaitUntil:
+    visible: Disconnect
+    timeout: 15000
+- tapOn:
+    text: Disconnect
+
+- extendedWaitUntil:
+    visible: "Connected apps will\u00a0be\u00a0shown\u00a0here"
+    timeout: 30000
+
+- tapOn: Explore
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow: "../../../steps/browser/open_stonfi_from_address_bar.yaml"
+- extendedWaitUntil:
+    visible: "Connect( wallet)?"
+    timeout: 15000

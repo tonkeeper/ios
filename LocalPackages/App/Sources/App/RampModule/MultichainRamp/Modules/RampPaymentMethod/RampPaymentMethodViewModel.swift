@@ -33,6 +33,7 @@ final class RampPaymentMethodViewModel: ObservableObject {
 
     private var assetDetail: OnRampAssetDetail?
     private var currencies: [RemoteCurrency] = []
+    private var methodsTask: Task<Void, Never>?
 
     init(
         asset: MultichainAsset,
@@ -107,8 +108,16 @@ final class RampPaymentMethodViewModel: ObservableObject {
     }
 
     func setCurrency(_ currency: RemoteCurrency) {
+        guard currency.code != currentCurrency?.code else {
+            return
+        }
         currentCurrency = currency
-        applyPaymentMethods()
+        rows = []
+        state = .loading
+        methodsTask?.cancel()
+        methodsTask = Task { [weak self] in
+            await self?.loadMethods(fiat: currency.code)
+        }
     }
 
     func select(row: RampPaymentMethodRow) {
@@ -131,6 +140,7 @@ final class RampPaymentMethodViewModel: ObservableObject {
 
 private extension RampPaymentMethodViewModel {
     func loadData() async {
+        methodsTask?.cancel()
         state = .loading
         rows = []
 
@@ -141,6 +151,7 @@ private extension RampPaymentMethodViewModel {
             case .deposit:
                 loadedAssetDetail = try await multichainRampService.getOnrampAsset(
                     assetId: asset.asset.assetId,
+                    fiat: nil,
                     walletId: walletId
                 )
             case .withdraw:
@@ -163,10 +174,43 @@ private extension RampPaymentMethodViewModel {
                 storeCurrencyCode: currencyStore.state.code
             )
 
-            applyPaymentMethods()
+            await loadMethods(fiat: currencyCode)
         } catch {
             state = .failed
             Log.multichainRamp.failure("payment methods loading failed", error: error, extraInfo: logInfo)
+        }
+    }
+
+    func loadMethods(fiat: String) async {
+        let fiatLogInfo = logInfo.merging(["fiat": fiat]) { _, new in new }
+        do {
+            let detail = try await methodsDetail(fiat: fiat)
+            guard !Task.isCancelled, currentCurrency?.code == fiat else {
+                Log.multichainRamp.i("payment methods response dropped - currency changed", extraInfo: fiatLogInfo)
+                return
+            }
+            assetDetail = detail
+            applyPaymentMethods()
+        } catch is CancellationError {
+            return
+        } catch {
+            guard !Task.isCancelled, currentCurrency?.code == fiat else { return }
+            rows = []
+            state = .loaded
+            Log.multichainRamp.failure("payment methods loading failed for currency", error: error, extraInfo: fiatLogInfo)
+        }
+    }
+
+    func methodsDetail(fiat: String) async throws -> OnRampAssetDetail? {
+        switch flow {
+        case .deposit:
+            return try await multichainRampService.getOnrampAsset(
+                assetId: asset.asset.assetId,
+                fiat: fiat,
+                walletId: walletId
+            )
+        case .withdraw:
+            return assetDetail
         }
     }
 

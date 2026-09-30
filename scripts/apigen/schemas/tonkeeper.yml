@@ -248,6 +248,7 @@ paths:
         - $ref: '#/components/parameters/isVpnActiveQuery'
         - $ref: '#/components/parameters/walletIdQuery'
         - $ref: '#/components/parameters/featuresQuery'
+        - $ref: '#/components/parameters/isNewUserQuery'
       responses:
         '200':
           $ref: '#/components/responses/StoriesPages'
@@ -276,6 +277,7 @@ paths:
         - $ref: '#/components/parameters/isVpnActiveQuery'
         - $ref: '#/components/parameters/walletIdQuery'
         - $ref: '#/components/parameters/featuresQuery'
+        - $ref: '#/components/parameters/isNewUserQuery'
       responses:
         '200':
           $ref: '#/components/responses/StoryPages'
@@ -303,6 +305,7 @@ paths:
         - $ref: '#/components/parameters/isVpnActiveQuery'
         - $ref: '#/components/parameters/walletIdQuery'
         - $ref: '#/components/parameters/featuresQuery'
+        - $ref: '#/components/parameters/isNewUserQuery'
       responses:
         '200':
           $ref: '#/components/responses/Banners'
@@ -538,6 +541,14 @@ components:
         minLength: 32
         maxLength: 64
         pattern: "^([a-f0-9]{64}|[a-z2-7]{32}|[a-z2-7]{36})$"
+    isNewUserQuery:
+      description: "Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one"
+      in: query
+      name: is_new
+      required: false
+      schema:
+        type: boolean
+        default: false
   
   schemas:
     ChainName:

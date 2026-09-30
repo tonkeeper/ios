@@ -54,6 +54,26 @@ final class MultichainAssetBalanceProviderLoadBalanceTests: XCTestCase {
         XCTAssertEqual(afterFailure, 0)
     }
 
+    func test_restoredPortfolioAfterKnownZero_keepsZero() async {
+        for hasCachedAsset in [false, true] {
+            let provider = makeProvider(script: .init([.listing([]), .failure]))
+            let persistedAssets = [makeAsset(assetId: trxAssetId, balance: 99)]
+            if hasCachedAsset {
+                provider.primeCache(assets: persistedAssets, multichainState: state)
+            }
+
+            let known = await provider.loadBalance(for: trxAssetId, multichainState: state)
+            provider.restoreCache(assets: persistedAssets, multichainState: state)
+            let afterFailure = await provider.loadBalance(for: trxAssetId, multichainState: state)
+
+            XCTAssertEqual(known, 0)
+            XCTAssertEqual(afterFailure, 0)
+            if !hasCachedAsset {
+                XCTAssertNil(provider.cachedAsset(for: trxAssetId, multichainState: state))
+            }
+        }
+    }
+
     /// A primed page mentioning the asset outdates the known zero even though `primeCache` leaves
     /// the existing entry alone.
     func test_primedPageAfterKnownZero_dropsTheKnownZero() async {

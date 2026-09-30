@@ -650,8 +650,7 @@ private extension PerpsMarketMetadata {
             fundingRatePercent: nil,
             priceDecimals: priceDecimals,
             sizeDecimals: 2,
-            minBaseSize: 0.001,
-            takerFee: 0.0005
+            minBaseSize: 0.001
         )
     }
 }

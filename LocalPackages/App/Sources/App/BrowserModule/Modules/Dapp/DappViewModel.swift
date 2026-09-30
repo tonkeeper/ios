@@ -3,7 +3,6 @@ import TKCore
 import TKLogging
 import TKUIKit
 import UIKit
-import WebKit
 
 protocol DappModuleOutput: AnyObject {
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)? { get set }
@@ -16,15 +15,15 @@ protocol DappModuleInput: AnyObject {
 protocol DappViewModel: AnyObject {
     var didOpenApp: ((URL?, String?) -> Void)? { get set }
     var injectHandler: ((String) -> Void)? { get set }
+    var currentURLProvider: (() -> URL?)? { get set }
     var jsInjection: String? { get }
     var walletIdentifier: String? { get }
     var didUpdateIsLandscapeEnable: (() -> Void)? { get set }
     var isLandscapeEnable: Bool { get }
     var didShareURLSystemShareSheet: ((URL) -> Void)? { get set }
-    /// Optional handler to customize WebView (e.g., inject TONWalletKit)
-    var webViewCustomizationHandler: ((WKWebView) -> Void)? { get }
 
     func viewDidLoad()
+    func isNativeHeaderHidden(for url: URL) -> Bool
     func didLoadInitialRequest()
     func didReceiveMessage(body: Any)
     func copyDappURL(url: URL)
@@ -46,9 +45,9 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
 
     var didOpenApp: ((URL?, String?) -> Void)?
     var injectHandler: ((String) -> Void)?
+    var currentURLProvider: (() -> URL?)?
     var didUpdateIsLandscapeEnable: (() -> Void)?
     var didShareURLSystemShareSheet: ((URL) -> Void)?
-    var webViewCustomizationHandler: ((WKWebView) -> Void)?
     var isLandscapeEnable: Bool = false {
         didSet {
             didUpdateIsLandscapeEnable?()
@@ -58,6 +57,10 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     func viewDidLoad() {
         didOpenApp?(dapp.url, dapp.name)
         didUpdateIsLandscapeEnable?()
+    }
+
+    func isNativeHeaderHidden(for url: URL) -> Bool {
+        earnDappMatcher.matches(url: url)
     }
 
     var walletIdentifier: String? {
@@ -82,7 +85,7 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
                     data: .data(string)
                 )
                 self?.sendResponse(response)
-            case .failed:
+            case .failed, .rejected:
                 break
             }
         }
@@ -97,10 +100,25 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
               let messageType = DappBridgeMessageType(rawValue: type),
               messageType == .invokeRnFunc,
               let name = json["name"] as? String,
-              let functionType = DappBridgeFunctionType(rawValue: name),
               let invocationId = json["invocationId"] as? String,
               let args = json["args"] as? [Any]
         else {
+            return
+        }
+
+        guard let functionType = DappBridgeFunctionType(rawValue: name),
+              !functionType.isNativeBridge || isEarnDapp
+        else {
+            sendResponse(
+                DappBridgeResponse(
+                    invocationId: invocationId,
+                    status: .rejected,
+                    data: .nativeError(
+                        code: DappNativeBridge.ErrorCode.unsupportedMethod.rawValue,
+                        message: DappNativeBridge.ErrorMessage.unsupportedMethod
+                    )
+                )
+            )
             return
         }
 
@@ -127,6 +145,13 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
                     invocationId: message.invocationId,
                     status: .rejected,
                     data: .error(error)
+                )
+                self?.sendResponse(response)
+            case let .rejected(code, errorMessage):
+                let response = DappBridgeResponse(
+                    invocationId: message.invocationId,
+                    status: .rejected,
+                    data: .nativeError(code: code, message: errorMessage)
                 )
                 self?.sendResponse(response)
             }
@@ -159,6 +184,11 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     private let analyticsSession: DappOpenAnalyticsSession
     private let wallet: Wallet?
     private let explorerURLMatcher: BlockchainExplorerURLMatcher
+    private let earnDappMatcher = EarnDappMatcher()
+
+    private var isEarnDapp: Bool {
+        earnDappMatcher.matches(url: currentURLProvider?() ?? dapp.url)
+    }
 
     init(
         dapp: Dapp,
@@ -195,6 +225,10 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         )
 
         let theme = TKThemeManager.shared.theme.stringDescription
+
+        let nativeInjection = earnDappMatcher.matches(url: dapp.url)
+            ? DappNativeBridge.injection(config: .current())
+            : ""
 
         guard let infoData = try? JSONEncoder().encode(info),
               var infoString = String(data: infoData, encoding: .utf8) else { return nil }
@@ -256,8 +290,10 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
                                                 
                                                 if (message.status === 'fulfilled') {
                                                     let messageData = JSON.parse(message.data);
-                                                    
+
                                                     promise.resolve(messageData);
+                                                } else if (message.data && typeof message.data === 'object') {
+                                                    promise.reject(Object.assign(new Error(message.data.message), { code: message.data.code }));
                                                 } else {
                                                     promise.reject(new Error(message.data));
                                                 }
@@ -288,6 +324,8 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
                                     lockOrientation: () => new Promise((resolve, reject) => window.invokeRnFunc('lockOrientation', [], resolve, reject)),
                                     tonconnect: Object.assign(\(infoString),{ send: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('send', args, resolve, reject))},connect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('connect', args, resolve, reject))},restoreConnection: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('restoreConnection', args, resolve, reject))},disconnect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('disconnect', args, resolve, reject))} },{ listen }),
                                 }
+
+                                \(nativeInjection)
                             })();
         """
     }
@@ -332,6 +370,7 @@ struct DappBridgeResponse {
     enum Data {
         case data(String)
         case error(Int)
+        case nativeError(code: Int, message: String)
     }
 
     let invocationId: String
@@ -347,6 +386,8 @@ struct DappBridgeResponse {
             dictionary["data"] = data
         case let .error(error):
             dictionary["data"] = error
+        case let .nativeError(code, message):
+            dictionary["data"] = ["code": code, "message": message]
         }
         return dictionary.asJsonString()
     }
@@ -360,12 +401,23 @@ enum DappBridgeMessageType: String, Codable {
 
 enum DappBridgeFunctionType: String, Codable {
     case send
+    case uiNavigateBack = "ui.navigateBack"
+    case analyticsTrack = "analytics.track"
     case connect
     case restoreConnection
     case disconnect
     case tonapiFetch = "tonapi.fetch"
     case unlockOrientation
     case lockOrientation
+
+    var isNativeBridge: Bool {
+        switch self {
+        case .uiNavigateBack, .analyticsTrack:
+            return true
+        case .send, .connect, .restoreConnection, .disconnect, .tonapiFetch, .unlockOrientation, .lockOrientation:
+            return false
+        }
+    }
 }
 
 private extension String {

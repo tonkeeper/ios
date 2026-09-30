@@ -8,6 +8,9 @@ enum DappOpenSource {
     case push
     case sidebar
     case deepLink
+    case history
+    case collectibles
+    case tonconnect
 }
 
 extension DappOpenSource {
@@ -27,6 +30,12 @@ extension DappOpenSource {
             return .sidebar
         case .deepLink:
             return .deepLink
+        case .history:
+            return .history
+        case .collectibles:
+            return .collectibles
+        case .tonconnect:
+            return .tonconnect
         }
     }
 }

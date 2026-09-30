@@ -24,7 +24,6 @@ final class TradeAssetDetailsMultichainHistoryViewModel: ObservableObject, Trade
         $state.eraseToAnyPublisher()
     }
 
-    private let walletId: String
     private let assetId: String
     private let multichainState: MultichainWalletState
     private let multichainService: MultichainService
@@ -33,14 +32,12 @@ final class TradeAssetDetailsMultichainHistoryViewModel: ObservableObject, Trade
     private var task: Task<Void, Never>?
 
     init(
-        walletId: String,
         assetId: String,
         multichainState: MultichainWalletState,
         multichainService: MultichainService,
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter
     ) {
-        self.walletId = walletId
         self.assetId = assetId
         self.multichainState = multichainState
         self.multichainService = multichainService
@@ -67,11 +64,11 @@ private extension TradeAssetDetailsMultichainHistoryViewModel {
         let page: MultichainWalletActivitiesPage
         do {
             page = try await multichainService.getWalletActivities(
-                walletId: walletId,
+                state: multichainState,
                 limit: Constants.loadLimit,
                 cursor: nil,
                 assetId: assetId,
-                activityType: nil,
+                activityTypeFilter: nil,
                 hideDust: nil
             )
         } catch {

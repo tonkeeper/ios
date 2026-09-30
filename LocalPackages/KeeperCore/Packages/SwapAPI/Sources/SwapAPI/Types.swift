@@ -492,10 +492,12 @@ extension APIProtocol {
     /// - Remark: HTTP `POST /v2/crosschain/quotes`.
     /// - Remark: Generated from `#/paths//v2/crosschain/quotes/post(createCrossSwapQuote)`.
     public func createCrossSwapQuote(
+        query: Operations.createCrossSwapQuote.Input.Query = .init(),
         headers: Operations.createCrossSwapQuote.Input.Headers = .init(),
         body: Components.RequestBodies.CrossSwapQuote
     ) async throws -> Operations.createCrossSwapQuote.Output {
         try await createCrossSwapQuote(Operations.createCrossSwapQuote.Input(
+            query: query,
             headers: headers,
             body: body
         ))
@@ -506,11 +508,13 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//v2/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRoute)`.
     public func prepareCrossSwapRoute(
         path: Operations.prepareCrossSwapRoute.Input.Path,
+        query: Operations.prepareCrossSwapRoute.Input.Query = .init(),
         headers: Operations.prepareCrossSwapRoute.Input.Headers = .init(),
         body: Components.RequestBodies.CrossSwapPrepare? = nil
     ) async throws -> Operations.prepareCrossSwapRoute.Output {
         try await prepareCrossSwapRoute(Operations.prepareCrossSwapRoute.Input(
             path: path,
+            query: query,
             headers: headers,
             body: body
         ))
@@ -4417,6 +4421,17 @@ public enum Components {
         public struct CrossSwapPrepare: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/route_id`.
             public var route_id: Swift.String
+            /// The aggregator's own identifier for this route, as the built
+            /// transaction carries it. For swapsxyz this is the `txId` that
+            /// `/getAction` minted, which is the id its own dashboards and
+            /// `/getStatus` know the swap by; a quote that was not prepared
+            /// inline carries an id of ours instead, so this is where the
+            /// upstream one first appears. Omitted when the provider exposes
+            /// none.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/provider_route_id`.
+            public var provider_route_id: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/aggregator`.
             public var aggregator: Components.Schemas.CrossSwapAggregator
             /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/payloads`.
@@ -4425,19 +4440,23 @@ public enum Components {
             ///
             /// - Parameters:
             ///   - route_id:
+            ///   - provider_route_id: The aggregator's own identifier for this route, as the built
             ///   - aggregator:
             ///   - payloads:
             public init(
                 route_id: Swift.String,
+                provider_route_id: Swift.String? = nil,
                 aggregator: Components.Schemas.CrossSwapAggregator,
                 payloads: [Components.Schemas.CrossSwapPayload]
             ) {
                 self.route_id = route_id
+                self.provider_route_id = provider_route_id
                 self.aggregator = aggregator
                 self.payloads = payloads
             }
             public enum CodingKeys: String, CodingKey {
                 case route_id
+                case provider_route_id
                 case aggregator
                 case payloads
             }
@@ -5000,6 +5019,10 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/WalletIdPath`.
         public typealias WalletIdPath = Swift.String
+        /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+        ///
+        /// - Remark: Generated from `#/components/parameters/IsNewUserQuery`.
+        public typealias IsNewUserQuery = Swift.Bool
     }
     /// Types generated from the `#/components/requestBodies` section of the OpenAPI document.
     public enum RequestBodies {
@@ -9815,6 +9838,21 @@ public enum Operations {
     public enum createCrossSwapQuote {
         public static let id: Swift.String = "createCrossSwapQuote"
         public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/query`.
+            public struct Query: Sendable, Hashable {
+                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                ///
+                /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/query/is_new`.
+                public var is_new: Components.Parameters.IsNewUserQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                public init(is_new: Components.Parameters.IsNewUserQuery? = nil) {
+                    self.is_new = is_new
+                }
+            }
+            public var query: Operations.createCrossSwapQuote.Input.Query
             /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
@@ -9847,12 +9885,15 @@ public enum Operations {
             /// Creates a new `Input`.
             ///
             /// - Parameters:
+            ///   - query:
             ///   - headers:
             ///   - body:
             public init(
+                query: Operations.createCrossSwapQuote.Input.Query = .init(),
                 headers: Operations.createCrossSwapQuote.Input.Headers = .init(),
                 body: Components.RequestBodies.CrossSwapQuote
             ) {
+                self.query = query
                 self.headers = headers
                 self.body = body
             }
@@ -10008,6 +10049,21 @@ public enum Operations {
                 }
             }
             public var path: Operations.prepareCrossSwapRoute.Input.Path
+            /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/query`.
+            public struct Query: Sendable, Hashable {
+                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                ///
+                /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/query/is_new`.
+                public var is_new: Components.Parameters.IsNewUserQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                public init(is_new: Components.Parameters.IsNewUserQuery? = nil) {
+                    self.is_new = is_new
+                }
+            }
+            public var query: Operations.prepareCrossSwapRoute.Input.Query
             /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
@@ -10041,14 +10097,17 @@ public enum Operations {
             ///
             /// - Parameters:
             ///   - path:
+            ///   - query:
             ///   - headers:
             ///   - body:
             public init(
                 path: Operations.prepareCrossSwapRoute.Input.Path,
+                query: Operations.prepareCrossSwapRoute.Input.Query = .init(),
                 headers: Operations.prepareCrossSwapRoute.Input.Headers = .init(),
                 body: Components.RequestBodies.CrossSwapPrepare? = nil
             ) {
                 self.path = path
+                self.query = query
                 self.headers = headers
                 self.body = body
             }

@@ -18,7 +18,8 @@ struct RampOnLayoutItemCell: View {
                         imageSource: imageSource,
                         size: .small,
                         shape: .circle,
-                        chainIconBackgroundColor: palette.background.contentTint
+                        chainIconBackgroundColor: palette.background.contentTint,
+                        imageBackgroundColor: .clear
                     )
                 }
             },

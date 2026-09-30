@@ -13,7 +13,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     }
 
     var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-    var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+    var didRequestDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
     var didRequestDepositTon: ((_ wallet: Wallet) -> Void)?
 
@@ -142,8 +142,8 @@ private extension CollectiblesCoordinator {
             self?.removeChild(coordinator)
         }
 
-        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.didRequestDeeplinkHandling?(deeplink)
+        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.didRequestDeeplinkHandling?(deeplink, utm)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
@@ -187,8 +187,8 @@ private extension CollectiblesCoordinator {
             }
         }
 
-        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.didRequestDeeplinkHandling?(deeplink)
+        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.didRequestDeeplinkHandling?(deeplink, utm)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in

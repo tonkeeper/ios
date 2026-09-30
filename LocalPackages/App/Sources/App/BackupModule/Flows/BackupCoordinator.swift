@@ -18,7 +18,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
     init(
         wallet: Wallet,
-        source: BackupSource = .settings,
+        source: BackupSource,
         startsWithIntro: Bool = false,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,

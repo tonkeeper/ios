@@ -12,15 +12,19 @@ struct WalletBalanceMultichainAssetsListView: View {
                 cellsGroup {
                     skeletonRows
                 }
-            } else if viewModel.showsError {
-                errorPlaceholder
             } else {
-                listTitle
-                cellsGroup {
-                    if viewModel.showsAllAssetsHidden {
+                switch viewModel.presentation {
+                case .error:
+                    errorPlaceholder
+                case .allAssetsHidden:
+                    listTitle
+                    cellsGroup {
                         SetupCell(content: allAssetsHiddenCellContent)
-                    } else {
-                        assetRows
+                    }
+                case let .rows(rows):
+                    listTitle
+                    cellsGroup {
+                        assetRows(rows)
                     }
                 }
             }
@@ -34,9 +38,9 @@ struct WalletBalanceMultichainAssetsListView: View {
         .asCellsGroup(config: CellsGroupModifier.Config(horizontalPadding: 0, cornerRadius: 16, backgroundColor: .backgroundContent))
     }
 
-    private var assetRows: some View {
-        ForEach(Array(listItems.enumerated()), id: \.element.id) { index, item in
-            let showsDivider = index < listItems.count - 1
+    private func assetRows(_ rows: [WalletBalanceMultichainAssetsListViewModel.Row]) -> some View {
+        ForEach(Array(rows.enumerated()), id: \.element.id) { index, item in
+            let showsDivider = index < rows.count - 1
             switch item {
             case let .asset(row):
                 AssetBalanceRowCell(
@@ -47,9 +51,9 @@ struct WalletBalanceMultichainAssetsListView: View {
                     },
                     commentAction: viewModel.commentAction(for: row)
                 )
-            case .moreAssets:
+            case let .moreAssets(previewAvatars):
                 WalletBalanceMoreAssetsCell(
-                    previewAvatars: viewModel.moreAssetsPreviewAvatars,
+                    previewAvatars: previewAvatars,
                     showsDivider: showsDivider,
                     action: {
                         withAnimation(Layout.expandAnimation) {
@@ -121,14 +125,6 @@ struct WalletBalanceMultichainAssetsListView: View {
         )
     }
 
-    private var listItems: [ListItem] {
-        var items = viewModel.rows.map { ListItem.asset($0) }
-        if viewModel.showsMoreAssetsButton {
-            items.append(.moreAssets)
-        }
-        return items
-    }
-
     private var allAssetsHiddenCellContent: SetupCellContent {
         SetupCellContent(
             icon: SetupCellContent.Icon(
@@ -150,19 +146,5 @@ private extension WalletBalanceMultichainAssetsListView {
         static let errorTopPadding: CGFloat = 32
         static let expandAnimation: Animation = .easeInOut(duration: 0.25)
         static let skeletonRowCount = 10
-    }
-
-    enum ListItem: Identifiable {
-        case asset(AssetBalanceRowCellContent)
-        case moreAssets
-
-        var id: String {
-            switch self {
-            case let .asset(row):
-                row.id
-            case .moreAssets:
-                "more-assets"
-            }
-        }
     }
 }

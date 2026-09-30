@@ -141,12 +141,12 @@ struct PerpsAmountFormView<ViewModel: PerpsAmountFormViewModel>: View {
                             HStack(spacing: 2) {
                                 Text(orderTypeText)
                                     .textStyle(.body2)
-                                    .foregroundStyle(.textSecondary)
+                                    .foregroundStyle(.textAccent)
                                 SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.switch)
                                     .renderingMode(.template)
                                     .resizable()
                                     .frame(width: 12, height: 12)
-                                    .foregroundStyle(.iconSecondary)
+                                    .foregroundStyle(.textAccent)
                             }
                         }
                     }

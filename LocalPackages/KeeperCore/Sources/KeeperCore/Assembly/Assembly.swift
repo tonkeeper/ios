@@ -49,17 +49,13 @@ public final class Assembly {
     )
     private lazy var bootConfigurationAPIAssembly = BootConfigurationAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
-        requestContextProvider: { [repositoriesAssembly, featureFlags = dependencies.featureFlags] in
-            let isMultichainEnabled = featureFlags[.multichainEnabled]
-            return BootConfigurationRequestContext(
-                features: isMultichainEnabled ? ["multichain"] : [],
-                walletID: walletIdForWalletScopedContent(
-                    isMultichainEnabled: isMultichainEnabled,
-                    walletId: (try? repositoriesAssembly.keeperInfoRepository().getKeeperInfo())?
-                        .currentWallet
-                        .multichainWalletState?
-                        .walletId
-                )
+        requestContextProvider: { [repositoriesAssembly] in
+            BootConfigurationRequestContext(
+                features: ["multichain"],
+                walletID: (try? repositoriesAssembly.keeperInfoRepository().getKeeperInfo())?
+                    .currentWallet
+                    .multichainWalletState?
+                    .walletId
             )
         }
     )
@@ -102,10 +98,7 @@ public final class Assembly {
     lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
         coreAssembly: coreAssembly,
-        configuration: configurationAssembly.configuration,
-        isMultichainEnabled: { [featureFlags = dependencies.featureFlags] in
-            featureFlags[.multichainEnabled]
-        }
+        tkAppSettings: dependencies.tkAppSettings
     )
     private lazy var scamAPIAssembly = ScamAPIAssembly(configurationAssembly: configurationAssembly)
     private lazy var nativeSwapAPIAssembly = NativeSwapAPIAssembly(configurationAssembly: configurationAssembly)
@@ -116,7 +109,8 @@ public final class Assembly {
     )
     private lazy var multichainSwapAPIAssembly = MultichainSwapAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
-        apiAssembly: apiAssembly
+        apiAssembly: apiAssembly,
+        tkAppSettings: dependencies.tkAppSettings
     )
     private lazy var multichainRampAPIAssembly = MultichainRampAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
@@ -126,8 +120,9 @@ public final class Assembly {
     private lazy var multichainAPIAssembly: MultichainAPIAssembly = MultichainAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
         apiAssembly: apiAssembly,
-        walletAuth: { [unowned self] in
-            MultichainWalletAuthDependencies(
+        walletAuth: { [weak self] in
+            guard let self else { return nil }
+            return MultichainWalletAuthDependencies(
                 deviceAuth: deviceAuthService,
                 walletAuthTokenProvider: walletAuthTokenProvider
             )
@@ -158,17 +153,17 @@ public final class Assembly {
     /// Above `MultichainAssembly` for the same reason as `deviceAuthService`: the battery reads the
     /// wallet credential too, and reaching it through that assembly would close a cycle over
     /// `ServicesAssembly`/`BatteryAssembly`. `ChainKitService` is resolved on first use, which is
-    /// long after the graph is built.
+    /// long after the graph is built — and, in an extension, can be after the graph is gone, so the
+    /// reference is `weak`: the provider is reachable from services that outlive this assembly.
     private lazy var walletAuthTokenProvider = WalletAuthTokenProvider(
-        chainKitService: { [unowned self] in multichainAssembly.chainKitService },
+        chainKitService: { [weak self] in self?.multichainAssembly.chainKitService },
         store: WalletAuthKeychainStore(keychainVault: coreAssembly.keychainVault)
     )
     private lazy var tradingAssembly = TradingAssembly(
         tradingAPIAssembly: tradingAPIAssembly,
         appInfoProvider: dependencies.appInfoProvider,
         repositoriesAssembly: repositoriesAssembly,
-        coreAssembly: coreAssembly,
-        configuration: configurationAssembly.configuration
+        coreAssembly: coreAssembly
     )
     private lazy var servicesAssembly = ServicesAssembly(
         repositoriesAssembly: repositoriesAssembly,
@@ -269,14 +264,6 @@ public final class Assembly {
         self.coreAssembly = coreAssembly
         self.deviceTokenStore = DeviceTokenStore(keychainVault: coreAssembly.keychainVault)
     }
-}
-
-func walletIdForWalletScopedContent(
-    isMultichainEnabled: Bool,
-    walletId: @autoclosure () -> String?
-) -> String? {
-    guard isMultichainEnabled else { return nil }
-    return walletId()
 }
 
 public extension Assembly {

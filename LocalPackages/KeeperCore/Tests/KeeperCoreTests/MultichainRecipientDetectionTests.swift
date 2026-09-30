@@ -123,11 +123,6 @@ final class MultichainRecipientDetectionTests: XCTestCase {
         XCTAssertFalse(Network.testnet.matchesTonAddress(tonMainnetNonBounceable))
     }
 
-    func test_matchesTonAddress_tetraFollowsMainnetTagging() {
-        XCTAssertTrue(Network.tetra.matchesTonAddress(tonMainnetNonBounceable))
-        XCTAssertFalse(Network.tetra.matchesTonAddress(tonTestnetNonBounceable))
-    }
-
     /// Raw addresses carry no tag byte, so they belong to either network and must keep working.
     func test_matchesTonAddress_rawAddressBelongsToEitherNetwork() {
         XCTAssertTrue(Network.mainnet.matchesTonAddress(tonRawAddress))
@@ -203,7 +198,7 @@ final class MultichainRecipientDetectionTests: XCTestCase {
     }
 
     func test_recipient_acceptsEVMAddressRegardlessOfWalletNetwork() {
-        for network in [Network.mainnet, .testnet, .tetra] {
+        for network in [Network.mainnet, .testnet] {
             XCTAssertEqual(
                 MultichainRecipient(string: evmAddress, chain: .eth, network: network),
                 MultichainRecipient(chain: .eth, address: evmAddress),

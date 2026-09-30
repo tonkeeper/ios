@@ -117,7 +117,10 @@ function _toNanoString(decimalAmount, decimals) {
     return nano === '' ? '0' : nano;
 }
 
-var FEE_COMMENT = 'Call: TonkeeperRelayerFee';
+// The relayer fee used to arrive as a second JettonTransfer with a "Call: …RelayerFee"
+// comment; TonAPI now folds it into a GasRelay action whose relayer_fee carries the
+// jetton and amount. Accept both shapes.
+var FEE_COMMENT = /^Call: (Tonkeeper|Keeper)RelayerFee$/;
 
 var result = _withRetry(function () {
     var body = _httpGetJSON('https://block.tonapi.io/v2/accounts/' + addr + '/events?limit=1&subject_only=true');
@@ -128,15 +131,28 @@ var result = _withRetry(function () {
     if (!ev.actions || ev.actions.length === 0) {
         throw new Error('getLastSentJettonTransferEvent: latest event has no actions for ' + addr);
     }
+    // TonAPI publishes the event before the relay leg settles; relayer_fee is filled in later.
+    if (ev.in_progress) {
+        throw new Error('getLastSentJettonTransferEvent: latest event still in progress for ' + addr);
+    }
     var primary = null;
     var fee = null;
+    var gasRelay = null;
     for (var i = 0; i < ev.actions.length; i++) {
         var a = ev.actions[i];
         if (!a || a.status !== 'ok') continue;
+        if (a.type === 'GasRelay' && a.GasRelay) {
+            var relay = a.GasRelay;
+            if (relay.relayer_fee && relay.relayer_fee.jetton && relay.relayer_fee.jetton.symbol === expectedSymbol) {
+                if (fee == null) fee = { amount: relay.relayer_fee.amount, jetton: relay.relayer_fee.jetton, comment: null };
+                if (gasRelay == null) gasRelay = relay;
+            }
+            continue;
+        }
         if (a.type !== 'JettonTransfer' || !a.JettonTransfer) continue;
         var t = a.JettonTransfer;
         if (!t.jetton || t.jetton.symbol !== expectedSymbol) continue;
-        if (t.comment === FEE_COMMENT) {
+        if (FEE_COMMENT.test(t.comment || '')) {
             if (fee == null) fee = t;
         } else {
             if (primary == null) primary = t;
@@ -145,12 +161,12 @@ var result = _withRetry(function () {
     if (!primary) {
         throw new Error(
             'getLastSentJettonTransferEvent: no primary ' + expectedSymbol +
-            ' JettonTransfer (without "' + FEE_COMMENT + '" comment) for ' + addr
+            ' JettonTransfer (without the relayer fee comment ' + FEE_COMMENT + ') for ' + addr
         );
     }
     if (!fee) {
         throw new Error(
-            'getLastSentJettonTransferEvent: no fee JettonTransfer (comment "' + FEE_COMMENT + '") for ' + addr
+            'getLastSentJettonTransferEvent: no ' + expectedSymbol + ' relayer fee (GasRelay.relayer_fee or a JettonTransfer with comment ' + FEE_COMMENT + ') for ' + addr
         );
     }
     var decimals = Number(primary.jetton.decimals);
@@ -164,9 +180,10 @@ var result = _withRetry(function () {
             ' (= ' + expectedAmount + ' * 10^' + decimals + '), got=' + String(primary.amount)
         );
     }
-    return { timestamp: ev.timestamp, primary: primary, fee: fee };
-}, 3);
+    return { timestamp: ev.timestamp, primary: primary, fee: fee, gasRelay: gasRelay };
+}, 8, 5000);
 
 output.lastSentJettonTransferTimestamp = result.timestamp;
 output.lastSentJettonTransferPrimary = result.primary;
 output.lastSentJettonTransferFee = result.fee;
+output.lastSentJettonTransferGasRelay = result.gasRelay;

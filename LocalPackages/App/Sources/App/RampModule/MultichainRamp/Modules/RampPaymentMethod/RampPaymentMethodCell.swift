@@ -47,7 +47,8 @@ private extension RampPaymentMethodCell {
             imageSource: row.imageURL.map { .url($0) } ?? .image(.TKUIKit.Icons.Size28.purchase),
             configuration: Layout.iconConfiguration,
             shape: .circle,
-            chainIconBackgroundColor: palette.background.content
+            chainIconBackgroundColor: palette.background.content,
+            imageBackgroundColor: .clear
         )
     }
 

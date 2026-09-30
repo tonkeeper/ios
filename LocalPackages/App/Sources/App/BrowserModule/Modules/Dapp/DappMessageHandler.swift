@@ -4,6 +4,7 @@ import KeeperCore
 enum DappMessageHandlerResult {
     case success(Data)
     case failed(Int)
+    case rejected(code: Int, message: String)
 
     init(_ result: TonConnectAppsStore.ConnectResult) {
         switch result {
@@ -48,6 +49,8 @@ final class DefaultDappMessageHandler: DappMessageHandler {
     var fetch: ((String, [String: Any]?, @escaping (TonConnectAppsStore.FetchResult) -> Void) -> Void)?
     var signData: ((Dapp, TonConnect.SignDataRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
     var toggleLandscape: ((Bool) -> Void)?
+    var navigateBack: (() -> Void)?
+    var track: ((String, [String: Any]) -> Void)?
 
     func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
         switch message.type {
@@ -119,6 +122,22 @@ final class DefaultDappMessageHandler: DappMessageHandler {
             completion(.success(Self.voidResponse))
         case .disconnect:
             disconnect?(dapp)
+            completion(.success(Self.voidResponse))
+        case .uiNavigateBack:
+            navigateBack?()
+            completion(.success(Self.voidResponse))
+        case .analyticsTrack:
+            let params = message.args.first as? [String: Any]
+            guard let event = params?["event"] as? String, event.contains(where: { !$0.isWhitespace }) else {
+                completion(
+                    .rejected(
+                        code: DappNativeBridge.ErrorCode.invalidParams.rawValue,
+                        message: DappNativeBridge.ErrorMessage.missingEvent
+                    )
+                )
+                return
+            }
+            track?(event, DappNativeBridge.trackParams(params?["params"] as? [String: Any]))
             completion(.success(Self.voidResponse))
         }
     }

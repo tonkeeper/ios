@@ -8,7 +8,7 @@ import UIKit
 public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
     private let featureFlags: TKFeatureFlags
     private weak var appCoordinator: AppCoordinator?
-    private var pendingDeeplink: CoordinatorDeeplink?
+    private var pendingDeeplinkState = PendingDeeplinkState()
     private var loadingTask: Task<Void, Never>?
 
     public init(
@@ -23,7 +23,7 @@ public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
     }
 
     override public func start(deeplink: CoordinatorDeeplink? = nil) {
-        pendingDeeplink = deeplink
+        pendingDeeplinkState.append(deeplink, isColdStart: true)
         openLaunchScreen()
 
         guard loadingTask == nil else { return }
@@ -39,8 +39,11 @@ public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
             )
             self.appCoordinator = appCoordinator
             addChild(appCoordinator)
-            appCoordinator.start(deeplink: pendingDeeplink)
-            pendingDeeplink = nil
+            let pending = pendingDeeplinkState.drain()
+            appCoordinator.start(
+                deeplink: pending.deeplink,
+                deeplinkOpenContexts: pending.analyticsContexts
+            )
         }
     }
 
@@ -50,7 +53,7 @@ public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
         }
 
         guard let deeplink else { return false }
-        pendingDeeplink = deeplink
+        pendingDeeplinkState.append(deeplink, isColdStart: false)
         return true
     }
 }

@@ -5,6 +5,7 @@ import TKLogging
 import UIKit
 import UserNotifications
 
+@MainActor
 final class WalletBalanceSetupModel {
     struct State {
         enum Item: Equatable {
@@ -28,14 +29,9 @@ final class WalletBalanceSetupModel {
         let items: [Item]
     }
 
-    private let syncQueue = DispatchQueue(label: "WalletBalanceSetupModelQueue")
-
-    /// Written only on `syncQueue`; atomic because `getState()` is read from the caller's thread.
-    @Atomic private var isPushAuthorizationGranted = false
-    private var pushAuthorizationGeneration = 0
-    private var didBecomeActiveObserver: NSObjectProtocol?
-
     var didUpdateState: ((State?) -> Void)?
+
+    private(set) var wallet: Wallet
 
     private let walletsStore: WalletsStore
     private let processedBalanceStore: ProcessedBalanceStore
@@ -43,48 +39,79 @@ final class WalletBalanceSetupModel {
     private let walletNotificationStore: WalletNotificationStore
     private let mnemonicsAccess: MnemonicAccess
     private let configuration: Configuration
+    private let pushAuthorizationModel: PushAuthorizationModel
+    private var didBecomeActiveObserver: NSObjectProtocol?
 
     init(
+        wallet: Wallet,
         walletsStore: WalletsStore,
         processedBalanceStore: ProcessedBalanceStore,
         securityStore: SecurityStore,
         walletNotificationStore: WalletNotificationStore,
         mnemonicsAccess: MnemonicAccess,
-        configuration: Configuration
+        configuration: Configuration,
+        pushAuthorizationModel: PushAuthorizationModel
     ) {
+        self.wallet = wallet
         self.walletsStore = walletsStore
         self.processedBalanceStore = processedBalanceStore
         self.securityStore = securityStore
         self.walletNotificationStore = walletNotificationStore
         self.mnemonicsAccess = mnemonicsAccess
         self.configuration = configuration
+        self.pushAuthorizationModel = pushAuthorizationModel
 
         walletsStore.addObserver(self) { observer, event in
-            observer.didGetWalletsStoreEvent(event)
+            Task { @MainActor in
+                observer.didGetWalletsStoreEvent(event)
+            }
         }
 
         securityStore.addObserver(self) { observer, event in
-            observer.didGetSecurityStoreEvent(event)
+            Task { @MainActor in
+                switch event {
+                case .didUpdateIsBiometryEnabled:
+                    observer.notifyState()
+                default:
+                    break
+                }
+            }
         }
 
         walletNotificationStore.addObserver(self) { observer, event in
-            observer.didGetWalletNotificationStoreEvent(event)
+            Task { @MainActor in
+                switch event {
+                case .didUpdateNotificationsIsOn:
+                    observer.notifyState()
+                default:
+                    break
+                }
+            }
         }
 
         processedBalanceStore.addObserver(self) { observer, event in
-            observer.didGetProcessedBalanceStoreEvent(event)
+            Task { @MainActor in
+                switch event {
+                case let .didUpdateProccessedBalance(wallet):
+                    guard observer.wallet == wallet else { return }
+                    observer.notifyState()
+                }
+            }
         }
 
-        // `didBecomeActive`, not `willEnterForeground`: the system permission prompt only makes the
-        // app inactive, so a grant given while this screen is alive posts no foreground transition.
+        pushAuthorizationModel.addObserver(self) { observer in
+            observer.notifyState()
+        }
+
         didBecomeActiveObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
-            queue: nil
+            queue: .main
         ) { [weak self] _ in
-            self?.refreshPushAuthorization()
+            Task { @MainActor in
+                self?.notifyState()
+            }
         }
-        refreshPushAuthorization()
     }
 
     deinit {
@@ -92,22 +119,15 @@ final class WalletBalanceSetupModel {
     }
 
     func getState() -> State? {
-        guard let wallet = try? walletsStore.activeWallet else {
-            return nil
-        }
-        let isSetupFinished = wallet.setupSettings.isSetupFinished
-        let isBiometryEnable = securityStore.getState().isBiometryEnable
-        let isNotificationsOn = walletNotificationStore.getState()[wallet]?.isOn ?? false
-        return calculateState(
-            wallet: wallet,
-            isSetupFinished: isSetupFinished,
-            isBiometryEnable: isBiometryEnable,
-            isNotificationsOn: isNotificationsOn,
-            isPushAuthorizationGranted: isPushAuthorizationGranted
+        calculateState(
+            isSetupFinished: wallet.setupSettings.isSetupFinished,
+            isBiometryEnable: securityStore.getState().isBiometryEnable,
+            isNotificationsOn: walletNotificationStore.getState()[wallet]?.isOn ?? false,
+            isPushAuthorizationGranted: pushAuthorizationModel.isGranted
         )
     }
 
-    func finishSetup(for wallet: Wallet) {
+    func finishSetup() {
         Task {
             guard let wallet = walletsStore.wallets.first(where: { $0.id == wallet.id }) else {
                 return
@@ -126,24 +146,21 @@ final class WalletBalanceSetupModel {
             try mnemonicsAccess.deletePasscode()
         } catch {
             Log.e("failed to turn off biometry due to: \(error)")
-            await self.securityStore.setIsBiometryEnable(false)
+            await securityStore.setIsBiometryEnable(false)
             throw error
         }
-        await self.securityStore.setIsBiometryEnable(false)
+        await securityStore.setIsBiometryEnable(false)
     }
 
     func turnOnNotifications() async {
-        guard let wallet = try? walletsStore.activeWallet else { return }
         let current = UNUserNotificationCenter.current()
         let settings = await current.notificationSettings()
 
         switch settings.authorizationStatus {
         case .denied:
             guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else { return }
-            if await UIApplication.shared.canOpenURL(settingsUrl) {
-                await MainActor.run {
-                    UIApplication.shared.open(settingsUrl)
-                }
+            if UIApplication.shared.canOpenURL(settingsUrl) {
+                UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
             }
             return
         case .notDetermined:
@@ -154,7 +171,7 @@ final class WalletBalanceSetupModel {
             guard await requestPushAuthorization() else { return }
         }
 
-        await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
+        await walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
     }
 
     private func requestPushAuthorization() async -> Bool {
@@ -168,111 +185,30 @@ final class WalletBalanceSetupModel {
             Log.w("failed to request notification authorization: \(error)")
             return false
         }
-        await UIApplication.shared.registerForRemoteNotifications()
+        UIApplication.shared.registerForRemoteNotifications()
         return true
     }
 
-    private func refreshPushAuthorization() {
-        syncQueue.async { [weak self] in
-            guard let self else { return }
-            self.pushAuthorizationGeneration += 1
-            let generation = self.pushAuthorizationGeneration
-            Task { [weak self] in
-                let isGranted = await UNUserNotificationCenter.current()
-                    .notificationSettings().authorizationStatus.isPushAuthorized
-                self?.applyPushAuthorization(isGranted, generation: generation)
-            }
-        }
-    }
-
-    private func applyPushAuthorization(_ isGranted: Bool, generation: Int) {
-        syncQueue.async {
-            guard generation == self.pushAuthorizationGeneration,
-                  self.isPushAuthorizationGranted != isGranted
-            else {
-                return
-            }
-            self.isPushAuthorizationGranted = isGranted
-            self.updateState()
-        }
-    }
-
     private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-        syncQueue.async {
-            switch event {
-            case .didChangeActiveWallet:
-                self.updateState()
-            case .didUpdateWalletSetupSettings:
-                self.updateState()
-            case .didAddWallets, .didDeleteWallet:
-                self.updateState()
-            case let .didUpdateWalletMultichain(wallet):
-                guard let activeWallet = try? self.walletsStore.activeWallet,
-                      activeWallet == wallet
-                else {
-                    return
-                }
-                self.updateState()
-            default: break
-            }
+        switch event {
+        case let .didUpdateWalletSetupSettings(wallet),
+             let .didUpdateWalletMetaData(wallet),
+             let .didUpdateWalletMultichain(wallet):
+            guard self.wallet == wallet else { return }
+            self.wallet = wallet
+            notifyState()
+        case .didAddWallets, .didDeleteWallet:
+            notifyState()
+        default:
+            break
         }
     }
 
-    private func didGetSecurityStoreEvent(_ event: SecurityStore.Event) {
-        syncQueue.async {
-            switch event {
-            case .didUpdateIsBiometryEnabled:
-                self.updateState()
-            default: break
-            }
-        }
-    }
-
-    private func didGetWalletNotificationStoreEvent(_ event: WalletNotificationStore.Event) {
-        syncQueue.async {
-            switch event {
-            case .didUpdateNotificationsIsOn:
-                self.updateState()
-            default: break
-            }
-        }
-    }
-
-    private func didGetProcessedBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
-        syncQueue.async {
-            switch event {
-            case let .didUpdateProccessedBalance(wallet):
-                guard let activeWallet = try? self.walletsStore.activeWallet,
-                      activeWallet == wallet
-                else {
-                    return
-                }
-                self.updateState()
-            }
-        }
-    }
-
-    private func updateState() {
-        let walletsStoreState = walletsStore.getState()
-        switch walletsStoreState {
-        case .empty: break
-        case let .wallets(walletsState):
-            let isBiometryEnable = securityStore.getState().isBiometryEnable
-            let isSetupFinished = walletsState.activeWallet.setupSettings.isSetupFinished
-            let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWallet]?.isOn ?? false
-            let state = calculateState(
-                wallet: walletsState.activeWallet,
-                isSetupFinished: isSetupFinished,
-                isBiometryEnable: isBiometryEnable,
-                isNotificationsOn: isNotificationsOn,
-                isPushAuthorizationGranted: isPushAuthorizationGranted
-            )
-            didUpdateState?(state)
-        }
+    private func notifyState() {
+        didUpdateState?(getState())
     }
 
     private func calculateState(
-        wallet: Wallet,
         isSetupFinished: Bool,
         isBiometryEnable: Bool,
         isNotificationsOn: Bool,
@@ -300,21 +236,24 @@ final class WalletBalanceSetupModel {
             items.append(.migration(walletsLeft: walletsLeft))
         }
 
+        var isBiometryStepDeferred = false
         if !isSetupFinished {
-            // The step exists to ask for push permission; once it is granted the wallet is
-            // subscribed by default and turning it back off belongs to Settings.
             if !isNotificationsOn, !isPushAuthorizationGranted {
                 items.append(.notifications)
             }
 
             if wallet.isBiometryAvailable, !isBiometryEnable {
-                items.append(.biometry)
+                if BiometryProvider().isAvailable {
+                    items.append(.biometry)
+                } else {
+                    isBiometryStepDeferred = true
+                }
             }
         }
 
         guard !items.isEmpty else {
-            if !isSetupFinished {
-                finishSetup(for: wallet)
+            if !isSetupFinished, !isBiometryStepDeferred {
+                finishSetup()
             }
             return nil
         }
@@ -327,10 +266,7 @@ final class WalletBalanceSetupModel {
     }
 
     private func migrationWalletsLeft(for wallet: Wallet) -> Int? {
-        guard configuration.featureEnabled(.multichainEnabled),
-              configuration.featureEnabled(.migrationEnabled),
-              wallet.isMultichain
-        else {
+        guard wallet.isMultichain else {
             return nil
         }
         let walletsLeft = WalletMigrationVisibility.legacyTonWalletCount(wallets: walletsStore.wallets)

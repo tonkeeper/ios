@@ -1,0 +1,29 @@
+# regress_EN: Browser Screen — Explore / Connected tabs; Connected empty state.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../steps/browser/open_browser_tab.yaml"
+
+- extendedWaitUntil:
+    visible: Connected
+    timeout: 60000
+
+- tapOn:
+    text: Connected
+    optional: true
+- extendedWaitUntil:
+    visible: "Connected apps will\u00a0be\u00a0shown\u00a0here"
+    timeout: 30000
+# Both the brand and the last word are glued with non-breaking spaces at runtime.
+- assertVisible: "Explore apps and services in\u00a0Keeper\u00a0browser."
+
+
+- runFlow:
+    when:
+      visible: Explore
+    commands:
+      - tapOn: Explore
+      # The multichain Explore has no "All" category chip; the first shelf header carries "See All".
+      - extendedWaitUntil:
+          visible: "See All"
+          timeout: 60000

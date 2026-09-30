@@ -31,7 +31,8 @@ extension DappOpenAnalyticsSession {
                 appId: context.appId,
                 bannerId: context.bannerId,
                 location: context.location
-            )
+            ),
+            utm: context.utm
         )
     }
 
@@ -47,7 +48,8 @@ extension DappOpenAnalyticsSession {
                 appId: context.appId,
                 bannerId: context.bannerId,
                 location: context.location
-            )
+            ),
+            utm: context.utm
         )
         state = .loaded
     }
@@ -59,7 +61,8 @@ extension DappOpenAnalyticsSession {
                 assetChain: context.assetChain,
                 from: from,
                 location: context.location
-            )
+            ),
+            utm: context.utm
         )
     }
 }

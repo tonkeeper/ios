@@ -6,10 +6,11 @@ appId: com.jbig.tonkeeper
 # `confirm_swipe` wait downstream then burns its whole ceiling and fails.
 # The button's enabled state is that exact signal, so wait on it instead of polling the receive
 # amount, which the preview quote fills in before `confirmation` exists.
-# Above the 15s house limit because the quote is a third-party provider round trip.
+# Above the 15s house limit because the quote is a third-party provider round trip; 60s agreed
+# with the task owner after CI runs where the provider took longer than 30s.
 - extendedWaitUntil:
     visible:
       id: native_swap_continue
       enabled: true
-    timeout: 30000
+    timeout: 60000
     label: Wait for the native swap confirmation quote to enable Continue

@@ -40,8 +40,7 @@ final class SignDataCoordinator: RouterCoordinator<WindowRouter> {
     override func start() {
         let redSession = redAnalyticsConfiguration.map { _ in
             RedAnalyticsSessionHolder(
-                analytics: self.analyticsProvider,
-                configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
+                analytics: self.analyticsProvider
             )
         }
         let resultHandler = RedAwareSignDataResultHandler(

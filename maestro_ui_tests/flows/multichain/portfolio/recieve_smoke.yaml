@@ -18,7 +18,7 @@ appId: com.jbig.tonkeeper
 - extendedWaitUntil:
     visible: Receiving address
     timeout: 30000
-- tapOn: "For all network tokens"
+- tapOn: "One address per network"
 
 
 # Shortened addresses on the picker for all 7 networks

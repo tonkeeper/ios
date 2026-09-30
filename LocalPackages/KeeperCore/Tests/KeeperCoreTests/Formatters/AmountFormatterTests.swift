@@ -3,6 +3,51 @@ import BigInt
 import XCTest
 
 final class AmountFormatterTests: XCTestCase {
+    func testNaNDisplaysUnavailableAmount() {
+        let formatter = makeFormatter(signPolicy: .always)
+        let styles: [AmountDisplayStyle] = [.regular, .compact, .exactValue, .fiatBalance, .percent]
+
+        for style in styles {
+            XCTAssertEqual(formatter.format(decimal: .nan, accessory: .fiat(Currency.USD), style: style), "—")
+        }
+        XCTAssertEqual(formatter.string(for: NSDecimalNumber.notANumber), "—")
+
+        let header = formatter.formatBalanceHeaderAmount(decimal: .nan, accessory: .fiat(Currency.USD))
+        XCTAssertEqual(header.fullText, "—")
+        XCTAssertEqual(header.numberParts, [.init(text: "—", role: .primary)])
+        XCTAssertNil(header.leadingAccessory)
+        XCTAssertNil(header.trailingAccessory)
+    }
+
+    func testExactDecimalFormattingPreservesAllDigits() {
+        let formatter = makeFormatter(groupDigits: false)
+        let values = [
+            "12345678901234567890.123456789012345678",
+            "0." + String(repeating: "0", count: 80) + "1",
+        ]
+
+        for value in values {
+            XCTAssertEqual(formatter.format(decimal: decimal(value), style: .exactValue), value)
+        }
+    }
+
+    func testCompactDecimalFormattingDoesNotRoundAcrossMagnitudeBoundary() {
+        let formatter = makeFormatter()
+
+        XCTAssertEqual(formatter.format(decimal: decimal("999999.999999999999999999")), "999 999.99")
+        XCTAssertEqual(
+            formatter.format(decimal: decimal("0." + String(repeating: "0", count: 80) + "1")),
+            "< 0.00000001"
+        )
+    }
+
+    func testExactBaseUnitFormattingPreservesUntrimmedFraction() {
+        let formatter = AmountFormatter(configuration: .init(trimTrailingZeros: false))
+
+        XCTAssertEqual(formatter.format(amount: BigUInt(1_230_000), fractionDigits: 6, style: .exactValue), "1.230000")
+        XCTAssertEqual(formatter.format(amount: BigUInt(0), fractionDigits: 6, style: .exactValue), "0.000000")
+    }
+
     func testRegularTokenFormatting() {
         let formatter = makeFormatter(style: .regular, space: " ")
 
@@ -75,6 +120,18 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(formatter.format(decimal: decimal("12.1000000000002343"), style: .compact), "12.1")
         XCTAssertEqual(formatter.format(decimal: decimal("12.0000004"), style: .compact), "12")
         XCTAssertEqual(formatter.format(decimal: decimal("999.999999999"), style: .compact), "999.99")
+    }
+
+    /// `.compact` collapses large amounts onto M/B/T (product spec); the balance header keeps its
+    /// own K/M/B/T/Q tiers.
+    func testCompactFormattingShortensLargeValues() {
+        let formatter = makeFormatter(space: " ")
+
+        XCTAssertEqual(formatter.format(decimal: decimal("5123456"), style: .compact), "5.12M")
+        XCTAssertEqual(formatter.format(decimal: decimal("45123456789"), style: .compact), "45.12B")
+        XCTAssertEqual(formatter.format(decimal: decimal("5123456789012"), style: .compact), "5.12T")
+        XCTAssertEqual(formatter.format(decimal: decimal("999999"), style: .compact), "999 999")
+        XCTAssertEqual(formatter.format(decimal: decimal("999999999.999"), style: .compact), "999.99M")
     }
 
     func testCompactFormattingUsesThreeSignificantFractionDigitsForValuesLowerThanOne() {
@@ -250,6 +307,34 @@ final class AmountFormatterTests: XCTestCase {
             formatter.format(decimal: decimal("0.000000001"), accessory: .fiat(Currency.USD), style: .regular),
             "$\u{2009}0.000000001"
         )
+    }
+
+    /// The balance header still builds its text from the local fiat-balance rules while every other
+    /// `.fiatBalance` render goes through ChainKit, so the two paths have to agree digit for digit.
+    func testBalanceHeaderFullTextMatchesFiatBalanceFormatting() {
+        let formatter = makeFormatter(space: " ")
+        let cases: [(String, AmountAccessoryType)] = [
+            ("0", .fiat(Currency.USD)),
+            ("0.001", .fiat(Currency.USD)),
+            ("0.01", .fiat(Currency.USD)),
+            ("2069.879", .fiat(Currency.USD)),
+            ("7362.45", .fiat(Currency.RUB)),
+            ("19999999.99", .fiat(Currency.RUB)),
+            ("999999999.999", .fiat(Currency.USD)),
+            ("-12.345", .fiat(Currency.USD)),
+            ("0", .tokenSymbol("TON")),
+            ("0.000000001", .tokenSymbol("TON")),
+            ("1.123456789", .tokenSymbol("TON")),
+            ("-0.5", .tokenSymbol("TON")),
+        ]
+
+        for (value, accessory) in cases {
+            XCTAssertEqual(
+                formatter.formatBalanceHeaderAmount(decimal: decimal(value), accessory: accessory).fullText,
+                formatter.format(decimal: decimal(value), accessory: accessory, style: .fiatBalance),
+                "Balance header and .fiatBalance disagree on \(value)"
+            )
+        }
     }
 
     func testBalanceHeaderAmountSplitsFractionAndAccessory() {
@@ -646,9 +731,54 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(available, "1.8 TON")
     }
 
+    /// `.compact` is rendered by ChainKit, so the locale decimal separator and the app's
+    /// space grouping have to survive the round trip.
+    func testCompactFormattingUsesLocaleDecimalSeparatorAndSpaceGrouping() {
+        let formatter = makeFormatter(localeIdentifier: "ru_RU", space: " ")
+
+        XCTAssertEqual(formatter.format(decimal: decimal("1.23456789"), style: .compact), "1,23")
+        XCTAssertEqual(
+            formatter.format(
+                amount: BigUInt(stringLiteral: "1500000000000"),
+                fractionDigits: 9,
+                accessory: .tokenSymbol("TON"),
+                style: .compact
+            ),
+            "1 500 TON"
+        )
+    }
+
+    /// A locale that prints its own numerals must not leak them into the digit string: ChainKit's
+    /// parser and the local digit rules both read ASCII only.
+    func testFormattingWithNonLatinNumeralLocaleKeepsDigitsParsable() {
+        let formatter = makeFormatter(localeIdentifier: "fa_IR", groupDigits: false)
+        let arabicDecimalSeparator = "\u{066B}"
+
+        XCTAssertEqual(
+            formatter.format(decimal: decimal("1234.5678"), style: .exactValue),
+            "1234" + arabicDecimalSeparator + "5678"
+        )
+        XCTAssertEqual(
+            formatter.format(decimal: decimal("1234.5678"), style: .compact),
+            "1234" + arabicDecimalSeparator + "56"
+        )
+        XCTAssertEqual(
+            formatter.format(decimal: decimal("1234.5678"), style: .regular),
+            "1234" + arabicDecimalSeparator + "5678"
+        )
+    }
+
+    func testCompactFormattingRespectsDisabledGrouping() {
+        let formatter = makeFormatter(groupDigits: false, space: " ")
+
+        XCTAssertEqual(formatter.format(decimal: decimal("1500"), style: .compact), "1500")
+        XCTAssertEqual(formatter.format(decimal: decimal("0.000000001"), style: .compact), "< 0.00000001")
+    }
+
     private func makeFormatter(
         localeIdentifier: String = "en_US_POSIX",
         style: AmountDisplayStyle? = nil,
+        groupDigits: Bool = true,
         signPolicy: AmountSignPolicy = .none,
         space: String = "\u{2009}"
     ) -> AmountFormatter {
@@ -657,6 +787,7 @@ final class AmountFormatterTests: XCTestCase {
         if let style {
             configuration.style = style
         }
+        configuration.groupDigits = groupDigits
         configuration.signPolicy = signPolicy
         configuration.space = space
         return AmountFormatter(configuration: configuration)

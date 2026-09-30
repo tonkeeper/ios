@@ -5,8 +5,6 @@ public struct BootConfigurations: Codable {
     let mainnet: BootConfiguration
     @usableFromInline
     let testnet: BootConfiguration
-    @usableFromInline
-    let tetra: BootConfiguration
 }
 
 public struct BootConfiguration: Codable, Equatable {
@@ -51,6 +49,9 @@ public struct BootConfiguration: Codable, Equatable {
     public let tronSwapUrl: String
     public let tronSwapTitle: String
     public let tonkeeperApiUrl: String?
+    /// Analytics ingestion host. Scheme and host only — the path is appended by the sender.
+    /// Absent means the endpoint compiled into the bundle stands.
+    public let aptabaseEndpoint: String?
     public let multichainHelpUrl: URL?
     public let multichain: Endpoint
     public let trading: Endpoint
@@ -58,6 +59,7 @@ public struct BootConfiguration: Codable, Equatable {
 
     public struct Endpoint: Codable, Equatable {
         public let domain: URL
+        public let realtime: URL?
     }
 
     public struct ChainExplorer: Codable, Equatable {
@@ -102,11 +104,13 @@ public struct BootConfiguration: Codable, Equatable {
         public let onboardingStoryDisabled: Bool
         public let nftsDisabled: Bool
         public let nativeSwapDisabled: Bool
-        public let multichainEnabled: Bool
     }
 }
 
 extension BootConfiguration {
+    /// Used until the boot configuration answers, and whenever it answers without a realtime host.
+    static let defaultMultichainRealtimeURL = URL(string: "wss://rt.tonkeeper.com/connection/websocket")!
+
     static var empty: BootConfiguration {
         BootConfiguration(
             tonapiV2Endpoint: "",
@@ -150,9 +154,13 @@ extension BootConfiguration {
             tronSwapUrl: "https://widget.letsexchange.io/en?affiliate_id=ffzymmunvvyxyypo&coin_from=ton&coin_to=USDT-TRC20&is_iframe=true",
             tronSwapTitle: "LetsExchange",
             tonkeeperApiUrl: nil,
+            aptabaseEndpoint: nil,
             multichainHelpUrl: URL(string: "https://tonkeeper.helpscoutdocs.com/article/137-multichain#Transfer-fees-for-USDT-TRC20-tHzDd"),
-            multichain: Endpoint(domain: URL(string: "https://multi.tonkeeper.com")!),
-            trading: Endpoint(domain: URL(string: "https://trading.tonkeeper.com")!),
+            multichain: Endpoint(
+                domain: URL(string: "https://multi.tonkeeper.com")!,
+                realtime: defaultMultichainRealtimeURL
+            ),
+            trading: Endpoint(domain: URL(string: "https://trading.tonkeeper.com")!, realtime: nil),
             explorers: []
         )
     }
@@ -173,8 +181,7 @@ extension BootConfiguration.Flags {
             storiesDisabled: true,
             onboardingStoryDisabled: true,
             nftsDisabled: true,
-            nativeSwapDisabled: true,
-            multichainEnabled: true
+            nativeSwapDisabled: true
         )
     }
 }

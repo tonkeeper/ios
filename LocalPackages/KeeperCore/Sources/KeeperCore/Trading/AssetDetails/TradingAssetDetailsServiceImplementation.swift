@@ -5,18 +5,15 @@ actor TradingAssetDetailsServiceImplementation {
     private let api: TradingAPI
     private let cache: InMemoryKeyedCache<String, TradingAssetDetails>
     private let requestContextProvider: TradingRequestContextProvider
-    private let isMultichainEnabled: Bool
 
     init(
         api: TradingAPI,
         cache: InMemoryKeyedCache<String, TradingAssetDetails>,
-        requestContextProvider: TradingRequestContextProvider,
-        isMultichainEnabled: Bool
+        requestContextProvider: TradingRequestContextProvider
     ) {
         self.api = api
         self.cache = cache
         self.requestContextProvider = requestContextProvider
-        self.isMultichainEnabled = isMultichainEnabled
     }
 }
 
@@ -34,17 +31,10 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
         let requestContext = await requestContextProvider.makeRequestContext()
         let response: Components.Schemas.AssetDetailsResponse
         do {
-            if isMultichainEnabled {
-                response = try await api.getAssetsDetailsV2(
-                    requestContext: requestContext,
-                    assetId: id
-                )
-            } else {
-                response = try await api.getAssetsDetails(
-                    requestContext: requestContext,
-                    assetId: id
-                )
-            }
+            response = try await api.getAssetsDetailsV2(
+                requestContext: requestContext,
+                assetId: id
+            )
         } catch {
             Log.trade.i("load details failed \(error.localizedDescription)")
             switch error {

@@ -126,10 +126,8 @@ extension MysteryRaffleCoordinator {
         openDeeplink: ((String) -> Void)? = nil,
         openMigration: ((@escaping () -> Void) -> Void)? = nil
     ) -> MysteryRaffleCoordinator? {
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
         let presentation = MysteryRafflePresentation(
-            raffles: keeperCoreMainAssembly.storesAssembly.raffleStore.getState(),
-            isFeatureEnabled: configuration.featureEnabled(.mysteryRaffleEnabled)
+            raffles: keeperCoreMainAssembly.storesAssembly.raffleStore.getState()
         )
         guard let presentation else { return nil }
 
@@ -264,10 +262,8 @@ extension MysteryRaffleCoordinator {
         coreAssembly: TKCore.CoreAssembly,
         openDeeplink: ((String) -> Void)?
     ) -> Bool {
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
         guard let presentation = MysteryRafflePresentation(
-            raffles: raffles,
-            isFeatureEnabled: configuration.featureEnabled(.mysteryRaffleEnabled)
+            raffles: raffles
         ) else { return false }
 
         return MysteryRaffleStoriesRouter
@@ -684,7 +680,6 @@ private extension MysteryRaffleCoordinator {
             return
         }
         guard
-            keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.migrationEnabled),
             let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
             wallet.isMultichain,
             let openMigration
@@ -732,6 +727,7 @@ private extension MysteryRaffleCoordinator {
             multichainState: multichainState,
             nativeSwapContext: NativeSwapContext(),
             initialSelection: Self.ticketSwapAssetSelection,
+            initiatedBy: .user,
             router: NavigationControllerRouter(rootViewController: swapNavigationController),
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly

@@ -138,6 +138,30 @@ final class TonkeeperDeeplinksParserTests: XCTestCase {
         }
     }
 
+    func testTransferKeepsUtmQueryItems() throws {
+        let address = "EQD2NmD_lH5f5u1Kj3KfGyTvhZSX0Eg6qp2a5IQUKXxOG21n"
+        let utm = UtmParameters.queryItemNames.map { "\($0)=promo" }.joined(separator: "&")
+
+        let parsedDeeplink = try parser.parse(string: "transfer/\(address)?amount=10000&\(utm)")
+
+        XCTAssertEqual(
+            parsedDeeplink,
+            Deeplink.transfer(
+                .sendTransfer(
+                    Deeplink.TransferData(
+                        recipient: address,
+                        amount: BigUInt(10000),
+                        comment: nil,
+                        jettonAddress: nil,
+                        assetId: nil,
+                        expirationTimestamp: nil,
+                        successReturn: nil
+                    )
+                )
+            )
+        )
+    }
+
     func testStakingParsing() throws {
         let string = "staking"
         let result = Deeplink.staking

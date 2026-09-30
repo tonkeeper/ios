@@ -1,7 +1,6 @@
 import BigInt
 import Foundation
 import KeeperCoreComponents
-import TKLogging
 import TonConnectAPI
 import TonSwift
 
@@ -86,7 +85,9 @@ public protocol TonConnectService {
 }
 
 final class TonConnectServiceImplementation: TonConnectService {
-    private let urlSession: URLSession
+    private static let tonConnectAppsLock = NSLock()
+
+    private let manifestLoader: TonConnectManifestLoader
     private let tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider
     private let tonConnectAppsVault: TonConnectAppsVault
     private let tonConnectRepository: TonConnectRepository
@@ -101,7 +102,7 @@ final class TonConnectServiceImplementation: TonConnectService {
         walletBalanceRepository: WalletBalanceRepository,
         sendService: SendService
     ) {
-        self.urlSession = urlSession
+        self.manifestLoader = TonConnectManifestLoader(urlSession: urlSession)
         self.tonConnectBridgeAPIClientProvider = tonConnectBridgeAPIClientProvider
         self.tonConnectAppsVault = tonConnectAppsVault
         self.tonConnectRepository = tonConnectRepository
@@ -145,6 +146,12 @@ final class TonConnectServiceImplementation: TonConnectService {
         signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
         keeperVersion: String
     ) async throws -> TonConnect.ConnectEventSuccess {
+        guard let requestOrigin = parameters.requestPayload.manifestUrl.normalizedOrigin,
+              let manifestOrigin = manifest.url.normalizedOrigin,
+              requestOrigin == manifestOrigin
+        else {
+            throw TonConnectManifestError.invalidManifest
+        }
         guard wallet.isTonconnectAvailable else {
             throw
                 TonConnectServiceError.unsupportedWalletKind(
@@ -184,18 +191,21 @@ final class TonConnectServiceImplementation: TonConnectService {
         manifest: TonConnectManifest,
         connectionType: TonConnectApp.ConnectionType
     ) throws {
-        let tonConnectApp = TonConnectApp(
-            clientId: parameters.clientId,
-            manifest: manifest,
-            keyPair: sessionCrypto.keyPair,
-            connectionType: connectionType
-        )
+        try Self.tonConnectAppsLock.withLock {
+            let tonConnectApp = TonConnectApp(
+                clientId: parameters.clientId,
+                manifest: manifest,
+                manifestURL: parameters.requestPayload.manifestUrl,
+                keyPair: sessionCrypto.keyPair,
+                connectionType: connectionType
+            )
 
-        if let apps = try? tonConnectAppsVault.loadValue(key: wallet) {
-            try tonConnectAppsVault.saveValue(apps.addApp(tonConnectApp), for: wallet)
-        } else {
-            let apps = TonConnectApps(apps: [tonConnectApp])
-            try tonConnectAppsVault.saveValue(apps, for: wallet)
+            if let apps = try? tonConnectAppsVault.loadValue(key: wallet) {
+                try tonConnectAppsVault.saveValue(apps.addApp(tonConnectApp), for: wallet)
+            } else {
+                let apps = TonConnectApps(apps: [tonConnectApp])
+                try tonConnectAppsVault.saveValue(apps, for: wallet)
+            }
         }
     }
 
@@ -216,25 +226,45 @@ final class TonConnectServiceImplementation: TonConnectService {
     }
 
     func getConnectedApps(forWallet wallet: Wallet) throws -> TonConnectApps {
-        try tonConnectAppsVault.loadValue(key: wallet)
+        try Self.tonConnectAppsLock.withLock {
+            try getConnectedAppsLocked(forWallet: wallet)
+        }
     }
 
     func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws {
-        let apps = try getConnectedApps(forWallet: wallet)
-        let updatedApps = apps.removeApp(app)
-        try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        try Self.tonConnectAppsLock.withLock {
+            let apps = try getConnectedAppsLocked(forWallet: wallet)
+            let updatedApps = apps.removeApp(app)
+            try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        }
     }
 
     func disconnectApp(_ clientId: String, wallet: Wallet) throws {
-        let apps = try getConnectedApps(forWallet: wallet)
-        let updatedApps = apps.removeApp(clientId: clientId)
-        try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        try Self.tonConnectAppsLock.withLock {
+            let apps = try getConnectedAppsLocked(forWallet: wallet)
+            let updatedApps = apps.removeApp(clientId: clientId)
+            try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        }
     }
 
     func disconnectApp(_ idx: Int, wallet: Wallet) throws {
-        let apps = try getConnectedApps(forWallet: wallet)
-        let updatedApps = apps.removeApp(at: idx)
-        try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        try Self.tonConnectAppsLock.withLock {
+            let apps = try getConnectedAppsLocked(forWallet: wallet)
+            let updatedApps = apps.removeApp(at: idx)
+            try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+        }
+    }
+
+    private func getConnectedAppsLocked(forWallet wallet: Wallet) throws -> TonConnectApps {
+        let apps = try tonConnectAppsVault.loadValue(key: wallet)
+        let preservedApps = apps.apps.filter(\.shouldPreserveStoredConnection)
+        guard preservedApps.count != apps.apps.count else {
+            return apps
+        }
+
+        let result = TonConnectApps(apps: preservedApps)
+        try tonConnectAppsVault.saveValue(result, for: wallet)
+        return result
     }
 
     func cancelRequest(appRequest: TonConnect.SendTransactionRequest, app: TonConnectApp) async throws {
@@ -336,64 +366,6 @@ final class TonConnectServiceImplementation: TonConnectService {
     }
 
     func loadManifest(url: URL) async throws -> TonConnectManifest {
-        let urls = [url, url.proxyURL].compactMap { $0 }
-
-        let manifest = try await loadManifest(urls: urls)
-
-        guard manifest.url.host?.contains(".") == true else {
-            throw TonConnectManifestError.invalidManifest
-        }
-        return manifest
-    }
-
-    private func loadManifest(urls: [URL]) async throws -> TonConnectManifest {
-        for (i, url) in urls.enumerated() {
-            let isLastUrl = i == urls.count - 1
-
-            do {
-                let (data, _) = try await urlSession.data(from: url)
-                let jsonDecoder = JSONDecoder()
-                return try jsonDecoder.decode(TonConnectManifest.self, from: data)
-            } catch {
-                guard isLastUrl else { continue }
-
-                switch error {
-                case is DecodingError:
-                    logManifestLoadingFailed(error: .invalidManifest, url: url)
-                    throw TonConnectManifestError.invalidManifest
-                case let urlError as URLError:
-                    if urlError.code == URLError.Code.badURL {
-                        logManifestLoadingFailed(error: .incorrectURL, url: url)
-                        throw TonConnectManifestError.incorrectURL
-                    } else {
-                        logManifestLoadingFailed(error: .loadFailed(error: urlError), url: url)
-                        throw TonConnectManifestError.loadFailed(error: urlError)
-                    }
-                default:
-                    logManifestLoadingFailed(error: .loadFailed(error: error), url: url)
-                    throw TonConnectManifestError.loadFailed(error: error)
-                }
-            }
-        }
-
-        throw TonConnectManifestError.incorrectURL
-    }
-
-    private func logManifestLoadingFailed(error: TonConnectManifestError, url: URL) {
-        let errorDesctiption: String
-
-        switch error {
-        case .incorrectURL: errorDesctiption = "Incorrect URL"
-        case .invalidManifest: errorDesctiption = "Invalid manifest"
-        case let .loadFailed(error): errorDesctiption = error.localizedDescription
-        }
-
-        Log.e(
-            "\(String(reflecting: Self.self)): manifest fetching failed",
-            extraInfo: [
-                "error": errorDesctiption,
-                "url": url.absoluteString,
-            ]
-        )
+        try await manifestLoader.load(url: url)
     }
 }

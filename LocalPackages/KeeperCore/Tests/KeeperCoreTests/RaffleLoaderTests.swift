@@ -137,25 +137,9 @@ private actor RaffleRequestRecorder {
 }
 
 private final class AppSettingsStub: TKAppSettings {
-    var isTetraWalletEnabled = false
     var isConfirmButtonInsteadSlider = false
-    var lighterAPIEnvironment: LighterAPIEnvironment = .testnet
     var raffleIsNewUser: Bool?
-    var pendingRaffleIsNewUser: Bool?
     var raffleDebugNow: Date?
-
-    func beginRaffleUserResolution(isNewUser: Bool) {
-        pendingRaffleIsNewUser = isNewUser
-    }
-
-    func cancelPendingRaffleUserResolution() {
-        pendingRaffleIsNewUser = nil
-    }
-
-    func resolveRaffleIsNewUser(_ isNewUser: Bool) {
-        raffleIsNewUser = raffleIsNewUser ?? isNewUser
-        pendingRaffleIsNewUser = nil
-    }
 }
 
 private func raffle(id: String) -> MultichainRaffle {

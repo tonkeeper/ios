@@ -13,11 +13,14 @@ final class PerpsLeverageSheetViewModel: ObservableObject {
     var onClose: (() -> Void)?
 
     private let context: PerpsLeverageSheetContext
-    private let service: PerpsTradingService
+    private let reviewLiquidation: (Double) -> Double?
 
-    init(context: PerpsLeverageSheetContext, service: PerpsTradingService) {
+    init(
+        context: PerpsLeverageSheetContext,
+        reviewLiquidation: @escaping (Double) -> Double?
+    ) {
         self.context = context
-        self.service = service
+        self.reviewLiquidation = reviewLiquidation
         self.bounds = context.bounds
         self.leverage = min(max(context.current, context.bounds.min), context.bounds.max)
         recomputeLiquidation()
@@ -53,20 +56,6 @@ final class PerpsLeverageSheetViewModel: ObservableObject {
     }
 
     private func recomputeLiquidation() {
-        guard let maintenanceFraction = context.maintenanceFraction, context.markPrice > 0 else {
-            liquidationText = nil
-            return
-        }
-        let margin = context.marginUsd > 0 ? context.marginUsd : 1
-        let preview = service.previewLiquidation(
-            side: context.side,
-            marginUsd: margin,
-            leverage: leverage,
-            openingFeeRate: context.openingFeeRate,
-            entryPrice: context.markPrice,
-            markPrice: context.markPrice,
-            maintenanceFraction: maintenanceFraction
-        )
-        liquidationText = preview.price.map { PerpsFormatting.usd($0) }
+        liquidationText = reviewLiquidation(leverage).map { PerpsFormatting.usd($0) }
     }
 }

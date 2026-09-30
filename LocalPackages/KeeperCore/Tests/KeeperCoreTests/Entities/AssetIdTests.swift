@@ -45,11 +45,6 @@ final class AssetIdTests: XCTestCase {
         )
     }
 
-    /// Tetra shares mainnet's identifiers, so its ids have to stay joinable with mainnet history.
-    func testTetraReportsTheMainnetSegment() {
-        XCTAssertEqual(Token.ton(.ton).assetId(network: .tetra), "ton/mainnet/coin")
-    }
-
     func testEveryShapeParsesBack() {
         let ids = [
             Token.ton(.ton).assetId(network: .mainnet),

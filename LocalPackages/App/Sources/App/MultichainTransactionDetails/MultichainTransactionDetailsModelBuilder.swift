@@ -248,7 +248,7 @@ private extension MultichainTransactionDetailsModelBuilder {
         activity: MultichainActivity,
         kind: MultichainActivityPresentationKind,
         token: MultichainAssetDetails?,
-        chain: MultichainChain,
+        chain: MultichainChain?,
         rawAmount: String?,
         amountUsd: Double?,
         sign: AmountSign
@@ -305,11 +305,11 @@ private extension MultichainTransactionDetailsModelBuilder {
 
     func asset(
         token: MultichainAssetDetails?,
-        chain: MultichainChain
+        chain: MultichainChain?
     ) -> MultichainTransactionDetailsModel.Asset {
         guard let token else {
             return MultichainTransactionDetailsModel.Asset(
-                imageSource: .url(nil, chainIcon: chain.addressConfiguration.icon)
+                imageSource: .url(nil, chainIcon: chain?.addressConfiguration.icon)
             )
         }
 
@@ -325,9 +325,9 @@ private extension MultichainTransactionDetailsModelBuilder {
     func addressRow(
         type: String,
         value: String?,
-        chain: MultichainChain
+        chain: MultichainChain?
     ) -> MultichainTransactionDetailsCellContent? {
-        guard let value, !value.isEmpty else {
+        guard let value, !value.isEmpty, let chain else {
             return nil
         }
         return .address(
@@ -340,9 +340,12 @@ private extension MultichainTransactionDetailsModelBuilder {
     }
 
     func networkRow(
-        fromChain: MultichainChain,
+        fromChain: MultichainChain?,
         toChain: MultichainChain?
-    ) -> MultichainTransactionDetailsCellContent {
+    ) -> MultichainTransactionDetailsCellContent? {
+        guard let fromChain else {
+            return nil
+        }
         if let toChain, toChain != fromChain {
             return .network(
                 title: TKLocales.Ramp.Deposit.network,
@@ -647,19 +650,19 @@ private extension MultichainTransactionDetailsModelBuilder {
 
     func amountLineChainTitle(
         token: MultichainAssetDetails?,
-        chain: MultichainChain
+        chain: MultichainChain?
     ) -> String? {
         guard let token,
               let assetIdComponents = AssetIdComponents(assetId: token.assetId)
         else {
-            return chain.title
+            return chain?.title
         }
 
         switch assetIdComponents {
         case .coin:
             return nil
         case .asset:
-            return chain.title
+            return chain?.title
         }
     }
 }

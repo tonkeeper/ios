@@ -33,8 +33,8 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
     public enum State {
         case unresolved
         case resolving
-        case inactive(accountIndex: Int64?)
-        case activating
+        case unbound
+        case inactive
         case active(Account)
 
         public struct Account {
@@ -84,9 +84,8 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
 
     private let operationRecoveryLock = NSLock()
     private var operationRecoveryGeneration: UUID?
-    private var transactionUpdatesWatch: PerpsTransactionUpdatesWatch?
-    private var transactionUpdatesSetupTask: Task<Void, Never>?
     private var operationRecoveryTask: Task<Void, Never>?
+    private var operationRecoveryRetryTask: Task<Void, Never>?
     private var operationRecoveryRequested = false
 
     private let service: PerpsAccountReading
@@ -177,8 +176,8 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
         notifyLifecycleChanged()
     }
 
-    /// `baseSizeBefore` must be the prepare-time venue read (the baseline
-    /// `reconcileSizeChange` confirms against) — the live stream may already
+    /// `baseSizeBefore` must be the prepare-time venue read (the baseline the
+    /// size-change reconciliation confirms against) — the live stream may already
     /// differ by the time the user swipes.
     public func beginAdjusting(marketId: Int64, direction: PerpsSizeChangeDirection, baseSizeBefore: Double) {
         lock.withLock {
@@ -189,8 +188,8 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
         notifyLifecycleChanged()
     }
 
-    /// `allocatedMarginBefore` must be the prepare-time venue read (the baseline
-    /// `reconcileMarginChange` confirms against) — the live stream may already
+    /// `allocatedMarginBefore` must be the prepare-time venue read (the baseline the
+    /// margin-change reconciliation confirms against) — the live stream may already
     /// differ by the time the user swipes.
     public func beginAdjustingMargin(
         marketId: Int64,
@@ -209,17 +208,6 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
     public func clearPending(marketId: Int64) {
         let changed = lock.withLock { pendingByMarket.removeValue(forKey: marketId) != nil }
         if changed { notifyLifecycleChanged() }
-    }
-
-    public func applyReconciledPositions(_ positions: [PerpsPositionSummary], availableBalance: String) {
-        guard case let .active(account) = currentWalletState() else { return }
-        reconcilePending(positions: positions)
-        setResolved(state: .active(.init(
-            accountIndex: account.accountIndex,
-            availableBalance: availableBalance,
-            positions: positions
-        )))
-        refreshExtrasForPositionFlips(accountIndex: account.accountIndex, positions: positions)
     }
 
     // MARK: - Per-market extras (TP/SL orders + recent activity)
@@ -263,26 +251,6 @@ public final class PerpsAccountStore: Store<PerpsAccountStore.Event, PerpsAccoun
         }
         if isLast { schedulePositionsStop() }
     }
-
-    public func beginActivation() {
-        lock.withLock {
-            resolveTask?.cancel()
-            resolveTask = nil
-            isResolving = true
-        }
-        setState(.activating, markResolved: true)
-        stopOperationRecovery()
-        stopPositionsWatch()
-    }
-
-    public func applyActivation(_ outcome: LighterActivationOutcome) async {
-        switch outcome {
-        case let .active(accountIndex, _):
-            await applyActive(accountIndex: accountIndex)
-        case .noAccount, .canceled, .failed:
-            resolve(showResolving: false)
-        }
-    }
 }
 
 private extension PerpsAccountStore {
@@ -301,12 +269,12 @@ private extension PerpsAccountStore {
                 let status = await service.status(wallet: wallet)
                 guard !Task.isCancelled else { return }
                 switch status {
-                case let .active(accountIndex, _):
+                case let .account(accountIndex):
                     await applyActive(accountIndex: accountIndex)
-                case let .accountExists(accountIndex):
-                    setResolved(state: .inactive(accountIndex: accountIndex))
+                case .unbound:
+                    setResolved(state: .unbound)
                 case .noAccount, .unknown:
-                    setResolved(state: .inactive(accountIndex: nil))
+                    setResolved(state: .inactive)
                 case let .unavailable(reason):
                     Log.w("🪵 Perps: status probe failed — \(reason)")
                     finishUnresolved()
@@ -317,14 +285,14 @@ private extension PerpsAccountStore {
 
     func applyActive(accountIndex: Int64) async {
         do {
-            guard let portfolio = try await service.portfolio(wallet: wallet, accountIndex: accountIndex) else {
+            guard let portfolio = try await service.portfolio(wallet: wallet) else {
                 guard !Task.isCancelled else { return }
                 Log.w("🪵 Perps: portfolio read returned nil")
                 finishUnresolved()
                 return
             }
             guard !Task.isCancelled else { return }
-            let positions = portfolio.positions.compactMap(PerpsPositionSummary.init(position:))
+            let positions = portfolio.positions
             reconcilePending(positions: positions)
             setResolved(state: .active(.init(
                 accountIndex: accountIndex,
@@ -334,7 +302,7 @@ private extension PerpsAccountStore {
             reloadRequestedExtras(accountIndex: accountIndex)
             guard !Task.isCancelled else { return }
             startOperationRecovery()
-            startPositionsWatch(accountIndex: accountIndex)
+            startPositionsWatch()
         } catch {
             guard !Task.isCancelled else { return }
             Log.w("🪵 Perps: portfolio read failed — \(error)")
@@ -413,31 +381,34 @@ private extension PerpsAccountStore {
         }
         Task { [weak self] in
             guard let self else { return }
-            async let orders = self.activeMarketOrdersResult(accountIndex: accountIndex, marketId: marketId)
+            async let trading = self.tradingSnapshotResult(accountIndex: accountIndex, marketId: marketId)
             async let activity = self.recentActivityResult(accountIndex: accountIndex, marketId: marketId, limit: 3)
-            let (ordersResult, activityResult) = await(orders, activity)
-            if case let .failure(error) = ordersResult {
-                Log.w("🪵 Perps: active-orders fetch failed market=\(marketId) — \(error)")
+            let (tradingResult, activityResult) = await(trading, activity)
+            if case let .failure(error) = tradingResult {
+                Log.w("🪵 Perps: trading-screen fetch failed market=\(marketId) — \(error)")
             }
             if case let .failure(error) = activityResult {
                 Log.w("🪵 Perps: recent-activity fetch failed market=\(marketId) — \(error)")
             }
             // Nothing fresh — don't churn the cache so a fully offline refresh keeps last-known extras.
-            if case .failure = ordersResult, case .failure = activityResult {
+            if case .failure = tradingResult, case .failure = activityResult {
                 self.finishMarketExtrasFetch(marketId: marketId, requestId: requestId)
                 return
             }
             // Each side falls back to last-known on failure rather than blanking live
             // order rows or history, while a successful side always lands.
             let cached = self.cachedExtras(marketId: marketId, accountIndex: accountIndex)
-            let activeOrders = try? ordersResult.get()
+            let tradingSnapshot = try? tradingResult.get()
+            let activeOrders = tradingSnapshot?.orders
             let limitOrders = activeOrders?.limitOrders ?? cached?.limitOrders ?? []
             let triggerOrders = activeOrders?.triggerOrders ?? cached?.triggerOrders ?? []
             let recentActivity = (try? activityResult.get()) ?? cached?.recentActivity ?? []
             let extras = PerpsMarketExtras(
                 limitOrders: limitOrders,
                 triggerOrders: triggerOrders,
-                recentActivity: recentActivity
+                recentActivity: recentActivity,
+                flags: tradingSnapshot?.flags ?? cached?.flags,
+                autoCloseKnown: tradingSnapshot.map { $0.orders != nil } ?? (cached?.autoCloseKnown ?? false)
             )
             let stored = self.lock.withLock { () -> Bool in
                 guard self.marketExtrasRequestIds[marketId] == requestId else { return false }
@@ -458,12 +429,16 @@ private extension PerpsAccountStore {
         }
     }
 
-    func activeMarketOrdersResult(
+    func tradingSnapshotResult(
         accountIndex: Int64,
         marketId: Int64
-    ) async -> Result<PerpsActiveOrders, Error> {
+    ) async -> Result<PerpsTradingSnapshot, Error> {
         do {
-            return try .success(await service.activeMarketOrders(wallet: wallet, accountIndex: accountIndex, marketId: marketId))
+            return try .success(await service.tradingSnapshot(
+                wallet: wallet,
+                marketId: marketId,
+                positionId: matchingPosition(marketId: marketId)?.positionId
+            ))
         } catch {
             return .failure(error)
         }
@@ -475,7 +450,7 @@ private extension PerpsAccountStore {
         limit: Int
     ) async -> Result<[PerpsActivityItem], Error> {
         do {
-            return try .success(await service.recentActivity(wallet: wallet, accountIndex: accountIndex, marketId: marketId, limit: limit))
+            return try .success(await service.recentActivity(wallet: wallet, marketId: marketId, limit: limit))
         } catch {
             return .failure(error)
         }
@@ -495,42 +470,27 @@ private extension PerpsAccountStore {
         let generation = operationRecoveryLock.withLock { () -> UUID in
             let generation = operationRecoveryGeneration ?? UUID()
             operationRecoveryGeneration = generation
-            guard transactionUpdatesWatch == nil, transactionUpdatesSetupTask == nil else { return generation }
-            transactionUpdatesSetupTask = Task { [weak self] in
-                guard let self else { return }
-                do {
-                    let watch = try await self.service.watchTransactionUpdates(
-                        wallet: self.wallet,
-                        onUpdate: { [weak self] in
-                            self?.scheduleOperationRecovery(generation: generation)
-                        },
-                        onReconnecting: { [weak self] in
-                            self?.scheduleOperationRecovery(generation: generation)
-                        }
-                    )
-                    guard !Task.isCancelled else {
-                        watch?.cancel()
-                        return
-                    }
-                    let installed = self.operationRecoveryLock.withLock {
-                        guard self.operationRecoveryGeneration == generation else { return false }
-                        self.transactionUpdatesWatch = watch
-                        self.transactionUpdatesSetupTask = nil
-                        return true
-                    }
-                    if !installed { watch?.cancel() }
-                } catch {
-                    self.operationRecoveryLock.withLock {
-                        if self.operationRecoveryGeneration == generation {
-                            self.transactionUpdatesSetupTask = nil
-                        }
-                    }
-                    Log.w("🪵 Perps: transaction recovery stream failed — \(error)")
-                }
-            }
             return generation
         }
         scheduleOperationRecovery(generation: generation)
+        let shouldStartRetry = operationRecoveryLock.withLock {
+            operationRecoveryRetryTask == nil && operationRecoveryGeneration == generation
+        }
+        guard shouldStartRetry else { return }
+        let retryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.scheduleOperationRecovery(generation: generation)
+            }
+        }
+        operationRecoveryLock.withLock {
+            guard operationRecoveryGeneration == generation, operationRecoveryRetryTask == nil else {
+                retryTask.cancel()
+                return
+            }
+            operationRecoveryRetryTask = retryTask
+        }
     }
 
     func scheduleOperationRecovery(generation: UUID) {
@@ -563,39 +523,33 @@ private extension PerpsAccountStore {
     }
 
     func stopOperationRecovery() {
-        let handles = operationRecoveryLock.withLock { () -> (
-            PerpsTransactionUpdatesWatch?,
-            Task<Void, Never>?,
-            Task<Void, Never>?
-        ) in
-            let handles = (transactionUpdatesWatch, transactionUpdatesSetupTask, operationRecoveryTask)
+        let recoveryTasks = operationRecoveryLock.withLock { () -> (Task<Void, Never>?, Task<Void, Never>?) in
+            let task = operationRecoveryTask
+            let retryTask = operationRecoveryRetryTask
             operationRecoveryGeneration = nil
-            transactionUpdatesWatch = nil
-            transactionUpdatesSetupTask = nil
             operationRecoveryTask = nil
+            operationRecoveryRetryTask = nil
             operationRecoveryRequested = false
-            return handles
+            return (task, retryTask)
         }
-        handles.0?.cancel()
-        handles.1?.cancel()
-        handles.2?.cancel()
+        recoveryTasks.0?.cancel()
+        recoveryTasks.1?.cancel()
     }
 
     func startPositionsWatchIfNeeded() {
-        guard case let .active(account) = currentWalletState() else { return }
-        startPositionsWatch(accountIndex: account.accountIndex)
+        guard case .active = currentWalletState() else { return }
+        startPositionsWatch()
     }
 
-    func startPositionsWatch(accountIndex: Int64) {
+    func startPositionsWatch() {
         guard positionsLifecycleLock.withLock({ positionsSubscriberCount > 0 && positionsWatch == nil }) else { return }
         let watch = service.watchPositions(
             wallet: wallet,
-            accountIndex: accountIndex,
             onUpdate: { [weak self] positions in
                 guard let self else { return }
                 self.pendingPositionsLock.withLock { self.pendingPositions = positions }
             },
-            onReconnecting: { [weak self] in
+            onInterrupted: { [weak self] in
                 self?.refresh()
             }
         )

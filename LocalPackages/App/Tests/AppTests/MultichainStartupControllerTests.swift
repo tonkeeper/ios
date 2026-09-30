@@ -59,22 +59,23 @@ final class MultichainStartupControllerTests: XCTestCase {
         XCTAssertEqual(syncController.reconcileCount, 2)
     }
 
-    func test_bindingsReconcile_doesNothingWhenTheFeatureIsOff() async {
-        let syncController = FakeWalletSyncController(result: false)
-        let controller = makeController(syncController: syncController, isEnabled: false)
+    /// Which flag gates a pass is the sync controller's call — the demote and detach halves are
+    /// enabled separately. A disabled pass reports itself done, and this controller must latch on
+    /// that rather than keep re-triggering it.
+    func test_bindingsReconcile_stopsRetryingWhenThePassReportsItselfDone() async {
+        let syncController = FakeWalletSyncController(result: true)
+        let controller = makeController(syncController: syncController)
 
         await controller.startBindingsReconcile()
         await controller.startBindingsReconcile()
 
-        XCTAssertEqual(syncController.reconcileCount, 0)
+        XCTAssertEqual(syncController.reconcileCount, 1)
     }
 
     private func makeController(
-        syncController: MultichainWalletSyncController,
-        isEnabled: Bool = true
+        syncController: MultichainWalletSyncController
     ) -> MultichainStartupController {
         MultichainStartupController(
-            isEnabled: isEnabled,
             authService: FakeMultichainAuthService(),
             walletSyncController: syncController
         )

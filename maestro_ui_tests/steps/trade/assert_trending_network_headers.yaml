@@ -1,5 +1,5 @@
 # Opens the first 3 Trending shelf cells and asserts NETWORK_HEADER in details
-# (e.g. "Ethereum (ERC20)", "TON (TON)"). Network badges on the shelf have no
+# (e.g. "Ethereum", "TON"). Network badges on the shelf have no
 # accessibility labels, so the details header is the reliable chain check.
 # Env: NETWORK_HEADER
 appId: com.jbig.tonkeeper

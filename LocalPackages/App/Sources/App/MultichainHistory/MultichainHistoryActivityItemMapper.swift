@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 import KeeperCore
+import TKLocalize
 import TKUIKit
 import UIKit
 
@@ -68,11 +69,15 @@ private extension MultichainHistoryActivityItemMapper {
     }
 
     func subtitle(for activity: MultichainActivity) -> String? {
+        if activity.activityType.isPerps {
+            return activity.perps?.symbol.map(TKLocales.MultichainHistory.Perps.subtitle)
+        }
+
         if let stakingProvider = MultichainHistoryStakingProvider(activity: activity) {
             return stakingProvider.displayName
         }
 
-        let addressContext: (address: String, chain: MultichainChain)?
+        let addressContext: (address: String, chain: MultichainChain?)?
         switch activity.direction {
         case .incoming:
             addressContext = (activity.fromAddress ?? activity.walletAddress).map {
@@ -94,10 +99,10 @@ private extension MultichainHistoryActivityItemMapper {
             }
         }
 
-        if let addressContext {
+        if let addressContext, let chain = addressContext.chain {
             return MultichainAddressFormatter.shortAddress(
                 addressContext.address,
-                chain: addressContext.chain
+                chain: chain
             )
         }
 
@@ -109,7 +114,9 @@ private extension MultichainHistoryActivityItemMapper {
         case .dnsRenew:
             return nft == nil ? activity.protocolName : nil
         case .send, .receive, .swap, .stake, .unstake, .mint, .burn,
-             .incomingFallback, .outgoingFallback:
+             .incomingFallback, .outgoingFallback, .perpsOpened, .perpsClosed,
+             .perpsLiquidated, .perpsTakeProfit, .perpsStopLoss, .perpsDeposit,
+             .perpsWithdrawal:
             return activity.comment
         }
     }

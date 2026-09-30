@@ -120,12 +120,13 @@ struct MultichainServiceFake: MultichainService {
     }
 
     func getWalletActivities(
-        walletId _: String,
+        state _: MultichainWalletState,
         limit _: Int?,
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .connectionError

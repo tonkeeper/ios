@@ -6,7 +6,25 @@ import TKLocalize
 struct PerpsConfirmContext {
     let intent: PerpsOpenMarketIntent
     let sizeDecimals: Int
+    let priceDecimals: Int
     let review: PerpsOpenOrderReview
+
+    func replacingAutoClose(_ autoClose: PerpsAutoClose?) -> PerpsConfirmContext {
+        PerpsConfirmContext(
+            intent: PerpsOpenMarketIntent(
+                marketId: intent.marketId,
+                side: intent.side,
+                marginUsd: intent.marginUsd,
+                leverage: intent.leverage,
+                maxSlippage: intent.maxSlippage,
+                autoClose: autoClose,
+                limitPrice: intent.limitPrice
+            ),
+            sizeDecimals: sizeDecimals,
+            priceDecimals: priceDecimals,
+            review: review
+        )
+    }
 }
 
 struct PerpsCloseConfirmContext {
@@ -63,7 +81,8 @@ final class PerpsTradeConfirmViewModel: ObservableObject {
         }
     }
 
-    @Published private(set) var rows: [Row]
+    @Published private(set) var rows: [Row] = []
+    @Published private(set) var isConfirmationEnabled = true
 
     let titleText: String
     let iconLetter: String
@@ -74,122 +93,70 @@ final class PerpsTradeConfirmViewModel: ObservableObject {
     var onBack: (() -> Void)?
     var onEditAutoClose: (() -> Void)?
 
-    @Published private(set) var isConfirmationEnabled = true
+    var openConfirmContext: PerpsConfirmContext? {
+        guard case let .open(context) = subject else { return nil }
+        return context
+    }
 
-    private(set) var openConfirmContext: PerpsConfirmContext?
-
+    private var subject: Subject
     private let marketsStore: PerpsMarketsStore?
     private let priceInterest: PerpsMarketsPriceInterest?
-    private let marketId: Int64?
-    private let limitPrice: Double?
-    private let sizeChangeSizeDecimals: Int?
-    private var sizeChangeConfirmationState: PerpsSizeChangeSession.ConfirmationState?
     private var sizeChangeSessionCancellable: AnyCancellable?
     private var markPrice: Double?
 
-    init(context: PerpsConfirmContext, iconURL: URL? = nil, marketsStore: PerpsMarketsStore? = nil) {
-        openConfirmContext = context
-        self.iconURL = iconURL
-        self.marketsStore = marketsStore
-        priceInterest = marketsStore?.makePriceInterest()
-        marketId = context.intent.marketId
-        limitPrice = context.intent.limitPrice
-        sizeChangeSizeDecimals = nil
-        sizeChangeConfirmationState = nil
-        titleText = Self.title(verb: TKLocales.Perps.Confirm.open, side: context.intent.side, symbol: context.review.symbol)
-        iconLetter = context.review.symbol.prefix(1).uppercased()
-        rows = Self.makeOpenRows(
-            context: context,
-            referencePrice: Self.referencePrice(
-                limitPrice: context.intent.limitPrice,
-                markPrice: nil,
-                fallback: context.review.entryPrice
-            )
-        )
-        observeLivePrices()
+    convenience init(context: PerpsConfirmContext, iconURL: URL? = nil, marketsStore: PerpsMarketsStore? = nil) {
+        self.init(subject: .open(context), iconURL: iconURL, marketsStore: marketsStore)
     }
 
-    init(closeContext: PerpsCloseConfirmContext, iconURL: URL? = nil) {
-        openConfirmContext = nil
-        self.iconURL = iconURL
-        marketsStore = nil
-        priceInterest = nil
-        marketId = nil
-        limitPrice = nil
-        sizeChangeSizeDecimals = nil
-        sizeChangeConfirmationState = nil
-        let review = closeContext.review
-        titleText = Self.title(verb: TKLocales.Perps.Confirm.close, side: review.side, symbol: review.symbol)
-        iconLetter = review.symbol.prefix(1).uppercased()
-        rows = Self.makeCloseRows(review: review, sizeDecimals: closeContext.sizeDecimals)
+    convenience init(closeContext: PerpsCloseConfirmContext, iconURL: URL? = nil) {
+        self.init(subject: .close(closeContext), iconURL: iconURL, marketsStore: nil)
     }
 
-    init?(
+    convenience init(marginChangeContext: PerpsMarginChangeConfirmContext, iconURL: URL? = nil) {
+        self.init(subject: .marginChange(marginChangeContext), iconURL: iconURL, marketsStore: nil)
+    }
+
+    convenience init?(
         sizeChangeSession: PerpsSizeChangeSession,
         sizeDecimals: Int,
         iconURL: URL? = nil,
         marketsStore: PerpsMarketsStore? = nil
     ) {
         guard let confirmationState = sizeChangeSession.confirmationState else { return nil }
-        let prepared = confirmationState.prepared
-        openConfirmContext = nil
-        self.iconURL = iconURL
-        sizeChangeSizeDecimals = sizeDecimals
-        sizeChangeConfirmationState = confirmationState
-        isConfirmationEnabled = confirmationState.isInteractionEnabled
-        self.marketsStore = marketsStore
-        priceInterest = marketsStore?.makePriceInterest()
-        marketId = prepared.marketId
-        limitPrice = nil
-        let review = prepared.review
-        let sideText = review.side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
-        let position = "\(sideText) \(review.symbol)"
-        titleText = review.direction == .add
-            ? TKLocales.Perps.EditPosition.addTitle(position)
-            : TKLocales.Perps.EditPosition.reduceTitle(position)
-        iconLetter = review.symbol.prefix(1).uppercased()
-        rows = Self.makeSizeChangeRows(
-            review: review,
-            autoClose: confirmationState.autoClose,
-            sizeDecimals: sizeDecimals,
-            referencePrice: Self.referencePrice(
-                limitPrice: nil,
-                markPrice: nil,
-                fallback: review.entryPrice.new
-            )
+        self.init(
+            subject: .sizeChange(confirmationState, sizeDecimals: sizeDecimals),
+            iconURL: iconURL,
+            marketsStore: marketsStore
         )
         sizeChangeSessionCancellable = sizeChangeSession.$confirmationState
             .dropFirst()
             .sink { [weak self] state in
                 self?.applySizeChangeConfirmationState(state)
             }
-        observeLivePrices()
     }
 
-    init(marginChangeContext: PerpsMarginChangeConfirmContext, iconURL: URL? = nil) {
-        openConfirmContext = nil
+    private init(subject: Subject, iconURL: URL?, marketsStore: PerpsMarketsStore?) {
+        self.subject = subject
         self.iconURL = iconURL
-        marketsStore = nil
-        priceInterest = nil
-        marketId = nil
-        limitPrice = nil
-        sizeChangeSizeDecimals = nil
-        sizeChangeConfirmationState = nil
-        let review = marginChangeContext.review
-        let sideText = review.side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
-        let position = "\(sideText) \(review.symbol)"
-        titleText = review.direction == .add
-            ? TKLocales.Perps.AdjustMargin.addConfirmTitle(position)
-            : TKLocales.Perps.AdjustMargin.reduceConfirmTitle(position)
-        iconLetter = review.symbol.prefix(1).uppercased()
-        rows = Self.makeMarginChangeRows(review: review)
+        self.marketsStore = marketsStore
+        priceInterest = marketsStore?.makePriceInterest()
+        titleText = subject.titleText
+        iconLetter = subject.iconLetter
+        isConfirmationEnabled = subject.isInteractionEnabled
+        refreshRows()
+        observeLivePrices()
     }
 
     // MARK: - Intent
 
     func confirm() {
         guard isConfirmationEnabled else { return }
+        isConfirmationEnabled = false
         onConfirm?()
+    }
+
+    func restoreConfirmation() {
+        isConfirmationEnabled = true
     }
 
     func close() {
@@ -206,7 +173,7 @@ final class PerpsTradeConfirmViewModel: ObservableObject {
     }
 
     func onAppear() {
-        guard let priceInterest, let marketId else { return }
+        guard let priceInterest, let marketId = subject.marketId else { return }
         priceInterest.set(marketIds: [marketId])
         applyMarketsStoreState()
     }
@@ -216,29 +183,15 @@ final class PerpsTradeConfirmViewModel: ObservableObject {
     }
 
     func updateOpenAutoClose(_ autoClose: PerpsAutoClose?) {
-        guard var context = openConfirmContext else { return }
-        let intent = PerpsOpenMarketIntent(
-            marketId: context.intent.marketId,
-            side: context.intent.side,
-            marginUsd: context.intent.marginUsd,
-            leverage: context.intent.leverage,
-            maxSlippage: context.intent.maxSlippage,
-            autoClose: autoClose,
-            limitPrice: context.intent.limitPrice
-        )
-        context = PerpsConfirmContext(
-            intent: intent,
-            sizeDecimals: context.sizeDecimals,
-            review: context.review
-        )
-        openConfirmContext = context
-        refreshAutoClosePresentation()
+        guard case let .open(context) = subject else { return }
+        subject = .open(context.replacingAutoClose(autoClose))
+        refreshRows()
     }
 
-    // MARK: - Rows
+    // MARK: - Live price
 
     private func observeLivePrices() {
-        guard let marketsStore, marketId != nil else { return }
+        guard let marketsStore, subject.marketId != nil else { return }
         marketsStore.addObserver(self) { observer, _ in
             Task { @MainActor in
                 observer.applyMarketsStoreState()
@@ -247,286 +200,118 @@ final class PerpsTradeConfirmViewModel: ObservableObject {
     }
 
     private func applyMarketsStoreState() {
-        guard let marketsStore, let marketId else { return }
+        guard let marketsStore, let marketId = subject.marketId else { return }
         markPrice = marketsStore.getState().price(marketId: marketId)
-        refreshAutoClosePresentation()
-    }
-
-    private func refreshAutoClosePresentation() {
-        if let context = openConfirmContext {
-            rows = Self.makeOpenRows(context: context, referencePrice: currentReferencePrice(fallback: context.review.entryPrice))
-            return
-        }
-        if let sizeChangeConfirmationState,
-           let sizeChangeSizeDecimals
-        {
-            let review = sizeChangeConfirmationState.prepared.review
-            rows = Self.makeSizeChangeRows(
-                review: review,
-                autoClose: sizeChangeConfirmationState.autoClose,
-                sizeDecimals: sizeChangeSizeDecimals,
-                referencePrice: currentReferencePrice(fallback: review.entryPrice.new)
-            )
-        }
+        refreshRows()
     }
 
     private func applySizeChangeConfirmationState(_ state: PerpsSizeChangeSession.ConfirmationState?) {
-        sizeChangeConfirmationState = state
+        guard case let .sizeChange(previous, sizeDecimals) = subject else { return }
+        subject = .sizeChange(state ?? previous, sizeDecimals: sizeDecimals)
         isConfirmationEnabled = state?.isInteractionEnabled ?? false
-        refreshAutoClosePresentation()
+        refreshRows()
     }
 
-    private func currentReferencePrice(fallback: Double?) -> Double {
-        Self.referencePrice(
-            limitPrice: limitPrice,
-            markPrice: markPrice,
-            fallback: fallback
-        )
-    }
+    // MARK: - Rows
 
-    private static func referencePrice(limitPrice: Double?, markPrice: Double?, fallback: Double?) -> Double {
-        limitPrice ?? markPrice ?? fallback ?? 0
-    }
-
-    private static func title(verb: String, side: KeeperCore.PerpsTradeSide, symbol: String) -> String {
-        let sideText = side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
-        return "\(verb) \(sideText) \(symbol)"
-    }
-
-    private static func makeOpenRows(context: PerpsConfirmContext, referencePrice: Double) -> [Row] {
-        let intent = context.intent
-        let review = context.review
-        let symbol = review.symbol
-        var rows: [Row] = []
-
-        rows.append(usdtRow(id: .youPay, title: TKLocales.Perps.Confirm.youPay, usd: review.marginUsd))
-
-        if let entryPrice = review.entryPrice, entryPrice > 0 {
-            rows.append(Row(
-                id: .entry,
-                title: TKLocales.Perps.Confirm.entryPrice,
-                value: PerpsFormatting.usd(entryPrice),
-                subValue: "≈ 1 \(symbol)"
-            ))
-        } else {
-            rows.append(Row(id: .entry, title: TKLocales.Perps.Confirm.entryPrice, value: TKLocales.Perps.Confirm.unavailable, subValue: nil))
+    private func refreshRows() {
+        switch subject {
+        case let .open(context):
+            rows = Self.makeOpenRows(
+                context: context,
+                referencePrice: referencePrice(fallback: context.review.entryPrice)
+            )
+        case let .close(context):
+            rows = Self.makeCloseRows(review: context.review, sizeDecimals: context.sizeDecimals)
+        case let .sizeChange(state, sizeDecimals):
+            let review = state.prepared.review
+            rows = Self.makeSizeChangeRows(
+                review: review,
+                autoClose: state.autoClose,
+                sizeDecimals: sizeDecimals,
+                referencePrice: referencePrice(fallback: review.entryPrice.new)
+            )
+        case let .marginChange(context):
+            rows = Self.makeMarginChangeRows(review: context.review)
         }
-
-        rows.append(Row(id: .leverage, title: TKLocales.Perps.Confirm.leverage, value: PerpsFormatting.leverage(intent.leverage), subValue: nil))
-
-        rows.append(liquidationRow(review: review))
-
-        rows.append(Row(
-            id: .size,
-            title: TKLocales.Perps.Confirm.size,
-            value: PerpsFormatting.usd(review.notionalUsd),
-            subValue: review.baseSize > 0 ? "≈ \(PerpsFormatting.token(review.baseSize, symbol: symbol, decimals: context.sizeDecimals))" : nil
-        ))
-
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd))
-
-        if let autoCloseRow = autoCloseRow(
-            from: intent.autoClose,
-            side: intent.side,
-            referencePrice: referencePrice,
-            liquidationPrice: review.liquidationPrice
-        ) {
-            rows.append(autoCloseRow)
-        }
-
-        return rows
     }
 
-    private static func makeCloseRows(review: PerpsCloseReview, sizeDecimals: Int) -> [Row] {
-        var rows: [Row] = []
-
-        rows.append(usdtRow(id: .position, title: TKLocales.Perps.Confirm.position, usd: review.marginUsd))
-
-        rows.append(Row(
-            id: .leverage,
-            title: TKLocales.Perps.Confirm.leverage,
-            value: review.leverage.map(PerpsFormatting.leverage) ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: nil
-        ))
-
-        rows.append(Row(
-            id: .size,
-            title: TKLocales.Perps.Confirm.size,
-            value: PerpsFormatting.usd(review.notionalUsd),
-            subValue: review.baseSize > 0 ? "≈ \(PerpsFormatting.token(review.baseSize, symbol: review.symbol, decimals: sizeDecimals))" : nil
-        ))
-
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd))
-
-        if let pnl = review.estimatedPnlUsd {
-            rows.append(Row(
-                id: .pnl,
-                title: TKLocales.Perps.Confirm.pnl,
-                value: PerpsFormatting.signedUsd(pnl),
-                subValue: review.estimatedPnlPercent.map { PerpsFormatting.signedPercent($0) },
-                tone: pnl >= 0 ? .positive : .negative
-            ))
-        } else {
-            rows.append(Row(id: .pnl, title: TKLocales.Perps.Confirm.pnl, value: TKLocales.Perps.Confirm.unavailable, subValue: nil))
-        }
-
-        rows.append(Row(
-            id: .youReceive,
-            title: TKLocales.Perps.Confirm.youReceive,
-            value: review.estimatedReceiveUsd.map(PerpsFormatting.usd) ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: review.estimatedReceiveUsd.map { "≈ \(PerpsFormatting.token($0, symbol: "USDT", decimals: 2))" }
-        ))
-
-        return rows
+    private func referencePrice(fallback: Double?) -> Double {
+        subject.limitPrice ?? markPrice ?? fallback ?? 0
     }
+}
 
-    private static func makeSizeChangeRows(
-        review: PerpsSizeChangeReview,
-        autoClose: PerpsAutoClose?,
-        sizeDecimals: Int,
-        referencePrice: Double
-    ) -> [Row] {
-        var rows: [Row] = []
+private extension PerpsTradeConfirmViewModel {
+    /// What is being confirmed. The four screens differ only in this, and only
+    /// open and size change follow a live price and rebuild their rows.
+    enum Subject {
+        case open(PerpsConfirmContext)
+        case close(PerpsCloseConfirmContext)
+        case sizeChange(PerpsSizeChangeSession.ConfirmationState, sizeDecimals: Int)
+        case marginChange(PerpsMarginChangeConfirmContext)
 
-        rows.append(payOrCloseRow(isAdd: review.direction == .add, usd: review.marginDeltaUsd))
-
-        rows.append(Row(
-            id: .entry,
-            title: TKLocales.Perps.Confirm.entryPrice,
-            value: review.entryPrice.isChanged
-                ? "\(PerpsFormatting.usd(review.entryPrice.old)) → \(PerpsFormatting.usd(review.entryPrice.new))"
-                : PerpsFormatting.usd(review.entryPrice.old),
-            subValue: "≈ 1 \(review.symbol)"
-        ))
-
-        rows.append(Row(
-            id: .leverage,
-            title: TKLocales.Perps.Confirm.leverage,
-            value: review.leverage.map(PerpsFormatting.leverage) ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: nil
-        ))
-
-        rows.append(Row(
-            id: .liquidation,
-            title: TKLocales.Perps.Confirm.liquidation,
-            value: review.liquidationPrice.map(PerpsFormatting.usd) ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: nil
-        ))
-
-        let baseDelta = abs(review.baseSize.new - review.baseSize.old)
-        rows.append(Row(
-            id: .size,
-            title: TKLocales.Perps.Confirm.size,
-            value: "\(PerpsFormatting.usd(review.notionalUsd.old)) → \(PerpsFormatting.usd(review.notionalUsd.new))",
-            subValue: baseDelta > 0
-                ? "\(review.direction == .add ? "+" : "−")\(PerpsFormatting.token(baseDelta, symbol: review.symbol, decimals: sizeDecimals))"
-                : nil
-        ))
-
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd))
-
-        if let autoCloseRow = autoCloseRow(
-            from: autoClose,
-            side: review.side,
-            referencePrice: referencePrice,
-            liquidationPrice: review.liquidationPrice
-        ) {
-            rows.append(autoCloseRow)
-        }
-
-        return rows
-    }
-
-    /// No Fee row: UpdateMargin carries no venue fee and the SDK review has no
-    /// fee field — the design's Fee line has no honest number behind it.
-    private static func makeMarginChangeRows(review: PerpsMarginChangeReview) -> [Row] {
-        var rows: [Row] = []
-
-        rows.append(payOrCloseRow(isAdd: review.direction == .add, usd: review.amountUsd))
-
-        let liquidationValue: String
-        if let liquidation = review.liquidationPrice {
-            liquidationValue = liquidation.isChanged
-                ? "\(PerpsFormatting.usd(liquidation.old)) → \(PerpsFormatting.usd(liquidation.new))"
-                : PerpsFormatting.usd(liquidation.old)
-        } else {
-            liquidationValue = TKLocales.Perps.Confirm.unavailable
-        }
-        rows.append(Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: liquidationValue, subValue: nil))
-
-        return rows
-    }
-
-    private static func liquidationRow(review: PerpsOpenOrderReview) -> Row {
-        guard let liquidationPrice = review.liquidationPrice else {
-            return Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: TKLocales.Perps.Confirm.unavailable, subValue: nil)
-        }
-        return Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: PerpsFormatting.usd(liquidationPrice), subValue: nil)
-    }
-
-    private static func autoCloseRow(
-        from autoClose: PerpsAutoClose?,
-        side: KeeperCore.PerpsTradeSide,
-        referencePrice: Double,
-        liquidationPrice: Double?
-    ) -> Row? {
-        guard let autoClose, !autoClose.isEmpty else { return nil }
-        let invalid = PerpsAutoCloseValidation.invalidLegs(
-            side: side,
-            entryPrice: referencePrice,
-            liquidationPrice: liquidationPrice,
-            autoClose: autoClose
-        )
-        var parts: [ValuePart] = []
-        if let takeProfit = autoClose.takeProfit {
-            parts.append(ValuePart(
-                text: "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.compactUsd(takeProfit.triggerPrice))",
-                tone: invalid.takeProfit ? .negative : .neutral
-            ))
-        }
-        if let stopLoss = autoClose.stopLoss {
-            if !parts.isEmpty {
-                parts.append(ValuePart(text: " / ", tone: .tertiary))
+        var marketId: Int64? {
+            switch self {
+            case let .open(context): context.intent.marketId
+            case let .sizeChange(state, _): state.prepared.marketId
+            case .close, .marginChange: nil
             }
-            parts.append(ValuePart(
-                text: "\(TKLocales.Perps.OpenPosition.sl) \(PerpsFormatting.compactUsd(stopLoss.triggerPrice))",
-                tone: invalid.stopLoss ? .negative : .neutral
-            ))
         }
-        let value = parts.map(\.text).joined()
-        return Row(
-            id: .autoClose,
-            title: TKLocales.Perps.Confirm.autoClose,
-            value: value,
-            valueParts: parts,
-            subValue: nil,
-            showsChevron: true
-        )
-    }
 
-    private static func usdtRow(id: Row.Kind, title: String, usd: Double) -> Row {
-        Row(
-            id: id,
-            title: title,
-            value: PerpsFormatting.usd(usd),
-            subValue: "≈ \(PerpsFormatting.token(usd, symbol: "USDT", decimals: 2))"
-        )
-    }
+        var limitPrice: Double? {
+            guard case let .open(context) = self else { return nil }
+            return context.intent.limitPrice
+        }
 
-    private static func payOrCloseRow(isAdd: Bool, usd: Double) -> Row {
-        usdtRow(
-            id: isAdd ? .youPay : .youClose,
-            title: isAdd ? TKLocales.Perps.Confirm.youPay : TKLocales.Perps.Confirm.youClose,
-            usd: usd
-        )
-    }
+        var isInteractionEnabled: Bool {
+            switch self {
+            case let .sizeChange(state, _): state.isInteractionEnabled
+            case .open, .close, .marginChange: true
+            }
+        }
 
-    private static func feeRow(estimatedFeeUsd: Double?) -> Row {
-        Row(
-            id: .fee,
-            title: TKLocales.Perps.Confirm.fee,
-            value: estimatedFeeUsd.map(PerpsFormatting.usd) ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: estimatedFeeUsd.map { "≈ \(PerpsFormatting.token($0, symbol: "USDT", decimals: 4))" }
-        )
+        var iconLetter: String {
+            symbol.prefix(1).uppercased()
+        }
+
+        var titleText: String {
+            switch self {
+            case .open:
+                "\(TKLocales.Perps.Confirm.open) \(position)"
+            case .close:
+                "\(TKLocales.Perps.Confirm.close) \(position)"
+            case let .sizeChange(state, _):
+                state.prepared.review.direction == .add
+                    ? TKLocales.Perps.EditPosition.addTitle(position)
+                    : TKLocales.Perps.EditPosition.reduceTitle(position)
+            case let .marginChange(context):
+                context.review.direction == .add
+                    ? TKLocales.Perps.AdjustMargin.addConfirmTitle(position)
+                    : TKLocales.Perps.AdjustMargin.reduceConfirmTitle(position)
+            }
+        }
+
+        private var symbol: String {
+            switch self {
+            case let .open(context): context.review.symbol
+            case let .close(context): context.review.symbol
+            case let .sizeChange(state, _): state.prepared.review.symbol
+            case let .marginChange(context): context.review.symbol
+            }
+        }
+
+        private var side: PerpsTradeSide {
+            switch self {
+            case let .open(context): context.intent.side
+            case let .close(context): context.review.side
+            case let .sizeChange(state, _): state.prepared.review.side
+            case let .marginChange(context): context.review.side
+            }
+        }
+
+        private var position: String {
+            let sideText = side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
+            return "\(sideText) \(symbol)"
+        }
     }
 }

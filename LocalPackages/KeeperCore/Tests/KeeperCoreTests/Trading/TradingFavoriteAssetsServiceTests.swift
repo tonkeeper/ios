@@ -356,13 +356,6 @@ private actor TradingAPISpy: TradingAPI {
         return response ?? Components.Schemas.AssetsCatalogResponse(items: [], data_freshness_sec: 0)
     }
 
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
-        fatalError("unused")
-    }
-
     func getAssetChart(
         requestContext: TradingRequestContext,
         assetId: String,
@@ -386,7 +379,10 @@ private actor TradingAPISpy: TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps _: Bool?,
+        chain _: String?,
+        filter _: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         fatalError("unused")
     }

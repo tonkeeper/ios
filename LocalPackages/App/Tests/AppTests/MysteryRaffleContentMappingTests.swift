@@ -71,7 +71,7 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
             zeroFeeEndsAt: nil,
             badgeIconId: "checkmark"
         )
-        let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], isFeatureEnabled: true))
+        let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle]))
 
         XCTAssertFalse(presentation.shouldShowMainScreenEntry)
     }
@@ -84,7 +84,7 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
             ticketsTotal: 10,
             zeroFeeEndsAt: now.addingTimeInterval(86400)
         )
-        let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], isFeatureEnabled: true))
+        let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle]))
 
         XCTAssertTrue(presentation.shouldShowMainScreenEntry)
     }

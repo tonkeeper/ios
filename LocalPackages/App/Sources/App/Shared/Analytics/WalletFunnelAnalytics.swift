@@ -21,13 +21,9 @@ extension AnalyticsProvider {
 
     func logWalletImportSuccess(
         mnemonic: CoreMnemonic,
-        multichainEnabled: Bool,
         from: AddWalletSource
     ) {
-        guard let walletMode = WalletMode(
-            knownMnemonic: mnemonic,
-            multichainEnabled: multichainEnabled
-        ) else { return }
+        guard let walletMode = WalletMode(knownMnemonic: mnemonic) else { return }
         logWalletImportSuccess(walletMode: walletMode, walletSource: .mnemonic, from: from)
     }
 
@@ -63,14 +59,10 @@ extension AnalyticsProvider {
 
     func logWalletImportError(
         mnemonic: CoreMnemonic,
-        multichainEnabled: Bool,
         from: AddWalletSource,
         errorMessage: String?
     ) {
-        guard let walletMode = WalletMode(
-            knownMnemonic: mnemonic,
-            multichainEnabled: multichainEnabled
-        ) else { return }
+        guard let walletMode = WalletMode(knownMnemonic: mnemonic) else { return }
         logWalletImportError(
             walletMode: walletMode,
             walletSource: .mnemonic,
@@ -81,13 +73,11 @@ extension AnalyticsProvider {
 
     func logWalletImportError(
         mnemonic: CoreMnemonic,
-        multichainEnabled: Bool,
         from: AddWalletSource,
         error: Error
     ) {
         logWalletImportError(
             mnemonic: mnemonic,
-            multichainEnabled: multichainEnabled,
             from: from,
             errorMessage: error.localizedDescription
         )
@@ -106,12 +96,6 @@ extension AnalyticsProvider {
 
 struct WalletFlowAnalyticsContext {
     let from: AddWalletSource
-    private let multichainEnabled: Bool
-
-    init(from: AddWalletSource, multichainEnabled: Bool) {
-        self.from = from
-        self.multichainEnabled = multichainEnabled
-    }
 
     func logOnboarding(_ event: Encodable, using analyticsProvider: AnalyticsProvider) {
         guard from == .onboarding else { return }
@@ -119,8 +103,6 @@ struct WalletFlowAnalyticsContext {
     }
 
     func walletMode(for derivationType: DerivationType) -> WalletMode {
-        guard multichainEnabled else { return .single }
-
         switch derivationType {
         case .ton:
             return .single
@@ -131,12 +113,7 @@ struct WalletFlowAnalyticsContext {
 }
 
 extension WalletMode {
-    init?(knownMnemonic mnemonic: CoreMnemonic, multichainEnabled: Bool) {
-        guard multichainEnabled else {
-            self = .single
-            return
-        }
-
+    init?(knownMnemonic mnemonic: CoreMnemonic) {
         switch mnemonic.type {
         case .ton:
             self = .single

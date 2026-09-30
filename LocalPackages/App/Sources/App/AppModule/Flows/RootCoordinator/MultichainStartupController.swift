@@ -1,7 +1,6 @@
 import KeeperCore
 
 actor MultichainStartupController {
-    private let isEnabled: Bool
     private let authService: MultichainAuthService
     private let walletSyncController: MultichainWalletSyncController
 
@@ -11,11 +10,9 @@ actor MultichainStartupController {
     private var hasPendingReconcile = false
 
     init(
-        isEnabled: Bool,
         authService: MultichainAuthService,
         walletSyncController: MultichainWalletSyncController
     ) {
-        self.isEnabled = isEnabled
         self.authService = authService
         self.walletSyncController = walletSyncController
     }
@@ -23,7 +20,6 @@ actor MultichainStartupController {
     func startPendingUnregisterFlush() async {
         guard !didStartPendingUnregisterFlush else { return }
         didStartPendingUnregisterFlush = true
-        guard isEnabled else { return }
         await authService.flushPendingUnregisters()
     }
 
@@ -33,10 +29,6 @@ actor MultichainStartupController {
     /// trigger instead of leaving the device without bindings for the whole run.
     func startBindingsReconcile() async {
         guard !didReconcileBindings else { return }
-        guard isEnabled else {
-            didReconcileBindings = true
-            return
-        }
         // A trigger that arrives mid-pass is not redundant: the pass in flight can still fail, and
         // dropping the trigger would leave the device without bindings until the next foreground.
         guard !isReconcilingBindings else {

@@ -1,0 +1,43 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- openLink:
+    link: "https://app.tonkeeper.com/swap?ft=USDT&tt=GRAM"
+- openLink:
+    link: "https://app.tonkeeper.com/swap?ft=USDT&tt=GRAM"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "MAX"
+    timeout: 60000
+- tapOn: "MAX"
+- runFlow: ../../../service/swap/wait_swap_quote_ready.yaml
+- tapOn:
+    id: native_swap_continue
+
+# Confirmation popup appears only after async fee emulation — wait for the slider.
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 36000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+- tapOn: "Continue"
+- runFlow: ../../../steps/password/enter_password.yaml
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "History"
+- tapOn:
+    id: "history_back_button"
+# On the new main screen the crypto list can start below the fold — scroll to the row.
+- scrollUntilVisible:
+    element: "USD\u20ae"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "USD\u20ae"
+- assertNotVisible: "Your balance"

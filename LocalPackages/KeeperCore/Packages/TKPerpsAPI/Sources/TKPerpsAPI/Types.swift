@@ -14,10 +14,27 @@ public protocol APIProtocol: Sendable {
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
+    /// This is also what a client polls while it waits for an account to exist: the index is resolved against Lighter live for as long as the binding has none, so not_registered turns into an account as soon as there is one. A wallet with no binding at all is answered not_registered too, and stays so until POST /account/bind records one -- a deposit made outside this service tells us nothing by itself.
     ///
     /// - Remark: HTTP `GET /account`.
     /// - Remark: Generated from `#/paths//account/get(getAccount)`.
     func getAccount(_ input: Operations.getAccount.Input) async throws -> Operations.getAccount.Output
+    /// Bind the caller's wallet to its L1 address
+    ///
+    /// Records which L1 (Ethereum) address a wallet owns, and the Lighter account that address holds when there is one. It is the only endpoint whose whole job is that binding; everywhere else it is a side effect of a write that needed it anyway.
+    /// A caller whose Lighter account was funded outside this service has no other way in. Every read here answers from the binding, so until one exists its account is invisible to us, and so is every event Lighter reports about it. A caller that deposited through this service is already bound by that deposit, and calls this only to have the account index recorded once there is one.
+    /// The address is never taken from the caller. It is recovered from the signature, and afterwards read back from what that recovered, so deadline and signature are read only while the wallet has proved nothing. Send them anyway: whether they are needed depends on what this service has recorded, which the caller cannot know, and by the time a refusal came back the vault would be locked again. This is what keeps the passcode prompt to once per wallet.
+    /// The account index is Lighter's to say, and it is asked for on every call. A wallet whose account does not exist yet is bound to its address alone and answered not_registered, which is not a failure but where every wallet starts: poll GET /account and continue as soon as account_index is set. It is filled in by whichever write learns it first, this one included.
+    /// Not knowing is not the same as not having, so when Lighter cannot say what the address owns the request is refused with 503 and nothing is recorded -- a not_registered on a timeout would report a state this service never established. The reads answer the same way. Retrying inside the signature's deadline needs no new signature, so the refusal costs no second prompt.
+    /// A 503 says nothing was learned, never that something was undone. The binding is written before the account is read, so a refusal can arrive with the row already recorded -- and the answer is to call again rather than to report a failed registration. The repeat is free: the address is read back from the row, so no signature is needed for it, and re-binding what is recorded writes nothing.
+    /// The answer names l1_address either way, and that is worth reading: the address was recovered from a signature rather than sent, so a wallet bound to one it did not expect would otherwise find out only when a later proof, signed over the address it believes in, is refused.
+    /// A binding never moves, and there is nothing here with which to redirect it: a bound wallet is served the address it recorded whatever it signs now, so re-binding is accepted and changes nothing, which is the ordinary case.
+    /// A 409 therefore reports a collision with another wallet rather than a caller changing its mind: l1_address_taken when that address is already held elsewhere, lighter_account_taken when the account behind it is. The usual cause is one wallet re-imported under a new wallet_id, while the old id still holds the row; somebody has to remove it, which is not something this endpoint can do. wallet_already_bound is the third and is all but unreachable -- it needs two first binds for one wallet to race each other, or Lighter to name a different account for an address it has already placed.
+    /// A proof made over some other address is not a conflict but a refused proof, 401: it was signed for a statement this service is not making. Read l1_address in the answer above, or from GET /account, to see which address that is.
+    ///
+    /// - Remark: HTTP `POST /account/bind`.
+    /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)`.
+    func bindAccount(_ input: Operations.bindAccount.Input) async throws -> Operations.bindAccount.Output
     /// Report transactions the caller submitted to Lighter
     ///
     /// Records transactions the caller has already submitted to Lighter so they can be forwarded to the Argus event stream. This service neither signs nor sends them: the client signs locally, submits to Lighter directly, and reports the result here.
@@ -49,19 +66,43 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /transactions/next-nonce`.
     /// - Remark: Generated from `#/paths//transactions/next-nonce/get(getNextNonce)`.
     func getNextNonce(_ input: Operations.getNextNonce.Input) async throws -> Operations.getNextNonce.Output
-    /// Store the caller's Lighter read-only token
+    /// Partner-attribution values the caller signs into its Lighter transactions
     ///
+    /// What the client copies, unchanged, into the transactions it signs. Two of them consume these values: an order takes integrator_account_index and the two fees, while ApproveIntegrator -- signed once, before the first order that carries a fee -- takes the account index and the four maximums, with an expiry of now plus approval_ttl_ms.
+    /// Fees are millionths of a fill's notional, Lighter's own unit, so 900 is 9 basis points. A zero account index means attribution is off and the client signs no integrator fields at all; that is also the answer while this service has no integrator account configured.
+    /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
+    /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    ///
+    /// - Remark: HTTP `GET /integrator`.
+    /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
+    func getIntegrator(_ input: Operations.getIntegrator.Input) async throws -> Operations.getIntegrator.Output
+    /// Store the caller's Lighter read-only token (deprecated)
+    ///
+    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
+    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
     /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
     /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
     /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- its first deposit, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
     ///
     /// - Remark: HTTP `POST /account/ro-token`.
     /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
+    @available(*, deprecated)
     func saveRoToken(_ input: Operations.saveRoToken.Input) async throws -> Operations.saveRoToken.Output
+    /// Mint the caller's Lighter read-only token and store it
+    ///
+    /// Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
+    /// What the caller supplies is lighter_auth: the short-lived credential its Lighter L2 key produced locally. It is a bearer credential and not a signature over this request, so it authorises anything Lighter accepts it for until it expires, and it is passed straight through without being stored or logged. The L2 private key itself never travels.
+    /// The account is not named by the caller. It is the one the wallet's proved L1 address owns, which is also what the token is minted against, so a wallet with no Lighter account yet -- one whose first deposit has not been credited -- has nothing to mint for and is answered 409.
+    /// The token's expiry and its reach are this service's to set, not the caller's, and are therefore absent from the body: it is minted long-lived, because the private reads this service makes on the caller's behalf run on it and nothing renews it, and scoped to the main account, because a wallet maps to exactly one.
+    /// Minting supersedes whatever token the account had. Superseded tokens are revoked at Lighter on a best-effort basis, in this request and only here: revoking takes the same short-lived authorization the mint did, so once this request ends nothing can revoke them any more.
+    ///
+    /// - Remark: HTTP `POST /account/ro-token/issue`.
+    /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)`.
+    func issueRoToken(_ input: Operations.issueRoToken.Input) async throws -> Operations.issueRoToken.Output
     /// The caller's open positions
     ///
     /// Every position the wallet currently holds, one per venue and market, with the numbers a position card renders. Only open ones: Lighter keeps a row for every market an account has ever traded, and on a long-lived account the closed rows outnumber the open ones many times over, so a zero size is filtered here rather than on the client.
-    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no X-Lighter-Auth is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need that token.
+    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no read-only token is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need one.
     /// Neither paginated nor filtered on purpose. One position per market caps the list at the number of active markets, and the upstream snapshot is unpaginated anyway, so a cursor would add failure modes without bounding anything.
     /// A wallet with no account yet, and an account with nothing open, both get an empty list rather than an error: that is what a client renders before the first position.
     ///
@@ -77,6 +118,46 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /positions/{id}`.
     /// - Remark: Generated from `#/paths//positions/{id}/get(getOpenPosition)`.
     func getOpenPosition(_ input: Operations.getOpenPosition.Input) async throws -> Operations.getOpenPosition.Output
+    /// What became of a market's position, and of the order just sent
+    ///
+    /// Answers the question a client has right after submitting an order: did anything happen. It reads this service's own record and nothing else, so it is cheap to poll -- no Lighter call, no read-only token, no markets snapshot.
+    /// Two things are answered. `open` is the position the market holds now, and `last_closed` is the one that ended most recently; a client that closed a position needs the second, because an absent position alone cannot tell "it closed" from "there never was one". Both are episodes: one life of a position, from the fill that opened it to the fill that closed it. Lighter keeps only the current size, so a closed position leaves no trace there at all -- `/positions/{id}` answers 404 for a market whose position closed a minute ago.
+    /// `orders` is what the venue said about the orders carrying `client_order_index`, and it is empty until an order event arrives. An empty list therefore means "nothing heard yet", which is the state to keep polling on; a client knows it submitted, so this service does not repeat that back. Several entries are a legitimate answer: nothing makes that number unique, and a client that reused it is told about every order rather than being handed a guess. Without the parameter the list is empty and only the position halves are answered.
+    /// A market this wallet has never traded is `open: null`, `last_closed: null`, `orders: []` -- not a 404. The question "what is the state" always has an answer, and "nothing" is one.
+    ///
+    /// - Remark: HTTP `GET /positions/{id}/state`.
+    /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)`.
+    func getPositionState(_ input: Operations.getPositionState.Input) async throws -> Operations.getPositionState.Output
+    /// Balance, open positions and open orders
+    ///
+    /// Everything the portfolio section renders in one read: the account balance, every open position with the numbers a position card needs, and the orders resting on the book. Replaces /screens/portfolio, which carries a thinner position and no orders at all.
+    /// Balance and positions come from the account snapshot Lighter serves by index, and mark prices from the cached markets snapshot; neither needs a token. open_orders does, and this service uses the read-only token it stored for the wallet rather than asking the caller.
+    /// open_orders_known says whether the orders were read at all. False means the section could not be filled -- no stored token, an expired one, one Vault would not decrypt, or an upstream that did not answer -- and open_orders is then empty because nothing was seen, not because nothing is resting. Render "temporarily unavailable" on false, never "no open orders". Orders never turn this endpoint into a 503: the balance and the positions are an answer of their own.
+    /// Take-profit and stop-loss legs are not here. They belong to a position and are served with it by /positions/{id}.
+    /// A wallet with no account yet gets empty sections rather than an error.
+    ///
+    /// - Remark: HTTP `GET /portfolio`.
+    /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)`.
+    func getPortfolio(_ input: Operations.getPortfolio.Input) async throws -> Operations.getPortfolio.Output
+    /// The caller's open orders
+    ///
+    /// Every order resting on the book across all markets. An unfilled order is not a position -- it holds no entry price, no PnL and no liquidation price -- so it appears here and never in /positions.
+    /// Take-profit and stop-loss legs are filtered out: they are attached to a position and are served with it by /positions/{id}, and listing them here would show the same leg twice.
+    /// Reading orders needs the wallet's stored read-only token, so unlike /positions this endpoint depends on Vault. orders_known carries that: false means the list could not be read and is empty for that reason alone. It is a 200, not a 503 -- a wallet without an active token is a state that no retry changes, and the client renders its unavailable block from the flag. A genuine upstream failure is still a 503.
+    /// Neither paginated nor filtered: an account's resting orders are bounded by what it can afford to place.
+    ///
+    /// - Remark: HTTP `GET /orders`.
+    /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)`.
+    func listOpenOrders(_ input: Operations.listOpenOrders.Input) async throws -> Operations.listOpenOrders.Output
+    /// One order, resting or finished, with its fills
+    ///
+    /// The order the id names, wherever it is now. Resting orders are read from the book; one that has left it -- filled, cancelled or expired -- is looked up in the account's order history, which is walked page by page because the venue offers no lookup by order id. `resting` says which of the two answered.
+    /// The history walk is bounded. An order older than the walk reaches is a 404, which is therefore "not found within the window this endpoint looks at" rather than a claim that it never existed.
+    /// `fills` is the execution broken down into trades, which the order itself does not carry -- it holds only the filled totals. That lookup is walked and bounded like the one above, so fills_known is false both when it failed and when the cap cut it short with pages still to come. Only under a true flag does an empty list mean the order has not traded.
+    ///
+    /// - Remark: HTTP `GET /orders/{id}`.
+    /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)`.
+    func getOrder(_ input: Operations.getOrder.Input) async throws -> Operations.getOrder.Output
     /// Markets list screen
     ///
     /// Aggregates the markets-list screen in a single call by merging Lighter orderBookDetails, assetDetails, and funding-rates into screen-shaped market rows. Supports free-text search, a coarse filter, and sorting so the client renders the list without further requests.
@@ -87,17 +168,20 @@ public protocol APIProtocol: Sendable {
     /// Trading screen bootstrap
     ///
     /// Single-call bootstrap for the trading screen: contract metadata for the market, the caller's current position, open orders, balance, and the action flags that drive UI affordances. Live orderbook and candles are delivered out-of-band over the Hermes WebSocket and are NOT part of this payload.
-    /// The market data is public; the private sections are the wallet's. X-Lighter-Auth is optional: without it, and for a wallet whose address owns no Lighter account yet, the position, open orders and private balance details are empty rather than an error.
+    /// The market data is public; the private sections are the wallet's, and the caller carries no credential for them: the read-only token comes from this service's own store.
+    /// The two absences differ. A wallet whose address owns no Lighter account yet, or one Lighter would not name an account for, gets the market and empty private sections throughout. A wallet with an account but no usable stored token keeps its position and balance, which come from the account snapshot and need no token, and loses only open_orders and what is derived from it -- position.auto_close and flags.cancel_enabled. Neither is an error.
     ///
     /// - Remark: HTTP `GET /screens/trading`.
     /// - Remark: Generated from `#/paths//screens/trading/get(getTradingScreen)`.
     func getTradingScreen(_ input: Operations.getTradingScreen.Input) async throws -> Operations.getTradingScreen.Output
-    /// Portfolio screen
+    /// Portfolio screen (deprecated)
     ///
+    /// Superseded by /portfolio, which carries the same balance, a fuller position -- with id, mark price, margin, equity and ROI -- and the open orders this one has no room for. Frozen: it keeps answering exactly as it does today and gains nothing further.
     /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
     ///
     /// - Remark: HTTP `GET /screens/portfolio`.
     /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
+    @available(*, deprecated)
     func getPortfolioScreen(_ input: Operations.getPortfolioScreen.Input) async throws -> Operations.getPortfolioScreen.Output
     /// Order book truncated to a notional
     ///
@@ -111,7 +195,7 @@ public protocol APIProtocol: Sendable {
     /// Account activity timeline
     ///
     /// Merged, cursor-paginated timeline of fills, funding payments, deposits, and withdrawals. Uses an opaque keyset cursor and returns last_sort_ts so the client can detect ranking shifts between polls. Deposits appear from the moment they are registered, as items of type deposit with status pending; the one Lighter reports once the money lands is the same item under the same id, with a new status, so the client updates a row rather than replacing it. A deposit that is never confirmed leaves the feed when it is closed, and its outcome is then only on /funding/deposit/{deposit_id}.
-    /// The feed belongs to the wallet. Everything Lighter holds needs X-Lighter-Auth as well; without it -- or for a wallet whose address owns no Lighter account yet -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account, and which then covers a deposit that was credited before the client had a token. A wallet that has proved no address gets an empty page rather than an error.
+    /// The feed belongs to the wallet, and the caller carries no credential for it -- everything Lighter holds is read with the token this service keeps. Without a usable one -- or for a wallet whose address owns no Lighter account yet, or one Lighter will not name an account for right now -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account. A wallet that has proved no address gets an empty page rather than an error, and so does an outage this service can still read its own rows through.
     ///
     /// - Remark: HTTP `GET /activity`.
     /// - Remark: Generated from `#/paths//activity/get(getActivity)`.
@@ -140,6 +224,29 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /funding/deposit/{deposit_id}`.
     /// - Remark: Generated from `#/paths//funding/deposit/{deposit_id}/get(getDeposit)`.
     func getDeposit(_ input: Operations.getDeposit.Input) async throws -> Operations.getDeposit.Output
+    /// Quote a deposit from another asset
+    ///
+    /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
+    /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
+    /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why expected_amount and min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
+    /// The quote is good for the seconds expires_at says. The aggregator revalidates at fill time, so a stale one is refunded rather than filled at a worse price -- ask again instead of signing an old one.
+    /// The wallet's L1 address is destination_address, and the two must agree once the wallet has proved one: a quote for somebody else's account is refused. A wallet that has proved nothing yet -- the first deposit is what creates the account -- is quoted for the address it names, and proves it when it records the deposit.
+    /// What this does not do yet: it does not initialise the Lighter account's signing key. A first deposit creates the account, and registering a key on it is a separate step the client takes once the account exists.
+    ///
+    /// - Remark: HTTP `POST /funding/quote`.
+    /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)`.
+    func quoteDeposit(_ input: Operations.quoteDeposit.Input) async throws -> Operations.quoteDeposit.Output
+    /// Follow a quoted deposit through the aggregator
+    ///
+    /// Reports where a cross-chain deposit is, by the execution_id its quote returned: whether the aggregator has seen the source transaction, filled on Ethereum, failed, or refunded. The execution lives at swaps-backend, which follows the fill by the id the aggregator quoted it under, so nothing has to be submitted there first: the wallet broadcasts on its own and polls.
+    /// This is how a client that paid from another chain learns the Ethereum transaction hash: the aggregator's fill is the transaction that called the gateway, so once status is success the first entry of tx_hashes is what POST /funding/deposit takes as l1_tx_hash. Until then there is nothing to record.
+    /// Poll while status is pending. success, failure and refund are final. unknown means the aggregator has no such execution, which is also what an expired, never-broadcast quote looks like.
+    ///
+    /// - Remark: HTTP `GET /funding/status/{execution_id}`.
+    /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)`.
+    func getFundingStatus(_ input: Operations.getFundingStatus.Input) async throws -> Operations.getFundingStatus.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -147,11 +254,36 @@ extension APIProtocol {
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
+    /// This is also what a client polls while it waits for an account to exist: the index is resolved against Lighter live for as long as the binding has none, so not_registered turns into an account as soon as there is one. A wallet with no binding at all is answered not_registered too, and stays so until POST /account/bind records one -- a deposit made outside this service tells us nothing by itself.
     ///
     /// - Remark: HTTP `GET /account`.
     /// - Remark: Generated from `#/paths//account/get(getAccount)`.
     public func getAccount(headers: Operations.getAccount.Input.Headers) async throws -> Operations.getAccount.Output {
         try await getAccount(Operations.getAccount.Input(headers: headers))
+    }
+    /// Bind the caller's wallet to its L1 address
+    ///
+    /// Records which L1 (Ethereum) address a wallet owns, and the Lighter account that address holds when there is one. It is the only endpoint whose whole job is that binding; everywhere else it is a side effect of a write that needed it anyway.
+    /// A caller whose Lighter account was funded outside this service has no other way in. Every read here answers from the binding, so until one exists its account is invisible to us, and so is every event Lighter reports about it. A caller that deposited through this service is already bound by that deposit, and calls this only to have the account index recorded once there is one.
+    /// The address is never taken from the caller. It is recovered from the signature, and afterwards read back from what that recovered, so deadline and signature are read only while the wallet has proved nothing. Send them anyway: whether they are needed depends on what this service has recorded, which the caller cannot know, and by the time a refusal came back the vault would be locked again. This is what keeps the passcode prompt to once per wallet.
+    /// The account index is Lighter's to say, and it is asked for on every call. A wallet whose account does not exist yet is bound to its address alone and answered not_registered, which is not a failure but where every wallet starts: poll GET /account and continue as soon as account_index is set. It is filled in by whichever write learns it first, this one included.
+    /// Not knowing is not the same as not having, so when Lighter cannot say what the address owns the request is refused with 503 and nothing is recorded -- a not_registered on a timeout would report a state this service never established. The reads answer the same way. Retrying inside the signature's deadline needs no new signature, so the refusal costs no second prompt.
+    /// A 503 says nothing was learned, never that something was undone. The binding is written before the account is read, so a refusal can arrive with the row already recorded -- and the answer is to call again rather than to report a failed registration. The repeat is free: the address is read back from the row, so no signature is needed for it, and re-binding what is recorded writes nothing.
+    /// The answer names l1_address either way, and that is worth reading: the address was recovered from a signature rather than sent, so a wallet bound to one it did not expect would otherwise find out only when a later proof, signed over the address it believes in, is refused.
+    /// A binding never moves, and there is nothing here with which to redirect it: a bound wallet is served the address it recorded whatever it signs now, so re-binding is accepted and changes nothing, which is the ordinary case.
+    /// A 409 therefore reports a collision with another wallet rather than a caller changing its mind: l1_address_taken when that address is already held elsewhere, lighter_account_taken when the account behind it is. The usual cause is one wallet re-imported under a new wallet_id, while the old id still holds the row; somebody has to remove it, which is not something this endpoint can do. wallet_already_bound is the third and is all but unreachable -- it needs two first binds for one wallet to race each other, or Lighter to name a different account for an address it has already placed.
+    /// A proof made over some other address is not a conflict but a refused proof, 401: it was signed for a statement this service is not making. Read l1_address in the answer above, or from GET /account, to see which address that is.
+    ///
+    /// - Remark: HTTP `POST /account/bind`.
+    /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)`.
+    public func bindAccount(
+        headers: Operations.bindAccount.Input.Headers,
+        body: Operations.bindAccount.Input.Body
+    ) async throws -> Operations.bindAccount.Output {
+        try await bindAccount(Operations.bindAccount.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// Report transactions the caller submitted to Lighter
     ///
@@ -208,14 +340,29 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Store the caller's Lighter read-only token
+    /// Partner-attribution values the caller signs into its Lighter transactions
     ///
+    /// What the client copies, unchanged, into the transactions it signs. Two of them consume these values: an order takes integrator_account_index and the two fees, while ApproveIntegrator -- signed once, before the first order that carries a fee -- takes the account index and the four maximums, with an expiry of now plus approval_ttl_ms.
+    /// Fees are millionths of a fill's notional, Lighter's own unit, so 900 is 9 basis points. A zero account index means attribution is off and the client signs no integrator fields at all; that is also the answer while this service has no integrator account configured.
+    /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
+    /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    ///
+    /// - Remark: HTTP `GET /integrator`.
+    /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
+    public func getIntegrator(headers: Operations.getIntegrator.Input.Headers) async throws -> Operations.getIntegrator.Output {
+        try await getIntegrator(Operations.getIntegrator.Input(headers: headers))
+    }
+    /// Store the caller's Lighter read-only token (deprecated)
+    ///
+    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
+    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
     /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
     /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
     /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- its first deposit, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
     ///
     /// - Remark: HTTP `POST /account/ro-token`.
     /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
+    @available(*, deprecated)
     public func saveRoToken(
         headers: Operations.saveRoToken.Input.Headers,
         body: Operations.saveRoToken.Input.Body
@@ -225,10 +372,29 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// Mint the caller's Lighter read-only token and store it
+    ///
+    /// Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
+    /// What the caller supplies is lighter_auth: the short-lived credential its Lighter L2 key produced locally. It is a bearer credential and not a signature over this request, so it authorises anything Lighter accepts it for until it expires, and it is passed straight through without being stored or logged. The L2 private key itself never travels.
+    /// The account is not named by the caller. It is the one the wallet's proved L1 address owns, which is also what the token is minted against, so a wallet with no Lighter account yet -- one whose first deposit has not been credited -- has nothing to mint for and is answered 409.
+    /// The token's expiry and its reach are this service's to set, not the caller's, and are therefore absent from the body: it is minted long-lived, because the private reads this service makes on the caller's behalf run on it and nothing renews it, and scoped to the main account, because a wallet maps to exactly one.
+    /// Minting supersedes whatever token the account had. Superseded tokens are revoked at Lighter on a best-effort basis, in this request and only here: revoking takes the same short-lived authorization the mint did, so once this request ends nothing can revoke them any more.
+    ///
+    /// - Remark: HTTP `POST /account/ro-token/issue`.
+    /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)`.
+    public func issueRoToken(
+        headers: Operations.issueRoToken.Input.Headers,
+        body: Operations.issueRoToken.Input.Body
+    ) async throws -> Operations.issueRoToken.Output {
+        try await issueRoToken(Operations.issueRoToken.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// The caller's open positions
     ///
     /// Every position the wallet currently holds, one per venue and market, with the numbers a position card renders. Only open ones: Lighter keeps a row for every market an account has ever traded, and on a long-lived account the closed rows outnumber the open ones many times over, so a zero size is filtered here rather than on the client.
-    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no X-Lighter-Auth is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need that token.
+    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no read-only token is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need one.
     /// Neither paginated nor filtered on purpose. One position per market caps the list at the number of active markets, and the upstream snapshot is unpaginated anyway, so a cursor would add failure modes without bounding anything.
     /// A wallet with no account yet, and an account with nothing open, both get an empty list rather than an error: that is what a client renders before the first position.
     ///
@@ -254,6 +420,68 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// What became of a market's position, and of the order just sent
+    ///
+    /// Answers the question a client has right after submitting an order: did anything happen. It reads this service's own record and nothing else, so it is cheap to poll -- no Lighter call, no read-only token, no markets snapshot.
+    /// Two things are answered. `open` is the position the market holds now, and `last_closed` is the one that ended most recently; a client that closed a position needs the second, because an absent position alone cannot tell "it closed" from "there never was one". Both are episodes: one life of a position, from the fill that opened it to the fill that closed it. Lighter keeps only the current size, so a closed position leaves no trace there at all -- `/positions/{id}` answers 404 for a market whose position closed a minute ago.
+    /// `orders` is what the venue said about the orders carrying `client_order_index`, and it is empty until an order event arrives. An empty list therefore means "nothing heard yet", which is the state to keep polling on; a client knows it submitted, so this service does not repeat that back. Several entries are a legitimate answer: nothing makes that number unique, and a client that reused it is told about every order rather than being handed a guess. Without the parameter the list is empty and only the position halves are answered.
+    /// A market this wallet has never traded is `open: null`, `last_closed: null`, `orders: []` -- not a 404. The question "what is the state" always has an answer, and "nothing" is one.
+    ///
+    /// - Remark: HTTP `GET /positions/{id}/state`.
+    /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)`.
+    public func getPositionState(
+        path: Operations.getPositionState.Input.Path,
+        query: Operations.getPositionState.Input.Query = .init(),
+        headers: Operations.getPositionState.Input.Headers
+    ) async throws -> Operations.getPositionState.Output {
+        try await getPositionState(Operations.getPositionState.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Balance, open positions and open orders
+    ///
+    /// Everything the portfolio section renders in one read: the account balance, every open position with the numbers a position card needs, and the orders resting on the book. Replaces /screens/portfolio, which carries a thinner position and no orders at all.
+    /// Balance and positions come from the account snapshot Lighter serves by index, and mark prices from the cached markets snapshot; neither needs a token. open_orders does, and this service uses the read-only token it stored for the wallet rather than asking the caller.
+    /// open_orders_known says whether the orders were read at all. False means the section could not be filled -- no stored token, an expired one, one Vault would not decrypt, or an upstream that did not answer -- and open_orders is then empty because nothing was seen, not because nothing is resting. Render "temporarily unavailable" on false, never "no open orders". Orders never turn this endpoint into a 503: the balance and the positions are an answer of their own.
+    /// Take-profit and stop-loss legs are not here. They belong to a position and are served with it by /positions/{id}.
+    /// A wallet with no account yet gets empty sections rather than an error.
+    ///
+    /// - Remark: HTTP `GET /portfolio`.
+    /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)`.
+    public func getPortfolio(headers: Operations.getPortfolio.Input.Headers) async throws -> Operations.getPortfolio.Output {
+        try await getPortfolio(Operations.getPortfolio.Input(headers: headers))
+    }
+    /// The caller's open orders
+    ///
+    /// Every order resting on the book across all markets. An unfilled order is not a position -- it holds no entry price, no PnL and no liquidation price -- so it appears here and never in /positions.
+    /// Take-profit and stop-loss legs are filtered out: they are attached to a position and are served with it by /positions/{id}, and listing them here would show the same leg twice.
+    /// Reading orders needs the wallet's stored read-only token, so unlike /positions this endpoint depends on Vault. orders_known carries that: false means the list could not be read and is empty for that reason alone. It is a 200, not a 503 -- a wallet without an active token is a state that no retry changes, and the client renders its unavailable block from the flag. A genuine upstream failure is still a 503.
+    /// Neither paginated nor filtered: an account's resting orders are bounded by what it can afford to place.
+    ///
+    /// - Remark: HTTP `GET /orders`.
+    /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)`.
+    public func listOpenOrders(headers: Operations.listOpenOrders.Input.Headers) async throws -> Operations.listOpenOrders.Output {
+        try await listOpenOrders(Operations.listOpenOrders.Input(headers: headers))
+    }
+    /// One order, resting or finished, with its fills
+    ///
+    /// The order the id names, wherever it is now. Resting orders are read from the book; one that has left it -- filled, cancelled or expired -- is looked up in the account's order history, which is walked page by page because the venue offers no lookup by order id. `resting` says which of the two answered.
+    /// The history walk is bounded. An order older than the walk reaches is a 404, which is therefore "not found within the window this endpoint looks at" rather than a claim that it never existed.
+    /// `fills` is the execution broken down into trades, which the order itself does not carry -- it holds only the filled totals. That lookup is walked and bounded like the one above, so fills_known is false both when it failed and when the cap cut it short with pages still to come. Only under a true flag does an empty list mean the order has not traded.
+    ///
+    /// - Remark: HTTP `GET /orders/{id}`.
+    /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)`.
+    public func getOrder(
+        path: Operations.getOrder.Input.Path,
+        headers: Operations.getOrder.Input.Headers
+    ) async throws -> Operations.getOrder.Output {
+        try await getOrder(Operations.getOrder.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// Markets list screen
     ///
     /// Aggregates the markets-list screen in a single call by merging Lighter orderBookDetails, assetDetails, and funding-rates into screen-shaped market rows. Supports free-text search, a coarse filter, and sorting so the client renders the list without further requests.
@@ -272,7 +500,8 @@ extension APIProtocol {
     /// Trading screen bootstrap
     ///
     /// Single-call bootstrap for the trading screen: contract metadata for the market, the caller's current position, open orders, balance, and the action flags that drive UI affordances. Live orderbook and candles are delivered out-of-band over the Hermes WebSocket and are NOT part of this payload.
-    /// The market data is public; the private sections are the wallet's. X-Lighter-Auth is optional: without it, and for a wallet whose address owns no Lighter account yet, the position, open orders and private balance details are empty rather than an error.
+    /// The market data is public; the private sections are the wallet's, and the caller carries no credential for them: the read-only token comes from this service's own store.
+    /// The two absences differ. A wallet whose address owns no Lighter account yet, or one Lighter would not name an account for, gets the market and empty private sections throughout. A wallet with an account but no usable stored token keeps its position and balance, which come from the account snapshot and need no token, and loses only open_orders and what is derived from it -- position.auto_close and flags.cancel_enabled. Neither is an error.
     ///
     /// - Remark: HTTP `GET /screens/trading`.
     /// - Remark: Generated from `#/paths//screens/trading/get(getTradingScreen)`.
@@ -285,12 +514,14 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Portfolio screen
+    /// Portfolio screen (deprecated)
     ///
+    /// Superseded by /portfolio, which carries the same balance, a fuller position -- with id, mark price, margin, equity and ROI -- and the open orders this one has no room for. Frozen: it keeps answering exactly as it does today and gains nothing further.
     /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
     ///
     /// - Remark: HTTP `GET /screens/portfolio`.
     /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
+    @available(*, deprecated)
     public func getPortfolioScreen(headers: Operations.getPortfolioScreen.Input.Headers) async throws -> Operations.getPortfolioScreen.Output {
         try await getPortfolioScreen(Operations.getPortfolioScreen.Input(headers: headers))
     }
@@ -314,7 +545,7 @@ extension APIProtocol {
     /// Account activity timeline
     ///
     /// Merged, cursor-paginated timeline of fills, funding payments, deposits, and withdrawals. Uses an opaque keyset cursor and returns last_sort_ts so the client can detect ranking shifts between polls. Deposits appear from the moment they are registered, as items of type deposit with status pending; the one Lighter reports once the money lands is the same item under the same id, with a new status, so the client updates a row rather than replacing it. A deposit that is never confirmed leaves the feed when it is closed, and its outcome is then only on /funding/deposit/{deposit_id}.
-    /// The feed belongs to the wallet. Everything Lighter holds needs X-Lighter-Auth as well; without it -- or for a wallet whose address owns no Lighter account yet -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account, and which then covers a deposit that was credited before the client had a token. A wallet that has proved no address gets an empty page rather than an error.
+    /// The feed belongs to the wallet, and the caller carries no credential for it -- everything Lighter holds is read with the token this service keeps. Without a usable one -- or for a wallet whose address owns no Lighter account yet, or one Lighter will not name an account for right now -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account. A wallet that has proved no address gets an empty page rather than an error, and so does an outage this service can still read its own rows through.
     ///
     /// - Remark: HTTP `GET /activity`.
     /// - Remark: Generated from `#/paths//activity/get(getActivity)`.
@@ -367,6 +598,45 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Quote a deposit from another asset
+    ///
+    /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
+    /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
+    /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why expected_amount and min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
+    /// The quote is good for the seconds expires_at says. The aggregator revalidates at fill time, so a stale one is refunded rather than filled at a worse price -- ask again instead of signing an old one.
+    /// The wallet's L1 address is destination_address, and the two must agree once the wallet has proved one: a quote for somebody else's account is refused. A wallet that has proved nothing yet -- the first deposit is what creates the account -- is quoted for the address it names, and proves it when it records the deposit.
+    /// What this does not do yet: it does not initialise the Lighter account's signing key. A first deposit creates the account, and registering a key on it is a separate step the client takes once the account exists.
+    ///
+    /// - Remark: HTTP `POST /funding/quote`.
+    /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)`.
+    public func quoteDeposit(
+        headers: Operations.quoteDeposit.Input.Headers,
+        body: Operations.quoteDeposit.Input.Body
+    ) async throws -> Operations.quoteDeposit.Output {
+        try await quoteDeposit(Operations.quoteDeposit.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Follow a quoted deposit through the aggregator
+    ///
+    /// Reports where a cross-chain deposit is, by the execution_id its quote returned: whether the aggregator has seen the source transaction, filled on Ethereum, failed, or refunded. The execution lives at swaps-backend, which follows the fill by the id the aggregator quoted it under, so nothing has to be submitted there first: the wallet broadcasts on its own and polls.
+    /// This is how a client that paid from another chain learns the Ethereum transaction hash: the aggregator's fill is the transaction that called the gateway, so once status is success the first entry of tx_hashes is what POST /funding/deposit takes as l1_tx_hash. Until then there is nothing to record.
+    /// Poll while status is pending. success, failure and refund are final. unknown means the aggregator has no such execution, which is also what an expired, never-broadcast quote looks like.
+    ///
+    /// - Remark: HTTP `GET /funding/status/{execution_id}`.
+    /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)`.
+    public func getFundingStatus(
+        path: Operations.getFundingStatus.Input.Path,
+        headers: Operations.getFundingStatus.Input.Headers
+    ) async throws -> Operations.getFundingStatus.Output {
+        try await getFundingStatus(Operations.getFundingStatus.Input(
+            path: path,
+            headers: headers
+        ))
+    }
 }
 
 /// Server URLs defined in the OpenAPI document.
@@ -396,6 +666,162 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/schemas/WalletID`.
         public typealias WalletID = Swift.String
+        /// The proof of the address to bind and this wallet's consent to being bound to it. Nothing else is here: the account is not the caller's to name, and the address is not the caller's to claim.
+        ///
+        /// - Remark: Generated from `#/components/schemas/BindAccountRequest`.
+        public struct BindAccountRequest: Codable, Hashable, Sendable {
+            /// Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BindAccountRequest/deadline`.
+            public var deadline: Swift.Int64?
+            /// EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            /// Read only while the wallet has proved no L1 address yet; missing when it is needed answers 400 address_proof_required.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BindAccountRequest/signature`.
+            public var signature: Swift.String?
+            /// The wallet's consent to this binding, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.account.bind.v1") | LP(wallet_id) | LP(l1_address), in the same length-prefixed framing the other writes use. l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            /// The signature above shows that somebody holds the key to an address; this shows that this wallet meant to be bound to it, which is what makes the binding irreversible. Required, and absent answers 401 operation_proof_required.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BindAccountRequest/proof`.
+            public var proof: Swift.String
+            /// Creates a new `BindAccountRequest`.
+            ///
+            /// - Parameters:
+            ///   - deadline: Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.
+            ///   - signature: EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            ///   - proof: The wallet's consent to this binding, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.account.bind.v1") | LP(wallet_id) | LP(l1_address), in the same length-prefixed framing the other writes use. l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            public init(
+                deadline: Swift.Int64? = nil,
+                signature: Swift.String? = nil,
+                proof: Swift.String
+            ) {
+                self.deadline = deadline
+                self.signature = signature
+                self.proof = proof
+            }
+            public enum CodingKeys: String, CodingKey {
+                case deadline
+                case signature
+                case proof
+            }
+        }
+        /// What it takes to have a read-only token minted: the Lighter authorization to mint it with, a label to remember it by, this wallet's consent, and the proof of its L1 address when it has none recorded yet. The account, the expiry and the reach are not here -- none of them is the caller's to choose.
+        ///
+        /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest`.
+        public struct IssueRoTokenRequest: Codable, Hashable, Sendable {
+            /// The short-lived Lighter authorization the caller's L2 key produced locally, typically good for ten minutes. Carried in the body rather than a header so it is never confused with this API's own authorization, which is a different credential answering a different question. Passed through to Lighter and never stored.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest/lighter_auth`.
+            public var lighter_auth: Swift.String
+            /// Optional client-supplied label for the token.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest/name`.
+            public var name: Swift.String?
+            /// Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest/deadline`.
+            public var deadline: Swift.Int64?
+            /// EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            /// Read only while the wallet has proved no L1 address yet; missing when it is needed answers 400 address_proof_required.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest/signature`.
+            public var signature: Swift.String?
+            /// The wallet's consent to this mint, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.rotoken.issue.v1") | LP(wallet_id) | LP(l1_address) | LP(auth_hash) | LP(name), in the same length-prefixed framing the other writes use. auth_hash is sha256 of lighter_auth in lowercase hex; name is what this body carries, empty string when omitted; l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            /// The token cannot be signed here the way the store endpoint signs it, because it does not exist yet. The authorization stands in for it and pins the consent to this one mint: the proof cannot be replayed with a different authorization, and the one it names expires within minutes, which bounds the replay window on its own.
+            /// Nothing else in the body is signed, because nothing else in it reaches Lighter. Required, and absent answers 401 operation_proof_required.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssueRoTokenRequest/proof`.
+            public var proof: Swift.String
+            /// Creates a new `IssueRoTokenRequest`.
+            ///
+            /// - Parameters:
+            ///   - lighter_auth: The short-lived Lighter authorization the caller's L2 key produced locally, typically good for ten minutes. Carried in the body rather than a header so it is never confused with this API's own authorization, which is a different credential answering a different question. Passed through to Lighter and never stored.
+            ///   - name: Optional client-supplied label for the token.
+            ///   - deadline: Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.
+            ///   - signature: EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            ///   - proof: The wallet's consent to this mint, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.rotoken.issue.v1") | LP(wallet_id) | LP(l1_address) | LP(auth_hash) | LP(name), in the same length-prefixed framing the other writes use. auth_hash is sha256 of lighter_auth in lowercase hex; name is what this body carries, empty string when omitted; l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            public init(
+                lighter_auth: Swift.String,
+                name: Swift.String? = nil,
+                deadline: Swift.Int64? = nil,
+                signature: Swift.String? = nil,
+                proof: Swift.String
+            ) {
+                self.lighter_auth = lighter_auth
+                self.name = name
+                self.deadline = deadline
+                self.signature = signature
+                self.proof = proof
+            }
+            public enum CodingKeys: String, CodingKey {
+                case lighter_auth
+                case name
+                case deadline
+                case signature
+                case proof
+            }
+        }
+        /// The minted token and what was recorded about it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/IssuedRoToken`.
+        public struct IssuedRoToken: Codable, Hashable, Sendable {
+            /// The read-only token itself, "ro:{account}:{scope}:{expiry}:{secret}". A credential: hold it as one. This service keeps its own encrypted copy, so a client that has no direct use for it can discard it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/token`.
+            public var token: Swift.String
+            /// Lighter's id for the token, and the only handle its revocation takes. Keep it if you intend to revoke the token yourself later.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/token_id`.
+            public var token_id: Swift.Int64
+            /// The label the token was minted and stored under.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/name`.
+            public var name: Swift.String?
+            /// The Lighter account the token belongs to, which is the one this wallet's address owns.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/account_index`.
+            public var account_index: Swift.Int64
+            /// When this service minted the token.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/issued_at`.
+            public var issued_at: Foundation.Date
+            /// When the token stops working, as the token itself states it rather than as it was asked for. Far ahead by design; nothing renews it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IssuedRoToken/expires_at`.
+            public var expires_at: Foundation.Date
+            /// Creates a new `IssuedRoToken`.
+            ///
+            /// - Parameters:
+            ///   - token: The read-only token itself, "ro:{account}:{scope}:{expiry}:{secret}". A credential: hold it as one. This service keeps its own encrypted copy, so a client that has no direct use for it can discard it.
+            ///   - token_id: Lighter's id for the token, and the only handle its revocation takes. Keep it if you intend to revoke the token yourself later.
+            ///   - name: The label the token was minted and stored under.
+            ///   - account_index: The Lighter account the token belongs to, which is the one this wallet's address owns.
+            ///   - issued_at: When this service minted the token.
+            ///   - expires_at: When the token stops working, as the token itself states it rather than as it was asked for. Far ahead by design; nothing renews it.
+            public init(
+                token: Swift.String,
+                token_id: Swift.Int64,
+                name: Swift.String? = nil,
+                account_index: Swift.Int64,
+                issued_at: Foundation.Date,
+                expires_at: Foundation.Date
+            ) {
+                self.token = token
+                self.token_id = token_id
+                self.name = name
+                self.account_index = account_index
+                self.issued_at = issued_at
+                self.expires_at = expires_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case token_id
+                case name
+                case account_index
+                case issued_at
+                case expires_at
+            }
+        }
         /// What travels with a Lighter read-only token: a label to remember it by, this wallet's consent to storing it, and the proof of its L1 address when it has none recorded yet. The token itself is in the X-Lighter-Auth header, and its account index and expiry are read out of it rather than declared here.
         ///
         /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest`.
@@ -519,7 +945,8 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/deadline`.
             public var deadline: Swift.Int64?
-            /// EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1}. Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.
+            /// EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            /// Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.
             ///
             /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/signature`.
             public var signature: Swift.String?
@@ -539,7 +966,7 @@ public enum Components {
             ///   - submitted_at: When the client submitted the transactions to Lighter.
             ///   - transactions: In submission order. The order matters to consumers, which see one event per entry: a leverage change that preceded an order must precede it here too.
             ///   - deadline: Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.
-            ///   - signature: EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1}. Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.
+            ///   - signature: EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
             ///   - proof: The wallet's consent to this report, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.transactions.report.v1") | LP(wallet_id) | LP(l1_address) | LP(submitted_at) | LP(type) | LP(tx_hash) | ..., one length-prefixed pair per entry in the order they appear in transactions, and submitted_at as unix nanoseconds in decimal. The same length-prefixed framing custodial-battery uses for its send proof.
             public init(
                 operation_id: Swift.String? = nil,
@@ -848,16 +1275,21 @@ public enum Components {
         public struct Account: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Account/account_index`.
             public var account_index: Swift.Int?
-            /// L1 (Ethereum) address keying this main account.
+            /// L1 (Ethereum) address keying this main account. Present whenever the wallet has proved one, status not_registered included: the address is never sent by the caller, so this is the only place to read back what the wallet is bound to. Absent only while it has proved nothing at all.
+            /// Always lowercase, whatever case Lighter reports, because it is signed over verbatim: an operation proof is checked against the address in the form recorded here, and the same address in two casings is two different statements.
             ///
             /// - Remark: Generated from `#/components/schemas/Account/l1_address`.
             public var l1_address: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Account/status`.
             public var status: Components.Schemas.AccountStatus?
-            /// Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account's API keys, not from the account record.
+            /// Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account's API keys, not from the account record. True exactly when api_keys below is non-empty.
             ///
             /// - Remark: Generated from `#/components/schemas/Account/has_l2_key`.
             public var has_l2_key: Swift.Bool?
+            /// The L2 signing keys registered on this account, one entry per occupied slot. Only occupied slots are listed, so an index absent here is one a client may register into, and an empty array means the account has no signing key at all. Absent while the wallet has no account.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Account/api_keys`.
+            public var api_keys: [Components.Schemas.AccountAPIKey]?
             /// Total collateral, human-unit decimal string.
             ///
             /// - Remark: Generated from `#/components/schemas/Account/collateral`.
@@ -872,9 +1304,10 @@ public enum Components {
             ///
             /// - Parameters:
             ///   - account_index:
-            ///   - l1_address: L1 (Ethereum) address keying this main account.
+            ///   - l1_address: L1 (Ethereum) address keying this main account. Present whenever the wallet has proved one, status not_registered included: the address is never sent by the caller, so this is the only place to read back what the wallet is bound to. Absent only while it has proved nothing at all.
             ///   - status:
-            ///   - has_l2_key: Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account's API keys, not from the account record.
+            ///   - has_l2_key: Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account's API keys, not from the account record. True exactly when api_keys below is non-empty.
+            ///   - api_keys: The L2 signing keys registered on this account, one entry per occupied slot. Only occupied slots are listed, so an index absent here is one a client may register into, and an empty array means the account has no signing key at all. Absent while the wallet has no account.
             ///   - collateral: Total collateral, human-unit decimal string.
             ///   - available_balance: Balance available for new orders, human-unit decimal string.
             ///   - created_at:
@@ -883,6 +1316,7 @@ public enum Components {
                 l1_address: Swift.String? = nil,
                 status: Components.Schemas.AccountStatus? = nil,
                 has_l2_key: Swift.Bool? = nil,
+                api_keys: [Components.Schemas.AccountAPIKey]? = nil,
                 collateral: Swift.String? = nil,
                 available_balance: Swift.String? = nil,
                 created_at: Foundation.Date? = nil
@@ -891,6 +1325,7 @@ public enum Components {
                 self.l1_address = l1_address
                 self.status = status
                 self.has_l2_key = has_l2_key
+                self.api_keys = api_keys
                 self.collateral = collateral
                 self.available_balance = available_balance
                 self.created_at = created_at
@@ -900,9 +1335,116 @@ public enum Components {
                 case l1_address
                 case status
                 case has_l2_key
+                case api_keys
                 case collateral
                 case available_balance
                 case created_at
+            }
+        }
+        /// One L2 signing key registered on the account, as Lighter reports it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccountAPIKey`.
+        public struct AccountAPIKey: Codable, Hashable, Sendable {
+            /// The slot this key occupies. It is what a client names when it signs a transaction and when it reads a nonce from GET /transactions/next-nonce.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccountAPIKey/api_key_index`.
+            public var api_key_index: Swift.Int
+            /// The key's public part. A client finds its own slot by comparing this against the key it holds, which is the only way to tell its key from another device's.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccountAPIKey/public_key`.
+            public var public_key: Swift.String
+            /// Creates a new `AccountAPIKey`.
+            ///
+            /// - Parameters:
+            ///   - api_key_index: The slot this key occupies. It is what a client names when it signs a transaction and when it reads a nonce from GET /transactions/next-nonce.
+            ///   - public_key: The key's public part. A client finds its own slot by comparing this against the key it holds, which is the only way to tell its key from another device's.
+            public init(
+                api_key_index: Swift.Int,
+                public_key: Swift.String
+            ) {
+                self.api_key_index = api_key_index
+                self.public_key = public_key
+            }
+            public enum CodingKeys: String, CodingKey {
+                case api_key_index
+                case public_key
+            }
+        }
+        /// Partner attribution for one caller. Every field is an integer in Lighter's own units and is signed verbatim; nothing here is a display value.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Integrator`.
+        public struct Integrator: Codable, Hashable, Sendable {
+            /// Lighter account the fees accrue to. Zero means attribution is off.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/integrator_account_index`.
+            public var integrator_account_index: Swift.Int64
+            /// Taker fee in millionths of the fill's notional. 900 is 9 basis points.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/integrator_taker_fee`.
+            public var integrator_taker_fee: Swift.Int
+            /// Maker fee in millionths of the fill's notional.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/integrator_maker_fee`.
+            public var integrator_maker_fee: Swift.Int
+            /// Perpetual taker ceiling to sign into ApproveIntegrator. Never below integrator_taker_fee, and raising it later needs a fresh approval from the same wallet.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/max_perps_taker_fee`.
+            public var max_perps_taker_fee: Swift.Int
+            /// Perpetual maker ceiling to sign into ApproveIntegrator.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/max_perps_maker_fee`.
+            public var max_perps_maker_fee: Swift.Int
+            /// Always zero -- this service does not trade spot.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/max_spot_taker_fee`.
+            public var max_spot_taker_fee: Swift.Int
+            /// Always zero.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/max_spot_maker_fee`.
+            public var max_spot_maker_fee: Swift.Int
+            /// How far ahead of now the approval_expiry signed into ApproveIntegrator should sit, in milliseconds. Zero alongside a zero account index means there is nothing to approve.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/approval_ttl_ms`.
+            public var approval_ttl_ms: Swift.Int64
+            /// Creates a new `Integrator`.
+            ///
+            /// - Parameters:
+            ///   - integrator_account_index: Lighter account the fees accrue to. Zero means attribution is off.
+            ///   - integrator_taker_fee: Taker fee in millionths of the fill's notional. 900 is 9 basis points.
+            ///   - integrator_maker_fee: Maker fee in millionths of the fill's notional.
+            ///   - max_perps_taker_fee: Perpetual taker ceiling to sign into ApproveIntegrator. Never below integrator_taker_fee, and raising it later needs a fresh approval from the same wallet.
+            ///   - max_perps_maker_fee: Perpetual maker ceiling to sign into ApproveIntegrator.
+            ///   - max_spot_taker_fee: Always zero -- this service does not trade spot.
+            ///   - max_spot_maker_fee: Always zero.
+            ///   - approval_ttl_ms: How far ahead of now the approval_expiry signed into ApproveIntegrator should sit, in milliseconds. Zero alongside a zero account index means there is nothing to approve.
+            public init(
+                integrator_account_index: Swift.Int64,
+                integrator_taker_fee: Swift.Int,
+                integrator_maker_fee: Swift.Int,
+                max_perps_taker_fee: Swift.Int,
+                max_perps_maker_fee: Swift.Int,
+                max_spot_taker_fee: Swift.Int,
+                max_spot_maker_fee: Swift.Int,
+                approval_ttl_ms: Swift.Int64
+            ) {
+                self.integrator_account_index = integrator_account_index
+                self.integrator_taker_fee = integrator_taker_fee
+                self.integrator_maker_fee = integrator_maker_fee
+                self.max_perps_taker_fee = max_perps_taker_fee
+                self.max_perps_maker_fee = max_perps_maker_fee
+                self.max_spot_taker_fee = max_spot_taker_fee
+                self.max_spot_maker_fee = max_spot_maker_fee
+                self.approval_ttl_ms = approval_ttl_ms
+            }
+            public enum CodingKeys: String, CodingKey {
+                case integrator_account_index
+                case integrator_taker_fee
+                case integrator_maker_fee
+                case max_perps_taker_fee
+                case max_perps_maker_fee
+                case max_spot_taker_fee
+                case max_spot_maker_fee
+                case approval_ttl_ms
             }
         }
         /// A perpetual market and its live stats. All monetary/price/size fields are human-unit decimal strings; the *_decimals fields tell the client how to scale those values back into integer units when building/signing a tx.
@@ -1773,6 +2315,219 @@ public enum Components {
                 case open_order_count
             }
         }
+        /// The state of one market for the caller: the position it holds, the one that ended last, and what the venue said about the orders a client order index names.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PositionState`.
+        public struct PositionState: Codable, Hashable, Sendable {
+            /// The market the id named. No symbol here on purpose: naming it means reading the venue's market list, and this endpoint is meant to be polled without touching the venue at all.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/market_index`.
+            public var market_index: Swift.Int
+            /// The position this market holds now, or null when it holds none. There is no separate status field: null is the whole answer, and two ways to say it would let them disagree. Always present, null included, so a decoder that distinguishes an absent key from a null one does not have to.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/open`.
+            public struct openPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PositionState/open/value1`.
+                public var value1: Components.Schemas.PositionEpisode
+                /// Creates a new `openPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.PositionEpisode) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Decoder) throws {
+                    value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try value1.encode(to: encoder)
+                }
+            }
+            /// The position this market holds now, or null when it holds none. There is no separate status field: null is the whole answer, and two ways to say it would let them disagree. Always present, null included, so a decoder that distinguishes an absent key from a null one does not have to.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/open`.
+            public var open: Components.Schemas.PositionState.openPayload?
+            /// The episode that ended most recently, or null if none ever did. What tells a client that watched a position that it closed, rather than that it never existed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/last_closed`.
+            public struct last_closedPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PositionState/last_closed/value1`.
+                public var value1: Components.Schemas.PositionEpisode
+                /// Creates a new `last_closedPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.PositionEpisode) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Decoder) throws {
+                    value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try value1.encode(to: encoder)
+                }
+            }
+            /// The episode that ended most recently, or null if none ever did. What tells a client that watched a position that it closed, rather than that it never existed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/last_closed`.
+            public var last_closed: Components.Schemas.PositionState.last_closedPayload?
+            /// Newest first, and capped. Empty without the client_order_index parameter, and empty while no event has arrived for it yet.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionState/orders`.
+            public var orders: [Components.Schemas.PositionStateOrder]
+            /// Creates a new `PositionState`.
+            ///
+            /// - Parameters:
+            ///   - market_index: The market the id named. No symbol here on purpose: naming it means reading the venue's market list, and this endpoint is meant to be polled without touching the venue at all.
+            ///   - open: The position this market holds now, or null when it holds none. There is no separate status field: null is the whole answer, and two ways to say it would let them disagree. Always present, null included, so a decoder that distinguishes an absent key from a null one does not have to.
+            ///   - last_closed: The episode that ended most recently, or null if none ever did. What tells a client that watched a position that it closed, rather than that it never existed.
+            ///   - orders: Newest first, and capped. Empty without the client_order_index parameter, and empty while no event has arrived for it yet.
+            public init(
+                market_index: Swift.Int,
+                open: Components.Schemas.PositionState.openPayload? = nil,
+                last_closed: Components.Schemas.PositionState.last_closedPayload? = nil,
+                orders: [Components.Schemas.PositionStateOrder]
+            ) {
+                self.market_index = market_index
+                self.open = open
+                self.last_closed = last_closed
+                self.orders = orders
+            }
+            public enum CodingKeys: String, CodingKey {
+                case market_index
+                case open
+                case last_closed
+                case orders
+            }
+        }
+        /// One life of a position on one market, from the fill that opened it to the one that closed it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PositionEpisode`.
+        public struct PositionEpisode: Codable, Hashable, Sendable {
+            /// Lighter's trade id of the fill that opened the episode, which is also its identity. Opaque; a string because it is an identifier and not a number to do arithmetic on.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/episode_id`.
+            public var episode_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/side`.
+            public var side: Components.Schemas.PositionSide
+            /// When the opening fill traded, in the venue's own time.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/opened_at`.
+            public var opened_at: Foundation.Date
+            /// false when this service adopted the episode mid-flight: the first fill it saw already found a position, so opened_at is that fill's time and not when the position opened. A client should not present it as an opening time when this is false.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/open_seen`.
+            public var open_seen: Swift.Bool
+            /// Null while the episode is open.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/closed_at`.
+            public var closed_at: Foundation.Date?
+            /// What ended it. `fill` is an ordinary close and `liquidation` a fill the venue marked as one. `event` is every close with no fill of ours behind it -- an auto-deleverage, or one whose fill this service never saw: the venue reported the position gone without saying why, and this does not claim to know either. Treat the set as open-ended; a later release may name a reason `event` covers today.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/close_reason`.
+            @frozen public enum close_reasonPayload: String, Codable, Hashable, Sendable {
+                case fill = "fill"
+                case liquidation = "liquidation"
+                case event = "event"
+            }
+            /// What ended it. `fill` is an ordinary close and `liquidation` a fill the venue marked as one. `event` is every close with no fill of ours behind it -- an auto-deleverage, or one whose fill this service never saw: the venue reported the position gone without saying why, and this does not claim to know either. Treat the set as open-ended; a later release may name a reason `event` covers today.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/close_reason`.
+            public var close_reason: Components.Schemas.PositionEpisode.close_reasonPayload?
+            /// Creates a new `PositionEpisode`.
+            ///
+            /// - Parameters:
+            ///   - episode_id: Lighter's trade id of the fill that opened the episode, which is also its identity. Opaque; a string because it is an identifier and not a number to do arithmetic on.
+            ///   - side:
+            ///   - opened_at: When the opening fill traded, in the venue's own time.
+            ///   - open_seen: false when this service adopted the episode mid-flight: the first fill it saw already found a position, so opened_at is that fill's time and not when the position opened. A client should not present it as an opening time when this is false.
+            ///   - closed_at: Null while the episode is open.
+            ///   - close_reason: What ended it. `fill` is an ordinary close and `liquidation` a fill the venue marked as one. `event` is every close with no fill of ours behind it -- an auto-deleverage, or one whose fill this service never saw: the venue reported the position gone without saying why, and this does not claim to know either. Treat the set as open-ended; a later release may name a reason `event` covers today.
+            public init(
+                episode_id: Swift.String,
+                side: Components.Schemas.PositionSide,
+                opened_at: Foundation.Date,
+                open_seen: Swift.Bool,
+                closed_at: Foundation.Date? = nil,
+                close_reason: Components.Schemas.PositionEpisode.close_reasonPayload? = nil
+            ) {
+                self.episode_id = episode_id
+                self.side = side
+                self.opened_at = opened_at
+                self.open_seen = open_seen
+                self.closed_at = closed_at
+                self.close_reason = close_reason
+            }
+            public enum CodingKeys: String, CodingKey {
+                case episode_id
+                case side
+                case opened_at
+                case open_seen
+                case closed_at
+                case close_reason
+            }
+        }
+        /// What the venue said about one order, as this service recorded it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PositionStateOrder`.
+        public struct PositionStateOrder: Codable, Hashable, Sendable {
+            /// Lighter's own number for the order. A cancel or a modify is addressed by `market_index` plus this.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/order_index`.
+            public var order_index: Swift.Int64
+            /// The venue's own word for what kind of order it was, e.g. `market`, `take-profit`, `stop-loss`, `liquidation`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/kind`.
+            public var kind: Swift.String?
+            /// The venue's own word, passed through unmapped -- Lighter does not document the set of values it uses, and mapping them by guess would report a state nobody established. An order still working carries something other than `filled` or `canceled`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/status`.
+            public var status: Swift.String
+            /// What the venue says was filled, in base units. Zero for an order still resting in the book.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/filled_base`.
+            public var filled_base: Swift.String?
+            /// True for a closing order, which is how a close is told from an open before any fill lands.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/reduce_only`.
+            public var reduce_only: Swift.Bool?
+            /// This service's own clock: when the order was first written here, not when the venue created it. An order can rest in the book for twenty minutes before an event brings it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/recorded_at`.
+            public var recorded_at: Foundation.Date?
+            /// Creates a new `PositionStateOrder`.
+            ///
+            /// - Parameters:
+            ///   - order_index: Lighter's own number for the order. A cancel or a modify is addressed by `market_index` plus this.
+            ///   - kind: The venue's own word for what kind of order it was, e.g. `market`, `take-profit`, `stop-loss`, `liquidation`.
+            ///   - status: The venue's own word, passed through unmapped -- Lighter does not document the set of values it uses, and mapping them by guess would report a state nobody established. An order still working carries something other than `filled` or `canceled`.
+            ///   - filled_base: What the venue says was filled, in base units. Zero for an order still resting in the book.
+            ///   - reduce_only: True for a closing order, which is how a close is told from an open before any fill lands.
+            ///   - recorded_at: This service's own clock: when the order was first written here, not when the venue created it. An order can rest in the book for twenty minutes before an event brings it.
+            public init(
+                order_index: Swift.Int64,
+                kind: Swift.String? = nil,
+                status: Swift.String,
+                filled_base: Swift.String? = nil,
+                reduce_only: Swift.Bool? = nil,
+                recorded_at: Foundation.Date? = nil
+            ) {
+                self.order_index = order_index
+                self.kind = kind
+                self.status = status
+                self.filled_base = filled_base
+                self.reduce_only = reduce_only
+                self.recorded_at = recorded_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case order_index
+                case kind
+                case status
+                case filled_base
+                case reduce_only
+                case recorded_at
+            }
+        }
         /// Fee breakdown for an order, all human-unit decimal strings.
         ///
         /// - Remark: Generated from `#/components/schemas/OrderFees`.
@@ -1808,10 +2563,18 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/schemas/Order`.
         public struct Order: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/Order/order_id`.
-            public var order_id: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/Order/client_order_id`.
-            public var client_order_id: Swift.String?
+            /// Identifies the order for the detail endpoint. Opaque -- read it from here and hand it back, do not parse it. It names the venue and the venue's own order number.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Order/id`.
+            public var id: Swift.String?
+            /// Lighter's own number for the order, assigned when it entered the book. A cancel or a modify is addressed by `market_index` plus this.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Order/order_index`.
+            public var order_index: Swift.Int64?
+            /// The number whoever created the order chose for it: Lighter stores and echoes it back, and never assigns one itself. Zero means nobody chose one -- it is a real value in the payload rather than an absent field. Match an order to your own record of placing it, and treat it as opaque otherwise.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Order/client_order_index`.
+            public var client_order_index: Swift.Int64?
             /// - Remark: Generated from `#/components/schemas/Order/market_index`.
             public var market_index: Swift.Int?
             /// - Remark: Generated from `#/components/schemas/Order/symbol`.
@@ -1895,8 +2658,9 @@ public enum Components {
             /// Creates a new `Order`.
             ///
             /// - Parameters:
-            ///   - order_id:
-            ///   - client_order_id:
+            ///   - id: Identifies the order for the detail endpoint. Opaque -- read it from here and hand it back, do not parse it. It names the venue and the venue's own order number.
+            ///   - order_index: Lighter's own number for the order, assigned when it entered the book. A cancel or a modify is addressed by `market_index` plus this.
+            ///   - client_order_index: The number whoever created the order chose for it: Lighter stores and echoes it back, and never assigns one itself. Zero means nobody chose one -- it is a real value in the payload rather than an absent field. Match an order to your own record of placing it, and treat it as opaque otherwise.
             ///   - market_index:
             ///   - symbol:
             ///   - side:
@@ -1919,8 +2683,9 @@ public enum Components {
             ///   - fees: Fee breakdown, null if not yet known. Always null today: nothing populates it, so a client must not rely on it. Lighter reports per-order fees and this service does not map them yet.
             ///   - sort_ts: Sort timestamp used for keyset pagination and poll ranking.
             public init(
-                order_id: Swift.String? = nil,
-                client_order_id: Swift.String? = nil,
+                id: Swift.String? = nil,
+                order_index: Swift.Int64? = nil,
+                client_order_index: Swift.Int64? = nil,
                 market_index: Swift.Int? = nil,
                 symbol: Swift.String? = nil,
                 side: Components.Schemas.OrderSide? = nil,
@@ -1943,8 +2708,9 @@ public enum Components {
                 fees: Components.Schemas.Order.feesPayload? = nil,
                 sort_ts: Foundation.Date? = nil
             ) {
-                self.order_id = order_id
-                self.client_order_id = client_order_id
+                self.id = id
+                self.order_index = order_index
+                self.client_order_index = client_order_index
                 self.market_index = market_index
                 self.symbol = symbol
                 self.side = side
@@ -1968,8 +2734,9 @@ public enum Components {
                 self.sort_ts = sort_ts
             }
             public enum CodingKeys: String, CodingKey {
-                case order_id
-                case client_order_id
+                case id
+                case order_index
+                case client_order_index
                 case market_index
                 case symbol
                 case side
@@ -2239,7 +3006,7 @@ public enum Components {
                 case markets
             }
         }
-        /// Perps asset details payload for a single market. Only open_orders needs X-Lighter-Auth: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. Without the token open_orders is empty, and two fields derived from it go with it -- flags.cancel_enabled is false and position.auto_close is null, since the TP/SL legs are themselves open orders.
+        /// Perps asset details payload for a single market. Only open_orders needs a read-only token, and this service reads it from its own store rather than from the caller: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. Without a usable token open_orders is empty, and two fields derived from it go with it -- flags.cancel_enabled is false and position.auto_close is null, since the TP/SL legs are themselves open orders.
         ///
         /// - Remark: Generated from `#/components/schemas/TradingScreen`.
         public struct TradingScreen: Codable, Hashable, Sendable {
@@ -2271,7 +3038,7 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TradingScreen/position`.
             public var position: Components.Schemas.TradingScreen.positionPayload?
-            /// Caller's open orders in this market (empty without X-Lighter-Auth).
+            /// Caller's open orders in this market (empty without a usable stored token).
             ///
             /// - Remark: Generated from `#/components/schemas/TradingScreen/open_orders`.
             public var open_orders: [Components.Schemas.Order]?
@@ -2285,7 +3052,7 @@ public enum Components {
             ///   - _type:
             ///   - market:
             ///   - position: Caller's position in this market, or null if none.
-            ///   - open_orders: Caller's open orders in this market (empty without X-Lighter-Auth).
+            ///   - open_orders: Caller's open orders in this market (empty without a usable stored token).
             ///   - balance:
             ///   - flags:
             public init(
@@ -2335,6 +3102,180 @@ public enum Components {
             public enum CodingKeys: String, CodingKey {
                 case balance
                 case positions
+            }
+        }
+        /// Balance, open positions and resting orders in one payload. The two sections are independent: a position is what the account holds, an order is what it is waiting for.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Portfolio`.
+        public struct Portfolio: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Portfolio/balance`.
+            public var balance: Components.Schemas.Balance?
+            /// - Remark: Generated from `#/components/schemas/Portfolio/positions`.
+            public var positions: [Components.Schemas.OpenPosition]?
+            /// Orders resting on the book, across every market. Empty when open_orders_known is false, which is a different thing from having none. Take-profit and stop-loss legs are not among them.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Portfolio/open_orders`.
+            public var open_orders: [Components.Schemas.Order]?
+            /// Whether open_orders was read at all. False without a usable stored read-only token, and when the venue did not answer. Never a reason to fail the response.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Portfolio/open_orders_known`.
+            public var open_orders_known: Swift.Bool?
+            /// Creates a new `Portfolio`.
+            ///
+            /// - Parameters:
+            ///   - balance:
+            ///   - positions:
+            ///   - open_orders: Orders resting on the book, across every market. Empty when open_orders_known is false, which is a different thing from having none. Take-profit and stop-loss legs are not among them.
+            ///   - open_orders_known: Whether open_orders was read at all. False without a usable stored read-only token, and when the venue did not answer. Never a reason to fail the response.
+            public init(
+                balance: Components.Schemas.Balance? = nil,
+                positions: [Components.Schemas.OpenPosition]? = nil,
+                open_orders: [Components.Schemas.Order]? = nil,
+                open_orders_known: Swift.Bool? = nil
+            ) {
+                self.balance = balance
+                self.positions = positions
+                self.open_orders = open_orders
+                self.open_orders_known = open_orders_known
+            }
+            public enum CodingKeys: String, CodingKey {
+                case balance
+                case positions
+                case open_orders
+                case open_orders_known
+            }
+        }
+        /// The caller's resting orders. An object rather than a bare array so the flag rides alongside and aggregates can be added later.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OpenOrdersPage`.
+        public struct OpenOrdersPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OpenOrdersPage/orders`.
+            public var orders: [Components.Schemas.Order]?
+            /// Whether the list was read at all. False means `orders` is empty because nothing could be read, not because nothing is resting -- the same flag Portfolio carries.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OpenOrdersPage/orders_known`.
+            public var orders_known: Swift.Bool?
+            /// Creates a new `OpenOrdersPage`.
+            ///
+            /// - Parameters:
+            ///   - orders:
+            ///   - orders_known: Whether the list was read at all. False means `orders` is empty because nothing could be read, not because nothing is resting -- the same flag Portfolio carries.
+            public init(
+                orders: [Components.Schemas.Order]? = nil,
+                orders_known: Swift.Bool? = nil
+            ) {
+                self.orders = orders
+                self.orders_known = orders_known
+            }
+            public enum CodingKeys: String, CodingKey {
+                case orders
+                case orders_known
+            }
+        }
+        /// One order and the trades it produced.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OrderDetail`.
+        public struct OrderDetail: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OrderDetail/order`.
+            public var order: Components.Schemas.Order?
+            /// True when the order is still on the book, false when it was found in history.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderDetail/resting`.
+            public var resting: Swift.Bool?
+            /// The trades this order took part in, newest first. Empty when it never traded, and also when fills_known is false.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderDetail/fills`.
+            public var fills: [Components.Schemas.OrderFill]?
+            /// Whether the fills were read in full. False when the lookup failed and when its page cap ended it early; `fills` is then empty rather than partial. The order is the answer without them, so neither fails the request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderDetail/fills_known`.
+            public var fills_known: Swift.Bool?
+            /// Creates a new `OrderDetail`.
+            ///
+            /// - Parameters:
+            ///   - order:
+            ///   - resting: True when the order is still on the book, false when it was found in history.
+            ///   - fills: The trades this order took part in, newest first. Empty when it never traded, and also when fills_known is false.
+            ///   - fills_known: Whether the fills were read in full. False when the lookup failed and when its page cap ended it early; `fills` is then empty rather than partial. The order is the answer without them, so neither fails the request.
+            public init(
+                order: Components.Schemas.Order? = nil,
+                resting: Swift.Bool? = nil,
+                fills: [Components.Schemas.OrderFill]? = nil,
+                fills_known: Swift.Bool? = nil
+            ) {
+                self.order = order
+                self.resting = resting
+                self.fills = fills
+                self.fills_known = fills_known
+            }
+            public enum CodingKeys: String, CodingKey {
+                case order
+                case resting
+                case fills
+                case fills_known
+            }
+        }
+        /// One trade an order took part in. Money is in quote units, sizes in the traded asset.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OrderFill`.
+        public struct OrderFill: Codable, Hashable, Sendable {
+            /// The venue's own number for the trade.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderFill/trade_id`.
+            public var trade_id: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/OrderFill/size`.
+            public var size: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/OrderFill/price`.
+            public var price: Swift.String?
+            /// What the trade was worth in quote units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderFill/quote_amount`.
+            public var quote_amount: Swift.String?
+            /// True when this order sat in the book and the other side took it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderFill/is_maker`.
+            public var is_maker: Swift.Bool?
+            /// The hash of the transaction that produced the trade, which is the taker's order submission. Occasionally a placeholder on the venue's side.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderFill/tx_hash`.
+            public var tx_hash: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/OrderFill/traded_at`.
+            public var traded_at: Foundation.Date?
+            /// Creates a new `OrderFill`.
+            ///
+            /// - Parameters:
+            ///   - trade_id: The venue's own number for the trade.
+            ///   - size:
+            ///   - price:
+            ///   - quote_amount: What the trade was worth in quote units.
+            ///   - is_maker: True when this order sat in the book and the other side took it.
+            ///   - tx_hash: The hash of the transaction that produced the trade, which is the taker's order submission. Occasionally a placeholder on the venue's side.
+            ///   - traded_at:
+            public init(
+                trade_id: Swift.Int64? = nil,
+                size: Swift.String? = nil,
+                price: Swift.String? = nil,
+                quote_amount: Swift.String? = nil,
+                is_maker: Swift.Bool? = nil,
+                tx_hash: Swift.String? = nil,
+                traded_at: Foundation.Date? = nil
+            ) {
+                self.trade_id = trade_id
+                self.size = size
+                self.price = price
+                self.quote_amount = quote_amount
+                self.is_maker = is_maker
+                self.tx_hash = tx_hash
+                self.traded_at = traded_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case trade_id
+                case size
+                case price
+                case quote_amount
+                case is_maker
+                case tx_hash
+                case traded_at
             }
         }
         /// A page of the account activity feed.
@@ -2615,6 +3556,482 @@ public enum Components {
                 case asks
             }
         }
+        /// - Remark: Generated from `#/components/schemas/DepositQuoteRequest`.
+        public struct DepositQuoteRequest: Codable, Hashable, Sendable {
+            /// What the caller pays with, as `<chain>/mainnet/coin` for a chain's own coin or `<chain>/mainnet/erc20/<address>` for a token. Chains quoted today: ton, eth, bsc, base, arb. Anything else answers 400 unsupported_source_asset.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteRequest/source_asset`.
+            public var source_asset: Swift.String
+            /// How much of source_asset the caller is willing to spend, in the asset's smallest unit (nanoton, wei, the token's own decimals). The payloads never ask for more than this.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteRequest/source_amount`.
+            public var source_amount: Swift.String
+            /// The address on the source chain the payloads are sent from, in that chain's own form. It is also where a failed fill is refunded to.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteRequest/sender_address`.
+            public var sender_address: Swift.String
+            /// The Ethereum address whose Lighter account is credited. Must be the L1 address this wallet has proved, once it has proved one; a first deposit is quoted for the address it names.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteRequest/destination_address`.
+            public var destination_address: Swift.String
+            /// Creates a new `DepositQuoteRequest`.
+            ///
+            /// - Parameters:
+            ///   - source_asset: What the caller pays with, as `<chain>/mainnet/coin` for a chain's own coin or `<chain>/mainnet/erc20/<address>` for a token. Chains quoted today: ton, eth, bsc, base, arb. Anything else answers 400 unsupported_source_asset.
+            ///   - source_amount: How much of source_asset the caller is willing to spend, in the asset's smallest unit (nanoton, wei, the token's own decimals). The payloads never ask for more than this.
+            ///   - sender_address: The address on the source chain the payloads are sent from, in that chain's own form. It is also where a failed fill is refunded to.
+            ///   - destination_address: The Ethereum address whose Lighter account is credited. Must be the L1 address this wallet has proved, once it has proved one; a first deposit is quoted for the address it names.
+            public init(
+                source_asset: Swift.String,
+                source_amount: Swift.String,
+                sender_address: Swift.String,
+                destination_address: Swift.String
+            ) {
+                self.source_asset = source_asset
+                self.source_amount = source_amount
+                self.sender_address = sender_address
+                self.destination_address = destination_address
+            }
+            public enum CodingKeys: String, CodingKey {
+                case source_asset
+                case source_amount
+                case sender_address
+                case destination_address
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DepositQuote`.
+        public struct DepositQuote: Codable, Hashable, Sendable {
+            /// Names this quote in logs and support. Not a lookup key.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/quote_id`.
+            public var quote_id: Swift.String
+            /// Who fills the order. relay is the cross-chain aggregator; direct means the source asset is already USDC on Ethereum and the payloads call the gateway themselves.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/provider`.
+            @frozen public enum providerPayload: String, Codable, Hashable, Sendable {
+                case relay = "relay"
+                case direct = "direct"
+            }
+            /// Who fills the order. relay is the cross-chain aggregator; direct means the source asset is already USDC on Ethereum and the payloads call the gateway themselves.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/provider`.
+            public var provider: Components.Schemas.DepositQuote.providerPayload
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/created_at`.
+            public var created_at: Foundation.Date
+            /// Past this, ask again rather than sign.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/expires_at`.
+            public var expires_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/input`.
+            public var input: Components.Schemas.DepositQuoteInput
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/output`.
+            public var output: Components.Schemas.DepositQuoteOutput
+            /// The slippage the quote allowed for, in basis points. It applies to the source side: the deposit itself is exact.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/slippage_bps`.
+            public var slippage_bps: Swift.Int?
+            /// What to sign and broadcast, in this order.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/payloads`.
+            public var payloads: [Components.Schemas.QuotePayload]
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/tracking`.
+            public var tracking: Components.Schemas.QuoteTracking?
+            /// Creates a new `DepositQuote`.
+            ///
+            /// - Parameters:
+            ///   - quote_id: Names this quote in logs and support. Not a lookup key.
+            ///   - provider: Who fills the order. relay is the cross-chain aggregator; direct means the source asset is already USDC on Ethereum and the payloads call the gateway themselves.
+            ///   - created_at:
+            ///   - expires_at: Past this, ask again rather than sign.
+            ///   - input:
+            ///   - output:
+            ///   - slippage_bps: The slippage the quote allowed for, in basis points. It applies to the source side: the deposit itself is exact.
+            ///   - payloads: What to sign and broadcast, in this order.
+            ///   - tracking:
+            public init(
+                quote_id: Swift.String,
+                provider: Components.Schemas.DepositQuote.providerPayload,
+                created_at: Foundation.Date,
+                expires_at: Foundation.Date,
+                input: Components.Schemas.DepositQuoteInput,
+                output: Components.Schemas.DepositQuoteOutput,
+                slippage_bps: Swift.Int? = nil,
+                payloads: [Components.Schemas.QuotePayload],
+                tracking: Components.Schemas.QuoteTracking? = nil
+            ) {
+                self.quote_id = quote_id
+                self.provider = provider
+                self.created_at = created_at
+                self.expires_at = expires_at
+                self.input = input
+                self.output = output
+                self.slippage_bps = slippage_bps
+                self.payloads = payloads
+                self.tracking = tracking
+            }
+            public enum CodingKeys: String, CodingKey {
+                case quote_id
+                case provider
+                case created_at
+                case expires_at
+                case input
+                case output
+                case slippage_bps
+                case payloads
+                case tracking
+            }
+        }
+        /// The request, echoed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DepositQuoteInput`.
+        public struct DepositQuoteInput: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteInput/source_asset`.
+            public var source_asset: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteInput/source_amount`.
+            public var source_amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteInput/sender_address`.
+            public var sender_address: Swift.String
+            /// Creates a new `DepositQuoteInput`.
+            ///
+            /// - Parameters:
+            ///   - source_asset:
+            ///   - source_amount:
+            ///   - sender_address:
+            public init(
+                source_asset: Swift.String,
+                source_amount: Swift.String,
+                sender_address: Swift.String
+            ) {
+                self.source_asset = source_asset
+                self.source_amount = source_amount
+                self.sender_address = sender_address
+            }
+            public enum CodingKeys: String, CodingKey {
+                case source_asset
+                case source_amount
+                case sender_address
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput`.
+        public struct DepositQuoteOutput: Codable, Hashable, Sendable {
+            /// What arrives, always USDC on Ethereum.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/asset_id`.
+            public var asset_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/destination_address`.
+            public var destination_address: Swift.String
+            /// What is deposited, in USDC's smallest unit (6 decimals).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/expected_amount`.
+            public var expected_amount: Swift.String
+            /// Equal to expected_amount: the deposit is exact.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/min_amount`.
+            public var min_amount: Swift.String
+            /// Creates a new `DepositQuoteOutput`.
+            ///
+            /// - Parameters:
+            ///   - asset_id: What arrives, always USDC on Ethereum.
+            ///   - destination_address:
+            ///   - expected_amount: What is deposited, in USDC's smallest unit (6 decimals).
+            ///   - min_amount: Equal to expected_amount: the deposit is exact.
+            public init(
+                asset_id: Swift.String,
+                destination_address: Swift.String,
+                expected_amount: Swift.String,
+                min_amount: Swift.String
+            ) {
+                self.asset_id = asset_id
+                self.destination_address = destination_address
+                self.expected_amount = expected_amount
+                self.min_amount = min_amount
+            }
+            public enum CodingKeys: String, CodingKey {
+                case asset_id
+                case destination_address
+                case expected_amount
+                case min_amount
+            }
+        }
+        /// One thing to sign. Which fields of meta are set depends on the chain: a TON message carries to, value, data (the body as a base64 BOC), bounce and mode; an EVM transaction carries to, value and data (0x calldata).
+        ///
+        /// - Remark: Generated from `#/components/schemas/QuotePayload`.
+        public struct QuotePayload: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/payload_id`.
+            public var payload_id: Swift.String
+            /// approval is a token allowance the main transaction needs; main moves the funds. An approval always precedes its main.
+            ///
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable {
+                case main = "main"
+                case approval = "approval"
+            }
+            /// approval is a token allowance the main transaction needs; main moves the funds. An approval always precedes its main.
+            ///
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/type`.
+            public var _type: Components.Schemas.QuotePayload._typePayload
+            /// The chain to broadcast on, as `<chain>/mainnet`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/chain_id`.
+            public var chain_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/fee`.
+            public var fee: Components.Schemas.PayloadFee?
+            /// - Remark: Generated from `#/components/schemas/QuotePayload/meta`.
+            public var meta: Components.Schemas.PayloadMeta
+            /// Creates a new `QuotePayload`.
+            ///
+            /// - Parameters:
+            ///   - payload_id:
+            ///   - _type: approval is a token allowance the main transaction needs; main moves the funds. An approval always precedes its main.
+            ///   - chain_id: The chain to broadcast on, as `<chain>/mainnet`.
+            ///   - fee:
+            ///   - meta:
+            public init(
+                payload_id: Swift.String,
+                _type: Components.Schemas.QuotePayload._typePayload,
+                chain_id: Swift.String,
+                fee: Components.Schemas.PayloadFee? = nil,
+                meta: Components.Schemas.PayloadMeta
+            ) {
+                self.payload_id = payload_id
+                self._type = _type
+                self.chain_id = chain_id
+                self.fee = fee
+                self.meta = meta
+            }
+            public enum CodingKeys: String, CodingKey {
+                case payload_id
+                case _type = "type"
+                case chain_id
+                case fee
+                case meta
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PayloadMeta`.
+        public struct PayloadMeta: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PayloadMeta/to`.
+            public var to: Swift.String
+            /// In the chain's smallest unit.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PayloadMeta/value`.
+            public var value: Swift.String
+            /// A base64 BOC on TON, 0x calldata on an EVM chain. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PayloadMeta/data`.
+            public var data: Swift.String?
+            /// TON only.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PayloadMeta/bounce`.
+            public var bounce: Swift.Bool?
+            /// TON only, the send mode.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PayloadMeta/mode`.
+            public var mode: Swift.Int?
+            /// Creates a new `PayloadMeta`.
+            ///
+            /// - Parameters:
+            ///   - to:
+            ///   - value: In the chain's smallest unit.
+            ///   - data: A base64 BOC on TON, 0x calldata on an EVM chain. Absent when there is none.
+            ///   - bounce: TON only.
+            ///   - mode: TON only, the send mode.
+            public init(
+                to: Swift.String,
+                value: Swift.String,
+                data: Swift.String? = nil,
+                bounce: Swift.Bool? = nil,
+                mode: Swift.Int? = nil
+            ) {
+                self.to = to
+                self.value = value
+                self.data = data
+                self.bounce = bounce
+                self.mode = mode
+            }
+            public enum CodingKeys: String, CodingKey {
+                case to
+                case value
+                case data
+                case bounce
+                case mode
+            }
+        }
+        /// The network fee the wallet should expect, when the quote knows it, in the chain's smallest unit. Which fields of data are set depends on type: value is a flat amount and nothing else; evm is a legacy gas transaction, limit and price with amount their product; eip1559 is limit, max_price and miner_price with amount as limit times max_price, and network_price only when the quote stated a base fee. Absent when the quote knows no fee -- a direct quote, or a chain whose fee the wallet estimates itself.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PayloadFee`.
+        public struct PayloadFee: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PayloadFee/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable {
+                case value = "value"
+                case evm = "evm"
+                case eip1559 = "eip1559"
+            }
+            /// - Remark: Generated from `#/components/schemas/PayloadFee/type`.
+            public var _type: Components.Schemas.PayloadFee._typePayload
+            /// - Remark: Generated from `#/components/schemas/PayloadFee/data`.
+            public struct dataPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/amount`.
+                public var amount: Swift.String
+                /// evm and eip1559.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/limit`.
+                public var limit: Swift.String?
+                /// evm only.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/price`.
+                public var price: Swift.String?
+                /// eip1559 only, and only when known.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/network_price`.
+                public var network_price: Swift.String?
+                /// eip1559 only.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/max_price`.
+                public var max_price: Swift.String?
+                /// eip1559 only.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PayloadFee/data/miner_price`.
+                public var miner_price: Swift.String?
+                /// Creates a new `dataPayload`.
+                ///
+                /// - Parameters:
+                ///   - amount:
+                ///   - limit: evm and eip1559.
+                ///   - price: evm only.
+                ///   - network_price: eip1559 only, and only when known.
+                ///   - max_price: eip1559 only.
+                ///   - miner_price: eip1559 only.
+                public init(
+                    amount: Swift.String,
+                    limit: Swift.String? = nil,
+                    price: Swift.String? = nil,
+                    network_price: Swift.String? = nil,
+                    max_price: Swift.String? = nil,
+                    miner_price: Swift.String? = nil
+                ) {
+                    self.amount = amount
+                    self.limit = limit
+                    self.price = price
+                    self.network_price = network_price
+                    self.max_price = max_price
+                    self.miner_price = miner_price
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case amount
+                    case limit
+                    case price
+                    case network_price
+                    case max_price
+                    case miner_price
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PayloadFee/data`.
+            public var data: Components.Schemas.PayloadFee.dataPayload
+            /// Creates a new `PayloadFee`.
+            ///
+            /// - Parameters:
+            ///   - _type:
+            ///   - data:
+            public init(
+                _type: Components.Schemas.PayloadFee._typePayload,
+                data: Components.Schemas.PayloadFee.dataPayload
+            ) {
+                self._type = _type
+                self.data = data
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+                case data
+            }
+        }
+        /// How to follow the fill. Absent when provider is direct: the client broadcast the gateway call itself and holds its hash.
+        ///
+        /// - Remark: Generated from `#/components/schemas/QuoteTracking`.
+        public struct QuoteTracking: Codable, Hashable, Sendable {
+            /// swaps-backend's execution id for the fill.
+            ///
+            /// - Remark: Generated from `#/components/schemas/QuoteTracking/execution_id`.
+            public var execution_id: Swift.String
+            /// The path to poll, under this API's base path.
+            ///
+            /// - Remark: Generated from `#/components/schemas/QuoteTracking/status_url`.
+            public var status_url: Swift.String
+            /// Creates a new `QuoteTracking`.
+            ///
+            /// - Parameters:
+            ///   - execution_id: swaps-backend's execution id for the fill.
+            ///   - status_url: The path to poll, under this API's base path.
+            public init(
+                execution_id: Swift.String,
+                status_url: Swift.String
+            ) {
+                self.execution_id = execution_id
+                self.status_url = status_url
+            }
+            public enum CodingKeys: String, CodingKey {
+                case execution_id
+                case status_url
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/FundingStatus`.
+        public struct FundingStatus: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/execution_id`.
+            public var execution_id: Swift.String
+            /// pending until the aggregator settles it. success, failure and refund are final. unknown is an execution nobody has heard of, which is also what a quote nobody paid becomes once swaps-backend closes it out.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                case pending = "pending"
+                case success = "success"
+                case failure = "failure"
+                case refund = "refund"
+                case unknown = "unknown"
+            }
+            /// pending until the aggregator settles it. success, failure and refund are final. unknown is an execution nobody has heard of, which is also what a quote nobody paid becomes once swaps-backend closes it out.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/status`.
+            public var status: Components.Schemas.FundingStatus.statusPayload
+            /// The aggregator's own words about a failure or refund, when it has any.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/details`.
+            public var details: Swift.String?
+            /// The Ethereum transactions of the fill, once there are any. The first is the one that called the gateway, and what POST /funding/deposit takes as l1_tx_hash.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/tx_hashes`.
+            public var tx_hashes: [Swift.String]?
+            /// The source-chain transactions the aggregator saw.
+            ///
+            /// - Remark: Generated from `#/components/schemas/FundingStatus/in_tx_hashes`.
+            public var in_tx_hashes: [Swift.String]?
+            /// Creates a new `FundingStatus`.
+            ///
+            /// - Parameters:
+            ///   - execution_id:
+            ///   - status: pending until the aggregator settles it. success, failure and refund are final. unknown is an execution nobody has heard of, which is also what a quote nobody paid becomes once swaps-backend closes it out.
+            ///   - details: The aggregator's own words about a failure or refund, when it has any.
+            ///   - tx_hashes: The Ethereum transactions of the fill, once there are any. The first is the one that called the gateway, and what POST /funding/deposit takes as l1_tx_hash.
+            ///   - in_tx_hashes: The source-chain transactions the aggregator saw.
+            public init(
+                execution_id: Swift.String,
+                status: Components.Schemas.FundingStatus.statusPayload,
+                details: Swift.String? = nil,
+                tx_hashes: [Swift.String]? = nil,
+                in_tx_hashes: [Swift.String]? = nil
+            ) {
+                self.execution_id = execution_id
+                self.status = status
+                self.details = details
+                self.tx_hashes = tx_hashes
+                self.in_tx_hashes = in_tx_hashes
+            }
+            public enum CodingKeys: String, CodingKey {
+                case execution_id
+                case status
+                case details
+                case tx_hashes
+                case in_tx_hashes
+            }
+        }
     }
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
     public enum Parameters {
@@ -2634,7 +4051,7 @@ public enum Components {
         /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
         /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
         /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-        /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+        /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
         ///
         /// - Remark: Generated from `#/components/parameters/WalletIDHeader`.
         public typealias WalletIDHeader = Components.Schemas.WalletID
@@ -2849,6 +4266,7 @@ public enum Operations {
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
+    /// This is also what a client polls while it waits for an account to exist: the index is resolved against Lighter live for as long as the binding has none, so not_registered turns into an account as soon as there is one. A wallet with no binding at all is answered not_registered too, and stays so until POST /account/bind records one -- a deposit made outside this service tells us nothing by itself.
     ///
     /// - Remark: HTTP `GET /account`.
     /// - Remark: Generated from `#/paths//account/get(getAccount)`.
@@ -2860,7 +4278,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/account/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -3098,6 +4516,302 @@ public enum Operations {
             }
         }
     }
+    /// Bind the caller's wallet to its L1 address
+    ///
+    /// Records which L1 (Ethereum) address a wallet owns, and the Lighter account that address holds when there is one. It is the only endpoint whose whole job is that binding; everywhere else it is a side effect of a write that needed it anyway.
+    /// A caller whose Lighter account was funded outside this service has no other way in. Every read here answers from the binding, so until one exists its account is invisible to us, and so is every event Lighter reports about it. A caller that deposited through this service is already bound by that deposit, and calls this only to have the account index recorded once there is one.
+    /// The address is never taken from the caller. It is recovered from the signature, and afterwards read back from what that recovered, so deadline and signature are read only while the wallet has proved nothing. Send them anyway: whether they are needed depends on what this service has recorded, which the caller cannot know, and by the time a refusal came back the vault would be locked again. This is what keeps the passcode prompt to once per wallet.
+    /// The account index is Lighter's to say, and it is asked for on every call. A wallet whose account does not exist yet is bound to its address alone and answered not_registered, which is not a failure but where every wallet starts: poll GET /account and continue as soon as account_index is set. It is filled in by whichever write learns it first, this one included.
+    /// Not knowing is not the same as not having, so when Lighter cannot say what the address owns the request is refused with 503 and nothing is recorded -- a not_registered on a timeout would report a state this service never established. The reads answer the same way. Retrying inside the signature's deadline needs no new signature, so the refusal costs no second prompt.
+    /// A 503 says nothing was learned, never that something was undone. The binding is written before the account is read, so a refusal can arrive with the row already recorded -- and the answer is to call again rather than to report a failed registration. The repeat is free: the address is read back from the row, so no signature is needed for it, and re-binding what is recorded writes nothing.
+    /// The answer names l1_address either way, and that is worth reading: the address was recovered from a signature rather than sent, so a wallet bound to one it did not expect would otherwise find out only when a later proof, signed over the address it believes in, is refused.
+    /// A binding never moves, and there is nothing here with which to redirect it: a bound wallet is served the address it recorded whatever it signs now, so re-binding is accepted and changes nothing, which is the ordinary case.
+    /// A 409 therefore reports a collision with another wallet rather than a caller changing its mind: l1_address_taken when that address is already held elsewhere, lighter_account_taken when the account behind it is. The usual cause is one wallet re-imported under a new wallet_id, while the old id still holds the row; somebody has to remove it, which is not something this endpoint can do. wallet_already_bound is the third and is all but unreachable -- it needs two first binds for one wallet to race each other, or Lighter to name a different account for an address it has already placed.
+    /// A proof made over some other address is not a conflict but a refused proof, 401: it was signed for a statement this service is not making. Read l1_address in the answer above, or from GET /account, to see which address that is.
+    ///
+    /// - Remark: HTTP `POST /account/bind`.
+    /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)`.
+    public enum bindAccount {
+        public static let id: Swift.String = "bindAccount"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/account/bind/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/account/bind/POST/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/account/bind/POST/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.bindAccount.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.bindAccount.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.bindAccount.Input.Headers
+            /// - Remark: Generated from `#/paths/account/bind/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/account/bind/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.BindAccountRequest)
+            }
+            public var body: Operations.bindAccount.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.bindAccount.Input.Headers,
+                body: Operations.bindAccount.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/account/bind/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/account/bind/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Account)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Account {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.bindAccount.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.bindAccount.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The binding as it now stands, with the account when there is one.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.bindAccount.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.bindAccount.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Report transactions the caller submitted to Lighter
     ///
     /// Records transactions the caller has already submitted to Lighter so they can be forwarded to the Argus event stream. This service neither signs nor sends them: the client signs locally, submits to Lighter directly, and reports the result here.
@@ -3116,7 +4830,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/transactions/POST/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -3359,7 +5073,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/transactions/send/POST/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -3487,7 +5201,8 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account.
+            /// The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account, integrator_fee_mismatch.
+            /// integrator_fee_mismatch means a transaction that can produce a fill (14 CreateOrder, 17 ModifyOrder, 28 CreateGroupedOrders) does not carry exactly the partner attribution this service serves: read GET /integrator and sign in all three values as given. Any other rate is refused, below the served one as well as above it.
             /// A refused submission never reached a block; a retry has to be signed again against a fresh nonce.
             ///
             /// - Remark: Generated from `#/paths//transactions/send/post(sendTransactions)/responses/400`.
@@ -3561,6 +5276,7 @@ public enum Operations {
                 }
             }
             /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
             ///
             /// - Remark: Generated from `#/paths//transactions/send/post(sendTransactions)/responses/409`.
             ///
@@ -3720,7 +5436,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/transactions/next-nonce/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -3887,6 +5603,7 @@ public enum Operations {
                 }
             }
             /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
             ///
             /// - Remark: Generated from `#/paths//transactions/next-nonce/get(getNextNonce)/responses/409`.
             ///
@@ -3986,8 +5703,265 @@ public enum Operations {
             }
         }
     }
-    /// Store the caller's Lighter read-only token
+    /// Partner-attribution values the caller signs into its Lighter transactions
     ///
+    /// What the client copies, unchanged, into the transactions it signs. Two of them consume these values: an order takes integrator_account_index and the two fees, while ApproveIntegrator -- signed once, before the first order that carries a fee -- takes the account index and the four maximums, with an expiry of now plus approval_ttl_ms.
+    /// Fees are millionths of a fill's notional, Lighter's own unit, so 900 is 9 basis points. A zero account index means attribution is off and the client signs no integrator fields at all; that is also the answer while this service has no integrator account configured.
+    /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
+    /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    ///
+    /// - Remark: HTTP `GET /integrator`.
+    /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
+    public enum getIntegrator {
+        public static let id: Swift.String = "getIntegrator"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/integrator/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/integrator/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/integrator/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getIntegrator.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getIntegrator.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getIntegrator.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getIntegrator.Input.Headers) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/integrator/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/integrator/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Integrator)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Integrator {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getIntegrator.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getIntegrator.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The attribution to sign.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getIntegrator.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getIntegrator.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Store the caller's Lighter read-only token (deprecated)
+    ///
+    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
+    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
     /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
     /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
     /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- its first deposit, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
@@ -4002,7 +5976,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/account/ro-token/POST/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -4151,6 +6125,7 @@ public enum Operations {
                 }
             }
             /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
             ///
             /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/409`.
             ///
@@ -4250,10 +6225,301 @@ public enum Operations {
             }
         }
     }
+    /// Mint the caller's Lighter read-only token and store it
+    ///
+    /// Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
+    /// What the caller supplies is lighter_auth: the short-lived credential its Lighter L2 key produced locally. It is a bearer credential and not a signature over this request, so it authorises anything Lighter accepts it for until it expires, and it is passed straight through without being stored or logged. The L2 private key itself never travels.
+    /// The account is not named by the caller. It is the one the wallet's proved L1 address owns, which is also what the token is minted against, so a wallet with no Lighter account yet -- one whose first deposit has not been credited -- has nothing to mint for and is answered 409.
+    /// The token's expiry and its reach are this service's to set, not the caller's, and are therefore absent from the body: it is minted long-lived, because the private reads this service makes on the caller's behalf run on it and nothing renews it, and scoped to the main account, because a wallet maps to exactly one.
+    /// Minting supersedes whatever token the account had. Superseded tokens are revoked at Lighter on a best-effort basis, in this request and only here: revoking takes the same short-lived authorization the mint did, so once this request ends nothing can revoke them any more.
+    ///
+    /// - Remark: HTTP `POST /account/ro-token/issue`.
+    /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)`.
+    public enum issueRoToken {
+        public static let id: Swift.String = "issueRoToken"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.issueRoToken.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.issueRoToken.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.issueRoToken.Input.Headers
+            /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.IssueRoTokenRequest)
+            }
+            public var body: Operations.issueRoToken.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.issueRoToken.Input.Headers,
+                body: Operations.issueRoToken.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/account/ro-token/issue/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.IssuedRoToken)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.IssuedRoToken {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.issueRoToken.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.issueRoToken.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Token minted and stored (encrypted at rest).
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.issueRoToken.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.issueRoToken.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//account/ro-token/issue/post(issueRoToken)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// The caller's open positions
     ///
     /// Every position the wallet currently holds, one per venue and market, with the numbers a position card renders. Only open ones: Lighter keeps a row for every market an account has ever traded, and on a long-lived account the closed rows outnumber the open ones many times over, so a zero size is filtered here rather than on the client.
-    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no X-Lighter-Auth is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need that token.
+    /// Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no read-only token is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need one.
     /// Neither paginated nor filtered on purpose. One position per market caps the list at the number of active markets, and the upstream snapshot is unpaginated anyway, so a cursor would add failure modes without bounding anything.
     /// A wallet with no account yet, and an account with nothing open, both get an empty list rather than an error: that is what a client renders before the first position.
     ///
@@ -4267,7 +6533,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/positions/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -4536,7 +6802,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/positions/{id}/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -4751,6 +7017,1131 @@ public enum Operations {
             /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
             ///
             /// - Remark: Generated from `#/paths//positions/{id}/get(getOpenPosition)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// What became of a market's position, and of the order just sent
+    ///
+    /// Answers the question a client has right after submitting an order: did anything happen. It reads this service's own record and nothing else, so it is cheap to poll -- no Lighter call, no read-only token, no markets snapshot.
+    /// Two things are answered. `open` is the position the market holds now, and `last_closed` is the one that ended most recently; a client that closed a position needs the second, because an absent position alone cannot tell "it closed" from "there never was one". Both are episodes: one life of a position, from the fill that opened it to the fill that closed it. Lighter keeps only the current size, so a closed position leaves no trace there at all -- `/positions/{id}` answers 404 for a market whose position closed a minute ago.
+    /// `orders` is what the venue said about the orders carrying `client_order_index`, and it is empty until an order event arrives. An empty list therefore means "nothing heard yet", which is the state to keep polling on; a client knows it submitted, so this service does not repeat that back. Several entries are a legitimate answer: nothing makes that number unique, and a client that reused it is told about every order rather than being handed a guess. Without the parameter the list is empty and only the position halves are answered.
+    /// A market this wallet has never traded is `open: null`, `last_closed: null`, `orders: []` -- not a 404. The question "what is the state" always has an answer, and "nothing" is one.
+    ///
+    /// - Remark: HTTP `GET /positions/{id}/state`.
+    /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)`.
+    public enum getPositionState {
+        public static let id: Swift.String = "getPositionState"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/positions/{id}/state/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Position id as the list reports it, e.g. `lighter:1`. Only the market it names is read here; the episode is addressed by its own id inside the response.
+                ///
+                /// - Remark: Generated from `#/paths/positions/{id}/state/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id: Position id as the list reports it, e.g. `lighter:1`. Only the market it names is read here; the episode is addressed by its own id inside the response.
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.getPositionState.Input.Path
+            /// - Remark: Generated from `#/paths/positions/{id}/state/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// The number the caller chose for its order when it signed it. Optional, and the only way to be told what became of one particular order: it is inside the signed payload, so this service reads it and never assigns one. Zero is refused rather than looked up -- it is what an order carries when nobody chose a number, so it addresses nothing.
+                ///
+                /// - Remark: Generated from `#/paths/positions/{id}/state/GET/query/client_order_index`.
+                public var client_order_index: Swift.Int64?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - client_order_index: The number the caller chose for its order when it signed it. Optional, and the only way to be told what became of one particular order: it is inside the signed payload, so this service reads it and never assigns one. Zero is refused rather than looked up -- it is what an order carries when nobody chose a number, so it addresses nothing.
+                public init(client_order_index: Swift.Int64? = nil) {
+                    self.client_order_index = client_order_index
+                }
+            }
+            public var query: Operations.getPositionState.Input.Query
+            /// - Remark: Generated from `#/paths/positions/{id}/state/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/positions/{id}/state/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/positions/{id}/state/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPositionState.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPositionState.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getPositionState.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getPositionState.Input.Path,
+                query: Operations.getPositionState.Input.Query = .init(),
+                headers: Operations.getPositionState.Input.Headers
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/positions/{id}/state/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/positions/{id}/state/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PositionState)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.PositionState {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getPositionState.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getPositionState.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The market's position state, and the orders the number names.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getPositionState.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getPositionState.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//positions/{id}/state/get(getPositionState)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Balance, open positions and open orders
+    ///
+    /// Everything the portfolio section renders in one read: the account balance, every open position with the numbers a position card needs, and the orders resting on the book. Replaces /screens/portfolio, which carries a thinner position and no orders at all.
+    /// Balance and positions come from the account snapshot Lighter serves by index, and mark prices from the cached markets snapshot; neither needs a token. open_orders does, and this service uses the read-only token it stored for the wallet rather than asking the caller.
+    /// open_orders_known says whether the orders were read at all. False means the section could not be filled -- no stored token, an expired one, one Vault would not decrypt, or an upstream that did not answer -- and open_orders is then empty because nothing was seen, not because nothing is resting. Render "temporarily unavailable" on false, never "no open orders". Orders never turn this endpoint into a 503: the balance and the positions are an answer of their own.
+    /// Take-profit and stop-loss legs are not here. They belong to a position and are served with it by /positions/{id}.
+    /// A wallet with no account yet gets empty sections rather than an error.
+    ///
+    /// - Remark: HTTP `GET /portfolio`.
+    /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)`.
+    public enum getPortfolio {
+        public static let id: Swift.String = "getPortfolio"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/portfolio/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/portfolio/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/portfolio/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPortfolio.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPortfolio.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getPortfolio.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getPortfolio.Input.Headers) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/portfolio/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/portfolio/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Portfolio)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Portfolio {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getPortfolio.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getPortfolio.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The caller's balance, positions and open orders.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getPortfolio.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getPortfolio.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//portfolio/get(getPortfolio)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// The caller's open orders
+    ///
+    /// Every order resting on the book across all markets. An unfilled order is not a position -- it holds no entry price, no PnL and no liquidation price -- so it appears here and never in /positions.
+    /// Take-profit and stop-loss legs are filtered out: they are attached to a position and are served with it by /positions/{id}, and listing them here would show the same leg twice.
+    /// Reading orders needs the wallet's stored read-only token, so unlike /positions this endpoint depends on Vault. orders_known carries that: false means the list could not be read and is empty for that reason alone. It is a 200, not a 503 -- a wallet without an active token is a state that no retry changes, and the client renders its unavailable block from the flag. A genuine upstream failure is still a 503.
+    /// Neither paginated nor filtered: an account's resting orders are bounded by what it can afford to place.
+    ///
+    /// - Remark: HTTP `GET /orders`.
+    /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)`.
+    public enum listOpenOrders {
+        public static let id: Swift.String = "listOpenOrders"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/orders/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/orders/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/orders/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listOpenOrders.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.listOpenOrders.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.listOpenOrders.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.listOpenOrders.Input.Headers) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/orders/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/orders/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.OpenOrdersPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.OpenOrdersPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.listOpenOrders.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.listOpenOrders.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The caller's open orders.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.listOpenOrders.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.listOpenOrders.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//orders/get(listOpenOrders)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// One order, resting or finished, with its fills
+    ///
+    /// The order the id names, wherever it is now. Resting orders are read from the book; one that has left it -- filled, cancelled or expired -- is looked up in the account's order history, which is walked page by page because the venue offers no lookup by order id. `resting` says which of the two answered.
+    /// The history walk is bounded. An order older than the walk reaches is a 404, which is therefore "not found within the window this endpoint looks at" rather than a claim that it never existed.
+    /// `fills` is the execution broken down into trades, which the order itself does not carry -- it holds only the filled totals. That lookup is walked and bounded like the one above, so fills_known is false both when it failed and when the cap cut it short with pages still to come. Only under a true flag does an empty list mean the order has not traded.
+    ///
+    /// - Remark: HTTP `GET /orders/{id}`.
+    /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)`.
+    public enum getOrder {
+        public static let id: Swift.String = "getOrder"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/orders/{id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Order id as the list reports it, e.g. `lighter:281474976712112`.
+                ///
+                /// - Remark: Generated from `#/paths/orders/{id}/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id: Order id as the list reports it, e.g. `lighter:281474976712112`.
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.getOrder.Input.Path
+            /// - Remark: Generated from `#/paths/orders/{id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/orders/{id}/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/orders/{id}/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getOrder.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getOrder.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getOrder.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.getOrder.Input.Path,
+                headers: Operations.getOrder.Input.Headers
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/orders/{id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/orders/{id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.OrderDetail)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.OrderDetail {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getOrder.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getOrder.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The order, and the trades it produced.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getOrder.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getOrder.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//orders/{id}/get(getOrder)/responses/503`.
             ///
             /// HTTP response code: `503 serviceUnavailable`.
             case serviceUnavailable(Components.Responses.ServiceUnavailable)
@@ -5060,7 +8451,8 @@ public enum Operations {
     /// Trading screen bootstrap
     ///
     /// Single-call bootstrap for the trading screen: contract metadata for the market, the caller's current position, open orders, balance, and the action flags that drive UI affordances. Live orderbook and candles are delivered out-of-band over the Hermes WebSocket and are NOT part of this payload.
-    /// The market data is public; the private sections are the wallet's. X-Lighter-Auth is optional: without it, and for a wallet whose address owns no Lighter account yet, the position, open orders and private balance details are empty rather than an error.
+    /// The market data is public; the private sections are the wallet's, and the caller carries no credential for them: the read-only token comes from this service's own store.
+    /// The two absences differ. A wallet whose address owns no Lighter account yet, or one Lighter would not name an account for, gets the market and empty private sections throughout. A wallet with an account but no usable stored token keeps its position and balance, which come from the account snapshot and need no token, and loses only open_orders and what is derived from it -- position.auto_close and flags.cancel_enabled. Neither is an error.
     ///
     /// - Remark: HTTP `GET /screens/trading`.
     /// - Remark: Generated from `#/paths//screens/trading/get(getTradingScreen)`.
@@ -5087,7 +8479,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/screens/trading/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -5353,8 +8745,9 @@ public enum Operations {
             }
         }
     }
-    /// Portfolio screen
+    /// Portfolio screen (deprecated)
     ///
+    /// Superseded by /portfolio, which carries the same balance, a fuller position -- with id, mark price, margin, equity and ROI -- and the open orders this one has no room for. Frozen: it keeps answering exactly as it does today and gains nothing further.
     /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
     ///
     /// - Remark: HTTP `GET /screens/portfolio`.
@@ -5367,7 +8760,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/screens/portfolio/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -5664,7 +9057,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/orderbook/truncated/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -5910,7 +9303,7 @@ public enum Operations {
     /// Account activity timeline
     ///
     /// Merged, cursor-paginated timeline of fills, funding payments, deposits, and withdrawals. Uses an opaque keyset cursor and returns last_sort_ts so the client can detect ranking shifts between polls. Deposits appear from the moment they are registered, as items of type deposit with status pending; the one Lighter reports once the money lands is the same item under the same id, with a new status, so the client updates a row rather than replacing it. A deposit that is never confirmed leaves the feed when it is closed, and its outcome is then only on /funding/deposit/{deposit_id}.
-    /// The feed belongs to the wallet. Everything Lighter holds needs X-Lighter-Auth as well; without it -- or for a wallet whose address owns no Lighter account yet -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account, and which then covers a deposit that was credited before the client had a token. A wallet that has proved no address gets an empty page rather than an error.
+    /// The feed belongs to the wallet, and the caller carries no credential for it -- everything Lighter holds is read with the token this service keeps. Without a usable one -- or for a wallet whose address owns no Lighter account yet, or one Lighter will not name an account for right now -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account. A wallet that has proved no address gets an empty page rather than an error, and so does an outage this service can still read its own rows through.
     ///
     /// - Remark: HTTP `GET /activity`.
     /// - Remark: Generated from `#/paths//activity/get(getActivity)`.
@@ -5968,7 +9361,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/activity/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -6230,7 +9623,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/funding/deposit/POST/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -6403,6 +9796,7 @@ public enum Operations {
                 }
             }
             /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
             ///
             /// - Remark: Generated from `#/paths//funding/deposit/post(openDeposit)/responses/409`.
             ///
@@ -6536,7 +9930,7 @@ public enum Operations {
                 /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
                 /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
                 /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
                 ///
                 /// - Remark: Generated from `#/paths/funding/deposit/{deposit_id}/GET/header/X-Wallet-Id`.
                 public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
@@ -6751,6 +10145,574 @@ public enum Operations {
             /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
             ///
             /// - Remark: Generated from `#/paths//funding/deposit/{deposit_id}/get(getDeposit)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Quote a deposit from another asset
+    ///
+    /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
+    /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
+    /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why expected_amount and min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
+    /// The quote is good for the seconds expires_at says. The aggregator revalidates at fill time, so a stale one is refunded rather than filled at a worse price -- ask again instead of signing an old one.
+    /// The wallet's L1 address is destination_address, and the two must agree once the wallet has proved one: a quote for somebody else's account is refused. A wallet that has proved nothing yet -- the first deposit is what creates the account -- is quoted for the address it names, and proves it when it records the deposit.
+    /// What this does not do yet: it does not initialise the Lighter account's signing key. A first deposit creates the account, and registering a key on it is a separate step the client takes once the account exists.
+    ///
+    /// - Remark: HTTP `POST /funding/quote`.
+    /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)`.
+    public enum quoteDeposit {
+        public static let id: Swift.String = "quoteDeposit"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/funding/quote/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/funding/quote/POST/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/funding/quote/POST/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.quoteDeposit.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.quoteDeposit.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.quoteDeposit.Input.Headers
+            /// - Remark: Generated from `#/paths/funding/quote/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/funding/quote/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.DepositQuoteRequest)
+            }
+            public var body: Operations.quoteDeposit.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.quoteDeposit.Input.Headers,
+                body: Operations.quoteDeposit.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/funding/quote/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/funding/quote/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DepositQuote)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DepositQuote {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.quoteDeposit.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.quoteDeposit.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The quote and the payloads to sign.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.quoteDeposit.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.quoteDeposit.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+            /// Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//funding/quote/post(quoteDeposit)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Follow a quoted deposit through the aggregator
+    ///
+    /// Reports where a cross-chain deposit is, by the execution_id its quote returned: whether the aggregator has seen the source transaction, filled on Ethereum, failed, or refunded. The execution lives at swaps-backend, which follows the fill by the id the aggregator quoted it under, so nothing has to be submitted there first: the wallet broadcasts on its own and polls.
+    /// This is how a client that paid from another chain learns the Ethereum transaction hash: the aggregator's fill is the transaction that called the gateway, so once status is success the first entry of tx_hashes is what POST /funding/deposit takes as l1_tx_hash. Until then there is nothing to record.
+    /// Poll while status is pending. success, failure and refund are final. unknown means the aggregator has no such execution, which is also what an expired, never-broadcast quote looks like.
+    ///
+    /// - Remark: HTTP `GET /funding/status/{execution_id}`.
+    /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)`.
+    public enum getFundingStatus {
+        public static let id: Swift.String = "getFundingStatus"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// The tracking.execution_id a quote returned.
+                ///
+                /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/path/execution_id`.
+                public var execution_id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - execution_id: The tracking.execution_id a quote returned.
+                public init(execution_id: Swift.String) {
+                    self.execution_id = execution_id
+                }
+            }
+            public var path: Operations.getFundingStatus.Input.Path
+            /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                /// Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
+                /// The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
+                /// Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
+                ///
+                /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/header/X-Wallet-Id`.
+                public var X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader
+                /// Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                /// It carries no operation of its own. What it answers is "is this wallet the caller's": the id is recomputed from the key recovered out of the signature, so a wallet nobody holds the key to cannot be named at all, and a stolen access token does not help — it is not the wallet's key. On the writes, which do not introspect, this is the whole answer.
+                /// Required. A format 2 wallet_id is what can produce one, and perps is a multichain-wallet product, so the older derivations are out of scope rather than exempt. It is bound to the access token, so it lives exactly as long as that token and is signed again after a device refresh.
+                /// Absent answers 401 wallet_auth_required, whether the header is missing or empty, and that is apart from wallet_auth_invalid: one says you did not sign the session, the other that the signature does not match it.
+                ///
+                /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/header/X-Wallet-Authorization`.
+                public var X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getFundingStatus.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_Id: Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
+                ///   - X_hyphen_Wallet_hyphen_Authorization: Proof that the wallet owns the access token in Authorization: base64url of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("keeper.wallet.auth.v1") | LP(blake2b256(access_token)), padding optional. The same header custodial-battery takes, so a client that signs one signs both.
+                ///   - accept:
+                public init(
+                    X_hyphen_Wallet_hyphen_Id: Components.Parameters.WalletIDHeader,
+                    X_hyphen_Wallet_hyphen_Authorization: Components.Parameters.WalletAuthHeader,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getFundingStatus.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_Id = X_hyphen_Wallet_hyphen_Id
+                    self.X_hyphen_Wallet_hyphen_Authorization = X_hyphen_Wallet_hyphen_Authorization
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getFundingStatus.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.getFundingStatus.Input.Path,
+                headers: Operations.getFundingStatus.Input.Headers
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/funding/status/{execution_id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.FundingStatus)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.FundingStatus {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getFundingStatus.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getFundingStatus.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Where the deposit is.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getFundingStatus.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getFundingStatus.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the KeeperAuth scheme.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-Id: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//funding/status/{execution_id}/get(getFundingStatus)/responses/503`.
             ///
             /// HTTP response code: `503 serviceUnavailable`.
             case serviceUnavailable(Components.Responses.ServiceUnavailable)

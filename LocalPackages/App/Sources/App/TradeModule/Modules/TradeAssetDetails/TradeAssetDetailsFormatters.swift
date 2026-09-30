@@ -123,28 +123,16 @@ struct TradeAssetDetailsValueFormatter {
 }
 
 struct TradeAssetDetailsDisplayFormatter {
-    private static let abbreviationThresholds: [(value: Decimal, suffix: String)] = [
-        (1_000_000_000_000_000, "Q"),
-        (1_000_000_000_000, "T"),
-        (1_000_000_000, "B"),
-        (1_000_000, "M"),
-        (1000, "K"),
-    ]
-
     private let amountFormatter: AmountFormatter
-    private let abbreviatedAmountFormatter: AmountFormatter
     private let valueFormatter: TradeAssetDetailsValueFormatter
     private let currencyProvider: () -> Currency
 
     init(
         amountFormatter: AmountFormatter,
         valueFormatter: TradeAssetDetailsValueFormatter,
-        currencyProvider: @escaping () -> Currency,
-        abbreviatedAmountFormatter: AmountFormatter? = nil
+        currencyProvider: @escaping () -> Currency
     ) {
         self.amountFormatter = amountFormatter
-        self.abbreviatedAmountFormatter = abbreviatedAmountFormatter
-            ?? Self.makeAbbreviatedAmountFormatter(basedOn: amountFormatter)
         self.valueFormatter = valueFormatter
         self.currencyProvider = currencyProvider
     }
@@ -251,31 +239,11 @@ struct TradeAssetDetailsDisplayFormatter {
     }
 
     private func formattedCompactDecimal(_ value: Decimal) -> String {
-        let absoluteValue = absDecimal(value)
-
-        for index in Self.abbreviationThresholds.indices {
-            let threshold = Self.abbreviationThresholds[index]
-            guard absoluteValue >= threshold.value else { continue }
-
-            let shortenedValue = value / threshold.value
-            return abbreviatedAmountFormatter.format(
-                decimal: shortenedValue,
-                accessory: .none,
-                style: .compact
-            ) + threshold.suffix
-        }
-
-        return amountFormatter.format(
+        amountFormatter.format(
             decimal: value,
             accessory: .none,
             style: .compact
         )
-    }
-
-    private static func makeAbbreviatedAmountFormatter(basedOn amountFormatter: AmountFormatter) -> AmountFormatter {
-        var configuration = amountFormatter.config
-        configuration.groupDigits = false
-        return AmountFormatter(configuration: configuration)
     }
 
     private func withAccessory(
@@ -318,9 +286,5 @@ struct TradeAssetDetailsDisplayFormatter {
             result *= 10
         }
         return result
-    }
-
-    private func absDecimal(_ value: Decimal) -> Decimal {
-        value < 0 ? -value : value
     }
 }

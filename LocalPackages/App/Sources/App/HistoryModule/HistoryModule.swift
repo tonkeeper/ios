@@ -81,8 +81,26 @@ struct HistoryModule {
             paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTronUSDTEventsPaginationLoader(
                 wallet: wallet
             ),
-            cacheProvider: HistoryListTronUSDTEventsCacheProvider(
+            cacheProvider: HistoryListTronEventsCacheProvider(
                 historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.tronUSDTHistoryService()
+            ),
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+            historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
+            filter: .all,
+            emptyViewProvider: nil
+        )
+    }
+
+    func createTronTRXHistoryListModule(
+        wallet: Wallet
+    ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+        return HistoryListAssembly.module(
+            wallet: wallet,
+            paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTronTRXEventsPaginationLoader(
+                wallet: wallet
+            ),
+            cacheProvider: HistoryListTronEventsCacheProvider(
+                historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.tronTRXHistoryService()
             ),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),

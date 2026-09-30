@@ -5,17 +5,17 @@ import KeeperCore
 final class MultichainWalletSyncStatusPoller {
     var onSyncStatusUpdate: (() async -> Void)?
 
-    private let walletsStore: WalletsStore
     private let multichainService: MultichainService
+    private var wallet: Wallet
 
     private var pollingTask: Task<Void, Never>?
     private var statusTracker = MultichainWalletSyncStatusPolling.Tracker()
 
     init(
-        walletsStore: WalletsStore,
+        wallet: Wallet,
         multichainService: MultichainService
     ) {
-        self.walletsStore = walletsStore
+        self.wallet = wallet
         self.multichainService = multichainService
     }
 
@@ -23,11 +23,20 @@ final class MultichainWalletSyncStatusPoller {
         pollingTask?.cancel()
     }
 
-    func restart(for wallet: Wallet?) {
+    func adopt(wallet: Wallet) {
+        guard self.wallet == wallet else { return }
+        self.wallet = wallet
+    }
+
+    func stop() {
         pollingTask?.cancel()
-        guard let wallet,
-              case let .multichain(state) = wallet.multichain
-        else {
+        pollingTask = nil
+        statusTracker.reset()
+    }
+
+    func restart() {
+        pollingTask?.cancel()
+        guard case let .multichain(state) = wallet.multichain else {
             pollingTask = nil
             statusTracker.reset()
             return
@@ -35,9 +44,9 @@ final class MultichainWalletSyncStatusPoller {
         let walletId = state.walletId
         statusTracker.restart(walletIdentifier: walletId)
 
-        pollingTask = Task { [weak self, walletIdentifier = wallet.id] in
+        pollingTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let self, self.isActiveWallet(id: walletIdentifier) else { return }
+                guard let self else { return }
 
                 do {
                     let status = try await self.multichainService.getWalletSyncStatus(walletId: walletId)
@@ -55,15 +64,6 @@ final class MultichainWalletSyncStatusPoller {
                 try? await Task.sleep(nanoseconds: Constants.pollIntervalNanoseconds)
             }
         }
-    }
-
-    private func isActiveWallet(id: String) -> Bool {
-        guard let activeWallet = try? walletsStore.activeWallet,
-              case .multichain = activeWallet.multichain
-        else {
-            return false
-        }
-        return activeWallet.id == id
     }
 }
 

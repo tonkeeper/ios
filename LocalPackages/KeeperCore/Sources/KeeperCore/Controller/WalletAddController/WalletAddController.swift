@@ -11,15 +11,13 @@ public final class WalletAddController {
     private let mnemonicAccess: MnemonicAccess
     private let importedWalletTronResolver: ImportedWalletTronResolver
     private let multichainAssembly: MultichainAssembly
-    private let configurationAssembly: ConfigurationAssembly
 
     init(
         walletsStore: WalletsStore,
         tonProofTokenService: TonProofTokenService,
         mnemonicAccess: MnemonicAccess,
         tronBalanceService: TronBalanceService,
-        multichainAssembly: MultichainAssembly,
-        configurationAssembly: ConfigurationAssembly
+        multichainAssembly: MultichainAssembly
     ) {
         self.walletsStore = walletsStore
         self.tonProofTokenService = tonProofTokenService
@@ -28,7 +26,6 @@ public final class WalletAddController {
             tronBalanceService: tronBalanceService
         )
         self.multichainAssembly = multichainAssembly
-        self.configurationAssembly = configurationAssembly
     }
 
     public func createWallet(
@@ -167,7 +164,7 @@ public final class WalletAddController {
             passcode: passcode
         )
         await walletsStore.addWallets(wallets)
-        await enrichImportedWallets(wallets, passcode: passcode)
+        await enrichWalletsIfNeeded(passcode: passcode)
         await reportRaffleImport(of: wallets)
     }
 
@@ -334,9 +331,6 @@ public final class WalletAddController {
 
 private extension WalletAddController {
     func enrichWalletsIfNeeded(passcode: String) async {
-        guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
-            return
-        }
         await multichainAssembly.walletAddressesEnricher.enrichMissingWallets(passcode: passcode)
         await multichainAssembly.walletSyncController.syncPendingWallets(passcode: passcode)
         await multichainAssembly.walletSyncController.warmMissingAppKeys(passcode: passcode)
@@ -347,16 +341,5 @@ private extension WalletAddController {
     /// once the wallet is registered, which the enrichment above does not always get to.
     func reportRaffleImport(of wallets: [Wallet]) async {
         await multichainAssembly.raffleImportReporter.recordImported(walletIds: wallets.map(\.id))
-    }
-
-    func enrichImportedWallets(_ wallets: [Wallet], passcode: String) async {
-        let configuration = configurationAssembly.configuration
-        if configuration.featureEnabled(.multichainEnabled) {
-            await enrichWalletsIfNeeded(passcode: passcode)
-        } else if configuration.featureEnabled(.importMultichainEnabled) {
-            await multichainAssembly.walletAddressesEnricher.enrichWallets(wallets, passcode: passcode)
-            await multichainAssembly.walletSyncController.syncPendingWallets(passcode: passcode)
-            await multichainAssembly.walletSyncController.warmMissingAppKeys(passcode: passcode)
-        }
     }
 }

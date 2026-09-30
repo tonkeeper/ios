@@ -1,0 +1,44 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: ../../../steps/launch_app_ensure_ton_wallet.yaml
+- runFlow: ../../../service/account/compare_ton_balance.yaml
+
+# Balance check leaves the screen scrolled to the asset list — return to the header.
+- scrollUntilVisible:
+    element:
+      id: wallet_battery
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: wallet_battery
+- extendedWaitUntil:
+    visible: Keeper Battery
+    timeout: 30000
+- runFlow: ../../../steps/battery/reveal_refill_bottom.yaml
+- tapOn: ${"Recharge with " + NATIVE_TOKEN_SHORT_TEXT}
+# Smallest prefilled pack (750 charges). Tap the row title — radio accessory is not interactive.
+- scrollUntilVisible:
+    element: "750 charges"
+    direction: DOWN
+    timeout: 45000
+- tapOn: "750 charges"
+- scrollUntilVisible:
+    element: Continue
+    direction: DOWN
+    timeout: 20000
+- tapOn: Continue
+# Confirmation popup appears only after async fee emulation — wait for the slider.
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 30000
+- assertVisible: battery.ton
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../../../steps/password/enter_password.yaml
+- assertVisible: History
+- runFlow: ../../../service/history/find_last_ton_transaction.yaml

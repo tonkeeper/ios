@@ -28,6 +28,7 @@ final class HistoryServiceImplementation: HistoryService {
     enum CacheNamespace {
         case allEvents
         case tronUSDT
+        case tronTRX
 
         var cacheKeySuffix: String {
             switch self {
@@ -35,6 +36,8 @@ final class HistoryServiceImplementation: HistoryService {
                 return "history-all-events"
             case .tronUSDT:
                 return "history-tron-usdt"
+            case .tronTRX:
+                return "history-tron-trx"
             }
         }
     }

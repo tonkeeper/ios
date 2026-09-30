@@ -6,7 +6,7 @@ import XCTest
 @MainActor
 final class PerpsSetLimitPriceViewModelTests: XCTestCase {
     private func makeViewModel(
-        side: App.PerpsTradeSide = .long,
+        side: PerpsTradeSide = .long,
         referencePrice: Double = 66000,
         initialLimitPrice: Double? = nil
     ) -> PerpsSetLimitPriceViewModel {

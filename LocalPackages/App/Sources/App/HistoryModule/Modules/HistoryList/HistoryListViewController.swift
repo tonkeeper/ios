@@ -12,11 +12,6 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
 
     var didScroll: ((_ scrollView: UIScrollView) -> Void)?
     var didPullToRefresh: (() -> Void)?
-    var adjustsContentTopPaddingToNavigationBar = false {
-        didSet {
-            updateContentTopPaddingToNavigationBarIfNeeded()
-        }
-    }
 
     private lazy var dataSource = setupDataSource()
     private lazy var layout = setupLayout()
@@ -67,7 +62,6 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        updateContentTopPaddingToNavigationBarIfNeeded()
         triggerPaginationIfNeeded()
     }
 
@@ -307,15 +301,6 @@ private extension HistoryListViewController {
     @objc
     func didBecomeActive() {
         viewModel.reload(force: false)
-    }
-
-    func updateContentTopPaddingToNavigationBarIfNeeded() {
-        guard adjustsContentTopPaddingToNavigationBar,
-              isViewLoaded,
-              let navigationBar = navigationController?.navigationBar
-        else { return }
-
-        contentTopPadding = navigationBar.frame.maxY
     }
 
     func triggerPaginationIfNeeded() {

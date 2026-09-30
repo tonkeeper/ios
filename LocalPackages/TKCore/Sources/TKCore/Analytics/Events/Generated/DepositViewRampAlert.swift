@@ -22,7 +22,7 @@ public struct DepositViewRampAlert: Codable, JSONEncodable, Hashable {
     public var sellAsset: String
     /** Carried from deposit_click_fiat_payment_method */
     public var paymentMethod: String
-    /** Carried from deposit_view_ramp_amount */
+    /** Carried from deposit_view_ramp_insert_amount */
     public var providerName: String
     /** Amount the user entered on the ramp amount screen */
     public var amount: Float

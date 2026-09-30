@@ -3,7 +3,7 @@
 #
 # Why: GUI builds ignore the `-derivedDataPath` the make targets pass, so Xcode
 # resolves its own SwiftPM store into ~/Library/Developer/Xcode/DerivedData/
-# Tonkeeper-<hash>. That path is keyed by the workspace location, so every worktree
+# Keeper-<hash>. That path is keyed by the workspace location, so every worktree
 # earns another ~3.7 GB store of the same dependencies, and the directory outlives
 # the worktree it belonged to. A workspace-relative location puts it in
 # <worktree>/build/DerivedData-xcode instead: gitignored, thrown away with the
@@ -20,10 +20,10 @@
 # location a developer already chose is left alone.
 set -eu
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
+REPO_ROOT="$(git rev-parse --show-toplevel)/ios"
 cd "$REPO_ROOT"
 
-PROJECT_NAME="Tonkeeper"
+PROJECT_NAME="Keeper"
 WANT_STYLE="WorkspaceRelativePath"
 WANT_LOCATION="build/DerivedData-xcode"
 SETTINGS="$PROJECT_NAME.xcodeproj/project.xcworkspace/xcuserdata/$(id -un).xcuserdatad/WorkspaceSettings.xcsettings"

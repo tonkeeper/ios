@@ -239,7 +239,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         let state = model.getState()
 
         XCTAssertEqual(state.wallets.map(\.id), [selectedWallet.id])
-        XCTAssertEqual(state.selectedWallet, 0)
+        XCTAssertEqual(state.selectedWalletIdentifier, selectedWallet.id)
         XCTAssertNil(model.getWallet(id: legacyWallet.id))
         XCTAssertNil(model.getWallet(id: unavailableWallet.id))
         XCTAssertEqual(model.getWallet(id: selectedWallet.id), selectedWallet)
@@ -285,7 +285,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         let updatedState = updatedStates.last { state in
             state.wallets.map(\.id) == [selectedWallet.id, addedWallet.id]
         }
-        XCTAssertEqual(updatedState?.selectedWallet, 0)
+        XCTAssertEqual(updatedState?.selectedWalletIdentifier, selectedWallet.id)
     }
 
     @MainActor

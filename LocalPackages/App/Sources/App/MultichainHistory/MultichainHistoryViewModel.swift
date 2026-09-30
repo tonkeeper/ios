@@ -26,7 +26,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     }
 
     var typeFilterItems: [MultichainHistoryTypeFilterItem] {
-        MultichainHistoryTypeFilter.allCases.map { filter in
+        availableTypeFilters.map { filter in
             MultichainHistoryTypeFilterItem(
                 id: filter,
                 title: filter.title,
@@ -39,9 +39,13 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         switch selectedTypeFilter {
         case .all:
             return TKLocales.History.Tab.allTypes
-        case .send, .receive, .swap, .spam:
+        case .send, .receive, .swap, .perps, .spam:
             return selectedTypeFilter.title
         }
+    }
+
+    var availableTypeFilters: [MultichainHistoryTypeFilter] {
+        MultichainHistoryTypeFilter.allCases.filter { $0 != .perps || showsPerps }
     }
 
     func isTypeFilterActionBarVisible(for queryViewModel: MultichainHistoryQueryViewModel) -> Bool {
@@ -52,6 +56,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
 
     private let multichainState: MultichainWalletState
     private let assetId: String?
+    private let showsPerps: Bool
     private let multichainService: MultichainService
     private let realtimeManager: MultichainRealtimeManager?
     private let reachabilityTracker: ReachabilityTracker?
@@ -70,6 +75,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         multichainState: MultichainWalletState,
         assetId: String? = nil,
         hidesDustTransactions: Bool = false,
+        isPerpsEnabled: Bool = false,
         multichainService: MultichainService,
         realtimeManager: MultichainRealtimeManager? = nil,
         reachabilityTracker: ReachabilityTracker? = nil,
@@ -82,6 +88,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     ) {
         self.multichainState = multichainState
         self.assetId = assetId
+        self.showsPerps = isPerpsEnabled && assetId == nil
         self.hidesDustTransactions = hidesDustTransactions
         self.multichainService = multichainService
         self.realtimeManager = realtimeManager
@@ -239,9 +246,10 @@ private extension MultichainHistoryViewModelImplementation {
         }
 
         let categoryViewModel = MultichainHistoryCategoryViewModel(
-            walletId: multichainState.walletId,
+            multichainState: multichainState,
             category: category,
             hidesDustTransactions: hidesDustTransactions,
+            showsPerps: showsPerps,
             multichainService: multichainService,
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
