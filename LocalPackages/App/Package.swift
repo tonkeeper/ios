@@ -21,7 +21,6 @@ let package = Package(
         .package(url: "https://github.com/bitmark-inc/tweetnacl-swiftwrap", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/tonkeeper/CryptoSwift", revision: "1d31a1ffb6043655f3faba9d160db67b2e547e49"),
         .package(url: "https://github.com/tonkeeper/hw-transport-ios-ble", from: "2.0.0"),
-        .package(url: "https://github.com/ton-org/kit-ios.git", exact: "1.0.0"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "7.0.0")),
         .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1")),
         // Not imported by name: the diffable-datasource closures in RampPickerViewController
@@ -31,7 +30,7 @@ let package = Package(
         .package(url: "https://github.com/objecthub/swift-numberkit.git", .upToNextMajor(from: "2.6.0")),
         .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.1")),
         // Only `AppTests` uses this — the Perps fixtures build ChainKit values directly.
-        .package(url: "https://github.com/tonkeeper/chainkit-swift", exact: "0.1.26"),
+        .package(url: "https://github.com/tonkeeper/chainkit-swift", exact: "0.1.28"),
         .package(path: "../Ledger"),
         .package(path: "../TronSwift"),
         .package(path: "../TKKeychain"),
@@ -78,7 +77,6 @@ let package = Package(
                 .product(name: "URKit", package: "URKit"),
                 .product(name: "BleTransport", package: "hw-transport-ios-ble"),
                 .product(name: "TonTransport", package: "Ledger"),
-                .product(name: "TONWalletKit", package: "kit-ios"),
                 .product(name: "Kingfisher", package: "Kingfisher"),
                 .product(name: "SnapKit-Dynamic", package: "SnapKit"),
                 .product(name: "TronSwift", package: "TronSwift"),

@@ -224,6 +224,14 @@ def top_level_yaml_command_lines(yaml_path: Path) -> list[int]:
 
 _FRAMEWORK_STEP_PREFIXES = ("Define variables", "Apply configuration")
 
+# A `retry:` block logs its failed attempts as ordinary "… FAILED" steps; only the
+# block's own terminal status says whether the flow actually failed there.
+_RETRY_STEP_PREFIX = "Retry "
+
+
+def _is_retry_step(desc: str) -> bool:
+    return desc.startswith(_RETRY_STEP_PREFIX)
+
 
 def _is_framework_step(desc: str) -> bool:
     return desc.startswith(_FRAMEWORK_STEP_PREFIXES)
@@ -236,12 +244,26 @@ def main_flow_failed_step_index(flow_block_lines: list[str]) -> int | None:
     """
     subflow_stack: list[str] = []
     completed_at_depth_0 = 0
+    retry_depth = 0
     for line in flow_block_lines:
         m = match_step_status(line.strip())
         if not m:
             continue
         desc, status = m.group(1).strip(), m.group(2)
         if _is_framework_step(desc):
+            continue
+        if _is_retry_step(desc):
+            if status == "RUNNING":
+                retry_depth += 1
+                continue
+            retry_depth = max(retry_depth - 1, 0)
+            if retry_depth or subflow_stack:
+                continue
+            if status == "FAILED":
+                return completed_at_depth_0
+            completed_at_depth_0 += 1
+            continue
+        if retry_depth:
             continue
         if status == "RUNNING" and desc.startswith("Run "):
             subflow_stack.append(desc)
@@ -281,7 +303,7 @@ def resolve_flow_yaml_path(
         return candidate
 
     # Shard flow dir (e.g. …/flows/multichain/staking) disambiguates stems that
-    # exist in both ton-state and multichain.
+    # exist in several shards (staking vs ton_staking).
     if preferred_dir is not None and preferred_dir.is_dir():
         in_preferred = preferred_dir / candidate.name
         if in_preferred.is_file():
@@ -367,6 +389,7 @@ def split_by_flows(
         step_labels: list[str] = []
         failed_at: datetime | None = None
         started_at = _parse_time(block_lines[0]) if block_lines else None
+        retry_depth = 0
         for bline in block_lines:
             stripped = bline.strip()
             cm = COMMAND_FAILED_RE.search(stripped) or COMMAND_FAILED_LEGACY_RE.search(
@@ -375,6 +398,18 @@ def split_by_flows(
             if cm:
                 failures.append(cm.group(1).strip())
                 failed_at = _parse_time(bline) or failed_at
+            st = match_step_status(stripped)
+            if st and _is_retry_step(st.group(1).strip()):
+                if st.group(2) == "RUNNING":
+                    retry_depth += 1
+                else:
+                    retry_depth = max(retry_depth - 1, 0)
+                    if st.group(2) == "FAILED" and not retry_depth:
+                        step_labels.append(st.group(1).strip())
+                        failed_at = _parse_time(bline) or failed_at
+                continue
+            if retry_depth:
+                continue
             sm = match_step_failed(stripped)
             if sm:
                 step_labels.append(sm.group(1).strip())

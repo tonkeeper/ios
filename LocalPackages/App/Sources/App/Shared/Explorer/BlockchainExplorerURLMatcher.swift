@@ -10,7 +10,7 @@ struct BlockchainExplorerURLMatcher {
 
     init(configuration: Configuration) {
         self.init(templatesProvider: {
-            [Network.mainnet, .testnet, .tetra].flatMap { network in
+            [Network.mainnet, .testnet].flatMap { network in
                 configuration.explorers(network: network).flatMap { [$0.url, $0.tokenURL] } + [
                     configuration.accountExplorer(network: network),
                     configuration.transactionExplorer(network: network),

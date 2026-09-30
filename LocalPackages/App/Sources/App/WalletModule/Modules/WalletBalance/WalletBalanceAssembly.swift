@@ -30,57 +30,17 @@ struct WalletBalanceAssembly {
             currencyProvider: { keeperCoreMainAssembly.storesAssembly.currencyStore.state }
         )
         let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        let collectiblesViewModel = WalletBalanceMultichainCollectiblesViewModel(
-            storesAssembly: keeperCoreMainAssembly.storesAssembly,
-            accountNftService: keeperCoreMainAssembly.servicesAssembly.accountNftService(),
-            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
-        )
+        let storesAssembly = keeperCoreMainAssembly.storesAssembly
+
+        let pushAuthorizationModel = PushAuthorizationModel()
 
         let viewModel = WalletBalanceViewModelImplementation(
             wallet: wallet,
-            balanceListModel: WalletBalanceBalanceModel(
-                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                balanceStore: keeperCoreMainAssembly.storesAssembly.managedBalanceStore,
-                stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-                appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                configuration: keeperCoreMainAssembly.configurationAssembly.configuration
-            ),
             balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-            setupModel: WalletBalanceSetupModel(
-                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
-                securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-                walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-                mnemonicsAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
-                configuration: configuration
-            ),
-            makeHeaderViewModel: { wallet in
-                WalletBalanceHeaderViewModel(
-                    wallet: wallet,
-                    totalBalanceModel: WalletTotalBalanceModel(
-                        wallet: wallet,
-                        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-                        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                        backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
-                        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                        updateQueue: queue
-                    ),
-                    balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                    walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                    appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                    appSettings: coreAssembly.appSettings,
-                    headerMapper: WalletBalanceHeaderMapper(
-                        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-                        dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
-                    ),
-                    configuration: configuration,
-                    tooltipsService: coreAssembly.tooltipsAssembly.service
-                )
-            },
-            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,
+            walletsStore: storesAssembly.walletsStore,
+            notificationStore: storesAssembly.internalNotificationsStore,
             configuration: configuration,
-            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+            appSettingsStore: storesAssembly.appSettingsStore,
             listMapper:
             WalletBalanceListMapper(
                 stakingMapper: stakingMappper,
@@ -103,26 +63,96 @@ struct WalletBalanceAssembly {
                 }
             ),
             urlOpener: coreAssembly.urlOpener(),
-            collectiblesViewModel: collectiblesViewModel,
-            makeHomeBannersViewModel: { wallet in
-                let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
+            makeWalletViewModel: { wallet in
+                Self.walletViewModel(
                     wallet: wallet,
-                    homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
-                    homeBannersLoader: keeperCoreMainAssembly.loadersAssembly.homeBannersLoader,
-                    deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
-                    analyticsProvider: coreAssembly.analyticsProvider
+                    queue: queue,
+                    configuration: configuration,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    coreAssembly: coreAssembly,
+                    pushAuthorizationModel: pushAuthorizationModel
                 )
-                homeBannersViewModel.onOpenLink = { url in
-                    coreAssembly.urlOpener().open(url: url)
-                }
-                return homeBannersViewModel
             }
         )
-        viewModel.bindBannersSectionVisibility()
         let viewController = WalletBalanceViewController(
             viewModel: viewModel,
             tooltipsService: coreAssembly.tooltipsAssembly.service
         )
         return .init(view: viewController, output: viewModel, input: viewModel)
+    }
+
+    @MainActor
+    private static func walletViewModel(
+        wallet: Wallet,
+        queue: DispatchQueue,
+        configuration: Configuration,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        coreAssembly: TKCore.CoreAssembly,
+        pushAuthorizationModel: PushAuthorizationModel
+    ) -> WalletBalanceWalletViewModel {
+        let storesAssembly = keeperCoreMainAssembly.storesAssembly
+
+        let headerViewModel = WalletBalanceHeaderViewModel(
+            wallet: wallet,
+            totalBalanceModel: WalletTotalBalanceModel(
+                wallet: wallet,
+                totalBalanceStore: storesAssembly.totalBalanceStore,
+                appSettingsStore: storesAssembly.appSettingsStore,
+                backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
+                balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                updateQueue: queue
+            ),
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            walletsStore: storesAssembly.walletsStore,
+            appSettingsStore: storesAssembly.appSettingsStore,
+            appSettings: coreAssembly.appSettings,
+            headerMapper: WalletBalanceHeaderMapper(
+                amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+            ),
+            configuration: configuration,
+            tooltipsService: coreAssembly.tooltipsAssembly.service
+        )
+
+        let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
+            wallet: wallet,
+            walletsStore: storesAssembly.walletsStore,
+            homeBannersStore: storesAssembly.homeBannersStore,
+            homeBannersLoader: keeperCoreMainAssembly.loadersAssembly.homeBannersLoader,
+            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
+            analyticsProvider: coreAssembly.analyticsProvider
+        )
+        homeBannersViewModel.onOpenLink = { url in
+            coreAssembly.urlOpener().open(url: url)
+        }
+
+        return WalletBalanceWalletViewModel(
+            balanceListModel: WalletBalanceBalanceModel(
+                wallet: wallet,
+                walletsStore: storesAssembly.walletsStore,
+                balanceStore: storesAssembly.managedBalanceStore,
+                stackingPoolsStore: storesAssembly.stackingPoolsStore,
+                appSettingsStore: storesAssembly.appSettingsStore,
+                configuration: configuration
+            ),
+            setupModel: WalletBalanceSetupModel(
+                wallet: wallet,
+                walletsStore: storesAssembly.walletsStore,
+                processedBalanceStore: storesAssembly.processedBalanceStore,
+                securityStore: storesAssembly.securityStore,
+                walletNotificationStore: storesAssembly.walletNotificationStore,
+                mnemonicsAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
+                configuration: configuration,
+                pushAuthorizationModel: pushAuthorizationModel
+            ),
+            headerViewModel: headerViewModel,
+            homeBannersViewModel: homeBannersViewModel,
+            collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel(
+                wallet: wallet,
+                storesAssembly: storesAssembly,
+                accountNftService: keeperCoreMainAssembly.servicesAssembly.accountNftService(),
+                appSettingsStore: storesAssembly.appSettingsStore
+            )
+        )
     }
 }

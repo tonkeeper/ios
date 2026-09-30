@@ -1,0 +1,38 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: ../../../steps/launch_app_ensure_ton_wallet.yaml
+- runFlow: ../../../service/account/compare_ton_balance.yaml
+- runFlow: ../../../steps/wallet/expand_more_assets.yaml
+
+- scrollUntilVisible:
+    element:
+      text: "^NOT$"
+    direction: DOWN
+    timeout: 30000
+    speed: 40
+    centerElement: true
+- tapOn:
+    text: "^NOT$"
+- runFlow: ../../../steps/trade/tap_asset_details_send.yaml
+- inputText: ${RECIEVE_WALLET}
+- tapOn: "Amount"
+- inputText: "3"
+- tapOn: "Continue"
+
+- tapOn:
+    id: "switch"
+- tapOn:
+    text: "^NOT$"
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+- runFlow: "../../../steps/password/enter_password.yaml"
+- assertVisible: History
+
+- runFlow:
+    file: "../../../service/history/last_sent_transaction_jetton.yaml"
+    env:
+      expectedSymbol: "NOT"
+      expectedAmount: "3"

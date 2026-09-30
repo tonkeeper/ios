@@ -1,173 +1,60 @@
 import ChainKit
 import Foundation
 
-enum PerpsTradeSideMapper {
-    static func toChainKit(_ side: PerpsTradeSide) -> LighterTradeSide {
-        switch side {
-        case .long: return LighterTradeSide.long_
-        case .short: return LighterTradeSide.short_
-        }
-    }
-
-    static func fromChainKit(_ side: LighterTradeSide) -> PerpsTradeSide {
-        side === LighterTradeSide.short_ ? .short : .long
-    }
-}
-
 enum PerpsLiquidationReasonMapper {
-    static func map(_ reason: LighterLiquidationUnavailable?) -> PerpsLiquidationUnavailableReason {
+    static func map(_ reason: PerpsLiquidationUnavailable?) -> PerpsLiquidationUnavailableReason {
         guard let reason else { return .unknown }
-        if reason === LighterLiquidationUnavailable.flatPosition { return .flatPosition }
-        if reason === LighterLiquidationUnavailable.missingMark { return .missingMark }
-        if reason === LighterLiquidationUnavailable.missingCollateral { return .missingCollateral }
-        if reason === LighterLiquidationUnavailable.missingMaintenanceFraction { return .missingMaintenanceFraction }
-        if reason === LighterLiquidationUnavailable.zeroDenominator { return .zeroDenominator }
-        if reason === LighterLiquidationUnavailable.negativePrice { return .negativePrice }
+        if reason === PerpsLiquidationUnavailable.flatposition { return .flatPosition }
+        if reason === PerpsLiquidationUnavailable.missingmark { return .missingMark }
+        if reason === PerpsLiquidationUnavailable.missingcollateral { return .missingCollateral }
+        if reason === PerpsLiquidationUnavailable.missingmaintenancefraction { return .missingMaintenanceFraction }
+        if reason === PerpsLiquidationUnavailable.zerodenominator { return .zeroDenominator }
+        if reason === PerpsLiquidationUnavailable.negativeprice { return .negativePrice }
         return .unknown
     }
 }
 
-enum PerpsOpenOrderReviewMapper {
-    static func map(
-        review: LighterOrderReview,
-        marginUsd: Double
-    ) -> PerpsOpenOrderReview {
-        PerpsOpenOrderReview(
-            symbol: review.symbol,
-            marginUsd: marginUsd,
-            entryPrice: review.estimatedEntryPrice?.doubleValue ?? review.priceHuman,
-            liquidationPrice: review.estimatedLiquidationPrice?.doubleValue,
-            notionalUsd: review.notionalUsd,
-            baseSize: review.baseSize,
-            estimatedFeeUsd: review.estimatedFeeUsd?.doubleValue,
-            liquidationUnavailableReason: review.estimatedLiquidationPrice == nil
-                ? PerpsLiquidationReasonMapper.map(review.liquidationUnavailableReason)
-                : nil
-        )
-    }
-}
+/// Cancel keys of the legs a change supersedes, kept by role: the SDK intent has
+/// a slot per role and rejects a stop-loss offered as the replaced take-profit.
+struct PerpsAutoCloseStaleLegs: Equatable {
+    let takeProfit: Int64?
+    let stopLoss: Int64?
 
-enum PerpsCloseReviewMapper {
-    static func map(review: LighterOrderReview, position: LighterOpenPosition) -> PerpsCloseReview {
-        let estimatedBaseFilled = review.estimatedBaseFilled?.doubleValue ?? review.baseSize
-        let closedPortion = position.size > 0 ? min(1, estimatedBaseFilled / abs(position.size)) : 0
-        let marginUsd = position.allocatedMargin * closedPortion
-        let positionNotional = abs(position.size) * position.avgEntryPrice
-        let fallbackLeverage: Double? = position.allocatedMargin > 0
-            ? (positionNotional / position.allocatedMargin).rounded()
-            : nil
-        return PerpsCloseReview(
-            symbol: review.symbol,
-            side: PerpsTradeSideMapper.fromChainKit(position.side),
-            leverage: position.leverage?.doubleValue ?? fallbackLeverage,
-            marginUsd: marginUsd,
-            notionalUsd: review.notionalUsd,
-            baseSize: estimatedBaseFilled,
-            estimatedFeeUsd: review.estimatedFeeUsd?.doubleValue,
-            estimatedPnlUsd: review.estimatedPnlUsd?.doubleValue,
-            estimatedReceiveUsd: review.estimatedReceiveUsd?.doubleValue
-        )
-    }
-}
-
-enum PerpsSizeChangeReviewMapper {
-    /// Old values are entry-cost based (size × avg entry), not mark-based: the design
-    /// frames Size as margin × leverage, which only holds at the position's entry.
-    static func map(
-        direction: PerpsSizeChangeDirection,
-        review: LighterOrderReview,
-        position: LighterOpenPosition,
-        marginDeltaUsd: Double
-    ) -> PerpsSizeChangeReview {
-        let positionSize = abs(position.size)
-        let oldEntry = position.avgEntryPrice
-        let oldNotional = positionSize * oldEntry
-        let chunkBase = abs(review.baseSize)
-
-        let newEntry: Double
-        let newNotional: Double
-        let newBase: Double
-        switch direction {
-        case .add:
-            if let projected = review.positionAfter {
-                newBase = abs(projected.baseSize)
-                newEntry = projected.entryPrice
-                newNotional = newBase * newEntry
-            } else {
-                newBase = positionSize + chunkBase
-                newEntry = newBase > 0
-                    ? (positionSize * oldEntry + chunkBase * review.priceHuman) / newBase
-                    : oldEntry
-                newNotional = oldNotional + review.notionalUsd
-            }
-        case .reduce:
-            newBase = abs(review.positionAfter?.baseSize ?? max(0, positionSize - chunkBase))
-            newEntry = review.positionAfter?.entryPrice ?? oldEntry
-            newNotional = newBase * newEntry
-        }
-
-        let marginUsd = position.allocatedMargin
-        let fallbackLeverage: Double? = marginUsd > 0 ? (oldNotional / marginUsd).rounded() : nil
-
-        return PerpsSizeChangeReview(
-            symbol: review.symbol,
-            direction: direction,
-            side: PerpsTradeSideMapper.fromChainKit(position.side),
-            leverage: position.leverage?.doubleValue ?? fallbackLeverage,
-            marginDeltaUsd: marginDeltaUsd,
-            entryPrice: PerpsValueChange(old: oldEntry, new: newEntry),
-            notionalUsd: PerpsValueChange(old: oldNotional, new: newNotional),
-            baseSize: PerpsValueChange(old: positionSize, new: newBase),
-            liquidationPrice: review.estimatedLiquidationPrice?.doubleValue,
-            liquidationUnavailableReason: review.estimatedLiquidationPrice == nil
-                ? PerpsLiquidationReasonMapper.map(review.liquidationUnavailableReason)
-                : nil,
-            estimatedFeeUsd: review.estimatedFeeUsd?.doubleValue
-        )
-    }
-}
-
-enum PerpsMarginChangeReviewMapper {
-    static func map(
-        direction: PerpsMarginChangeDirection,
-        review: LighterMarginReview,
-        position: LighterOpenPosition
-    ) -> PerpsMarginChangeReview {
-        let marginBefore = review.allocatedMarginBefore?.doubleValue ?? position.allocatedMargin
-        let signedDelta = direction == .add ? review.usdc : -review.usdc
-        let marginAfter = review.allocatedMarginAfter?.doubleValue ?? (marginBefore + signedDelta)
-
-        let liquidationBefore = review.liquidationPriceBefore?.doubleValue
-            ?? (position.liquidationPrice > 0 ? position.liquidationPrice : nil)
-        let liquidationAfter = review.estimatedLiquidationPriceAfter?.doubleValue
-        let liquidationChange: PerpsValueChange? = liquidationAfter.map {
-            PerpsValueChange(old: liquidationBefore ?? $0, new: $0)
-        }
-
-        let fallbackLeverage: Double? = marginBefore > 0
-            ? (abs(position.size) * position.avgEntryPrice / marginBefore).rounded()
-            : nil
-
-        return PerpsMarginChangeReview(
-            symbol: position.symbol,
-            direction: direction,
-            side: PerpsTradeSideMapper.fromChainKit(position.side),
-            leverage: position.leverage?.doubleValue ?? fallbackLeverage,
-            amountUsd: review.usdc,
-            allocatedMargin: PerpsValueChange(old: marginBefore, new: marginAfter),
-            liquidationPrice: liquidationChange,
-            liquidationUnavailableReason: liquidationAfter == nil
-                ? PerpsLiquidationReasonMapper.map(review.liquidationUnavailableReason)
-                : nil,
-            isImmediateRisk: review.isImmediateRisk
-        )
+    var indexes: [Int64] {
+        Array(Set([takeProfit, stopLoss].compactMap { $0 })).sorted()
     }
 }
 
 enum PerpsAutoCloseTxPlan: Equatable {
-    case replace(target: PerpsAutoClose, staleOrderIndexes: [Int64])
-    case clear(orderIndexes: [Int64])
+    case replace(target: PerpsAutoClose, stale: PerpsAutoCloseStaleLegs)
+    case clear(stale: PerpsAutoCloseStaleLegs)
     case noChange
+}
+
+/// An auto-close change translated into what the SDK intent needs, plus what the
+/// journal needs to confirm it afterwards. A nil `pending` means the change asked
+/// for nothing the venue does not already hold.
+struct PerpsAutoCloseLegs {
+    var takeProfit: PerpsAutoCloseLeg?
+    var stopLoss: PerpsAutoCloseLeg?
+    var replacedTakeProfit: KotlinLong?
+    var replacedStopLoss: KotlinLong?
+    var target: PerpsAutoClose?
+    var pending: PerpsPendingAutoCloseChange?
+
+    var spec: PerpsAutoCloseSpec? {
+        guard takeProfit != nil || stopLoss != nil
+            || replacedTakeProfit != nil || replacedStopLoss != nil
+        else {
+            return nil
+        }
+        return PerpsAutoCloseSpec(
+            takeProfit: takeProfit,
+            stopLoss: stopLoss,
+            replacedTakeProfitOrderIndex: replacedTakeProfit,
+            replacedStopLossOrderIndex: replacedStopLoss
+        )
+    }
 }
 
 public enum PerpsAutoCloseChangePlanner {
@@ -175,13 +62,16 @@ public enum PerpsAutoCloseChangePlanner {
         guard !matches(target: target, resting: resting) else { return .noChange }
         // Position-tied triggers expose a composite read `order_index` that is
         // not a cancel identity; prefer the client order index used at creation.
-        let indexes = Array(Set(resting.map(\.cancelKey))).sorted()
+        let stale = PerpsAutoCloseStaleLegs(
+            takeProfit: resting.first { $0.kind == .takeProfit }?.cancelKey,
+            stopLoss: resting.first { $0.kind == .stopLoss }?.cancelKey
+        )
         return target.isEmpty
-            ? .clear(orderIndexes: indexes)
-            : .replace(target: target, staleOrderIndexes: indexes)
+            ? .clear(stale: stale)
+            : .replace(target: target, stale: stale)
     }
 
-    /// Confirmation predicate for `reconcileAutoCloseChange`. Set path: the live
+    /// Confirmation predicate for the auto-close reconciliation. Set path: the live
     /// legs must match the target exactly (leg kinds + rounded trigger prices) —
     /// a venue that stacked instead of replacing leaves extra legs and honestly
     /// never confirms. Cancel path: the resting indexes are gone — a leg that
@@ -193,7 +83,9 @@ public enum PerpsAutoCloseChangePlanner {
             let live = Set(orders.map(\.cancelKey))
             return pending.restingOrderIndexes.allSatisfy { !live.contains($0) }
         }
+        let live = Set(orders.map(\.cancelKey))
         return matches(target: target, resting: orders)
+            && pending.restingOrderIndexes.allSatisfy { !live.contains($0) }
     }
 
     public static func matches(target: PerpsAutoClose, resting: [PerpsTriggerOrderSummary]) -> Bool {
@@ -208,112 +100,137 @@ public enum PerpsAutoCloseChangePlanner {
     }
 }
 
-enum PerpsAutoCloseChangeReviewMapper {
-    static func map(review: LighterTpSlReview, position: LighterOpenPosition) -> PerpsAutoCloseChangeReview {
-        PerpsAutoCloseChangeReview(
-            side: PerpsTradeSideMapper.fromChainKit(position.side),
-            new: PerpsAutoClose(
-                takeProfit: review.takeProfit.map(trigger),
-                stopLoss: review.stopLoss.map(trigger)
-            )
-        )
-    }
-
-    static func mapCancel(position: LighterOpenPosition) -> PerpsAutoCloseChangeReview {
-        PerpsAutoCloseChangeReview(side: PerpsTradeSideMapper.fromChainKit(position.side), new: nil)
-    }
-
-    private static func trigger(_ leg: LighterAutoCloseReview) -> PerpsAutoCloseTrigger {
-        PerpsAutoCloseTrigger(triggerPrice: leg.triggerPrice)
-    }
-}
-
 enum PerpsTradingErrorMapper {
     static func map(_ error: Error) -> PerpsTradingError {
         if let trading = error as? PerpsTradingError { return trading }
-        if operationBlockedException(from: error) != nil { return .operationInProgress }
-        if sessionException(from: error) != nil { return .credentialsRevoked }
-        if let operation = operationException(from: error) {
-            guard operation.operationState === LighterOperationState.failed else {
-                return .submitUnknown
-            }
-            return map(
-                kind: operation.kind,
-                message: operation.message ?? "operation failed",
-                isInsufficientBalance: operation.isInsufficientBalance
-            )
+        if let api = error as? PerpsAPIError { return map(api) }
+        if let execution = kotlinException(from: error, as: PerpsExecutionException.self) {
+            return map(kind: execution.kind, message: execution.message ?? "execution failed")
+        }
+        if let trade = kotlinException(from: error, as: PerpsTradeException.self) {
+            return map(kind: trade.kind, message: trade.message ?? "invalid transaction")
         }
         if let validation = lighterValidationException(from: error) {
-            let kind = validation.kind
-            if kind === LighterValidationKind.noPosition { return .positionNotFound }
-            if kind === LighterValidationKind.insufficientLiquidity
-                || kind === LighterValidationKind.slippageBound
-            {
-                return .insufficientLiquidity
-            }
             return .validation(validation.message ?? "invalid transaction")
-        }
-        if let api = lighterApiException(from: error) {
-            return map(
-                kind: api.kind,
-                message: api.message ?? "request failed",
-                isInsufficientBalance: api.isInsufficientBalance
-            )
         }
         if let network = mapNetworkError(error as NSError) { return network }
         return .unknown("\(error)")
     }
 
-    static func map(_ failure: LighterOperationFailure) -> PerpsTradingError {
-        let insufficientCodes = [
-            LighterErrorCodes.shared.NOT_ENOUGH_COLLATERAL,
-            LighterErrorCodes.shared.NOT_ENOUGH_ASSET_BALANCE,
-            LighterErrorCodes.shared.NOT_ENOUGH_ASSET_BALANCE_FOR_FEE,
-        ]
-        let isInsufficientBalance = failure.lighterCode
-            .map { insufficientCodes.contains($0.int32Value) } ?? false
-        return map(
-            kind: failure.kind,
-            message: failure.message,
-            isInsufficientBalance: isInsufficientBalance
-        )
+    private static func map(kind: PerpsTradeError, message: String) -> PerpsTradingError {
+        if kind === PerpsTradeError.protocolfailure { return .protocolFailure(message) }
+        if kind === PerpsTradeError.insufficientbalance { return .insufficientBalance }
+        if kind === PerpsTradeError.insufficientliquidity
+            || kind === PerpsTradeError.needsmoredepth
+            || kind === PerpsTradeError.slippageexceeded
+        {
+            return .insufficientLiquidity
+        }
+        if kind === PerpsTradeError.noposition || kind === PerpsTradeError.ordernotfound {
+            return .positionNotFound
+        }
+        if kind === PerpsTradeError.marginbelowrequirement { return .immediateLiquidationRisk }
+        if kind === PerpsTradeError.tradingdisabled || kind === PerpsTradeError.unsupportedmarket {
+            return .regionUnavailable
+        }
+        if kind === PerpsTradeError.staleinput
+            || kind === PerpsTradeError.planexpired
+            || kind === PerpsTradeError.positionchanged
+            || kind === PerpsTradeError.unusablesnapshot
+        {
+            return .stalePreparedTransaction
+        }
+        return .validation(message)
     }
 
     private static func map(
-        kind: LighterErrorKind,
-        message: String,
-        isInsufficientBalance: Bool
+        kind: PerpsExecutionErrorKind,
+        message: String
     ) -> PerpsTradingError {
-        if isInsufficientBalance { return .insufficientBalance }
-        if kind === LighterErrorKind.offline { return .offline }
-        if kind === LighterErrorKind.timeout { return .timeout }
-        if kind === LighterErrorKind.rateLimited { return .rateLimited }
-        if kind === LighterErrorKind.serverUnavailable { return .serverUnavailable }
-        if kind === LighterErrorKind.serverRejected { return .serverRejected(message) }
-        if kind === LighterErrorKind.auth { return .authExpired }
-        // `LighterErrorKind.protocol` is not importable from Swift (keyword-named Kotlin enum entry).
-        if kind.name == "protocol" { return .protocolFailure(message) }
-        return .unknown(message)
+        switch kind {
+        case .offline: return .offline
+        case .timeout: return .timeout
+        case .ratelimited: return .rateLimited
+        case .serverunavailable: return .serverUnavailable
+        case .serverrejected: return .serverRejected(message)
+        case .authexpired: return .authExpired
+        case .credentialsrevoked: return .credentialsRevoked
+        case .activationrequired: return .activationRequired
+        case .activationcanceled: return .activationCanceled
+        case .regionunavailable: return .regionUnavailable
+        case .validation: return .validation(message)
+        case .nothingtochange: return .nothingToChange
+        case .insufficientbalance: return .insufficientBalance
+        case .insufficientliquidity: return .insufficientLiquidity
+        case .positionnotfound: return .positionNotFound
+        case .immediateliquidationrisk: return .immediateLiquidationRisk
+        case .protocolfailure: return .protocolFailure(message)
+        case .operationinprogress: return .operationInProgress
+        case .stalepreparedtransaction: return .stalePreparedTransaction
+        case .submitunknown: return .submitUnknown
+        case .unknown: return .unknown(message)
+        default: return .unknown(message)
+        }
     }
 
-    static func operationBlockedException(from error: Error) -> LighterOperationBlockedException? {
-        kotlinException(from: error, as: LighterOperationBlockedException.self)
+    /// The service names the outcome twice: `details.reason` says what to do about
+    /// a refused submission, and the envelope's `code` classifies everything else.
+    /// `message` is fixed per code, so it is carried for logs and never matched on.
+    static func map(_ failure: PerpsAPIFailure) -> PerpsTradingError {
+        let text = failure.message ?? failure.code ?? "request failed"
+        switch failure.reason {
+        case "resign_required", "order_gone":
+            return .stalePreparedTransaction
+        case "invalid_transaction", "malformed_tx_info", "empty_batch", "foreign_account", "batch_not_accepted":
+            return .protocolFailure(text)
+        case "lighter_rejected":
+            return .serverRejected(text)
+        default:
+            break
+        }
+        switch failure.code {
+        case "validation_error":
+            return .validation(text)
+        case "conflict":
+            return .stalePreparedTransaction
+        case "token_expired", "invalid_token", "wallet_auth_required", "wallet_auth_invalid":
+            return .authExpired
+        case "token_revoked", "device_inactive":
+            return .credentialsRevoked
+        case "wallet_forbidden":
+            return .regionUnavailable
+        case "not_found":
+            return .positionNotFound
+        case "upstream_unavailable", "auth_unavailable":
+            return .serverUnavailable
+        default:
+            break
+        }
+        if failure.httpStatus == 429 { return .rateLimited }
+        if failure.httpStatus == 400 { return .validation(text) }
+        return .serverUnavailable
     }
 
-    private static func lighterApiException(from error: Error) -> LighterApiException? {
-        kotlinException(from: error, as: LighterApiException.self)
+    static func map(_ api: PerpsAPIError) -> PerpsTradingError {
+        switch api {
+        case .unauthorized:
+            return .authExpired
+        case .conflict:
+            return .stalePreparedTransaction
+        case let .badStatus(failure):
+            return map(failure)
+        case let .transport(underlying):
+            if let network = underlying.flatMap({ mapNetworkError($0 as NSError) }) {
+                return network
+            }
+            return .serverUnavailable
+        case .badUrl, .badResponse, .unknown, .notFound:
+            return .serverUnavailable
+        }
     }
 
     private static func lighterValidationException(from error: Error) -> LighterValidationException? {
         kotlinException(from: error, as: LighterValidationException.self)
-    }
-
-    private static func operationException(from error: Error) -> LighterOperationException? {
-        kotlinException(from: error, as: LighterOperationException.self)
-    }
-
-    private static func sessionException(from error: Error) -> LighterSessionException? {
-        kotlinException(from: error, as: LighterSessionException.self)
     }
 
     private static func mapNetworkError(_ error: NSError) -> PerpsTradingError? {

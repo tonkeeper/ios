@@ -1,27 +1,40 @@
 import Foundation
 import TKLogging
 
-public struct MultichainPortfolioTotal: Equatable, Codable {
+/// One wallet's portfolio as the last `getAllWalletAssets` response delivered it: the fiat total the
+/// wallets list and header render, plus the visible assets the wallet screen lists. The scope fields
+/// record what the response was requested for, so a reader can reject a snapshot that no longer
+/// matches the current account set, display currency or dust filter.
+public struct MultichainPortfolio: Equatable, Codable {
     public let fiatPrice: [String: String]
-    public let date: Date
+    public let assets: [MultichainAsset]
+    public let accountsIdentifier: String
+    public let currencyCode: String
     public let hidesDustBalances: Bool
+    public let date: Date
 
     public init(
         fiatPrice: [String: String],
-        date: Date,
-        hidesDustBalances: Bool = false
+        assets: [MultichainAsset],
+        accountsIdentifier: String,
+        currencyCode: String,
+        hidesDustBalances: Bool,
+        date: Date = Date()
     ) {
         self.fiatPrice = fiatPrice
-        self.date = date
+        self.assets = assets
+        self.accountsIdentifier = accountsIdentifier
+        self.currencyCode = currencyCode
         self.hidesDustBalances = hidesDustBalances
+        self.date = date
     }
 }
 
 public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Event, MultichainPortfolioStore.State> {
-    public typealias State = [Wallet: MultichainPortfolioTotal]
+    public typealias State = [Wallet: MultichainPortfolio]
 
     public enum Event {
-        case didUpdatePortfolioTotal(wallet: Wallet)
+        case didUpdatePortfolio(wallet: Wallet)
     }
 
     private let walletsStore: WalletsStore
@@ -44,7 +57,7 @@ public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Even
         var state = State()
         for wallet in walletsStore.wallets {
             do {
-                state[wallet] = try repository.getPortfolioTotal(walletId: wallet.id)
+                state[wallet] = try repository.getPortfolio(walletId: wallet.id)
             } catch {
                 continue
             }
@@ -52,10 +65,9 @@ public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Even
         return state
     }
 
-    public func setPortfolioTotal(
-        _ fiatPrice: [String: String],
+    public func setPortfolio(
+        _ portfolio: MultichainPortfolio,
         wallet: Wallet,
-        hidesDustBalances: Bool,
         requestToken: UInt64? = nil
     ) {
         let requestToken = requestToken ?? makeRequestToken()
@@ -66,27 +78,22 @@ public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Even
                 return nil
             }
             var updatedState = state
-            let total = MultichainPortfolioTotal(
-                fiatPrice: fiatPrice,
-                date: Date(),
-                hidesDustBalances: hidesDustBalances
-            )
-            updatedState[wallet] = total
-            self.save(total, wallet: wallet)
+            updatedState[wallet] = portfolio
+            self.save(portfolio, wallet: wallet)
             return StateUpdate(newState: updatedState)
         } completion: { [weak self] _ in
             guard let self,
                   self.isLatestRequestToken(requestToken, wallet: wallet)
             else { return }
-            self.sendEvent(.didUpdatePortfolioTotal(wallet: wallet))
+            self.sendEvent(.didUpdatePortfolio(wallet: wallet))
         }
     }
 
-    private func save(_ total: MultichainPortfolioTotal, wallet: Wallet) {
+    private func save(_ portfolio: MultichainPortfolio, wallet: Wallet) {
         do {
-            try repository.savePortfolioTotal(total, walletId: wallet.id)
+            try repository.savePortfolio(portfolio, walletId: wallet.id)
         } catch {
-            Log.w("MultichainPortfolioStore: failed to save portfolio total: \(error)")
+            Log.w("MultichainPortfolioStore: failed to save portfolio: \(error)")
         }
     }
 

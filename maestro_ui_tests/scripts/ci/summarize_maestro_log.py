@@ -38,7 +38,7 @@ def main() -> int:
         "--flow-dir",
         type=Path,
         default=None,
-        help="Shard flow directory (disambiguates stems shared by ton-state and multichain)",
+        help="Shard flow directory (disambiguates stems shared by several shards, e.g. staking vs ton_staking)",
     )
     ap.add_argument(
         "--record-started-at",

@@ -47,10 +47,9 @@ final class MysteryRaffleLoadingController {
     }
 
     private func loadForActiveWallet() {
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        guard configuration.featureEnabled(.mysteryRaffleEnabled),
-              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-              case let .multichain(multichainState) = wallet.multichain
+        guard
+            let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+            case let .multichain(multichainState) = wallet.multichain
         else {
             keeperCoreMainAssembly.loadersAssembly.raffleLoader.clearRaffles()
             return

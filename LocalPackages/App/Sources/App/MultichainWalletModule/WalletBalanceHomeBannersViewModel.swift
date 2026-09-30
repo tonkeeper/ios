@@ -6,7 +6,7 @@ import TKUIKit
 
 enum HomeBannersViewState {
     case idle
-    case loading(data: [BannerItem], task: Task<Void, Never>)
+    case loading(data: [BannerItem]?, task: Task<Void, Never>)
     case loaded([BannerItem])
 
     var items: [BannerItem] {
@@ -14,46 +14,39 @@ enum HomeBannersViewState {
         case .idle:
             []
         case let .loading(data, _):
-            data
+            data ?? []
         case let .loaded(items):
             items
         }
     }
 
-    /// Only a wait with nothing to show yet: a reload over a deck keeps rendering the deck.
-    var showsShimmer: Bool {
-        guard case let .loading(data, _) = self else { return false }
-        return data.isEmpty
-    }
-}
-
-/// Everything a deck is bound to: the wallet that dismisses banners and the seed they are answered
-/// for. A rename leaves both alone, so it must not replace the model.
-struct HomeBannersIdentity: Hashable {
-    let walletId: String
-    let scopeWalletId: String?
-
-    init(wallet: Wallet) {
-        walletId = wallet.id
-        scopeWalletId = wallet.multichainWalletState?.walletId
+    var hasAnswered: Bool {
+        switch self {
+        case .idle:
+            false
+        case let .loading(data, _):
+            data != nil
+        case .loaded:
+            true
+        }
     }
 }
 
 @MainActor
 final class WalletBalanceHomeBannersViewModel: ObservableObject {
     @Published private(set) var state: HomeBannersViewState = .idle
-    @Published private(set) var sectionHeight = WalletBalanceHomeBannersLayout.height(remainingCount: 0)
-    @Published private(set) var isSectionVisible = false
+    @Published private(set) var sectionHeight: CGFloat
+    @Published private(set) var isSectionVisible: Bool
 
-    var onOpenDeeplink: ((Deeplink) -> Void)?
+    var onOpenDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var onOpenLink: ((URL) -> Void)?
     var onSectionVisibilityChanged: ((_ isVisible: Bool) -> Void)?
     var onSectionHeightChanged: ((_ height: CGFloat) -> Void)?
 
-    let wallet: Wallet
+    private(set) var wallet: Wallet
 
-    var identity: HomeBannersIdentity {
-        HomeBannersIdentity(wallet: wallet)
+    private var scopeWalletId: String? {
+        wallet.multichainWalletState?.walletId
     }
 
     private let homeBannersStore: HomeBannersStore
@@ -61,15 +54,12 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
     private let deeplinkParser: DeeplinkParser
     private let analyticsProvider: AnalyticsProvider
 
-    /// Banner ids already reported during the current on-screen appearance.
-    /// Both sets are cleared in `handleBannersDisappeared`, so each appearance
-    /// reports at most one view and one click per banner (keeping views and
-    /// clicks symmetric for CTR).
     private var shownBannerIDs = Set<String>()
     private var clickedBannerIDs = Set<String>()
 
     init(
         wallet: Wallet,
+        walletsStore: WalletsStore,
         homeBannersStore: HomeBannersStore,
         homeBannersLoader: HomeBannersLoader,
         deeplinkParser: DeeplinkParser,
@@ -80,9 +70,10 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         self.homeBannersLoader = homeBannersLoader
         self.deeplinkParser = deeplinkParser
         self.analyticsProvider = analyticsProvider
+        let cachedCount = homeBannersStore.visibleBanners(for: wallet).count
+        sectionHeight = WalletBalanceHomeBannersLayout.height(remainingCount: cachedCount)
+        isSectionVisible = cachedCount > 0
 
-        // The deck changes from outside this screen too — a load answering for the same seed, or
-        // the dismissals being reset — so the store is what it follows, not only its own reload.
         homeBannersStore.addObserver(self) { observer, event in
             switch event {
             case .didUpdateBanners:
@@ -93,32 +84,64 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
                 break
             }
         }
+
+        walletsStore.addObserver(self) { observer, event in
+            Task { @MainActor in
+                observer.didGetWalletsStoreEvent(event)
+            }
+        }
     }
 
-    func loadIfNeeded() {
+    private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
+        switch event {
+        case let .didUpdateWalletMetaData(wallet),
+             let .didUpdateWalletMultichain(wallet):
+            adopt(wallet: wallet)
+        default:
+            break
+        }
+    }
+
+    private func adopt(wallet: Wallet) {
+        guard self.wallet == wallet else { return }
+        let previousScopeWalletId = scopeWalletId
+        self.wallet = wallet
+        guard previousScopeWalletId != scopeWalletId else { return }
+
+        restart()
+    }
+
+    func startLoadIfNeeded() {
         guard case .idle = state else { return }
-        reload(force: false)
+        startLoad()
     }
 
-    func reload(force: Bool) {
+    func loadIfNeeded() async {
+        startLoadIfNeeded()
+        guard case let .loading(_, task) = state else { return }
+        await task.value
+    }
+
+    private func restart() {
         if case let .loading(_, task) = state {
-            guard force else { return }
             task.cancel()
         }
+        startLoad()
+    }
+
+    private func startLoad() {
+        let cached = visibleBannerItems()
+        let data: [BannerItem]? = cached.isEmpty ? nil : cached
         let loader = homeBannersLoader
-        let scope = WalletScope.walletId(identity.scopeWalletId)
+        let scope = WalletScope.walletId(scopeWalletId)
         let task = Task { [weak self] in
-            await loader.loadBanners(scope: scope, force: force)
+            await loader.loadBanners(scope: scope, force: false)
             guard !Task.isCancelled else { return }
             self?.finishLoading()
         }
-        // Seeded from the store so a wallet already answered for keeps its deck while it refreshes.
-        setState(.loading(data: visibleBannerItems(), task: task))
+        setState(.loading(data: data, task: task))
     }
 
-    /// Called as the pop animation starts, not after it: the deck has already taken the card out
-    /// of its own stack, and rebuilding the items here would remount it and drop the animation
-    /// halfway. What the deck cannot do is resize or hide the section it sits in.
     func dismissBanner(_ item: BannerItem, remainingCount: Int) {
         homeBannersStore.dismissBanner(id: item.id, walletId: wallet.id)
         updateSectionHeight(remainingCount: remainingCount)
@@ -158,13 +181,12 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         setState(.loaded(visibleBannerItems()))
     }
 
-    /// Neither a dismissal nor a store update is an answer: a reload still in flight keeps its
-    /// phase, and a deck that has not asked for anything yet stays idle so it still asks.
     private func refreshBannerItems() {
         switch state {
         case .idle:
             return
-        case let .loading(_, task):
+        case let .loading(data, task):
+            guard data != nil else { return }
             setState(.loading(data: visibleBannerItems(), task: task))
         case .loaded:
             setState(.loaded(visibleBannerItems()))
@@ -204,7 +226,7 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
                     let deeplink = try? self.deeplinkParser.parse(string: url.absoluteString)
                     self.handleBannerClick(id: banner.id, action: Self.actionType(for: deeplink))
                     guard let deeplink else { return }
-                    self.onOpenDeeplink?(deeplink)
+                    self.onOpenDeeplink?(deeplink, UtmParameters(link: url.absoluteString))
                 }
             case let .link(url):
                 return { [weak self] in

@@ -1,0 +1,18 @@
+# regress_EN: Ton Connect 2.0 — universal tc:// deeplink opens the connect sheet.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- openLink: "tc://?v=2&id=4091db63def30d086acef76cd045a20ca6def5744bad530d2a86766d3e781477&r=%7B%22manifestUrl%22%3A%22https%3A%2F%2Fton-connect.github.io%2Fdemo-dapp-with-react-ui%2Ftonconnect-manifest.json%22%2C%22items%22%3A%5B%7B%22name%22%3A%22ton_addr%22%7D%5D%7D"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: Open
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Connect wallet"
+    timeout: 60000
+- assertVisible: "Connect to ton-connect.github.io?"
+- tapOn: "Connect to ton-connect.github.io?"
+- assertVisible: "Allow Notifications"

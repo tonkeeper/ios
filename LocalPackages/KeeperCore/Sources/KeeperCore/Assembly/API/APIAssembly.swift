@@ -5,6 +5,7 @@ import MultichainAPI
 import OpenAPIRuntime
 import StreamURLSessionTransport
 import SwapAPI
+import TKPerpsAPI
 import TonAPI
 import TonConnectAPI
 import TonStreamingAPIV2
@@ -56,11 +57,10 @@ public final class APIAssembly {
     // MARK: - Internal
 
     var apiProvider: APIProvider {
-        APIProvider { [api, testnetAPI, tetraAPI] network in
+        APIProvider { [api, testnetAPI] network in
             switch network {
             case .mainnet: return api
             case .testnet: return testnetAPI
-            case .tetra: return tetraAPI
             }
         }
     }
@@ -79,13 +79,6 @@ public final class APIAssembly {
         requestCreationQueue: apiRequestCreationQueue
     )
 
-    lazy var tetraAPI: API = API(
-        hostProvider: tetraTonApiHostProvider,
-        urlSession: urlSession,
-        configuration: configurationAssembly.configuration,
-        requestCreationQueue: apiRequestCreationQueue
-    )
-
     public lazy var pushNotificationsAPI: PushNotificationsAPI = PushNotificationsAPI(urlSession: .shared)
 
     private lazy var apiRequestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
@@ -98,16 +91,11 @@ public final class APIAssembly {
         TestnetAPIHostProvider(configuration: configurationAssembly.configuration)
     }
 
-    private var tetraTonApiHostProvider: APIHostProvider {
-        TetraAPIHostProvider(configuration: configurationAssembly.configuration)
-    }
-
     var streamingAPIV2Provider: StreamingAPIV2Provider {
         StreamingAPIV2Provider { [streamingAPIV2Task, testnetStreamingAPIV2Task] network in
             switch network {
             case .mainnet: return await streamingAPIV2Task.value
             case .testnet: return await testnetStreamingAPIV2Task.value
-            case .tetra: return nil
             }
         }
     }
@@ -172,18 +160,23 @@ public final class APIAssembly {
 
     /// Client for operations that inherit the spec's top-level `deviceJWT` requirement.
     func deviceSessionMultichainAPIClient(
-        deviceAuth: DeviceAuthProviding,
+        deviceAuth: DeviceAuthProviding?,
         userAgent: String? = nil
     ) async -> MultichainAPI.Client {
-        MultichainAPI.Client(
+        var middlewares: [any ClientMiddleware] = [
+            UserAgentHeaderMiddleware(userAgent: userAgent),
+            FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+        ]
+        // Nothing to authenticate with once the graph that owns the session is gone: the request
+        // goes out without the device JWT rather than the process aborting over it.
+        if let deviceAuth {
+            middlewares.append(DeviceSessionMiddleware(deviceAuth: deviceAuth))
+        }
+        return MultichainAPI.Client(
             serverURL: await configurationAssembly.configuration.multichainHost(network: .mainnet),
             configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
             transport: apiTransport,
-            middlewares: .logged([
-                UserAgentHeaderMiddleware(userAgent: userAgent),
-                FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
-                DeviceSessionMiddleware(deviceAuth: deviceAuth),
-            ])
+            middlewares: .logged(middlewares)
         )
     }
 
@@ -213,7 +206,7 @@ public final class APIAssembly {
         deviceJWT: String?,
         walletId: String,
         walletAuthToken: String?,
-        recovery: MultichainWalletAuthDependencies,
+        recovery: MultichainWalletAuthDependencies?,
         userAgent: String? = nil
     ) async -> MultichainAPI.Client {
         var middlewares: [any ClientMiddleware] = [
@@ -236,6 +229,33 @@ public final class APIAssembly {
             configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
             transport: apiTransport,
             middlewares: .logged(middlewares)
+        )
+    }
+
+    func walletAuthPerpsAPIClient(
+        hostURL: URL,
+        deviceJWT: String?,
+        walletId: String,
+        walletAuthToken: String?,
+        recovery: MultichainWalletAuthDependencies,
+        userAgent: String? = nil
+    ) throws -> TKPerpsAPI.Client {
+        var middlewares: [any ClientMiddleware] = [
+            UserAgentHeaderMiddleware(userAgent: userAgent),
+            FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+        ]
+        middlewares.append(
+            contentsOf: WalletAuthClientMiddlewares.make(
+                deviceJWT: deviceJWT,
+                walletId: walletId,
+                walletAuthToken: walletAuthToken,
+                recovery: recovery
+            )
+        )
+        return try TKPerpsAPI.Client(
+            hostURL: hostURL,
+            urlSession: urlSession,
+            middlewares: middlewares
         )
     }
 

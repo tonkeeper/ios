@@ -17,6 +17,8 @@ final class MultichainSwapConfirmationCoordinator: RouterCoordinator<NavigationC
 
     private let wallet: Wallet
     private let confirmationInput: MultichainSwapConfirmationInput
+    private let initiatedBy: InitiatedBy
+    private let utm: UtmParameters
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let nativeFeeShortagePopupPresenter: MultichainNativeFeeShortagePopupPresenter
@@ -26,7 +28,8 @@ final class MultichainSwapConfirmationCoordinator: RouterCoordinator<NavigationC
 
     init(
         wallet: Wallet,
-        nativeSwapContext _: NativeSwapContext,
+        nativeSwapContext: NativeSwapContext,
+        initiatedBy: InitiatedBy,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter,
@@ -35,6 +38,8 @@ final class MultichainSwapConfirmationCoordinator: RouterCoordinator<NavigationC
     ) {
         self.wallet = wallet
         self.confirmationInput = confirmationInput
+        self.initiatedBy = initiatedBy
+        self.utm = nativeSwapContext.utm
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         nativeFeeShortagePopupPresenter = MultichainNativeFeeShortagePopupPresenter(
@@ -272,6 +277,8 @@ private extension MultichainSwapConfirmationCoordinator {
             router: NavigationControllerRouter(rootViewController: navigationController),
             wallet: wallet,
             jettonMasterAddress: nil,
+            initiatedBy: initiatedBy,
+            utm: utm,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
@@ -353,12 +360,12 @@ private extension MultichainSwapConfirmationCoordinator {
             toAsset: userInput.receiveAsset.asset.assetId,
             amount: userInput.sourceAmount,
             feeAsset: FeeAsset(multichainSwapFeeMethod: feeMethod),
-            origin: .user,
+            origin: TransactionOrigin(initiatedBy: initiatedBy, utm: utm),
             isMax: userInput.isMax
         ) else {
             return
         }
-        coreAssembly.analyticsProvider.log(event)
+        coreAssembly.analyticsProvider.log(event, utm: utm)
     }
 
     func confirmationLogInfo(additional: [String: String] = [:]) -> [String: String] {

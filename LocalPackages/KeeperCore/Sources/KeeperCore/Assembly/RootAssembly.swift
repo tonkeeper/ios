@@ -115,11 +115,6 @@ public final class RootAssembly {
             formattersAssembly: formattersAssembly,
             secureAssembly: secureAssembly
         )
-        let tonWalletKitAssembly = TONWalletKitAssembly(
-            storesAssembly: storesAssembly,
-            tonConnectAssembly: tonConnectAssembly,
-            apiAssembly: apiAssembly
-        )
         return MainAssembly(
             appInfoProvider: appInfoProvider,
             repositoriesAssembly: repositoriesAssembly,
@@ -134,7 +129,6 @@ public final class RootAssembly {
             knownAccountsAssembly: knownAccountsAssembly,
             batteryAssembly: batteryAssembly,
             tonConnectAssembly: tonConnectAssembly,
-            tonWalletKitAssembly: tonWalletKitAssembly,
             apiAssembly: apiAssembly,
             tonkeeperAPIAssembly: tonkeeperAPIAssembly,
             loadersAssembly: loadersAssembly,

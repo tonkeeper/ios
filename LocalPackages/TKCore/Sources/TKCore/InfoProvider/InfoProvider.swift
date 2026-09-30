@@ -1,10 +1,3 @@
-//
-//  InfoProvider.swift
-//
-//
-//  Created by Grigory on 29.9.23..
-//
-
 import Foundation
 
 public struct InfoProvider {

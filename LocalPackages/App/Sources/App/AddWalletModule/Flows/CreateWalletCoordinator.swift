@@ -256,10 +256,7 @@ private extension CreateWalletCoordinator {
     }
 
     func shouldOfferOnboardingMigration() async -> Bool {
-        guard mode == .multichain,
-              configurationAssembly.configuration.featureEnabled(.multichainEnabled),
-              configurationAssembly.configuration.featureEnabled(.migrationEnabled)
-        else {
+        guard mode == .multichain else {
             return false
         }
 

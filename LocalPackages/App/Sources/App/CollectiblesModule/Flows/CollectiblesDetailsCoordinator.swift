@@ -17,7 +17,7 @@ final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationControll
     var didClose: (() -> Void)?
     var didPerformTransaction: (() -> Void)?
     var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-    var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+    var didRequestDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
     var didRequestDepositTon: (() -> Void)?
 
@@ -142,7 +142,10 @@ private extension CollectiblesDetailsCoordinator {
                     Task { @MainActor [self] in
                         if let deeplink = try? self.keeperCoreMainAssembly.deeplinkParser.parse(string: url.absoluteString) {
                             await MainActor.run {
-                                self.didRequestDeeplinkHandling?(deeplink)
+                                self.didRequestDeeplinkHandling?(
+                                    deeplink,
+                                    UtmParameters(link: url.absoluteString)
+                                )
                             }
 
                             return

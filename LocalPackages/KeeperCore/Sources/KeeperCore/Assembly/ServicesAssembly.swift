@@ -160,6 +160,14 @@ public final class ServicesAssembly {
         )
     }
 
+    public func tronTRXHistoryService() -> HistoryService {
+        HistoryServiceImplementation(
+            apiProvider: apiAssembly.apiProvider,
+            repository: repositoriesAssembly.historyRepository(),
+            cacheNamespace: .tronTRX
+        )
+    }
+
     public func walletService() -> WalletService {
         WalletServiceImplementation(apiProvider: apiAssembly.apiProvider)
     }

@@ -48,7 +48,7 @@ extension MainCoordinator {
         transfer: Deeplink.TransferData,
         sendSource: SendAnalyticsSource
     ) {
-        runSendDeeplinkTask(expirationTimestamp: transfer.expirationTimestamp) { wallet in
+        runSendDeeplinkTask(expirationTimestamp: transfer.expirationTimestamp, sendSource: sendSource) { wallet in
             try await self.handleSendDeeplink(
                 transfer: transfer,
                 wallet: wallet,
@@ -61,7 +61,7 @@ extension MainCoordinator {
         candidates: MultichainRecipientCandidates,
         sendSource: SendAnalyticsSource
     ) {
-        runSendDeeplinkTask(expirationTimestamp: nil) { wallet in
+        runSendDeeplinkTask(expirationTimestamp: nil, sendSource: sendSource) { wallet in
             try await self.handleMultichainSendDeeplink(
                 candidates: candidates,
                 wallet: wallet,
@@ -74,7 +74,7 @@ extension MainCoordinator {
         transfer: Deeplink.EvmTransferData,
         sendSource: SendAnalyticsSource
     ) {
-        runSendDeeplinkTask(expirationTimestamp: nil) { wallet in
+        runSendDeeplinkTask(expirationTimestamp: nil, sendSource: sendSource) { wallet in
             try await self.handleEvmSendDeeplink(
                 transfer: transfer,
                 wallet: wallet,
@@ -85,6 +85,7 @@ extension MainCoordinator {
 
     private func runSendDeeplinkTask(
         expirationTimestamp: Int64?,
+        sendSource: SendAnalyticsSource,
         handle: @escaping @Sendable (Wallet) async throws -> Void
     ) {
         deeplinkHandleTask?.cancel()
@@ -103,6 +104,7 @@ extension MainCoordinator {
         }
 
         let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+        let entrySource = depositAnalyticsSource(for: sendSource)
 
         let deeplinkHandleTask = Task {
             do {
@@ -134,7 +136,8 @@ extension MainCoordinator {
                         tokenSymbol: jettonInfo?.symbol ?? jettonInfo?.name,
                         fractionDigits: jettonInfo?.fractionDigits ?? 2,
                         balance: balance,
-                        isInternalPurchasing: isInternalPurchasing
+                        isInternalPurchasing: isInternalPurchasing,
+                        entrySource: entrySource
                     )
                 }
             } catch let InsufficientFundsError.blockchainFee(wallet, balance, amount) {
@@ -163,7 +166,8 @@ extension MainCoordinator {
                         tokenSymbol: tonToken.symbol,
                         fractionDigits: tonToken.fractionDigits,
                         balance: balance,
-                        isInternalPurchasing: true
+                        isInternalPurchasing: true,
+                        entrySource: entrySource
                     )
                 }
             } catch let failure as SendDeeplinkFailure {
@@ -575,7 +579,8 @@ extension MainCoordinator {
         tokenSymbol: String?,
         fractionDigits: Int,
         balance: BigUInt,
-        isInternalPurchasing: Bool
+        isInternalPurchasing: Bool,
+        entrySource: DepositAnalyticsSource
     ) {
         var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
         buyButtonConfiguration.content = TKButton.Configuration.Content(
@@ -583,7 +588,11 @@ extension MainCoordinator {
         )
         buyButtonConfiguration.action = { [weak self] in
             self?.router.dismiss(animated: true) {
-                self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+                self?.openBuy(
+                    wallet: wallet,
+                    isInternalPurchasing: isInternalPurchasing,
+                    entrySource: entrySource
+                )
             }
         }
 
@@ -683,7 +692,8 @@ extension MainCoordinator {
                         payload: jettonTransferBin ?? bin,
                         stateInit: stateInit,
                         sendFrom: .tonconnectRemote,
-                        initiatedBy: sendSource.initiatedBy
+                        initiatedBy: sendSource.initiatedBy,
+                        utm: sendSource.utm
                     )
                 }
             } catch {
@@ -698,28 +708,43 @@ extension MainCoordinator {
         self.deeplinkHandleTask = deeplinkHandleTask
     }
 
-    func openRampDeeplink(flow: RampFlow, parameters: RampDeeplinkParameters, entrySource: DepositAnalyticsSource) {
+    func openRampDeeplink(
+        flow: RampFlow,
+        parameters: RampDeeplinkParameters,
+        entrySource: DepositAnalyticsSource,
+        utm: UtmParameters
+    ) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
         switch flow {
         case .deposit:
-            openDeposit(wallet: wallet, entrySource: entrySource, initialDeeplink: parameters)
+            openDeposit(
+                wallet: wallet,
+                entrySource: entrySource,
+                initialDeeplink: parameters,
+                utm: utm
+            )
         case .withdraw:
-            openWithdraw(wallet: wallet, entrySource: entrySource, initialDeeplink: parameters)
+            openWithdraw(
+                wallet: wallet,
+                entrySource: entrySource,
+                initialDeeplink: parameters,
+                utm: utm
+            )
         }
     }
 
-    func openStakingDeeplink() {
+    func openStakingDeeplink(utm: UtmParameters) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
         guard !keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.stakingDisabled, network: wallet.network) else { return }
-        openStake(wallet: wallet)
+        openStake(wallet: wallet, initiatedBy: .deepLink, utm: utm)
     }
 
-    func openPoolDetailsDeeplink(poolAddress: Address) {
+    func openPoolDetailsDeeplink(poolAddress: Address, utm: UtmParameters) {
         deeplinkHandleTask?.cancel()
 
         ToastPresenter.hideAll()
@@ -749,7 +774,9 @@ extension MainCoordinator {
                     self.router.dismiss(animated: true) { [weak self = self] in
                         self?.openStakingItemDetails(
                             wallet: wallet,
-                            stakingPoolInfo: stakingPool
+                            stakingPoolInfo: stakingPool,
+                            initiatedBy: .deepLink,
+                            utm: utm
                         )
                     }
                 }
@@ -766,7 +793,7 @@ extension MainCoordinator {
         self.deeplinkHandleTask = deeplinkHandleTask
     }
 
-    func handleDappDeeplink(url: URL) -> Bool {
+    func handleDappDeeplink(url: URL, analyticsFrom: DappOpenSource = .deepLink, utm: UtmParameters = .empty) -> Bool {
         deeplinkHandleTask?.cancel()
         ToastPresenter.hideAll()
         ToastPresenter.showToast(configuration: .loading)
@@ -793,24 +820,22 @@ extension MainCoordinator {
             }
 
             let appSettings = coreAssembly.appSettings
-            let catalogMode: DappCatalogMode = keeperCoreMainAssembly
-                .configurationAssembly
-                .configuration
-                .featureEnabled(.multichainEnabled) ? .multichain : .ton
+            let catalogMode: DappCatalogMode = .multichain
             if let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang),
                let app = getApp(url, popularAppsResponse)
             {
                 openDapp(
                     popularApp: app,
                     url: url,
-                    analyticsFrom: .deepLink,
-                    catalogMode: catalogMode
+                    analyticsFrom: analyticsFrom,
+                    catalogMode: catalogMode,
+                    utm: utm
                 )
             } else if
                 let host = url.host,
                 appSettings.isDappOpenWarningDoNotShow(host) || appSettings.dappHostWhiteList.contains(host)
             {
-                openDapp(title: nil, url: url, analyticsFrom: .deepLink)
+                openDapp(title: nil, url: url, analyticsFrom: analyticsFrom, utm: utm)
             } else {
                 ToastPresenter.hideAll()
                 let warningModule = OpenDappWarningPopupAssembly.module(
@@ -822,7 +847,7 @@ extension MainCoordinator {
 
                 warningModule.output.didTapOpen = { [weak bottomSheetViewController] url, title in
                     bottomSheetViewController?.dismiss { [weak self = self] in
-                        self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
+                        self?.openDapp(title: title, url: url, analyticsFrom: analyticsFrom, utm: utm)
                     }
                 }
 
@@ -835,7 +860,7 @@ extension MainCoordinator {
     }
 
     /// Catalog asset ids are multichain-only; legacy swaps fall back to defaults.
-    func openSwapDeeplink(fromToken: String?, toToken: String?) {
+    func openSwapDeeplink(fromToken: String?, toToken: String?, utm: UtmParameters) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
@@ -848,7 +873,9 @@ extension MainCoordinator {
             openWebSwap(
                 wallet: wallet,
                 fromToken: carriesCatalogAssetIds ? nil : fromToken,
-                toToken: carriesCatalogAssetIds ? nil : toToken
+                toToken: carriesCatalogAssetIds ? nil : toToken,
+                initiatedBy: .deepLink,
+                utm: utm
             )
             return
         }
@@ -857,10 +884,12 @@ extension MainCoordinator {
             openMultichainSwap(
                 wallet: wallet,
                 multichainState: multichainState,
+                nativeSwapContext: NativeSwapContext(utm: utm),
                 initialSelection: MultichainSwapInitialAssetSelection(
                     deeplinkSendAssetId: fromToken,
                     deeplinkReceiveAssetId: toToken
-                )
+                ),
+                initiatedBy: .deepLink
             )
             return
         }
@@ -869,8 +898,10 @@ extension MainCoordinator {
             wallet: wallet,
             nativeSwapContext: NativeSwapContext(
                 fromTokenSymbol: carriesCatalogAssetIds ? nil : fromToken,
-                toTokenSymbol: carriesCatalogAssetIds ? nil : toToken
-            )
+                toTokenSymbol: carriesCatalogAssetIds ? nil : toToken,
+                utm: utm
+            ),
+            initiatedBy: .deepLink
         )
     }
 
@@ -934,7 +965,7 @@ extension MainCoordinator {
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
-        openBackup(wallet: wallet, source: .settings)
+        openBackup(wallet: wallet, source: .deepLink)
     }
 
     func openAddWalletDeeplink() {
@@ -947,9 +978,9 @@ extension MainCoordinator {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
 
-        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
-              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-              case .multichain = wallet.multichain
+        guard
+            let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+            case .multichain = wallet.multichain
         else {
             return
         }
@@ -976,8 +1007,7 @@ extension MainCoordinator {
     func openMigrationDeeplink(source: MigrationSource, onFinish: (() -> Void)? = nil) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
-        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.migrationEnabled),
-              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+        guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
               wallet.isMultichain,
               let navigationController = modalFlowNavigationController(rootViewController: router.rootViewController)
         else {
@@ -1005,7 +1035,7 @@ extension MainCoordinator {
         coordinator.start()
     }
 
-    func handleBatteryDeeplink(_ payload: Deeplink.Battery) {
+    func handleBatteryDeeplink(_ payload: Deeplink.Battery, utm: UtmParameters) {
         let walletStore = keeperCoreMainAssembly.storesAssembly.walletsStore
         guard let wallet = try? walletStore.activeWallet else { return }
         if keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.batteryDisabled, network: wallet.network) {
@@ -1029,7 +1059,9 @@ extension MainCoordinator {
 
         self.openBattery(
             wallet: wallet,
-            jettonMasterAddress: payload.masterJettonAddress
+            jettonMasterAddress: payload.masterJettonAddress,
+            initiatedBy: .deepLink,
+            utm: utm
         )
     }
 

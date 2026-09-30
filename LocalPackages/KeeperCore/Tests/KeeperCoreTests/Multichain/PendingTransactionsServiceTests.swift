@@ -117,7 +117,7 @@ final class PendingTransactionsServiceTests: XCTestCase {
                 MultichainPendingTransaction.SwapDetails(
                     fromAssetId: "ton/mainnet/coin",
                     toAssetId: "base/mainnet/coin",
-                    quote: .init(aggregator: "swapkit", providerRouteId: "provider-route")
+                    quote: .init(aggregator: "swapkit", routeId: "route", providerRouteId: "provider-route")
                 )
             )
         )

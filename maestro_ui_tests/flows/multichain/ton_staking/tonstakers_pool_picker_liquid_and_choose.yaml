@@ -1,0 +1,35 @@
+# regress_EN: Pool selection — Liquid Staking / Other; open Tonstakers details; Choose returns to deposit.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+# Wait for the loaded balance header (the TON list row can be below the fold on the new main screen).
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+- scrollUntilVisible:
+    element: "Stake"
+    direction: DOWN
+    timeout: 60000
+- tapOn: "Stake"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_pool_picker"
+    timeout: 60000
+- tapOn:
+    id: "staking_deposit_pool_picker"
+
+- extendedWaitUntil:
+    visible: "Liquid Staking"
+    timeout: 30000
+- assertVisible: "Liquid Staking"
+- scrollUntilVisible:
+    element: "Tonstakers"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "Tonstakers"

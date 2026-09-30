@@ -513,11 +513,11 @@ private extension MultichainSwapConfirmationViewModel {
     /// A plan that drops the relayed option really does leave nothing paying, so the shortage has to
     /// reach the user again. A refresh that produced no plan at all says nothing about what can pay,
     /// and the last one that priced the swap still answers for it.
-    var isBatteryFeeCovering: Bool {
+    var isRelayedFeeCovering: Bool {
         guard let option = selectedFeeOption else {
-            return lastCoveringFeeMethod?.isBattery == true
+            return lastCoveringFeeMethod?.isRelayed == true
         }
-        return option.method.isBattery && !option.isInsufficient
+        return option.method.isRelayed && !option.isInsufficient
     }
 
     /// The fee row can only say the chain's coin is short. When a relayer could pay instead, the
@@ -541,17 +541,13 @@ private extension MultichainSwapConfirmationViewModel {
     }
 
     func requestFeeRefill(for option: MultichainSwapFeeOption) {
-        switch option.cost {
-        case .batteryCharges, .batteryUnpriced:
+        guard let asset = option.depositAsset else {
             onRefillBattery { [weak self] in
                 self?.refreshFeeCalculationAfterDeposit()
             }
-        case let .native(fees, _):
-            guard let fee = fees.first else {
-                return
-            }
-            onDepositNativeFee(fee.asset)
+            return
         }
+        onDepositNativeFee(asset)
     }
 
     var networkFeesForDisplay: [MultichainTransactionEmulationResult]? {
@@ -603,7 +599,7 @@ private extension MultichainSwapConfirmationViewModel {
         executionState = .executionFailed(message)
         // A relayed swap whose outcome is unknown must not be re-armed: signing again would send a
         // second, equally valid message once the first one lands and moves the seqno.
-        isRetryUnsafe = sentMethod?.isBattery == true && failure.isBroadcastOutcomeUnknown
+        isRetryUnsafe = sentMethod?.isRelayed == true && failure.isBroadcastOutcomeUnknown
         Log.multichainSwap.w(
             "execution failed in confirmation",
             error: failure,
@@ -649,7 +645,7 @@ private extension MultichainSwapConfirmationViewModel {
     }
 
     func applyInsufficientNativeFee(_ shortage: MultichainNativeFeeShortage, stage: String) {
-        guard !isBatteryFeeCovering else {
+        guard !isRelayedFeeCovering else {
             return
         }
         nativeFeeShortageForFeeDisplay = shortage

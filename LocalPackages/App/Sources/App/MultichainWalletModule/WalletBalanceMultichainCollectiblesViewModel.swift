@@ -17,166 +17,35 @@ final class WalletBalanceMultichainCollectiblesViewModel: ObservableObject {
         let isOnSale: Bool
     }
 
-    enum ContentState {
-        case items
+    struct Content {
+        let items: [Item]
+        let showsSeeAllButton: Bool
+
+        fileprivate let nfts: [NFT]
+    }
+
+    enum State {
+        case items(Content)
         case allHidden
         case empty
     }
 
-    @Published private(set) var items: [Item] = []
-    @Published private(set) var showsSeeAllButton = false
-    @Published private(set) var contentState: ContentState = .empty
-    @Published private(set) var isSectionVisible = false
+    @Published private(set) var state: State = .empty
 
     var onTapOpenCollectibles: (() -> Void)?
     var onContentHeightChanged: (() -> Void)?
     var onSelectNFT: ((NFT) -> Void)?
 
+    var isSectionVisible: Bool {
+        switch state {
+        case .items, .allHidden:
+            true
+        case .empty:
+            false
+        }
+    }
+
     var sectionContentHeight: CGFloat {
-        sectionContentHeight(for: contentState)
-    }
-
-    private let storesAssembly: StoresAssembly
-    private let accountNftService: AccountNFTService
-    private let appSettingsStore: AppSettingsStore
-
-    private var walletNFTsStore: WalletNFTStore?
-    private var walletNftManagementStore: WalletNFTsManagementStore?
-    private var walletId: String?
-    private var nfts = [NFT]()
-
-    init(
-        storesAssembly: StoresAssembly,
-        accountNftService: AccountNFTService,
-        appSettingsStore: AppSettingsStore
-    ) {
-        self.storesAssembly = storesAssembly
-        self.accountNftService = accountNftService
-        self.appSettingsStore = appSettingsStore
-
-        appSettingsStore.addObserver(self) { observer, event in
-            switch event {
-            case .didUpdateIsSecureMode:
-                Task { @MainActor in
-                    observer.updateItems()
-                }
-            default:
-                break
-            }
-        }
-    }
-
-    func load(for wallet: Wallet?) async {
-        prepare(for: wallet)
-
-        guard let wallet else {
-            return
-        }
-
-        let store = storesAssembly.walletNFTsStore(
-            wallet: wallet,
-            nftService: accountNftService
-        )
-        if store !== walletNFTsStore {
-            walletNFTsStore = store
-            walletNftManagementStore = storesAssembly.walletNFTsManagementStore(wallet: wallet)
-            await store.addObserver(self)
-        }
-
-        guard walletId == wallet.id, walletNFTsStore === store else {
-            return
-        }
-
-        updateItems()
-        _ = await store.loadNFTs()
-
-        guard walletId == wallet.id, walletNFTsStore === store else {
-            return
-        }
-
-        updateItems()
-    }
-
-    func prepare(for wallet: Wallet?) {
-        let walletId = wallet?.id
-        guard self.walletId != walletId else { return }
-
-        self.walletId = walletId
-        walletNFTsStore = nil
-        walletNftManagementStore = nil
-        nfts = []
-        setItems([])
-        setShowsSeeAllButton(false)
-        updateSectionState()
-    }
-
-    func selectItem(id: String) {
-        guard let nft = nfts.first(where: { $0.address.toRaw() == id }) else {
-            return
-        }
-        onSelectNFT?(nft)
-    }
-
-    private func updateItems() {
-        guard let walletNFTsStore, let walletNftManagementStore else {
-            return
-        }
-
-        let walletNFTs = walletNFTsStore.state.value.nfts
-        let visibleNFTs = walletNFTs.visible
-        let isSecureMode = appSettingsStore.getState().isSecureMode
-        let mapper = WalletBalanceMultichainCollectiblesMapper(
-            walletNftManagementStore: walletNftManagementStore
-        )
-
-        setShowsSeeAllButton(visibleNFTs.count > Constants.previewItemLimit)
-        nfts = Array(visibleNFTs.prefix(Constants.previewItemLimit))
-        setItems(nfts.map { mapper.map(nft: $0, isSecureMode: isSecureMode) })
-        updateSectionState()
-    }
-
-    private func setItems(_ items: [Item]) {
-        guard self.items != items else { return }
-        self.items = items
-    }
-
-    private func setShowsSeeAllButton(_ value: Bool) {
-        guard showsSeeAllButton != value else { return }
-        showsSeeAllButton = value
-    }
-
-    private func resolveContentState() -> ContentState {
-        if !items.isEmpty {
-            return .items
-        }
-        guard let state = walletNFTsStore?.state.value else {
-            return .empty
-        }
-        if state.nfts.visible.isEmpty, !state.nfts.hidden.isEmpty || !state.nfts.spam.isEmpty {
-            return .allHidden
-        }
-        return .empty
-    }
-
-    private func updateSectionState() {
-        let newState = resolveContentState()
-        let isVisible = newState != .empty
-        let heightChanged = sectionContentHeight(for: contentState) != sectionContentHeight(for: newState)
-
-        if contentState != newState {
-            contentState = newState
-        }
-
-        if isSectionVisible != isVisible {
-            isSectionVisible = isVisible
-        }
-
-        if heightChanged {
-            onContentHeightChanged?()
-        }
-    }
-
-    private func sectionContentHeight(for state: ContentState) -> CGFloat {
         switch state {
         case .items:
             WalletBalanceCollectiblesLayout.expandedHeight
@@ -186,12 +55,105 @@ final class WalletBalanceMultichainCollectiblesViewModel: ObservableObject {
             0
         }
     }
+
+    let wallet: Wallet
+
+    private let appSettingsStore: AppSettingsStore
+    private let walletNFTsStore: WalletNFTStore
+    private let walletNftManagementStore: WalletNFTsManagementStore
+    private var isActive = true
+    private var needsStateUpdate = false
+
+    init(
+        wallet: Wallet,
+        storesAssembly: StoresAssembly,
+        accountNftService: AccountNFTService,
+        appSettingsStore: AppSettingsStore
+    ) {
+        self.wallet = wallet
+        self.appSettingsStore = appSettingsStore
+        walletNFTsStore = storesAssembly.walletNFTsStore(
+            wallet: wallet,
+            nftService: accountNftService
+        )
+        walletNftManagementStore = storesAssembly.walletNFTsManagementStore(wallet: wallet)
+
+        appSettingsStore.addObserver(self) { observer, event in
+            switch event {
+            case .didUpdateIsSecureMode:
+                Task { @MainActor in
+                    observer.updateState()
+                }
+            default:
+                break
+            }
+        }
+
+        Task { [walletNFTsStore] in
+            await walletNFTsStore.addObserver(self)
+        }
+    }
+
+    func setActive(_ isActive: Bool) {
+        guard self.isActive != isActive else { return }
+        self.isActive = isActive
+        guard isActive, needsStateUpdate else { return }
+        updateState()
+    }
+
+    func load() async {
+        updateState()
+        _ = await walletNFTsStore.loadNFTs()
+        updateState()
+    }
+
+    func selectItem(id: String) {
+        guard case let .items(content) = state,
+              let nft = content.nfts.first(where: { $0.address.toRaw() == id })
+        else {
+            return
+        }
+        onSelectNFT?(nft)
+    }
+
+    private func updateState() {
+        guard isActive else {
+            needsStateUpdate = true
+            return
+        }
+        needsStateUpdate = false
+        let previousHeight = sectionContentHeight
+        state = makeState()
+        guard sectionContentHeight != previousHeight else { return }
+        onContentHeightChanged?()
+    }
+
+    private func makeState() -> State {
+        let nfts = walletNFTsStore.state.value.nfts
+        let visibleNFTs = nfts.visible
+        guard !visibleNFTs.isEmpty else {
+            return nfts.hidden.isEmpty && nfts.spam.isEmpty ? .empty : .allHidden
+        }
+
+        let isSecureMode = appSettingsStore.getState().isSecureMode
+        let mapper = WalletBalanceMultichainCollectiblesMapper(
+            walletNftManagementStore: walletNftManagementStore
+        )
+        let previewNFTs = Array(visibleNFTs.prefix(Constants.previewItemLimit))
+        return .items(
+            Content(
+                items: previewNFTs.map { mapper.map(nft: $0, isSecureMode: isSecureMode) },
+                showsSeeAllButton: visibleNFTs.count > Constants.previewItemLimit,
+                nfts: previewNFTs
+            )
+        )
+    }
 }
 
 extension WalletBalanceMultichainCollectiblesViewModel: WalletNFTStoreObserver {
     nonisolated func didUpdateNFTs(_ nfts: WalletNFTs) {
         Task { @MainActor in
-            updateItems()
+            updateState()
         }
     }
 }

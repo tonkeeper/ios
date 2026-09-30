@@ -16,6 +16,10 @@ public struct TronApi {
         /// whichever half was wrong, so `reason` is what tells a missing signature from corrupt
         /// `raw_data` when reading the log.
         case invalidHex(reason: String)
+        /// The `raw_data` a node built describes something other than what was requested. The node
+        /// assembles the transaction and the signature covers its bytes, so this is the one thing
+        /// standing between a compromised node and a signature over someone else's transfer.
+        case unverifiedTransaction(reason: String)
         /// A node rejected building or broadcasting the transaction and named the reason,
         /// e.g. `BANDWIDTH_ERROR`, `CONTRACT_VALIDATE_ERROR`, `TRANSACTION_EXPIRATION_ERROR`.
         case transactionRejected(code: String, message: String?)
@@ -72,6 +76,10 @@ public struct TronApi {
     }
 
     public static let defaultNativeTransferBandwidth = 345
+
+    /// One value for the whole USDT transfer path: the estimate has to measure the very `fee_limit`
+    /// the signed transaction will carry, and a second copy is how the two came to disagree.
+    public static let usdtTransferFeeLimit = 150_000_000
 
     private var client: HttpApiClient
 
@@ -162,10 +170,32 @@ public struct TronApi {
         )
     }
 
+    public func getTronAccountTransactions(
+        address: Address,
+        limit: Int,
+        maxTimestamp: Int64?,
+        fingerprint: String?
+    ) async throws(Error) -> AccountTransactionsResponse {
+        try await client.get(
+            endpoint: "v1/accounts/\(address.base58)/transactions",
+            params: [
+                "limit": String(limit),
+                "max_timestamp": maxTimestamp.map(String.init),
+                "fingerprint": fingerprint,
+            ].compactMapValues { $0 },
+            decoder: .defaultDecodable()
+        )
+    }
+
     public func estimateUSDTResources(
         owner: Address,
-        method: ContractMethod
+        method: ContractMethod,
+        feeLimit: Int = TronApi.usdtTransferFeeLimit
     ) async throws(Error) -> (energy: Int, bandwidth: Int) {
+        guard feeLimit >= 0 else {
+            throw .invalidRequest
+        }
+
         let response = try await triggerConstantContract(
             owner: owner,
             contract: USDT.address,
@@ -174,7 +204,7 @@ public struct TronApi {
         )
         let estimatedResources: (energy: Int, bandwidth: Int)
         do {
-            estimatedResources = try response.estimatedResources
+            estimatedResources = try response.estimatedResources(feeLimit: feeLimit)
         } catch {
             throw .invalidResponse
         }
@@ -276,15 +306,49 @@ public struct TronApi {
     public func getTransferTransaction(
         owner: Address,
         method: ContractMethod,
-        feeLimit: Int
+        feeLimit: Int = TronApi.usdtTransferFeeLimit
     ) async throws(Error) -> Transaction {
+        guard feeLimit >= 0 else {
+            throw .invalidRequest
+        }
+
+        let functionSelector = method.signature
+        let parameter = ContractCoding.encode(parameters: method.arguments)
+        let callData = ContractCoding.methodId(signature: functionSelector) + parameter
         let json = try await triggerSmartContract(
             owner: owner,
             contract: USDT.address,
-            method: method,
+            functionSelector: functionSelector,
+            parameter: parameter,
             feeLimit: feeLimit
         )
-        return try Self.transferTransaction(from: json)
+        let transaction = try Self.transferTransaction(from: json)
+        try Self.verify(
+            transaction,
+            matches: .smartContractCall(
+                owner: owner,
+                contract: USDT.address,
+                data: callData,
+                feeLimit: feeLimit
+            )
+        )
+        return transaction
+    }
+
+    /// A TRON transaction is built by the node, and the signature covers the `raw_data` it returns
+    /// byte for byte, while the confirmation screen shows the local intent. Verifying here — where
+    /// the node's answer becomes a `Transaction` — covers every signing path at once, including one
+    /// added later, which a check sitting next to each signature would not.
+    private static func verify(
+        _ transaction: Transaction,
+        matches expected: Transaction.ExpectedContract
+    ) throws(Error) {
+        do {
+            try transaction.verify(matches: expected)
+        } catch {
+            Log.tron.e("tron node returned a transaction that does not match the request: \(error)")
+            throw .unverifiedTransaction(reason: "\(error)")
+        }
     }
 
     static func transferTransaction(from json: [String: Any]) throws(Error) -> Transaction {
@@ -317,10 +381,14 @@ public struct TronApi {
             decoder: .defaultJsonSerialization()
         )
 
-        return try Self.nativeTransferTransaction(from: json)
+        let transaction = try Self.nativeTransferTransaction(from: json)
+        try Self.verify(transaction, matches: .nativeTransfer(owner: owner, to: to, amountSun: amountSun))
+        return transaction
     }
 
-    public static func nativeTransferTransaction(from json: [String: Any]) throws(Error) -> Transaction {
+    /// Internal on purpose: a `Transaction` reaches the rest of the app only through the two
+    /// endpoints above, which verify it against the request before returning it.
+    static func nativeTransferTransaction(from json: [String: Any]) throws(Error) -> Transaction {
         if let transaction = Transaction(json: json) {
             return transaction
         }
@@ -356,10 +424,11 @@ public struct TronApi {
             + aSignature
     }
 
-    public func triggerSmartContract(
+    private func triggerSmartContract(
         owner: Address,
         contract: Address,
-        method: ContractMethod,
+        functionSelector: String,
+        parameter: Data,
         feeLimit: Int
     ) async throws(Error) -> [String: Any] {
         try await client.post(
@@ -367,8 +436,8 @@ public struct TronApi {
             request: TriggerSmartContractRequest(
                 ownerAddress: owner.raw.hexString(),
                 contractAddress: contract.raw.hexString(),
-                functionSelector: method.signature,
-                parameter: ContractCoding.encode(parameters: method.arguments).hexString(),
+                functionSelector: functionSelector,
+                parameter: parameter.hexString(),
                 feeLimit: feeLimit
             ),
             encoder: .defaultEncodable(),

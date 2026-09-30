@@ -461,6 +461,146 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         XCTAssertNil(normalized.batteryPayload)
     }
 
+    /// SwapKit answers a TON deposit with the message itself rather than an envelope of messages,
+    /// which is the shape the live route carries; nothing about the swap works until it parses.
+    func test_tonJettonAltVmDeposit_swapKitMessageObject_buildsBatteryJettonDeposit() throws {
+        let tonAddress = address(for: .ton)
+        let sourceAsset = makeJettonAsset()
+        let normalized = try normalize(
+            sourceChain: .ton,
+            sourceAsset: sourceAsset,
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "alt_vm_deposit",
+                payload: #"{"amount":"50000000","to":"\#(tonAddress)"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: sourceAsset.asset.assetId,
+                    spendAmount: "50000000",
+                    receiveAsset: "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+                    depositAddress: tonAddress
+                ),
+                calldataPayloadType: .flex
+            ),
+            provider: .swapKit
+        )
+
+        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
+        XCTAssertEqual(normalized.transaction.amount.description, "50000000")
+        XCTAssertEqual(
+            normalized.batteryPayload,
+            .tonJettonDeposit(TonJettonSwapDeposit(recipient: tonAddress, amount: 50_000_000))
+        )
+    }
+
+    func test_tonJettonAltVmDeposit_messageObjectWithCalldata_isNotRelayable() throws {
+        let tonAddress = address(for: .ton)
+        let sourceAsset = makeJettonAsset()
+        let normalized = try normalize(
+            sourceChain: .ton,
+            sourceAsset: sourceAsset,
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "alt_vm_deposit",
+                payload: #"{"amount":"50000000","to":"\#(tonAddress)","payload":"te6ccg"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: sourceAsset.asset.assetId,
+                    spendAmount: "50000000",
+                    receiveAsset: "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                ),
+                calldataPayloadType: .flex
+            ),
+            provider: .swapKit
+        )
+
+        XCTAssertNil(normalized.batteryPayload)
+    }
+
+    /// Wrapping must not promote an envelope the relay cannot reproduce: `tonRelayObstacle` reads the
+    /// payload as the backend sent it, so a `ton_boc` object parses but still pays its own way.
+    /// SwapKit prices an EVM deposit the same way it prices a TON one, and the EVM parser reads the
+    /// amount under `value`, so the descriptor is unusable until the two names meet.
+    func test_evmAltVmDeposit_swapKitMessageObject_buildsPlainTransfer() throws {
+        let deposit = "0xF90Fcfc48e36d1214B1854Ce91EE1E5D06Eb6e9B"
+        let normalized = try normalize(
+            sourceChain: .eth,
+            payload: makePayload(
+                sourceChain: .eth,
+                payloadType: "alt_vm_deposit",
+                payload: #"{"amount":"50000000","to":"\#(deposit)"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "eth/mainnet/coin",
+                    spendAmount: "50000000",
+                    receiveAsset: "ton/mainnet/coin",
+                    depositAddress: deposit
+                ),
+                calldataPayloadType: .flex
+            ),
+            provider: .swapKit
+        )
+
+        XCTAssertEqual(normalized.transaction.to.display, deposit)
+        XCTAssertEqual(normalized.transaction.amount.description, "50000000")
+        XCTAssertNil(normalized.transaction.data)
+    }
+
+    /// The translation is scoped to the descriptor: a payload whose shape the schema fixes reaches
+    /// the parser as the backend sent it, so a broken contract stays visible instead of being
+    /// quietly repaired here.
+    func test_fixedShapePayloadTypes_areNotTranslated() {
+        XCTAssertThrowsError(
+            try normalize(
+                sourceChain: .ton,
+                payload: makePayload(
+                    sourceChain: .ton,
+                    payloadType: "ton_boc",
+                    payload: #"{"address":"\#(address(for: .ton))","amount":"1000000000"}"#,
+                    humanSummary: makeHumanSummary(
+                        spendAsset: "ton/mainnet/coin",
+                        spendAmount: "1000000000",
+                        receiveAsset: "eth/mainnet/coin"
+                    )
+                )
+            )
+        ) { error in
+            guard case .invalidPayload = error as? MultichainSwapExecutionFailure else {
+                return XCTFail("Expected invalidPayload, got \(error)")
+            }
+        }
+    }
+
+    func test_parsableDepositDescriptor_translatesOnlyWhatItsParserCannotRead() throws {
+        let message = #"{"amount":"1","to":"UQ"}"#
+        XCTAssertEqual(
+            MultichainSwapPayloadAdapter.parsableDepositDescriptor(message, chain: .ton),
+            "[\(message)]"
+        )
+
+        let envelope = #"[{"amount":"1","to":"UQ"}]"#
+        XCTAssertEqual(MultichainSwapPayloadAdapter.parsableDepositDescriptor(envelope, chain: .ton), envelope)
+
+        let base64 = "te6ccgEBAQEAAgAAAA=="
+        XCTAssertEqual(MultichainSwapPayloadAdapter.parsableDepositDescriptor(base64, chain: .ton), base64)
+
+        for chain in MultichainChain.allCases where chain.isEVM {
+            let translated = MultichainSwapPayloadAdapter.parsableDepositDescriptor(
+                #"{"amount":"42","to":"0x1"}"#,
+                chain: chain
+            )
+            let fields = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: XCTUnwrap(translated.data(using: .utf8))) as? [String: String]
+            )
+            XCTAssertEqual(fields["value"], "42")
+            XCTAssertEqual(fields["to"], "0x1")
+
+            let priced = #"{"value":"42","amount":"7","to":"0x1"}"#
+            XCTAssertEqual(MultichainSwapPayloadAdapter.parsableDepositDescriptor(priced, chain: chain), priced)
+        }
+
+        for chain in MultichainChain.allCases where !chain.isEVM && chain != .ton {
+            XCTAssertEqual(MultichainSwapPayloadAdapter.parsableDepositDescriptor(message, chain: chain), message)
+        }
+    }
+
     func test_tronAltVmDepositPayload_swapXyz_buildsPlainTransfer() throws {
         let tronAddress = address(for: .tron)
         let normalized = try normalize(
@@ -839,7 +979,8 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             energy: normalized.transaction.energy,
             isMax: false,
             to: normalized.transaction.to,
-            meta: "memo"
+            memo: "memo",
+            payload: nil
         )
         let reserve = GasReserveResult(
             amount: BignumBigInteger.Companion.shared.fromInt(int: 30),
@@ -852,7 +993,7 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         XCTAssertEqual(adjusted.amount.description, "30")
         XCTAssertTrue(adjusted.isMax)
         XCTAssertEqual(adjusted.to.display, transfer.to.display)
-        XCTAssertEqual(adjusted.meta, "memo")
+        XCTAssertEqual(adjusted.memo, "memo")
     }
 
     func test_unknownPayloadType_isRejected() {

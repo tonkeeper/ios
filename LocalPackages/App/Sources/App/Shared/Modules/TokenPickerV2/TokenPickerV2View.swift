@@ -145,12 +145,12 @@ struct TokenPickerV2Screen: View {
                     TokenPickerV2ContentView(
                         queryViewModel: queryViewModel,
                         searchText: viewModel.searchText,
-                        showsCatalogSortControl: viewModel.showsCatalogSortControl,
+                        showsCatalogSortControl: viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl,
                         onSelectRow: viewModel.selectRow(_:)
                     )
                 } else {
                     TokenPickerV2ContentView.skeleton(
-                        showsCatalogSortControl: viewModel.showsCatalogSortControl,
+                        showsCatalogSortControl: viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl,
                         palette: palette
                     )
                 }
@@ -169,6 +169,22 @@ struct TokenPickerV2Screen: View {
                 .frame(height: Layout.fadeHeight)
                 TokenPickerV2CatalogSortView(viewModel: viewModel)
                     .padding(.bottom, Layout.bottomPadding)
+            } else if viewModel.showsPerpsSortControl {
+                LinearGradient(
+                    colors: [
+                        palette.background.page.opacity(0),
+                        palette.background.page,
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: Layout.fadeHeight)
+                PerpsSortMenuButton(
+                    sort: viewModel.perpsSearchSort,
+                    menuPosition: .top,
+                    onSelect: viewModel.selectPerpsSort
+                )
+                .padding(.bottom, Layout.bottomPadding)
             }
         }
         .background(.backgroundPage)
@@ -190,6 +206,7 @@ private struct TokenPickerV2ContentView: View {
         static let placeholderTopPadding: CGFloat = 32
         static let rowCornerRadius: CGFloat = 16
         static let catalogSortBottomInset: CGFloat = 64
+        static let perpDividerLeadingInset: CGFloat = 16
     }
 
     @ObservedObject var queryViewModel: TokenPickerV2QueryViewModel
@@ -233,12 +250,10 @@ private struct TokenPickerV2ContentView: View {
                     showsCatalogSortControl: showsCatalogSortControl,
                     palette: palette
                 ) { index, item in
-                    TokenPickerV2RowView(
-                        content: .content(item.row),
+                    tokenPickerRow(
+                        item: item,
                         showsDivider: index < presentation.items.count - 1,
-                        action: {
-                            onSelectRow(item.id)
-                        }
+                        onSelect: { onSelectRow(item.id) }
                     )
                     .onAppear {
                         queryViewModel.loadNextPageIfNeeded(currentItem: item)
@@ -255,6 +270,40 @@ private struct TokenPickerV2ContentView: View {
 private extension TokenPickerV2ContentView {
     struct SkeletonRow: Identifiable {
         let id: Int
+    }
+
+    @ViewBuilder
+    func tokenPickerRow(
+        item: TokenPickerV2QueryViewModel.Item,
+        showsDivider: Bool,
+        onSelect: @escaping () -> Void
+    ) -> some View {
+        switch item.payload {
+        case let .asset(_, row):
+            TokenPickerV2RowView(
+                content: .content(row),
+                showsDivider: showsDivider,
+                action: onSelect
+            )
+        case let .perp(market):
+            Button(action: onSelect) {
+                PerpsMarketRowView(market: market)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .overlay {
+                if showsDivider {
+                    VStack {
+                        Spacer(minLength: 0)
+                        Rectangle()
+                            .fill(.separatorCommon)
+                            .frame(height: TKUIKit.Constants.separatorWidth)
+                            .padding(.leading, Layout.perpDividerLeadingInset)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
     }
 
     static func rows<Item: Identifiable, Row: View>(

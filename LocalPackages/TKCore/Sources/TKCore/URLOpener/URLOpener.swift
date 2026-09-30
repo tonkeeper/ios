@@ -1,10 +1,3 @@
-//
-//  URLOpener.swift
-//
-//
-//  Created by Grigory on 29.9.23..
-//
-
 import UIKit
 
 public protocol URLOpener {

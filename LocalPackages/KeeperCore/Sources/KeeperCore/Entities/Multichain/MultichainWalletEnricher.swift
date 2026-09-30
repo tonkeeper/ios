@@ -5,14 +5,11 @@ import TKLogging
 public protocol MultichainWalletEnricher {
     var needsStartupEnrichment: Bool { get }
     func enrichMissingWallets(passcode: String) async
-    func enrichWallets(_ wallets: [Wallet], passcode: String) async
 }
 
 // MARK: -
 
 struct MultichainWalletEnricherDependencies {
-    var isFeatureEnabled: () -> Bool
-    var isImportEnrichmentEnabled: () -> Bool
     var supportedChains: Set<MultichainChain>
     var getWallets: () -> [Wallet]
     var getMnemonics: (_ wallets: [Wallet], _ passcode: String) async throws -> [CoreMnemonicIdentifier: CoreMnemonic]
@@ -30,25 +27,11 @@ struct MultichainWalletEnricherImplementation {
 
 extension MultichainWalletEnricherImplementation: MultichainWalletEnricher {
     var needsStartupEnrichment: Bool {
-        guard dependencies.isFeatureEnabled() else {
-            return false
-        }
-        return !walletsNeedingEnrichment().isEmpty
+        !walletsNeedingEnrichment().isEmpty
     }
 
     func enrichMissingWallets(passcode: String) async {
-        guard dependencies.isFeatureEnabled() else {
-            return
-        }
         await enrich(walletsNeedingEnrichment(), passcode: passcode)
-    }
-
-    func enrichWallets(_ wallets: [Wallet], passcode: String) async {
-        guard dependencies.isImportEnrichmentEnabled() else {
-            return
-        }
-        let walletIds = Set(wallets.map(\.id))
-        await enrich(walletsNeedingEnrichment().filter { walletIds.contains($0.id) }, passcode: passcode)
     }
 }
 

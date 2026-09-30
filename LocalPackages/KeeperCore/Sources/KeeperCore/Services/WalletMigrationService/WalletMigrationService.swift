@@ -1,6 +1,5 @@
 import BigInt
 import Foundation
-import TKFeatureFlags
 import TKLogging
 import TonAPI
 import TonSwift
@@ -151,7 +150,6 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
         publicKey: String,
         wallet: Wallet
     ) async -> [WalletMigrationPreparedTransaction]? {
-        guard !configuration.featureEnabled(.migrationBatteryDisabled) else { return nil }
         guard wallet.isBatteryEnable else { return nil }
         let isBatteryEnable = await configuration.isBatteryEnable(network: wallet.network)
         guard isBatteryEnable else { return nil }
@@ -220,7 +218,6 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
     }
 
     func availableBatteryCharges(wallet: Wallet) async -> Int? {
-        guard !configuration.featureEnabled(.migrationBatteryDisabled) else { return nil }
         guard let batteryBalance = try? await batteryService.loadBatteryBalance(wallet: wallet) else {
             return nil
         }
@@ -307,8 +304,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
             availableTypes: resolved.availableTypes,
             requiredBatteryCharges: feeEstimate.requiredBatteryCharges,
             requiredTRXSun: requiredTRXSun,
-            isAccountActivated: isActivated,
-            isBatteryDisabled: configuration.featureEnabled(.migrationBatteryDisabled)
+            isAccountActivated: isActivated
         )
 
         let result = WalletMigrationTronPrepareResult(

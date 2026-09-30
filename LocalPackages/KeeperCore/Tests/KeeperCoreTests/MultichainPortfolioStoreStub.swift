@@ -14,20 +14,20 @@ extension MultichainPortfolioStore {
 
 final class InMemoryMultichainPortfolioRepository: MultichainPortfolioRepository {
     enum Error: Swift.Error {
-        case noTotal
+        case noPortfolio
     }
 
-    private var totals = [String: MultichainPortfolioTotal]()
+    private var portfolios = [String: MultichainPortfolio]()
 
-    func getPortfolioTotal(walletId: String) throws -> MultichainPortfolioTotal {
-        guard let total = totals[walletId] else {
-            throw Error.noTotal
+    func getPortfolio(walletId: String) throws -> MultichainPortfolio {
+        guard let portfolio = portfolios[walletId] else {
+            throw Error.noPortfolio
         }
-        return total
+        return portfolio
     }
 
-    func savePortfolioTotal(_ total: MultichainPortfolioTotal, walletId: String) throws {
-        totals[walletId] = total
+    func savePortfolio(_ portfolio: MultichainPortfolio, walletId: String) throws {
+        portfolios[walletId] = portfolio
     }
 }
 

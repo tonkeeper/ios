@@ -173,6 +173,8 @@ struct PerpsAssetPageReadyView: View {
             PerpsAssetPositionSection(
                 position: position,
                 autoClose: ready.autoClose,
+                canAdjustMargin: ready.canAdjustMargin,
+                canEditAutoClose: ready.canEditAutoClose,
                 showSizeInToken: $showSizeInToken,
                 onShare: onShare,
                 onAdjustMargin: onAdjustMargin,
@@ -184,6 +186,8 @@ struct PerpsAssetPageReadyView: View {
                 limitOrders: ready.limitOrders,
                 triggerOrders: ready.orders,
                 autoClose: ready.autoClose,
+                canEditAutoClose: ready.canEditAutoClose,
+                canCancelOrders: ready.canCancelOrders,
                 onAutoClose: onAutoClose,
                 onLimitOrder: onLimitOrder
             )
@@ -336,7 +340,7 @@ private struct PerpsAssetCandleCrosshairReadout: View {
             Spacer(minLength: Layout.rowGap)
             VStack(alignment: .trailing, spacing: Layout.tagRowSpacing) {
                 PerpsAssetCrosshairTrailingCell(
-                    value: candle.volume.map(PerpsFormatting.compactUsd) ?? "—",
+                    value: candle.volume.map(PerpsFormatting.usd) ?? "—",
                     tag: PerpsAssetChartTag(text: TKLocales.Perps.Chart.volume)
                 )
                 PerpsAssetCrosshairTrailingCell(
@@ -537,10 +541,16 @@ private struct PerpsAssetAboutSection: View {
 private struct PerpsAssetPositionSection: View {
     let position: PerpsAssetPageViewModel.Position
     let autoClose: PerpsAssetPageViewModel.AutoCloseAffordance
+    let canAdjustMargin: Bool
+    let canEditAutoClose: Bool
     @Binding var showSizeInToken: Bool
     let onShare: () -> Void
     let onAdjustMargin: () -> Void
     let onAutoClose: () -> Void
+
+    private var showsSetAutoClose: Bool {
+        canEditAutoClose && autoClose == .setAutoClose
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -557,12 +567,15 @@ private struct PerpsAssetPositionSection: View {
             PerpsAssetPnlCard(position: position)
                 .padding(.bottom, Layout.positionCardSpacing)
             PerpsAssetPositionDetailsCard(position: position, showSizeInToken: $showSizeInToken)
-                .padding(.bottom, Layout.positionCardSpacing)
-            PerpsAssetPositionManageCard(
-                autoClose: autoClose,
-                onAdjustMargin: onAdjustMargin,
-                onAutoClose: onAutoClose
-            )
+            if canAdjustMargin || showsSetAutoClose {
+                PerpsAssetPositionManageCard(
+                    showsAdjustMargin: canAdjustMargin,
+                    showsSetAutoClose: showsSetAutoClose,
+                    onAdjustMargin: onAdjustMargin,
+                    onAutoClose: onAutoClose
+                )
+                .padding(.top, Layout.positionCardSpacing)
+            }
         }
         .padding(.bottom, Layout.sectionBottomPadding)
     }
@@ -707,15 +720,20 @@ private struct PerpsAssetPositionRow: View {
 }
 
 private struct PerpsAssetPositionManageCard: View {
-    let autoClose: PerpsAssetPageViewModel.AutoCloseAffordance
+    let showsAdjustMargin: Bool
+    let showsSetAutoClose: Bool
     let onAdjustMargin: () -> Void
     let onAutoClose: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            PerpsAssetAccentRow(title: TKLocales.Perps.Asset.adjustMargin, action: onAdjustMargin)
-            if autoClose == .setAutoClose {
-                PerpsAssetSeparator(inset: Layout.cellPadding)
+            if showsAdjustMargin {
+                PerpsAssetAccentRow(title: TKLocales.Perps.Asset.adjustMargin, action: onAdjustMargin)
+            }
+            if showsSetAutoClose {
+                if showsAdjustMargin {
+                    PerpsAssetSeparator(inset: Layout.cellPadding)
+                }
                 PerpsAssetAccentRow(title: TKLocales.Perps.Asset.setAutoClose, action: onAutoClose)
             }
         }
@@ -748,6 +766,8 @@ private struct PerpsAssetOrdersSection: View {
     let limitOrders: [PerpsAssetPageViewModel.LimitOrder]
     let triggerOrders: [PerpsAssetPageViewModel.TriggerOrder]
     let autoClose: PerpsAssetPageViewModel.AutoCloseAffordance
+    let canEditAutoClose: Bool
+    let canCancelOrders: Bool
     let onAutoClose: () -> Void
     let onLimitOrder: (Int64) -> Void
 
@@ -760,13 +780,15 @@ private struct PerpsAssetOrdersSection: View {
                     if index > 0 {
                         PerpsAssetSeparator(inset: Layout.cellPadding)
                     }
-                    PerpsAssetLimitOrderRow(order: order) { onLimitOrder(order.orderIndex) }
+                    PerpsAssetLimitOrderRow(order: order, isEnabled: canCancelOrders) {
+                        onLimitOrder(order.orderIndex)
+                    }
                 }
                 ForEach(Array(triggerOrders.enumerated()), id: \.element.id) { index, order in
                     if index > 0 || !limitOrders.isEmpty {
                         PerpsAssetSeparator(inset: Layout.cellPadding)
                     }
-                    PerpsAssetOrderRow(order: order, action: onAutoClose)
+                    PerpsAssetOrderRow(order: order, isEnabled: canEditAutoClose, action: onAutoClose)
                 }
                 if let setTitle {
                     PerpsAssetSeparator(inset: Layout.cellPadding)
@@ -779,16 +801,18 @@ private struct PerpsAssetOrdersSection: View {
     }
 
     private var setTitle: String? {
+        guard canEditAutoClose else { return nil }
         switch autoClose {
-        case .setTakeProfit: TKLocales.Perps.Asset.setTakeProfit
-        case .setStopLoss: TKLocales.Perps.Asset.setStopLoss
-        case .setAutoClose, .none: nil
+        case .setTakeProfit: return TKLocales.Perps.Asset.setTakeProfit
+        case .setStopLoss: return TKLocales.Perps.Asset.setStopLoss
+        case .setAutoClose, .none: return nil
         }
     }
 }
 
 private struct PerpsAssetLimitOrderRow: View {
     let order: PerpsAssetPageViewModel.LimitOrder
+    let isEnabled: Bool
     let action: () -> Void
 
     var body: some View {
@@ -818,11 +842,13 @@ private struct PerpsAssetLimitOrderRow: View {
             .padding(.bottom, Layout.cellCaptionVerticalPadding)
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
     }
 }
 
 private struct PerpsAssetOrderRow: View {
     let order: PerpsAssetPageViewModel.TriggerOrder
+    let isEnabled: Bool
     let action: () -> Void
 
     var body: some View {
@@ -861,6 +887,7 @@ private struct PerpsAssetOrderRow: View {
             .padding(.bottom, Layout.cellCaptionVerticalPadding)
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
     }
 }
 
@@ -937,10 +964,10 @@ struct PerpsAssetStickyActions: View {
                 PerpsAssetStickyButton(title: TKLocales.Perps.Asset.long, appearance: .primary, isEnabled: enabled, action: onLong)
                 PerpsAssetStickyButton(title: TKLocales.Perps.Asset.short, appearance: .primary, isEnabled: enabled, action: onShort)
             }
-        case let .editCashOut(enabled):
+        case let .editCashOut(editEnabled, cashOutEnabled):
             stickyBar {
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: enabled, action: onEdit)
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.cashOut, appearance: .primary, isEnabled: enabled, action: onCashOut)
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: editEnabled, action: onEdit)
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.cashOut, appearance: .primary, isEnabled: cashOutEnabled, action: onCashOut)
             }
         }
     }

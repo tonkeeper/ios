@@ -44,11 +44,8 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         self.stateManager = RootCoordinatorStateManager(
             walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore
         )
-        let configuration = dependencies.keeperCoreRootAssembly.mainAssembly().configurationAssembly.configuration
-        let isMultichainEnabled = configuration.featureEnabled(.multichainEnabled)
         let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
         self.multichainStartupController = MultichainStartupController(
-            isEnabled: isMultichainEnabled,
             authService: multichainAssembly.multichainAuthService,
             walletSyncController: multichainAssembly.walletSyncController
         )
@@ -61,8 +58,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
             walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore,
             tonConnectAppsStore: dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectAppsStore,
             tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService(),
-            multichainAuthService: multichainAssembly.multichainAuthService,
-            isMultichainEnabled: isMultichainEnabled
+            multichainAuthService: multichainAssembly.multichainAuthService
         )
         self.argon2DeriveTimeMeasurementController = Argon2DeriveTimeMeasurementController(
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
@@ -108,7 +104,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
                 }
             }
         case .main:
-            resolveRaffleUserAtLaunch()
+            resolveRaffleUserIfNeeded()
             migrateBiometryIfNeed { [weak self] in
                 self?.migrateNativeIfNeed { [weak self] didNeedToMigrate, isSuccess, passcode in
                     if !isSuccess {
@@ -145,6 +141,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     private func completeRNMigration(passcode: String?) {
         stateManager.reloadWalletsAfterRNMigration { [weak self] in
             guard let self else { return }
+            resolveRaffleUserIfNeeded()
             if let passcode {
                 Task {
                     await self.performStartupEnrichment(passcode: passcode)
@@ -168,7 +165,11 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
             if let onboardingCoordinator {
                 return onboardingCoordinator.handleDeeplink(deeplink: coreDeeplink)
             } else if let mainCoordinator {
-                return mainCoordinator.handleDeeplink(deeplink: coreDeeplink, fromStories: false)
+                return mainCoordinator.handleDeeplink(
+                    deeplink: coreDeeplink,
+                    fromStories: false,
+                    utm: UtmParameters(link: string)
+                )
             } else {
                 return false
             }
@@ -353,14 +354,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
 
 private extension RootCoordinator {
     func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
-        if state == .main, dependencies.coreAssembly.tkAppSettings.raffleIsNewUser == nil {
-            if let pendingIsNewUser = dependencies.coreAssembly.tkAppSettings.pendingRaffleIsNewUser {
-                resolveRaffleUser(isNewUser: pendingIsNewUser)
-            } else {
-                resolveRaffleUser(isNewUser: false)
-            }
-        }
-
         removeChild(mainCoordinator)
         removeChild(onboardingCoordinator)
         self.mainCoordinator = nil
@@ -374,6 +367,7 @@ private extension RootCoordinator {
     }
 
     func openOnboarding(deeplink: CoordinatorDeeplink?) {
+        resolveRaffleUserIfNeeded()
         let module = OnboardingModule(
             dependencies: OnboardingModule.Dependencies(
                 coreAssembly: dependencies.coreAssembly,
@@ -385,15 +379,8 @@ private extension RootCoordinator {
         )
         let coordinator = module.createOnboardingCoordinator()
 
-        coordinator.didFinishOnboarding = { [weak self, weak coordinator] completion in
+        coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
             guard let self else { return }
-            switch completion {
-            case .walletCreated:
-                resolveRaffleUser(isNewUser: true)
-            case .walletImported:
-                resolveRaffleUser(isNewUser: false)
-            }
-
             if let coordinator {
                 removeChild(coordinator)
             }
@@ -440,18 +427,11 @@ private extension RootCoordinator {
         }
     }
 
-    func resolveRaffleUser(isNewUser: Bool) {
-        dependencies.coreAssembly.tkAppSettings.resolveRaffleIsNewUser(isNewUser)
-    }
-
-    func resolveRaffleUserAtLaunch() {
+    func resolveRaffleUserIfNeeded() {
         let settings = dependencies.coreAssembly.tkAppSettings
         guard settings.raffleIsNewUser == nil else { return }
-        if let pendingIsNewUser = settings.pendingRaffleIsNewUser {
-            resolveRaffleUser(isNewUser: pendingIsNewUser)
-        } else {
-            resolveRaffleUser(isNewUser: false)
-        }
+        let wallets = dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore.wallets
+        settings.raffleIsNewUser = wallets.isEmpty || wallets.allSatisfy(\.isMultichain)
     }
 
     func handleMigrationResult(

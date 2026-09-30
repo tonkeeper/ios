@@ -96,7 +96,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
         if let regionSection = createDevOverridesSection() {
             sections.append(createDesignSystemSection())
-            sections.append(createPerpTradingSection())
             sections.append(createMysteryRaffleSection())
             sections.append(regionSection)
         }
@@ -273,7 +272,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             SettingsListItemsSection(
                 items: [
                     .listItem(createImportTestnetWalletItem()),
-                    .listItem(createTetraWalletsItem()),
                 ],
                 header: SettingsListSectionHeader(title: "Wallets")
             )
@@ -337,19 +335,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         )
     }
 
-    private func createTetraWalletsItem() -> SettingsListItem {
-        let action: (Bool) -> Void = { isOn in
-            self.tkAppSettings.isTetraWalletEnabled = isOn
-        }
-
-        return createSwitchItem(
-            title: "Tetra L2 wallets",
-            id: .tetraWalletsItemIdentifier,
-            isOn: tkAppSettings.isTetraWalletEnabled,
-            action: action
-        )
-    }
-
     private func createConfirmationSection() -> SettingsListSection {
         .items(
             SettingsListItemsSection(
@@ -368,28 +353,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
                 ],
                 header: SettingsListSectionHeader(title: "Design System")
             )
-        )
-    }
-
-    private func createPerpTradingSection() -> SettingsListSection {
-        .items(
-            SettingsListItemsSection(
-                items: [.listItem(createPerpTestnetItem())],
-                header: SettingsListSectionHeader(title: "Perp Trading")
-            )
-        )
-    }
-
-    private func createPerpTestnetItem() -> SettingsListItem {
-        let action: (Bool) -> Void = { isOn in
-            self.tkAppSettings.lighterAPIEnvironment = isOn ? .testnet : .production
-        }
-
-        return createSwitchItem(
-            title: "Testnet",
-            id: .perpTestnetItemIdentifier,
-            isOn: tkAppSettings.lighterAPIEnvironment == .testnet,
-            action: action
         )
     }
 
@@ -601,10 +564,8 @@ private extension String {
     static let buildVersionItemIdentifier = "buildVersionItemIdentifier"
     static let loggingSeverityItemIdentifier = "loggingSeverityItemIdentifier"
     static let mysteryRaffleItemIdentifier = "mysteryRaffleItemIdentifier"
-    static let perpTestnetItemIdentifier = "perpTestnetItemIdentifier"
     static let showTouchesItemIdentifier = "showTouchesItemIdentifier"
     static let importTestnetWalletItemIdentifier = "importTestnetWalletItemIdentifier"
-    static let tetraWalletsItemIdentifier = "tetraWalletsItemIdentifier"
     static let tooltipsItemIdentifier = "tooltipsItemIdentifier"
     static let featureFlagsItemIdentifier = "featureFlagsItemIdentifier"
     static let designSystemItemIdentifier = "designSystemItemIdentifier"

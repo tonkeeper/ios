@@ -60,6 +60,8 @@
 "perps.activate_account" = "Activate Account";
 "perps.activating_toast" = "Activating account on this device";
 "perps.account_activated" = "Account successfully activated";
+"perps.open_positions" = "Open positions";
+"perps.total_amount" = "Total amount";
 "perps.explore" = "Explore Perps";
 "perps.volume" = "Volume";
 "perps.volume_short" = "vol";
@@ -120,11 +122,11 @@
 "perps.chart.high" = "High";
 "perps.chart.low" = "Low";
 "perps.chart.volume" = "Vol";
-"perps.open_position.price" = "Price";
+"perps.open_position.price" = "Current price";
 "perps.open_position.market" = "Market";
 "perps.open_position.size" = "Size:";
 "perps.open_position.max" = "MAX";
-"perps.open_position.balance" = "Balance:";
+"perps.open_position.balance" = "Available:";
 "perps.open_position.deposit" = "Deposit";
 "perps.open_position.leverage" = "Leverage";
 "perps.open_position.auto_close" = "Auto Close";
@@ -285,11 +287,24 @@
 "multichain_history.placeholder.buttons.add_funds" = "Add Funds";
 "multichain_history.placeholder.filtered.title" = "Nothing to show";
 "multichain_history.placeholder.filtered.subtitle" = "Nothing matches the current filters.";
+"multichain_history.perps.opened_long" = "Long opened";
+"multichain_history.perps.opened_short" = "Short opened";
+"multichain_history.perps.opened" = "Position opened";
+"multichain_history.perps.closed_long" = "Long closed";
+"multichain_history.perps.closed_short" = "Short closed";
+"multichain_history.perps.closed" = "Position closed";
+"multichain_history.perps.liquidated_long" = "Long Liquidated";
+"multichain_history.perps.liquidated_short" = "Short Liquidated";
+"multichain_history.perps.liquidated" = "Liquidated";
+"multichain_history.perps.take_profit_executed" = "TP executed";
+"multichain_history.perps.stop_loss_executed" = "SL executed";
+"multichain_history.perps.subtitle" = "%@ Perps";
 "history.tab.all" = "All";
 "history.tab.all_types" = "All Types";
 "history.tab.sent" = "Sent";
 "history.tab.received" = "Received";
 "history.tab.spam" = "Spam";
+"history.tab.perpetuals" = "Perpetuals";
 "history.spam.footer.after_date" = "Spam after %@, is shown";
 "history.spam.footer.no_spam" = "No spam events found";
 "history.spam.folder.empty" = "Spam folder is empty";
@@ -428,7 +443,7 @@
 
 "settings.notifications.title" = "Notifications";
 "settings.notifications.notifications_item.title" = "Push notifications";
-"settings.notifications.notifications_item.caption" = "Get notifications when you receive GRAM, tokens and NFTs. Notifications from connected apps.";
+"settings.notifications.notifications_item.caption" = "Get notifications when you receive tokens and NFTs. Notifications from connected apps.";
 "settings.notifications.notifications_disabled.title" = "Notifications are disabled";
 "settings.notifications.notifications_disabled.caption" = "You turned off notifications in\U00A0your phone’s settings. To\U00A0activate notifications, go to\U00A0Settings on\U00A0this device.";
 "settings.notifications.notifications_disabled.action_title" = "Settings";
@@ -546,7 +561,7 @@
 
 "ramp.deposit.title" = "Add Funds";
 "ramp.deposit.receive_tokens" = "Receive tokens";
-"ramp.deposit.receive_tokens_subtitle" = "From another TON/TRON wallet";
+"ramp.deposit.receive_tokens_subtitle" = "From another wallet";
 "ramp.deposit.deposit_with_cash_or_crypto" = "Buy with Cash or Crypto";
 "ramp.deposit.available_from_other_crypto" = "Available from other crypto";
 "ramp.deposit.available_1to1_cross_chain" = "Available 1:1 cross-chain";
@@ -775,9 +790,6 @@
 "add_wallet.items.testnet.title" = "Testnet Account";
 "add_wallet.items.testnet.subtitle" = "Import wallet with a 24 secret recovery words to Testnet";
 
-"add_wallet.items.tetra.title" = "Tetra L2";
-"add_wallet.items.tetra.subtitle" = "Connect Tetra L2 network";
-
 "add_wallet.items.pair_signer.title" = "Pair Signer";
 "add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
 
@@ -788,7 +800,6 @@
 "add_wallet.items.pair_ledger.subtitle" = "Hardware module, Bluetooth, limited TON features";
 
 "add_wallet.sections.other_options" = "Other options";
-"add_wallet.sections.for_developers" = "For developers";
 
 "scanner.title" = "Scan QR code";
 "scanner.select_from_gallery" = "Select from Gallery";
@@ -836,23 +847,23 @@
 "receive.multichain.address_title" = "Your %@ address";
 "receive.multichain.disclaimer" = "Send only %1$@ (%2$@) and tokens in %3$@ network to this address, or you might lose your funds.";
 "receive.multichain.network_picker.title" = "Receiving address";
-"receive.multichain.network_picker.subtitle" = "For all network tokens";
+"receive.multichain.network_picker.subtitle" = "One address per network";
 "receive.multichain.networks.ton.title" = "TON";
-"receive.multichain.networks.ton.display_title" = "TON (TON)";
+"receive.multichain.networks.ton.display_title" = "TON";
 "receive.multichain.networks.ton.disclaimer_title" = "Gram";
 "receive.multichain.networks.ethereum.title" = "Ethereum";
-"receive.multichain.networks.ethereum.display_title" = "Ethereum (ERC20)";
+"receive.multichain.networks.ethereum.display_title" = "Ethereum";
 "receive.multichain.networks.bitcoin.title" = "Bitcoin";
-"receive.multichain.networks.bitcoin.display_title" = "Bitcoin (BTC)";
+"receive.multichain.networks.bitcoin.display_title" = "Bitcoin";
 "receive.multichain.networks.base.title" = "Base";
-"receive.multichain.networks.base.display_title" = "Base (Base)";
+"receive.multichain.networks.base.display_title" = "Base";
 "receive.multichain.networks.smartchain.title" = "BSC";
-"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain (BEP20)";
+"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain";
 "receive.multichain.networks.smartchain.disclaimer_title" = "BNB Smart Chain";
 "receive.multichain.networks.arbitrum.title" = "Arbitrum";
-"receive.multichain.networks.arbitrum.display_title" = "Arbitrum (ARB)";
+"receive.multichain.networks.arbitrum.display_title" = "Arbitrum";
 "receive.multichain.networks.tron.title" = "TRON";
-"receive.multichain.networks.tron.display_title" = "TRON (TRC20)";
+"receive.multichain.networks.tron.display_title" = "TRON";
 "receive.multichain.networks.solana.title" = "Solana";
 
 "receive.trx.description" = "Send only Tron TRX to this address, or you might lose your funds.";

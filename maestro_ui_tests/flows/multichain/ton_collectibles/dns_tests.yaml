@@ -1,0 +1,135 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../service/account/compare_ton_balance.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+- scrollUntilVisible:
+    element: "Collectibles"
+- tapOn: "Collectibles"
+# Full collectibles screen — the item can be below the fold.
+- scrollUntilVisible:
+    element: biba-and-boba.ton
+    direction: DOWN
+    timeout: 30000
+- tapOn: biba-and-boba.ton
+
+- scrollUntilVisible:
+    element: "biba-and-boba.ton"
+- scrollUntilVisible:
+    element: "TON DNS Domains"
+- scrollUntilVisible:
+    element: Transfer
+- scrollUntilVisible:
+    element: Manage
+
+- runScript:
+    file: ../../../scripts/api/v2/accounts/dns/getExpiring.js
+    env:
+      _dns: 0:90cfeb684f0e26bb0a6d72029508dd37d0d6d33ea995da3fb067ede3a651d43f
+      auth_token: ${auth}
+- evalScript: ${output.buttonRenew = 'Renew until ' + output.dns[0].expired.renewFormatted}
+- evalScript: ${output.latestExpiredUnix = output.dns[0].expired.unix}
+
+- scrollUntilVisible:
+    element: ${output.buttonRenew}
+- tapOn: ${output.buttonRenew}
+- waitForAnimationToEnd:
+    timeout: 5000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../../../steps/password/enter_password.yaml
+- waitForAnimationToEnd:
+    timeout: 8000
+- assertVisible: biba-and-boba.ton
+- tapOn: "biba-and-boba.ton"
+
+- scrollUntilVisible:
+    element: "Link domain|Linked with [A-Za-z0-9_-]{4}[.]{3}[A-Za-z0-9_-]{4}"
+
+- runFlow:
+    when:
+      visible: Link domain
+    commands:
+      - runFlow: ../../../steps/nfts/dns/link_domain.yaml
+      # History is pushed once the signed link transaction is broadcast — not instantly.
+      - extendedWaitUntil:
+          visible: "History"
+          timeout: 15000
+      - retry:
+          maxRetries: 2
+          commands:
+            - runScript:
+                file: ../../../scripts/api/v2/accounts/dns/findByDNS.js
+                env:
+                  _dns: biba-and-boba
+                  auth_token: ${auth}
+            - assertTrue:
+                condition: ${output.domainSet}
+                label: DNS domain should be linked after link
+      - tapOn:
+          id: "history_back_button"
+      - scrollUntilVisible:
+          element: "Collectibles"
+      - tapOn: "Collectibles"
+      - scrollUntilVisible:
+          element: biba-and-boba.ton
+          direction: DOWN
+          timeout: 30000
+      - tapOn: biba-and-boba.ton
+      - runFlow: ../../../steps/nfts/dns/unlink_domain.yaml
+      - extendedWaitUntil:
+          visible: "History"
+          timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Linked with [A-Za-z0-9_-]{4}[.]{3}[A-Za-z0-9_-]{4}"
+    commands:
+      - runFlow: ../../../steps/nfts/dns/unlink_domain.yaml
+      - extendedWaitUntil:
+          visible: "History"
+          timeout: 15000
+      - tapOn:
+          id: "history_back_button"
+      - scrollUntilVisible:
+          element: "Collectibles"
+      - tapOn: "Collectibles"
+      - scrollUntilVisible:
+          element: biba-and-boba.ton
+          direction: DOWN
+          timeout: 30000
+      - tapOn: biba-and-boba.ton
+      - scrollUntilVisible:
+          element: Link domain
+      - runFlow: ../../../steps/nfts/dns/link_domain.yaml
+      # History is pushed once the signed link transaction is broadcast — not instantly.
+      - extendedWaitUntil:
+          visible: "History"
+          timeout: 15000
+      - retry:
+          maxRetries: 2
+          commands:
+            - runScript:
+                file: ../../../scripts/api/v2/accounts/dns/findByDNS.js
+                env:
+                  _dns: biba-and-boba
+                  auth_token: ${auth}
+            - assertTrue:
+                condition: ${output.domainSet}
+                label: DNS domain should be linked after link
+
+- runScript:
+    file: ../../../scripts/api/v2/accounts/dns/getExpiring.js
+    env:
+      _dns: 0:90cfeb684f0e26bb0a6d72029508dd37d0d6d33ea995da3fb067ede3a651d43f
+      auth_token: ${auth}
+- evalScript: ${output.expiredUnixChanged = output.latestExpiredUnix < output.dns[0].expired.unix}
+- assertTrue:
+    condition: ${output.expiredUnixChanged}
+    label: Expiry timestamp should change after renew

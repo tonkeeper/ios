@@ -84,8 +84,8 @@ struct TronEventMapper {
             }
             let amount = amountFormatter.format(
                 amount: event.amount,
-                fractionDigits: TronSwift.USDT.fractionDigits,
-                accessory: .tokenSymbol(TronSwift.USDT.symbol),
+                fractionDigits: event.token.fractionDigits,
+                accessory: .tokenSymbol(event.token.symbol),
                 isNegative: amountType == .outcome
             )
 
@@ -96,6 +96,13 @@ struct TronEventMapper {
                 lineBreakMode: .byTruncatingTail
             )
         }()
+
+        let tags: [TKTagView.Configuration] = switch event.token {
+        case .usdt:
+            [.tag(text: TronSwift.USDT.tag)]
+        case .trx:
+            []
+        }
 
         let contentConfiguration = TKListItemContentView.Configuration(
             iconViewConfiguration: TKListItemIconView.Configuration(
@@ -117,7 +124,7 @@ struct TronEventMapper {
                 titleViewConfiguration: TKListItemTitleView.Configuration(
                     title: title,
                     caption: nil,
-                    tags: [.tag(text: TronSwift.USDT.tag)],
+                    tags: tags,
                     icon: nil
                 ),
                 captionViewsConfigurations: [

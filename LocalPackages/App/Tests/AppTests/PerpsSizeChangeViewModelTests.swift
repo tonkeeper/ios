@@ -10,7 +10,8 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
     /// BTC long: 0.008 @ $66 000, margin $20, notional $540 → 27x.
     private func makeViewModel(
         direction: PerpsSizeChangeDirection,
-        triggerOrders: [PerpsTriggerOrderSummary] = []
+        triggerOrders: [PerpsTriggerOrderSummary] = [],
+        leverage: Double? = 27
     ) async -> PerpsSizeChangeViewModel {
         let reader = SizeChangeAccountReadingSpy()
         reader.triggerOrders = triggerOrders
@@ -27,17 +28,22 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
         let session = PerpsSizeChangeSession(
             marketId: 1,
             direction: direction,
+            priceDecimals: 2,
             restingTriggerOrders: triggerOrders
         )
         let viewModel = PerpsSizeChangeViewModel(
             session: session,
             summary: PerpsPositionSummary(
+                positionId: "lighter:1",
                 marketId: 1,
                 symbol: "BTC",
                 side: .long,
                 baseSize: 0.008,
                 notionalUsd: 540,
                 marginUsd: 20,
+                equityUsd: 20.5,
+                leverage: leverage,
+                roiPercent: 2.5,
                 entryPrice: 66000,
                 liquidationPrice: 64141.75,
                 unrealizedPnlUsd: 0.5,
@@ -100,6 +106,14 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
         ])
         let value = withLegs.optionRows.first { $0.id == "autoClose" }?.value
         XCTAssertEqual(value, "\(PerpsFormatting.usd(68141)) TP · \(PerpsFormatting.usd(64720)) SL")
+    }
+
+    func test_underivableLeverage_keepsTheProjectionAndDropsTheRow() async {
+        let viewModel = await makeViewModel(direction: .add, leverage: nil)
+        XCTAssertEqual(viewModel.optionRows.map(\.id), ["autoClose"])
+
+        viewModel.setAmount("20")
+        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.usd(540)) → \(PerpsFormatting.usd(1080))")
     }
 
     func test_review_carriesAutoCloseOnlyWhenEdited() async {
@@ -183,33 +197,26 @@ private extension Wallet {
 private final class SizeChangeAccountReadingSpy: PerpsAccountReading, @unchecked Sendable {
     var triggerOrders: [PerpsTriggerOrderSummary] = []
 
-    func status(wallet: Wallet) async -> LighterPerpsStatus {
-        .active(accountIndex: 1, apiKeyIndex: 0)
+    func status(wallet: Wallet) async -> PerpsAccountStatus {
+        .account(accountIndex: 1)
     }
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
-        PerpsPortfolio(
-            accountIndex: 1,
-            collateral: "0",
-            availableBalance: "712.56",
-            totalAssetValue: "712.56",
-            positions: []
-        )
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot? {
+        PerpsAccountSnapshot(availableBalance: "712.56")
     }
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        triggerOrders
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: triggerOrders))
     }
 
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }

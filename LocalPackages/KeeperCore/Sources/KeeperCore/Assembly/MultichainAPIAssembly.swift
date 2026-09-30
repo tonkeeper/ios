@@ -14,13 +14,15 @@ final class MultichainAPIAssembly {
     let appInfoProvider: AppInfoProvider
     let apiAssembly: APIAssembly
     /// Resolved lazily: the provider needs `ChainKitService`, whose assembly is built from this
-    /// one, so holding it directly would close the graph into a cycle.
-    let walletAuth: () -> MultichainWalletAuthDependencies
+    /// one, so holding it directly would close the graph into a cycle. `nil` once the graph that
+    /// vends it is gone — a client built then goes out unauthenticated, as it did before wallet
+    /// auth existed, rather than taking the process down.
+    let walletAuth: () -> MultichainWalletAuthDependencies?
 
     init(
         appInfoProvider: AppInfoProvider,
         apiAssembly: APIAssembly,
-        walletAuth: @escaping () -> MultichainWalletAuthDependencies
+        walletAuth: @escaping () -> MultichainWalletAuthDependencies?
     ) {
         self.appInfoProvider = appInfoProvider
         self.apiAssembly = apiAssembly
@@ -37,7 +39,7 @@ final class MultichainAPIAssembly {
             },
             deviceScopedAPIClient: { [apiAssembly, appInfoProvider, walletAuth] in
                 await apiAssembly.deviceSessionMultichainAPIClient(
-                    deviceAuth: walletAuth().deviceAuth,
+                    deviceAuth: walletAuth()?.deviceAuth,
                     userAgent: appInfoProvider.userAgent
                 )
             },
@@ -45,15 +47,19 @@ final class MultichainAPIAssembly {
                 let dependencies = walletAuth()
                 // A wallet the device cannot authenticate for still reaches the endpoint; the
                 // backend accepts the credential's absence, so the call is not worth failing here.
-                let session = try? await dependencies.deviceAuth.session()
+                let session = try? await dependencies?.deviceAuth.session()
                 let accessToken = session?.accessToken ?? ""
+                var walletAuthToken: String?
+                if let dependencies {
+                    walletAuthToken = await dependencies.walletAuthTokenProvider.token(
+                        walletId: walletId,
+                        accessToken: accessToken
+                    )
+                }
                 return await apiAssembly.walletAuthMultichainAPIClient(
                     deviceJWT: accessToken,
                     walletId: walletId,
-                    walletAuthToken: await dependencies.walletAuthTokenProvider.token(
-                        walletId: walletId,
-                        accessToken: accessToken
-                    ),
+                    walletAuthToken: walletAuthToken,
                     recovery: dependencies,
                     userAgent: appInfoProvider.userAgent
                 )

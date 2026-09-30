@@ -78,36 +78,42 @@ struct PerpsTradeConfirmView: View {
         .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius))
     }
 
+    @ViewBuilder
     private func rowView(_ row: PerpsTradeConfirmViewModel.Row) -> some View {
-        Button {
-            guard row.showsChevron else { return }
-            viewModel.editAutoClose()
-        } label: {
-            HStack(alignment: .top) {
-                Text(row.title)
-                    .textStyle(.body1)
-                    .foregroundStyle(.textSecondary)
-                Spacer()
-                VStack(alignment: .trailing, spacing: -2) {
-                    valueLabel(row)
-                    if let subValue = row.subValue {
-                        Text(subValue)
-                            .textStyle(.body2)
-                            .foregroundStyle(.textSecondary)
-                    }
-                }
-                if row.showsChevron {
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
-                        .foregroundStyle(.iconTertiary)
-                        .padding(.top, 6)
+        if row.showsChevron {
+            Button(action: viewModel.editAutoClose) {
+                rowContent(row)
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.isConfirmationEnabled)
+        } else {
+            rowContent(row)
+        }
+    }
+
+    private func rowContent(_ row: PerpsTradeConfirmViewModel.Row) -> some View {
+        HStack(alignment: .top) {
+            Text(row.title)
+                .textStyle(.body1)
+                .foregroundStyle(.textSecondary)
+            Spacer()
+            VStack(alignment: .trailing, spacing: -2) {
+                valueLabel(row)
+                if let subValue = row.subValue {
+                    Text(subValue)
+                        .textStyle(.body2)
+                        .foregroundStyle(.textSecondary)
                 }
             }
-            .padding(.horizontal, Layout.inset)
-            .padding(.vertical, Layout.rowVerticalPadding)
-            .contentShape(Rectangle())
+            if row.showsChevron {
+                SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
+                    .foregroundStyle(.iconTertiary)
+                    .padding(.top, 6)
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(!row.showsChevron || !viewModel.isConfirmationEnabled)
+        .padding(.horizontal, Layout.inset)
+        .padding(.vertical, Layout.rowVerticalPadding)
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder

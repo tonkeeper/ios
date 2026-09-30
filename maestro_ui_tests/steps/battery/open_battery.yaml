@@ -1,4 +1,4 @@
-# Opens the Tonkeeper Battery refill screen from the wallet header.
+# Opens the Keeper Battery refill screen from the wallet header.
 appId: com.jbig.tonkeeper
 ---
 - scrollUntilVisible:
@@ -11,5 +11,5 @@ appId: com.jbig.tonkeeper
 - waitForAnimationToEnd:
     timeout: 5000
 - extendedWaitUntil:
-    visible: Tonkeeper Battery
+    visible: Keeper Battery
     timeout: 30000

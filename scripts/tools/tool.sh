@@ -5,7 +5,10 @@
 # a self-contained binary, so this also works where PATH holds neither mise nor its shims
 # (a git hook started from a GUI client), and a machine that never ran `make setup` fails
 # here instead of silently formatting or generating with whatever version it has.
-# Resolving the pinned version, and installing it when missing, are mise's job.
+# Resolving the pinned version, and installing it when missing, are mise's job. The shim
+# reads mise.toml from the current directory, and the git hooks and agent hooks start at
+# the repository root, one level above the project, so hop into the project dir first;
+# callers that pass file arguments pass absolute paths or already run from there.
 #
 # Usage: scripts/tools/tool.sh <tool> [args...]
 set -eu
@@ -24,4 +27,5 @@ if [ ! -x "$shim" ]; then
 	exit 1
 fi
 
+cd "$(dirname "$0")/../.."
 exec "$shim" "$@"

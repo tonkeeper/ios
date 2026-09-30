@@ -988,7 +988,7 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
             amount: amount,
             fractionDigits: fractionDigits,
             isNegative: false,
-            style: .regular
+            style: .compact
         )
         return "\(TKLocales.Common.Numbers.approximate) \(token)"
     }
@@ -1008,7 +1008,7 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
             fractionDigits: converted.fractionLength,
             accessory: .fiat(currencyStore.state),
             isNegative: false,
-            style: .regular
+            style: .compact
         )
     }
 

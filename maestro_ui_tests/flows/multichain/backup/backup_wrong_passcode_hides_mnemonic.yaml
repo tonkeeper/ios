@@ -1,0 +1,41 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- runFlow: "../../../steps/backup/open_backup_show_recovery_phrase.yaml"
+
+- evalScript: ${output.wrongDigit = String((parseInt(PASSWORD_KEY, 10) + 1) % 10)}
+
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${output.wrongDigit}
+
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- assertNotVisible: "Recovery phrase"
+- assertNotVisible:
+    id: "mnemonic.word.0"
+
+- runScript:
+    file: ../../../scripts/utils/parse_mnemonic.js
+    env:
+      phrase: ${WALLET_WITH_MONEY}
+
+- assertNotVisible: ${output.word[0]}
+- assertNotVisible: ${output.word[output.word.length - 1]}
+
+- assertVisible: "Enter passcode"
+
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${output.wrongDigit}
+
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- assertNotVisible: "Recovery phrase"
+- assertNotVisible: ${output.word[0]}
+- assertVisible: "Enter passcode"

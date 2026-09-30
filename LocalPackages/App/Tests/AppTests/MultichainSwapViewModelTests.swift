@@ -311,6 +311,161 @@ final class MultichainSwapViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_repeatedSendAmountInputModeTogglesKeepTheAmountExact() async {
+        let oneEth = BigUInt(10).power(18)
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(
+                initialAssets(
+                    sendBalance: oneEth * 10,
+                    sendPrice: 3.4567,
+                    receivePrice: 0.5
+                )
+            )
+        )
+        let swapService = SwapServiceSpy(
+            quoteResult: .success(
+                quote(
+                    sourceAmount: oneEth.description,
+                    estimatedDestinationAmount: "5000000000"
+                )
+            )
+        )
+        let viewModel = makeViewModel(
+            defaultAssetsService: defaultAssetsService,
+            swapService: swapService
+        )
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+
+        viewModel.updateSendAmount("1")
+        await waitUntil(timeout: 2) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.validationState == .valid
+        }
+
+        for _ in 0 ..< 3 {
+            viewModel.toggleSendAmountInputMode()
+            guard case let .loaded(fiatState) = viewModel.state else {
+                return XCTFail("Expected loaded state")
+            }
+            XCTAssertEqual(fiatState.sendAmountInputMode, .fiat)
+            // The fiat field rounds to cents; the crypto amount behind it must not.
+            XCTAssertEqual(fiatState.sendAmount, "3.45")
+            XCTAssertEqual(fiatState.sendCardRateText, "1 ETH")
+
+            viewModel.toggleSendAmountInputMode()
+            guard case let .loaded(cryptoState) = viewModel.state else {
+                return XCTFail("Expected loaded state")
+            }
+            XCTAssertEqual(cryptoState.sendAmountInputMode, .crypto)
+            XCTAssertEqual(cryptoState.sendAmount, "1")
+        }
+
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        let requests = await swapService.quoteRequests()
+        XCTAssertTrue(requests.allSatisfy { $0.sourceAmount == oneEth.description })
+    }
+
+    @MainActor
+    func test_sendAmountEditedInFiatModeConvertsFromTheTypedFiatValue() async {
+        let oneEth = BigUInt(10).power(18)
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(
+                initialAssets(
+                    sendBalance: oneEth * 10,
+                    sendPrice: 2,
+                    receivePrice: 0.5
+                )
+            )
+        )
+        let viewModel = makeViewModel(defaultAssetsService: defaultAssetsService)
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+
+        viewModel.updateSendAmount("1")
+        viewModel.toggleSendAmountInputMode()
+        viewModel.updateSendAmount("5")
+        viewModel.toggleSendAmountInputMode()
+
+        guard case let .loaded(state) = viewModel.state else {
+            return XCTFail("Expected loaded state")
+        }
+        XCTAssertEqual(state.sendAmountInputMode, .crypto)
+        XCTAssertEqual(state.sendAmount, "2.5")
+    }
+
+    @MainActor
+    func test_maxSendSurvivesSendAmountInputModeRoundTrip() async {
+        let oneEth = BigUInt(10).power(18)
+        let balance = oneEth * 2
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(
+                initialAssets(
+                    sendBalance: balance,
+                    sendPrice: 3.4567,
+                    receivePrice: 0.5
+                )
+            )
+        )
+        let swapService = SwapServiceSpy(
+            quoteResult: .success(
+                quote(
+                    sourceAmount: balance.description,
+                    estimatedDestinationAmount: "5000000000"
+                )
+            )
+        )
+        var confirmationInput: MultichainSwapConfirmationInput?
+        let viewModel = makeViewModel(
+            defaultAssetsService: defaultAssetsService,
+            swapService: swapService,
+            onContinue: { input in
+                confirmationInput = input
+            }
+        )
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+
+        viewModel.applyMaxSend()
+        await waitUntil(timeout: 2) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.validationState == .valid
+                && state.quote.quoteState == .ready
+        }
+
+        viewModel.toggleSendAmountInputMode()
+        viewModel.toggleSendAmountInputMode()
+
+        guard case let .loaded(state) = viewModel.state else {
+            return XCTFail("Expected loaded state")
+        }
+        XCTAssertEqual(state.sendAmount, "2")
+
+        viewModel.continueSwap()
+        XCTAssertEqual(confirmationInput?.userInput.sourceAmount, balance)
+        XCTAssertEqual(confirmationInput?.userInput.isMax, true)
+    }
+
+    @MainActor
     func test_usdOnlyPricesWithoutFxRateShowOnlyZeroFiatAndKeepFiatInputDisabled() async {
         let oneEth = BigUInt(10).power(18)
         let initialAssets = initialAssets(

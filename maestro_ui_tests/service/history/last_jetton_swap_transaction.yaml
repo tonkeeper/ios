@@ -1,4 +1,4 @@
-appId: com.jbig.tonkeeper.dev
+appId: com.jbig.tonkeeper
 ---
 # Poll until TonAPI indexes the swap we just sent — limit=1 often returns a non-swap event
 # right after signing, or a stale swap from a previous run.
@@ -16,7 +16,8 @@ appId: com.jbig.tonkeeper.dev
 - runScript: ../../scripts/utils/formatter.js
 
 - assertTrue: ${output.jettonLastSwap.status == "ok"}
-- assertTrue: ${String(output.jettonLastSwapJettonSwap.ton_in) == nanoTonToSwap}
+# ton_in is the TON attached to the swap call: the swapped amount plus gas.
+- assertTrue: ${Number(output.jettonLastSwapJettonSwap.ton_in) >= Number(nanoTonToSwap)}
 
 - evalScript: ${output.jettonLastSwapUsdtLine = output.formatter.formatHistoryJettonIncomeLine(output.jettonLastSwapJettonSwap.amount_out, output.jettonLastSwapJettonSwap.jetton_master_out.decimals, "USD₮")}
 - assertVisible: ${output.jettonLastSwapUsdtLine}

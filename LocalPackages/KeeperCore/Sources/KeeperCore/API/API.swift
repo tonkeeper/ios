@@ -42,20 +42,6 @@ struct TestnetAPIHostProvider: APIHostProvider {
     }
 }
 
-struct TetraAPIHostProvider: APIHostProvider {
-    private let configuration: Configuration
-
-    init(configuration: Configuration) {
-        self.configuration = configuration
-    }
-
-    var basePath: String {
-        get async {
-            await configuration.tetraHost
-        }
-    }
-}
-
 struct API {
     private let hostProvider: APIHostProvider
     private let urlSession: URLSession

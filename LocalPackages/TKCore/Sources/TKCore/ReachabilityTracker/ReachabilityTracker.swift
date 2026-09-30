@@ -1,10 +1,3 @@
-//
-//  ReachabilityTracker.swift
-//  Tonkeeper
-//
-//  Created by Grigory on 20.9.23..
-//
-
 import Foundation
 import Network
 

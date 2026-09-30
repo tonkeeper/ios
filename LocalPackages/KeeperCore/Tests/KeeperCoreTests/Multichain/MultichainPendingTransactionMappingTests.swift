@@ -11,7 +11,7 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: "ton/mainnet/coin",
                         toAssetId: "eth/mainnet/coin",
-                        quote: .init(aggregator: "swapsxyz", providerRouteId: "tx-id")
+                        quote: .init(aggregator: "swapsxyz", routeId: "route-id", providerRouteId: "tx-id")
                     )
                 )
             )
@@ -24,6 +24,7 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                 "from_asset_id": "ton/mainnet/coin",
                 "to_asset_id": "eth/mainnet/coin",
                 "aggregator": "swapsxyz",
+                "route_id": "route-id",
                 "provider_route_id": "tx-id",
             ]
         )
@@ -60,7 +61,7 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: "ton/mainnet/coin",
                         toAssetId: "eth/mainnet/coin",
-                        quote: .init(aggregator: "omniston")
+                        quote: .init(aggregator: "omniston", routeId: "route-id")
                     )
                 )
             )
@@ -72,6 +73,7 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                 "from_asset_id": "ton/mainnet/coin",
                 "to_asset_id": "eth/mainnet/coin",
                 "aggregator": "omniston",
+                "route_id": "route-id",
             ]
         )
     }

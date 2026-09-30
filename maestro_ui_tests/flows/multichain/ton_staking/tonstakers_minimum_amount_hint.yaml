@@ -1,0 +1,51 @@
+# regress_EN: Tonstakers min deposit — amount below pool minimum shows "Minimum …" (AmountInput balance hint).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+# Wait for the loaded balance header (the TON list row can be below the fold on the new main screen).
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+- scrollUntilVisible:
+    element: "Stake"
+    direction: DOWN
+    timeout: 60000
+- tapOn: "Stake"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_pool_picker"
+    timeout: 60000
+- tapOn:
+    id: "staking_deposit_pool_picker"
+
+- scrollUntilVisible:
+    element: "Tonstakers"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "Tonstakers"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_pool_details_choose"
+    timeout: 30000
+- tapOn:
+    id: "staking_pool_details_choose"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_amount_input"
+    timeout: 30000
+- tapOn:
+    id: "staking_amount_input"
+- inputText: "0.5"
+
+# The hint depends on async-loaded pool info — wait instead of asserting instantly.
+- extendedWaitUntil:
+    visible: "Minimum .*"
+    timeout: 30000

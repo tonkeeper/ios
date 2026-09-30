@@ -13,8 +13,7 @@ final class WalletMigrationTronFeeOptionsTests: XCTestCase {
                 .gasless(token: makeToken(symbol: TRX.symbol)),
             ],
             requiredBatteryCharges: 7,
-            requiredTRXSun: 42,
-            isBatteryDisabled: false
+            requiredTRXSun: 42
         )
 
         XCTAssertEqual(methods, [
@@ -30,8 +29,7 @@ final class WalletMigrationTronFeeOptionsTests: XCTestCase {
                 .gasless(token: makeToken(symbol: USDT.symbol)),
             ],
             requiredBatteryCharges: 7,
-            requiredTRXSun: 42,
-            isBatteryDisabled: false
+            requiredTRXSun: 42
         )
 
         XCTAssertEqual(methods, [.battery(charges: 7)])
@@ -44,8 +42,7 @@ final class WalletMigrationTronFeeOptionsTests: XCTestCase {
                 .gasless(token: makeToken(symbol: TRX.symbol)),
             ],
             requiredBatteryCharges: 0,
-            requiredTRXSun: 42,
-            isBatteryDisabled: false
+            requiredTRXSun: 42
         )
 
         XCTAssertEqual(methods, [.trx(amountSun: 42)])
@@ -57,8 +54,7 @@ final class WalletMigrationTronFeeOptionsTests: XCTestCase {
                 .gasless(token: makeToken(symbol: TRX.symbol)),
             ],
             requiredBatteryCharges: 7,
-            requiredTRXSun: 42,
-            isBatteryDisabled: false
+            requiredTRXSun: 42
         )
 
         XCTAssertEqual(methods, [.trx(amountSun: 42)])
@@ -72,22 +68,7 @@ final class WalletMigrationTronFeeOptionsTests: XCTestCase {
             ],
             requiredBatteryCharges: 7,
             requiredTRXSun: 42,
-            isAccountActivated: false,
-            isBatteryDisabled: false
-        )
-
-        XCTAssertEqual(methods, [.trx(amountSun: 42)])
-    }
-
-    func test_resolveOmitsBatteryWhenFeatureDisabled() {
-        let methods = WalletMigrationTronFeeOptionsResolver.resolve(
-            availableTypes: [
-                .battery,
-                .gasless(token: makeToken(symbol: TRX.symbol)),
-            ],
-            requiredBatteryCharges: 7,
-            requiredTRXSun: 42,
-            isBatteryDisabled: true
+            isAccountActivated: false
         )
 
         XCTAssertEqual(methods, [.trx(amountSun: 42)])

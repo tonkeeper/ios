@@ -49,7 +49,6 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
 
     let flow: RampFlow
     private let wallet: Wallet
-    let configuration: Configuration
     private let onRampService: OnRampService
     private let currenciesService: CurrenciesService
     private let currencyStore: CurrencyStore
@@ -63,7 +62,6 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
     init(
         flow: RampFlow,
         wallet: Wallet,
-        configuration: Configuration,
         onRampService: OnRampService,
         currenciesService: CurrenciesService,
         currencyStore: CurrencyStore,
@@ -71,7 +69,6 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
     ) {
         self.flow = flow
         self.wallet = wallet
-        self.configuration = configuration
         self.onRampService = onRampService
         self.currenciesService = currenciesService
         self.currencyStore = currencyStore
@@ -79,8 +76,6 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
     }
 
     func viewDidLoad() {
-        let navigationTitle: String? = configuration.featureEnabled(.multichainEnabled) ? nil : flow.title
-        didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: navigationTitle))
         buildSnapshot()
         Task { await loadOnRampLayout() }
     }
@@ -91,27 +86,17 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
         buildSnapshot()
 
         do {
-            let layout: OnRampLayout
-            if configuration.featureEnabled(.multichainEnabled) {
-                let allCurrencies = try await currenciesService.loadCurrencies()
-                fiatCurrencies = allCurrencies.filter { $0.currencyType == .fiat }
-                if currentFiatCurrency == nil {
-                    let code = currencyStore.getState().code
-                    currentFiatCurrency = fiatCurrencies.first(where: { $0.code == code }) ?? .default
-                }
-                layout = try await onRampService.getLayout(
-                    flow: flow.api,
-                    currency: currentFiatCurrency?.code,
-                    walletId: wallet.multichainWalletId
-                )
-            } else {
-                fiatCurrencies = []
-                layout = try await onRampService.getLayout(
-                    flow: flow.api,
-                    currency: nil,
-                    walletId: wallet.multichainWalletId
-                )
+            let allCurrencies = try await currenciesService.loadCurrencies()
+            fiatCurrencies = allCurrencies.filter { $0.currencyType == .fiat }
+            if currentFiatCurrency == nil {
+                let code = currencyStore.getState().code
+                currentFiatCurrency = fiatCurrencies.first(where: { $0.code == code }) ?? .default
             }
+            let layout = try await onRampService.getLayout(
+                flow: flow.api,
+                currency: currentFiatCurrency?.code,
+                walletId: wallet.multichainWalletId
+            )
 
             onRampLayout = layout
                 .filteredByCashOrCryptoAvailability(isAvailable: wallet.isRampCashOrCryptoAvailable)

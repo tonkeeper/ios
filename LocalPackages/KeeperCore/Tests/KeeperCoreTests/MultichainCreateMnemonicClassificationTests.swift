@@ -44,8 +44,6 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
         let persistenceSpy = MultichainCreatePersistenceSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.ton, .eth, .btc],
                 getWallets: { [wallet] },
                 getMnemonics: { _, _ in
@@ -102,8 +100,6 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
         let persistenceSpy = MultichainCreatePersistenceSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.eth],
                 getWallets: { [wallet] },
                 getMnemonics: { _, _ in

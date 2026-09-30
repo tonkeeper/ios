@@ -16,6 +16,7 @@ extension MainCoordinator {
         appId: String? = nil,
         initiatedBy: InitiatedBy,
         dappUrl: String? = nil,
+        utm: UtmParameters = .empty,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil
     ) {
         guard let windowScene = router.rootViewController.windowScene else { return }
@@ -30,6 +31,7 @@ extension MainCoordinator {
             appId: appId,
             initiatedBy: initiatedBy,
             dappUrl: dappUrl,
+            utm: utm,
             redAnalyticsConfiguration: redAnalyticsConfiguration,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -45,8 +47,14 @@ extension MainCoordinator {
                 )
             },
             didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
-                self?.router.dismiss(animated: true) {
-                    self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+                guard let self else { return }
+                let entrySource = depositAnalyticsSource(for: initiatedBy)
+                router.dismiss(animated: true) { [weak self] in
+                    self?.openBuy(
+                        wallet: wallet,
+                        isInternalPurchasing: isInternalPurchasing,
+                        entrySource: entrySource
+                    )
                 }
             }
         )
@@ -59,7 +67,8 @@ extension MainCoordinator {
         payload: String?,
         stateInit: String?,
         sendFrom: SendOpen.From,
-        initiatedBy: InitiatedBy
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty
     ) {
         let signRaw: () async throws -> SignRawRequest = {
             try await self.createTransferSignRaw(
@@ -75,7 +84,7 @@ extension MainCoordinator {
             try .signRaw(
                 await signRaw(), forceRelayer: true
             )
-        }, resultHandler: nil, sendFrom: sendFrom, initiatedBy: initiatedBy)
+        }, resultHandler: nil, sendFrom: sendFrom, initiatedBy: initiatedBy, utm: utm)
     }
 
     private func createTransferSignRaw(

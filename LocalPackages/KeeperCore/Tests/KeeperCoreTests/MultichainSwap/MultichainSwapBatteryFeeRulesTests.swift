@@ -1,3 +1,4 @@
+import BigInt
 @testable import KeeperCore
 import TonSwift
 import TronSwift
@@ -29,14 +30,7 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
 
     func testEverySwitchOffMakesTheSwapUnrelayable() {
         let cases: [(String, () -> MultichainSwapRelayedAsset?)] = [
-            ("remote battery flag", { self.relayedAsset(isBatteryEnabled: false) }),
-            ("remote battery send flag", { self.relayedAsset(isBatterySendEnabled: false) }),
             ("route needs an approval", { self.relayedAsset(requiresApproval: true) }),
-            ("wallet turned battery off for swaps", {
-                self.relayedAsset(
-                    wallet: self.makeWallet(batterySettings: .init(isSwapTransactionEnable: false))
-                )
-            }),
             ("testnet wallet", { self.relayedAsset(wallet: self.makeWallet(network: .testnet)) }),
             ("no address on the chain", { self.relayedAsset(wallet: self.makeWallet(addresses: [])) }),
             ("not a multichain wallet", {
@@ -46,6 +40,27 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
         for (reason, subject) in cases {
             XCTAssertNil(subject(), reason)
         }
+    }
+
+    /// The battery switches speak about charges alone. They decide whether that one method is offered
+    /// on top of a relayable swap, and the GRAM instant fee — which spends no charges — is not theirs
+    /// to hide, exactly as the TRON send screen has it.
+    func testBatterySwitchesOnlyDecideTheChargesMethod() {
+        XCTAssertTrue(isBatteryAllowed())
+        let cases: [(String, Bool)] = [
+            ("remote battery flag", isBatteryAllowed(isBatteryEnabled: false)),
+            ("remote battery send flag", isBatteryAllowed(isBatterySendEnabled: false)),
+            (
+                "wallet turned battery off for swaps",
+                isBatteryAllowed(wallet: makeWallet(batterySettings: .init(isSwapTransactionEnable: false)))
+            ),
+        ]
+        for (reason, isAllowed) in cases {
+            XCTAssertFalse(isAllowed, reason)
+        }
+        XCTAssertNotNil(
+            relayedAsset(wallet: makeWallet(batterySettings: .init(isSwapTransactionEnable: false)))
+        )
     }
 
     /// The USDT send path hides battery entirely in a TRX-only region, so a TRON swap must not offer a
@@ -80,7 +95,7 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
             XCTAssertEqual(option.cost, .batteryUnpriced)
             XCTAssertEqual(option.isInsufficient, true)
             XCTAssertEqual(option.method, .battery)
-            XCTAssertNil(option.batteryCharges)
+            XCTAssertNil(option.relayedFee)
         }
     }
 
@@ -120,6 +135,45 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
             confirmedCharges: 7,
             available: .unknown,
             payloadId: "main"
+        )
+    }
+
+    /// The GRAM price moves with the TON rate between the confirmation and the send, so drift inside
+    /// the tolerance is paid rather than bounced back to the user.
+    func testGramRequoteWithinTheToleranceIsSent() throws {
+        for amountNano: BigUInt in [99_000_000, 100_000_000, 105_000_000] {
+            try MultichainSwapBatteryFeeRules.requireGramQuote(
+                amountNano,
+                confirmedAmountNano: 100_000_000,
+                payloadId: "main"
+            )
+        }
+    }
+
+    func testGramRequotePastTheToleranceIsRefused() {
+        do {
+            try MultichainSwapBatteryFeeRules.requireGramQuote(
+                105_000_001,
+                confirmedAmountNano: 100_000_000,
+                payloadId: "main"
+            )
+            XCTFail("expected the requote to be refused")
+        } catch {
+            guard case let .preparationFailed(kind, _) = error else {
+                return XCTFail("expected a preparation failure, got \(error)")
+            }
+            XCTAssertEqual(kind, .unknown)
+        }
+    }
+
+    /// The tolerance is a share of the confirmed price, so it cannot turn a free quote into a paid one.
+    func testGramToleranceScalesWithTheConfirmedPrice() {
+        XCTAssertThrowsError(
+            try MultichainSwapBatteryFeeRules.requireGramQuote(
+                1,
+                confirmedAmountNano: 0,
+                payloadId: "main"
+            )
         )
     }
 
@@ -167,8 +221,6 @@ private extension MultichainSwapBatteryFeeRulesTests {
         assetId: String? = nil,
         chain: MultichainChain = .ton,
         requiresApproval: Bool = false,
-        isBatteryEnabled: Bool = true,
-        isBatterySendEnabled: Bool = true,
         isTRXOnlyRegion: Bool = false
     ) -> MultichainSwapRelayedAsset? {
         MultichainSwapBatteryFeeRules.relayedAsset(
@@ -178,9 +230,19 @@ private extension MultichainSwapBatteryFeeRulesTests {
             ]),
             sourceAsset: makeAsset(assetId: assetId ?? tonJettonAssetId, chain: chain),
             requiresApproval: requiresApproval,
-            isBatteryEnabled: isBatteryEnabled,
-            isBatterySendEnabled: isBatterySendEnabled,
             isTRXOnlyRegion: isTRXOnlyRegion
+        )
+    }
+
+    func isBatteryAllowed(
+        wallet: Wallet? = nil,
+        isBatteryEnabled: Bool = true,
+        isBatterySendEnabled: Bool = true
+    ) -> Bool {
+        MultichainSwapBatteryFeeRules.isBatteryAllowed(
+            wallet: wallet ?? makeWallet(),
+            isBatteryEnabled: isBatteryEnabled,
+            isBatterySendEnabled: isBatterySendEnabled
         )
     }
 

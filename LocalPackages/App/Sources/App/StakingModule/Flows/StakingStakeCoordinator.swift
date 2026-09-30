@@ -13,18 +13,24 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
 
     private let wallet: Wallet
     private let stakingPoolInfo: StackingPoolInfo
+    private let initiatedBy: InitiatedBy
+    private let utm: UtmParameters
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
 
     init(
         wallet: Wallet,
         stakingPoolInfo: StackingPoolInfo,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter
     ) {
         self.wallet = wallet
         self.stakingPoolInfo = stakingPoolInfo
+        self.initiatedBy = initiatedBy
+        self.utm = utm
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
 
@@ -87,6 +93,8 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
         let coordinator = StakingConfirmationCoordinator(
             wallet: wallet,
             item: item,
+            initiatedBy: initiatedBy,
+            utm: utm,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: router

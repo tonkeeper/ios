@@ -43,6 +43,8 @@ private extension MultichainHistoryCoordinator {
         let viewModel = MultichainHistoryViewModelImplementation(
             multichainState: multichainState,
             hidesDustTransactions: appSettingsStore.getState().hidesDustTransactions,
+            isPerpsEnabled: keeperCoreMainAssembly.configurationAssembly.configuration
+                .featureEnabled(.perpsEnabled),
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
             realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager,
             reachabilityTracker: coreAssembly.reachabilityTracker,

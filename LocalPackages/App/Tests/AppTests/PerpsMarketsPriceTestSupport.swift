@@ -173,3 +173,14 @@ extension XCTestCase {
         client.onSetTickers = nil
     }
 }
+
+extension PerpsTradingFlags {
+    static let testAllEnabled: PerpsTradingFlags? = PerpsTradingFlags(
+        openEnabled: true,
+        closeEnabled: true,
+        cancelEnabled: true,
+        addMarginEnabled: true,
+        removeMarginEnabled: true,
+        autoCloseEnabled: true
+    )
+}

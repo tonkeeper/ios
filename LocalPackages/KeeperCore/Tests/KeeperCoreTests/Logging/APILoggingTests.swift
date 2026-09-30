@@ -146,11 +146,24 @@ final class APILoggingTests: XCTestCase {
         XCTAssertEqual(record.extraInfo["responseBody"], "<unreadable>")
     }
 
-    /// A prompt, usable response is the overwhelming majority of calls and says nothing a reader
-    /// of the log needs; recording it would only shorten the window the export covers.
-    func testMiddlewareSaysNothingAboutAPromptSuccess() async throws {
+    /// A prompt, usable response is the overwhelming majority of calls, so it is recorded at debug
+    /// — present for a developer reading a live console, and below the severity a release build
+    /// keeps, so it never shortens the window an exported log covers.
+    func testMiddlewareRecordsAPromptSuccessAtDebug() async throws {
         let backend = RecordingLogBackend()
         _ = try await withRecording(backend) {
+            try await send(response: response(status: 200, json: #"{"ok":true}"#))
+        }
+
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.severity, .debug)
+        XCTAssertTrue(record.message.contains("→ 200 in"), record.message)
+        XCTAssertNil(record.extraInfo["responseBody"])
+    }
+
+    func testAPromptSuccessIsBelowTheSeverityAReleaseBuildKeeps() async throws {
+        let backend = RecordingLogBackend()
+        _ = try await withRecording(backend, minimumSeverity: .info) {
             try await send(response: response(status: 200, json: #"{"ok":true}"#))
         }
 
@@ -238,12 +251,13 @@ private extension APILoggingTests {
 
     func withRecording<T>(
         _ backend: RecordingLogBackend,
+        minimumSeverity: LogSeverity = .debug,
         _ work: () async throws -> T
     ) async rethrows -> T {
         let configuration = Log.configuration
         defer { Log.configuration = configuration }
         Log.configuration = LoggingConfiguration(
-            minimumSeverity: .debug,
+            minimumSeverity: minimumSeverity,
             defaultSubsystem: "test",
             backends: [backend]
         )

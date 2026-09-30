@@ -39,8 +39,18 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
     public var deviceCountryCode: String?
     /** Value from keys['region'] response from backend in ISO 3166-1 alpha-2 format (2-letter uppercase) */
     public var keysCountryCode: String?
+    /** UTM standard `utm_source` — who sent the user: the referrer the link came from, e.g. `telegram`, `x`, `newsletter`, `partner_xyz`, `push`. https://en.wikipedia.org/wiki/UTM_parameters Read from the link the user arrived by — a `tonkeeper://` / `ton://` app link, a universal `https://` one, or the link a push carried — and set on the entry event (`deeplink_open`, `push_click`) and on the events of the flow that link opened, for as long as that flow lasts: send, swap, staking, battery, deposit / withdraw, dapp and the resulting `transaction_sent`. NULL everywhere else — on an app opened directly or from an untagged link, and on everything the user does after stepping out of that flow. The client reports the entry, not an attribution window: crediting later activity to a campaign (an hour, a day, a session) is a decision made in analysis, over `deeplink_open` / `push_click`, not one baked into the events.  */
+    public var utmSource: String?
+    /** UTM standard `utm_medium` — what kind of channel carried the link: the channel type rather than the individual placement, e.g. `push`, `email`, `social`, `cpc`, `banner`, `referral`, `qr`. Same source and scope as `utm_source`. NULL when the link carried no `utm_medium`.  */
+    public var utmMedium: String?
+    /** UTM standard `utm_campaign` — which campaign the link belongs to, e.g. `battery_launch`, `summer_2026`, `ton_staking_promo`. This is the field campaign reporting groups by; `utm_source` / `utm_medium` say where the same campaign was placed. Same source and scope as `utm_source`. Marketing pushes set it to the same slug as the `analytics_label` of the push, which is what lets the FCM BigQuery export join to these events at campaign level. NULL when the link carried no `utm_campaign`.  */
+    public var utmCampaign: String?
+    /** UTM standard `utm_term` — the paid keyword the click was bought on, e.g. `ton+wallet`. Set by ad platforms on paid search campaigns; NULL for our own links, which carry no keyword. Same source and scope as `utm_source`.  */
+    public var utmTerm: String?
+    /** UTM standard `utm_content` — which creative or placement inside one campaign was clicked, e.g. `hero_button` vs `footer_link`. Used to tell A/B variants and several placements of the same campaign apart. Same source and scope as `utm_source`. NULL when the link carried no `utm_content`.  */
+    public var utmContent: String?
 
-    public init(schemaVersion: String? = "6.0.1", firebaseUserId: String? = nil, deviceId: String? = nil, uuidPersistent: String? = nil, platform: Platform? = nil, storeCountryCode: String? = nil, deviceCountryCode: String? = nil, keysCountryCode: String? = nil) {
+    public init(schemaVersion: String? = "6.0.1", firebaseUserId: String? = nil, deviceId: String? = nil, uuidPersistent: String? = nil, platform: Platform? = nil, storeCountryCode: String? = nil, deviceCountryCode: String? = nil, keysCountryCode: String? = nil, utmSource: String? = nil, utmMedium: String? = nil, utmCampaign: String? = nil, utmTerm: String? = nil, utmContent: String? = nil) {
         self.schemaVersion = schemaVersion
         self.firebaseUserId = firebaseUserId
         self.deviceId = deviceId
@@ -49,6 +59,11 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
         self.storeCountryCode = storeCountryCode
         self.deviceCountryCode = deviceCountryCode
         self.keysCountryCode = keysCountryCode
+        self.utmSource = utmSource
+        self.utmMedium = utmMedium
+        self.utmCampaign = utmCampaign
+        self.utmTerm = utmTerm
+        self.utmContent = utmContent
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -60,6 +75,11 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
         case storeCountryCode = "store_country_code"
         case deviceCountryCode = "device_country_code"
         case keysCountryCode = "keys_country_code"
+        case utmSource = "utm_source"
+        case utmMedium = "utm_medium"
+        case utmCampaign = "utm_campaign"
+        case utmTerm = "utm_term"
+        case utmContent = "utm_content"
     }
 
     // Encodable protocol methods
@@ -74,6 +94,11 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(storeCountryCode, forKey: .storeCountryCode)
         try container.encodeIfPresent(deviceCountryCode, forKey: .deviceCountryCode)
         try container.encodeIfPresent(keysCountryCode, forKey: .keysCountryCode)
+        try container.encodeIfPresent(utmSource, forKey: .utmSource)
+        try container.encodeIfPresent(utmMedium, forKey: .utmMedium)
+        try container.encodeIfPresent(utmCampaign, forKey: .utmCampaign)
+        try container.encodeIfPresent(utmTerm, forKey: .utmTerm)
+        try container.encodeIfPresent(utmContent, forKey: .utmContent)
     }
 }
 

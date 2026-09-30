@@ -1,11 +1,15 @@
-import ChainKit
 import Foundation
 import TKKeychain
 import TKLogging
 
-/// Keychain-backed `SecureKeyStore` for the ChainKit Lighter engine, scoped to one
-/// wallet and one environment so testnet and mainnet credentials never mix.
-final class LighterCredentialsStore: NSObject, SecureKeyStore {
+struct PerpsStoredAccount {
+    let accountIndex: Int64
+    let apiKeyIndex: Int32
+}
+
+/// Keychain-backed store for the perps trading key, scoped to one wallet and one
+/// environment so testnet and mainnet credentials never mix.
+final class LighterCredentialsStore {
     private struct StoredAccount: Codable {
         let accountIndex: Int64
         let apiKeyIndex: Int32
@@ -21,87 +25,60 @@ final class LighterCredentialsStore: NSObject, SecureKeyStore {
         self.environment = environment
     }
 
-    func loadL2PrivateKey(completionHandler: @escaping (KotlinByteArray?, Error?) -> Void) {
+    func loadL2PrivateKey() throws -> Data? {
         do {
-            let data: Data = try keychainVault.get(query: query(item: .l2PrivateKey))
-            completionHandler(data.asKotlinByteArray, nil)
+            return try keychainVault.get(query: query(item: .l2PrivateKey))
         } catch TKKeychainVaultError.unexpectedData, TKKeychainError.noItem {
             // No stored key yet (first activation) — absent, not a failure.
-            completionHandler(nil, nil)
+            return nil
         } catch {
             Log.w("🪵 Lighter: loadL2PrivateKey failed", error: error)
-            completionHandler(nil, error)
+            throw error
         }
     }
 
-    func saveL2PrivateKey(key: KotlinByteArray, completionHandler: @escaping (Error?) -> Void) {
+    func saveL2PrivateKey(_ key: Data) throws {
         do {
-            try keychainVault.set(key.asData, query: query(item: .l2PrivateKey))
-            completionHandler(nil)
+            try keychainVault.set(key, query: query(item: .l2PrivateKey))
         } catch {
             Log.w("🪵 Lighter: saveL2PrivateKey failed", error: error)
-            completionHandler(error)
+            throw error
         }
     }
 
-    func loadAccount(completionHandler: @escaping (StoredLighterAccount?, Error?) -> Void) {
+    func loadAccount() throws -> PerpsStoredAccount? {
         do {
             let stored: StoredAccount = try keychainVault.get(query: query(item: .account))
-            completionHandler(
-                StoredLighterAccount(accountIndex: stored.accountIndex, apiKeyIndex: stored.apiKeyIndex),
-                nil
-            )
+            return PerpsStoredAccount(accountIndex: stored.accountIndex, apiKeyIndex: stored.apiKeyIndex)
         } catch TKKeychainVaultError.unexpectedData, TKKeychainError.noItem {
             // No stored account yet — absent, not a failure.
-            completionHandler(nil, nil)
+            return nil
         } catch {
             Log.w("🪵 Lighter: loadAccount failed", error: error)
-            completionHandler(nil, error)
+            throw error
         }
     }
 
-    func saveAccount(account: StoredLighterAccount, completionHandler: @escaping (Error?) -> Void) {
+    func saveAccount(_ account: PerpsStoredAccount) throws {
         do {
             try keychainVault.set(
                 StoredAccount(accountIndex: account.accountIndex, apiKeyIndex: account.apiKeyIndex),
                 query: query(item: .account)
             )
-            completionHandler(nil)
         } catch {
             Log.w("🪵 Lighter: saveAccount failed", error: error)
-            completionHandler(error)
+            throw error
         }
-    }
-
-    func clear(completionHandler: @escaping (Error?) -> Void) {
-        clear()
-        completionHandler(nil)
     }
 
     func clear() {
         try? keychainVault.delete(query(item: .l2PrivateKey))
         try? keychainVault.delete(query(item: .account))
-        try? keychainVault.delete(query(item: .l1Address))
-    }
-
-    /// The wallet's L1 address is public data; cached so the account probe
-    /// works even when the wallet has no multichain enrichment.
-    func saveL1Address(_ address: String) {
-        do {
-            try keychainVault.set(address, query: query(item: .l1Address))
-        } catch {
-            Log.w("🪵 Lighter: saveL1Address failed", error: error)
-        }
-    }
-
-    func loadL1Address() -> String? {
-        try? keychainVault.get(query: query(item: .l1Address))
     }
 
     private enum Item: String {
         case l2PrivateKey = "l2key"
         case account
-        case l1Address = "l1addr"
     }
 
     private func query(item: Item) -> TKKeychainQuery {

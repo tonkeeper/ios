@@ -309,6 +309,7 @@ private extension ChartServiceTests {
             tronSwapUrl: configuration.tronSwapUrl,
             tronSwapTitle: configuration.tronSwapTitle,
             tonkeeperApiUrl: configuration.tonkeeperApiUrl,
+            aptabaseEndpoint: configuration.aptabaseEndpoint,
             multichainHelpUrl: configuration.multichainHelpUrl,
             multichain: configuration.multichain,
             trading: configuration.trading,
@@ -318,8 +319,7 @@ private extension ChartServiceTests {
             bootConfigurationService: BootConfigurationServiceStub(
                 bootConfigurations: BootConfigurations(
                     mainnet: bootConfiguration,
-                    testnet: .empty,
-                    tetra: .empty
+                    testnet: .empty
                 )
             ),
             featureFlags: FeatureFlagsStub(),
@@ -408,7 +408,10 @@ private final class TradingAPIStub: TradingAPI {
         order: Components.Schemas.AssetsOrder?,
         cursor: String?,
         pageSize: Int?,
-        sourceShelf: String?
+        sourceShelf: String?,
+        showPerps _: Bool?,
+        chain _: String?,
+        filter _: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         throw .unknown(underlying: nil)
     }
@@ -417,13 +420,6 @@ private final class TradingAPIStub: TradingAPI {
         requestContext: TradingRequestContext,
         ids: [String]
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
-        throw .unknown(underlying: nil)
-    }
-
-    func getAssetsDetails(
-        requestContext: TradingRequestContext,
-        assetId: String
-    ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
         throw .unknown(underlying: nil)
     }
 
@@ -488,25 +484,9 @@ private final class FeatureFlagsStub: TKFeatureFlags {
 }
 
 private final class AppSettingsStub: TKAppSettings {
-    var isTetraWalletEnabled = false
     var isConfirmButtonInsteadSlider = false
-    var lighterAPIEnvironment: LighterAPIEnvironment = .testnet
     var raffleIsNewUser: Bool?
-    var pendingRaffleIsNewUser: Bool?
     var raffleDebugNow: Date?
-
-    func beginRaffleUserResolution(isNewUser: Bool) {
-        pendingRaffleIsNewUser = isNewUser
-    }
-
-    func cancelPendingRaffleUserResolution() {
-        pendingRaffleIsNewUser = nil
-    }
-
-    func resolveRaffleIsNewUser(_ isNewUser: Bool) {
-        raffleIsNewUser = raffleIsNewUser ?? isNewUser
-        pendingRaffleIsNewUser = nil
-    }
 }
 
 private final class ChartURLProtocolStub: URLProtocol {

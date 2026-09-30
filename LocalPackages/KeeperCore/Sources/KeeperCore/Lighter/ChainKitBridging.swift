@@ -33,6 +33,28 @@ func bridgeKotlinOptional<T>(
     }
 }
 
+func perpsValue<T: AnyObject>(_ result: PerpsRes<T>) throws -> T {
+    if let error = result.error {
+        throw NSError(
+            domain: "ChainKitPerpsTrade",
+            code: 1,
+            userInfo: [
+                "KotlinException": error,
+                NSLocalizedDescriptionKey: error.message ?? "invalid transaction",
+            ]
+        )
+    }
+    guard let value = result.getOrNull() else {
+        throw PerpsTradingError.protocolFailure("perps planner returned neither a value nor an error")
+    }
+    return value
+}
+
+func perpsTradeException(from error: Error) -> PerpsTradeException? {
+    if let typed = error as? PerpsTradeException { return typed }
+    return (error as NSError).userInfo["KotlinException"] as? PerpsTradeException
+}
+
 extension Data {
     var asKotlinByteArray: KotlinByteArray {
         let array = KotlinByteArray(size: Int32(count))

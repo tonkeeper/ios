@@ -3,6 +3,14 @@ import KeeperCore
 import TKLocalize
 
 enum PerpsTradingErrorText {
+    /// Errors a screen deliberately says nothing about (a cancelled passcode, a
+    /// no-op change) map to an empty message, so every caller that must show
+    /// something needs a fallback of its own.
+    static func message(for error: PerpsTradingError, fallback: String) -> String {
+        let message = message(for: error)
+        return message.isEmpty ? fallback : message
+    }
+
     static func message(for error: PerpsTradingError) -> String {
         switch error {
         case .offline:

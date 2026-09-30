@@ -119,13 +119,15 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     var optionRows: [PerpsAmountFormOptionRow] {
         let autoCloseText = effectiveAutoClose.flatMap(PerpsFormatting.autoCloseSummary)
         return [
-            PerpsAmountFormOptionRow(
-                id: "leverage",
-                title: TKLocales.Perps.OpenPosition.leverage,
-                value: PerpsFormatting.leverage(summary.leverage ?? 0),
-                valueColor: .textPrimary,
-                action: nil
-            ),
+            summary.leverage.map {
+                PerpsAmountFormOptionRow(
+                    id: "leverage",
+                    title: TKLocales.Perps.OpenPosition.leverage,
+                    value: PerpsFormatting.leverage($0),
+                    valueColor: .textPrimary,
+                    action: nil
+                )
+            },
             PerpsAmountFormOptionRow(
                 id: "autoClose",
                 title: TKLocales.Perps.OpenPosition.autoClose,
@@ -133,7 +135,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
                 valueColor: autoCloseText == nil ? .textAccent : .textPrimary,
                 action: { [weak self] in self?.openAutoClose() }
             ),
-        ]
+        ].compactMap { $0 }
     }
 
     var warningText: String? {
@@ -188,8 +190,10 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         onOpenAutoClose?(PerpsAutoCloseSheetContext(
             side: summary.side,
             entryPrice: summary.entryPrice,
-            leverage: summary.leverage ?? 0,
+            referencePrice: displayPrice,
+            leverage: summary.effectiveLeverage ?? 0,
             liquidationPrice: summary.liquidationPrice > 0 ? summary.liquidationPrice : nil,
+            priceDecimals: session.priceDecimals,
             draft: session.desiredAutoClose
         ))
     }
@@ -201,7 +205,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         }
         guard PerpsAutoCloseValidation.warning(
             side: summary.side,
-            entryPrice: summary.entryPrice,
+            referencePrice: displayPrice,
             liquidationPrice: summary.liquidationPrice > 0 ? summary.liquidationPrice : nil,
             autoClose: value
         ) == nil else { return }
@@ -223,7 +227,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     }
 
     private var sizeDeltaUsd: Double {
-        marginDeltaUsd * (summary.leverage ?? 0)
+        marginDeltaUsd * (summary.effectiveLeverage ?? 0)
     }
 
     private var exceedsReduceMargin: Bool {
@@ -240,7 +244,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
 
     private func setMax() {
         guard let availableBalance, availableBalance > 0 else { return }
-        session.setAmount(PerpsDecimalInput.inputText(from: availableBalance))
+        session.setAmount(PerpsDecimalInput.usdText(availableBalance))
     }
 
     private func observeStore() {
@@ -251,7 +255,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
 
     private func applyStoreState() {
         switch accountStore.currentWalletState() {
-        case .unresolved, .resolving, .activating, .inactive:
+        case .unresolved, .resolving, .unbound, .inactive:
             availableBalance = nil
         case let .active(value):
             availableBalance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0

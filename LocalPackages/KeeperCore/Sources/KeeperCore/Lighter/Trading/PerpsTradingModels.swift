@@ -1,3 +1,4 @@
+import ChainKit
 import Foundation
 
 public enum PerpsTradeSide: String, Sendable, Equatable, Codable {
@@ -85,9 +86,7 @@ public struct PerpsOpenMarketContext: Sendable, Equatable {
     public let leverageBounds: PerpsLeverageBounds
     public let defaultLeverage: Double
     public let maxSlippage: Double
-    public let maintenanceFraction: Double?
     public let minBaseSize: Double
-    public let takerFee: Double
 
     public init(
         marketId: Int64,
@@ -99,9 +98,7 @@ public struct PerpsOpenMarketContext: Sendable, Equatable {
         leverageBounds: PerpsLeverageBounds,
         defaultLeverage: Double,
         maxSlippage: Double,
-        maintenanceFraction: Double?,
-        minBaseSize: Double,
-        takerFee: Double
+        minBaseSize: Double
     ) {
         self.marketId = marketId
         self.side = side
@@ -112,9 +109,7 @@ public struct PerpsOpenMarketContext: Sendable, Equatable {
         self.leverageBounds = leverageBounds
         self.defaultLeverage = defaultLeverage
         self.maxSlippage = maxSlippage
-        self.maintenanceFraction = maintenanceFraction
         self.minBaseSize = minBaseSize
-        self.takerFee = takerFee
     }
 }
 
@@ -149,10 +144,17 @@ public struct PerpsOpenOrderReview: Sendable, Equatable {
     }
 }
 
+/// What every prepared action carries regardless of the operation: the identity a
+/// submission is journalled and reconciled under.
+protocol PerpsPreparedAction {
+    var operationId: String { get }
+    var walletId: String { get }
+    var marketId: Int64 { get }
+}
+
 public struct PerpsPreparedTradingAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let intent: PerpsOpenMarketIntent
     public let review: PerpsOpenOrderReview
@@ -209,8 +211,8 @@ public struct PerpsCloseReview: Sendable, Equatable {
 public struct PerpsPreparedCloseAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
+    public let positionBaseAmount: Int64
     public let review: PerpsCloseReview
 }
 
@@ -332,7 +334,6 @@ public struct PerpsSizeChangeReview: Sendable, Equatable {
 public struct PerpsPreparedSizeChangeAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let intent: PerpsSizeChangeIntent
     public let review: PerpsSizeChangeReview
@@ -394,7 +395,6 @@ public struct PerpsMarginChangeReview: Sendable, Equatable {
 public struct PerpsPreparedMarginChangeAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let intent: PerpsMarginChangeIntent
     public let review: PerpsMarginChangeReview
@@ -429,7 +429,6 @@ public struct PerpsAutoCloseChangeReview: Sendable, Equatable {
 public struct PerpsPreparedAutoCloseChangeAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let intent: PerpsAutoCloseChangeIntent
     public let review: PerpsAutoCloseChangeReview
@@ -490,7 +489,6 @@ public struct PerpsLimitOrderChangeReview: Sendable, Equatable {
 public struct PerpsPreparedLimitOrderChangeAction: Sendable {
     public let operationId: String
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let intent: PerpsLimitOrderChangeIntent
     public let review: PerpsLimitOrderChangeReview
@@ -508,12 +506,6 @@ public struct PerpsPendingLimitOrderChange: Sendable, Equatable, Codable {
     }
 }
 
-public enum PerpsLimitOrderChangeReconcileResult: Sendable {
-    case confirmed
-    case failed(PerpsTradingError)
-    case pending
-}
-
 public struct PerpsPendingAutoCloseChange: Sendable, Equatable, Codable {
     /// nil = clearing; trigger prices are post-rounding (from the SDK review).
     public let target: PerpsAutoClose?
@@ -525,64 +517,172 @@ public struct PerpsPendingAutoCloseChange: Sendable, Equatable, Codable {
     }
 }
 
-public enum PerpsAutoCloseReconcileResult: Sendable {
-    case confirmed([PerpsTriggerOrderSummary])
-    case failed(PerpsTradingError)
-    case pending
+/// One market read, able to review a trade over itself. The planner is pure, so a
+/// review is synchronous and costs no network: a screen loads a reviewer once and
+/// recomputes as the user drags. `nil` means this read no longer answers for that
+/// intent — it went stale, or stopped covering the size — and the caller reloads.
+public protocol PerpetualReviewer: AnyObject, Sendable {
+    /// True once this read is old enough that the client should ask the backend for
+    /// a new one. Separate from the planner's own limit: the planner says when a
+    /// read is unusable, this says when it is merely worth replacing.
+    var isStale: Bool { get }
+
+    func reviewOpen(_ intent: PerpsOpenMarketIntent) -> PerpsOpenOrderReview?
+    func reviewMarginChange(_ intent: PerpsMarginChangeIntent) -> PerpsMarginChangeReview?
 }
 
-public enum PerpsPendingActionKind: String, Sendable, Codable {
-    case open
+struct PerpsReviewInputs {
+    let context: PerpsMarketContext
+    let marketSnapshot: PerpetualMarketSnapshot?
+    let symbol: String
+}
+
+public enum PerpsPendingOrderRole: String, Sendable, Codable {
+    case parent
+    case takeProfit
+    case stopLoss
     case close
-    case sizeChange
-    case marginChange
-    case autoCloseChange
-    case limitOrderChange
+    case add
+}
+
+public struct PerpsPendingOrderRef: Sendable, Equatable, Codable {
+    public let role: PerpsPendingOrderRole
+    public let clientOrderIndex: Int64
+
+    public init(role: PerpsPendingOrderRole, clientOrderIndex: Int64) {
+        self.role = role
+        self.clientOrderIndex = clientOrderIndex
+    }
+}
+
+public enum PerpsPendingStepState: String, Sendable, Equatable, Codable {
+    case signed
+    case sending
+    case unknown
+    case accepted
+}
+
+/// Durable transport data for one execution step. The signed payload is kept
+/// separately from order refs so a crash before POST can resume the exact tx.
+public struct PerpsPendingSignedStep: Sendable, Equatable, Codable {
+    public let stepId: String
+    public let attemptId: String
+    public let nonce: Int64
+    public let transactionExpiryUnixMs: Int64
+    public let txType: Int32
+    public let txInfo: String
+    public let txHash: String
+    public let state: PerpsPendingStepState
+
+    public init(
+        stepId: String,
+        attemptId: String,
+        nonce: Int64,
+        transactionExpiryUnixMs: Int64,
+        txType: Int32,
+        txInfo: String,
+        txHash: String,
+        state: PerpsPendingStepState
+    ) {
+        self.stepId = stepId
+        self.attemptId = attemptId
+        self.nonce = nonce
+        self.transactionExpiryUnixMs = transactionExpiryUnixMs
+        self.txType = txType
+        self.txInfo = txInfo
+        self.txHash = txHash
+        self.state = state
+    }
+
+    func withState(_ state: PerpsPendingStepState) -> Self {
+        Self(
+            stepId: stepId,
+            attemptId: attemptId,
+            nonce: nonce,
+            transactionExpiryUnixMs: transactionExpiryUnixMs,
+            txType: txType,
+            txInfo: txInfo,
+            txHash: txHash,
+            state: state
+        )
+    }
+}
+
+public enum PerpsPendingPayload: Sendable, Equatable, Codable {
+    case open(limitPrice: Double?)
+    case close
+    case sizeChange(PerpsPendingSizeChange, autoClose: PerpsPendingAutoCloseChange?)
+    case marginChange(PerpsPendingMarginChange)
+    case autoCloseChange(PerpsPendingAutoCloseChange)
+    case limitOrderChange(PerpsPendingLimitOrderChange)
+
+    /// Whether the operation can leave an order resting on the venue after it is sent.
+    /// A margin move settles or fails at once and leaves nothing behind; everything
+    /// else can place, replace or cancel an order that outlives the submission.
+    var leavesRestingOrder: Bool {
+        switch self {
+        case .marginChange:
+            return false
+        case .open, .close, .sizeChange, .autoCloseChange, .limitOrderChange:
+            return true
+        }
+    }
 }
 
 public struct PerpsPendingTradingAction: Sendable, Equatable, Codable {
     public let operationId: String
     public let createdAtMillis: Int64
-    public let kind: PerpsPendingActionKind
     public let walletId: String
-    public let isTestnet: Bool
     public let marketId: Int64
     public let side: PerpsTradeSide
-    public let limitPrice: Double?
+    public let payload: PerpsPendingPayload
+    /// When the last order this operation can place stops being resting. Nil for an
+    /// operation that leaves nothing behind.
+    public let expiresAtMillis: Int64?
+    /// Expected base amount for a market open, or the position amount captured before a close.
+    /// Nil when the operation has no expected base amount.
+    public let expectedBaseSize: Double?
     public let positionBaseSizeBefore: Double?
-    public let sizeChange: PerpsPendingSizeChange?
-    public let marginChange: PerpsPendingMarginChange?
-    public let autoCloseChange: PerpsPendingAutoCloseChange?
-    public let limitOrderChange: PerpsPendingLimitOrderChange?
+    public var orderRefs: [PerpsPendingOrderRef]?
+    public var signedSteps: [PerpsPendingSignedStep]?
 
     public init(
         operationId: String,
         createdAtMillis: Int64 = Int64(Date().timeIntervalSince1970 * 1000),
-        kind: PerpsPendingActionKind,
         walletId: String,
-        isTestnet: Bool,
         marketId: Int64,
         side: PerpsTradeSide,
-        limitPrice: Double? = nil,
+        payload: PerpsPendingPayload,
+        expiresAtMillis: Int64? = nil,
+        expectedBaseSize: Double? = nil,
         positionBaseSizeBefore: Double? = nil,
-        sizeChange: PerpsPendingSizeChange? = nil,
-        marginChange: PerpsPendingMarginChange? = nil,
-        autoCloseChange: PerpsPendingAutoCloseChange? = nil,
-        limitOrderChange: PerpsPendingLimitOrderChange? = nil
+        orderRefs: [PerpsPendingOrderRef]? = nil,
+        signedSteps: [PerpsPendingSignedStep]? = nil
     ) {
         self.operationId = operationId
         self.createdAtMillis = createdAtMillis
-        self.kind = kind
         self.walletId = walletId
-        self.isTestnet = isTestnet
         self.marketId = marketId
         self.side = side
-        self.limitPrice = limitPrice
+        self.payload = payload
+        self.expiresAtMillis = expiresAtMillis
+        self.expectedBaseSize = expectedBaseSize
         self.positionBaseSizeBefore = positionBaseSizeBefore
-        self.sizeChange = sizeChange
-        self.marginChange = marginChange
-        self.autoCloseChange = autoCloseChange
-        self.limitOrderChange = limitOrderChange
+        self.orderRefs = orderRefs
+        self.signedSteps = signedSteps
+    }
+
+    var positionOrderRef: PerpsPendingOrderRef? {
+        orderRefs?.first { $0.role == .parent || $0.role == .close || $0.role == .add }
+    }
+
+    var triggerOrderRefs: [PerpsPendingOrderRef] {
+        orderRefs?.filter { $0.role == .takeProfit || $0.role == .stopLoss } ?? []
+    }
+
+    var hasOnlyAcceptedSignedSteps: Bool {
+        guard let signedSteps, !signedSteps.isEmpty else { return false }
+        return signedSteps.allSatisfy { $0.state == .accepted }
     }
 }
 
@@ -601,10 +701,16 @@ public struct PerpsPendingMarginChange: Sendable, Equatable, Codable {
 public struct PerpsPendingSizeChange: Sendable, Equatable, Codable {
     public let direction: PerpsSizeChangeDirection
     public let baseSizeBefore: Double
+    public let expectedBaseDelta: Double?
 
-    public init(direction: PerpsSizeChangeDirection, baseSizeBefore: Double) {
+    public init(
+        direction: PerpsSizeChangeDirection,
+        baseSizeBefore: Double,
+        expectedBaseDelta: Double? = nil
+    ) {
         self.direction = direction
         self.baseSizeBefore = baseSizeBefore
+        self.expectedBaseDelta = expectedBaseDelta
     }
 }
 
@@ -614,6 +720,19 @@ enum PerpsChangeSettlement {
         case .add: current > before
         case .reduce: current < before
         }
+    }
+
+    static func sizeMoved(
+        current: Double,
+        before: Double,
+        direction: PerpsSizeChangeDirection,
+        expectedDelta: Double?
+    ) -> Bool {
+        let observed = direction == .add ? current - before : before - current
+        guard observed > 0 else { return false }
+        guard let expectedDelta else { return true }
+        let tolerance = max(0.000000001, abs(expectedDelta) * 1e-9)
+        return observed + tolerance >= expectedDelta
     }
 
     static func closeMoved(current: Double, before: Double) -> Bool {
@@ -639,22 +758,12 @@ public enum PerpsSubmitResult: Sendable {
     case submitUnknown(PerpsPendingTradingAction)
 }
 
-public enum PerpsReconcileResult: Sendable {
-    case confirmed(positions: [PerpsPositionSummary], availableBalance: String)
+/// What became of one submitted operation. Refreshing the portfolio afterwards is
+/// a separate concern: a read that fails there cannot unsettle a settled trade.
+public enum PerpsReconcileResult: Sendable, Equatable {
+    case confirmed
     case failed(PerpsTradingError)
     case pending
-}
-
-public struct PerpsLiquidationPreview: Sendable, Equatable {
-    public let price: Double?
-    public let isImmediateRisk: Bool
-    public let unavailableReason: PerpsLiquidationUnavailableReason?
-
-    public init(price: Double?, isImmediateRisk: Bool, unavailableReason: PerpsLiquidationUnavailableReason?) {
-        self.price = price
-        self.isImmediateRisk = isImmediateRisk
-        self.unavailableReason = unavailableReason
-    }
 }
 
 public enum PerpsTradingError: Error, Sendable, Equatable {
@@ -682,3 +791,10 @@ public enum PerpsTradingError: Error, Sendable, Equatable {
     case submitUnknown
     case unknown(String)
 }
+
+extension PerpsPreparedTradingAction: PerpsPreparedAction {}
+extension PerpsPreparedCloseAction: PerpsPreparedAction {}
+extension PerpsPreparedSizeChangeAction: PerpsPreparedAction {}
+extension PerpsPreparedMarginChangeAction: PerpsPreparedAction {}
+extension PerpsPreparedAutoCloseChangeAction: PerpsPreparedAction {}
+extension PerpsPreparedLimitOrderChangeAction: PerpsPreparedAction {}

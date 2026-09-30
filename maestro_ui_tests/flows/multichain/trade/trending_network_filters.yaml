@@ -22,7 +22,7 @@ appId: com.jbig.tonkeeper
 - runFlow:
     file: "../../../steps/trade/assert_trending_network_headers.yaml"
     env:
-      NETWORK_HEADER: "Ethereum (ERC20)"
+      NETWORK_HEADER: "Ethereum"
 
 # --- Ton ---
 - tapOn:
@@ -37,7 +37,7 @@ appId: com.jbig.tonkeeper
 - runFlow:
     file: "../../../steps/trade/assert_trending_network_headers.yaml"
     env:
-      NETWORK_HEADER: "TON (TON)"
+      NETWORK_HEADER: "TON"
 
 # --- Back to All ---
 - tapOn:

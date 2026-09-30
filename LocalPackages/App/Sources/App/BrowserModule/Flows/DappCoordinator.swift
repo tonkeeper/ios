@@ -6,12 +6,11 @@ import TKLocalize
 import TKLogging
 import TKScreenKit
 import TKUIKit
-import TONWalletKit
 import UIKit
 
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
-    var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
+    var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
 
     private let dapp: Dapp
     private let analyticsSession: DappOpenAnalyticsSession
@@ -44,153 +43,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     override func start() {
         analyticsSession.logClick()
-
-        if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.walletKitEnabled) {
-            openWalletKitDappModule(dapp)
-        } else {
-            openDappModule(dapp)
-        }
-    }
-
-    private func openWalletKitDappModule(_ dapp: Dapp) {
-        let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
-        let messageHandler = DefaultDappMessageHandler()
-        let eventsHandler = TONConnectWebViewEventsHandler(dapp: dapp, wallet: wallet)
-        let walletKit = keeperCoreMainAssembly.tonWalletKitAssembly.tonWalletKit
-        let module = DappWalletKitAssembly.module(
-            dapp: dapp,
-            analyticsSession: analyticsSession,
-            deeplinkHandler: { [weak self] deeplink in
-                self?.didHandleDeeplink?(deeplink)
-            },
-            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
-            messageHandler: messageHandler,
-            wallet: wallet,
-            walletKit: walletKit,
-            eventsHandler: eventsHandler,
-            explorerURLMatcher: explorerURLMatcher
-        )
-
-        messageHandler.fetch = { [weak self] url, params, completion in
-            guard let self else {
-                completion(.error(.unknownError))
-                return
-            }
-            Task {
-                do {
-                    let data = try await self.keeperCoreMainAssembly.servicesAssembly.dappFetchService().fetch(url, params: params)
-                    completion(.response(data))
-
-                } catch {
-                    completion(.error(.unknownError))
-                    Log.e(
-                        "\(String(reflecting: Self.self)): WalletKit dapp fetch failed",
-                        extraInfo: [
-                            "error": error.localizedDescription,
-                            "url": url,
-                        ]
-                    )
-                }
-            }
-        }
-
-        messageHandler.toggleLandscape = { [weak moduleInput = module.input] landscapeEnabled in
-            moduleInput?.setLandscapeMode(isEnabled: landscapeEnabled)
-        }
-
-        // kinda kludge for case with different manifestUrl and app.url to show domain correctly on SignData bottomsheet
-        var manifestUrl: URL?
-        eventsHandler.connectionEventHandler = { [weak self, weak moduleView = module.view] protocolVersion, payload, request in
-            guard let self, let moduleView else {
-                return
-            }
-            manifestUrl = payload.manifestUrl
-
-            let connector = TONWalletKitCoordinatorConnector(
-                kit: keeperCoreMainAssembly.tonWalletKitAssembly.tonWalletKit,
-                tonConnectAppsStore: self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
-                request: request
-            )
-
-            self.performConnect(
-                protocolVersion: protocolVersion,
-                payload: payload,
-                connector: connector,
-                fromViewController: moduleView,
-                completion: { _ in }
-            )
-        }
-
-        weak let moduleView = module.view
-        eventsHandler.sendTransactionEventHandler = { [weak self] _, request, completion in
-            guard let self, let moduleView else {
-                completion(.error(.unknownError))
-                return
-            }
-            let wallet: Wallet?
-            do {
-                wallet = try self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
-            } catch {
-                Log.e(
-                    "\(String(reflecting: Self.self)): failed to fetch active wallet for WalletKit sendTransaction",
-                    extraInfo: [
-                        "error": error.localizedDescription,
-                    ]
-                )
-                wallet = nil
-            }
-            guard let wallet else {
-                completion(.error(.unknownError))
-                return
-            }
-            let appId = manifestUrl?.host ?? dapp.url.host
-            self.openSend(
-                wallet: wallet,
-                dapp: dapp,
-                appRequest: request,
-                appId: appId,
-                fromViewController: moduleView,
-                completion: completion
-            )
-        }
-
-        eventsHandler.signDataEventHandler = { [weak self] app, request, completion in
-            guard let self, let moduleView else {
-                completion(.error(.unknownError))
-                return
-            }
-            let wallet: Wallet?
-            do {
-                wallet = try self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
-            } catch {
-                Log.e(
-                    "\(String(reflecting: Self.self)): failed to fetch active wallet for WalletKit signData",
-                    extraInfo: [
-                        "error": error.localizedDescription,
-                    ]
-                )
-                wallet = nil
-            }
-            guard let wallet else {
-                completion(.error(.unknownError))
-                return
-            }
-            self.openSignData(
-                wallet: wallet,
-                dappUrl: manifestUrl?.host ?? app.url.host ?? "",
-                appRequest: request,
-                fromViewController: moduleView,
-                router: router,
-                completion: completion
-            )
-        }
-
-        module.output.didShareDappURL = { [weak self] in
-            self?.openSharingSheet(app: $0, url: $1)
-        }
-
-        module.view.modalPresentationStyle = .fullScreen
-        router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
+        openDappModule(dapp)
     }
 
     private func openDappModule(_ dapp: Dapp) {
@@ -199,8 +52,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         let module = DappAssembly.module(
             dapp: dapp,
             analyticsSession: analyticsSession,
-            deeplinkHandler: { deeplink in
-                self.didHandleDeeplink?(deeplink)
+            deeplinkHandler: { deeplink, utm in
+                self.didHandleDeeplink?(deeplink, utm)
             },
             deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
             messageHandler: messageHandler,
@@ -208,7 +61,6 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             explorerURLMatcher: explorerURLMatcher
         )
 
-        // kinda kludge for case with different manifestUrl and app.url to show domain correctly on SignData bottomsheet
         var manifestUrl: URL?
         messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
             guard let self, let moduleView else {
@@ -291,14 +143,19 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
 
         messageHandler.signData = {
-            [weak self] app, request, completion in
-            guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            [weak self] _, request, completion in
+            guard let self,
+                  let moduleView,
+                  let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                  let dappHost = moduleView.currentURL?.host,
+                  !dappHost.isEmpty
+            else {
                 completion(.error(.unknownError))
                 return
             }
             self.openSignData(
                 wallet: wallet,
-                dappUrl: manifestUrl?.host ?? app.url.host ?? "",
+                dappUrl: dappHost,
                 appRequest: request,
                 fromViewController: moduleView,
                 router: router,
@@ -308,6 +165,14 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
         messageHandler.toggleLandscape = { [weak moduleInput = module.input] landscapeEnabled in
             moduleInput?.setLandscapeMode(isEnabled: landscapeEnabled)
+        }
+
+        messageHandler.navigateBack = { [moduleView] in
+            moduleView?.dismiss(animated: true)
+        }
+
+        messageHandler.track = { [weak self] event, params in
+            self?.coreAssembly.analyticsProvider.log(event: .Dapp.track(event: event, params: params))
         }
 
         module.output.didShareDappURL = { [weak self] in
@@ -397,7 +262,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                 showWalletPicker: false,
                 isSilentConnect: isSilentConnect,
                 coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                injectedDappDomainProvider: { [weak fromViewController] in
+                    (fromViewController as? DappViewController)?.currentURL?.host
+                }
             )
 
             coordinator.didCancel = { [weak self, weak coordinator] in

@@ -19,7 +19,7 @@ final class TokenPickerV2QueryViewModelTests: XCTestCase {
         await viewModel.refresh()
 
         XCTAssertEqual(
-            viewModel.presentation.items.map(\.row.showsVerificationCheckmark),
+            viewModel.presentation.items.compactMap(\.assetRow).map(\.showsVerificationCheckmark),
             [true, false, false]
         )
     }
@@ -33,7 +33,7 @@ final class TokenPickerV2QueryViewModelTests: XCTestCase {
 
         await viewModel.refresh()
 
-        XCTAssertEqual(viewModel.presentation.items.map(\.row.showsVerificationCheckmark), [true])
+        XCTAssertEqual(viewModel.presentation.items.compactMap(\.assetRow).map(\.showsVerificationCheckmark), [true])
     }
 }
 

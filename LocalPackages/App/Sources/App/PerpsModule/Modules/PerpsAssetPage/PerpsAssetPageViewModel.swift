@@ -4,11 +4,6 @@ import KeeperCore
 import SwiftUI
 import TKLocalize
 
-enum PerpsTradeSide: Equatable {
-    case long
-    case short
-}
-
 @MainActor
 final class PerpsAssetPageViewModel: ObservableObject {
     struct Position: Equatable {
@@ -65,7 +60,7 @@ final class PerpsAssetPageViewModel: ObservableObject {
 
     enum Actions: Equatable {
         case longShort(enabled: Bool)
-        case editCashOut(enabled: Bool)
+        case editCashOut(editEnabled: Bool, cashOutEnabled: Bool)
         case hidden
     }
 
@@ -87,6 +82,9 @@ final class PerpsAssetPageViewModel: ObservableObject {
         let orders: [TriggerOrder]
         let autoClose: AutoCloseAffordance
         let history: [ActivityRow]
+        let canAdjustMargin: Bool
+        let canEditAutoClose: Bool
+        let canCancelOrders: Bool
         let actions: Actions
     }
 
@@ -111,7 +109,7 @@ final class PerpsAssetPageViewModel: ObservableObject {
     var onMore: (() -> Void)?
     var onPerpetualInfo: (() -> Void)?
     var onTrade: ((Int64, PerpsTradeSide) -> Void)?
-    var onEdit: ((Int64) -> Void)?
+    var onEdit: ((Int64, Set<PerpsSizeChangeDirection>) -> Void)?
     var onCashOut: ((Int64) -> Void)?
     var onAdjustMargin: ((Int64) -> Void)?
     var onAutoClose: ((Int64) -> Void)?
@@ -120,7 +118,11 @@ final class PerpsAssetPageViewModel: ObservableObject {
     var onSeeAllHistory: ((Int64) -> Void)?
 
     let marketId: Int64
-    let isTestnet: Bool
+    var priceDecimals: Int? {
+        guard case let .ready(snapshot, _, _) = currentMarketInput() else { return nil }
+        return snapshot.priceDecimals
+    }
+
     private let store: PerpsMarketsStore
     private let priceInterest: PerpsMarketsPriceInterest
     private let marketDetailsStore: PerpsMarketDetailsStore
@@ -137,8 +139,7 @@ final class PerpsAssetPageViewModel: ObservableObject {
         store: PerpsMarketsStore,
         marketDetailsStore: PerpsMarketDetailsStore,
         accountStore: PerpsAccountStore,
-        openPositionFlow: PerpsOpenPositionFlow,
-        isTestnet: Bool
+        openPositionFlow: PerpsOpenPositionFlow
     ) {
         self.marketId = marketId
         self.store = store
@@ -146,7 +147,6 @@ final class PerpsAssetPageViewModel: ObservableObject {
         self.marketDetailsStore = marketDetailsStore
         self.accountStore = accountStore
         self.openPositionFlow = openPositionFlow
-        self.isTestnet = isTestnet
         observeStores()
         recompute()
     }
@@ -181,7 +181,11 @@ final class PerpsAssetPageViewModel: ObservableObject {
     }
 
     func edit() {
-        onEdit?(marketId)
+        onEdit?(marketId, Self.editDirections(
+            snapshot: currentMarketInput().snapshot,
+            flags: accountStore.marketExtras(marketId: marketId)?.flags,
+            isAccountActive: isAccountActive
+        ))
     }
 
     func cashOut() {
@@ -244,6 +248,11 @@ extension PerpsAssetPageViewModel {
         case failed
         case notFound
         case ready(snapshot: PerpsAssetMarketSnapshot, markPrice: Double?, sizeDecimals: Int)
+
+        var snapshot: PerpsAssetMarketSnapshot? {
+            guard case let .ready(snapshot, _, _) = self else { return nil }
+            return snapshot
+        }
     }
 }
 
@@ -268,6 +277,11 @@ private extension PerpsAssetPageViewModel {
         recompute()
     }
 
+    var isAccountActive: Bool {
+        if case .active = accountStore.currentWalletState() { return true }
+        return false
+    }
+
     func recompute() {
         let market = currentMarketInput()
         if case let .ready(_, markPrice, _) = market, let markPrice {
@@ -279,6 +293,7 @@ private extension PerpsAssetPageViewModel {
             market: market,
             lifecycle: lifecycle,
             extras: extras,
+            isAccountActive: isAccountActive,
             isOpenPositionSubmitting: openPositionFlow.isSubmitting,
             previous: state
         )
@@ -315,7 +330,7 @@ private extension PerpsAssetPageViewModel {
             leverage: summary.leverage,
             entryPrice: summary.entryPrice,
             currentPrice: markPrice,
-            pnlPercent: summary.unrealizedPnlPercent,
+            pnlPercent: summary.roiPercent,
             isProfit: summary.unrealizedPnlUsd >= 0,
             date: Date()
         )
@@ -329,6 +344,7 @@ extension PerpsAssetPageViewModel {
         market: MarketInput,
         lifecycle: PerpsMarketLifecycle,
         extras: PerpsMarketExtras?,
+        isAccountActive: Bool,
         isOpenPositionSubmitting: Bool,
         previous: State
     ) -> State {
@@ -346,6 +362,7 @@ extension PerpsAssetPageViewModel {
                 sizeDecimals: sizeDecimals,
                 lifecycle: lifecycle,
                 extras: extras,
+                isAccountActive: isAccountActive,
                 isOpenPositionSubmitting: isOpenPositionSubmitting
             ))
         }
@@ -357,13 +374,15 @@ extension PerpsAssetPageViewModel {
         sizeDecimals: Int,
         lifecycle: PerpsMarketLifecycle,
         extras: PerpsMarketExtras?,
+        isAccountActive: Bool,
         isOpenPositionSubmitting: Bool
     ) -> Ready {
         let summary = summaryForLifecycle(lifecycle)
+        let flags = extras?.flags
         let triggerOrders = summary != nil ? (extras?.triggerOrders ?? []) : []
-        let autoClose = extras == nil
-            ? AutoCloseAffordance.none
-            : autoCloseAffordance(orders: triggerOrders, hasPosition: summary != nil)
+        let autoClose = extras?.autoCloseKnown == true
+            ? autoCloseAffordance(orders: triggerOrders, hasPosition: summary != nil)
+            : AutoCloseAffordance.none
         let positionMark = markPrice ?? snapshot.price
         return Ready(
             title: snapshot.displayName,
@@ -374,8 +393,8 @@ extension PerpsAssetPageViewModel {
             changePercentText: PerpsFormatting.signedPercent(snapshot.priceChangePercent),
             changeAmountText: PerpsFormatting.signedUsd(snapshot.priceChangeAmount),
             isChangePositive: snapshot.priceChangePercent >= 0,
-            volumeText: PerpsFormatting.compactUsd(snapshot.volume24h),
-            openInterestText: PerpsFormatting.compactUsd(snapshot.openInterest),
+            volumeText: PerpsFormatting.usd(snapshot.volume24h),
+            openInterestText: PerpsFormatting.usd(snapshot.openInterest),
             fundingText: snapshot.fundingRatePercent.map { PerpsFormatting.funding(percent: $0) },
             about: snapshot.about,
             position: summary.map { makePosition($0, markPrice: positionMark, sizeDecimals: sizeDecimals) },
@@ -383,21 +402,63 @@ extension PerpsAssetPageViewModel {
             orders: triggerOrders.map { makeTriggerOrder($0, position: summary) },
             autoClose: autoClose,
             history: (extras?.recentActivity ?? []).map { makeActivityRow($0, symbol: snapshot.symbol) },
-            actions: actions(for: lifecycle, snapshot: snapshot, isOpenPositionSubmitting: isOpenPositionSubmitting)
+            canAdjustMargin: (flags?.addMarginEnabled ?? false) || (flags?.removeMarginEnabled ?? false),
+            canEditAutoClose: flags?.autoCloseEnabled ?? false,
+            canCancelOrders: flags?.cancelEnabled ?? false,
+            actions: actions(
+                for: lifecycle,
+                snapshot: snapshot,
+                flags: flags,
+                isAccountActive: isAccountActive,
+                isOpenPositionSubmitting: isOpenPositionSubmitting
+            )
         )
     }
 
     nonisolated static func actions(
         for lifecycle: PerpsMarketLifecycle,
         snapshot: PerpsAssetMarketSnapshot,
+        flags: PerpsTradingFlags?,
+        isAccountActive: Bool,
         isOpenPositionSubmitting: Bool
     ) -> Actions {
+        let canOpen = isOpenAllowed(snapshot: snapshot, flags: flags, isAccountActive: isAccountActive)
+        let canClose = isCloseAllowed(flags: flags)
+        let canResize = canOpen || canClose
         switch lifecycle {
-        case .flat: .longShort(enabled: snapshot.isTradingEnabled && !isOpenPositionSubmitting)
-        case .opening: .hidden
-        case .open: .editCashOut(enabled: true)
-        case .closing, .adjusting, .adjustingMargin: .editCashOut(enabled: false)
+        case .flat:
+            return .longShort(enabled: canOpen && !isOpenPositionSubmitting)
+        case .opening:
+            return .hidden
+        case .open:
+            return .editCashOut(editEnabled: canResize, cashOutEnabled: canClose)
+        case .closing, .adjusting, .adjustingMargin:
+            return .editCashOut(editEnabled: false, cashOutEnabled: false)
         }
+    }
+
+    nonisolated static func isOpenAllowed(
+        snapshot: PerpsAssetMarketSnapshot?,
+        flags: PerpsTradingFlags?,
+        isAccountActive: Bool
+    ) -> Bool {
+        guard isAccountActive else { return snapshot?.isTradingEnabled ?? false }
+        return flags?.openEnabled ?? false
+    }
+
+    nonisolated static func isCloseAllowed(flags: PerpsTradingFlags?) -> Bool {
+        flags?.closeEnabled ?? false
+    }
+
+    nonisolated static func editDirections(
+        snapshot: PerpsAssetMarketSnapshot?,
+        flags: PerpsTradingFlags?,
+        isAccountActive: Bool
+    ) -> Set<PerpsSizeChangeDirection> {
+        var directions = Set<PerpsSizeChangeDirection>()
+        if isOpenAllowed(snapshot: snapshot, flags: flags, isAccountActive: isAccountActive) { directions.insert(.add) }
+        if isCloseAllowed(flags: flags) { directions.insert(.reduce) }
+        return directions
     }
 
     nonisolated static func chartMarkers(lifecycle: PerpsMarketLifecycle, extras: PerpsMarketExtras?) -> [PerpsChartPositionMarker] {
@@ -431,16 +492,14 @@ extension PerpsAssetPageViewModel {
     }
 
     nonisolated static func makePosition(_ summary: PerpsPositionSummary, markPrice: Double, sizeDecimals: Int) -> Position {
-        let distanceText: String? = markPrice > 0
-            ? TKLocales.Perps.Asset.liquidationDistance(
-                PerpsFormatting.signedPercent((summary.liquidationPrice - markPrice) / markPrice * 100)
-            )
-            : nil
+        let distanceText = summary.liquidationDistancePercent.map {
+            TKLocales.Perps.Asset.liquidationDistance(PerpsFormatting.signedPercent($0))
+        }
         let sideText = (summary.side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short).uppercased()
         return Position(
-            valueText: PerpsFormatting.usd(summary.marginUsd),
+            valueText: PerpsFormatting.usd(summary.equityUsd),
             pnlText: PerpsFormatting.signedUsd(summary.unrealizedPnlUsd),
-            pnlPercentText: summary.unrealizedPnlPercent.map { PerpsFormatting.signedPercent($0) },
+            pnlPercentText: summary.roiPercent.map { PerpsFormatting.signedPercent($0) },
             isPnlPositive: summary.unrealizedPnlUsd >= 0,
             isLong: summary.side == .long,
             sideText: sideText,
@@ -514,7 +573,7 @@ extension PerpsAssetPageViewModel {
     }
 
     nonisolated static func makeActivityRow(_ item: PerpsActivityItem, symbol: String) -> ActivityRow {
-        let side = item.side.map { $0 == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short } ?? ""
+        let side = item.positionSide.map { $0 == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short } ?? ""
         let title: String = switch item.outcome {
         case .liquidated: TKLocales.Perps.Asset.activityLiquidated(side)
         case .closed: TKLocales.Perps.Asset.activityClosed(side)
@@ -580,7 +639,7 @@ extension PerpsAssetPageViewModel {
     }
 
     /// Design pill copy for close: "Closing BTC long · 27x" / "Closed BTC long · 27x".
-    nonisolated static func closeToastText(verb: String, symbol: String, side: KeeperCore.PerpsTradeSide, leverage: Double?) -> String {
+    nonisolated static func closeToastText(verb: String, symbol: String, side: PerpsTradeSide, leverage: Double?) -> String {
         let sideText = (side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short).lowercased()
         let leverageText = leverage.map { " · \(PerpsFormatting.leverage($0))" } ?? ""
         return "\(verb) \(symbol) \(sideText)\(leverageText)"

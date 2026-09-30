@@ -33,7 +33,7 @@ public protocol APIProtocol: Sendable {
     func getAssets(_ input: Operations.getAssets.Input) async throws -> Operations.getAssets.Output
     /// Search the swappable asset catalog
     ///
-    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
+    /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -249,7 +249,7 @@ extension APIProtocol {
     }
     /// Search the swappable asset catalog
     ///
-    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
+    /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -1577,10 +1577,14 @@ public enum Components {
                 case backfill
             }
         }
-        /// Classified activity kind emitted by the indexer. Kept as a closed enum so clients can build exhaustive rendering / filters; new values require a coordinated backend release.
+        /// Classified activity kind emitted by the indexer. The `perps.*` kinds only appear with `show_perps=true` or `activity_type=perps`.
         ///
         /// - Remark: Generated from `#/components/schemas/ActivityType`.
-        @frozen public enum ActivityType: String, Codable, Hashable, Sendable {
+        public typealias ActivityType = Swift.String
+        /// Same as `ActivityType` plus the `perps` umbrella, which selects every `perps.*` kind. Filter only: no activity is returned with that value.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ActivityTypeFilter`.
+        @frozen public enum ActivityTypeFilter: String, Codable, Hashable, Sendable {
             case send = "send"
             case receive = "receive"
             case swap = "swap"
@@ -1611,6 +1615,11 @@ public enum Components {
             case borrow = "borrow"
             case repay = "repay"
             case airdrop = "airdrop"
+            case perps_period_position_opened = "perps.position_opened"
+            case perps_period_position_closed = "perps.position_closed"
+            case perps_period_balance_deposit = "perps.balance_deposit"
+            case perps_period_balance_withdrawal = "perps.balance_withdrawal"
+            case perps = "perps"
         }
         /// - Remark: Generated from `#/components/schemas/ActivityStatus`.
         @frozen public enum ActivityStatus: String, Codable, Hashable, Sendable {
@@ -1625,7 +1634,7 @@ public enum Components {
             case out = "out"
             case _self = "self"
         }
-        /// How the fee was paid: the chain's native coin, a gasless relayer, or Tonkeeper Battery. Defaults to native.
+        /// How the fee was paid: the chain's native coin, a gasless relayer, or Keeper Battery. Defaults to native.
         ///
         /// - Remark: Generated from `#/components/schemas/ActivityFeeType`.
         @frozen public enum ActivityFeeType: String, Codable, Hashable, Sendable {
@@ -1675,9 +1684,9 @@ public enum Components {
             /// - Remark: Generated from `#/components/schemas/Activity/block_number`.
             public var block_number: Swift.Int64?
             /// - Remark: Generated from `#/components/schemas/Activity/from_chain`.
-            public var from_chain: Components.Schemas.Chain
+            public var from_chain: Swift.String
             /// - Remark: Generated from `#/components/schemas/Activity/to_chain`.
-            public var to_chain: Components.Schemas.Chain
+            public var to_chain: Swift.String
             /// - Remark: Generated from `#/components/schemas/Activity/wallet_address`.
             public var wallet_address: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Activity/direction`.
@@ -1783,7 +1792,7 @@ public enum Components {
             public var fee_fiat_price: Components.Schemas.Activity.fee_fiat_pricePayload?
             /// - Remark: Generated from `#/components/schemas/Activity/fee`.
             public var fee: Components.Schemas.ActivityFee?
-            /// DEX/bridge protocol name (uniswap_v3, stargate, etc.)
+            /// Bridge/DeFi protocol name (stargate, etc.). Always empty for swap activities.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/protocol`.
             public var _protocol: Swift.String?
@@ -1803,7 +1812,7 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/is_spam`.
             public var is_spam: Swift.Bool?
-            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_closed` only: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public struct metaPayload: Codable, Hashable, Sendable {
@@ -1823,7 +1832,7 @@ public enum Components {
                     try encoder.encodeAdditionalProperties(additionalProperties)
                 }
             }
-            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_closed` only: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public var meta: Components.Schemas.Activity.metaPayload?
@@ -1854,19 +1863,19 @@ public enum Components {
             ///   - fee_amount_usd:
             ///   - fee_fiat_price: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
             ///   - fee:
-            ///   - _protocol: DEX/bridge protocol name (uniswap_v3, stargate, etc.)
+            ///   - _protocol: Bridge/DeFi protocol name (stargate, etc.). Always empty for swap activities.
             ///   - tx_ids: On-chain tx identifiers, format: chain:txhash
             ///   - explorer_url: Ready-to-open explorer URL for the primary tx (source chain for cross-chain bridges). Omitted when the chain has no known explorer template — clients should hide the link in that case.
             ///   - is_read: Has the wallet owner acknowledged this activity in the app. Client-driven flag.
             ///   - is_spam: Backend-classified spam flag on this specific activity. Clients may hide by default or show a warning badge.
-            ///   - meta: Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
+            ///   - meta: Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_closed` only: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
             public init(
                 activity_type: Components.Schemas.ActivityType,
                 status: Components.Schemas.ActivityStatus,
                 block_time: Foundation.Date,
                 block_number: Swift.Int64? = nil,
-                from_chain: Components.Schemas.Chain,
-                to_chain: Components.Schemas.Chain,
+                from_chain: Swift.String,
+                to_chain: Swift.String,
                 wallet_address: Swift.String? = nil,
                 direction: Components.Schemas.ActivityDirection,
                 from_address: Swift.String? = nil,
@@ -3101,6 +3110,14 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/ShowPerpsQuery`.
         public typealias ShowPerpsQuery = Swift.Bool
+        /// Include Lighter perps activities (`perps.*` types) in the history. They are hidden when the parameter is absent or false.
+        ///
+        /// - Remark: Generated from `#/components/parameters/ShowPerpsActivitiesQuery`.
+        public typealias ShowPerpsActivitiesQuery = Swift.Bool
+        /// Skip the `swap` capability filter and search the whole catalog.
+        ///
+        /// - Remark: Generated from `#/components/parameters/OmitSwappableQuery`.
+        public typealias OmitSwappableQuery = Swift.Bool
         /// Shows all possible assets
         ///
         /// - Remark: Generated from `#/components/parameters/ShowAllQuery`.
@@ -3109,7 +3126,7 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/ShowHiddenQuery`.
         public typealias ShowHiddenQuery = Swift.Bool
-        /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+        /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value. Only send and receive activities are filtered.
         ///
         /// - Remark: Generated from `#/components/parameters/HideDustQuery`.
         public typealias HideDustQuery = Swift.Bool
@@ -3143,10 +3160,10 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/NetworkQuery`.
         public typealias NetworkQuery = Components.Schemas.Network
-        /// Filter by activity type
+        /// Filter by activity type. `perps` selects every `perps.*` kind.
         ///
         /// - Remark: Generated from `#/components/parameters/ActivityTypeQuery`.
-        public typealias ActivityTypeQuery = Components.Schemas.ActivityType
+        public typealias ActivityTypeQuery = Components.Schemas.ActivityTypeFilter
         /// ETag value from previous response
         ///
         /// - Remark: Generated from `#/components/parameters/IfNoneMatch`.
@@ -5514,7 +5531,7 @@ public enum Operations {
     }
     /// Search the swappable asset catalog
     ///
-    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
+    /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -5574,6 +5591,10 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/show_perps`.
                 public var show_perps: Components.Parameters.ShowPerpsQuery?
+                /// Skip the `swap` capability filter and search the whole catalog.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/omit_swappable`.
+                public var omit_swappable: Components.Parameters.OmitSwappableQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
@@ -5585,6 +5606,7 @@ public enum Operations {
                 ///   - cursor: Cursor for pagination
                 ///   - verified_only: Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
                 ///   - show_perps: Mix Lighter perpetual markets into the unfiltered catalog. Ignored when `chain` is set.
+                ///   - omit_swappable: Skip the `swap` capability filter and search the whole catalog.
                 public init(
                     chain: Components.Parameters.SearchChainQuery? = nil,
                     currencies: Components.Parameters.CurrenciesQuery,
@@ -5593,7 +5615,8 @@ public enum Operations {
                     limit: Components.Parameters.LimitQuery? = nil,
                     cursor: Components.Parameters.CursorQuery? = nil,
                     verified_only: Components.Parameters.VerifiedOnlyQuery? = nil,
-                    show_perps: Components.Parameters.ShowPerpsQuery? = nil
+                    show_perps: Components.Parameters.ShowPerpsQuery? = nil,
+                    omit_swappable: Components.Parameters.OmitSwappableQuery? = nil
                 ) {
                     self.chain = chain
                     self.currencies = currencies
@@ -5603,6 +5626,7 @@ public enum Operations {
                     self.cursor = cursor
                     self.verified_only = verified_only
                     self.show_perps = show_perps
+                    self.omit_swappable = omit_swappable
                 }
             }
             public var query: Operations.searchAssets.Input.Query
@@ -7968,7 +7992,7 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/verified_only`.
                 public var verified_only: Components.Parameters.VerifiedOnlyQuery?
-                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value. Only send and receive activities are filtered.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/hide_dust`.
                 public var hide_dust: Components.Parameters.HideDustQuery?
@@ -7993,7 +8017,7 @@ public enum Operations {
                 ///   - show_all: Shows all possible assets
                 ///   - currencies: Base currencies
                 ///   - verified_only: Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
-                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value. Only send and receive activities are filtered.
                 ///   - limit: Pagination limit
                 ///   - cursor: Cursor for pagination
                 public init(
@@ -8674,7 +8698,7 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/network`.
                 public var network: Components.Parameters.NetworkQuery?
-                /// Filter by activity type
+                /// Filter by activity type. `perps` selects every `perps.*` kind.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/activity_type`.
                 public var activity_type: Components.Parameters.ActivityTypeQuery?
@@ -8690,10 +8714,14 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/currencies`.
                 public var currencies: Components.Parameters.CurrenciesOptQuery?
-                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value. Only send and receive activities are filtered.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/hide_dust`.
                 public var hide_dust: Components.Parameters.HideDustQuery?
+                /// Include Lighter perps activities (`perps.*` types) in the history. They are hidden when the parameter is absent or false.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/show_perps`.
+                public var show_perps: Components.Parameters.ShowPerpsActivitiesQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
@@ -8701,11 +8729,12 @@ public enum Operations {
                 ///   - cursor: Cursor for pagination
                 ///   - chain: Filter by chain
                 ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
-                ///   - activity_type: Filter by activity type
+                ///   - activity_type: Filter by activity type. `perps` selects every `perps.*` kind.
                 ///   - asset_id: Filter activities by asset id (matched against the in or out token). Format chain/network/type[/address].
                 ///   - is_spam: Filter activities by spam classification. When true, only spam activities are returned; when false, only non-spam. When omitted, no spam filter is applied and both are returned.
                 ///   - currencies: Base currencies
-                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value. Only send and receive activities are filtered.
+                ///   - show_perps: Include Lighter perps activities (`perps.*` types) in the history. They are hidden when the parameter is absent or false.
                 public init(
                     limit: Components.Parameters.LimitQuery? = nil,
                     cursor: Components.Parameters.CursorQuery? = nil,
@@ -8715,7 +8744,8 @@ public enum Operations {
                     asset_id: Components.Parameters.AssetIdOptQuery? = nil,
                     is_spam: Components.Parameters.IsSpamOptQuery? = nil,
                     currencies: Components.Parameters.CurrenciesOptQuery? = nil,
-                    hide_dust: Components.Parameters.HideDustQuery? = nil
+                    hide_dust: Components.Parameters.HideDustQuery? = nil,
+                    show_perps: Components.Parameters.ShowPerpsActivitiesQuery? = nil
                 ) {
                     self.limit = limit
                     self.cursor = cursor
@@ -8726,6 +8756,7 @@ public enum Operations {
                     self.is_spam = is_spam
                     self.currencies = currencies
                     self.hide_dust = hide_dust
+                    self.show_perps = show_perps
                 }
             }
             public var query: Operations.getWalletActivities.Input.Query

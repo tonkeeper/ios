@@ -131,6 +131,13 @@ public final class LoadersAssembly {
         )
     }
 
+    public func historyTronTRXEventsPaginationLoader(wallet: Wallet) -> HistoryPaginationLoader {
+        historyPaginationLoader(
+            wallet: wallet,
+            loader: HistoryListTronTRXEventsLoader(tronUsdtApi: tronAssembly.tronUsdtApi)
+        )
+    }
+
     func historyPaginationLoader(
         wallet: Wallet,
         loader: HistoryListLoader
@@ -178,10 +185,15 @@ public final class LoadersAssembly {
                                 hideDust: hidesDustBalances ? true : nil
                             )
                             guard !Task.isCancelled else { return }
-                            storesAssembly.multichainPortfolioStore.setPortfolioTotal(
-                                page.fiatPrice,
+                            storesAssembly.multichainPortfolioStore.setPortfolio(
+                                MultichainPortfolio(
+                                    fiatPrice: page.fiatPrice,
+                                    assets: page.assets.filter { !$0.isHidden },
+                                    accountsIdentifier: state.accountsIdentifier,
+                                    currencyCode: currency.code.lowercased(),
+                                    hidesDustBalances: hidesDustBalances
+                                ),
                                 wallet: wallet,
-                                hidesDustBalances: hidesDustBalances,
                                 requestToken: requestToken
                             )
                         } catch {

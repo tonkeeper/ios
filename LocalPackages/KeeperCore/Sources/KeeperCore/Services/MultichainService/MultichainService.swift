@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import TonSwift
 
 public enum MultichainServiceError: Error {
     case cancelled
@@ -80,12 +81,13 @@ public protocol MultichainService {
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainServiceError)
     func getWalletActivities(
-        walletId: String,
+        state: MultichainWalletState,
         limit: Int?,
         cursor: String?,
         chain: MultichainChain?,
         assetId: String?,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
+        showPerps: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage
     func getWalletChallenge() async throws(MultichainServiceError) -> MultichainWalletChallenge
@@ -263,26 +265,32 @@ final class MultichainServiceImplementation: MultichainService {
     }
 
     func getWalletActivities(
-        walletId: String,
+        state: MultichainWalletState,
         limit: Int?,
         cursor: String?,
         chain: MultichainChain?,
         assetId: String?,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
+        showPerps: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         await withTimeLimit(pendingTransactionsFlushTimeLimit) { [pendingTransactionsService] in
             await pendingTransactionsService.flushRetained()
         }
-        return try await serviceCall(await multichainClientAPI.getWalletActivities(
-            walletId: walletId,
+        let page = try await serviceCall(await multichainClientAPI.getWalletActivities(
+            walletId: state.walletId,
             limit: limit,
             cursor: cursor,
             chain: chain,
             assetId: assetId,
-            activityType: activityType,
+            activityTypeFilter: activityTypeFilter,
+            showPerps: showPerps,
             hideDust: hideDust
         ))
+        return MultichainWalletActivitiesPage(
+            activities: Self.filteringForeignAccounts(in: page.activities, state: state),
+            nextCursor: page.nextCursor
+        )
     }
 
     func getWalletChallenge() async throws(MultichainServiceError) -> MultichainWalletChallenge {
@@ -400,6 +408,29 @@ private extension MultichainServiceImplementation {
         }
     }
 
+    /// Same collision as above, but an activity carries no account type — only the address it
+    /// belongs to — so the sibling's TON activities are told apart by that address. A value that
+    /// is absent or belongs to another chain says nothing about ownership and is kept.
+    static func filteringForeignAccounts(
+        in activities: [MultichainActivity],
+        state: MultichainWalletState
+    ) -> [MultichainActivity] {
+        guard let ownAddress = state.address(for: .ton).flatMap(tonRawAddress) else {
+            return activities
+        }
+        return activities.filter { activity in
+            guard let address = activity.walletAddress.flatMap(tonRawAddress) else {
+                return true
+            }
+            return address == ownAddress
+        }
+    }
+
+    /// The backend echoes TON addresses raw while the wallet stores them user-friendly.
+    static func tonRawAddress(_ value: String) -> String? {
+        (try? AnyAddress(rawAddress: value))?.address.toRaw()
+    }
+
     func serviceCall<T>(
         _ block: @autoclosure () async throws(MultichainClientAPIError) -> T
     ) async throws(MultichainServiceError) -> T {
@@ -473,20 +504,21 @@ private extension MultichainServiceImplementation {
 
 public extension MultichainService {
     func getWalletActivities(
-        walletId: String,
+        state: MultichainWalletState,
         limit: Int?,
         cursor: String?,
         assetId: String,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         try await getWalletActivities(
-            walletId: walletId,
+            state: state,
             limit: limit,
             cursor: cursor,
             chain: nil,
             assetId: assetId,
-            activityType: activityType,
+            activityTypeFilter: activityTypeFilter,
+            showPerps: nil,
             hideDust: hideDust
         )
     }

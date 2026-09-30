@@ -5,11 +5,16 @@ import UIKit
 
 @MainActor
 final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewModel {
+    private let draftReviewer = PerpsDraftReviewer()
+
     @Published private(set) var amountFocusState: PerpsAmountFocusState = .active(version: 0)
     @Published private(set) var amountText: String = ""
     @Published private(set) var availableBalance: Double?
     @Published private(set) var reviewWarningText: String?
-    @Published private(set) var maintenanceFraction: Double?
+    /// Last liquidation the planner reviewed for the typed amount; the client
+    /// derives no trade figures of its own.
+    @Published private(set) var projectedLiquidation: PerpsValueChange?
+    @Published private(set) var isImmediateRisk = false
 
     let marketId: Int64
     let direction: PerpsMarginChangeDirection
@@ -23,7 +28,6 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     private let accountStore: PerpsAccountStore
     private let tradingService: PerpsTradingService
     private var didAppear = false
-    private var didLoadContext = false
 
     init(
         direction: PerpsMarginChangeDirection,
@@ -111,7 +115,6 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     func onAppear() {
         accountStore.resolveIfNeeded()
         applyStoreState()
-        loadContextIfNeeded()
     }
 
     func requestFocusOnAppear() {
@@ -128,8 +131,11 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     func setAmount(_ text: String) {
-        amountText = PerpsDecimalInput.sanitize(text)
-        reviewWarningText = nil
+        let sanitized = PerpsDecimalInput.sanitize(text, decimals: 2)
+        let isEdit = sanitized != amountText
+        amountText = sanitized
+        refreshProjectedLiquidation()
+        if isEdit { reviewWarningText = nil }
     }
 
     func toggleSizeMode() {}
@@ -167,45 +173,59 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     private var isReduceAtImmediateRisk: Bool {
-        direction == .reduce && projectedLiquidation?.isImmediateRisk == true
+        direction == .reduce && isImmediateRisk
     }
 
     private var liquidationRowValue: String {
         let oldText = summary.liquidationPrice > 0 ? PerpsFormatting.usd(summary.liquidationPrice) : "—"
-        guard let projected = projectedLiquidation?.price else { return oldText }
+        guard let projected = projectedLiquidation?.new else { return oldText }
         return "\(oldText) → \(PerpsFormatting.usd(projected))"
     }
 
-    private var projectedLiquidation: PerpsLiquidationPreview? {
-        guard amountUsd > 0, let maintenanceFraction, displayPrice > 0 else { return nil }
-        let collateral = direction == .add
-            ? summary.marginUsd + amountUsd
-            : summary.marginUsd - amountUsd
-        guard collateral > 0 else { return nil }
-        return tradingService.previewPositionLiquidation(
-            side: summary.side,
-            baseSize: summary.baseSize,
-            entryPrice: summary.entryPrice,
-            markPrice: displayPrice,
-            maintenanceFraction: maintenanceFraction,
-            collateralUsd: collateral
+    private func refreshProjectedLiquidation() {
+        guard amountUsd > 0, let reviewer = draftReviewer.current else {
+            projectedLiquidation = nil
+            isImmediateRisk = false
+            loadReviewerIfNeeded()
+            return
+        }
+        let intent = PerpsMarginChangeIntent(
+            marketId: marketId,
+            direction: direction,
+            amountUsd: PerpsDecimalInput.normalized(amountText)
         )
+        guard let review = reviewer.reviewMarginChange(intent) else {
+            projectedLiquidation = nil
+            isImmediateRisk = false
+            loadReviewerIfNeeded()
+            return
+        }
+        projectedLiquidation = review.liquidationPrice
+        isImmediateRisk = review.isImmediateRisk
+        if draftReviewer.needsLoad {
+            loadReviewerIfNeeded()
+        }
+    }
+
+    private func loadReviewerIfNeeded() {
+        guard amountUsd > 0 else { return }
+        let intent = PerpsMarginChangeIntent(
+            marketId: marketId,
+            direction: direction,
+            amountUsd: PerpsDecimalInput.normalized(amountText)
+        )
+        draftReviewer.loadIfNeeded { [tradingService] in
+            try? await tradingService.loadReviewer(for: intent).get()
+        } then: { [weak self] in
+            self?.refreshProjectedLiquidation()
+        }
     }
 
     private func setMax() {
         guard let availableBalance, availableBalance > 0 else { return }
-        amountText = PerpsDecimalInput.inputText(from: availableBalance)
+        amountText = PerpsDecimalInput.usdText(availableBalance)
         reviewWarningText = nil
-    }
-
-    private func loadContextIfNeeded() {
-        guard !didLoadContext else { return }
-        didLoadContext = true
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            let context = await tradingService.openMarketContext(marketId: marketId, side: summary.side)
-            maintenanceFraction = context?.maintenanceFraction
-        }
+        refreshProjectedLiquidation()
     }
 
     private func observeStore() {
@@ -216,7 +236,7 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
 
     private func applyStoreState() {
         switch accountStore.currentWalletState() {
-        case .unresolved, .resolving, .activating, .inactive:
+        case .unresolved, .resolving, .unbound, .inactive:
             availableBalance = nil
         case let .active(value):
             availableBalance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0

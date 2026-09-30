@@ -1,23 +1,18 @@
-/// The decisions the battery fee method makes about a swap, kept pure so they can be tested without
+import BigInt
+
+/// The decisions the relayed fee methods make about a swap, kept pure so they can be tested without
 /// a `TransferService`.
 enum MultichainSwapBatteryFeeRules {
-    /// What the relayer may be asked to move for this swap, or `nil` when battery must not pay for it:
-    /// the relayer has to be switched on remotely and by the wallet itself, there must be nothing to
-    /// approve first, and the wallet must be a mainnet one whose address on that chain is known. The
-    /// wallet's own switch is checked here rather than per chain, because a user who turned battery off
-    /// for swaps means it for every chain.
+    /// What the relayer may be asked to move for this swap, or `nil` when no relayed method must pay
+    /// for it: there must be nothing to approve first, and the wallet must be a mainnet regular one
+    /// whose address on that chain is known.
     static func relayedAsset(
         wallet: Wallet,
         sourceAsset: MultichainAsset,
         requiresApproval: Bool,
-        isBatteryEnabled: Bool,
-        isBatterySendEnabled: Bool,
         isTRXOnlyRegion: Bool
     ) -> MultichainSwapRelayedAsset? {
-        guard isBatteryEnabled, isBatterySendEnabled, !requiresApproval else {
-            return nil
-        }
-        guard wallet.isBatteryEnable, wallet.batterySettings.isSwapTransactionEnable else {
+        guard !requiresApproval else {
             return nil
         }
         guard wallet.kind == .regular, wallet.network.isMainnet else {
@@ -29,12 +24,27 @@ enum MultichainSwapBatteryFeeRules {
         else {
             return nil
         }
-        // A TRX-only region bills TRON resources in TRX and hides battery altogether, exactly as the
-        // USDT send path does; offering it here would contradict the send screen for the same asset.
+        // A TRX-only region bills TRON resources in TRX and hides every relayed method, exactly as the
+        // USDT send path does; offering one here would contradict the send screen for the same asset.
         guard asset.chain != .tron || !isTRXOnlyRegion else {
             return nil
         }
         return asset
+    }
+
+    /// Battery on top of that: the relayer has to be switched on remotely and by the wallet itself.
+    /// The wallet's own switch is checked here rather than per chain, because a user who turned
+    /// battery off for swaps means it for every chain. The GRAM instant fee is not charges, so it is
+    /// not gated on any of this — the same way the TRON send screen offers it.
+    static func isBatteryAllowed(
+        wallet: Wallet,
+        isBatteryEnabled: Bool,
+        isBatterySendEnabled: Bool
+    ) -> Bool {
+        isBatteryEnabled
+            && isBatterySendEnabled
+            && wallet.isBatteryEnable
+            && wallet.batterySettings.isSwapTransactionEnable
     }
 
     /// A method that cannot cover its own fee is still offered, marked insufficient, so the picker can
@@ -110,6 +120,28 @@ enum MultichainSwapBatteryFeeRules {
         throw .preparationFailed(
             kind: .unknown,
             reason: "battery now charges \(charges) for swap payload \(payloadId), above the confirmed \(confirmedCharges)"
+        )
+    }
+
+    /// The relayer prices its instant fee in GRAM against a TON rate that keeps moving, so a re-quote
+    /// slightly above the confirmed one is drift rather than a different price, and refusing it would
+    /// only send the user back to confirm the same swap. Past the tolerance the difference stops being
+    /// noise and needs a fresh confirmation. Charges have no equivalent: they are whole units, and one
+    /// more of them is a real one more.
+    static let gramRequoteTolerancePercent: BigUInt = 5
+
+    static func requireGramQuote(
+        _ amountNano: BigUInt,
+        confirmedAmountNano: BigUInt,
+        payloadId: String
+    ) throws(MultichainSwapExecutionFailure) {
+        let tolerated = confirmedAmountNano + confirmedAmountNano * gramRequoteTolerancePercent / 100
+        guard amountNano > tolerated else {
+            return
+        }
+        throw .preparationFailed(
+            kind: .unknown,
+            reason: "the relayer now asks \(amountNano) nano for swap payload \(payloadId), above the \(tolerated) the confirmed \(confirmedAmountNano) tolerates"
         )
     }
 

@@ -18,7 +18,7 @@ final class BrowserMultichainViewModelImplementation: ObservableObject, BrowserM
     var didTapSearch: (() -> Void)?
     var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)?
     var didSelectDapp: ((DappOpenIntent) -> Void)?
-    var didOpenDeeplink: ((Deeplink) -> Void)?
+    var didOpenDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
 
     // MARK: - State
 
@@ -123,8 +123,8 @@ private extension BrowserMultichainViewModelImplementation {
             self?.didSelectDapp?(request)
         }
 
-        exploreModuleOutput.didOpenDeeplink = { [weak self] deeplink in
-            self?.didOpenDeeplink?(deeplink)
+        exploreModuleOutput.didOpenDeeplink = { [weak self] deeplink, utm in
+            self?.didOpenDeeplink?(deeplink, utm)
         }
 
         connectedModuleOutput.didSelectDapp = { [weak self] request in

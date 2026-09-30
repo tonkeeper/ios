@@ -265,25 +265,36 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
         }
     }
 
+    /// Resolved by wallet identity rather than by position: the selection is also applied outside the
+    /// `dataSource.apply` completion, where the store can already be ahead of what the collection view holds.
+    static func walletIndexPath(for walletIdentifier: String, in snapshot: Snapshot) -> IndexPath? {
+        guard let sectionIndex = snapshot.sectionIdentifiers.firstIndex(where: {
+            if case .wallets = $0 {
+                return true
+            }
+            return false
+        }) else {
+            return nil
+        }
+        guard let itemIndex = snapshot
+            .itemIdentifiers(inSection: snapshot.sectionIdentifiers[sectionIndex])
+            .firstIndex(where: { $0.identifier == walletIdentifier })
+        else {
+            return nil
+        }
+        return IndexPath(item: itemIndex, section: sectionIndex)
+    }
+
     private func selectWallet() {
-        guard let selectedWalletIndex = viewModel.selectedWalletIndex,
-              let walletsSectionIndex = dataSource.snapshot().sectionIdentifiers.firstIndex(where: {
-                  if case .wallets = $0 {
-                      return true
-                  }
-                  return false
-              })
+        let collectionView = customView.collectionView
+        guard let walletIdentifier = viewModel.selectedWalletIdentifier,
+              let indexPath = Self.walletIndexPath(for: walletIdentifier, in: dataSource.snapshot()),
+              indexPath.section < collectionView.numberOfSections,
+              indexPath.item < collectionView.numberOfItems(inSection: indexPath.section)
         else {
             return
         }
-        customView.collectionView.selectItem(
-            at: IndexPath(
-                item: selectedWalletIndex,
-                section: walletsSectionIndex
-            ),
-            animated: false,
-            scrollPosition: []
-        )
+        collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
     }
 
     private func restoreContentOffset(_ contentOffset: CGPoint) {

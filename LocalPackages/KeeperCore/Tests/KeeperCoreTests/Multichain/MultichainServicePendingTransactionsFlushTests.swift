@@ -9,12 +9,13 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
         let service = try makeService(calls: calls)
 
         _ = try await service.getWalletActivities(
-            walletId: "wallet",
+            state: MultichainWalletState(walletId: "wallet", addresses: []),
             limit: nil,
             cursor: nil,
             chain: .eth,
             assetId: nil,
-            activityType: nil,
+            activityTypeFilter: nil,
+            showPerps: nil,
             hideDust: nil
         )
 
@@ -27,11 +28,11 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
         let service = try makeService(calls: calls)
 
         _ = try await service.getWalletActivities(
-            walletId: "wallet",
+            state: MultichainWalletState(walletId: "wallet", addresses: []),
             limit: nil,
             cursor: nil,
             assetId: "eth/mainnet/coin",
-            activityType: nil,
+            activityTypeFilter: nil,
             hideDust: nil
         )
 
@@ -48,12 +49,13 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
         )
 
         _ = try await service.getWalletActivities(
-            walletId: "wallet",
+            state: MultichainWalletState(walletId: "wallet", addresses: []),
             limit: nil,
             cursor: nil,
             chain: .eth,
             assetId: nil,
-            activityType: nil,
+            activityTypeFilter: nil,
+            showPerps: nil,
             hideDust: nil
         )
 
@@ -134,7 +136,8 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         await calls.record(.getWalletActivities)

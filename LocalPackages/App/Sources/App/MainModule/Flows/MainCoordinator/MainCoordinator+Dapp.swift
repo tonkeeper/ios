@@ -8,10 +8,15 @@ extension MainCoordinator {
         title: String?,
         url: URL,
         analyticsFrom: DappOpenSource,
+        utm: UtmParameters = .empty,
         isSilentConnect: Bool = false
     ) {
         let dapp = makeDapp(title: title, url: url)
-        let request = dappBrowserAnalyticsController.directOpenRequest(source: analyticsFrom, dapp: dapp)
+        let request = dappBrowserAnalyticsController.directOpenRequest(
+            source: analyticsFrom,
+            dapp: dapp,
+            utm: utm
+        )
         openDapp(request, isSilentConnect: isSilentConnect)
     }
 
@@ -20,6 +25,7 @@ extension MainCoordinator {
         url: URL,
         analyticsFrom: DappOpenSource,
         catalogMode: DappCatalogMode,
+        utm: UtmParameters = .empty,
         isSilentConnect: Bool = false
     ) {
         let dapp = makeDapp(popularApp: popularApp, url: url)
@@ -27,7 +33,8 @@ extension MainCoordinator {
             source: analyticsFrom,
             popularApp: popularApp,
             catalogMode: catalogMode,
-            dapp: dapp
+            dapp: dapp,
+            utm: utm
         ) else {
             Log.e("failed to create popular dapp open request", extraInfo: [
                 "url": url.absoluteString,
@@ -37,6 +44,7 @@ extension MainCoordinator {
                 title: popularApp.name,
                 url: url,
                 analyticsFrom: analyticsFrom,
+                utm: utm,
                 isSilentConnect: isSilentConnect
             )
             return
@@ -61,8 +69,8 @@ private extension MainCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        coordinator.didHandleDeeplink = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
+        coordinator.didHandleDeeplink = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
         }
 
         addChild(coordinator)

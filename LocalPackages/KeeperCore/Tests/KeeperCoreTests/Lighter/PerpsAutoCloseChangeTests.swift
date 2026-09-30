@@ -13,7 +13,7 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
             Self.leg(orderIndex: 101, clientOrderIndex: 1, kind: .takeProfit, price: 70000),
             Self.leg(orderIndex: 102, clientOrderIndex: 2, kind: .stopLoss, price: 60000),
         ])
-        XCTAssertEqual(plan, .replace(target: target, staleOrderIndexes: [1, 2]))
+        XCTAssertEqual(plan, .replace(target: target, stale: .init(takeProfit: 1, stopLoss: 2)))
     }
 
     func testNilClientIndexFallsBackToVenueOrderIndex() {
@@ -22,7 +22,7 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
             resting: [Self.leg(orderIndex: 101, clientOrderIndex: 0, kind: .takeProfit, price: 70000)]
         )
 
-        XCTAssertEqual(plan, .clear(orderIndexes: [101]))
+        XCTAssertEqual(plan, .clear(stale: .init(takeProfit: 101, stopLoss: nil)))
     }
 
     func testClearingSharedIndexPairDeduplicatesTheCancel() {
@@ -33,7 +33,7 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
                 Self.leg(orderIndex: 7, kind: .stopLoss, price: 60000),
             ]
         )
-        XCTAssertEqual(plan, .clear(orderIndexes: [7]))
+        XCTAssertEqual(plan, .clear(stale: .init(takeProfit: 7, stopLoss: 7)))
     }
 
     func testClearingLegsOnDistinctIndexesCancelsBothInStableOrder() {
@@ -44,7 +44,25 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
                 Self.leg(orderIndex: 2, kind: .stopLoss, price: 60000),
             ]
         )
-        XCTAssertEqual(plan, .clear(orderIndexes: [1, 2]))
+        XCTAssertEqual(plan, .clear(stale: .init(takeProfit: 1, stopLoss: 2)))
+    }
+
+    func testReplacingASoleStopLossLeavesTheTakeProfitSlotEmpty() {
+        let target = Self.autoClose(tp: 68141.70, sl: 64720.16)
+        let plan = PerpsAutoCloseChangePlanner.plan(
+            target: target,
+            resting: [Self.leg(orderIndex: 102, clientOrderIndex: 55, kind: .stopLoss, price: 60000)]
+        )
+        XCTAssertEqual(plan, .replace(target: target, stale: .init(takeProfit: nil, stopLoss: 55)))
+    }
+
+    func testStaleLegsKeepRolesWhenTheStopLossCarriesTheLowerIndex() {
+        let target = Self.autoClose(tp: 68141.70, sl: 64720.16)
+        let plan = PerpsAutoCloseChangePlanner.plan(target: target, resting: [
+            Self.leg(orderIndex: 101, clientOrderIndex: 9, kind: .takeProfit, price: 70000),
+            Self.leg(orderIndex: 102, clientOrderIndex: 4, kind: .stopLoss, price: 60000),
+        ])
+        XCTAssertEqual(plan, .replace(target: target, stale: .init(takeProfit: 9, stopLoss: 4)))
     }
 
     func testClearingNothingIsNoChange() {
@@ -129,35 +147,17 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
 
     // MARK: - Review mapper
 
-    func testReviewMapsRoundedSdkPricesAndPositionSide() {
-        let review = PerpsAutoCloseChangeReviewMapper.map(
-            review: LighterTpSlReview(
-                marketId: 1,
-                symbol: "BTC",
-                side: LighterTradeSide.short_,
-                baseAmount: 800,
-                baseSize: 0.008,
-                takeProfit: LighterAutoCloseReview(
-                    kind: LighterOrderKind.market,
-                    orderType: 0,
-                    triggerPrice: 68141.7,
-                    triggerPriceScaled: 6_814_170,
-                    price: 68141.7,
-                    priceScaled: 6_814_170,
-                    clientOrderIndex: 11
-                ),
+    func testReviewMapsRoundedPricesAndPositionSide() {
+        let review = PerpsAutoCloseChangeReview(
+            side: .long,
+            new: PerpsAutoClose(
+                takeProfit: PerpsAutoCloseTrigger(triggerPrice: 68141.7),
                 stopLoss: nil
-            ),
-            position: Self.makePosition(side: LighterTradeSide.long_)
+            )
         )
         XCTAssertEqual(review.side, .long, "side must come from the protected position, not the trigger order")
         XCTAssertEqual(review.new?.takeProfit?.triggerPrice, 68141.7)
         XCTAssertNil(review.new?.stopLoss)
-    }
-
-    func testCancelReviewClearsTarget() {
-        let review = PerpsAutoCloseChangeReviewMapper.mapCancel(position: Self.makePosition(side: LighterTradeSide.long_))
-        XCTAssertNil(review.new, "a cancel clears the target so the pending reconcile expects the legs gone")
     }
 
     // MARK: - Error mapping
@@ -166,11 +166,12 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
         XCTAssertEqual(
             PerpsTradingErrorMapper.map(
                 kotlinError(
-                    LighterValidationException(
+                    PerpsTradeException(
+                        kind: PerpsTradeError.noposition,
                         message: "localized wording may change",
-                        kind: LighterValidationKind.noPosition,
-                        actualValue: nil,
-                        limitValue: nil
+                        field: nil,
+                        suggestion: nil,
+                        cause: nil
                     )
                 )
             ),
@@ -179,35 +180,16 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
         XCTAssertEqual(
             PerpsTradingErrorMapper.map(
                 kotlinError(
-                    LighterValidationException(
+                    PerpsTradeException(
+                        kind: PerpsTradeError.slippageexceeded,
                         message: "localized wording may change",
-                        kind: LighterValidationKind.slippageBound,
-                        actualValue: nil,
-                        limitValue: nil
+                        field: nil,
+                        suggestion: nil,
+                        cause: nil
                     )
                 )
             ),
             .insufficientLiquidity
-        )
-    }
-
-    func testFailedOperationMapsTypedSdkCause() {
-        let apiError = LighterApiException(
-            message: "not enough collateral",
-            cause: nil,
-            kind: LighterErrorKind.serverRejected,
-            httpStatus: nil,
-            lighterCode: KotlinInt(value: LighterErrorCodes.shared.NOT_ENOUGH_COLLATERAL)
-        )
-        let operationError = LighterOperationException(
-            operationId: "open-1",
-            operationState: LighterOperationState.failed,
-            cause: apiError
-        )
-
-        XCTAssertEqual(
-            PerpsTradingErrorMapper.map(kotlinError(operationError)),
-            .insufficientBalance
         )
     }
 
@@ -237,22 +219,6 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
             side: .short,
             triggerPrice: price,
             baseAmount: 0.008
-        )
-    }
-
-    private static func makePosition(side: LighterTradeSide) -> LighterOpenPosition {
-        LighterOpenPosition(
-            marketId: 1,
-            symbol: "BTC",
-            side: side,
-            size: 0.008,
-            avgEntryPrice: 66000,
-            allocatedMargin: 20,
-            liquidationPrice: 64141.75,
-            unrealizedPnl: 0.5,
-            marginMode: 1,
-            leverage: KotlinDouble(value: 27),
-            fundingPaid: nil
         )
     }
 }

@@ -5,7 +5,7 @@ protocol MultichainRampAPI {
     func getLayoutCards(flow: String, currency: String?) async throws -> OnRampLayoutCards
     func getOnrampChains(query: OnRampChainsQuery, walletId: String?) async throws -> OnRampChains
     func getOnrampConfiguration(query: OnRampConfigurationQuery, walletId: String?) async throws -> OnRampConfiguration
-    func getOnrampAsset(assetId: String, walletId: String?) async throws -> OnRampAssetDetail
+    func getOnrampAsset(assetId: String, fiat: String?, walletId: String?) async throws -> OnRampAssetDetail
     func onrampQuote(request: OnRampQuoteRequest, walletId: String?) async throws -> OnRampQuotesResult
     func createOnrampOrder(request: OnRampCreateOrderRequest, walletId: String?) async throws -> OnRampOrder
     func getOnrampOrder(orderId: String) async throws -> OnRampOrder
@@ -125,8 +125,8 @@ final class MultichainRampAPIImplementation: MultichainRampAPI {
         return try mapOnrampOrder(output)
     }
 
-    func getOnrampAsset(assetId: String, walletId: String?) async throws -> OnRampAssetDetail {
-        let query = await buildOnrampAssetQuery(assetId: assetId)
+    func getOnrampAsset(assetId: String, fiat: String?, walletId: String?) async throws -> OnRampAssetDetail {
+        let query = await buildOnrampAssetQuery(assetId: assetId, fiat: fiat)
         let output = try await apiCall(await client.getOnrampAsset(
             .init(query: query, headers: .init(X_hyphen_Wallet_hyphen_ID: walletId, F: firebaseUserIdProvider()))
         ))
@@ -350,10 +350,14 @@ final class MultichainRampAPIImplementation: MultichainRampAPI {
         )
     }
 
-    private func buildOnrampAssetQuery(assetId: String) async -> SwapAPI.Operations.getOnrampAsset.Input.Query {
+    private func buildOnrampAssetQuery(
+        assetId: String,
+        fiat: String?
+    ) async -> SwapAPI.Operations.getOnrampAsset.Input.Query {
         let context = await makeDeviceQueryContext()
         return SwapAPI.Operations.getOnrampAsset.Input.Query(
             asset_id: assetId,
+            fiat: fiat,
             device_country_code: context.deviceCountryCode,
             store_country_code: context.storeCountryCode,
             timezone: context.timezone,

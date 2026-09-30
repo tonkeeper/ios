@@ -24,7 +24,7 @@ if [ "$#" -eq 0 ]; then
 	exit 1
 fi
 
-APP_LOCKFILE="$REPO_ROOT/Tonkeeper.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+APP_LOCKFILE="$REPO_ROOT/Keeper.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 if [ ! -f "$APP_LOCKFILE" ]; then
 	echo "error: app lockfile missing: $APP_LOCKFILE" >&2
 	exit 1

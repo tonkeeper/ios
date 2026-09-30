@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 import unittest
 
+import maestro_log_parse
+
 from maestro_log_parse import (
     RUN_FLOW_RE,
     STEP_FAILED_RE,
@@ -107,6 +109,35 @@ class GuardedMatchersTests(unittest.TestCase):
         # Unguarded this is ~60s; the bound is loose enough to survive a slow CI runner.
         self.assertLess(elapsed, 5.0, f"split_by_flows took {elapsed:.1f}s")
 
+
+
+class RetryBlockTests(unittest.TestCase):
+    PREFIX = "16:30:00.000 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: "
+    START = "16:30:00.000 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: "
+
+    def _flow(self, retry_status: str, tail: list[str]) -> list[str]:
+        return [
+            "16:29:00.000 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow:  Running flow hide_show",
+            self.START + "Tap on BTC RUNNING",
+            self.PREFIX + "Tap on BTC COMPLETED",
+            self.START + "Retry 5 times RUNNING",
+            self.START + 'Assert that "Hide in Wallet" is visible RUNNING',
+            self.PREFIX + 'Assert that "Hide in Wallet" is visible FAILED',
+            self.START + 'Assert that "Hide in Wallet" is visible RUNNING',
+            self.PREFIX + 'Assert that "Hide in Wallet" is visible ' + ("COMPLETED" if retry_status == "COMPLETED" else "FAILED"),
+            self.PREFIX + "Retry 5 times " + retry_status,
+        ] + tail
+
+    def test_failed_attempt_inside_a_completed_retry_is_not_a_flow_failure(self) -> None:
+        lines = self._flow("COMPLETED", [self.START + "Tap on Hide RUNNING", self.PREFIX + "Tap on Hide COMPLETED"])
+        self.assertEqual(maestro_log_parse.failed_flow_names(lines), [])
+        self.assertIsNone(maestro_log_parse.main_flow_failed_step_index(lines))
+
+    def test_exhausted_retry_fails_the_flow_at_the_retry_command(self) -> None:
+        lines = self._flow("FAILED", [])
+        self.assertEqual(maestro_log_parse.failed_flow_names(lines), ["hide_show"])
+        # Tap on BTC is command 0, the retry block is command 1.
+        self.assertEqual(maestro_log_parse.main_flow_failed_step_index(lines), 1)
 
 if __name__ == "__main__":
     unittest.main()

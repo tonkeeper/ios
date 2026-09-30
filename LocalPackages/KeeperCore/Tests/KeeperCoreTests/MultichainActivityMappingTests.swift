@@ -8,7 +8,7 @@ final class MultichainActivityMappingTests: XCTestCase {
     func test_everyDomainActivityType_hasMatchingAPISchemaRawValue() {
         for activityType in MultichainActivityType.allCases where activityType != .unknown {
             XCTAssertNotNil(
-                MultichainAPI.Components.Schemas.ActivityType(rawValue: activityType.rawValue),
+                MultichainAPI.Components.Schemas.ActivityTypeFilter(rawValue: activityType.rawValue),
                 "\(activityType.rawValue) has no matching API schema value"
             )
         }
@@ -16,29 +16,29 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_activityTypesBeyondTransfersAndSwaps_keepTheirOwnDomainCase() throws {
         let apiActivityTypes: [MultichainAPI.Components.Schemas.ActivityType] = [
-            .stake, .unstake, .mint, .burn, .claim, .withdraw, .contract_call,
+            "stake", "unstake", "mint", "burn", "claim", "withdraw", "contract_call",
         ]
 
         for apiActivityType in apiActivityTypes {
             let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: apiActivityType, direction: .out)))
 
-            XCTAssertEqual(activity.activityType.rawValue, apiActivityType.rawValue)
+            XCTAssertEqual(activity.activityType.rawValue, apiActivityType)
             XCTAssertNotEqual(activity.activityType, .unknown)
         }
     }
 
     func test_isSpamFlag_isMappedOrthogonallyToActivityType() throws {
-        let spam = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: .receive, direction: ._in, isSpam: true)))
+        let spam = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: "receive", direction: ._in, isSpam: true)))
         XCTAssertTrue(spam.isSpam)
         XCTAssertEqual(spam.activityType, .receive)
 
-        let clean = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: .receive, direction: ._in, isSpam: nil)))
+        let clean = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: "receive", direction: ._in, isSpam: nil)))
         XCTAssertFalse(clean.isSpam)
     }
 
     func test_comment_isReadFromMetaCommentKey() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: ["comment": "555 Telegram Stars \n\nRef#Tnrt9eOdu"]
         )))
@@ -47,14 +47,14 @@ final class MultichainActivityMappingTests: XCTestCase {
     }
 
     func test_comment_isNilWhenMetaAbsent() throws {
-        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: .send, direction: .out)))
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: "send", direction: .out)))
 
         XCTAssertNil(activity.comment)
     }
 
     func test_comment_isNilWhenMetaHasNoCommentKey() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: ["memo": "unrelated"]
         )))
@@ -64,7 +64,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_comment_isNilWhenCommentIsNotAString() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: ["comment": 42]
         )))
@@ -74,7 +74,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_tronResource_isReadFromMetaTronResourceKey() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: [
                 "tron_resource": [
@@ -92,7 +92,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_tronResource_isNilWhenBothEnergyAndBandwidthAreZero() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: [
                 "tron_resource": [
@@ -107,7 +107,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_tronResource_isNilWhenMetaHasNoTronResourceKey() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: ["comment": "hi"]
         )))
@@ -117,7 +117,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_tronResource_acceptsDoubleValuesFromJSONNumbers() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: [
                 "tron_resource": [
@@ -135,7 +135,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_tronResource_isNilWhenDoubleValuesAreNonFinite() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             meta: [
                 "tron_resource": [
@@ -150,7 +150,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_feeType_isReadFromNestedFeeObject() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery, amount: "3")
         )))
@@ -161,7 +161,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_feeType_fallsBackToFlatFields() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             feeType: .battery,
             feeAmount: "2"
@@ -173,7 +173,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_feeType_prefersNestedFeeObjectOverFlatFields() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             feeType: .native,
             feeAmount: "1000000",
@@ -186,7 +186,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_batteryCharges_keepsZeroAsReportedValue() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery, amount: "0")
         )))
@@ -196,7 +196,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_batteryCharges_acceptsIntegralDecimalString() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery, amount: "5.0")
         )))
@@ -206,7 +206,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_batteryCharges_isNilWhenAmountMissingOrNotNumeric() throws {
         let missing = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery)
         )))
@@ -214,14 +214,14 @@ final class MultichainActivityMappingTests: XCTestCase {
         XCTAssertNil(missing.batteryCharges)
 
         let garbage = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery, amount: "abc")
         )))
         XCTAssertNil(garbage.batteryCharges)
 
         let fractional = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             fee: .init(_type: .battery, amount: "1.5")
         )))
@@ -230,7 +230,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_batteryCharges_isNilForNativeFee() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             feeType: .native,
             feeAmount: "1000000"
@@ -242,7 +242,7 @@ final class MultichainActivityMappingTests: XCTestCase {
 
     func test_feeType_isNilWhenBackendOmitsIt() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
-            activityType: .send,
+            activityType: "send",
             direction: .out,
             feeAmount: "0"
         )))
@@ -266,8 +266,8 @@ private extension MultichainActivityMappingTests {
             activity_type: activityType,
             status: .confirmed,
             block_time: Date(timeIntervalSince1970: 0),
-            from_chain: .eth,
-            to_chain: .eth,
+            from_chain: "eth",
+            to_chain: "eth",
             direction: direction,
             fee_type: feeType,
             fee_amount: feeAmount,

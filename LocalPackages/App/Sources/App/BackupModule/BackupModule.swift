@@ -13,7 +13,7 @@ struct BackupModule {
     func createBackupCoordinator(
         router: NavigationControllerRouter,
         wallet: Wallet,
-        source: BackupSource = .settings,
+        source: BackupSource,
         startsWithIntro: Bool = false
     ) -> BackupCoordinator {
         return BackupCoordinator(

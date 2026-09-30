@@ -48,7 +48,6 @@ final class MultichainSwapViewModel: ObservableObject {
         displayCurrency: Currency = .defaultCurrency,
         isSwapKitEnabled: Bool = false,
         raffleStore: RaffleStore? = nil,
-        isMysteryRaffleEnabled: Bool = false,
         analyticsProvider: AnalyticsProvider? = nil,
         onClose: @escaping () -> Void = {},
         onContinue: @escaping (MultichainSwapConfirmationInput) -> Void = { _ in },
@@ -95,8 +94,7 @@ final class MultichainSwapViewModel: ObservableObject {
             self?.onQuoteProviderError(message)
         }
         raffleObserver = MysteryRafflePresentationObserver(
-            raffleStore: raffleStore,
-            isFeatureEnabled: isMysteryRaffleEnabled
+            raffleStore: raffleStore
         ) { [weak self] presentation in
             self?.rafflePresentation = presentation
             self?.logRaffleBannerViewIfNeeded()
@@ -159,11 +157,8 @@ final class MultichainSwapViewModel: ObservableObject {
             return
         }
         let previousSendAsset = inputs.sendAsset
-        let previousSendAmount = inputs.sendAmount
         let previousSendCryptoAmount = calculator.sourceAmount(
-            text: previousSendAmount,
-            mode: inputs.sendAmountInputMode,
-            asset: previousSendAsset,
+            inputs: inputs,
             usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
         ).flatMap { sourceAmount -> String? in
             guard sourceAmount > 0 else {
@@ -304,21 +299,27 @@ final class MultichainSwapViewModel: ObservableObject {
             return
         }
         let sourceAmount = calculator.sourceAmount(
-            text: inputs.sendAmount,
-            mode: inputs.sendAmountInputMode,
-            asset: inputs.sendAsset,
+            inputs: inputs,
             usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
-        ) ?? .zero
-        inputs.sendAmountInputMode = nextMode
-        inputs = inputs.settingSendAmount(
-            calculator.inputAmountString(
-                sourceAmount: sourceAmount,
-                mode: inputs.sendAmountInputMode,
+        )
+        inputs = inputs.switchingSendAmountInputMode(
+            to: nextMode,
+            convertedAmount: calculator.inputAmountString(
+                sourceAmount: sourceAmount ?? .zero,
+                mode: nextMode,
                 asset: inputs.sendAsset,
                 usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
             )
         )
         commit(inputs)
+        // Switching the currency the amount is written in leaves the amount itself alone,
+        // so a ready quote is kept instead of being dropped for an identical one.
+        guard calculator.sourceAmount(
+            inputs: inputs,
+            usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
+        ) != sourceAmount else {
+            return
+        }
         refreshQuote(recreatePair: false, debounce: true)
     }
 
@@ -352,9 +353,7 @@ final class MultichainSwapViewModel: ObservableObject {
         }
         let sourceAmount = selectedRoute.sourceAmount.flatMap { BigUInt($0) }
             ?? calculator.sourceAmount(
-                text: inputs.sendAmount,
-                mode: inputs.sendAmountInputMode,
-                asset: inputs.sendAsset,
+                inputs: inputs,
                 usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
             )
         guard let sourceAmount,
@@ -565,9 +564,7 @@ private extension MultichainSwapViewModel {
 
     func quoteSourceAmount(for inputs: MultichainSwapInputs) -> BigUInt? {
         guard let sourceAmount = calculator.sourceAmount(
-            text: inputs.sendAmount,
-            mode: inputs.sendAmountInputMode,
-            asset: inputs.sendAsset,
+            inputs: inputs,
             usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
         ),
             sourceAmount > 0,

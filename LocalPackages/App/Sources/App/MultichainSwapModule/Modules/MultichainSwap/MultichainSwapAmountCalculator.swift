@@ -29,6 +29,23 @@ extension MultichainSwapAmountCalculator {
         }
     }
 
+    /// Crypto amount the send card currently stands for. Prefers the exact crypto text kept
+    /// across a mode switch over converting the rounded fiat string back.
+    func sourceAmount(
+        inputs: MultichainSwapInputs,
+        usdFiatRate: Decimal?
+    ) -> BigUInt? {
+        if let cryptoText = inputs.sendAmountCryptoText {
+            return cryptoAmount(text: cryptoText, decimals: inputs.sendAsset.asset.decimals)
+        }
+        return sourceAmount(
+            text: inputs.sendAmount,
+            mode: inputs.sendAmountInputMode,
+            asset: inputs.sendAsset,
+            usdFiatRate: usdFiatRate
+        )
+    }
+
     func cryptoAmount(text: String, decimals: Int) -> BigUInt? {
         AmountInputFormatter.amount(
             from: text,
@@ -67,12 +84,13 @@ extension MultichainSwapAmountCalculator {
 }
 
 extension MultichainSwapAmountCalculator {
+    /// The result lands in the editable receive field and `swapTokens()` carries it over into the
+    /// send field, so it has to survive a round trip through `AmountInputFormatter`: no
+    /// abbreviation, no grouping, and every fraction digit kept.
     func formattedAmount(_ baseUnits: String, asset: MultichainAsset) -> String {
-        amountFormatter.format(
+        cryptoInputAmountString(
             amount: BigUInt(baseUnits) ?? 0,
-            fractionDigits: asset.asset.decimals,
-            accessory: .none,
-            style: .compact
+            decimals: asset.asset.decimals
         )
     }
 
@@ -118,20 +136,19 @@ extension MultichainSwapAmountCalculator {
 
 extension MultichainSwapAmountCalculator {
     func sendCardRateText(
-        mode: MultichainSwapAmountInputMode,
-        sendAmount: String,
-        asset: MultichainAsset,
+        inputs: MultichainSwapInputs,
         usdFiatRate: Decimal?,
         routeUsdPrice: Double? = nil
     ) -> String? {
-        switch mode {
+        let asset = inputs.sendAsset
+        let amount = sourceAmount(inputs: inputs, usdFiatRate: usdFiatRate) ?? .zero
+        switch inputs.sendAmountInputMode {
         case .crypto:
-            let sourceAmount = cryptoAmount(text: sendAmount, decimals: asset.asset.decimals) ?? .zero
-            guard sourceAmount > 0 else {
+            guard amount > 0 else {
                 return formatFiatAmount(.zero)
             }
             guard let fiatAmount = fiatAmount(
-                sourceAmount: sourceAmount,
+                sourceAmount: amount,
                 asset: asset,
                 usdFiatRate: usdFiatRate,
                 fallbackUsdPrice: routeUsdPrice
@@ -140,13 +157,8 @@ extension MultichainSwapAmountCalculator {
             }
             return formatFiatAmount(fiatAmount)
         case .fiat:
-            let sourceAmount = fiatSourceAmount(
-                text: sendAmount,
-                asset: asset,
-                usdFiatRate: usdFiatRate
-            ) ?? .zero
             return amountFormatter.format(
-                amount: sourceAmount,
+                amount: amount,
                 fractionDigits: asset.asset.decimals,
                 accessory: .tokenSymbol(asset.swapDisplaySymbol),
                 style: .compact

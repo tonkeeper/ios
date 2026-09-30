@@ -1,0 +1,15 @@
+# regress_EN [Trading UI]: global asset search; placeholder "Not Found".
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000
+- runFlow: "../../../steps/ensure_trade_tab_or_relaunch.yaml"
+- runFlow: "../../../steps/trade/open_trade_tab.yaml"
+
+- runFlow: "../../../steps/trade/open_trade_search.yaml"
+- inputText: "zzzzmaestro-not-found-qa"
+- extendedWaitUntil:
+    visible: "Not Found"
+    timeout: 60000

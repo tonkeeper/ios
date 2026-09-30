@@ -1,14 +1,22 @@
 import Foundation
 
-enum PerpsMarketAssetID {
-    private static let prefix = "lighter/mainnet/"
+public enum PerpsMarketAssetID {
+    private static let currentPrefix = "lighter/mainnet/market/"
+    private static let legacyPrefix = "lighter/mainnet/"
 
     static func make(marketId: Int64) -> String {
-        "\(prefix)\(marketId)"
+        "\(currentPrefix)\(marketId)"
     }
 
-    static func marketId(assetId: String) -> Int64? {
-        guard assetId.hasPrefix(prefix) else { return nil }
-        return Int64(assetId.dropFirst(prefix.count))
+    public static func marketId(assetId: String) -> Int64? {
+        if assetId.hasPrefix(currentPrefix) {
+            return Int64(assetId.dropFirst(currentPrefix.count))
+        }
+        guard assetId.hasPrefix(legacyPrefix),
+              !assetId.hasPrefix(currentPrefix)
+        else {
+            return nil
+        }
+        return Int64(assetId.dropFirst(legacyPrefix.count))
     }
 }

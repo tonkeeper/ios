@@ -31,7 +31,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         XCTAssertEqual(request.limit, 30)
         XCTAssertNil(request.cursor)
         XCTAssertNil(request.chain)
-        XCTAssertNil(request.activityType)
+        XCTAssertNil(request.activityTypeFilter)
         XCTAssertEqual(currentActivities(in: viewModel.currentQueryViewModel).map(\.txIds), [["all-1"]])
         XCTAssertEqual(currentItems(in: viewModel.currentQueryViewModel).map(\.id.txIds), [["all-1"]])
         XCTAssertTrue(
@@ -39,6 +39,86 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 for: XCTUnwrap(viewModel.currentQueryViewModel)
             )
         )
+    }
+
+    @MainActor
+    func test_perpetualsFilter_isOfferedOnlyWhenPerpsAreEnabled() {
+        let disabled = makeViewModel(multichainService: MultichainServiceSpy())
+        XCTAssertFalse(disabled.typeFilterItems.map(\.id).contains(.perps))
+
+        let enabled = makeViewModel(multichainService: MultichainServiceSpy(), isPerpsEnabled: true)
+        XCTAssertTrue(enabled.typeFilterItems.map(\.id).contains(.perps))
+    }
+
+    @MainActor
+    func test_allTypesRequest_asksForPerpsOnlyWhenPerpsAreEnabled() async throws {
+        for isPerpsEnabled in [false, true] {
+            let service = MultichainServiceSpy()
+            await service.setActivityPlans([.success(page(activities: [], nextCursor: nil))])
+            let viewModel = makeViewModel(multichainService: service, isPerpsEnabled: isPerpsEnabled)
+
+            viewModel.viewDidLoad()
+
+            await waitUntil {
+                let requests = await service.activityRequests()
+                return !requests.isEmpty
+            }
+            let requests = await service.activityRequests()
+            let request = try XCTUnwrap(requests.first)
+            XCTAssertNil(request.activityTypeFilter)
+            XCTAssertEqual(request.showPerps, isPerpsEnabled ? true : nil)
+        }
+    }
+
+    @MainActor
+    func test_spamFilter_doesNotAskForPerpsItWouldDiscard() async throws {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans(
+            (1 ... 12).map { _ in .success(page(activities: [], nextCursor: nil)) }
+        )
+        let viewModel = makeViewModel(multichainService: service, isPerpsEnabled: true)
+        viewModel.viewDidLoad()
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return !requests.isEmpty
+        }
+
+        viewModel.selectTypeFilter(.spam)
+
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return requests.count > 1
+        }
+        let recorded = await service.activityRequests()
+        let request = try XCTUnwrap(recorded.last)
+        XCTAssertNil(request.activityTypeFilter)
+        XCTAssertNil(request.showPerps)
+    }
+
+    @MainActor
+    func test_perpetualsFilter_requestsThePerpsUmbrellaType() async throws {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [], nextCursor: nil)),
+        ])
+        let viewModel = makeViewModel(multichainService: service, isPerpsEnabled: true)
+        viewModel.viewDidLoad()
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return !requests.isEmpty
+        }
+
+        viewModel.selectTypeFilter(.perps)
+
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return requests.count > 1
+        }
+        let recorded = await service.activityRequests()
+        let request = try XCTUnwrap(recorded.last)
+        XCTAssertEqual(request.activityTypeFilter, .perps)
+        XCTAssertEqual(request.showPerps, true)
     }
 
     @MainActor
@@ -156,7 +236,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.txIds), [["spam"]])
         // Spam tab fetches all types (no server-side spam filter) and filters client-side.
         let requests = await service.activityRequests()
-        XCTAssertEqual(requests.map(\.activityType), [nil])
+        XCTAssertEqual(requests.map(\.activityTypeFilter), [nil])
     }
 
     @MainActor
@@ -255,6 +335,62 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 self.currentItems(in: queryViewModel).map(\.id.txIds) == [["spam"]]
             }
         }
+    }
+
+    @MainActor
+    func test_autoAdvance_stopsAfterSpendingThePageBudget() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans(
+            (1 ... 15).map { index in
+                .success(page(activities: [activity(id: "clean-\(index)", isSpam: false)], nextCursor: "cursor-\(index + 1)"))
+            }
+        )
+        let queryViewModel = makeQueryViewModel(
+            multichainService: service,
+            category: .chain(chainFilter: .all, typeFilter: .spam)
+        )
+
+        queryViewModel.appeared()
+        // Every page is fully spam-filtered, so the walk is bounded by the budget, not by the cursor.
+        await waitUntil {
+            await service.activityRequests().count == 11
+        }
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.count, 11)
+        XCTAssertTrue(currentItems(in: queryViewModel).isEmpty)
+        if case .loaded = queryViewModel.state {
+        } else {
+            XCTFail("Expected the walk to settle instead of loading further pages")
+        }
+    }
+
+    @MainActor
+    func test_autoAdvance_refillsThePageBudgetOnTheNextAppearance() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans(
+            (1 ... 15).map { index in
+                .success(page(activities: [activity(id: "clean-\(index)", isSpam: false)], nextCursor: "cursor-\(index + 1)"))
+            }
+        )
+        let queryViewModel = makeQueryViewModel(
+            multichainService: service,
+            category: .chain(chainFilter: .all, typeFilter: .spam)
+        )
+
+        queryViewModel.appeared()
+        await waitUntil {
+            await service.activityRequests().count == 11
+        }
+
+        queryViewModel.appeared()
+
+        await waitUntil {
+            await service.activityRequests().count > 11
+        }
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.dropFirst(11).first?.cursor, "cursor-12")
     }
 
     @MainActor
@@ -1201,7 +1337,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let request = try XCTUnwrap(requests.first)
         XCTAssertEqual(request.chain, .eth)
         XCTAssertNil(request.assetId)
-        XCTAssertEqual(request.activityType, .send)
+        XCTAssertEqual(request.activityTypeFilter, .send)
     }
 
     @MainActor
@@ -1227,7 +1363,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let request = try XCTUnwrap(requests.first)
         XCTAssertEqual(request.assetId, "eth/mainnet/erc20/usdt")
         XCTAssertNil(request.chain)
-        XCTAssertEqual(request.activityType, .send)
+        XCTAssertEqual(request.activityTypeFilter, .send)
     }
 
     @MainActor
@@ -1661,7 +1797,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             ),
         ])
         let paginationViewModel = MultichainHistoryPaginationViewModel(
-            walletId: "wallet",
+            multichainState: makeMultichainState(),
             limit: 30,
             category: .chain(chainFilter: .all, typeFilter: .all),
             multichainService: service
@@ -3236,6 +3372,7 @@ private extension MultichainHistoryViewModelTests {
     func makeViewModel(
         multichainService: MultichainService,
         hidesDustTransactions: Bool = false,
+        isPerpsEnabled: Bool = false,
         nftResolver: MultichainActivityNFTResolver? = nil,
         currentDateProvider: @escaping () -> Date = Date.init,
         addresses: [MultichainWalletAddress]? = nil,
@@ -3244,6 +3381,7 @@ private extension MultichainHistoryViewModelTests {
         MultichainHistoryViewModelImplementation(
             multichainState: makeMultichainState(addresses: addresses),
             hidesDustTransactions: hidesDustTransactions,
+            isPerpsEnabled: isPerpsEnabled,
             multichainService: multichainService,
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
@@ -3263,7 +3401,7 @@ private extension MultichainHistoryViewModelTests {
         currentDateProvider: @escaping () -> Date = Date.init
     ) -> MultichainHistoryQueryViewModel {
         MultichainHistoryQueryViewModel(
-            walletId: "wallet",
+            multichainState: makeMultichainState(),
             category: category,
             hidesDustTransactions: hidesDustTransactions,
             multichainService: multichainService,
@@ -3708,7 +3846,8 @@ private actor MultichainServiceSpy: MultichainService {
         let cursor: String?
         let chain: MultichainChain?
         let assetId: String?
-        let activityType: MultichainActivityType?
+        let activityTypeFilter: MultichainActivityTypeFilter?
+        let showPerps: Bool?
         let hideDust: Bool?
     }
 
@@ -3758,22 +3897,24 @@ private actor MultichainServiceSpy: MultichainService {
     }
 
     func getWalletActivities(
-        walletId: String,
+        state: MultichainWalletState,
         limit: Int?,
         cursor: String?,
         chain: MultichainChain?,
         assetId: String?,
-        activityType: MultichainActivityType?,
+        activityTypeFilter: MultichainActivityTypeFilter?,
+        showPerps: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         recordedActivityRequests.append(
             ActivityRequest(
-                walletId: walletId,
+                walletId: state.walletId,
                 limit: limit,
                 cursor: cursor,
                 chain: chain,
                 assetId: assetId,
-                activityType: activityType,
+                activityTypeFilter: activityTypeFilter,
+                showPerps: showPerps,
                 hideDust: hideDust
             )
         )

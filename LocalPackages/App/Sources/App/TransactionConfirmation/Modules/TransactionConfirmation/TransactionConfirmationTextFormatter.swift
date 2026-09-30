@@ -43,10 +43,10 @@ struct TransactionConfirmationTextFormatter {
             )
 
         case let .token(amount, fractionDigits, symbol, _):
-            let topValue = amountFormatter.format(
+            let topValue = formatTokenAmount(
                 amount: amount,
                 fractionDigits: fractionDigits,
-                accessory: .tokenSymbol(symbol)
+                symbol: symbol
             )
             let bottomValue: String? = {
                 guard let rate else { return nil }
@@ -132,7 +132,7 @@ struct TransactionConfirmationTextFormatter {
             fractionDigits: converted.fractionLength,
             accessory: .fiat(currency),
             isNegative: false,
-            style: .regular
+            style: .compact
         )
     }
 
@@ -146,7 +146,7 @@ struct TransactionConfirmationTextFormatter {
             fractionDigits: fractionDigits,
             accessory: .tokenSymbol(symbol),
             isNegative: false,
-            style: .regular
+            style: .compact
         )
     }
 }

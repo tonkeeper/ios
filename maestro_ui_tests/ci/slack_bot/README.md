@@ -2,7 +2,7 @@
 
 Posts iOS Maestro UI test results to `#tk-autotests-status` after each CI run.
 
-Workflow job: [.github/workflows/maestro-ui-tests.yml](../../../.github/workflows/maestro-ui-tests.yml) → `maestro-slack-notify`.
+Workflow job: [.github/workflows/maestro-ui-tests.yml](../../../../.github/workflows/maestro-ui-tests.yml) → `maestro-slack-notify`.
 
 ## High-level flow
 

@@ -252,7 +252,7 @@ private extension WalletConnectRequestAssembly {
             amount: amount,
             fractionDigits: request.chain.nativeTokenFractionDigits,
             accessory: .tokenSymbol(request.chain.nativeTokenSymbol),
-            style: .regular
+            style: .compact
         )
 
         return WalletConnectRequestInfoRow(

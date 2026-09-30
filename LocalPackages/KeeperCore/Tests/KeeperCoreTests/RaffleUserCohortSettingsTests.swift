@@ -19,28 +19,33 @@ final class RaffleUserCohortSettingsTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_cohortStartsUnresolvedAndFirstResolutionStaysSticky() {
-        let settings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
-
-        XCTAssertNil(settings.raffleIsNewUser)
-        XCTAssertNil(settings.pendingRaffleIsNewUser)
-
-        settings.beginRaffleUserResolution(isNewUser: true)
-        XCTAssertEqual(settings.pendingRaffleIsNewUser, true)
-        settings.resolveRaffleIsNewUser(true)
-        settings.resolveRaffleIsNewUser(false)
-
-        XCTAssertEqual(settings.raffleIsNewUser, true)
-        XCTAssertNil(settings.pendingRaffleIsNewUser)
+    func test_cohortStartsUnresolved() {
+        XCTAssertNil(UserDefaultsTKAppSettings(userDefaults: userDefaults).raffleIsNewUser)
     }
 
-    func test_existingUserResolutionPersistsAcrossSettingsInstances() {
-        UserDefaultsTKAppSettings(userDefaults: userDefaults).resolveRaffleIsNewUser(false)
+    func test_cohortRoundTripsBothValues() {
+        let settings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
 
-        let reloadedSettings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
-        reloadedSettings.resolveRaffleIsNewUser(true)
+        settings.raffleIsNewUser = true
+        XCTAssertEqual(settings.raffleIsNewUser, true)
 
-        XCTAssertEqual(reloadedSettings.raffleIsNewUser, false)
+        settings.raffleIsNewUser = false
+        XCTAssertEqual(settings.raffleIsNewUser, false)
+    }
+
+    func test_cohortPersistsAcrossSettingsInstances() {
+        UserDefaultsTKAppSettings(userDefaults: userDefaults).raffleIsNewUser = false
+
+        XCTAssertEqual(UserDefaultsTKAppSettings(userDefaults: userDefaults).raffleIsNewUser, false)
+    }
+
+    func test_assigningNilClearsCohort() {
+        let settings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
+        settings.raffleIsNewUser = true
+
+        settings.raffleIsNewUser = nil
+
+        XCTAssertNil(settings.raffleIsNewUser)
     }
 
     func test_legacyTapBasedValueDoesNotPreResolveCohort() {
@@ -49,17 +54,5 @@ final class RaffleUserCohortSettingsTests: XCTestCase {
         let settings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
 
         XCTAssertNil(settings.raffleIsNewUser)
-    }
-
-    func test_pendingResolutionSurvivesRestartAndCanBeCancelled() {
-        UserDefaultsTKAppSettings(userDefaults: userDefaults).beginRaffleUserResolution(isNewUser: false)
-
-        let reloadedSettings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
-        XCTAssertEqual(reloadedSettings.pendingRaffleIsNewUser, false)
-
-        reloadedSettings.cancelPendingRaffleUserResolution()
-
-        XCTAssertNil(reloadedSettings.raffleIsNewUser)
-        XCTAssertNil(reloadedSettings.pendingRaffleIsNewUser)
     }
 }

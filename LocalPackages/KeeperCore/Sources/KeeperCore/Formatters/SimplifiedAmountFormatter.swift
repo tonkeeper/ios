@@ -6,6 +6,7 @@
 //
 
 import BigInt
+import ChainKit
 import Foundation
 import TKLocalize
 
@@ -141,11 +142,11 @@ public struct BalanceHeaderAmountFormat: Hashable {
 /// - Positive values smaller than the display precision: "< 0.01" or "< 0.00000001"
 ///
 /// Exact value: Shows all fraction digits with optional trailing zero trimming.
-public class AmountFormatter: Formatter {
+/// `Foundation.` is explicit throughout this file: importing ChainKit brings its own
+/// `Formatter` and `Decimal` into scope.
+public class AmountFormatter: Foundation.Formatter {
     private enum Constants {
-        static let compactMaxFractionDigits = 2
         static let compactMaxSignificantFractionDigits = 3
-        static let compactSmallValueMaxFractionDigits = 8
         static let compactMinimumFractionDigits = 8
         static let fiatFractionDigits = 2
         static let fiatBalanceTokenFractionDigits = 8
@@ -235,7 +236,7 @@ public class AmountFormatter: Formatter {
         if let amount = obj as? BigUInt {
             return format(amount: amount, fractionDigits: 9)
         }
-        if let decimal = obj as? Decimal {
+        if let decimal = obj as? Foundation.Decimal {
             return format(decimal: decimal)
         }
         if let number = obj as? NSNumber {
@@ -254,94 +255,65 @@ public class AmountFormatter: Formatter {
         isNegative: Bool = false,
         style: AmountDisplayStyle? = nil
     ) -> String {
-        let displayStyle = style ?? config.style
-
-        // Split into integer and fraction parts
         let (integer, fraction) = splitAmount(amount: amount, fractionDigits: fractionDigits)
 
-        // Apply formatting rules based on style
-        let parts: FormattedNumberParts
-        switch displayStyle {
-        case .regular:
-            parts = applyRegularRules(integer: integer, fraction: fraction)
-        case .compact:
-            parts = applyCompactRules(integer: integer, fraction: fraction)
-        case .fiatBalance:
-            parts = applyFiatBalanceRules(
-                integer: integer,
-                fraction: fraction,
-                fractionDigits: fiatBalanceFractionDigits(for: accessory)
-            )
-        case .exactValue:
-            parts = makeExactValueParts(integer: integer, fraction: fraction)
-        case .percent:
-            parts = applyPercentRules(integer: integer, fraction: fraction)
-        }
-
-        // Build final string
-        return buildFormattedString(
-            integer: parts.integer,
-            fraction: parts.fraction,
+        return formatted(
+            integer: integer,
+            fraction: fraction,
             isNegative: isNegative,
             accessory: accessory,
-            isLessThanMinimum: parts.isLessThanMinimum,
-            isZero: parts.isZero,
-            isPercent: displayStyle == .percent
+            style: style ?? config.style
         )
     }
 
     /// Format a Decimal value
     public func format(
-        decimal: Decimal,
+        decimal: Foundation.Decimal,
         accessory: AmountAccessoryType = .none,
         style: AmountDisplayStyle? = nil
     ) -> String {
+        guard !decimal.isNaN else { return "—" }
+
         let displayStyle = style ?? config.style
         let isNegative = decimal < 0
         let magnitude = isNegative ? -decimal : decimal
+        let (integer, fraction) = splitAmount(decimal: magnitude)
 
-        // Convert decimal to string representation
-        let formatter = NumberFormatter()
-        formatter.locale = config.locale
-        formatter.numberStyle = .decimal
-        formatter.usesGroupingSeparator = false
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 80
-        formatter.roundingMode = .down
+        return formatted(
+            integer: integer,
+            fraction: fraction,
+            isNegative: isNegative,
+            accessory: accessory,
+            style: displayStyle
+        )
+    }
 
-        let numberString = formatter.string(from: magnitude as NSDecimalNumber) ?? "0"
-        let decimalSeparator = formatter.decimalSeparator ?? "."
-
-        // Split into integer and fraction
-        let (integer, fraction): (String, String)
-        if let separatorIndex = numberString.firstIndex(of: Character(decimalSeparator)) {
-            integer = String(numberString[..<separatorIndex])
-            fraction = String(numberString[numberString.index(after: separatorIndex)...])
-        } else {
-            integer = numberString
-            fraction = ""
-        }
-
-        // Apply formatting rules based on style
+    /// `.compact`, `.exactValue` and `.fiatBalance` are ChainKit's; `.regular` and `.percent` still
+    /// run the local rules — the first needs the rounding/8-digit-cap switch, the second a
+    /// "below 0.01 → 0" knob ChainKit has no parameter for.
+    private func formatted(
+        integer: String,
+        fraction: String,
+        isNegative: Bool,
+        accessory: AmountAccessoryType,
+        style: AmountDisplayStyle
+    ) -> String {
         let parts: FormattedNumberParts
-        switch displayStyle {
-        case .regular:
-            parts = applyRegularRules(integer: integer, fraction: fraction)
-        case .compact:
-            parts = applyCompactRules(integer: integer, fraction: fraction)
-        case .fiatBalance:
-            parts = applyFiatBalanceRules(
+        switch style {
+        case .compact, .exactValue, .fiatBalance:
+            return chainKitFormatted(
                 integer: integer,
                 fraction: fraction,
-                fractionDigits: fiatBalanceFractionDigits(for: accessory)
+                isNegative: isNegative,
+                accessory: accessory,
+                style: style
             )
-        case .exactValue:
-            parts = makeExactValueParts(integer: integer, fraction: fraction)
+        case .regular:
+            parts = applyRegularRules(integer: integer, fraction: fraction)
         case .percent:
             parts = applyPercentRules(integer: integer, fraction: fraction)
         }
 
-        // Build final string
         return buildFormattedString(
             integer: parts.integer,
             fraction: parts.fraction,
@@ -349,7 +321,7 @@ public class AmountFormatter: Formatter {
             accessory: accessory,
             isLessThanMinimum: parts.isLessThanMinimum,
             isZero: parts.isZero,
-            isPercent: displayStyle == .percent
+            isPercent: style == .percent
         )
     }
 
@@ -367,9 +339,17 @@ public class AmountFormatter: Formatter {
     }
 
     public func formatBalanceHeaderAmount(
-        decimal: Decimal,
+        decimal: Foundation.Decimal,
         accessory: AmountAccessoryType = .none
     ) -> BalanceHeaderAmountFormat {
+        guard !decimal.isNaN else {
+            return BalanceHeaderAmountFormat(
+                numberParts: [.init(text: "—", role: .primary)],
+                fullText: "—",
+                textSize: .regular
+            )
+        }
+
         let isNegative = decimal < 0
         let magnitude = isNegative ? -decimal : decimal
         let (integer, fraction) = splitAmount(decimal: magnitude)
@@ -378,6 +358,100 @@ public class AmountFormatter: Formatter {
             fraction: fraction,
             accessory: accessory,
             isNegative: isNegative
+        )
+    }
+
+    // MARK: - ChainKit
+
+    private func chainKitSpec(
+        for style: AmountDisplayStyle,
+        accessory: AmountAccessoryType,
+        fractionDigits: Int
+    ) -> any ScaleSpec {
+        switch style {
+        case .compact:
+            ScaleSpecCompact.shared
+        case .exactValue:
+            if config.trimTrailingZeros {
+                ScaleSpecExact.shared
+            } else {
+                // BigDecimal normalizes trailing zeros, so retain the input scale explicitly.
+                ScaleSpecFixed(scale: Int32(fractionDigits), rounding: .towardsZero)
+            }
+        case .fiatBalance:
+            ScaleSpecFixed(
+                scale: Int32(fiatBalanceFractionDigits(for: accessory)),
+                rounding: .towardsZero
+            )
+        case .regular, .percent:
+            preconditionFailure("\(style) is formatted locally, not by ChainKit")
+        }
+    }
+
+    /// ChainKit reads no locale of its own — every glyph it prints comes from here.
+    ///
+    /// `symbolSpacing` has to be per call: iOS picks the space from the symbol's glyphs
+    /// (`space(for:)` — "TON" gets U+0020, "$" and "R$" get U+2009), ChainKit would pick it from
+    /// the symbol's role, which disagrees on exactly those cases.
+    private func chainKitOptions(
+        symbol: String,
+        placement: SymbolPlacement
+    ) -> FormatOptions {
+        FormatOptions(
+            decimalSeparator: config.locale.decimalSeparator ?? ".",
+            groupingSeparator: config.groupDigits ? Constants.groupingSeparator : nil,
+            minusSign: String.Symbol.minus,
+            plusSign: String.Symbol.plus,
+            signSpacing: config.space,
+            lessThanPrefix: "< ",
+            approximatePrefix: String.Symbol.almostEqual + " ",
+            approximateAppliesToFiatPart: false,
+            symbolPlacement: placement,
+            currencyPlacement: placement,
+            symbolSpacing: symbol.isEmpty ? nil : space(for: symbol),
+            symbolOverride: nil,
+            percentSpacing: config.space
+        )
+    }
+
+    private func chainKitFormatted(
+        integer: String,
+        fraction: String,
+        isNegative: Bool,
+        accessory: AmountAccessoryType,
+        style: AmountDisplayStyle
+    ) -> String {
+        let magnitude = fraction.isEmpty ? integer : "\(integer).\(fraction)"
+        assert(
+            magnitude.allSatisfy { $0.isASCII && ($0.isNumber || $0 == ".") },
+            "ChainKit parses ASCII digits only, got \(magnitude)"
+        )
+        let value = BignumBigDecimal.companion.parseString(
+            string: isNegative ? "-" + magnitude : magnitude,
+            base: 10
+        )
+
+        let symbol: String
+        let placement: SymbolPlacement
+        switch accessory {
+        case .none:
+            symbol = ""
+            placement = .leading
+        case let .token(currency),
+             let .fiat(currency):
+            symbol = currency.symbol
+            placement = currency.symbolOnLeft ? .leading : .trailing
+        }
+
+        return ChainKit.Formatter.shared.formatFiat(
+            value: value,
+            currency: FiatCurrency(symbol: symbol),
+            sign: config.signPolicy.chainKitSignMode,
+            approximate: false,
+            spec: chainKitSpec(for: style, accessory: accessory, fractionDigits: fraction.count),
+            isShorten: style == .compact,
+            trimTrailingZeros: style == .fiatBalance ? false : config.trimTrailingZeros,
+            options: chainKitOptions(symbol: symbol, placement: placement)
         )
     }
 
@@ -465,19 +539,12 @@ public class AmountFormatter: Formatter {
         return (integerPart.isEmpty ? "0" : integerPart, fractionPart)
     }
 
-    private func splitAmount(decimal: Decimal) -> (integer: String, fraction: String) {
-        let formatter = NumberFormatter()
-        formatter.locale = config.locale
-        formatter.numberStyle = .decimal
-        formatter.usesGroupingSeparator = false
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 80
-        formatter.roundingMode = .down
+    /// Preserve Decimal precision and ASCII digits; apply the display locale only when rendering.
+    private func splitAmount(decimal: Foundation.Decimal) -> (integer: String, fraction: String) {
+        var decimal = decimal
+        let numberString = NSDecimalString(&decimal, Locale(identifier: "en_US_POSIX"))
 
-        let numberString = formatter.string(from: decimal as NSDecimalNumber) ?? "0"
-        let decimalSeparator = formatter.decimalSeparator ?? "."
-
-        if let separatorIndex = numberString.firstIndex(of: Character(decimalSeparator)) {
+        if let separatorIndex = numberString.firstIndex(of: ".") {
             return (
                 String(numberString[..<separatorIndex]),
                 String(numberString[numberString.index(after: separatorIndex)...])
@@ -493,16 +560,6 @@ public class AmountFormatter: Formatter {
             integer: integer,
             fraction: fraction,
             maxGreaterThanOneFractionDigits: Constants.compactMinimumFractionDigits
-        )
-    }
-
-    /// Apply compact token-like display rules
-    private func applyCompactRules(integer: String, fraction: String) -> FormattedNumberParts {
-        applyTokenLikeRules(
-            integer: integer,
-            fraction: fraction,
-            maxGreaterThanOneFractionDigits: Constants.compactMaxFractionDigits,
-            smallValueMaxFractionDigits: Constants.compactSmallValueMaxFractionDigits
         )
     }
 
@@ -770,18 +827,6 @@ public class AmountFormatter: Formatter {
         paddedFraction(fraction, digits: Constants.percentFractionDigits).allSatisfy { $0 == "0" }
     }
 
-    /// Apply exact value rules
-    private func makeExactValueParts(integer: String, fraction: String) -> FormattedNumberParts {
-        let finalFraction = config.trimTrailingZeros ? trimTrailingZeros(fraction) : fraction
-
-        return FormattedNumberParts(
-            integer: integer,
-            fraction: finalFraction.isEmpty ? nil : finalFraction,
-            isLessThanMinimum: false,
-            isZero: isZero(integer: integer, fraction: fraction)
-        )
-    }
-
     /// Trim trailing zeros from a string
     private func trimTrailingZeros(_ string: String) -> String {
         var result = string
@@ -1000,6 +1045,18 @@ public class AmountFormatter: Formatter {
     private func hasOnlyASCIILatinLetters(_ symbol: String) -> Bool {
         !symbol.isEmpty && symbol.unicodeScalars.allSatisfy { scalar in
             (65 ... 90).contains(scalar.value) || (97 ... 122).contains(scalar.value)
+        }
+    }
+}
+
+private extension AmountSignPolicy {
+    /// iOS `.none` means "never a sign", which is ChainKit's `Hidden` — its `None` still keeps a
+    /// natural minus.
+    var chainKitSignMode: SignMode {
+        switch self {
+        case .negativeOnly: .minusonly
+        case .always: .all
+        case .none: .hidden
         }
     }
 }

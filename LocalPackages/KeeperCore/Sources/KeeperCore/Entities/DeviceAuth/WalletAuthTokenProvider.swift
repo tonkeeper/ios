@@ -5,6 +5,9 @@ public protocol WalletAuthTokenProviding: Sendable {
     /// The `X-Wallet-Authorization` credential for one wallet, or `nil` when this install cannot
     /// sign for it yet. A caller that gets `nil` sends the request without the header.
     func token(walletId: String, accessToken: String) async -> String?
+    /// Drops the credential minted for this wallet, in memory and in the Keychain, so the next
+    /// `token` call signs a fresh one. The app key is kept: it is what makes reminting free.
+    func invalidateToken(walletId: String) async
     /// Whether a durable app key is already kept for this wallet (memory or Keychain). An ephemeral
     /// lease does not count: it would still need a passcode-gated warm to survive a relaunch.
     func hasPersistentAppKey(walletId: String) async -> Bool
@@ -58,8 +61,10 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
 
     /// Resolved on first use rather than held: this provider is owned above `MultichainAssembly`,
     /// because the battery needs it too and reaching it through that assembly would close a cycle
-    /// over `ServicesAssembly`/`BatteryAssembly`.
-    private let resolveChainKitService: @Sendable () -> ChainKitService
+    /// over `ServicesAssembly`/`BatteryAssembly`. `nil` once the owning graph is gone — a caller
+    /// that keeps a service but drops the assembly leaves this provider behind it, and a request
+    /// without the wallet credential beats aborting the process.
+    private let resolveChainKitService: @Sendable () -> ChainKitService?
     private let store: WalletAuthKeychainStore
 
     private var appKeys = [String: Data]()
@@ -70,7 +75,7 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
     private var tokens = [String: String]()
 
     init(
-        chainKitService: @escaping @Sendable () -> ChainKitService,
+        chainKitService: @escaping @Sendable () -> ChainKitService?,
         store: WalletAuthKeychainStore
     ) {
         resolveChainKitService = chainKitService
@@ -113,7 +118,12 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
             return nil
         }
 
-        let token = resolveChainKitService().walletAuthToken(
+        guard let chainKitService = resolveChainKitService() else {
+            Log.w("🪵 WalletAuth: no chain kit service, request goes unsigned")
+            return nil
+        }
+
+        let token = chainKitService.walletAuthToken(
             appPrivateKey: appKey.data,
             accessToken: accessToken
         )
@@ -125,6 +135,14 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
             )
         }
         return token
+    }
+
+    func invalidateToken(walletId: String) {
+        guard !walletId.isEmpty else {
+            return
+        }
+        removeCachedTokens(walletId: walletId)
+        store.deleteToken(walletId: walletId)
     }
 
     func hasPersistentAppKey(walletId: String) -> Bool {
@@ -167,8 +185,12 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
         case nil:
             break
         }
+        guard let chainKitService = resolveChainKitService() else {
+            Log.w("🪵 WalletAuth: no chain kit service, app key not warmed")
+            return
+        }
         do {
-            let appPrivateKey = try resolveChainKitService().walletAppPrivateKey(mnemonic: mnemonic)
+            let appPrivateKey = try chainKitService.walletAppPrivateKey(mnemonic: mnemonic)
             appKeys[walletId] = appPrivateKey
             walletsWithoutAppKey.remove(walletId)
             // A refused write costs the next launch a passcode, not this session: the key above
@@ -208,8 +230,12 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
             return leaseId
         }
 
+        guard let chainKitService = resolveChainKitService() else {
+            Log.w("🪵 WalletAuth: no chain kit service, no ephemeral key")
+            return nil
+        }
         do {
-            let appPrivateKey = try resolveChainKitService().walletAppPrivateKey(mnemonic: mnemonic)
+            let appPrivateKey = try chainKitService.walletAppPrivateKey(mnemonic: mnemonic)
             ephemeralKeys[walletId] = EphemeralKey(data: appPrivateKey, leaseIds: [leaseId])
             return leaseId
         } catch {

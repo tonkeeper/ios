@@ -34,9 +34,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
 
         setup()
         setupBindings()
-        viewModel.viewDidLoad()
         configureHomeBannersIfNeeded()
         configureCollectiblesIfNeeded()
+        viewModel.viewDidLoad()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -70,15 +70,8 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
             guard let self else { return }
             customView.refreshControl.endRefreshing()
-            if isAnimated {
-                dataSource.apply(snapshot, animatingDifferences: true)
-            } else {
-                if #available(iOS 15.0, *) {
-                    dataSource.applySnapshotUsingReloadData(snapshot, completion: nil)
-                } else {
-                    dataSource.apply(snapshot, animatingDifferences: false)
-                }
-            }
+            // Reloading data recreates hosted SwiftUI sections and makes the banner deck blink.
+            dataSource.apply(snapshot, animatingDifferences: isAnimated)
         }
 
         viewModel.didUpdateHeader = { [weak self] model in
@@ -94,7 +87,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
                 guard let indexPath = self.dataSource.indexPath(for: .listItem(item.key)),
                       let cell = self.customView.collectionView.cellForItem(at: indexPath) as? WalletBalanceListCell
                 else {
-                    return
+                    continue
                 }
                 cell.configuration = item.value
             }
@@ -102,11 +95,10 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         viewModel.didCopy = { configuration in
             ToastPresenter.showToast(configuration: configuration)
         }
-        viewModel.didChangeHomeBannersViewModel = { [weak self] in
-            self?.configureHomeBannersIfNeeded()
-        }
-        viewModel.collectiblesViewModel.onContentHeightChanged = { [weak self] in
-            self?.invalidateCollectiblesLayout()
+        viewModel.didChangeHostedViewModels = { [weak self] in
+            guard let self else { return }
+            configureHomeBannersIfNeeded()
+            configureCollectiblesIfNeeded()
         }
     }
 
@@ -165,9 +157,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
                 (cell as? TKContainerCollectionViewCell)?.setContentView(self.homeBannersContainerView)
                 return cell
             case .cryptoAssetsHeader:
-                let snapshot = self.dataSource.snapshot()
-                let section = snapshot.sectionIdentifiers[indexPath.section]
-                guard case let .cryptoAssetsHeader(canManage) = section else {
+                guard let section = self.dataSource.sectionIdentifier(for: indexPath.section),
+                      case let .cryptoAssetsHeader(canManage) = section
+                else {
                     return nil
                 }
                 let cell = collectionView.dequeueReusableCell(
@@ -210,8 +202,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
 
             switch elementKind {
             case TKListCollectionViewButtonHeaderView.elementKind:
-                guard let snapshot = self?.dataSource.snapshot() else { return nil }
-                let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
+                guard let snapshotSection = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                    return nil
+                }
                 switch snapshotSection {
                 case let .setup(setupSection):
                     let view = collectionView.dequeueConfiguredReusableSupplementary(
@@ -242,14 +235,22 @@ private extension WalletBalanceViewController {
         )
     }
 
+    /// A zero absolute dimension is logged as invalid by the layout, which says it will assert.
+    static func sectionHeight(_ height: CGFloat) -> CGFloat {
+        max(height, Layout.emptySectionHeight)
+    }
+
     private var layout: UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.scrollDirection = .vertical
 
         return UICollectionViewCompositionalLayout(
             sectionProvider: { [weak dataSource, weak viewModel] sectionIndex, _ in
-                guard let dataSource else { return nil }
-                let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
+                guard let dataSource,
+                      let snapshotSection = dataSource.sectionIdentifier(for: sectionIndex)
+                else {
+                    return nil
+                }
 
                 switch snapshotSection {
                 case .balanceHeader:
@@ -323,7 +324,10 @@ private extension WalletBalanceViewController {
                     let itemLayoutSize = NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1.0),
                         heightDimension: .absolute(
-                            viewModel?.homeBannersViewModel.sectionHeight ?? WalletBalanceHomeBannersLayout.expandedHeight
+                            Self.sectionHeight(
+                                viewModel?.homeBannersViewModel.sectionHeight
+                                    ?? WalletBalanceHomeBannersLayout.expandedHeight
+                            )
                         )
                     )
                     let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
@@ -342,7 +346,9 @@ private extension WalletBalanceViewController {
                 case .collectibles:
                     let itemLayoutSize = NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1.0),
-                        heightDimension: .absolute(viewModel?.collectiblesViewModel.sectionContentHeight ?? 0)
+                        heightDimension: .absolute(
+                            Self.sectionHeight(viewModel?.collectiblesViewModel.sectionContentHeight ?? 0)
+                        )
                     )
                     let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
                     let group = NSCollectionLayoutGroup.horizontal(
@@ -365,23 +371,24 @@ private extension WalletBalanceViewController {
 
     func configureHomeBannersIfNeeded() {
         let homeBannersViewModel = viewModel.homeBannersViewModel
-        // A deck that has nothing left reports zero, and the section has to follow it there: the
-        // snapshot drops the section on its own schedule, and until it does the layout would hold
-        // the height the cards used to need.
-        homeBannersViewModel.onSectionHeightChanged = { [weak self] _ in
-            self?.invalidateHomeBannersLayout()
+        homeBannersViewModel.onSectionHeightChanged = { [weak self, weak homeBannersViewModel] _ in
+            guard let self, let homeBannersViewModel,
+                  homeBannersViewModel === viewModel.homeBannersViewModel else { return }
+            invalidateHomeBannersLayout()
         }
         homeBannersContainerView.configure(viewModel: homeBannersViewModel)
-        // The deck that just arrived brings its own height and has no change of its own to report
-        // it, so the layout would keep the height the previous wallet's deck asked for.
         invalidateHomeBannersLayout(animated: false)
     }
 
     func configureCollectiblesIfNeeded() {
-        collectiblesContainerView.configure(viewModel: viewModel.collectiblesViewModel)
-        Task { @MainActor in
-            await viewModel.reloadCollectibles()
+        let collectiblesViewModel = viewModel.collectiblesViewModel
+        collectiblesViewModel.onContentHeightChanged = { [weak self, weak collectiblesViewModel] in
+            guard let self, let collectiblesViewModel,
+                  collectiblesViewModel === viewModel.collectiblesViewModel else { return }
+            invalidateCollectiblesLayout()
         }
+        collectiblesContainerView.configure(viewModel: collectiblesViewModel)
+        invalidateCollectiblesLayout(animated: false)
     }
 
     func invalidateHomeBannersLayout(animated: Bool = true) {
@@ -390,7 +397,6 @@ private extension WalletBalanceViewController {
 
         guard animated else {
             customView.collectionView.collectionViewLayout.invalidateLayout()
-            customView.collectionView.layoutIfNeeded()
             return
         }
 
@@ -404,9 +410,14 @@ private extension WalletBalanceViewController {
         }
     }
 
-    func invalidateCollectiblesLayout() {
+    func invalidateCollectiblesLayout(animated: Bool = true) {
         let snapshot = dataSource.snapshot()
         guard snapshot.itemIdentifiers.contains(.collectibles) else { return }
+
+        guard animated else {
+            customView.collectionView.collectionViewLayout.invalidateLayout()
+            return
+        }
 
         UIView.animate(
             withDuration: WalletBalanceCollectiblesLayout.animationDuration,
@@ -421,8 +432,7 @@ private extension WalletBalanceViewController {
 
 extension WalletBalanceViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let snapshot = dataSource.snapshot()
-        let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         switch item {
         case let .listItem(listItem):
             listItem.onSelection?()
@@ -435,6 +445,12 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         didScroll?(scrollView.contentOffset.y + scrollView.adjustedContentInset.top)
+    }
+}
+
+private extension WalletBalanceViewController {
+    enum Layout {
+        static let emptySectionHeight: CGFloat = 1
     }
 }
 

@@ -13,7 +13,6 @@ struct PerpsMarketMetadata: Equatable, Sendable {
     let priceDecimals: Int
     let sizeDecimals: Int
     let minBaseSize: Double
-    let takerFee: Double
 
     var displayPrice: Double {
         markPrice ?? lastTradePrice ?? 0

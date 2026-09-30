@@ -1,0 +1,35 @@
+appId: com.jbig.tonkeeper
+---
+# Asserts TON send confirmation shows network fee (Fee row) before signing.
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- runFlow: "../../../service/account/compare_ton_balance.yaml"
+- runFlow: "../../../steps/ensure_trade_tab_or_relaunch.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+- scrollUntilVisible:
+    element: ${NATIVE_TOKEN_DISPLAY_TEXT}
+    direction: DOWN
+    timeout: 120000
+- tapOn: ${NATIVE_TOKEN_DISPLAY_TEXT}
+- runFlow: "../../../steps/trade/tap_asset_details_send.yaml"
+- tapOn:
+    id: input_field
+- inputText: ${RECIEVE_WALLET}
+- tapOn:
+    id: amount
+- inputText: "0.001"
+- tapOn: Continue
+
+- runFlow: "../../../steps/transactions/assert_receive_wallet_visible.yaml"
+- assertVisible: ${"0.001 " + NATIVE_TOKEN_SHORT_TEXT}
+- assertVisible: Fee
+
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+- assertVisible: History

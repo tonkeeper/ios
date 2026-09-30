@@ -21,7 +21,6 @@ public extension Wallet {
         case .regular:
             switch network {
             case .testnet: return "TESTNET"
-            case .tetra: return "TETRA"
             case .mainnet: return nil
             }
         case .lockup:

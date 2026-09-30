@@ -38,7 +38,7 @@ public enum MultichainAssetCapability: String, Hashable, Sendable, Codable {
     case p2p
 }
 
-public struct MultichainAssetDetails: Hashable, Sendable {
+public struct MultichainAssetDetails: Hashable, Sendable, Codable {
     public let assetId: String
     public let chain: MultichainChain?
     public let name: String
@@ -92,7 +92,7 @@ public struct MultichainAssetDetails: Hashable, Sendable {
     }
 }
 
-public struct MultichainAssetPrice: Equatable, Sendable {
+public struct MultichainAssetPrice: Equatable, Sendable, Codable {
     public let prices: [String: Double]
     public let diff24h: [String: String]
     public let diff7d: [String: String]
@@ -111,7 +111,7 @@ public struct MultichainAssetPrice: Equatable, Sendable {
     }
 }
 
-public struct MultichainAsset: Equatable, Sendable {
+public struct MultichainAsset: Equatable, Sendable, Codable {
     public let asset: MultichainAssetDetails
     public let price: MultichainAssetPrice
     public let isHidden: Bool
@@ -350,6 +350,10 @@ public enum MultichainActivityType: String, Sendable, Equatable, Codable, CaseIt
     case borrow
     case repay
     case airdrop
+    case perpsPositionOpened = "perps.position_opened"
+    case perpsPositionClosed = "perps.position_closed"
+    case perpsBalanceDeposit = "perps.balance_deposit"
+    case perpsBalanceWithdrawal = "perps.balance_withdrawal"
     /// Fallback for activity types the client doesn't recognize yet — keeps unknown
     /// values decodable and rendered (by direction) instead of dropping or crashing.
     case unknown
@@ -386,13 +390,70 @@ public struct MultichainTronResource: Hashable, Sendable {
     }
 }
 
+public extension MultichainActivityType {
+    static let perpsRawValuePrefix = "perps."
+
+    var isPerps: Bool {
+        switch self {
+        case .perpsPositionOpened, .perpsPositionClosed, .perpsBalanceDeposit, .perpsBalanceWithdrawal:
+            true
+        default:
+            false
+        }
+    }
+}
+
+public enum MultichainActivityTypeFilter: String, Sendable, Equatable {
+    case send
+    case receive
+    case swap
+    case perps
+}
+
+public enum MultichainPerpsSide: String, Sendable, Equatable {
+    case long
+    case short
+}
+
+public enum MultichainPerpsCloseReason: String, Sendable, Equatable {
+    case manual
+    case takeProfit = "take_profit"
+    case stopLoss = "stop_loss"
+    case liquidation
+}
+
+public struct MultichainActivityPerpsMeta: Hashable, Sendable {
+    public let symbol: String?
+    public let assetId: String?
+    public let side: MultichainPerpsSide?
+    public let closeReason: MultichainPerpsCloseReason?
+    public let accountIndex: Int64?
+    public let settledAt: Date?
+
+    public init(
+        symbol: String?,
+        assetId: String?,
+        side: MultichainPerpsSide?,
+        closeReason: MultichainPerpsCloseReason?,
+        accountIndex: Int64?,
+        settledAt: Date?
+    ) {
+        self.symbol = symbol
+        self.assetId = assetId
+        self.side = side
+        self.closeReason = closeReason
+        self.accountIndex = accountIndex
+        self.settledAt = settledAt
+    }
+}
+
 public struct MultichainActivity: Hashable, Sendable {
     public let activityType: MultichainActivityType
     public let status: MultichainActivityStatus
     public let blockTime: Date
     public let blockNumber: Int64?
-    public let fromChain: MultichainChain
-    public let toChain: MultichainChain
+    public let fromChain: MultichainChain?
+    public let toChain: MultichainChain?
     public let walletAddress: String?
     public let direction: MultichainActivityDirection
     public let fromAddress: String?
@@ -416,14 +477,15 @@ public struct MultichainActivity: Hashable, Sendable {
     public let feeType: MultichainActivityFeeType?
     /// Keeper Battery charges spent on the fee. `0` is a real value; `nil` means the backend did not report it.
     public let batteryCharges: Int?
+    public let perps: MultichainActivityPerpsMeta?
 
     public init(
         activityType: MultichainActivityType,
         status: MultichainActivityStatus,
         blockTime: Date,
         blockNumber: Int64?,
-        fromChain: MultichainChain,
-        toChain: MultichainChain,
+        fromChain: MultichainChain?,
+        toChain: MultichainChain?,
         walletAddress: String?,
         direction: MultichainActivityDirection,
         fromAddress: String?,
@@ -445,7 +507,8 @@ public struct MultichainActivity: Hashable, Sendable {
         comment: String? = nil,
         tronResource: MultichainTronResource? = nil,
         feeType: MultichainActivityFeeType? = nil,
-        batteryCharges: Int? = nil
+        batteryCharges: Int? = nil,
+        perps: MultichainActivityPerpsMeta? = nil
     ) {
         self.activityType = activityType
         self.status = status
@@ -475,6 +538,7 @@ public struct MultichainActivity: Hashable, Sendable {
         self.tronResource = tronResource
         self.feeType = feeType
         self.batteryCharges = batteryCharges
+        self.perps = perps
     }
 }
 

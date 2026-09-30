@@ -3,26 +3,21 @@
 # Ends back on the refill screen, scrolled to the history section, browser closed.
 appId: com.jbig.tonkeeper
 ---
-- scrollUntilVisible:
-    centerElement: true
-    direction: DOWN
-    element:
-      id: battery_charges_history
-    timeout: 40000
-- waitForAnimationToEnd:
-    timeout: 2000
+- runFlow: reveal_refill_bottom.yaml
 - tapOn:
     id: battery_charges_history
     waitToSettleTimeoutMs: 5000
     retryTapIfNoChange: true
 
-# Opens bat.tonkeeper.com in the in-app browser — wait for native title.
+# Opens bat.tonkeeper.com in the in-app browser — the native title shows at once, the web
+# content with the purchase card arrives later. Above the 15s house limit: it is a page
+# load over the network on a cold CI simulator.
 - extendedWaitUntil:
     visible: Charges history
     timeout: 30000
 - extendedWaitUntil:
     visible: Details
-    timeout: 5000
+    timeout: 30000
 - tapOn: Details
 - scrollUntilVisible:
     element: Return charges

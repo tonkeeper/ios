@@ -71,15 +71,18 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             throw error
         }
         let preparedPayloads: [MultichainSwapPreparedPayload]
+        var providerRouteId = route.providerRouteId
         if let inlinePayloads = route.payloads, !inlinePayloads.isEmpty {
             preparedPayloads = inlinePayloads
         } else {
             do {
-                preparedPayloads = try await swapService.prepareCrossSwapRoute(
+                let prepare = try await swapService.prepareCrossSwapRoute(
                     routeId: route.routeId,
                     request: nil,
                     walletId: wallet.multichainWalletId
-                ).payloads
+                )
+                preparedPayloads = prepare.payloads
+                providerRouteId = prepare.providerRouteId ?? providerRouteId
             } catch {
                 Log.multichainSwap.w(
                     "swap preparation prepare failed",
@@ -129,14 +132,14 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             nativeFees: aggregated,
             isNativeInsufficient: preparation.nativeFeeShortage != nil
         )
-        // A battery method the wallet is only short of charges for is not a dead end: the picker is
-        // the only place those charges can be bought, so the plan has to exist for the screen to
+        // A relayed method the wallet is only short of charges or GRAM for is not a dead end: the
+        // picker is the only place either can be bought, so the plan has to exist for the screen to
         // offer it at all. Only a swap left with the chain's own coin has nowhere else to go.
         let isFeePayable = feeOptions.contains { !$0.isInsufficient }
-        let isBatteryFeeRefillable = feeOptions.contains { $0.method.isBattery }
+        let isRelayedFeeRefillable = feeOptions.contains { $0.method.isRelayed }
         if let nativeFeeShortage = preparation.nativeFeeShortage,
            !isFeePayable,
-           !isBatteryFeeRefillable
+           !isRelayedFeeRefillable
         {
             let error = MultichainSwapExecutionFailure.insufficientNativeFee(shortage: nativeFeeShortage)
             Log.multichainSwap.w(
@@ -157,7 +160,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         return MultichainSwapExecutionPlan(
             routeId: route.routeId,
             aggregator: aggregator,
-            providerRouteId: route.providerRouteId,
+            providerRouteId: providerRouteId,
             payloads: payloads,
             networkFees: aggregated,
             requiresApproval: preparation.requiresApproval,
@@ -205,13 +208,14 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         )
 
         switch feeMethod {
-        case .battery:
-            return try await executeWithBatteryFee(
+        case .battery, .gram:
+            return try await executeWithRelayedFee(
                 passcodeProvider: passcodeProvider,
                 wallet: wallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
-                executionPlan: executionPlan
+                executionPlan: executionPlan,
+                feeMethod: feeMethod
             )
         case .native:
             break
@@ -266,15 +270,16 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
 }
 
 extension MultichainSwapExecutionServiceImplementation {
-    /// Sends the swap through battery instead of the chain's own broadcast. A battery that cannot be
-    /// honoured fails the send rather than falling back: the user confirmed paying with it, and
-    /// paying with something else is a different transaction.
-    func executeWithBatteryFee(
+    /// Sends the swap through the relayer instead of the chain's own broadcast. A relayed method that
+    /// cannot be honoured fails the send rather than falling back: the user confirmed paying with it,
+    /// and paying with something else is a different transaction.
+    func executeWithRelayedFee(
         passcodeProvider: @escaping () async -> String?,
         wallet: Wallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
-        executionPlan: MultichainSwapExecutionPlan
+        executionPlan: MultichainSwapExecutionPlan,
+        feeMethod: MultichainSwapFeeMethod
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult {
         func planInfo(_ additional: [String: String] = [:]) -> [String: String] {
             Self.executionPlanLogInfo(
@@ -284,8 +289,8 @@ extension MultichainSwapExecutionServiceImplementation {
                 additional: additional
             )
         }
-        guard let batterySend = executionPlan.batterySend,
-              let engine = feeMethodResolver.engine(payload: batterySend.payload)
+        guard let relayedSend = executionPlan.relayedSend(for: feeMethod),
+              let engine = feeMethodResolver.engine(payload: relayedSend.payload)
         else {
             let error = MultichainSwapExecutionFailure.internal(
                 reason: "no engine can pay for this swap with the selected fee method"
@@ -304,9 +309,9 @@ extension MultichainSwapExecutionServiceImplementation {
                 sourceAsset: sourceAsset,
                 payloadId: mainPayload.payloadId,
                 requiresApproval: executionPlan.requiresApproval,
-                payload: batterySend.payload
+                payload: relayedSend.payload
             ),
-            confirmedCharges: batterySend.confirmedCharges,
+            confirmed: relayedSend.confirmed,
             passcodeProvider: passcodeProvider
         )
         let result = MultichainSwapExecutionResult(
@@ -322,8 +327,8 @@ extension MultichainSwapExecutionServiceImplementation {
             ]
         )
         Log.multichainSwap.i(
-            "execution completed after battery relay",
-            extraInfo: planInfo(["txHash": txHash])
+            "execution completed after relay",
+            extraInfo: planInfo(["txHash": txHash, "feeMethod": feeMethod.rawValue])
         )
         await reportPendingTransaction(
             txHash: txHash,
@@ -374,6 +379,7 @@ extension MultichainSwapExecutionServiceImplementation {
                         toAssetId: destinationAsset.asset.assetId,
                         quote: .init(
                             aggregator: executionPlan.aggregator.rawValue,
+                            routeId: executionPlan.routeId,
                             providerRouteId: executionPlan.providerRouteId
                         )
                     )

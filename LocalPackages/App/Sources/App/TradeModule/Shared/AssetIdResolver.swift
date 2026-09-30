@@ -195,7 +195,7 @@ private extension MultichainChain {
 private extension KeeperCore.Network {
     var tradeAssetDetailsNetworkIdentifier: String {
         switch self {
-        case .mainnet, .tetra:
+        case .mainnet:
             "mainnet"
         case .testnet:
             "testnet"

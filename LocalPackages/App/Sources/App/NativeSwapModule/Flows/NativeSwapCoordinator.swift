@@ -13,6 +13,7 @@ final class NativeSwapCoordinator: RouterCoordinator<NavigationControllerRouter>
 
     private let wallet: Wallet
     private let nativeSwapContext: NativeSwapContext
+    private let initiatedBy: InitiatedBy
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
@@ -22,12 +23,14 @@ final class NativeSwapCoordinator: RouterCoordinator<NavigationControllerRouter>
     init(
         wallet: Wallet,
         nativeSwapContext: NativeSwapContext,
+        initiatedBy: InitiatedBy,
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) {
         self.wallet = wallet
         self.nativeSwapContext = nativeSwapContext
+        self.initiatedBy = initiatedBy
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         super.init(router: router)
@@ -221,6 +224,7 @@ private extension NativeSwapCoordinator {
         let coordinator = NativeSwapTransactionConfirmationCoordinator(
             wallet: wallet,
             model: model,
+            initiatedBy: initiatedBy,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: router

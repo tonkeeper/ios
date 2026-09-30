@@ -20,7 +20,7 @@ enum PerpsMarketRowMapping {
             symbol: market.symbol,
             iconURL: market.iconURL,
             leverageText: market.maxLeverage > 0 ? PerpsFormatting.leverageBadge(Double(market.maxLeverage)) : nil,
-            volumeText: "\(PerpsFormatting.compactUsd(market.volume24h)) \(TKLocales.Perps.volumeShort)",
+            volumeText: "\(PerpsFormatting.usd(market.volume24h)) \(TKLocales.Perps.volumeShort)",
             priceText: PerpsFormatting.usd(market.price),
             changeText: PerpsFormatting.signedPercent(market.priceChangePercent),
             isChangePositive: market.priceChangePercent >= 0

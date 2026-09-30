@@ -40,8 +40,8 @@ public final class MultichainWalletCoordinator: RouterCoordinator<NavigationCont
     var didSelectMultichainAssetDetails: ((TradeAssetDetailsViewModel.PreviewContext) -> Void)?
     var didTapOpenCryptoAssets: (() -> Void)?
     var collectiblesDidOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-    var collectiblesDidRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
-    var didRequestBannerDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+    var collectiblesDidRequestDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
+    var didRequestBannerDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var collectiblesDidRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
     var collectiblesDidRequestDepositTon: ((_ wallet: Wallet) -> Void)?
 
@@ -110,147 +110,37 @@ private extension MultichainWalletCoordinator {
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
             return
         }
-        let totalBalanceUpdateQueue = DispatchQueue(label: "MultichainWalletTotalBalanceQueue")
-        let multichainService = keeperCoreMainAssembly.servicesAssembly.multichainService()
 
+        let pushAuthorizationModel = PushAuthorizationModel()
+        let totalBalanceUpdateQueue = DispatchQueue(label: "MultichainWalletTotalBalanceQueue")
         let headerMapper = WalletBalanceHeaderMapper(
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
         )
-
-        let setupModel = WalletBalanceSetupModel(
-            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-            mnemonicsAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
-            configuration: configuration
-        )
+        let multichainService = keeperCoreMainAssembly.servicesAssembly.multichainService()
 
         let rootViewModel = MultichainWalletRootViewModel(
             wallet: wallet,
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            setupModel: setupModel,
-            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-            multichainService: multichainService,
-            multichainAssetBalanceProvider: keeperCoreMainAssembly
-                .multichainAssembly
-                .multichainAssetBalanceProvider,
-            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             configuration: configuration,
-            tooltipsService: coreAssembly.tooltipsAssembly.service,
-            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-            makeBalanceViewModel: { [weak self, keeperCoreMainAssembly, configuration] wallet in
-                let viewModel = MultichainWalletBalanceSectionViewModel(
-                    wallet: wallet,
-                    totalBalanceModel: WalletTotalBalanceModel(
-                        wallet: wallet,
-                        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-                        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                        backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
-                        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                        updateQueue: totalBalanceUpdateQueue
-                    ),
-                    balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                    walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                    portfolioStore: keeperCoreMainAssembly.storesAssembly.multichainPortfolioStore,
-                    currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-                    appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                    headerMapper: headerMapper,
-                    configuration: configuration
-                )
-                viewModel.onAddress = { [weak self] wallet in
-                    self?.didTapAddress?(wallet)
-                }
-                viewModel.onBattery = { [weak self] wallet in
-                    self?.didTapBattery?(wallet)
-                }
-                viewModel.onBackup = { [weak self] wallet in
-                    self?.didTapBackup?(wallet)
-                }
-                return viewModel
-            },
-            storesAssembly: keeperCoreMainAssembly.storesAssembly,
-            accountNftService: keeperCoreMainAssembly.servicesAssembly.accountNftService(),
-            makeHomeBannersViewModel: { [weak self, keeperCoreMainAssembly, coreAssembly] wallet in
-                let viewModel = WalletBalanceHomeBannersViewModel(
-                    wallet: wallet,
-                    homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
-                    homeBannersLoader: keeperCoreMainAssembly.loadersAssembly.homeBannersLoader,
-                    deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
-                    analyticsProvider: coreAssembly.analyticsProvider
-                )
-                viewModel.onOpenDeeplink = { [weak self] deeplink in
-                    self?.didRequestBannerDeeplinkHandling?(deeplink)
-                }
-                viewModel.onOpenLink = { [weak self] url in
-                    self?.coreAssembly.urlOpener().open(url: url)
-                }
-                return viewModel
-            },
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
             analyticsProvider: coreAssembly.analyticsProvider,
-            realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager
+            makeWalletViewModel: { [weak self, keeperCoreMainAssembly, coreAssembly, configuration] wallet in
+                Self.makeWalletViewModel(
+                    wallet: wallet,
+                    coordinator: self,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    coreAssembly: coreAssembly,
+                    configuration: configuration,
+                    multichainService: multichainService,
+                    headerMapper: headerMapper,
+                    totalBalanceUpdateQueue: totalBalanceUpdateQueue,
+                    pushAuthorizationModel: pushAuthorizationModel
+                )
+            }
         )
-        rootViewModel.onSend = { [weak self] wallet in
-            self?.didTapSend?(wallet)
-        }
-        rootViewModel.onDeposit = { [weak self] wallet in
-            self?.didTapDeposit?(wallet)
-        }
-        rootViewModel.onSwap = { [weak self] wallet in
-            self?.didTapSwap?(wallet)
-        }
-        rootViewModel.onStake = { [weak self] wallet in
-            self?.didTapStake?(wallet)
-        }
-        rootViewModel.onBackup = { [weak self] wallet in
-            self?.didTapBackup?(wallet)
-        }
-        rootViewModel.onMigration = { [weak self] wallet in
-            self?.didTapMigration?(wallet)
-        }
-        rootViewModel.onRequirePasscode = { [weak self] in
-            await self?.getPasscode()
-        }
         rootViewModel.onOpenRaffle = { [weak self] in
             self?.openMysteryRaffle()
-        }
-        rootViewModel.assetsListViewModel.onTapManage = { [weak self, weak rootViewModel] in
-            guard
-                let self,
-                let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
-            else {
-                return
-            }
-            openManageTokens(wallet: wallet, rootViewModel: rootViewModel)
-        }
-        rootViewModel.assetsListViewModel.onTapOpenAssets = { [weak self] in
-            self?.didTapOpenCryptoAssets?()
-        }
-        rootViewModel.assetsListViewModel.onSelectAsset = { [weak self] asset in
-            self?.didSelectMultichainAssetDetails?(
-                TradeItemsMapper.previewContext(for: asset)
-            )
-        }
-        rootViewModel.assetsListViewModel.onSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStakingInfo in
-            self?.didSelectStakingItem?(wallet, stakingPoolInfo, accountStakingInfo)
-        }
-        rootViewModel.assetsListViewModel.onSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStakingInfo in
-            self?.didSelectCollectStakingItem?(wallet, stakingPoolInfo, accountStakingInfo)
-        }
-        rootViewModel.collectiblesViewModel.onTapOpenCollectibles = { [weak self] in
-            self?.openCollectibles()
-        }
-        rootViewModel.collectiblesViewModel.onSelectNFT = { [weak self] nft in
-            guard
-                let self,
-                let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
-            else {
-                return
-            }
-            openNFTDetails(wallet: wallet, nft: nft)
         }
         let balanceViewController = MultichainWalletBalanceViewController(viewModel: rootViewModel)
         rootViewModel.didChangeWallet = { [weak balanceViewController] in
@@ -280,6 +170,174 @@ private extension MultichainWalletCoordinator {
         }
 
         router.push(viewController: module.view, animated: false)
+    }
+
+    static func makeWalletViewModel(
+        wallet: Wallet,
+        coordinator: MultichainWalletCoordinator?,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        coreAssembly: TKCore.CoreAssembly,
+        configuration: Configuration,
+        multichainService: MultichainService,
+        headerMapper: WalletBalanceHeaderMapper,
+        totalBalanceUpdateQueue: DispatchQueue,
+        pushAuthorizationModel: PushAuthorizationModel
+    ) -> MultichainWalletViewModel {
+        let storesAssembly = keeperCoreMainAssembly.storesAssembly
+
+        let balanceViewModel = MultichainWalletBalanceSectionViewModel(
+            wallet: wallet,
+            totalBalanceModel: WalletTotalBalanceModel(
+                wallet: wallet,
+                totalBalanceStore: storesAssembly.totalBalanceStore,
+                appSettingsStore: storesAssembly.appSettingsStore,
+                backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
+                balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                updateQueue: totalBalanceUpdateQueue
+            ),
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            walletsStore: storesAssembly.walletsStore,
+            portfolioStore: storesAssembly.multichainPortfolioStore,
+            currencyStore: storesAssembly.currencyStore,
+            appSettingsStore: storesAssembly.appSettingsStore,
+            headerMapper: headerMapper,
+            configuration: configuration
+        )
+        balanceViewModel.onAddress = { [weak coordinator] wallet in
+            coordinator?.didTapAddress?(wallet)
+        }
+        balanceViewModel.onBattery = { [weak coordinator] wallet in
+            coordinator?.didTapBattery?(wallet)
+        }
+        balanceViewModel.onBackup = { [weak coordinator] wallet in
+            coordinator?.didTapBackup?(wallet)
+        }
+
+        let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
+            wallet: wallet,
+            walletsStore: storesAssembly.walletsStore,
+            homeBannersStore: storesAssembly.homeBannersStore,
+            homeBannersLoader: keeperCoreMainAssembly.loadersAssembly.homeBannersLoader,
+            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
+            analyticsProvider: coreAssembly.analyticsProvider
+        )
+        homeBannersViewModel.onOpenDeeplink = { [weak coordinator] deeplink, utm in
+            coordinator?.didRequestBannerDeeplinkHandling?(deeplink, utm)
+        }
+        homeBannersViewModel.onOpenLink = { url in
+            coreAssembly.urlOpener().open(url: url)
+        }
+
+        let amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let assetsListViewModel = WalletBalanceMultichainAssetsListViewModel(
+            wallet: wallet,
+            multichainService: multichainService,
+            multichainAssetBalanceProvider: keeperCoreMainAssembly
+                .multichainAssembly
+                .multichainAssetBalanceProvider,
+            currencyStore: storesAssembly.currencyStore,
+            amountFormatter: amountFormatter,
+            portfolioStore: storesAssembly.multichainPortfolioStore,
+            stakingPoolsStore: storesAssembly.stackingPoolsStore,
+            processedBalanceStore: storesAssembly.processedBalanceStore,
+            appSettingsStore: storesAssembly.appSettingsStore,
+            tonStakingAPYProvider: { [configuration, storesAssembly] wallet in
+                guard !configuration.flag(\.stakingDisabled, network: wallet.network) else {
+                    return nil
+                }
+                return storesAssembly.stackingPoolsStore.state[wallet]?
+                    .filter { configuration.value(\.stakingEnabledProviders).contains($0.implementation.type.rawValue) }
+                    .map(\.apy)
+                    .max()
+            },
+            tonStakingAPYTextFormatter: { [amountFormatter] value in
+                guard let value else { return nil }
+                return TKLocales.Trade.AssetDetails.apyValue(
+                    amountFormatter.format(decimal: value, style: .percent)
+                )
+            },
+            canManage: true
+        )
+        assetsListViewModel.onTapOpenAssets = { [weak coordinator] in
+            coordinator?.didTapOpenCryptoAssets?()
+        }
+        assetsListViewModel.onSelectAsset = { [weak coordinator] asset in
+            coordinator?.didSelectMultichainAssetDetails?(
+                TradeItemsMapper.previewContext(for: asset)
+            )
+        }
+        assetsListViewModel.onSelectStakingItem = { [weak coordinator] wallet, stakingPoolInfo, accountStakingInfo in
+            coordinator?.didSelectStakingItem?(wallet, stakingPoolInfo, accountStakingInfo)
+        }
+        assetsListViewModel.onSelectCollectStakingItem = { [weak coordinator] wallet, stakingPoolInfo, accountStakingInfo in
+            coordinator?.didSelectCollectStakingItem?(wallet, stakingPoolInfo, accountStakingInfo)
+        }
+
+        let collectiblesViewModel = WalletBalanceMultichainCollectiblesViewModel(
+            wallet: wallet,
+            storesAssembly: storesAssembly,
+            accountNftService: keeperCoreMainAssembly.servicesAssembly.accountNftService(),
+            appSettingsStore: storesAssembly.appSettingsStore
+        )
+        collectiblesViewModel.onTapOpenCollectibles = { [weak coordinator] in
+            coordinator?.openCollectibles()
+        }
+
+        let viewModel = MultichainWalletViewModel(
+            wallet: wallet,
+            balanceViewModel: balanceViewModel,
+            homeBannersViewModel: homeBannersViewModel,
+            assetsListViewModel: assetsListViewModel,
+            collectiblesViewModel: collectiblesViewModel,
+            setupModel: WalletBalanceSetupModel(
+                wallet: wallet,
+                walletsStore: storesAssembly.walletsStore,
+                processedBalanceStore: storesAssembly.processedBalanceStore,
+                securityStore: storesAssembly.securityStore,
+                walletNotificationStore: storesAssembly.walletNotificationStore,
+                mnemonicsAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
+                configuration: configuration,
+                pushAuthorizationModel: pushAuthorizationModel
+            ),
+            walletsStore: storesAssembly.walletsStore,
+            multichainService: multichainService,
+            realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager,
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            stakingPoolsStore: storesAssembly.stackingPoolsStore,
+            processedBalanceStore: storesAssembly.processedBalanceStore,
+            configuration: configuration,
+            tooltipsService: coreAssembly.tooltipsAssembly.service
+        )
+        viewModel.onSend = { [weak coordinator] wallet in
+            coordinator?.didTapSend?(wallet)
+        }
+        viewModel.onDeposit = { [weak coordinator] wallet in
+            coordinator?.didTapDeposit?(wallet)
+        }
+        viewModel.onSwap = { [weak coordinator] wallet in
+            coordinator?.didTapSwap?(wallet)
+        }
+        viewModel.onStake = { [weak coordinator] wallet in
+            coordinator?.didTapStake?(wallet)
+        }
+        viewModel.onBackup = { [weak coordinator] wallet in
+            coordinator?.didTapBackup?(wallet)
+        }
+        viewModel.onRequirePasscode = { [weak coordinator] in
+            await coordinator?.getPasscode()
+        }
+        viewModel.onMigration = { [weak coordinator] wallet in
+            coordinator?.didTapMigration?(wallet)
+        }
+        assetsListViewModel.onTapManage = { [weak coordinator, weak viewModel] in
+            guard let coordinator, let viewModel else { return }
+            coordinator.openManageTokens(walletViewModel: viewModel)
+        }
+        collectiblesViewModel.onSelectNFT = { [weak coordinator, weak viewModel] nft in
+            guard let coordinator, let viewModel else { return }
+            coordinator.openNFTDetails(wallet: viewModel.wallet, nft: nft)
+        }
+        return viewModel
     }
 
     func openMysteryRaffle() {
@@ -316,8 +374,8 @@ private extension MultichainWalletCoordinator {
         collectiblesCoordinator.didOpenDapp = { [weak self] url, title in
             self?.collectiblesDidOpenDapp?(url, title)
         }
-        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.collectiblesDidRequestDeeplinkHandling?(deeplink)
+        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.collectiblesDidRequestDeeplinkHandling?(deeplink, utm)
         }
         collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
             self?.collectiblesDidRequestOpenBuySell?(isInternalPurchasing, wallet)
@@ -376,8 +434,8 @@ private extension MultichainWalletCoordinator {
             self?.collectiblesDetailsCoordinator = nil
         }
 
-        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            self?.collectiblesDidRequestDeeplinkHandling?(deeplink)
+        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            self?.collectiblesDidRequestDeeplinkHandling?(deeplink, utm)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
@@ -399,7 +457,8 @@ private extension MultichainWalletCoordinator {
         })
     }
 
-    func openManageTokens(wallet: Wallet, rootViewModel: MultichainWalletRootViewModel?) {
+    func openManageTokens(walletViewModel: MultichainWalletViewModel) {
+        let wallet = walletViewModel.wallet
         let coordinator = ManageTokensCoordinator(
             router: router,
             wallet: wallet,
@@ -407,11 +466,9 @@ private extension MultichainWalletCoordinator {
             balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
             visibilityChangesController: keeperCoreMainAssembly.visibilityChangesController
         )
-        coordinator.didSaveVisibilityChanges = { [weak rootViewModel] update in
-            guard let rootViewModel else { return }
-            rootViewModel.assetsListViewModel.applyVisibilityUpdate(update)
+        coordinator.didSaveVisibilityChanges = { [weak walletViewModel] update in
             Task {
-                await rootViewModel.reloadAssetsList()
+                await walletViewModel?.applyVisibilityUpdate(update)
             }
         }
         addChild(coordinator)

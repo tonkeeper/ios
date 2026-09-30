@@ -186,10 +186,7 @@ private extension WalletMigrationCoordinator {
         ).createAddWalletCoordinator(
             options: [.importRegular],
             router: ViewControllerRouter(rootViewController: migrationRouter.rootViewController),
-            analyticsContext: WalletFlowAnalyticsContext(
-                from: .main,
-                multichainEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
-            )
+            analyticsContext: WalletFlowAnalyticsContext(from: .main)
         )
 
         coordinator.didAddWallets = { [weak self, weak coordinator] in
@@ -523,6 +520,7 @@ private extension WalletMigrationCoordinator {
             router: NavigationControllerRouter(rootViewController: navigationController),
             wallet: wallet,
             jettonMasterAddress: nil,
+            initiatedBy: .user,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )

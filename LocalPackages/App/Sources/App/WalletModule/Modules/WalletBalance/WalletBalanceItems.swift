@@ -29,13 +29,21 @@ enum WalletBalance {
 
     struct SetupSection: Hashable {
         let items: [ListItem]
+        /// Forces a header refresh when finishability changes.
+        let isFinishEnabled: Bool
+        /// Forces a header refresh after a wallet switch.
+        let walletId: String
         let headerConfiguration: TKListCollectionViewButtonHeaderView.Configuration
 
         init(
             items: [ListItem],
+            isFinishEnabled: Bool,
+            walletId: String,
             headerConfiguration: TKListCollectionViewButtonHeaderView.Configuration
         ) {
             self.items = items
+            self.isFinishEnabled = isFinishEnabled
+            self.walletId = walletId
             self.headerConfiguration = headerConfiguration
         }
     }

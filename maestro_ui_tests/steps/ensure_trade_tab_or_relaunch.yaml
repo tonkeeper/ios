@@ -6,5 +6,5 @@ appId: com.jbig.tonkeeper
       notVisible: Trade
     commands:
       - stopApp
-      - runFlow: launch_app_ensure_wallet.yaml
+      - runFlow: launch_app_ensure_ton_wallet.yaml
       - runFlow: ../service/account/compare_ton_balance.yaml

@@ -1,23 +1,9 @@
-
-## macOS
-.DS_Store
-
 ## User settings
 xcuserdata/
 
 ## XCode
 *.xcscmblueprint
 *.xccheckout
-
-.env
-.context
-.build
-
-## Codex generated skill artifacts
-.agents/skills/tk-impact-analysis/reports/
-build/
-DerivedData/
-worktrees/
 *.moved-aside
 *.pbxuser
 !default.pbxuser
@@ -27,6 +13,7 @@ worktrees/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
+DerivedData/
 
 ## Obj-C/Swift specific
 *.hmap
@@ -37,15 +24,18 @@ worktrees/
 *.dSYM
 
 ## Firebase config
-Tonkeeper/Resources/Firebase/
+Keeper/Resources/Firebase/
 
 ## Modules
-Modules/Package.resolved
 LocalPackages/**/Package.resolved
 
+## Build output
+build/
 .build
+
+## macOS / tooling leftovers
+.DS_Store
 __pycache__/
 
 ## Locally generated sourcekit-lsp config (machine-specific SDK paths)
 .sourcekit-lsp/
-.reports/

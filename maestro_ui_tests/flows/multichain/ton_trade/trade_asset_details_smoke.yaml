@@ -1,0 +1,43 @@
+# regress_EN [Trading UI]: token details from trading UI; [Token screen] sections and Send/Receive menu.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000
+- runFlow: "../../../steps/ensure_trade_tab_or_relaunch.yaml"
+- runFlow: "../../../steps/trade/open_trade_tab.yaml"
+
+- scrollUntilVisible:
+    element: "Today's top movers"
+- extendedWaitUntil:
+    visible: ${NATIVE_TOKEN_SHORT_TEXT}
+    timeout: 120000
+- tapOn: ${NATIVE_TOKEN_SHORT_TEXT}
+
+- extendedWaitUntil:
+    visible: Buy
+    timeout: 120000
+- scrollUntilVisible:
+    element:
+      id: trade_asset_details_send
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- assertVisible:
+    id: "trade_asset_details_send"
+- assertVisible:
+    id: "trade_asset_details_receive"
+
+- scrollUntilVisible:
+    element: "About"
+- assertVisible: About
+- scrollUntilVisible:
+    element: "Overview"
+- assertVisible: Overview
+
+- scrollUntilVisible:
+    element: "24h Trading activity"
+    direction: DOWN
+    timeout: 15000
+    optional: true

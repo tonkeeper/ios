@@ -1,6 +1,6 @@
-# Canary for the multichain cluster: one import-to-home pass that gates the
-# shard matrix in CI. When wallet setup is broken app-wide, every shard would
-# burn its full timeout budget on the same failure — fail here once instead.
+# Canary: one multichain-seed import-to-home pass that gates the shard matrix in CI.
+# When wallet setup is broken app-wide, every shard would burn its full timeout
+# budget on the same failure — fail here once instead.
 # Not part of any shard: config.yaml globs do not cover flows/canary/**.
 appId: com.jbig.tonkeeper
 ---

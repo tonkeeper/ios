@@ -8,6 +8,7 @@ import UIKit
 protocol TokenPickerV2ModuleOutput: AnyObject {
     var didFinish: (() -> Void)? { get set }
     var didSelectAsset: ((MultichainAsset) -> Void)? { get set }
+    var didSelectPerpMarket: ((Int64) -> Void)? { get set }
     var didDismiss: (() -> Void)? { get set }
     func finishAssetSelection(shouldClose: Bool)
 }
@@ -20,6 +21,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
 
     var didFinish: (() -> Void)?
     var didSelectAsset: ((MultichainAsset) -> Void)?
+    var didSelectPerpMarket: ((Int64) -> Void)?
     var didDismiss: (() -> Void)?
     var onCatalogSortOverlayStateChanged: (() -> Void)?
 
@@ -28,7 +30,9 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     @Published private(set) var selectedChainFilter: TokenPickerV2ChainFilter = .all
     @Published private(set) var currentQueryViewModel: TokenPickerV2QueryViewModel?
     @Published private(set) var showsCatalogSortControl = false
+    @Published private(set) var showsPerpsSortControl = false
     @Published private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
+    @Published private(set) var perpsSearchSort: PerpsMarketsSort = .volume
     @Published private(set) var isAwaitingAssetSelection = false
 
     let headerTitle: String
@@ -99,6 +103,21 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         activateCurrentQuery()
     }
 
+    func selectPerpsSort(_ sort: PerpsMarketsSort) {
+        guard selectedChainFilter == .perpetuals else {
+            return
+        }
+        guard tokenPickerModel.perpsSearchSort != sort else {
+            return
+        }
+
+        tokenPickerModel.setPerpsSearchSort(sort)
+        syncCatalogSortState()
+
+        categoryViewModels[.perpetuals]?.invalidateCachedQueries()
+        activateCurrentQuery()
+    }
+
     func search(text: String) {
         guard searchText != text else {
             return
@@ -118,6 +137,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
 
         cancelActivateQueryTask()
         selectedChainFilter = filter
+        syncCatalogSortState()
 
         guard hasLoaded else {
             return
@@ -127,21 +147,28 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
 
     func selectRow(_ id: String) {
         guard !isAwaitingAssetSelection,
-              let asset = currentQueryViewModel?.item(withID: id)?.asset,
-              let didSelectAsset
+              let item = currentQueryViewModel?.item(withID: id)
         else {
             return
         }
 
-        if waitsForSelectionCompletion {
-            isAwaitingAssetSelection = true
-        }
-        didSelectAsset(asset)
-        guard !waitsForSelectionCompletion else {
-            return
-        }
-        if presentation.closesOnSelection {
-            close()
+        switch item.payload {
+        case let .asset(asset, _):
+            guard let didSelectAsset else {
+                return
+            }
+            if waitsForSelectionCompletion {
+                isAwaitingAssetSelection = true
+            }
+            didSelectAsset(asset)
+            guard !waitsForSelectionCompletion else {
+                return
+            }
+            if presentation.closesOnSelection {
+                close()
+            }
+        case let .perp(market):
+            didSelectPerpMarket?(market.id)
         }
     }
 
@@ -204,8 +231,10 @@ private extension TokenPickerV2ViewModelImplementation {
     }
 
     func syncCatalogSortState() {
-        showsCatalogSortControl = tokenPickerModel.showsCatalogSortControl
+        showsPerpsSortControl = selectedChainFilter == .perpetuals
+        showsCatalogSortControl = tokenPickerModel.showsCatalogSortControl && !showsPerpsSortControl
         catalogSearchSort = tokenPickerModel.catalogSearchSort
+        perpsSearchSort = tokenPickerModel.perpsSearchSort
         onCatalogSortOverlayStateChanged?()
     }
 
@@ -268,6 +297,13 @@ private extension TokenPickerV2ViewModelImplementation {
                     id: .chain(chain),
                     title: chain.addressConfiguration.title,
                     image: chain.addressConfiguration.icon,
+                    isSelectable: true
+                )
+            case .perpetuals:
+                return TokenPickerV2TabModel(
+                    id: .perpetuals,
+                    title: TKLocales.Perps.title,
+                    image: nil,
                     isSelectable: true
                 )
             }
@@ -339,15 +375,27 @@ struct TokenPickerV2TabModel: Identifiable, Hashable {
 enum TokenPickerV2ChainFilter: Hashable {
     case all
     case chain(MultichainChain)
+    case perpetuals
 }
 
 extension TokenPickerV2ChainFilter {
+    var chain: MultichainChain? {
+        switch self {
+        case .all, .perpetuals:
+            return nil
+        case let .chain(chain):
+            return chain
+        }
+    }
+
     func includes(chain: MultichainChain) -> Bool {
         switch self {
         case .all:
             return true
         case let .chain(expectedChain):
             return expectedChain == chain
+        case .perpetuals:
+            return false
         }
     }
 
@@ -357,6 +405,8 @@ extension TokenPickerV2ChainFilter {
             return "token_picker_chain_all"
         case let .chain(chain):
             return "token_picker_chain_\(chain.rawValue)"
+        case .perpetuals:
+            return "token_picker_chain_perps"
         }
     }
 }

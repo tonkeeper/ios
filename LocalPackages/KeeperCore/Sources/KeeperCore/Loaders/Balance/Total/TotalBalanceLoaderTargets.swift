@@ -23,7 +23,7 @@ extension TotalBalanceLoaderTarget {
     static func from(
         wallets: [Wallet],
         balanceStates: [Wallet: WalletBalanceState],
-        portfolioTotals: [Wallet: MultichainPortfolioTotal],
+        portfolioTotals: [Wallet: MultichainPortfolio],
         currencyCode: String,
         hidesDustBalances: Bool = false,
         now: Date
@@ -59,7 +59,7 @@ extension TotalBalanceLoaderTarget {
 
     private static func needsPortfolioTotal(
         wallet: Wallet,
-        portfolioTotals: [Wallet: MultichainPortfolioTotal],
+        portfolioTotals: [Wallet: MultichainPortfolio],
         currencyCode: String,
         hidesDustBalances: Bool,
         now: Date

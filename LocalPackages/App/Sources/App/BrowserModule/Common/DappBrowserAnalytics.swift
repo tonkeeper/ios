@@ -38,40 +38,56 @@ final class DappBrowserAnalyticsController {
         source: DappOpenSource,
         popularApp: PopularApp,
         catalogMode: DappCatalogMode,
-        dapp: Dapp
+        dapp: Dapp,
+        utm: UtmParameters = .empty
     ) -> DappOpenRequest? {
         popularAppOpenRequest(
             source: source,
             popularApp: popularApp,
             catalogMode: catalogMode,
-            dapp: dapp
+            dapp: dapp,
+            utm: utm
         )
     }
 
-    func directOpenRequest(source: DappOpenSource, dapp: Dapp) -> DappOpenRequest {
-        DappOpenRequest(
+    func directOpenRequest(
+        source: DappOpenSource,
+        dapp: Dapp,
+        utm: UtmParameters = .empty
+    ) -> DappOpenRequest {
+        var context = Self.directContext(
+            source: source,
+            dapp: dapp,
+            selectedCountry: selectedCountryProvider(),
+            localeRegionCode: localeRegionCodeProvider()
+        )
+        context.utm = utm
+
+        return DappOpenRequest(
             dapp: dapp,
             analyticsSession: DappOpenAnalyticsSession(
-                context: Self.directContext(
-                    source: source,
-                    dapp: dapp,
-                    selectedCountry: selectedCountryProvider(),
-                    localeRegionCode: localeRegionCodeProvider()
-                ),
+                context: context,
                 analyticsProvider: analyticsProvider
             )
         )
     }
 
-    func logBrowserOpen(from source: DappBrowserOpenSource, tab: DappBrowserTab) {
-        analyticsProvider.log(DappBrowserOpen(
-            from: source.analyticsValue,
-            type: tab.analyticsValue,
-            location: Self.location(
-                selectedCountry: selectedCountryProvider(),
-                localeRegionCode: localeRegionCodeProvider()
-            )
-        ))
+    func logBrowserOpen(
+        from source: DappBrowserOpenSource,
+        tab: DappBrowserTab,
+        utm: UtmParameters = .empty
+    ) {
+        analyticsProvider.log(
+            DappBrowserOpen(
+                from: source.analyticsValue,
+                type: tab.analyticsValue,
+                location: Self.location(
+                    selectedCountry: selectedCountryProvider(),
+                    localeRegionCode: localeRegionCodeProvider()
+                )
+            ),
+            utm: utm
+        )
     }
 
     func logBrowserTabClick(tab: DappBrowserTab) {
@@ -212,10 +228,11 @@ private extension DappBrowserAnalyticsController {
         source: DappOpenSource,
         popularApp: PopularApp,
         catalogMode: DappCatalogMode,
-        dapp: Dapp? = nil
+        dapp: Dapp? = nil,
+        utm: UtmParameters = .empty
     ) -> DappOpenRequest? {
         guard let dapp = dapp ?? Dapp(popularApp: popularApp),
-              let context = Self.context(
+              var context = Self.context(
                   source: source,
                   popularApp: popularApp,
                   selectedCountry: selectedCountryProvider(),
@@ -225,6 +242,7 @@ private extension DappBrowserAnalyticsController {
         else {
             return nil
         }
+        context.utm = utm
 
         return DappOpenRequest(
             dapp: dapp,

@@ -18,9 +18,11 @@ public final class TKContainerCollectionViewCell: UICollectionViewCell, Reusable
     override public func prepareForReuse() {
         super.prepareForReuse()
         containerView.subviews.forEach { $0.removeFromSuperview() }
+        containerContentView = nil
     }
 
     public func setContentView(_ view: UIView?) {
+        if let view, view === containerContentView, view.superview === containerView { return }
         containerView.subviews.forEach { $0.removeFromSuperview() }
         containerContentView = view
         guard let view else { return }

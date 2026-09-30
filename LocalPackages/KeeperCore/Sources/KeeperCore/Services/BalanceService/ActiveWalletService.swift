@@ -240,7 +240,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
 
 private extension ActiveWalletsServiceImplementation {
     func createAddress(publicKey: TonSwift.PublicKey, revision: WalletContractVersion, networkId: Network) throws -> Address {
-        let networkRawValue = networkId.walletNetworkGlobalId
+        let networkRawValue = networkId.rawValue
 
         let contract: WalletContract
         switch revision {

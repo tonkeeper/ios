@@ -1,5 +1,4 @@
 import Foundation
-import TKFeatureFlags
 import TonSwift
 
 public final class MainController {
@@ -8,7 +7,6 @@ public final class MainController {
     private let backgroundUpdate: BackgroundUpdate
     private let tonConnectEventsStore: TonConnectEventsStore
     private let tonConnectService: TonConnectService
-    private let configurationAssembly: ConfigurationAssembly
     private let deeplinkParser: DeeplinkParser
 
     private let walletsStore: WalletsStore
@@ -34,7 +32,6 @@ public final class MainController {
         homeBannersLoader: HomeBannersLoader,
         walletInfoLoader: WalletInfoLoader,
         tronUSDTFeesService: TronUsdtFeesService,
-        configurationAssembly: ConfigurationAssembly,
         multichainRealtimeManager: MultichainRealtimeManager
     ) {
         self.backgroundUpdate = backgroundUpdate
@@ -47,7 +44,6 @@ public final class MainController {
         self.walletsStore = walletsStore
         self.walletInfoLoader = walletInfoLoader
         self.tronUSDTFeesService = tronUSDTFeesService
-        self.configurationAssembly = configurationAssembly
         self.multichainRealtimeManager = multichainRealtimeManager
 
         let (commands, updatesContinuation) = AsyncStream<MainControllerUpdatesCommand>.makeStream()
@@ -62,10 +58,7 @@ public final class MainController {
             tronUSDTFeesService: tronUSDTFeesService,
             multichainRealtimeManager: multichainRealtimeManager,
             tonConnectEventsStore: tonConnectEventsStore,
-            tonConnectObserver: self,
-            isTonConnectLifecycleOwned: { [configurationAssembly] in
-                !configurationAssembly.configuration.featureEnabled(.walletKitEnabled)
-            }
+            tonConnectObserver: self
         )
         updatesWorker = Task {
             for await command in commands {
@@ -124,7 +117,6 @@ public final class MainController {
 
 extension MainController: TonConnectEventsStoreObserver {
     public func didGetTonConnectEventsStoreEvent(_ event: TonConnectEventsStore.Event) {
-        guard !configurationAssembly.configuration.featureEnabled(.walletKitEnabled) else { return }
         switch event {
         case let .request(request, wallet, app):
             Task { @MainActor in
@@ -150,11 +142,9 @@ private actor MainControllerUpdatesRuntime {
     private let tronUSDTFeesService: TronUsdtFeesService
     private let multichainRealtimeManager: MultichainRealtimeManager
     private let tonConnectEventsStore: TonConnectEventsStore
-    private let isTonConnectLifecycleOwned: () -> Bool
 
     private var updatesStarted = false
     private weak var tonConnectObserver: TonConnectEventsStoreObserver?
-    private var ownsTonConnectLifecycle = false
     private var tonConnectTransition: Task<Void, Never>?
     private var isShutDown = false
 
@@ -166,8 +156,7 @@ private actor MainControllerUpdatesRuntime {
         tronUSDTFeesService: TronUsdtFeesService,
         multichainRealtimeManager: MultichainRealtimeManager,
         tonConnectEventsStore: TonConnectEventsStore,
-        tonConnectObserver: TonConnectEventsStoreObserver,
-        isTonConnectLifecycleOwned: @escaping () -> Bool
+        tonConnectObserver: TonConnectEventsStoreObserver
     ) {
         self.backgroundUpdate = backgroundUpdate
         self.walletsStore = walletsStore
@@ -177,7 +166,6 @@ private actor MainControllerUpdatesRuntime {
         self.multichainRealtimeManager = multichainRealtimeManager
         self.tonConnectEventsStore = tonConnectEventsStore
         self.tonConnectObserver = tonConnectObserver
-        self.isTonConnectLifecycleOwned = isTonConnectLifecycleOwned
     }
 
     func handle(_ command: MainControllerUpdatesCommand) {
@@ -188,18 +176,12 @@ private actor MainControllerUpdatesRuntime {
                 // A brief resign does not stop updates, but a connection may still fail while the app
                 // is inactive. Reconnect only failed sessions and leave healthy ones untouched.
                 backgroundUpdate.reconnect()
-                // The WalletKit-owned lifecycle historically refreshes data on every foreground.
-                if !ownsTonConnectLifecycle {
-                    refreshData()
-                    tronUSDTFeesService.start()
-                }
                 return
             }
             updatesStarted = true
             balanceLoader.setQuiet(false, owner: .appLifecycle)
             resumeConnections()
-            ownsTonConnectLifecycle = isTonConnectLifecycleOwned()
-            guard ownsTonConnectLifecycle, let tonConnectObserver else { return }
+            guard let tonConnectObserver else { return }
             scheduleTonConnectTransition { store in
                 await store.addObserver(tonConnectObserver)
                 await store.start()
@@ -231,15 +213,12 @@ private actor MainControllerUpdatesRuntime {
         backgroundUpdate.stop()
         tronUSDTFeesService.stop()
         multichainRealtimeManager.setForeground(false)
-        if ownsTonConnectLifecycle {
-            let tonConnectObserver = tonConnectObserver
-            scheduleTonConnectTransition { store in
-                await store.stop()
-                if let tonConnectObserver {
-                    await store.removeObserver(tonConnectObserver)
-                }
+        let tonConnectObserver = tonConnectObserver
+        scheduleTonConnectTransition { store in
+            await store.stop()
+            if let tonConnectObserver {
+                await store.removeObserver(tonConnectObserver)
             }
-            ownsTonConnectLifecycle = false
         }
     }
 

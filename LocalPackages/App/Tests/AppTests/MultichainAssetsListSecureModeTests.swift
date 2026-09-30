@@ -19,7 +19,7 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
             )
         )
 
-        await context.viewModel.loadAssets(for: context.wallet)
+        await context.viewModel.loadAssets()
         await waitUntil {
             context.portfolioStore.getState()[context.wallet]?.fiatPrice["usd"] == "7"
         }
@@ -44,7 +44,7 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
 
         context.viewModel.applyVisibilityUpdate(makeVisibilityUpdate())
 
-        XCTAssertTrue(context.viewModel.rows.isEmpty)
+        XCTAssertEqual(context.viewModel.presentation, .rows([]))
         XCTAssertNil(context.portfolioStore.getState()[context.wallet])
     }
 
@@ -53,7 +53,7 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
 
         context.viewModel.applyVisibilityUpdate(makeVisibilityUpdate())
 
-        let amounts = try? XCTUnwrap(amounts(in: context.viewModel.rows.first))
+        let amounts = try? XCTUnwrap(amounts(in: context.viewModel))
         XCTAssertEqual(amounts?.balance, "1.5")
         XCTAssertEqual(amounts?.fiat, "$\u{2009}3")
     }
@@ -63,7 +63,7 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
 
         context.viewModel.applyVisibilityUpdate(makeVisibilityUpdate())
 
-        let amounts = try? XCTUnwrap(amounts(in: context.viewModel.rows.first))
+        let amounts = try? XCTUnwrap(amounts(in: context.viewModel))
         XCTAssertEqual(amounts?.balance, String.secureModeValueShort)
         XCTAssertEqual(amounts?.fiat, String.secureModeValueShort)
     }
@@ -74,7 +74,7 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
 
         context.viewModel.applyVisibilityUpdate(makeVisibilityUpdate())
 
-        let amounts = try? XCTUnwrap(amounts(in: context.viewModel.rows.first))
+        let amounts = try? XCTUnwrap(amounts(in: context.viewModel))
         XCTAssertEqual(amounts?.price, "$\u{2009}2")
     }
 
@@ -86,9 +86,134 @@ final class MultichainAssetsListSecureModeTests: XCTestCase {
 
         await waitUntil {
             await MainActor.run {
-                self.amounts(in: context.viewModel.rows.first)?.balance == String.secureModeValueShort
+                self.amounts(in: context.viewModel)?.balance == String.secureModeValueShort
             }
         }
+    }
+
+    func test_persistedPortfolioRendersRowsBeforeAnyRequest() {
+        let cached = makeAsset()
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [cached])
+        )
+
+        let restored = context.viewModel.restoreCachedAssets()
+
+        XCTAssertTrue(restored)
+        XCTAssertEqual(rowIDs(in: context.viewModel), [cached.asset.assetId])
+        XCTAssertEqual(amounts(in: context.viewModel)?.fiat, "$\u{2009}3")
+    }
+
+    func test_failedRefreshKeepsRestoredRowsWithoutErrorPlaceholder() async {
+        let cached = makeAsset()
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [cached])
+        )
+        context.viewModel.restoreCachedAssets()
+
+        await context.viewModel.loadAssets()
+
+        XCTAssertNotEqual(context.viewModel.presentation, .error)
+        XCTAssertEqual(rowIDs(in: context.viewModel), [cached.asset.assetId])
+    }
+
+    func test_networkResultReplacesRestoredRows() async {
+        let cached = makeAsset(assetId: "eth/mainnet/erc20/0xcached", symbol: "OLD")
+        let fresh = makeAsset()
+        let context = makeContext(
+            isSecureMode: false,
+            walletAssetsPage: MultichainWalletAssetsPage(assets: [fresh], nextCursor: nil, fiatPrice: ["usd": "3"]),
+            cachedPortfolio: makeCachedPortfolio(assets: [cached])
+        )
+        context.viewModel.restoreCachedAssets()
+
+        await context.viewModel.loadAssets()
+
+        XCTAssertEqual(rowIDs(in: context.viewModel), [fresh.asset.assetId])
+    }
+
+    func test_restoreDoesNotReplaceAnAnsweredList() async {
+        let cached = makeAsset(assetId: "eth/mainnet/erc20/0xcached", symbol: "OLD")
+        let fresh = makeAsset()
+        let context = makeContext(
+            isSecureMode: false,
+            walletAssetsPage: MultichainWalletAssetsPage(assets: [fresh], nextCursor: nil, fiatPrice: ["usd": "3"]),
+            cachedPortfolio: makeCachedPortfolio(assets: [cached])
+        )
+        await context.viewModel.loadAssets()
+
+        XCTAssertFalse(context.viewModel.restoreCachedAssets())
+        XCTAssertEqual(rowIDs(in: context.viewModel), [fresh.asset.assetId])
+    }
+
+    func test_persistedPortfolioForAnotherAccountSetIsIgnored() {
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [makeAsset()], accountsIdentifier: "other-accounts")
+        )
+
+        XCTAssertFalse(context.viewModel.restoreCachedAssets())
+        XCTAssertEqual(context.viewModel.presentation, .rows([]))
+    }
+
+    func test_persistedPortfolioUnderAnotherDustFilterIsIgnored() {
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [makeAsset()], hidesDustBalances: true)
+        )
+
+        XCTAssertFalse(context.viewModel.restoreCachedAssets())
+        XCTAssertEqual(context.viewModel.presentation, .rows([]))
+    }
+
+    func test_persistedPortfolioInAnotherCurrencyIsIgnored() {
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [makeAsset()], currencyCode: "eur")
+        )
+
+        XCTAssertFalse(context.viewModel.restoreCachedAssets())
+        XCTAssertEqual(context.viewModel.presentation, .rows([]))
+    }
+
+    func test_loadPersistsAssetsWithTotalAndScope() async throws {
+        let asset = makeAsset()
+        let context = makeContext(
+            isSecureMode: false,
+            walletAssetsPage: MultichainWalletAssetsPage(assets: [asset], nextCursor: nil, fiatPrice: ["usd": "3"])
+        )
+
+        await context.viewModel.loadAssets()
+        await waitUntil {
+            context.portfolioStore.getState()[context.wallet] != nil
+        }
+
+        let portfolio = try XCTUnwrap(context.portfolioStore.getState()[context.wallet])
+        XCTAssertEqual(portfolio.assets, [asset])
+        XCTAssertEqual(portfolio.fiatPrice, ["usd": "3"])
+        XCTAssertEqual(portfolio.accountsIdentifier, "multichain-wallet")
+        XCTAssertEqual(portfolio.currencyCode, "usd")
+        XCTAssertFalse(portfolio.hidesDustBalances)
+    }
+
+    func test_visibilityUpdatePersistsAssetDelta() async throws {
+        let update = makeVisibilityUpdate()
+        let cached = makeAsset(assetId: "eth/mainnet/erc20/0xcached", symbol: "OLD")
+        let context = makeContext(
+            isSecureMode: false,
+            cachedPortfolio: makeCachedPortfolio(assets: [cached])
+        )
+        context.viewModel.restoreCachedAssets()
+
+        context.viewModel.applyVisibilityUpdate(update)
+        await waitUntil {
+            context.portfolioStore.getState()[context.wallet]?.assets.count == 2
+        }
+
+        let portfolio = try XCTUnwrap(context.portfolioStore.getState()[context.wallet])
+        XCTAssertEqual(portfolio.assets, [cached] + update.visibleAssets)
     }
 }
 
@@ -103,7 +228,8 @@ private extension MultichainAssetsListSecureModeTests {
     func makeContext(
         isSecureMode: Bool,
         hidesDustBalances: Bool = false,
-        walletAssetsPage: MultichainWalletAssetsPage? = nil
+        walletAssetsPage: MultichainWalletAssetsPage? = nil,
+        cachedPortfolio: MultichainPortfolio? = nil
     ) -> Context {
         let keeperInfoStore = KeeperInfoStore(
             keeperInfoRepository: KeeperInfoRepositoryStub(
@@ -113,13 +239,16 @@ private extension MultichainAssetsListSecureModeTests {
                 )
             )
         )
+        let wallet = keeperInfoStore.getState()!.currentWallet
         let walletsStore = WalletsStore(keeperInfoStore: keeperInfoStore)
         let currencyStore = CurrencyStore(keeperInfoStore: keeperInfoStore)
         let appSettingsStore = AppSettingsStore(keeperInfoStore: keeperInfoStore)
         let multichainService = MultichainServiceStub(walletAssetsPage: walletAssetsPage)
         let portfolioStore = MultichainPortfolioStore(
             walletsStore: walletsStore,
-            repository: MultichainAssetsListPortfolioRepositoryStub()
+            repository: MultichainAssetsListPortfolioRepositoryStub(
+                portfolios: cachedPortfolio.map { [makeWallet().id: $0] } ?? [:]
+            )
         )
         let stakingPoolsStore = StakingPoolsStore(
             walletsStore: walletsStore,
@@ -127,6 +256,7 @@ private extension MultichainAssetsListSecureModeTests {
         )
 
         let viewModel = WalletBalanceMultichainAssetsListViewModel(
+            wallet: wallet,
             multichainService: multichainService,
             multichainAssetBalanceProvider: MultichainAssetBalanceProvider(
                 balanceService: multichainService,
@@ -156,16 +286,30 @@ private extension MultichainAssetsListSecureModeTests {
             viewModel: viewModel,
             appSettingsStore: appSettingsStore,
             portfolioStore: portfolioStore,
-            wallet: keeperInfoStore.getState()!.currentWallet
+            wallet: wallet
         )
     }
 
     func makeVisibilityUpdate() -> TokenManagementVisibilityUpdate {
-        let asset = MultichainAsset(
+        let asset = makeAsset()
+
+        return TokenManagementVisibilityUpdate(
+            changes: [
+                MultichainAssetFilterChange(assetId: asset.asset.assetId, action: .show),
+            ],
+            visibleAssets: [asset]
+        )
+    }
+
+    func makeAsset(
+        assetId: String = "eth/mainnet/erc20/0xdAC17F95",
+        symbol: String = "USDT"
+    ) -> MultichainAsset {
+        MultichainAsset(
             asset: MultichainAssetDetails(
-                assetId: "eth/mainnet/erc20/0xdAC17F95",
+                assetId: assetId,
                 name: "Tether USD",
-                symbol: "USDT",
+                symbol: symbol,
                 decimals: 6,
                 image: "",
                 verification: .trusted
@@ -178,18 +322,37 @@ private extension MultichainAssetsListSecureModeTests {
             ),
             balance: BigUInt(1_500_000)
         )
+    }
 
-        return TokenManagementVisibilityUpdate(
-            changes: [
-                MultichainAssetFilterChange(assetId: asset.asset.assetId, action: .show),
-            ],
-            visibleAssets: [asset]
+    /// Scope defaults match `makeWallet()` and a `makeContext` with dust off and USD display.
+    func makeCachedPortfolio(
+        assets: [MultichainAsset],
+        accountsIdentifier: String = "multichain-wallet",
+        currencyCode: String = "usd",
+        hidesDustBalances: Bool = false
+    ) -> MultichainPortfolio {
+        MultichainPortfolio(
+            fiatPrice: ["usd": "3"],
+            assets: assets,
+            accountsIdentifier: accountsIdentifier,
+            currencyCode: currencyCode,
+            hidesDustBalances: hidesDustBalances
         )
     }
 
+    func rowIDs(in viewModel: WalletBalanceMultichainAssetsListViewModel) -> [String]? {
+        guard case let .rows(rows) = viewModel.presentation else { return nil }
+        return rows.map(\.id)
+    }
+
     func amounts(
-        in row: AssetBalanceRowCellContent?
+        in viewModel: WalletBalanceMultichainAssetsListViewModel
     ) -> (balance: String, price: String, fiat: String)? {
+        guard case let .rows(rows) = viewModel.presentation else { return nil }
+        let row = rows.compactMap { row -> AssetBalanceRowCellContent? in
+            guard case let .asset(content) = row else { return nil }
+            return content
+        }.first
         guard case let .includingDiffs(balance, price, _, fiat, _, _) = row?.displayMode else {
             return nil
         }
@@ -310,18 +473,6 @@ private struct WalletBalanceRepositoryStub: WalletBalanceRepositoryV2 {
     }
 }
 
-private struct MultichainPortfolioRepositoryStub: MultichainPortfolioRepository {
-    enum Error: Swift.Error {
-        case noTotal
-    }
-
-    func getPortfolioTotal(walletId _: String) throws -> MultichainPortfolioTotal {
-        throw Error.noTotal
-    }
-
-    func savePortfolioTotal(_: MultichainPortfolioTotal, walletId _: String) throws {}
-}
-
 private struct RatesRepositoryStub: RatesRepository {
     func saveRates(_: Rates) throws {}
 
@@ -408,12 +559,13 @@ private struct MultichainServiceStub: MultichainService {
     }
 
     func getWalletActivities(
-        walletId _: String,
+        state _: MultichainWalletState,
         limit _: Int?,
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .apiError(message: "Unimplemented")
@@ -463,19 +615,23 @@ private struct MultichainServiceStub: MultichainService {
 
 private final class MultichainAssetsListPortfolioRepositoryStub: MultichainPortfolioRepository {
     private enum Error: Swift.Error {
-        case noTotal
+        case noPortfolio
     }
 
-    private var totals = [String: MultichainPortfolioTotal]()
+    private var portfolios: [String: MultichainPortfolio]
 
-    func getPortfolioTotal(walletId: String) throws -> MultichainPortfolioTotal {
-        guard let total = totals[walletId] else {
-            throw Error.noTotal
+    init(portfolios: [String: MultichainPortfolio] = [:]) {
+        self.portfolios = portfolios
+    }
+
+    func getPortfolio(walletId: String) throws -> MultichainPortfolio {
+        guard let portfolio = portfolios[walletId] else {
+            throw Error.noPortfolio
         }
-        return total
+        return portfolio
     }
 
-    func savePortfolioTotal(_ total: MultichainPortfolioTotal, walletId: String) throws {
-        totals[walletId] = total
+    func savePortfolio(_ portfolio: MultichainPortfolio, walletId: String) throws {
+        portfolios[walletId] = portfolio
     }
 }

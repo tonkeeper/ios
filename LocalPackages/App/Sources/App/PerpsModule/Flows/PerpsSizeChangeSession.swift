@@ -43,6 +43,7 @@ final class PerpsSizeChangeSession: ObservableObject {
 
     let marketId: Int64
     let direction: PerpsSizeChangeDirection
+    let priceDecimals: Int
 
     @Published private var autoCloseSelection: AutoCloseSelection = .followingResting
     private var requestId: UInt = 0
@@ -52,10 +53,12 @@ final class PerpsSizeChangeSession: ObservableObject {
     init(
         marketId: Int64,
         direction: PerpsSizeChangeDirection,
+        priceDecimals: Int,
         restingTriggerOrders: [PerpsTriggerOrderSummary]
     ) {
         self.marketId = marketId
         self.direction = direction
+        self.priceDecimals = priceDecimals
         self.restingTriggerOrders = restingTriggerOrders
     }
 
@@ -98,7 +101,7 @@ final class PerpsSizeChangeSession: ObservableObject {
 
     func setAmount(_ text: String) {
         guard phase == .editing else { return }
-        amountText = PerpsDecimalInput.sanitize(text)
+        amountText = PerpsDecimalInput.sanitize(text, decimals: 2)
         reviewWarningText = nil
     }
 

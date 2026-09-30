@@ -5,27 +5,95 @@ import UIKit
 public final class AptabaseConfigurator {
     public static let configurator = AptabaseConfigurator()
 
+    private var endpointState = EndpointState()
+    private var trackingOverride: Bool?
+
     private init() {}
 
-    public func configure(
-        sendStatsImmediately: Bool?
-    ) {
-        let endpoint = InfoProvider.aptabaseEndpoint()
-        let initOptions: InitOptions
-        if let sendStatsImmediately {
-            initOptions = InitOptions(
-                host: endpoint,
-                trackingMode: sendStatsImmediately ? .asDebug : .asRelease
-            )
-        } else {
-            initOptions = InitOptions(
-                host: endpoint
-            )
+    private func configure(sendStatsImmediately: Bool?) {
+        trackingOverride = sendStatsImmediately
+        endpointState.active = InfoProvider.aptabaseEndpoint()
+        observeLifecycle()
+        initializeSDK(endpoint: endpointState.active)
+    }
+
+    static func usableEndpoint(_ endpoint: String?) -> String? {
+        guard let endpoint,
+              let url = URL(string: endpoint),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty
+        else { return nil }
+        return endpoint
+    }
+
+    func retarget(endpointProvider: @escaping () -> String?) {
+        DispatchQueue.main.async {
+            if let endpoint = self.endpointState.request(
+                endpointProvider(),
+                bundledEndpoint: InfoProvider.aptabaseEndpoint()
+            ) {
+                self.replaceSDK(endpoint: endpoint)
+            }
         }
+    }
+
+    private func observeLifecycle() {
+        let center = NotificationCenter.default
+        _ = center.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.endpointState.isPolling = true
+        }
+        _ = center.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.endpointState.isPolling = false
+            // Let the SDK's background observer stop its timer before replacing the client.
+            DispatchQueue.main.async {
+                guard let self, let endpoint = self.endpointState.applyPending() else { return }
+                self.replaceSDK(endpoint: endpoint)
+            }
+        }
+    }
+
+    private func replaceSDK(endpoint: String) {
+        NotificationCenter.default.removeObserver(Aptabase.shared)
+        initializeSDK(endpoint: endpoint)
+    }
+
+    private func initializeSDK(endpoint: String?) {
+        guard let appKey = InfoProvider.aptabaseKey() else { return }
         Aptabase.shared.initialize(
-            appKey: InfoProvider.aptabaseKey()!,
-            with: initOptions
+            appKey: appKey,
+            with: InitOptions(
+                host: endpoint,
+                trackingMode: trackingOverride.map { $0 ? .asDebug : .asRelease } ?? .readFromEnvironment
+            )
         )
+    }
+
+    struct EndpointState {
+        var active: String?
+        var isPolling = false
+        private(set) var pending: String?
+
+        mutating func request(_ remoteEndpoint: String?, bundledEndpoint: String?) -> String? {
+            let endpoint = AptabaseConfigurator.usableEndpoint(remoteEndpoint) ?? bundledEndpoint
+            pending = endpoint != active ? endpoint : nil
+            return applyPending()
+        }
+
+        mutating func applyPending() -> String? {
+            // The SDK cannot retire a running timer through its public API. Swap after backgrounding.
+            guard !isPolling, let pending else { return nil }
+            active = pending
+            self.pending = nil
+            return pending
+        }
     }
 
     /// Falls back to the SDK when the persistent cache is disabled or the app is missing its Aptabase
@@ -35,7 +103,8 @@ public final class AptabaseConfigurator {
         cohortSource: AptabaseCohortSource,
         installId: String,
         sendStatsImmediately: Bool?,
-        reachabilityTracker: ReachabilityTracker
+        reachabilityTracker: ReachabilityTracker,
+        remoteEndpoint: @escaping @Sendable () -> String?
     ) -> AnalyticsService {
         let sequence = AnalyticsEventSequence(installId: installId)
         var environment = AptabaseEnvironment.current()
@@ -44,24 +113,26 @@ public final class AptabaseConfigurator {
         }
 
         guard persistentCacheEnabled,
-              let endpoint = InfoProvider.aptabaseEndpoint(),
-              let appKey = InfoProvider.aptabaseKey(),
-              let dispatcher = AptabaseDispatcher(
-                  endpoint: endpoint,
-                  appKey: appKey,
-                  environment: environment,
-                  session: URLSession.shared
-              )
+              let bundledEndpoint = InfoProvider.aptabaseEndpoint(),
+              let appKey = InfoProvider.aptabaseKey()
         else {
             // The flag is a kill switch, so a queue left by a previous run has to go: on this branch
             // nothing would ever send it, and it would sit on disk until its TTL.
             AptabaseEventStore.purge(configuration: .default())
+            DispatchQueue.main.async {
+                self.configure(sendStatsImmediately: sendStatsImmediately)
+            }
             return AptabaseService(sequence: sequence, cohortSource: cohortSource)
         }
 
         let client = AptabaseQueueClient(
             store: AptabaseEventStore(configuration: .default()),
-            dispatcher: dispatcher,
+            dispatcher: AptabaseDispatcher(
+                endpointProvider: { Self.usableEndpoint(remoteEndpoint()) ?? bundledEndpoint },
+                appKey: appKey,
+                environment: environment,
+                session: URLSession.shared
+            ),
             environment: environment,
             flushInterval: environment.isDebug ? 2 : 60
         )
@@ -186,15 +257,15 @@ class AptabaseService: AnalyticsService {
     }
 
     func logEvent(name: String, args: [String: Any]) {
-        Aptabase.shared.trackEvent(
-            name,
-            with: AptabaseTransportProperty.decorate(
-                args,
-                transport: .sdk,
-                cohortSource: cohortSource,
-                sequence: sequence
-            )
+        let props = AptabaseTransportProperty.decorate(
+            args,
+            transport: .sdk,
+            cohortSource: cohortSource,
+            sequence: sequence
         )
+        DispatchQueue.main.async {
+            Aptabase.shared.trackEvent(name, with: props)
+        }
     }
 }
 

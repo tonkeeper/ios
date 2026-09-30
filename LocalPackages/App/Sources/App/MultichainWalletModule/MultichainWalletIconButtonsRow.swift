@@ -23,20 +23,23 @@ struct MultichainWalletIconButtonsModel: Equatable {
 }
 
 struct MultichainWalletIconButtonsSection: View {
-    let showsSkeleton: Bool
-    let model: MultichainWalletIconButtonsModel?
+    enum Config {
+        case shimmer
+        case content(MultichainWalletIconButtonsModel)
+    }
+
+    let config: Config
     let onSend: () -> Void
     let onDeposit: () -> Void
     let onSwap: () -> Void
     let onStake: () -> Void
 
     var body: some View {
-        if showsSkeleton {
-            section {
+        section {
+            switch config {
+            case .shimmer:
                 MultichainWalletIconButtonsRowSkeleton()
-            }
-        } else if let model {
-            section {
+            case let .content(model):
                 MultichainWalletIconButtonsRow(
                     model: model,
                     onSend: onSend,

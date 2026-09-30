@@ -74,15 +74,6 @@ final class MultichainPushSynchronizerTests: XCTestCase {
         )
     }
 
-    func test_featureDisabled_doesNotTouchTheV2Contour() {
-        let context = Context(synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1"))
-        context.isEnabled = false
-
-        XCTAssertNil(context.synchronizer.schedule(requireAuthorization: false))
-        XCTAssertEqual(context.deviceIdCount, 0)
-        XCTAssertEqual(context.unsubscribeCount, 0)
-    }
-
     // MARK: - Cache key transitions
 
     func test_subscribe_sendsTheFullSetAndRecordsIt() async {
@@ -454,7 +445,6 @@ private enum PushSyncFailure: Error {
 }
 
 private final class Context: @unchecked Sendable {
-    var isEnabled = true
     var desired = [String]()
     var token: String? = "fcm"
     var synced: MultichainPushSyncState
@@ -477,7 +467,6 @@ private final class Context: @unchecked Sendable {
 
     lazy var synchronizer = MultichainPushSynchronizer(
         dependencies: MultichainPushSynchronizerDependencies(
-            isFeatureEnabled: { [unowned self] in isEnabled },
             desiredWalletIds: { [unowned self] in desired },
             loadState: { [unowned self] in synced },
             saveState: { [unowned self] state in

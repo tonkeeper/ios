@@ -44,10 +44,10 @@ struct WalletConnectChainKitMessageSigningUtilities {
                     return
                 }
                 guard let value = result?.getOrNull() else {
-                    let error = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
+                    let reason = result.flatMap(\.error).map { "\($0)" } ?? "unknown"
                     continuation.resume(
                         returning: .failure(
-                            .failedToSign(reason: "chainkit failed to sign message: \(error.logDescription)")
+                            .failedToSign(reason: "chainkit failed to sign message: \(reason)")
                         )
                     )
                     return

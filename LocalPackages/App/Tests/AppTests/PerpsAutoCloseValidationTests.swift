@@ -6,7 +6,7 @@ final class PerpsAutoCloseValidationTests: XCTestCase {
     func test_long_takeProfitBelowMark_isInvalid() {
         let invalid = PerpsAutoCloseValidation.invalidLegs(
             side: .long,
-            entryPrice: 66000,
+            referencePrice: 66000,
             liquidationPrice: 50000,
             takeProfitPrice: 59500,
             stopLossPrice: 49700
@@ -16,7 +16,7 @@ final class PerpsAutoCloseValidationTests: XCTestCase {
         XCTAssertEqual(
             PerpsAutoCloseValidation.confirmStaleKind(
                 side: .long,
-                entryPrice: 66000,
+                referencePrice: 66000,
                 liquidationPrice: 50000,
                 autoClose: PerpsAutoClose(
                     takeProfit: PerpsAutoCloseTrigger(triggerPrice: 59500),
@@ -30,7 +30,7 @@ final class PerpsAutoCloseValidationTests: XCTestCase {
     func test_long_onlyTakeProfitStale_kindIsTakeProfit() {
         let kind = PerpsAutoCloseValidation.confirmStaleKind(
             side: .long,
-            entryPrice: 70000,
+            referencePrice: 70000,
             liquidationPrice: 50000,
             autoClose: PerpsAutoClose(
                 takeProfit: PerpsAutoCloseTrigger(triggerPrice: 68000),
@@ -43,7 +43,7 @@ final class PerpsAutoCloseValidationTests: XCTestCase {
     func test_long_onlyStopLossStale_kindIsStopLoss() {
         let kind = PerpsAutoCloseValidation.confirmStaleKind(
             side: .long,
-            entryPrice: 60000,
+            referencePrice: 60000,
             liquidationPrice: 50000,
             autoClose: PerpsAutoClose(
                 takeProfit: PerpsAutoCloseTrigger(triggerPrice: 70000),
@@ -67,7 +67,7 @@ final class PerpsAutoCloseValidationTests: XCTestCase {
     func test_short_markPastTakeProfit_isInvalid() {
         let kind = PerpsAutoCloseValidation.confirmStaleKind(
             side: .short,
-            entryPrice: 60000,
+            referencePrice: 60000,
             liquidationPrice: 70000,
             autoClose: PerpsAutoClose(
                 takeProfit: PerpsAutoCloseTrigger(triggerPrice: 62000),

@@ -63,7 +63,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
         priceInterest = marketsStore.makePriceInterest()
         var state = State(referencePrice: context.referencePrice)
         if let initial = context.initialLimitPrice, initial > 0 {
-            state.amountText = Self.priceString(initial, decimals: context.priceDecimals)
+            state.amountText = PerpsDecimalInput.text(initial, decimals: context.priceDecimals)
         }
         self.state = state
         observeStore()
@@ -136,7 +136,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
 
     func setAmount(_ text: String) {
         update {
-            $0.amountText = $0.inputMode == .percent ? sanitizeSignedPercent(text) : PerpsDecimalInput.sanitize(text)
+            $0.amountText = $0.inputMode == .percent ? sanitizeSignedPercent(text) : PerpsDecimalInput.sanitize(text, decimals: context.priceDecimals)
             $0.activeQuickFill = nil
         }
     }
@@ -153,7 +153,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
         }
         switch draft.inputMode {
         case .price:
-            draft.amountText = Self.priceString(price, decimals: context.priceDecimals)
+            draft.amountText = PerpsDecimalInput.text(price, decimals: context.priceDecimals)
         case .percent:
             guard draft.referencePrice > 0 else {
                 draft.amountText = ""
@@ -179,7 +179,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
         draft.activeQuickFill = fill
         switch draft.inputMode {
         case .price:
-            draft.amountText = Self.priceString(price, decimals: context.priceDecimals)
+            draft.amountText = PerpsDecimalInput.text(price, decimals: context.priceDecimals)
         case .percent:
             let offset = draft.referencePrice > 0 ? (price - draft.referencePrice) / draft.referencePrice * 100 : signedPercent(for: fill)
             draft.amountText = Self.percentString(offset, signed: true)
@@ -268,10 +268,6 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
 
     private static let zeroPercent = "0\u{2009}%"
 
-    private static func priceString(_ value: Double, decimals: Int) -> String {
-        trimmed(String(format: "%.\(max(0, min(decimals, 8)))f", value))
-    }
-
     private func signedPercent(_ text: String) -> Double? {
         let normalized = text
             .trimmingCharacters(in: .whitespaces)
@@ -295,22 +291,12 @@ final class PerpsSetLimitPriceViewModel: ObservableObject {
                 unsigned.append(character)
             }
         }
-        return sign + PerpsDecimalInput.sanitize(unsigned)
+        return sign + PerpsDecimalInput.sanitize(unsigned, decimals: 2)
     }
 
     private static func percentString(_ value: Double, signed: Bool = false) -> String {
-        let trimmedValue = trimmed(String(format: "%.2f", abs(value)))
-        guard signed, abs(value) >= 0.005 else { return trimmedValue }
-        return (value > 0 ? "+" : "-") + trimmedValue
-    }
-
-    private static func trimmed(_ formatted: String) -> String {
-        guard formatted.contains(".") else { return formatted }
-        var result = formatted
-        while result.hasSuffix("0") {
-            result.removeLast()
-        }
-        if result.hasSuffix(".") { result.removeLast() }
-        return result
+        let magnitude = PerpsDecimalInput.percentText(abs(value))
+        guard signed, abs(value) >= 0.005 else { return magnitude }
+        return (value > 0 ? "+" : "-") + magnitude
     }
 }

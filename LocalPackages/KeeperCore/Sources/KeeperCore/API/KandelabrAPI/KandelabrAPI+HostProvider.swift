@@ -7,8 +7,7 @@ struct KandelabrAPIHostProvider: APIHostProvider {
 
     var basePath: String {
         get async {
-            let network: Network = configuration.lighterAPIEnvironment == .testnet ? .testnet : .mainnet
-            return await configuration.multichainHost(network: network).absoluteString
+            await configuration.multichainHost(network: .mainnet).absoluteString
         }
     }
 }

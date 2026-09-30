@@ -315,13 +315,15 @@ final class BackgroundUpdateLifecycleTests: XCTestCase {
             eventCoalescingInterval: eventCoalescingInterval
         )
 
-        return Fixture(
+        let fixture = Fixture(
             walletsStore: walletsStore,
             backgroundUpdate: backgroundUpdate,
             recorder: recorder,
             walletA: walletA,
             walletB: walletB
         )
+        await fixture.drainStoreQueue()
+        return fixture
     }
 
     private func expectedUpdate(
@@ -372,7 +374,7 @@ private struct Fixture {
 
     /// `Store.sendEvent` is dispatched behind the completion of `makeWalletActive`, so the wallet
     /// observation runs only after the store queue drains.
-    private func drainStoreQueue() async {
+    func drainStoreQueue() async {
         let anchor = StoreAnchor()
         await withCheckedContinuation { continuation in
             walletsStore.addObserver(anchor, closure: { _, _ in }) {

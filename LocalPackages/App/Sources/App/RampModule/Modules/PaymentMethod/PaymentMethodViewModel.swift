@@ -51,10 +51,6 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
 
     var currentCurrency: RemoteCurrency?
 
-    var showsFiatCurrencyPicker: Bool {
-        !configuration.featureEnabled(.multichainEnabled)
-    }
-
     let flow: RampFlow
     var asset: RampAsset
     var onRampLayout: OnRampLayout?
@@ -64,7 +60,6 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
     private let onRampService: OnRampService
     private let currencyStore: CurrencyStore
     private let currenciesService: CurrenciesService
-    private let configuration: Configuration
     private let initialDeeplink: RampDeeplinkParameters?
     private let walletId: String?
 
@@ -80,7 +75,6 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
         onRampService: OnRampService,
         currencyStore: CurrencyStore,
         currenciesService: CurrenciesService,
-        configuration: Configuration,
         initialDeeplink: RampDeeplinkParameters?,
         fiatCurrency: RemoteCurrency?,
         walletId: String?
@@ -92,7 +86,6 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
         self.onRampService = onRampService
         self.currencyStore = currencyStore
         self.currenciesService = currenciesService
-        self.configuration = configuration
         self.initialDeeplink = initialDeeplink
         self.currentCurrency = fiatCurrency
         self.walletId = walletId

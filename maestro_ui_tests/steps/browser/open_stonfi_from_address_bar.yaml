@@ -1,0 +1,14 @@
+appId: com.jbig.tonkeeper
+---
+# Opens app.ston.fi by URL. The Explore shelf tile "STON.fi" points at whatever the dapp
+# catalog links to (a campaign landing at the time of writing), so the TonConnect flow
+# addresses the swap app directly. Expects the Browser tab.
+- tapOn: "Search or enter address"
+- inputText: "app.ston.fi"
+# Return opens the typed address; the "Open link" row shifts once history suggestions
+# for the same site appear, so a tap on it is not reliable.
+- pressKey: Enter
+# The in-app browser header shows the host once the page is loaded.
+- extendedWaitUntil:
+    visible: "app.ston.fi"
+    timeout: 60000

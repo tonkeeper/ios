@@ -1,0 +1,73 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 15000
+
+- extendedWaitUntil:
+    visible: "Swap"
+    timeout: 180000
+
+- tapOn: Swap
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: input_value
+    index: 0
+    waitToSettleTimeoutMs: 4000
+    retryTapIfNoChange: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 1500
+- eraseText
+- setClipboard: "1"
+- pasteText
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: switch_button
+- copyTextFrom:
+    id: token_title
+    index: 0
+- assertTrue:
+    condition: ${maestro.copiedText == 'USD₮'}
+    label: After switching token should be swap
+
+- copyTextFrom:
+    id: input_value
+    index: 0
+- assertTrue:
+    condition: ${maestro.copiedText != "0.01"}
+    label: Balance not switched or 1:1
+
+- tapOn:
+    id: switch_button
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow: ../../../service/swap/wait_swap_quote_ready.yaml
+- tapOn:
+    id: native_swap_continue
+
+# Confirmation popup appears only after async fee emulation — wait for the slider.
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 36000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../../../steps/password/enter_password.yaml
+
+- assertVisible: Done
+- assertVisible: History
+
+- runFlow:
+    file: ../../../service/history/last_jetton_swap_transaction.yaml
+    env:
+      nanoTonToSwap: "1000000000"

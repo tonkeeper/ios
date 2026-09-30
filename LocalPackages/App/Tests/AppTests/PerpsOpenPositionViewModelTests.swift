@@ -8,20 +8,14 @@ import XCTest
 @MainActor
 final class PerpsOpenPositionViewModelTests: XCTestCase {
     private func makeViewModel(
-        side: App.PerpsTradeSide = .long,
+        side: PerpsTradeSide = .long,
         service: FakePerpsTradingService = FakePerpsTradingService(),
-        status: LighterPerpsStatus = .active(accountIndex: 1, apiKeyIndex: 0),
+        status: PerpsAccountStatus = .account(accountIndex: 1),
         balance: String = "712.56"
     ) -> PerpsOpenPositionViewModel {
         let reader = AccountReadingSpy()
         reader.statusResult = status
-        reader.portfolioResult = PerpsPortfolio(
-            accountIndex: 1,
-            collateral: "0",
-            availableBalance: balance,
-            totalAssetValue: balance,
-            positions: []
-        )
+        reader.portfolioResult = PerpsAccountSnapshot(availableBalance: balance)
         let store = PerpsAccountStore(service: reader, wallet: .openPositionTest())
         return PerpsOpenPositionViewModel(
             marketId: 1,
@@ -61,7 +55,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         await waitUntil(viewModel) { viewModel.viewState == .ready }
         viewModel.applyAutoClose(PerpsAutoClose(takeProfit: PerpsAutoCloseTrigger(triggerPrice: 60000), stopLoss: nil))
         XCTAssertNil(viewModel.autoCloseSummary)
-        XCTAssertEqual(viewModel.autoCloseWarningText, "The Take Profit value must be above the current price.")
+        XCTAssertEqual(viewModel.state.autoCloseWarningText, "The Take Profit value must be above the current price.")
     }
 
     // MARK: - State machine
@@ -107,7 +101,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
 
     func test_orderRetriesBalanceAfterInitialPortfolioFailure() async {
         let reader = AccountReadingSpy()
-        reader.statusResult = .active(accountIndex: 1, apiKeyIndex: 0)
+        reader.statusResult = .account(accountIndex: 1)
         reader.portfolioError = AccountReadingError.failed
         let store = PerpsAccountStore(service: reader, wallet: .openPositionTest())
 
@@ -123,13 +117,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertEqual(reader.portfolioCallCount, 1)
 
         reader.portfolioError = nil
-        reader.portfolioResult = PerpsPortfolio(
-            accountIndex: 1,
-            collateral: "0",
-            availableBalance: "321.45",
-            totalAssetValue: "321.45",
-            positions: []
-        )
+        reader.portfolioResult = PerpsAccountSnapshot(availableBalance: "321.45")
         let viewModel = PerpsOpenPositionViewModel(
             marketId: 1,
             side: .long,
@@ -203,6 +191,21 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertTrue(service.preparedIntents.isEmpty)
     }
 
+    func test_review_doesNotAskForAPasscode() async {
+        let service = FakePerpsTradingService()
+        let viewModel = makeViewModel(service: service)
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.setAmount("20")
+
+        let reviewed = XCTestExpectation(description: "review emitted")
+        viewModel.onReview = { _ in reviewed.fulfill() }
+        viewModel.review()
+
+        await fulfillment(of: [reviewed], timeout: 5)
+        XCTAssertFalse(service.passcodeRequested)
+    }
+
     func test_reviewPreviewFailure_showsWarningAndDoesNotOpenConfirm() async {
         let service = FakePerpsTradingService()
         service.previewResult = .failure(.insufficientLiquidity)
@@ -219,6 +222,15 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         await waitUntil(viewModel) { viewModel.warningText != nil }
         XCTAssertFalse(openedConfirm)
         XCTAssertEqual(viewModel.warningText, "Not enough market liquidity to fill this size.")
+        XCTAssertTrue(viewModel.amountFocusState.isActive)
+
+        // Regaining focus makes the text field commit its buffer back through the
+        // binding; that write must not be mistaken for the user editing the amount.
+        viewModel.setAmount(viewModel.amountText)
+        XCTAssertEqual(viewModel.warningText, "Not enough market liquidity to fill this size.")
+
+        viewModel.setAmount("21")
+        XCTAssertNil(viewModel.warningText)
     }
 
     // MARK: - Order type
@@ -299,12 +311,12 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         viewModel.applyLimitPrice(64000)
 
         XCTAssertNil(viewModel.autoCloseSummary)
-        XCTAssertEqual(viewModel.autoCloseWarningText, "The Stop Loss value must be below the current price.")
+        XCTAssertEqual(viewModel.state.autoCloseWarningText, "The Stop Loss value must be below the current price.")
     }
 
-    func test_leverageChange_resetsAutoCloseBeyondLiquidation() async {
+    func test_leverageChange_resetsAutoCloseBeyondTheReviewedLiquidation() async {
         let service = FakePerpsTradingService()
-        service.liquidationPreview = PerpsLiquidationPreview(price: 64000, isImmediateRisk: false, unavailableReason: nil)
+        service.reviewer.openReview = Self.openReview(liquidationPrice: 64000)
         let viewModel = makeViewModel(service: service)
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
@@ -314,13 +326,26 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         ))
         XCTAssertNotNil(viewModel.autoCloseSummary)
 
-        service.liquidationPreview = PerpsLiquidationPreview(price: 65500, isImmediateRisk: false, unavailableReason: nil)
+        service.reviewer.openReview = Self.openReview(liquidationPrice: 65500)
         viewModel.applyLeverage(40)
+        await waitUntil(viewModel) { viewModel.autoCloseSummary == nil }
 
-        XCTAssertNil(viewModel.autoCloseSummary)
         XCTAssertEqual(
-            viewModel.autoCloseWarningText,
+            viewModel.state.autoCloseWarningText,
             "The Stop Loss value must be above the liquidation price (\(PerpsFormatting.usd(65500)))."
+        )
+    }
+
+    private static func openReview(liquidationPrice: Double) -> PerpsOpenOrderReview {
+        PerpsOpenOrderReview(
+            symbol: "BTC",
+            marginUsd: 100,
+            entryPrice: 66000,
+            liquidationPrice: liquidationPrice,
+            notionalUsd: 1000,
+            baseSize: 0.015,
+            estimatedFeeUsd: 0.4,
+            liquidationUnavailableReason: nil
         )
     }
 
@@ -366,16 +391,16 @@ private extension Wallet {
 }
 
 private final class AccountReadingSpy: PerpsAccountReading, @unchecked Sendable {
-    var statusResult: LighterPerpsStatus = .unknown
-    var portfolioResult: PerpsPortfolio?
+    var statusResult: PerpsAccountStatus = .unknown
+    var portfolioResult: PerpsAccountSnapshot?
     var portfolioError: Error?
     private(set) var portfolioCallCount = 0
 
-    func status(wallet: Wallet) async -> LighterPerpsStatus {
+    func status(wallet: Wallet) async -> PerpsAccountStatus {
         statusResult
     }
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio? {
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot? {
         portfolioCallCount += 1
         if let portfolioError {
             throw portfolioError
@@ -383,19 +408,18 @@ private final class AccountReadingSpy: PerpsAccountReading, @unchecked Sendable 
         return portfolioResult
     }
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}
     }

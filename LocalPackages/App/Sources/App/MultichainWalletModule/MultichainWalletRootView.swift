@@ -5,64 +5,91 @@ import TKUIKit
 
 struct MultichainWalletRootView: View {
     @ObservedObject var viewModel: MultichainWalletRootViewModel
+
+    var body: some View {
+        MultichainWalletContentView(
+            rootViewModel: viewModel,
+            viewModel: viewModel.walletViewModel
+        )
+    }
+}
+
+private struct MultichainWalletContentView: View {
+    @ObservedObject var rootViewModel: MultichainWalletRootViewModel
+    @ObservedObject var viewModel: MultichainWalletViewModel
     @Environment(\.tkPalette) private var palette
+
+    @State private var settledWalletId: String?
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                MultichainWalletBalanceSection(viewModel: viewModel.balanceViewModel)
+                MultichainWalletBalanceSection(
+                    viewModel: viewModel.balanceViewModel,
+                    showsShimmer: showsSkeleton
+                )
 
                 MultichainWalletIconButtonsSection(
-                    showsSkeleton: viewModel.showsSkeleton,
-                    model: viewModel.iconButtonsModel,
+                    config: iconButtonsConfig,
                     onSend: viewModel.tapSend,
                     onDeposit: viewModel.tapDeposit,
                     onSwap: viewModel.tapSwap,
                     onStake: viewModel.tapStake
                 )
 
-                MultichainWalletHomeBannersSection(viewModel: viewModel.homeBannersViewModel)
-                    .id(viewModel.homeBannersViewModel.identity)
+                MultichainWalletHomeBannersSection(
+                    viewModel: viewModel.homeBannersViewModel,
+                    showsShimmer: showsSkeleton
+                )
+                .id(viewModel.homeBannersViewModel.wallet.id)
 
-                if let raffle = viewModel.rafflePresentation, raffle.shouldShowMainScreenEntry {
+                if !showsSkeleton,
+                   let raffle = rootViewModel.rafflePresentation,
+                   raffle.shouldShowMainScreenEntry
+                {
                     RaffleEntryPointView(
                         title: raffle.compactTitle,
                         ticketsText: raffle.ticketsText,
-                        action: viewModel.tapRaffle
+                        action: rootViewModel.tapRaffle
                     )
                     .padding(.top, 8)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                     .onAppear {
-                        viewModel.raffleBannerDidAppear()
+                        rootViewModel.raffleBannerDidAppear()
                     }
                 }
 
-                if !viewModel.showsSkeleton, viewModel.showsFinishSetup {
+                if case let .visible(items, isSkippable) = finishSetup {
                     MultichainWalletFinishSetupSection(
-                        items: viewModel.finishSetupItems,
-                        isFinishEnabled: viewModel.isFinishSetupEnabled,
+                        items: items,
+                        isFinishEnabled: isSkippable,
                         onBackup: viewModel.backupPressed,
                         onMigration: viewModel.migrationPressed,
                         onEnableNotifications: viewModel.enableNotifications,
                         onEnableBiometry: viewModel.enableBiometry,
-                        onFinish: viewModel.finishSetup
+                        onFinish: viewModel.skipSetup
                     )
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
+                    .transition(.opacity)
                 }
 
                 WalletBalanceMultichainAssetsListView(
                     viewModel: viewModel.assetsListViewModel,
-                    showsSkeleton: viewModel.showsSkeleton
+                    showsSkeleton: showsSkeleton
                 )
                 .padding(.horizontal, 16)
 
-                if !viewModel.showsSkeleton {
+                if !showsSkeleton {
                     MultichainWalletCollectiblesSection(viewModel: viewModel.collectiblesViewModel)
                 }
             }
             .padding(.bottom, 16)
+            .animation(finishSetupAnimation, value: finishSetup)
+        }
+        .onChange(of: settlingWalletId) { settlingWalletId in
+            settledWalletId = settlingWalletId
         }
         .tkImmediateButtonPresses()
         .refreshable {
@@ -77,26 +104,66 @@ struct MultichainWalletRootView: View {
                 .ignoresSafeArea()
         )
     }
+
+    private var iconButtonsConfig: MultichainWalletIconButtonsSection.Config {
+        switch viewModel.state {
+        case .pending:
+            .shimmer
+        case let .ready(iconButtons, _):
+            .content(iconButtons)
+        }
+    }
+
+    private var finishSetup: MultichainWalletViewModel.FinishSetup {
+        guard case let .ready(_, finishSetup) = viewModel.state else { return .hidden }
+        return finishSetup
+    }
+
+    private var showsSkeleton: Bool {
+        switch viewModel.state {
+        case .pending:
+            true
+        case .ready:
+            false
+        }
+    }
+
+    private var settlingWalletId: String? {
+        showsSkeleton ? nil : viewModel.wallet.id
+    }
+
+    private var finishSetupAnimation: Animation? {
+        settledWalletId == viewModel.wallet.id ? Layout.sectionAnimation : nil
+    }
+}
+
+private extension MultichainWalletContentView {
+    enum Layout {
+        static let sectionAnimation: Animation = WalletBalanceHomeBannersLayout.animation
+    }
 }
 
 private struct MultichainWalletBalanceSection: View {
     @ObservedObject var viewModel: MultichainWalletBalanceSectionViewModel
+    let showsShimmer: Bool
+
+    private var config: BalanceViewConfig {
+        showsShimmer ? .shimmer : viewModel.config
+    }
 
     var body: some View {
         BalanceSwiftUIView(
-            config: viewModel.config,
+            config: config,
             balanceAction: viewModel.balancePressed,
             addressAction: viewModel.addressPressed,
             addressLongPressAction: viewModel.addressLongPressed,
             batteryAction: viewModel.batteryPressed,
             backupAction: viewModel.backupPressed
         )
-        .frame(height: height(for: viewModel.config), alignment: .top)
+        .frame(height: height(for: config), alignment: .top)
         .clipped()
     }
 
-    /// The address row is the only optional part of the balance view, so the window either
-    /// includes it whole or ends above it — clipping partway through it truncated the line.
     private func height(for config: BalanceViewConfig) -> CGFloat {
         if case let .content(content) = config, content.address == nil {
             return Layout.heightWithoutAddress
@@ -112,9 +179,10 @@ private struct MultichainWalletBalanceSection: View {
 
 private struct MultichainWalletHomeBannersSection: View {
     @ObservedObject var viewModel: WalletBalanceHomeBannersViewModel
+    let showsShimmer: Bool
 
     var body: some View {
-        if viewModel.state.showsShimmer {
+        if showsShimmer || !viewModel.state.hasAnswered {
             MultichainWalletHomeBannersSkeleton()
         } else {
             WalletBalanceHomeBannersView(viewModel: viewModel)
@@ -153,7 +221,7 @@ private struct MultichainWalletCollectiblesSection: View {
 }
 
 private struct MultichainWalletFinishSetupSection: View {
-    let items: [MultichainWalletRootViewModel.FinishSetupItem]
+    let items: [WalletBalanceSetupModel.State.Item]
     let isFinishEnabled: Bool
     let onBackup: () -> Void
     let onMigration: () -> Void
@@ -184,8 +252,9 @@ private struct MultichainWalletFinishSetupSection: View {
             .padding(.trailing, 8)
             if !items.isEmpty {
                 VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    ForEach(Array(items.enumerated()), id: \.element.identifier) { index, item in
                         cell(for: item, showsDivider: index < items.count - 1)
+                            .transition(.opacity)
                     }
                 }
                 .asCellsGroup(
@@ -201,7 +270,7 @@ private struct MultichainWalletFinishSetupSection: View {
 
     @ViewBuilder
     private func cell(
-        for item: MultichainWalletRootViewModel.FinishSetupItem,
+        for item: WalletBalanceSetupModel.State.Item,
         showsDivider: Bool
     ) -> some View {
         switch item {

@@ -1,4 +1,3 @@
-import ChainKit
 import Foundation
 
 public struct PerpsPositionsWatch {
@@ -13,56 +12,28 @@ public struct PerpsPositionsWatch {
     }
 }
 
-public struct PerpsTransactionUpdatesWatch {
-    private let onCancel: @Sendable () -> Void
+public struct PerpsAccountSnapshot: Sendable, Equatable {
+    public let availableBalance: String
+    public let positions: [PerpsPositionSummary]
 
-    public init(onCancel: @escaping @Sendable () -> Void) {
-        self.onCancel = onCancel
-    }
-
-    public func cancel() {
-        onCancel()
+    public init(availableBalance: String, positions: [PerpsPositionSummary] = []) {
+        self.availableBalance = availableBalance
+        self.positions = positions
     }
 }
 
 protocol PerpsAccountReading: AnyObject {
-    func status(wallet: Wallet) async -> LighterPerpsStatus
+    func status(wallet: Wallet) async -> PerpsAccountStatus
 
-    func portfolio(wallet: Wallet, accountIndex: Int64) async throws -> PerpsPortfolio?
+    func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot?
 
     func watchPositions(
         wallet: Wallet,
-        accountIndex: Int64,
         onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch
 
-    func watchTransactionUpdates(
-        wallet: Wallet,
-        onUpdate: @escaping @Sendable () -> Void,
-        onReconnecting: @escaping @Sendable () -> Void
-    ) async throws -> PerpsTransactionUpdatesWatch?
+    func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId: String?) async throws -> PerpsTradingSnapshot
 
-    func activeTriggerOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> [PerpsTriggerOrderSummary]
-
-    func activeMarketOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> PerpsActiveOrders
-
-    func recentActivity(wallet: Wallet, accountIndex: Int64, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem]
-}
-
-extension PerpsAccountReading {
-    func watchTransactionUpdates(
-        wallet _: Wallet,
-        onUpdate _: @escaping @Sendable () -> Void,
-        onReconnecting _: @escaping @Sendable () -> Void
-    ) async throws -> PerpsTransactionUpdatesWatch? {
-        nil
-    }
-
-    func activeMarketOrders(wallet: Wallet, accountIndex: Int64, marketId: Int64) async throws -> PerpsActiveOrders {
-        try PerpsActiveOrders(
-            limitOrders: [],
-            triggerOrders: await activeTriggerOrders(wallet: wallet, accountIndex: accountIndex, marketId: marketId)
-        )
-    }
+    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem]
 }

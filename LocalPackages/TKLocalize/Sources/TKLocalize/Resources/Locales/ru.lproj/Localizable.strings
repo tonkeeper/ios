@@ -59,6 +59,8 @@
 "perps.activate_account" = "Активировать аккаунт";
 "perps.activating_toast" = "Активация аккаунта на этом устройстве";
 "perps.account_activated" = "Аккаунт успешно активирован";
+"perps.open_positions" = "Открытые позиции";
+"perps.total_amount" = "Общая сумма";
 "perps.explore" = "Обзор Perps";
 "perps.volume" = "Объём";
 "perps.volume_short" = "vol";
@@ -115,11 +117,11 @@
 "perps.chart.high" = "Максимум";
 "perps.chart.low" = "Минимум";
 "perps.chart.volume" = "Объём";
-"perps.open_position.price" = "Цена";
+"perps.open_position.price" = "Текущая цена";
 "perps.open_position.market" = "Маркет";
 "perps.open_position.size" = "Размер:";
 "perps.open_position.max" = "MAX";
-"perps.open_position.balance" = "Баланс:";
+"perps.open_position.balance" = "Доступно:";
 "perps.open_position.deposit" = "Пополнить";
 "perps.open_position.leverage" = "Плечо";
 "perps.open_position.auto_close" = "Автозакрытие";
@@ -265,11 +267,24 @@
 "multichain_history.placeholder.buttons.add_funds" = "Пополнить";
 "multichain_history.placeholder.filtered.title" = "Ничего не найдено";
 "multichain_history.placeholder.filtered.subtitle" = "Ничего не найдено под текущими фильтрами.";
+"multichain_history.perps.opened_long" = "Лонг открыт";
+"multichain_history.perps.opened_short" = "Шорт открыт";
+"multichain_history.perps.opened" = "Позиция открыта";
+"multichain_history.perps.closed_long" = "Лонг закрыт";
+"multichain_history.perps.closed_short" = "Шорт закрыт";
+"multichain_history.perps.closed" = "Позиция закрыта";
+"multichain_history.perps.liquidated_long" = "Лонг ликвидирован";
+"multichain_history.perps.liquidated_short" = "Шорт ликвидирован";
+"multichain_history.perps.liquidated" = "Ликвидирована";
+"multichain_history.perps.take_profit_executed" = "TP исполнен";
+"multichain_history.perps.stop_loss_executed" = "SL исполнен";
+"multichain_history.perps.subtitle" = "%@ Perps";
 "history.tab.all" = "Все";
 "history.tab.all_types" = "Все типы";
 "history.tab.sent" = "Отправлено";
 "history.tab.received" = "Получено";
 "history.tab.spam" = "Спам";
+"history.tab.perpetuals" = "Перпетуалы";
 "history.spam.footer.after_date" = "Показан спам после %@";
 "history.spam.footer.no_spam" = "Спам не найден";
 "history.spam.folder.empty" = "Папка спама пуста";
@@ -404,7 +419,7 @@
 
 "settings.notifications.title" = "Уведомления";
 "settings.notifications.notifications_item.title" = "Push уведомления";
-"settings.notifications.notifications_item.caption" = "Получайте уведомления при получении GRAM, токенов, NFT и уведомления от подключенных приложений.";
+"settings.notifications.notifications_item.caption" = "Получайте уведомления при получении токенов, NFT и уведомления от подключенных приложений.";
 
 "settings.notifications.notifications_disabled.title" = "Уведомления отключены";
 "settings.notifications.notifications_disabled.caption" = "Вы отключили уведомления в\U00A0настройках устройства. Чтобы ничего не\U00A0пропустить разрешите уведомления.";
@@ -523,7 +538,7 @@
 
 "ramp.deposit.title" = "Пополнить";
 "ramp.deposit.receive_tokens" = "Получить токены";
-"ramp.deposit.receive_tokens_subtitle" = "Из другого кошелька TON/TRON";
+"ramp.deposit.receive_tokens_subtitle" = "Из другого кошелька";
 "ramp.deposit.deposit_with_cash_or_crypto" = "Купить за наличные или крипту";
 "ramp.deposit.available_from_other_crypto" = "Доступно из другой крипты";
 "ramp.deposit.available_1to1_cross_chain" = "Доступно 1:1 кросс-чейн";
@@ -747,9 +762,6 @@
 "add_wallet.items.testnet.title" = "Аккаунт в Testnet";
 "add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретной фразы из 24 слов в Testnet";
 
-"add_wallet.items.tetra.title" = "Tetra L2";
-"add_wallet.items.tetra.subtitle" = "Добавить кошелёк в сети Tetra L2";
-
 "add_wallet.items.pair_keystone.title" = "Подключить Keystone";
 "add_wallet.items.pair_keystone.subtitle" = "Аппаратный модуль использующий AIR-GAP";
 
@@ -757,7 +769,6 @@
 "add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
 
 "add_wallet.sections.other_options" = "Другие варианты";
-"add_wallet.sections.for_developers" = "Для разработчиков";
 
 "scanner.title" = "Отсканируйте QR-код";
 "scanner.select_from_gallery" = "Выбрать из галереи";
@@ -805,23 +816,23 @@
 "receive.multichain.address_title" = "Ваш адрес %@";
 "receive.multichain.disclaimer" = "Отправляйте на этот адрес только %1$@ (%2$@) и токены в сети %3$@, иначе вы можете потерять свои средства.";
 "receive.multichain.network_picker.title" = "Выбрать сеть";
-"receive.multichain.network_picker.subtitle" = "Один адрес для всех токенов в каждой сети";
+"receive.multichain.network_picker.subtitle" = "Один адрес на сеть";
 "receive.multichain.networks.ton.title" = "TON";
-"receive.multichain.networks.ton.display_title" = "TON (TON)";
+"receive.multichain.networks.ton.display_title" = "TON";
 "receive.multichain.networks.ton.disclaimer_title" = "Gram";
 "receive.multichain.networks.ethereum.title" = "Ethereum";
-"receive.multichain.networks.ethereum.display_title" = "Ethereum (ERC20)";
+"receive.multichain.networks.ethereum.display_title" = "Ethereum";
 "receive.multichain.networks.bitcoin.title" = "Bitcoin";
-"receive.multichain.networks.bitcoin.display_title" = "Bitcoin (BTC)";
+"receive.multichain.networks.bitcoin.display_title" = "Bitcoin";
 "receive.multichain.networks.base.title" = "Base";
-"receive.multichain.networks.base.display_title" = "Base (Base)";
+"receive.multichain.networks.base.display_title" = "Base";
 "receive.multichain.networks.smartchain.title" = "BSC";
-"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain (BEP20)";
+"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain";
 "receive.multichain.networks.smartchain.disclaimer_title" = "BNB Smart Chain";
 "receive.multichain.networks.arbitrum.title" = "Arbitrum";
-"receive.multichain.networks.arbitrum.display_title" = "Arbitrum (ARB)";
+"receive.multichain.networks.arbitrum.display_title" = "Arbitrum";
 "receive.multichain.networks.tron.title" = "TRON";
-"receive.multichain.networks.tron.display_title" = "TRON (TRC20)";
+"receive.multichain.networks.tron.display_title" = "TRON";
 "receive.multichain.networks.solana.title" = "Solana";
 
 "receive.trx.description" = "Отправляйте на этот адрес только Tron TRX, иначе вы можете потерять свои средства.";

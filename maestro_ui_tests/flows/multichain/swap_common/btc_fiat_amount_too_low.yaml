@@ -1,5 +1,6 @@
 # Multichain Swap: BTC send in fiat mode with amount below provider minimum.
-# Expects provider error toast, quote unavailable rate row, and disabled Continue.
+# Expects no quote (the provider's own message is not surfaced), the unavailable-rate
+# row, and a disabled Continue.
 appId: com.jbig.tonkeeper
 ---
 - runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
@@ -46,9 +47,9 @@ appId: com.jbig.tonkeeper
 - inputText: "0.1"
 
 - extendedWaitUntil:
-    visible: "insufficient balance for source asset: The specified amount is too low."
+    visible: "Couldn't get a quote. Change amount"
     timeout: 30000
-- assertVisible: "Couldn't get a quote. Change amount"
+- assertVisible: "No quote"
 - assertVisible:
     id: swap_continue
     enabled: false

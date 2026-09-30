@@ -584,12 +584,13 @@ private final class MultichainServiceStub: MultichainService {
     }
 
     func getWalletActivities(
-        walletId _: String,
+        state _: MultichainWalletState,
         limit _: Int?,
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .connectionError
@@ -708,7 +709,8 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
         cursor _: String?,
         chain _: MultichainChain?,
         assetId _: String?,
-        activityType _: MultichainActivityType?,
+        activityTypeFilter _: MultichainActivityTypeFilter?,
+        showPerps _: Bool?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         throw .connectionError(underlying: nil)

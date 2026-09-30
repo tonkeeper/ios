@@ -130,6 +130,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     private let currencyStore: CurrencyStore
     private let ratesService: RatesService
     private let balanceService: BalanceService
+    private let multichainAssetBalanceProvider: MultichainAssetBalanceProvider
     private let batteryCalculation: BatteryCalculation
     private let feeCalculator: TransactionConfirmationFeeCalculator
     private let textFormatter: TransactionConfirmationTextFormatter
@@ -147,6 +148,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         currencyStore: CurrencyStore,
         ratesService: RatesService,
         balanceService: BalanceService,
+        multichainAssetBalanceProvider: MultichainAssetBalanceProvider,
         batteryCalculation: BatteryCalculation,
         configurationAssembly: ConfigurationAssembly,
         transactionSentNotificationPatch: @escaping (inout [String: Any]) -> Void = { _ in },
@@ -159,6 +161,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         self.currencyStore = currencyStore
         self.ratesService = ratesService
         self.balanceService = balanceService
+        self.multichainAssetBalanceProvider = multichainAssetBalanceProvider
         self.configurationAssembly = configurationAssembly
         self.batteryCalculation = batteryCalculation
         self.transactionSentNotificationPatch = transactionSentNotificationPatch
@@ -689,7 +692,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         let topFormatted = amountFormatter.format(
             decimal: feeDecimal,
             accessory: .tokenSymbol(info.symbol, onLeft: false),
-            style: .regular
+            style: .compact
         )
         let topValue = "\(TKLocales.Common.Numbers.approximate) \(topFormatted)"
 
@@ -699,13 +702,13 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             bottomFormatted = amountFormatter.format(
                 decimal: converted,
                 accessory: .fiat(currency),
-                style: .regular
+                style: .compact
             )
         } else {
             bottomFormatted = amountFormatter.format(
                 decimal: feeDecimal,
                 accessory: .fiat(Currency.USD),
-                style: .regular
+                style: .compact
             )
         }
         let bottomValue = "\(TKLocales.Common.Numbers.approximate) \(bottomFormatted)"
@@ -1150,12 +1153,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             }
 
             let feeRate: Rates.Rate?
-            if case let .transfer(.multichain(asset)) = model.transaction,
-               case let .extra(extra) = model.extraState,
-               case let .multichain(feeAsset, _) = extra.value,
-               feeAsset.assetId == asset.asset.assetId
+            if case let .extra(extra) = model.extraState,
+               case let .multichain(feeAsset, _) = extra.value
             {
-                feeRate = multichainRate(asset: asset, currency: currency)
+                feeRate = multichainFeeRate(
+                    feeAsset: feeAsset,
+                    transaction: model.transaction,
+                    wallet: model.wallet,
+                    currency: currency
+                )
             } else {
                 switch feeToken {
                 case .ton:
@@ -1199,8 +1205,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         return amountFormatter.format(
             decimal: fiatAmount,
             accessory: .fiat(currency),
-            style: .regular
+            style: .compact
         )
+    }
+
+    /// The fee asset is not always the asset being transferred — an EVM withdrawal spends USDC and
+    /// pays the fee in ETH — and only `MultichainAsset` carries a price, so fall back to the cached
+    /// balance entry when the ids differ.
+    private func multichainFeeRate(
+        feeAsset: MultichainAssetDetails,
+        transaction: TransactionConfirmationModel.Transaction,
+        wallet: Wallet,
+        currency: Currency
+    ) -> Rates.Rate? {
+        if case let .transfer(.multichain(asset)) = transaction,
+           feeAsset.assetId == asset.asset.assetId
+        {
+            return multichainRate(asset: asset, currency: currency)
+        }
+        guard let asset = multichainAssetBalanceProvider.cachedAsset(
+            for: feeAsset.assetId,
+            wallet: wallet
+        ) else {
+            return nil
+        }
+        return multichainRate(asset: asset, currency: currency)
     }
 
     private func multichainRate(
@@ -1400,7 +1429,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     fractionDigits: TonInfo.fractionDigits,
                     accessory: .tokenSymbol(TonInfo.symbol),
                     isNegative: false,
-                    style: .regular
+                    style: .compact
                 )
 
             case .trx:
@@ -1410,7 +1439,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     fractionDigits: TRX.fractionDigits,
                     accessory: .tokenSymbol(TRX.symbol),
                     isNegative: false,
-                    style: .regular
+                    style: .compact
                 )
 
             case .other:

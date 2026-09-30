@@ -2,119 +2,94 @@ import ChainKit
 @testable import KeeperCore
 import XCTest
 
-/// The size-change review blends the live position with the resizing order's
-/// expected fill. These tests lock the non-obvious parts of that blend.
+/// The "before" figures are the caller's, the "after" ones are the venue's, and
+/// both are decoded with the market's own scale rather than a default.
 final class PerpsSizeChangeReviewMapperTests: XCTestCase {
-    func testSideComesFromPositionNotResizingOrder() {
-        let review = PerpsSizeChangeReviewMapper.map(
-            direction: .reduce,
-            review: Self.makeOrderReview(side: LighterTradeSide.short_),
-            position: Self.makePosition(side: LighterTradeSide.long_),
-            marginDeltaUsd: 10
-        )
-        XCTAssertEqual(review.side, .long)
-    }
+    private let scale = PerpsScale(priceDecimals: 4, baseDecimals: 5, quoteDecimals: 9)
 
-    func testAddUsesProjectedPositionWithoutBlendingEntryTwice() {
-        let review = PerpsSizeChangeReviewMapper.map(
+    func testAddKeepsTheOldEntryAndProjectsTheNewNotional() {
+        let review = PerpetualReview.Add(
+            side: PerpsSide.long_,
+            kind: PerpsOrderKind.market,
+            scale: scale,
+            marginBudgetQuote: 10_000_000_000,
+            initialMarginBps: 1000,
+            baseAmount: 50000,
+            notionalQuote: 150_000_000_000,
+            referencePrice: 30_000_000,
+            estimatedEntryPrice: 30_000_000,
+            mergedBaseAmount: 150_000,
+            mergedEntryPrice: 23_333_333,
+            estimatedFeeQuote: 1_000_000_000,
+            estimatedCollateralQuote: 40_000_000_000,
+            priceBoundOrLimit: 31_000_000,
+            maxNotionalQuote: 150_000_000_000,
+            maxFeeQuote: 1_000_000_000,
+            takeProfitTrigger: nil,
+            stopLossTrigger: nil,
+            liquidationPrice: nil,
+            liquidationUnavailableReason: nil,
+            isImmediateRisk: false
+        )
+
+        let mapped = PerpsPlannerMapping.addReview(
+            review,
+            symbol: "BTC",
             direction: .add,
-            review: Self.makeOrderReview(
-                baseSize: 0.008,
-                notionalUsd: 512,
-                positionAfterBaseSize: 0.016,
-                positionAfterEntryPrice: 65000
-            ),
-            position: Self.makePosition(size: 0.008, avgEntryPrice: 66000),
-            marginDeltaUsd: 20
+            marginDeltaUsd: 10,
+            oldBase: 100_000,
+            oldEntry: 20_000_000,
+            oldNotionalUsd: 2000
         )
-        XCTAssertEqual(review.entryPrice.old, 66000)
-        XCTAssertEqual(review.entryPrice.new, 65000, accuracy: 0.0001)
-        XCTAssertEqual(review.notionalUsd.old, 528, accuracy: 0.0001)
-        XCTAssertEqual(review.notionalUsd.new, 1040, accuracy: 0.0001)
+
+        XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.add)
+        XCTAssertEqual(mapped.baseSize.old, 1, accuracy: 1e-9)
+        XCTAssertEqual(mapped.baseSize.new, 1.5, accuracy: 1e-9)
+        XCTAssertEqual(mapped.entryPrice.old, 2000, accuracy: 1e-6)
+        XCTAssertEqual(mapped.entryPrice.new, 2333.3333, accuracy: 1e-3)
+        XCTAssertEqual(mapped.notionalUsd.old, 2000, accuracy: 1e-9)
+        XCTAssertEqual(mapped.notionalUsd.new, 3500, accuracy: 1e-3)
     }
 
-    func testReduceKeepsEntryAndShrinksNotionalOnEntryBasis() {
-        let review = PerpsSizeChangeReviewMapper.map(
+    func testReduceKeepsTheEntryAndShrinksTheNotional() {
+        let review = PerpetualReview.Close(
+            side: PerpsSide.long_,
+            scale: scale,
+            fullExit: false,
+            closingBaseAmount: 40000,
+            estimatedFillBaseAmount: 40000,
+            remainingBaseAmount: 60000,
+            notionalQuote: 80_000_000_000,
+            referencePrice: 20_000_000,
+            estimatedExitPrice: 20_000_000,
+            estimatedFeeQuote: 1_000_000_000,
+            estimatedRealizedPnlQuote: 0,
+            estimatedReceiveQuote: 39_000_000_000,
+            estimatedReturnedMarginQuote: 40_000_000_000,
+            priceBound: 19_000_000,
+            maxNotionalQuote: 80_000_000_000,
+            maxFeeQuote: 1_000_000_000,
+            liquidationPrice: nil,
+            liquidationUnavailableReason: nil,
+            isImmediateRisk: false
+        )
+
+        let mapped = PerpsPlannerMapping.closeSizeReview(
+            review,
+            symbol: "BTC",
             direction: .reduce,
-            review: Self.makeOrderReview(
-                baseSize: 0.004,
-                notionalUsd: 256,
-                positionAfterBaseSize: 0.004,
-                positionAfterEntryPrice: 66000
-            ),
-            position: Self.makePosition(size: 0.008, avgEntryPrice: 66000),
-            marginDeltaUsd: 10
+            marginDeltaUsd: 40,
+            leverage: 5,
+            oldBase: 100_000,
+            oldEntry: 20_000_000,
+            oldNotionalUsd: 2000
         )
-        XCTAssertFalse(review.entryPrice.isChanged)
-        XCTAssertEqual(review.notionalUsd.old, 528, accuracy: 0.0001)
-        XCTAssertEqual(review.notionalUsd.new, 264, accuracy: 0.0001)
-    }
 
-    // MARK: - Fixtures
-
-    private static func makeOrderReview(
-        side: LighterTradeSide = LighterTradeSide.long_,
-        baseSize: Double = 0.008,
-        notionalUsd: Double = 512,
-        positionAfterBaseSize: Double? = nil,
-        positionAfterEntryPrice: Double? = nil
-    ) -> LighterOrderReview {
-        let positionAfter = positionAfterBaseSize.map { projectedSize in
-            LighterPositionPreview(
-                marketId: 1,
-                side: side,
-                baseAmount: 800,
-                baseSize: projectedSize,
-                entryPrice: positionAfterEntryPrice ?? 64000,
-                liquidation: LighterLiquidationEstimate(
-                    price: KotlinDouble(value: 64141.75),
-                    isImmediateRisk: false,
-                    unavailableReason: nil
-                )
-            )
-        }
-        return LighterOrderReview(
-            marketId: 1,
-            symbol: "BTC",
-            side: side,
-            kind: LighterOrderKind.market,
-            reduceOnly: false,
-            baseAmount: 800,
-            baseSize: baseSize,
-            price: 0,
-            priceHuman: 64000,
-            notionalUsd: notionalUsd,
-            estimatedFeeUsd: KotlinDouble(value: 0.144),
-            clientOrderIndex: 0,
-            takeProfit: nil,
-            stopLoss: nil,
-            fillWorstPrice: nil,
-            quoteFilled: nil,
-            estimatedBaseFilled: nil,
-            maintenanceMarginFraction: nil,
-            estimatedPnlUsd: nil,
-            estimatedReceiveUsd: nil,
-            positionAfter: positionAfter
-        )
-    }
-
-    private static func makePosition(
-        side: LighterTradeSide = LighterTradeSide.long_,
-        size: Double = 0.008,
-        avgEntryPrice: Double = 66000
-    ) -> LighterOpenPosition {
-        LighterOpenPosition(
-            marketId: 1,
-            symbol: "BTC",
-            side: side,
-            size: size,
-            avgEntryPrice: avgEntryPrice,
-            allocatedMargin: 20,
-            liquidationPrice: 64141.75,
-            unrealizedPnl: 0.5,
-            marginMode: 1,
-            leverage: KotlinDouble(value: 27),
-            fundingPaid: nil
-        )
+        XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.reduce)
+        XCTAssertEqual(mapped.baseSize.old, 1, accuracy: 1e-9)
+        XCTAssertEqual(mapped.baseSize.new, 0.6, accuracy: 1e-9)
+        XCTAssertEqual(mapped.entryPrice.new, 2000, accuracy: 1e-6)
+        XCTAssertEqual(mapped.notionalUsd.old, 2000, accuracy: 1e-9)
+        XCTAssertEqual(mapped.notionalUsd.new, 1200, accuracy: 1e-9)
     }
 }

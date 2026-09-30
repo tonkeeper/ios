@@ -29,6 +29,16 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
     }
 
     override func start(deeplink: CoordinatorDeeplink? = nil) {
+        let deeplinkOpenContexts = (deeplink as? String).map {
+            [DeeplinkOpenAnalyticsContext(link: $0, isColdStart: true)]
+        } ?? []
+        start(deeplink: deeplink, deeplinkOpenContexts: deeplinkOpenContexts)
+    }
+
+    func start(
+        deeplink: CoordinatorDeeplink?,
+        deeplinkOpenContexts: [DeeplinkOpenAnalyticsContext]
+    ) {
         makeTKUIKitInitialSetup()
         setupSensitiveContentAnalytics()
 
@@ -39,6 +49,9 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
         }
 
         logLaunchApp()
+        for context in deeplinkOpenContexts {
+            logDeeplinkOpen(context.link, isColdStart: context.isColdStart)
+        }
 
         openRoot(deeplink: deeplink)
 
@@ -46,8 +59,38 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
     }
 
     override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+        if let link = deeplink as? String {
+            logDeeplinkOpen(link, isColdStart: false)
+        }
         guard let rootCoordinator else { return false }
         return rootCoordinator.handleDeeplink(deeplink: deeplink)
+    }
+
+    /// Every link that reaches the app from the outside passes through here or through `start`;
+    /// links opened from inside the app go straight to `MainCoordinator` and report their own
+    /// placement instead.
+    private func logDeeplinkOpen(_ link: String, isColdStart: Bool) {
+        guard !link.isEmpty else { return }
+
+        let linkType: DeeplinkOpen.LinkType
+        do {
+            let parsed = try keeperCoreAssembly.rootAssembly().rootController().parseDeeplink(string: link)
+            linkType = DeeplinkOpen.LinkType(deeplink: parsed)
+        } catch let error as DeeplinkParserError where error.isSilent {
+            // A WalletConnect wake-up opens nothing, so it is neither an app open nor a campaign entry.
+            return
+        } catch {
+            linkType = .unknown
+        }
+
+        coreAssembly.analyticsProvider.log(
+            DeeplinkOpen(
+                from: DeeplinkOpen.From(link: link),
+                linkType: linkType,
+                isColdStart: isColdStart
+            ),
+            utm: UtmParameters(link: link)
+        )
     }
 
     private func makeTKUIKitInitialSetup() {

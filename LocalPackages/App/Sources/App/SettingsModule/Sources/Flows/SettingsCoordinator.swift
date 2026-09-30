@@ -376,7 +376,8 @@ private extension SettingsCoordinator {
             )
         ).createBackupCoordinator(
             router: router,
-            wallet: wallet
+            wallet: wallet,
+            source: .settings
         )
 
         coordinator.didFinish = { [weak self] in
@@ -505,7 +506,8 @@ private extension SettingsCoordinator {
             ),
             tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
             urlOpener: coreAssembly.urlOpener(),
-            pushTokenProvider: PushNotificationTokenProvider()
+            pushTokenProvider: PushNotificationTokenProvider(),
+            appSettings: coreAssembly.appSettings
         )
 
         let module = SettingsListAssembly.module(configurator: configuration)
@@ -550,15 +552,10 @@ private extension SettingsCoordinator {
             let connectedAppsStore = keeperCoreMainAssembly.storesAssembly.connectedAppsStore(
                 tonConnectAppsStore: tonConnectAppsStore
             )
-            let walletConnectSessionsStore: WalletConnectSessionsStore?
-            if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) {
-                let walletConnectService = await keeperCoreMainAssembly.walletConnectAssembly.walletConnectService
-                walletConnectSessionsStore = keeperCoreMainAssembly.storesAssembly.walletConnectSessionsStore(
-                    walletConnectService: walletConnectService
-                )
-            } else {
-                walletConnectSessionsStore = nil
-            }
+            let walletConnectService = await keeperCoreMainAssembly.walletConnectAssembly.walletConnectService
+            let walletConnectSessionsStore = keeperCoreMainAssembly.storesAssembly.walletConnectSessionsStore(
+                walletConnectService: walletConnectService
+            )
 
             let viewModel = SettingsConnectedAppsViewModel(
                 wallet: wallet,

@@ -22,18 +22,16 @@ extension RampViewModelImplementation {
     func buildSnapshot() {
         var snapshot = RampViewController.Snapshot()
 
-        if configuration.featureEnabled(.multichainEnabled) {
-            let showsCurrencyShimmer = state == .loading && currentFiatCurrency == nil
-            let model = RampFiatCurrencyCell.Model(
-                headingTitle: fiatCurrencyBlockHeading,
-                rowCaption: fiatCurrencyRowCaption,
-                currencyCode: currentFiatCurrency?.code,
-                currencyImage: currentFiatCurrency.flatMap { URL(string: $0.image) },
-                showsCurrencyShimmer: showsCurrencyShimmer
-            )
-            snapshot.appendSections([.fiatCurrency])
-            snapshot.appendItems([.fiatCurrencyPicker(model)], toSection: .fiatCurrency)
-        }
+        let showsCurrencyShimmer = state == .loading && currentFiatCurrency == nil
+        let model = RampFiatCurrencyCell.Model(
+            headingTitle: fiatCurrencyBlockHeading,
+            rowCaption: fiatCurrencyRowCaption,
+            currencyCode: currentFiatCurrency?.code,
+            currencyImage: currentFiatCurrency.flatMap { URL(string: $0.image) },
+            showsCurrencyShimmer: showsCurrencyShimmer
+        )
+        snapshot.appendSections([.fiatCurrency])
+        snapshot.appendItems([.fiatCurrencyPicker(model)], toSection: .fiatCurrency)
 
         snapshot.appendSections([.action])
         snapshot.appendItems([actionItem], toSection: .action)
@@ -78,7 +76,7 @@ extension RampViewModelImplementation {
             )),
             alignment: .center,
             cornerRadius: 22,
-            backgroundColor: .Accent.blue.withAlphaComponent(0.12),
+            backgroundColor: .Accent.blue.withAlphaComponent(0.16),
             size: CGSize(width: 44, height: 44)
         )
         let configuration = TKListItemCell.Configuration(
@@ -139,7 +137,7 @@ extension RampViewModelImplementation {
             ),
             alignment: .center,
             cornerRadius: 22,
-            backgroundColor: .Background.contentTint,
+            backgroundColor: .clear,
             size: CGSize(width: 44, height: 44)
         )
     }

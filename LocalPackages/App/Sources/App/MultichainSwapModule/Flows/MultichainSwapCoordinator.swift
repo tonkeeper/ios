@@ -20,6 +20,7 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
     private let multichainState: MultichainWalletState
     private let nativeSwapContext: NativeSwapContext
     private let initialSelection: MultichainSwapInitialAssetSelection?
+    private let initiatedBy: InitiatedBy
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
@@ -31,6 +32,7 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
         multichainState: MultichainWalletState,
         nativeSwapContext: NativeSwapContext,
         initialSelection: MultichainSwapInitialAssetSelection? = nil,
+        initiatedBy: InitiatedBy,
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -39,6 +41,7 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
         self.multichainState = multichainState
         self.nativeSwapContext = nativeSwapContext
         self.initialSelection = initialSelection
+        self.initiatedBy = initiatedBy
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         super.init(router: router)
@@ -90,7 +93,6 @@ private extension MultichainSwapCoordinator {
             displayCurrency: keeperCoreMainAssembly.storesAssembly.currencyStore.state,
             isSwapKitEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.swapKitEnabled),
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
-            isMysteryRaffleEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
             analyticsProvider: coreAssembly.analyticsProvider,
             onClose: { [weak self] in
                 guard let self else { return }
@@ -304,6 +306,7 @@ private extension MultichainSwapCoordinator {
         let coordinator = MultichainSwapConfirmationCoordinator(
             wallet: wallet,
             nativeSwapContext: nativeSwapContext,
+            initiatedBy: initiatedBy,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: router,

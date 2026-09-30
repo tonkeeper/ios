@@ -10,7 +10,7 @@ import TonSwift
 import UIKit
 
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
+    public var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
 
     private var browserInput: BrowserModuleInput?
@@ -48,7 +48,7 @@ public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension BrowserCoordinator {
     func openBrowser() {
-        let module = BrowserAssembly.module(
+        let module = BrowserMultichainAssembly.module(
             keeperCoreAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             analyticsController: analyticsController
@@ -66,8 +66,8 @@ private extension BrowserCoordinator {
             self?.openDapp(request, fromViewController: router.rootViewController)
         }
 
-        module.output.didOpenDeeplink = { [weak self] deeplink in
-            self?.didHandleDeeplink?(deeplink)
+        module.output.didOpenDeeplink = { [weak self] deeplink, utm in
+            self?.didHandleDeeplink?(deeplink, utm)
         }
 
         browserInput = module.input
@@ -76,28 +76,11 @@ private extension BrowserCoordinator {
     }
 
     func openCategory(_ category: PopularAppsCategory, selectedChain: MultichainChain?) {
-        if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) {
-            let module = BrowserCategoryMultichainAssembly.module(
-                category: category,
-                walletStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                supportedChains: keeperCoreMainAssembly.multichainAssembly.supportedChains,
-                initialChain: selectedChain
-            )
-
-            module.output.didSelectDapp = { [weak self, unowned router] intent in
-                self?.openDapp(intent, fromViewController: router.rootViewController)
-            }
-
-            module.output.didTapSearch = { [weak self] in
-                self?.openSearch()
-            }
-
-            router.push(viewController: module.view)
-            return
-        }
-
-        let module = BrowserCategoryAssembly.module(
-            category: category
+        let module = BrowserCategoryMultichainAssembly.module(
+            category: category,
+            walletStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+            supportedChains: keeperCoreMainAssembly.multichainAssembly.supportedChains,
+            initialChain: selectedChain
         )
 
         module.output.didSelectDapp = { [weak self, unowned router] intent in
@@ -107,8 +90,6 @@ private extension BrowserCoordinator {
         module.output.didTapSearch = { [weak self] in
             self?.openSearch()
         }
-
-        module.view.setupBackButton()
 
         router.push(viewController: module.view)
     }
@@ -133,8 +114,8 @@ private extension BrowserCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        coordinator.didHandleDeeplink = { [weak self] deeplink in
-            _ = self?.didHandleDeeplink?(deeplink)
+        coordinator.didHandleDeeplink = { [weak self] deeplink, utm in
+            _ = self?.didHandleDeeplink?(deeplink, utm)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInternalPurchasing in
@@ -173,10 +154,11 @@ private extension BrowserCoordinator {
 }
 
 extension BrowserCoordinator {
-    func logBrowserOpen(from: DappBrowserOpenSource) {
+    func logBrowserOpen(from: DappBrowserOpenSource, utm: UtmParameters = .empty) {
         analyticsController.logBrowserOpen(
             from: from,
-            tab: browserInput?.selectedBrowserTab ?? .explore
+            tab: browserInput?.selectedBrowserTab ?? .explore,
+            utm: utm
         )
     }
 

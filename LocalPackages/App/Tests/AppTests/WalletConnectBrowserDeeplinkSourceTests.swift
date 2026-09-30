@@ -53,7 +53,7 @@ final class WalletConnectBrowserDeeplinkSourceTests: XCTestCase {
     func testNavigationHandlerCancelsSessionRequestRedirect() throws {
         let handler = TKWebViewControllerNavigationHandler(
             deeplinkParser: parser,
-            openDeeplinkHandler: { _ in
+            openDeeplinkHandler: { _, _ in
                 XCTFail("Session request redirect must not be opened as a deeplink")
             }
         )
@@ -68,7 +68,7 @@ final class WalletConnectBrowserDeeplinkSourceTests: XCTestCase {
     func testNavigationHandlerCancelsSilentWalletConnectWakeUp() throws {
         let handler = TKWebViewControllerNavigationHandler(
             deeplinkParser: parser,
-            openDeeplinkHandler: { _ in
+            openDeeplinkHandler: { _, _ in
                 XCTFail("Silent wake-up must not be opened as a deeplink")
             }
         )
@@ -77,6 +77,23 @@ final class WalletConnectBrowserDeeplinkSourceTests: XCTestCase {
         guard case .notOpen = result else {
             return XCTFail("Expected navigation to be cancelled")
         }
+    }
+
+    func testNavigationHandlerForwardsTheLinkCampaign() throws {
+        var receivedUtm: UtmParameters?
+        let handler = TKWebViewControllerNavigationHandler(
+            deeplinkParser: parser,
+            openDeeplinkHandler: { _, utm in
+                receivedUtm = utm
+            }
+        )
+
+        let url = try XCTUnwrap(URL(string: "tonkeeper://staking?utm_source=merchant&utm_campaign=autumn"))
+        guard case .notOpen = handler.handlerURLOpen(url) else {
+            return XCTFail("Expected navigation to be handled as a deeplink")
+        }
+        XCTAssertEqual(receivedUtm?.source, "merchant")
+        XCTAssertEqual(receivedUtm?.campaign, "autumn")
     }
 
     private var parser: DeeplinkParser {

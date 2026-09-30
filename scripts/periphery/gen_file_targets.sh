@@ -12,7 +12,7 @@
 # target, not target roots. The three Xcode targets own one top-level directory
 # each.
 #
-# Test targets are left out by default: `make compile` builds the Tonkeeper
+# Test targets are left out by default: `make compile` builds the Keeper
 # scheme, which does not build them, and periphery errors on a mapped target
 # with no index data. Excluding them is also what surfaces production API that
 # only its own tests still reference. Set INCLUDE_TESTS=1 after a
@@ -38,15 +38,15 @@ import sys
 output = sys.argv[1]
 include_tests = os.environ.get("INCLUDE_TESTS", "0") not in ("", "0", "no", "false")
 
-# Top-level Xcode targets: directory -> target name in Tonkeeper.xcodeproj.
+# Top-level Xcode targets: directory -> target name in Keeper.xcodeproj.
 XCODE_TARGETS = {
-    "Tonkeeper": "Tonkeeper",
-    "TonkeeperWidget": "TonkeeperWidgetExtension",
-    "TonkeeperIntents": "TonkeeperIntents",
+    "Keeper": "Keeper",
+    "KeeperWidget": "KeeperWidgetExtension",
+    "KeeperIntents": "KeeperIntents",
 }
 
 CONTAINER_NAMES = ("Sources", "Tests")
-# Built by neither the Tonkeeper scheme nor the unit-test schemes.
+# Built by neither the Keeper scheme nor the unit-test schemes.
 EXCLUDED_TARGETS = {"LightweightCharts"}
 SKIP_DIR_NAMES = {".build", ".git", "build", "DerivedData", ".swiftpm"}
 

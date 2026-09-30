@@ -1,0 +1,20 @@
+appId: com.jbig.tonkeeper
+---
+# The refill sheet ignores Maestro's centre-screen scroll (scrollUntilVisible never moves it),
+# but a swipe that starts on one of its rows does. Swipe from the recharge rows until the
+# charges-history cell at the very bottom is on screen.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: battery_charges_history
+    commands:
+      - swipe:
+          from:
+            text: "Recharge with .*"
+          direction: UP
+          duration: 800
+      - waitForAnimationToEnd:
+          timeout: 1500
+- assertVisible:
+    id: battery_charges_history

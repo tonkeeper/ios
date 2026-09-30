@@ -9,13 +9,16 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         entry: Double = 100,
         leverage: Double = 10,
         liquidation: Double? = nil,
+        priceDecimals: Int = 2,
         draft: PerpsAutoClose? = nil
     ) -> PerpsAutoCloseSheetViewModel {
         PerpsAutoCloseSheetViewModel(context: PerpsAutoCloseSheetContext(
             side: side,
             entryPrice: entry,
+            referencePrice: entry,
             leverage: leverage,
             liquidationPrice: liquidation,
+            priceDecimals: priceDecimals,
             draft: draft
         ))
     }
@@ -120,7 +123,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         viewModel.setTakeProfitPrice("110")
         viewModel.setStopLossPrice("90")
         var emitted: PerpsAutoClose?
-        viewModel.onApply = { emitted = $0 }
+        viewModel.onApply = .draft { emitted = $0 }
         viewModel.apply()
         XCTAssertEqual(emitted?.takeProfit?.triggerPrice, 110)
         XCTAssertEqual(emitted?.stopLoss?.triggerPrice, 90)
@@ -130,24 +133,22 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         let viewModel = makeViewModel(side: .long)
         viewModel.setTakeProfitPrice("90") // invalid for long
         var applied = false
-        viewModel.onApply = { _ in applied = true }
+        viewModel.onApply = .draft { _ in applied = true }
         viewModel.apply()
         XCTAssertFalse(applied)
     }
 
     // MARK: - Live-position submit (TK-1580)
 
-    func test_apply_withSubmitHandler_showsLoadingThenInlineError_andNeverFiresOnApply() async {
+    func test_apply_withSubmitHandler_showsLoadingThenInlineError() async {
         let viewModel = makeViewModel(side: .long)
         viewModel.setTakeProfitPrice("110")
-        var applied = false
-        viewModel.onApply = { _ in applied = true }
         var submitted: PerpsAutoClose??
         var submitCallCount = 0
-        viewModel.onSubmit = { target in
+        viewModel.onApply = .submit { target in
             submitCallCount += 1
             submitted = target
-            return "boom"
+            return .failed("boom")
         }
 
         viewModel.apply()
@@ -159,17 +160,16 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         XCTAssertEqual(submitCallCount, 1, "re-entry while in flight must be a no-op")
         XCTAssertEqual(viewModel.submitErrorText, "boom")
         XCTAssertEqual(submitted??.takeProfit?.triggerPrice, 110)
-        XCTAssertFalse(applied, "live mode must not fall through to the instant apply path")
     }
 
-    func test_apply_withSubmitHandler_emptyResult_staysOpenWithoutInlineError() async {
+    func test_apply_withSubmitHandler_finished_staysOpenWithoutInlineError() async {
         let viewModel = makeViewModel(side: .long)
         viewModel.setTakeProfitPrice("110")
-        // The coordinator returns "" for passcode cancel / position gone — no inline error.
-        viewModel.onSubmit = { _ in "" }
+        // The owner closed the sheet, or the user backed out of the passcode.
+        viewModel.onApply = .submit { _ in .finished }
         viewModel.apply()
         await waitUntil { !viewModel.isSubmitting }
-        XCTAssertNil(viewModel.submitErrorText, "empty submit result must not render an inline warning")
+        XCTAssertNil(viewModel.submitErrorText, "a finished submit must not render an inline warning")
     }
 
     func test_apply_withSubmitHandler_clearingRestingLegs_submitsNilTarget() async {
@@ -179,9 +179,9 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         ))
         viewModel.setTakeProfitPrice("")
         var submitted: PerpsAutoClose?? = PerpsAutoClose(takeProfit: nil, stopLoss: nil)
-        viewModel.onSubmit = { target in
+        viewModel.onApply = .submit { target in
             submitted = target
-            return nil
+            return .finished
         }
         XCTAssertTrue(viewModel.isApplyEnabled, "clearing resting legs is a legitimate Set")
         viewModel.apply()
@@ -191,7 +191,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
 
     func test_apply_liveMode_disabledWhenNothingToSetAndNothingToClear() {
         let viewModel = makeViewModel(side: .long)
-        viewModel.onSubmit = { _ in nil }
+        viewModel.onApply = .submit { _ in .finished }
         XCTAssertFalse(viewModel.isApplyEnabled, "empty sheet over no resting legs is a no-op — Set must stay disabled")
 
         // The open flow keeps empty-Set enabled: it means "no draft".
@@ -200,7 +200,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
     }
 
     func test_prefill_keepsFineTickPrecision() throws {
-        let viewModel = makeViewModel(side: .long, entry: 0.05, draft: PerpsAutoClose(
+        let viewModel = makeViewModel(side: .long, entry: 0.05, priceDecimals: 6, draft: PerpsAutoClose(
             takeProfit: PerpsAutoCloseTrigger(triggerPrice: 0.061234),
             stopLoss: nil
         ))
@@ -213,6 +213,32 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
             accuracy: 1e-12,
             "an untouched Set must not move the resting leg on fine-tick markets"
         )
+    }
+
+    func test_preset_onFineTickMarket_keepsTheDerivedTriggerPrice() throws {
+        // 10% ROI at 10x is a 1% price move: 0.001 → 0.00101. Rendering the
+        // derived price at two decimals used to collapse it to "0", and the
+        // sheet then reported no take profit at all.
+        let viewModel = makeViewModel(side: .long, entry: 0.001, leverage: 10, priceDecimals: 6)
+        viewModel.applyTakeProfitPreset(10)
+        XCTAssertEqual(viewModel.takeProfitPriceText, "0.00101")
+        XCTAssertEqual(try XCTUnwrap(viewModel.takeProfitPrice), 0.00101, accuracy: 1e-12)
+        XCTAssertTrue(viewModel.isValid)
+    }
+
+    func test_typedPrice_onFineTickMarket_isNotTruncatedToTwoDecimals() throws {
+        let viewModel = makeViewModel(side: .long, entry: 0.001, leverage: 10, priceDecimals: 6)
+        viewModel.setTakeProfitPrice("0.00101")
+        XCTAssertEqual(viewModel.takeProfitPriceText, "0.00101")
+        XCTAssertEqual(try XCTUnwrap(viewModel.takeProfitPrice), 0.00101, accuracy: 1e-12)
+    }
+
+    func test_coarseMarket_roundsTheDerivedTriggerToTheMarketTick() {
+        // priceDecimals is the venue's tick: the sheet must not offer a price
+        // the market cannot hold.
+        let viewModel = makeViewModel(side: .long, entry: 100, leverage: 10, priceDecimals: 1)
+        viewModel.setTakeProfitPrice("105.678")
+        XCTAssertEqual(viewModel.takeProfitPriceText, "105.6")
     }
 
     private func waitUntil(

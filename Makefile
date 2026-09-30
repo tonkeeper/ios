@@ -142,19 +142,19 @@ compile: firebase_config spm_deps
 #     the per-worktree checkout costs no re-download. Kept local because checkouts
 #     are pinned to this worktree's Package.resolved.
 #     CLONED_SOURCE_PACKAGES_DIR mirrors this path into the environment because the
-#     Tonkeeper target's "Crashlytics+dSYM" build-phase script reads it to locate
+#     Keeper target's "Crashlytics+dSYM" build-phase script reads it to locate
 #     firebase-ios-sdk/Crashlytics/run. Xcode does not export it to script phases,
 #     and the script's fallback (${BUILD_DIR%/Build/*}/SourcePackages) resolves to
 #     DerivedData/SourcePackages — wrong once -clonedSourcePackagesDirPath moves the
 #     checkout elsewhere — so the build fails without this env var.
 #   - -derivedDataPath -> in-repo build/DerivedData: per-worktree so removing the
 #     worktree reclaims it instead of orphaning a path-hashed dir in $HOME.
-	@set -o pipefail; echo 'building Tonkeeper...' && \
+	@set -o pipefail; echo 'building Keeper...' && \
 		$(XCODEBUILD_ENV) \
 		xcodebuild \
-		-project Tonkeeper.xcodeproj \
-		-scheme Tonkeeper \
-		-configuration TonkeeperDebug \
+		-project Keeper.xcodeproj \
+		-scheme Keeper \
+		-configuration KeeperDebug \
 		-destination 'generic/platform=iOS Simulator' \
 		ARCHS=arm64 \
 		CLANG_MODULE_CACHE_PATH=$(MODULE_CACHE_PATH) \
@@ -191,10 +191,10 @@ TEST_ONLY ?=
 
 test: test_all
 
-# Single complete unit-test run via the unified TonkeeperUnitTests scheme
+# Single complete unit-test run via the unified KeeperUnitTests scheme
 # (9 bundles across KeeperCore/TronSwift/TKCore/TKLocalize/App/TKUIKit).
 # Reuses the test_project_scheme template for SCM/lockfile flags.
-test_all: SCHEME=TonkeeperUnitTests
+test_all: SCHEME=KeeperUnitTests
 test_all: test_project_scheme
 
 test_project_scheme: spm_deps
@@ -210,7 +210,7 @@ test_project_scheme: spm_deps
 	@set -o pipefail; echo 'running $(SCHEME) tests...' && \
 		$(XCODEBUILD_ENV) \
 		xcodebuild \
-		-project Tonkeeper.xcodeproj \
+		-project Keeper.xcodeproj \
 		-scheme $(SCHEME) \
 		-destination '$(TEST_DESTINATION)' \
 		-disableAutomaticPackageResolution \

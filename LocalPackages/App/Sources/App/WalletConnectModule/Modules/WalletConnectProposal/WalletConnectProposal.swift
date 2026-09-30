@@ -161,17 +161,11 @@ private extension WalletConnectProposal {
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
         )
-        let multichainEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.multichainEnabled)
-
         let coordinator = module.createAddWalletCoordinator(
             options: [
-                multichainEnabled ? .createMultichain : .createRegular,
+                .createMultichain,
                 .importRegular,
                 .importWatchOnly,
-                .importTetra,
                 .signer,
             ],
             router: router,
@@ -226,8 +220,7 @@ final class WalletConnectWalletsPickerListModel: WalletsListModel {
     func getState() -> WalletsListModelState {
         let wallets = filteredWallets()
         let currentWallet = wallets.first(where: { $0 == selectedWallet }) ?? wallets.first
-        let selectedWalletIndex = currentWallet.flatMap { wallets.firstIndex(of: $0) }
-        return WalletsListModelState(wallets: wallets, selectedWallet: selectedWalletIndex)
+        return WalletsListModelState(wallets: wallets, selectedWalletIdentifier: currentWallet?.id)
     }
 
     func selectWallet(wallet: Wallet) {

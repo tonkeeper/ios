@@ -199,6 +199,42 @@ extension MultichainSwapPayloadAdapter {
         return values.count == messages.count ? values : nil
     }
 
+    /// A deposit descriptor in the shape the source chain's ChainKit parser reads. SwapKit answers
+    /// with the descriptor itself — `{"amount": …, "to": …}` — while every parser reads what
+    /// swaps.xyz sends: TON an envelope of messages, an EVM chain a transaction whose amount is
+    /// `value`. Neither refusal is partial, so a descriptor that is not translated leaves the route
+    /// unusable rather than merely unrelayable.
+    ///
+    /// Only `alt_vm_deposit` may be translated, and only the caller knows the type: the schema fixes
+    /// the shape of every other payload — a `ton_boc` envelope, an EVM transaction — and repairing
+    /// one of those would hide a backend that broke its own contract. Anything already in shape, and
+    /// anything that is not JSON at all, is handed back untouched.
+    static func parsableDepositDescriptor(_ payload: String, chain: MultichainChain) -> String {
+        guard let data = payload.data(using: .utf8),
+              let descriptor = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            return payload
+        }
+        switch chain {
+        case .ton:
+            return "[\(payload)]"
+        case .eth, .base, .arb, .bsc:
+            guard descriptor["value"] == nil, let amount = descriptor["amount"] else {
+                return payload
+            }
+            var transaction = descriptor
+            transaction["value"] = amount
+            guard let encoded = try? JSONSerialization.data(withJSONObject: transaction),
+                  let text = String(data: encoded, encoding: .utf8)
+            else {
+                return payload
+            }
+            return text
+        case .btc, .tron:
+            return payload
+        }
+    }
+
     /// `nil` when the `ton_boc` envelope is one message this path can hand to a relayer unchanged;
     /// otherwise what stands in the way. A relayed swap is rebuilt from the parsed recipient, amount
     /// and body and nothing else, so anything further in the envelope — a state init, a send mode, a
@@ -279,13 +315,16 @@ private extension MultichainSwapPayloadAdapter {
             provider: provider,
             sourceChain: sourceChain
         )
+        let rawPayload = payload.preparedPayloadType == .altVmDeposit
+            ? Self.parsableDepositDescriptor(payload.payload, chain: sourceChain)
+            : payload.payload
         let parsed: SwapPayload
         do {
             parsed = try SwapPayload.Companion.shared.fromQuote(
                 provider: provider.chainKitProvider,
                 type: calldataType.chainKitType,
                 chain: sourceChain.asChainKitChain,
-                payload: payload.payload,
+                payload: rawPayload,
                 depositAddress: payload.humanSummary.depositAddress?.nonEmpty,
                 spendAmount: payload.humanSummary.spendAmount
             )

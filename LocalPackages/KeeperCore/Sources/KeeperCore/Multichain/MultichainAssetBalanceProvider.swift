@@ -183,7 +183,20 @@ public struct MultichainAssetBalanceProvider {
     ) {
         let cacheId = scope(for: multichainState).cacheId
         cache.storeIfAbsent(
-            assets.map { (Key(cacheId: cacheId, assetId: $0.asset.assetId), $0) }
+            assets.map { (Key(cacheId: cacheId, assetId: $0.asset.assetId), $0) },
+            clearingKnownAbsence: true
+        )
+    }
+
+    /// Persisted assets fill gaps without superseding balances or absence confirmed this session.
+    public func restoreCache(
+        assets: [MultichainAsset],
+        multichainState: MultichainWalletState
+    ) {
+        let cacheId = scope(for: multichainState).cacheId
+        cache.storeIfAbsent(
+            assets.map { (Key(cacheId: cacheId, assetId: $0.asset.assetId), $0) },
+            clearingKnownAbsence: false
         )
     }
 
@@ -369,12 +382,19 @@ private final class Cache {
         return assetToStore
     }
 
-    func storeIfAbsent(_ newEntries: [(key: Key, asset: MultichainAsset)]) {
+    func storeIfAbsent(
+        _ newEntries: [(key: Key, asset: MultichainAsset)],
+        clearingKnownAbsence: Bool
+    ) {
         lock.lock()
         defer { lock.unlock() }
 
         for newEntry in newEntries {
-            absentKeys.remove(newEntry.key)
+            if clearingKnownAbsence {
+                absentKeys.remove(newEntry.key)
+            } else if absentKeys.contains(newEntry.key) {
+                continue
+            }
             guard entries[newEntry.key] == nil else {
                 continue
             }

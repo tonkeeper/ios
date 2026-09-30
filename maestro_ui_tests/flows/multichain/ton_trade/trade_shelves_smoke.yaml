@@ -1,0 +1,34 @@
+# regress_EN [Trading UI]: shelf categories (API titles) and Today's top movers segments.
+# Shelf group names come from Trading API — use optional checks where titles may vary by environment.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000
+- runFlow: "../../../steps/ensure_trade_tab_or_relaunch.yaml"
+- runFlow: "../../../steps/trade/open_trade_tab.yaml"
+
+- scrollUntilVisible:
+    element: "Most traded"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+
+- scrollUntilVisible:
+    element: "Real world assets"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+
+- scrollUntilVisible:
+    element: "Core tokens"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+
+- scrollUntilVisible:
+    element: "Today's top movers"
+    direction: DOWN
+    timeout: 15000
+    optional: true

@@ -3,7 +3,7 @@ import KeeperCore
 import TKCore
 import TonSwift
 
-final class WalletTotalBalanceModel {
+final class WalletTotalBalanceModel: @unchecked Sendable {
     struct State {
         let address: FriendlyAddress
         let totalBalanceState: TotalBalanceState?

@@ -3,11 +3,9 @@ import KeeperCore
 enum WalletMigrationVisibility {
     static func shouldShowMigrationSection(
         wallet: Wallet,
-        wallets: [Wallet],
-        multichainEnabled: Bool,
-        migrationEnabled: Bool
+        wallets: [Wallet]
     ) -> Bool {
-        guard multichainEnabled, migrationEnabled, wallet.isMultichain else {
+        guard wallet.isMultichain else {
             return false
         }
         return legacyTonWalletCount(wallets: wallets) > 0

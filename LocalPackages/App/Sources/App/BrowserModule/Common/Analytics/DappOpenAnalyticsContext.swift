@@ -1,3 +1,4 @@
+import KeeperCore
 import TKCore
 
 struct DappOpenAnalyticsContext: Equatable {
@@ -7,4 +8,5 @@ struct DappOpenAnalyticsContext: Equatable {
     var appId: String
     var bannerId: String?
     var location: String
+    var utm: UtmParameters = .empty
 }

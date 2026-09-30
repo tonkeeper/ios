@@ -3,7 +3,7 @@ appId: com.jbig.tonkeeper
 ---
 - runFlow: open_battery.yaml
 
-- assertVisible: Tonkeeper Battery
+- assertVisible: Keeper Battery
 - assertVisible: Supported transactions
 
 - scrollUntilVisible:

@@ -145,51 +145,7 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
             return lIndex < rIndex
         }
 
-        let sortedUnpinnedItems = unpinnedItems.sorted {
-            switch ($0, $1) {
-            case (.ton, _):
-                return true
-            case (_, .ton):
-                return false
-            case (.tronUSDT, _):
-                return true
-            case (_, .tronUSDT):
-                return false
-            case (.tronTRX, _):
-                return true
-            case (_, .tronTRX):
-                return false
-            case (.ethena, _):
-                return true
-            case (_, .ethena):
-                return false
-            case let (.jetton(lModel), .staking):
-                return lModel.jetton.jettonInfo.isTonUSDT
-            case let (.staking, .jetton(rModel)):
-                return !rModel.jetton.jettonInfo.isTonUSDT
-            case let (.staking(lModel), .staking(rModel)):
-                return lModel.amountConverted > rModel.amountConverted
-            case (.staking, _):
-                return true
-            case (_, .staking):
-                return false
-            case let (.jetton(lModel), .jetton(rModel)):
-                switch (lModel.jetton.jettonInfo.verification, rModel.jetton.jettonInfo.verification) {
-                case (.whitelist, .whitelist):
-                    if lModel.converted == rModel.converted {
-                        return lModel.amount > rModel.amount
-                    } else {
-                        return lModel.converted > rModel.converted
-                    }
-                case (.whitelist, _):
-                    return true
-                case (_, .whitelist):
-                    return false
-                default:
-                    return lModel.converted > rModel.converted
-                }
-            }
-        }
+        let sortedUnpinnedItems = unpinnedItems.sorted(by: ProcessedBalanceItem.isOrderedBeforeInBalanceList)
 
         let managedBalance = ManagedBalance(
             tonItems: tonItems,
@@ -209,5 +165,34 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
         case .previous:
             return .previous(managedBalance)
         }
+    }
+}
+
+extension ProcessedBalanceItem {
+    var balanceListRank: Int {
+        switch self {
+        case .ton:
+            return 0
+        case .tronUSDT:
+            return 1
+        case let .jetton(item) where item.jetton.jettonInfo.isTonUSDT:
+            return 2
+        case .staking:
+            return 3
+        case let .jetton(item):
+            return item.jetton.jettonInfo.verification == .whitelist ? 4 : 5
+        case .tronTRX, .ethena:
+            return 4
+        }
+    }
+
+    static func isOrderedBeforeInBalanceList(_ lhs: ProcessedBalanceItem, _ rhs: ProcessedBalanceItem) -> Bool {
+        guard lhs.balanceListRank == rhs.balanceListRank else {
+            return lhs.balanceListRank < rhs.balanceListRank
+        }
+        guard lhs.converted == rhs.converted else {
+            return lhs.converted > rhs.converted
+        }
+        return lhs.identifier < rhs.identifier
     }
 }

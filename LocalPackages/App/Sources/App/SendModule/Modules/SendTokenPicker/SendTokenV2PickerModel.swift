@@ -17,11 +17,15 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
     private let searchBehavior: SendTokenV2PickerSearchBehavior
     private let multichainService: MultichainService
     private let currencyStore: CurrencyStore
+    private let catalogSearching: TradingCatalogSearching?
+    private let perpsSearching: PerpsMarketsSearching?
     private let isTransferSupported: (MultichainAsset) -> Bool
+    private let isPerpsCatalogEnabled: Bool
 
     let initialState: TokenPickerV2ModelState
 
     private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
+    private(set) var perpsSearchSort: PerpsMarketsSort = .volume
 
     var showsCatalogSortControl: Bool {
         searchBehavior == .catalog
@@ -36,21 +40,33 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         initialCatalogSearchSort: MultichainAssetSearchSort = .marketCap,
         isTransferSupported: @escaping (MultichainAsset) -> Bool = { _ in true },
         allowedChains: Set<MultichainChain>? = nil,
-        initialChain: MultichainChain? = nil
+        initialChain: MultichainChain? = nil,
+        catalogSearching: TradingCatalogSearching? = nil,
+        perpsSearching: PerpsMarketsSearching? = nil
     ) {
         self.multichainState = multichainState
         self.searchBehavior = searchBehavior
         self.multichainService = multichainService
         self.currencyStore = currencyStore
+        self.catalogSearching = catalogSearching
+        self.perpsSearching = perpsSearching
         self.isTransferSupported = isTransferSupported
         catalogSearchSort = initialCatalogSearchSort
+        isPerpsCatalogEnabled = searchBehavior == .catalog
+            && allowedChains == nil
+            && catalogSearching != nil
+            && perpsSearching != nil
         let selection = Self.chainFilters(
             walletFilters: multichainState.tokenPickerV2Filters,
             allowedChains: allowedChains,
             initialChain: initialChain
         )
+        var filters = selection.filters
+        if isPerpsCatalogEnabled {
+            filters.append(.perpetuals)
+        }
         initialState = TokenPickerV2ModelState(
-            filters: selection.filters,
+            filters: filters,
             displayMode: displayMode,
             initialFilter: selection.initialFilter
         )
@@ -61,6 +77,13 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
             return
         }
         catalogSearchSort = sort
+    }
+
+    func setPerpsSearchSort(_ sort: PerpsMarketsSort) {
+        guard isPerpsCatalogEnabled, perpsSearchSort != sort else {
+            return
+        }
+        perpsSearchSort = sort
     }
 
     static func chainFilters(
@@ -92,12 +115,19 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         limit: Int,
         cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
+        let normalizedQuery = normalizedQuery(query)
+
+        if isPerpsCatalogEnabled, filter == .perpetuals {
+            return try await loadPerpsMarkets(
+                query: normalizedQuery,
+                cursor: cursor
+            )
+        }
+
         let accounts = multichainState.tokenPickerV2Accounts(for: filter)
         guard !accounts.isEmpty else {
             return TokenPickerLoadResult(assets: [], nextCursor: nil)
         }
-
-        let normalizedQuery = normalizedQuery(query)
 
         switch searchBehavior {
         case .catalog:
@@ -125,11 +155,74 @@ private extension SendTokenV2PickerModel {
         limit: Int,
         cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
+        if isPerpsCatalogEnabled {
+            return try await loadTradingCatalogAssets(
+                query: query,
+                filter: filter,
+                limit: limit,
+                cursor: cursor
+            )
+        }
+        return try await loadMultichainCatalogAssets(
+            query: query,
+            filter: filter,
+            limit: limit,
+            cursor: cursor
+        )
+    }
+
+    func loadTradingCatalogAssets(
+        query: String?,
+        filter: TokenPickerV2ChainFilter,
+        limit: Int,
+        cursor: String?
+    ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
+        guard let catalogSearching else {
+            return TokenPickerLoadResult(items: [], nextCursor: nil)
+        }
+
+        let walletAssetById = try await walletAssetsByIdForMergingBalances()
+        let page: TradingCatalogPage
+        do {
+            page = try await catalogSearching.catalogSearch(
+                query: query,
+                chain: filter.chain?.rawValue,
+                showPerps: filter == .all,
+                sort: catalogSearchSort,
+                cursor: cursor,
+                pageSize: limit
+            )
+        } catch {
+            throw mapCatalogError(error)
+        }
+
+        let currencyCode = currencyStore.state.code.lowercased()
+        let items = page.rows.compactMap { row -> TokenPickerLoadResult.Item? in
+            switch row {
+            case let .spot(spot):
+                let asset = spot.multichainAsset(
+                    walletAsset: walletAssetById[spot.id],
+                    currencyCode: currencyCode
+                )
+                return isTransferSupported(asset) ? .asset(asset) : nil
+            case let .perp(market):
+                return .perp(market)
+            }
+        }
+        return TokenPickerLoadResult(items: items, nextCursor: page.nextCursor)
+    }
+
+    func loadMultichainCatalogAssets(
+        query: String?,
+        filter: TokenPickerV2ChainFilter,
+        limit: Int,
+        cursor: String?
+    ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
         let walletAssetById = try await walletAssetsByIdForMergingBalances()
         let currencyCodes = requestedCurrencyCodes(for: currencyStore.state)
         let page = try await multichainService.searchAssets(
             currencies: currencyCodes,
-            chain: apiChain(for: filter),
+            chain: filter.chain,
             search: query,
             sort: catalogSearchSort,
             limit: limit,
@@ -147,6 +240,37 @@ private extension SendTokenV2PickerModel {
             assets: prioritizedAssets(merged, isFirstPage: cursor == nil),
             nextCursor: page.nextCursor
         )
+    }
+
+    func loadPerpsMarkets(
+        query: String?,
+        cursor: String?
+    ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
+        guard let perpsSearching else {
+            return TokenPickerLoadResult(items: [], nextCursor: nil)
+        }
+
+        let page: PerpsMarketsPage
+        do {
+            page = try await perpsSearching.markets(
+                query: query,
+                sort: perpsSearchSort,
+                cursor: cursor
+            )
+        } catch {
+            throw mapCatalogError(error)
+        }
+        return TokenPickerLoadResult(
+            items: page.items.map { .perp($0) },
+            nextCursor: page.nextCursor
+        )
+    }
+
+    func mapCatalogError(_ error: Error) -> MultichainServiceError {
+        if error is CancellationError {
+            return .cancelled
+        }
+        return .apiError(message: nil)
     }
 
     func loadAccountAssets(
@@ -243,15 +367,6 @@ private extension SendTokenV2PickerModel {
         }
     }
 
-    func apiChain(for filter: TokenPickerV2ChainFilter) -> MultichainChain? {
-        switch filter {
-        case .all:
-            return nil
-        case let .chain(chain):
-            return chain
-        }
-    }
-
     func prioritizedAssets(
         _ assets: [MultichainAsset],
         isFirstPage: Bool
@@ -280,5 +395,32 @@ private extension SendTokenV2PickerModel {
             at: 0
         )
         return prioritizedAssets
+    }
+}
+
+private extension TradingCatalogSpot {
+    func multichainAsset(
+        walletAsset: MultichainAsset?,
+        currencyCode: String
+    ) -> MultichainAsset {
+        let parsedPrice = Double(price)
+        return MultichainAsset(
+            asset: MultichainAssetDetails(
+                assetId: id,
+                name: name,
+                symbol: symbol,
+                decimals: decimals,
+                image: imageURL?.absoluteString ?? "",
+                verification: MultichainAssetVerification(rawValue: verification.rawValue) ?? .none
+            ),
+            price: MultichainAssetPrice(
+                prices: parsedPrice.map { [currencyCode: $0] } ?? [:],
+                diff24h: [currencyCode: change24hPercent],
+                diff7d: [:],
+                diff30d: [:]
+            ),
+            balance: walletAsset?.balance ?? .zero,
+            marketCap: marketCap.map { [currencyCode: $0] } ?? [:]
+        )
     }
 }

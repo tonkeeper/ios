@@ -60,7 +60,7 @@ final class PerpsViewModelTests: XCTestCase {
         let service = PerpsHomeServiceSpy()
         service.pages = [.test([.test(id: 1)])]
         let stores = makeStores(service: service)
-        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, isTestnet: false)
+        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account)
         await expectPublished(first.$marketsState, description: "first home loaded", matching: {
             $0.loadedMarketIDs == [1]
         }) {
@@ -74,7 +74,7 @@ final class PerpsViewModelTests: XCTestCase {
         }
         first.onDisappear()
 
-        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, isTestnet: false)
+        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account)
         XCTAssertEqual(second.sort, .openInterest)
         second.onAppear()
         await service.waitForRequestCount(3)
@@ -88,8 +88,8 @@ final class PerpsViewModelTests: XCTestCase {
     @MainActor
     func test_resolveAccount_active_exposesPortfolio() async {
         let service = PerpsHomeServiceSpy()
-        service.statusResult = .active(accountIndex: 7, apiKeyIndex: 3)
-        service.portfolioResult = makePortfolio(accountIndex: 7, availableBalance: "125.50")
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(availableBalance: "125.50")
         let viewModel = makeViewModel(service: service)
 
         await expectPublished(
@@ -112,85 +112,219 @@ final class PerpsViewModelTests: XCTestCase {
         await expectPublished(
             viewModel.$accountState,
             description: "account inactive",
-            matching: \.showsActivationControls
+            matching: { if case .inactive = $0 { true } else { false } }
         ) {
             viewModel.onAppear()
         }
+        XCTAssertNil(viewModel.accountState.portfolio)
         viewModel.onDisappear()
     }
 
-    // MARK: Activation
+    // MARK: Open positions
 
     @MainActor
-    func test_activation_success_becomesActiveAndShowsSuccessToast() async {
+    func test_activePortfolio_exposesPositionRowsAndTotal() async {
         let service = PerpsHomeServiceSpy()
-        service.statusResult = .noAccount(ethAddress: "0xabc")
-        service.portfolioResult = makePortfolio(accountIndex: 9, availableBalance: "50")
-        let stores = makeStores(service: service)
-        let viewModel = PerpsViewModel(
-            marketsStore: stores.markets,
-            accountStore: stores.account,
-            isTestnet: false
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [
+                makePosition(marketId: 1, symbol: "BTC", side: .long, notionalUsd: 553.5, marginUsd: 20.5, unrealizedPnlUsd: 0.5),
+                makePosition(marketId: 2, symbol: "ETH", side: .short, notionalUsd: 850, marginUsd: 106.25, unrealizedPnlUsd: 6.18),
+            ]
         )
+        let viewModel = makeViewModel(service: service)
 
         await expectPublished(
             viewModel.$accountState,
-            description: "account inactive",
-            matching: \.showsActivationControls
+            description: "positions loaded",
+            matching: { $0.portfolio?.positions.count == 2 }
         ) {
             viewModel.onAppear()
         }
+
+        let portfolio = viewModel.accountState.portfolio
+        let btc = portfolio?.positions.first
+        XCTAssertEqual(btc?.id, 1)
+        XCTAssertEqual(btc?.symbol, "BTC")
+        XCTAssertEqual(btc?.isLong, true)
+        XCTAssertEqual(btc?.leverageText, "27X")
+        XCTAssertEqual(btc?.valueText, PerpsFormatting.usd(21))
+        XCTAssertEqual(btc?.pnlText, PerpsFormatting.signedUsd(0.5))
+        XCTAssertEqual(btc?.isPnlPositive, true)
+        XCTAssertEqual(portfolio?.positions.last?.isLong, false)
+
+        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.usd(133.43))
+        XCTAssertEqual(portfolio?.positionsTotal?.pnlText, PerpsFormatting.signedUsd(6.68))
+        XCTAssertEqual(portfolio?.positionsTotal?.isPnlPositive, true)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_activePortfolioWithoutPositions_hasNoTotal() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(availableBalance: "125.50")
+        let viewModel = makeViewModel(service: service)
+
         await expectPublished(
             viewModel.$accountState,
-            description: "account activating",
-            matching: \.isActivating
-        ) {
-            stores.account.beginActivation()
-        }
-        await expectPublished(
-            viewModel.$accountState,
-            description: "account activated",
+            description: "account active",
             matching: \.isActive
         ) {
-            await stores.account.applyActivation(.active(accountIndex: 9, apiKeyIndex: 3))
+            viewModel.onAppear()
         }
-        XCTAssertEqual(viewModel.activationToast, .success)
+        XCTAssertTrue(viewModel.accountState.portfolio?.positions.isEmpty == true)
+        XCTAssertNil(viewModel.accountState.portfolio?.positionsTotal)
         viewModel.onDisappear()
     }
 
     @MainActor
-    func test_activation_canceled_returnsToInactiveWithoutToast() async {
+    func test_headerTotalIsTheSumOfTheCardsBelowIt() async {
         let service = PerpsHomeServiceSpy()
-        service.statusResult = .noAccount(ethAddress: "0xabc")
-        let stores = makeStores(service: service)
-        let viewModel = PerpsViewModel(
-            marketsStore: stores.markets,
-            accountStore: stores.account,
-            isTestnet: false
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [
+                makePosition(marketId: 1, symbol: "BTC", marginUsd: 20.5, unrealizedPnlUsd: 0.5),
+                makePosition(marketId: 2, symbol: "ETH", marginUsd: 106.25, unrealizedPnlUsd: 6.18),
+            ]
         )
+        let viewModel = makeViewModel(service: service)
 
         await expectPublished(
             viewModel.$accountState,
-            description: "account inactive",
-            matching: \.showsActivationControls
+            description: "positions loaded",
+            matching: { $0.portfolio?.positionsTotal != nil }
         ) {
             viewModel.onAppear()
         }
+        XCTAssertEqual(
+            viewModel.accountState.portfolio?.positionsTotal?.pnlText,
+            PerpsFormatting.signedUsd(6.68)
+        )
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_aPositionWithoutMargin_suppressesTheHeaderPercent() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [
+                makePosition(marketId: 1, symbol: "BTC", marginUsd: 0, unrealizedPnlUsd: 50),
+                makePosition(marketId: 2, symbol: "ETH", marginUsd: 20, unrealizedPnlUsd: 2),
+            ]
+        )
+        let viewModel = makeViewModel(service: service)
+
         await expectPublished(
             viewModel.$accountState,
-            description: "account activating",
-            matching: \.isActivating
+            description: "positions loaded",
+            matching: { $0.portfolio?.positionsTotal != nil }
         ) {
-            stores.account.beginActivation()
+            viewModel.onAppear()
         }
+        let total = viewModel.accountState.portfolio?.positionsTotal
+        XCTAssertEqual(total?.pnlText, PerpsFormatting.signedUsd(52))
+        XCTAssertNil(total?.pnlPercentText)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_positionRowIcon_comesFromLoadedMarkets() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [makePosition(marketId: 1, symbol: "BTC")]
+        )
+        let iconURL = URL(string: "https://cache.tonapi.io/btc.png")
+        service.pages = [.test([.test(id: 1, symbol: "BTC", iconURL: iconURL)])]
+        let viewModel = makeViewModel(service: service)
+
         await expectPublished(
             viewModel.$accountState,
-            description: "activation canceled",
-            matching: \.showsActivationControls
+            description: "position icon resolved",
+            matching: { $0.portfolio?.positions.first?.iconURL == iconURL }
         ) {
-            await stores.account.applyActivation(.canceled)
+            viewModel.onAppear()
         }
-        XCTAssertNil(viewModel.activationToast)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_positionValueIsEquityWhileTheHeaderPercentStaysAgainstMargin() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [makePosition(marketId: 1, symbol: "BTC", marginUsd: 100, unrealizedPnlUsd: 25)]
+        )
+        let viewModel = makeViewModel(service: service)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "positions loaded",
+            matching: { $0.portfolio?.positionsTotal != nil }
+        ) {
+            viewModel.onAppear()
+        }
+        let portfolio = viewModel.accountState.portfolio
+        XCTAssertEqual(portfolio?.positions.first?.valueText, PerpsFormatting.usd(125))
+        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.usd(125))
+        XCTAssertEqual(portfolio?.positionsTotal?.pnlPercentText, PerpsFormatting.signedPercent(25))
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_positionRows_keepMarketIdOrderWhateverOrderTheBackendSends() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [
+                makePosition(marketId: 9, symbol: "SOL"),
+                makePosition(marketId: 2, symbol: "ETH"),
+                makePosition(marketId: 5, symbol: "TON"),
+            ]
+        )
+        let viewModel = makeViewModel(service: service)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "positions loaded",
+            matching: { $0.portfolio?.positions.count == 3 }
+        ) {
+            viewModel.onAppear()
+        }
+        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.id), [2, 5, 9])
+        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.symbol), ["ETH", "TON", "SOL"])
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_manyPositions_shareASinglePositionsWatch() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "712.56",
+            positions: [
+                makePosition(marketId: 1, symbol: "BTC"),
+                makePosition(marketId: 2, symbol: "ETH"),
+            ]
+        )
+        let viewModel = makeViewModel(service: service)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "positions loaded",
+            matching: { $0.portfolio?.positions.count == 2 }
+        ) {
+            viewModel.onAppear()
+        }
+        XCTAssertEqual(service.positionWatchStarts, 1)
         viewModel.onDisappear()
     }
 
@@ -314,18 +448,43 @@ private extension PerpsViewModelTests {
         let stores = makeStores(service: service, client: client)
         return PerpsViewModel(
             marketsStore: stores.markets,
-            accountStore: stores.account,
-            isTestnet: false
+            accountStore: stores.account
         )
     }
 
-    func makePortfolio(accountIndex: Int64, availableBalance: String) -> PerpsPortfolio {
-        PerpsPortfolio(
-            accountIndex: accountIndex,
-            collateral: "0",
-            availableBalance: availableBalance,
-            totalAssetValue: availableBalance,
-            positions: []
+    func makePortfolio(
+        availableBalance: String,
+        positions: [PerpsPositionSummary] = []
+    ) -> PerpsAccountSnapshot {
+        PerpsAccountSnapshot(availableBalance: availableBalance, positions: positions)
+    }
+
+    func makePosition(
+        marketId: Int64 = 1,
+        symbol: String = "BTC",
+        side: PerpsTradeSide = .long,
+        baseSize: Double = 0.008164,
+        notionalUsd: Double = 553.5,
+        marginUsd: Double = 20.5,
+        unrealizedPnlUsd: Double = 0.5,
+        leverage: Double? = 27
+    ) -> PerpsPositionSummary {
+        PerpsPositionSummary(
+            positionId: "lighter:\(marketId)",
+            marketId: marketId,
+            symbol: symbol,
+            side: side,
+            baseSize: baseSize,
+            notionalUsd: notionalUsd,
+            marginUsd: marginUsd,
+            equityUsd: marginUsd + unrealizedPnlUsd,
+            leverage: leverage,
+            roiPercent: 2.5,
+            entryPrice: 66541.7,
+            liquidationPrice: 64141.75,
+            unrealizedPnlUsd: unrealizedPnlUsd,
+            realizedPnlUsd: 0,
+            fundingPaidUsd: 0
         )
     }
 
@@ -370,12 +529,18 @@ private final class PerpsHomeServiceSpy: PerpsMarketsReading, PerpsAccountReadin
     private var requests: [(sort: PerpsMarketsSort, cursor: String?)] = []
     private var requestWaiters: [(needed: Int, resume: () -> Void)] = []
 
-    var statusResult: LighterPerpsStatus = .unknown
-    var portfolioResult: PerpsPortfolio?
+    private var positionWatchStartCount = 0
+
+    var statusResult: PerpsAccountStatus = .unknown
+    var portfolioResult: PerpsAccountSnapshot?
     var pages: [PerpsMarketsPage] = []
 
     var requestedSorts: [PerpsMarketsSort] {
         lock.withLock { requests.map(\.sort) }
+    }
+
+    var positionWatchStarts: Int {
+        lock.withLock { positionWatchStartCount }
     }
 
     func waitForRequestCount(_ count: Int) async {
@@ -391,29 +556,29 @@ private final class PerpsHomeServiceSpy: PerpsMarketsReading, PerpsAccountReadin
         }
     }
 
-    func status(wallet _: Wallet) async -> LighterPerpsStatus {
+    func status(wallet _: Wallet) async -> PerpsAccountStatus {
         statusResult
     }
 
-    func portfolio(wallet _: Wallet, accountIndex _: Int64) async throws -> PerpsPortfolio? {
+    func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
         portfolioResult
     }
 
-    func activeTriggerOrders(wallet _: Wallet, accountIndex _: Int64, marketId _: Int64) async throws -> [PerpsTriggerOrderSummary] {
-        []
+    func tradingSnapshot(wallet _: Wallet, marketId _: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet _: Wallet, accountIndex _: Int64, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
+    func recentActivity(wallet _: Wallet, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
         []
     }
 
     func watchPositions(
         wallet _: Wallet,
-        accountIndex _: Int64,
         onUpdate _: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
-        onReconnecting _: @escaping @Sendable () -> Void
+        onInterrupted _: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
-        PerpsPositionsWatch {}
+        lock.withLock { positionWatchStartCount += 1 }
+        return PerpsPositionsWatch {}
     }
 
     func markets(query _: String?, sort: PerpsMarketsSort, cursor: String?) async throws -> PerpsMarketsPage {

@@ -66,9 +66,7 @@ final class WalletConnectMessageSignatureTests: XCTestCase {
                 userAgent: nil,
                 sessionProvider: nil
             )
-        ),
-        perpetualKeyStore: nil,
-        perpetualEnvironment: LighterEnvironment.Mainnet.shared
+        )
     )
 
     func testTypedDataSignatureCarriesAnEip712RecoveryId() async throws {

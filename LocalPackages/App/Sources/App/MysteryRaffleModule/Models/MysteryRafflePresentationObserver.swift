@@ -12,7 +12,6 @@ final class MysteryRafflePresentationObserver {
     /// don't stay stale for the rest of the session.
     private static let refreshInterval: TimeInterval = 30
 
-    private let isFeatureEnabled: Bool
     private let onUpdate: (MysteryRafflePresentation?) -> Void
 
     private var raffles: [MultichainRaffle] = []
@@ -20,10 +19,8 @@ final class MysteryRafflePresentationObserver {
 
     init(
         raffleStore: RaffleStore?,
-        isFeatureEnabled: Bool,
         onUpdate: @escaping (MysteryRafflePresentation?) -> Void
     ) {
-        self.isFeatureEnabled = isFeatureEnabled
         self.onUpdate = onUpdate
 
         guard let raffleStore else { return }
@@ -49,6 +46,6 @@ final class MysteryRafflePresentationObserver {
 
     private func apply(_ raffles: [MultichainRaffle]) {
         self.raffles = raffles
-        onUpdate(MysteryRafflePresentation(raffles: raffles, isFeatureEnabled: isFeatureEnabled))
+        onUpdate(MysteryRafflePresentation(raffles: raffles))
     }
 }

@@ -32,8 +32,7 @@ public final class WalletsUpdateAssembly {
             tonProofTokenService: servicesAssembly.tonProofTokenService(),
             mnemonicAccess: secureAssembly.mnemonicAccess,
             tronBalanceService: servicesAssembly.tronBalanceService(),
-            multichainAssembly: multichainAssembly,
-            configurationAssembly: configurationAssembly
+            multichainAssembly: multichainAssembly
         )
     }
 

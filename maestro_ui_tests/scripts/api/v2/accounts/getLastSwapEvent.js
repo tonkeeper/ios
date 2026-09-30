@@ -123,7 +123,48 @@ if (typeof expected_ton_in !== 'undefined' && expected_ton_in) {
     _expectedTonIn = String(expected_ton_in);
 }
 
-var swapAction = _withRetry(function () {
+// TonAPI stopped classifying Omniston swaps as JettonSwap: the event is a
+// SmartContractExec by our wallet (ton_attached = swap amount + gas) plus the
+// jetton transfer that lands back on the wallet. Recognise both shapes and expose
+// the legacy JettonSwap-like fields the flows read.
+function _swapFromEvent(ev) {
+    var me = ev.account && ev.account.address;
+    var exec = null;
+    var incoming = null;
+    for (var j = 0; j < ev.actions.length; j++) {
+        var action = ev.actions[j];
+        if (action.status !== 'ok') continue;
+        if (action.JettonSwap != null) {
+            var js = action.JettonSwap;
+            if (_expectedTonIn != null && String(js.ton_in) !== _expectedTonIn) continue;
+            return {
+                action: action,
+                ton_in: js.ton_in,
+                amount_out: js.amount_out,
+                jetton_master_out: js.jetton_master_out
+            };
+        }
+        if (action.SmartContractExec && action.SmartContractExec.executor &&
+            action.SmartContractExec.executor.address === me) {
+            if (exec == null) exec = action.SmartContractExec;
+        }
+        if (action.JettonTransfer && action.JettonTransfer.recipient &&
+            action.JettonTransfer.recipient.address === me) {
+            if (incoming == null) incoming = action.JettonTransfer;
+        }
+    }
+    if (exec == null || incoming == null) return null;
+    var attached = Number(exec.ton_attached);
+    if (_expectedTonIn != null && !(attached >= Number(_expectedTonIn))) return null;
+    return {
+        action: { type: 'SmartContractExec', status: 'ok', SmartContractExec: exec, incoming: incoming },
+        ton_in: exec.ton_attached,
+        amount_out: incoming.amount,
+        jetton_master_out: incoming.jetton
+    };
+}
+
+var swap = _withRetry(function () {
     var body = _httpGetJSON(
         'https://block.tonapi.io/v2/accounts/' + addr + '/events?limit=' + _eventsLimit + '&subject_only=true'
     );
@@ -133,33 +174,26 @@ var swapAction = _withRetry(function () {
     var nowSec = Math.floor(Date.now() / 1000);
     for (var i = 0; i < body.events.length; i++) {
         var ev = body.events[i];
-        if (!ev.actions || ev.actions.length === 0) {
-            continue;
-        }
-        if (_freshWithinSec > 0 && Number(ev.timestamp) < nowSec - _freshWithinSec) {
-            continue;
-        }
-        for (var j = 0; j < ev.actions.length; j++) {
-            var action = ev.actions[j];
-            if (action.status !== 'ok' || action.JettonSwap == null) {
-                continue;
-            }
-            if (_expectedTonIn != null && String(action.JettonSwap.ton_in) !== _expectedTonIn) {
-                continue;
-            }
-            return action;
-        }
+        if (!ev.actions || ev.actions.length === 0) continue;
+        if (_freshWithinSec > 0 && Number(ev.timestamp) < nowSec - _freshWithinSec) continue;
+        if (ev.in_progress) continue;
+        var found = _swapFromEvent(ev);
+        if (found) return found;
     }
     throw new Error(
-        'getLastSwapEvent: no JettonSwap action in last ' +
+        'getLastSwapEvent: no swap (JettonSwap, or SmartContractExec + incoming jetton) in last ' +
             _eventsLimit +
             ' events for ' +
             addr +
             (_freshWithinSec > 0 ? ' (fresh within ' + _freshWithinSec + 's)' : '') +
-            (_expectedTonIn != null ? ' (ton_in=' + _expectedTonIn + ')' : '')
+            (_expectedTonIn != null ? ' (ton_in>=' + _expectedTonIn + ')' : '')
     );
 }, _pollAttempts, _pollDelayMs);
 
-console.log(swapAction.JettonSwap);
-output.jettonLastSwap = swapAction;
-output.jettonLastSwapJettonSwap = swapAction.JettonSwap;
+console.log(JSON.stringify({ ton_in: swap.ton_in, amount_out: swap.amount_out, symbol: swap.jetton_master_out && swap.jetton_master_out.symbol }));
+output.jettonLastSwap = swap.action;
+output.jettonLastSwapJettonSwap = {
+    ton_in: swap.ton_in,
+    amount_out: swap.amount_out,
+    jetton_master_out: swap.jetton_master_out
+};

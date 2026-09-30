@@ -9,7 +9,6 @@ struct WalletsListAssembly {
         model: WalletsListModel,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         raffleStore: RaffleStore? = nil,
-        isMysteryRaffleEnabled: Bool = false,
         analyticsProvider: AnalyticsProvider? = nil,
         tooltipsService: TooltipsService? = nil,
         shouldShowAddMultichainWalletTooltip: Bool = false
@@ -25,7 +24,6 @@ struct WalletsListAssembly {
             homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             raffleStore: raffleStore,
-            isMysteryRaffleEnabled: isMysteryRaffleEnabled,
             analyticsProvider: analyticsProvider
         )
 

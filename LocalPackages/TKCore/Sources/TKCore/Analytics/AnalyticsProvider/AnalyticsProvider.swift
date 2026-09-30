@@ -1,5 +1,6 @@
 import Aptabase
 import Foundation
+import KeeperCore
 
 public enum EventKey: String, CaseIterable {
     case deleteWallet = "delete_wallet"
@@ -50,7 +51,9 @@ public struct AnalyticsProvider {
         self.keysCountryCodeProvider = keysCountryCodeProvider
     }
 
-    public func log(_ event: Encodable) {
+    /// `utm` tags the event with the campaign of the link that opened the flow it belongs to. Only the
+    /// events of that flow carry it: attribution beyond them is decided on the analytics side.
+    public func log(_ event: Encodable, utm: UtmParameters = .empty) {
         guard var dict = event.asDictionary() else {
             return
         }
@@ -59,20 +62,21 @@ public struct AnalyticsProvider {
             return
         }
 
-        self.log(name: name, args: dict)
+        self.log(name: name, args: dict, utm: utm)
     }
 
-    public func log(eventKey: EventKey, args: [String: Any] = [:]) {
-        self.log(name: eventKey.key, args: args)
+    public func log(eventKey: EventKey, args: [String: Any] = [:], utm: UtmParameters = .empty) {
+        self.log(name: eventKey.key, args: args, utm: utm)
     }
 
-    public func log(event: AnalyticsEventLegacy) {
-        self.log(name: event.name, args: event.params)
+    public func log(event: AnalyticsEventLegacy, utm: UtmParameters = .empty) {
+        self.log(name: event.name, args: event.params, utm: utm)
     }
 
     private func log(
         name: String,
-        args: [String: Any] = [:]
+        args: [String: Any] = [:],
+        utm: UtmParameters
     ) {
         let baseEvent = AnalyticsEventMobileNative(
             firebaseUserId: uniqueIdProvider.uniqueDeviceId.uuidString,
@@ -80,7 +84,12 @@ public struct AnalyticsProvider {
             platform: .iosNative,
             storeCountryCode: appInfoProvider.cachedStoreCountryCode?.uppercased(),
             deviceCountryCode: appInfoProvider.deviceCountryCode?.uppercased(),
-            keysCountryCode: keysCountryCodeProvider.keysCountryCode
+            keysCountryCode: keysCountryCodeProvider.keysCountryCode,
+            utmSource: utm.source,
+            utmMedium: utm.medium,
+            utmCampaign: utm.campaign,
+            utmTerm: utm.term,
+            utmContent: utm.content
         )
         log(name: name, args: args, baseEvent: baseEvent)
     }
@@ -171,6 +180,16 @@ public extension AnalyticsEventLegacy {
                 "provider_name": "ston.fi",
                 "type": "native",
             ])
+        }
+    }
+}
+
+// MARK: - Dapp Bridge Events
+
+public extension AnalyticsEventLegacy {
+    enum Dapp {
+        public static func track(event: String, params: [String: Any]) -> AnalyticsEventLegacy {
+            .init(name: event, params: params)
         }
     }
 }

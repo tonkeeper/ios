@@ -23,43 +23,32 @@ struct PerpsRootView: View {
 
             VStack(spacing: 0) {
                 header
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: Layout.sectionSpacing) {
-                        balanceCard
-                        exploreSection
+                if viewModel.accountState.isResolving {
+                    accountLoader
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: Layout.sectionSpacing) {
+                            balanceCard
+                            openPositionsSection
+                            exploreSection
+                        }
+                        .padding(.horizontal, Layout.horizontalPadding)
+                        .padding(.bottom, scrollBottomInset)
                     }
-                    .padding(.horizontal, Layout.horizontalPadding)
-                    .padding(.bottom, scrollBottomInset)
+                    .tkImmediateButtonPresses()
+                    .ignoresSafeArea(.container, edges: .bottom)
                 }
-                .tkImmediateButtonPresses()
-                .ignoresSafeArea(.container, edges: .bottom)
             }
-
-            if let toast = viewModel.activationBanner {
-                activationToast(toast)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(1)
-            }
-
-            floatingButton
         }
         .onPreferenceChange(BottomSafeAreaKey.self) { safeAreaBottom = $0 }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.activationBanner)
     }
 
     var scrollBottomInset: CGFloat {
-        let buttonFootprint = hasFloatingButton
-            ? Layout.stickyButtonTopPadding + Layout.stickyButtonHeight
-            : 0
-        return safeAreaBottom + buttonFootprint + Layout.bottomPadding
-    }
-
-    var hasFloatingButton: Bool {
-        viewModel.accountState.isActive || viewModel.accountState.showsActivationButton
+        safeAreaBottom + Layout.bottomPadding
     }
 }
 
-private struct BottomSafeAreaKey: PreferenceKey {
+struct BottomSafeAreaKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
@@ -67,20 +56,13 @@ private struct BottomSafeAreaKey: PreferenceKey {
 }
 
 private extension PerpsRootView {
-    @ViewBuilder
-    var floatingButton: some View {
-        if viewModel.accountState.isActive {
-            stickyButton(title: TKLocales.Perps.deposit) {
-                viewModel.onDeposit?()
-            }
-        } else if viewModel.accountState.showsActivationButton {
-            stickyButton(
-                title: TKLocales.Perps.activateAccount,
-                isEnabled: viewModel.accountState.isActivationButtonEnabled
-            ) {
-                viewModel.activate()
-            }
+    var accountLoader: some View {
+        VStack {
+            Spacer()
+            CircularLoader(mode: .indeterminate, preset: .medium)
+            Spacer()
         }
+        .frame(maxWidth: .infinity)
     }
 
     var header: some View {
@@ -119,39 +101,6 @@ private extension PerpsRootView {
         .padding(.vertical, Layout.headerVerticalPadding)
     }
 
-    func activationToast(_ toast: PerpsViewModel.ActivationToast) -> some View {
-        VStack {
-            HStack(spacing: Layout.toastSpacing) {
-                switch toast {
-                case .activating:
-                    CircularLoader(mode: .indeterminate, preset: .small)
-                        .frame(width: Layout.toastIconSide, height: Layout.toastIconSide)
-                case .success:
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.checkmarkCircle)
-                        .renderingMode(.template)
-                        .foregroundStyle(.accentGreen)
-                        .frame(width: Layout.toastIconSide, height: Layout.toastIconSide)
-                }
-
-                Text(toast.title)
-                    .textStyle(.label2)
-                    .foregroundStyle(.textPrimary)
-                    .lineLimit(1)
-            }
-            .padding(.leading, Layout.toastLeadingPadding)
-            .padding(.trailing, Layout.toastTrailingPadding)
-            .frame(height: Layout.toastHeight)
-            .background(
-                Capsule()
-                    .fill(.backgroundContentTint)
-                    .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
-            )
-            .padding(.top, Layout.toastTopPadding)
-
-            Spacer()
-        }
-    }
-
     func navButton(icon: UIImage, circled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             ZStack {
@@ -180,15 +129,9 @@ private extension PerpsRootView {
             .frame(width: Layout.balanceIconSide, height: Layout.balanceIconSide)
 
             VStack(alignment: .leading, spacing: Layout.titleSubtitleSpacing) {
-                if let portfolio = viewModel.accountState.portfolio {
-                    Text(portfolio.balanceText)
-                        .textStyle(.label1)
-                        .foregroundStyle(.textPrimary)
-                } else {
-                    Text(TKLocales.Perps.accountInactive)
-                        .textStyle(.label1)
-                        .foregroundStyle(.textPrimary)
-                }
+                Text(viewModel.accountState.portfolio?.balanceText ?? PerpsFormatting.usd(0))
+                    .textStyle(.label1)
+                    .foregroundStyle(.textPrimary)
                 Text(TKLocales.Perps.balance)
                     .textStyle(.body2)
                     .foregroundStyle(.textSecondary)
@@ -198,32 +141,19 @@ private extension PerpsRootView {
 
             Spacer()
 
-            if viewModel.accountState.isActive {
-                Button(action: { viewModel.onDeposit?() }) {
-                    Text(TKLocales.Perps.deposit)
-                        .textStyle(.label2)
-                        .foregroundStyle(.buttonPrimaryForeground)
-                        .padding(.horizontal, Layout.depositButtonHorizontalPadding)
-                        .frame(height: Layout.depositButtonHeight)
-                        .background(
-                            Capsule().fill(.buttonPrimaryBackground)
-                        )
+            HStack(spacing: Layout.balanceButtonSpacing) {
+                PerpsCircleButton(
+                    icon: .TKUIKit.Icons.Size16.minus,
+                    side: Layout.balanceButtonSide
+                ) {
+                    viewModel.onWithdraw?()
                 }
-            } else if viewModel.accountState.showsActivationButton {
-                Button(action: {
-                    guard viewModel.accountState.isActivationButtonEnabled else { return }
-                    viewModel.activate()
-                }) {
-                    Text(TKLocales.Perps.activate)
-                        .textStyle(.label2)
-                        .foregroundStyle(.buttonPrimaryForeground)
-                        .opacity(primaryButtonTextOpacity(isEnabled: viewModel.accountState.isActivationButtonEnabled))
-                        .padding(.horizontal, Layout.depositButtonHorizontalPadding)
-                        .frame(height: Layout.depositButtonHeight)
-                        .background(
-                            Capsule()
-                                .fill(primaryButtonBackgroundColor(isEnabled: viewModel.accountState.isActivationButtonEnabled))
-                        )
+                PerpsCircleButton(
+                    icon: .TKUIKit.Icons.Size16.plus,
+                    appearance: .accent,
+                    side: Layout.balanceButtonSide
+                ) {
+                    viewModel.onDeposit?()
                 }
             }
         }
@@ -234,8 +164,27 @@ private extension PerpsRootView {
         )
     }
 
+    @ViewBuilder
+    var openPositionsSection: some View {
+        if let portfolio = viewModel.accountState.portfolio,
+           let total = portfolio.positionsTotal
+        {
+            VStack(alignment: .leading, spacing: Layout.sectionTitleSpacing) {
+                Text(TKLocales.Perps.openPositions)
+                    .textStyle(.label1)
+                    .foregroundStyle(.textPrimary)
+
+                PerpsOpenPositionsCard(
+                    total: total,
+                    positions: portfolio.positions,
+                    onSelect: viewModel.selectMarket
+                )
+            }
+        }
+    }
+
     var exploreSection: some View {
-        VStack(alignment: .leading, spacing: Layout.exploreSpacing) {
+        VStack(alignment: .leading, spacing: Layout.sectionTitleSpacing) {
             HStack {
                 Text(TKLocales.Perps.explore)
                     .textStyle(.label1)
@@ -273,74 +222,13 @@ private extension PerpsRootView {
         }
     }
 
-    func stickyButton(title: String, isEnabled: Bool = true, action: @escaping () -> Void) -> some View {
-        VStack {
-            Spacer()
-            VStack(spacing: 0) {
-                Button(action: {
-                    guard isEnabled else { return }
-                    action()
-                }) {
-                    Text(title)
-                        .textStyle(.label1)
-                        .foregroundStyle(.buttonPrimaryForeground)
-                        .opacity(primaryButtonTextOpacity(isEnabled: isEnabled))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: Layout.stickyButtonHeight)
-                        .background(
-                            RoundedRectangle(cornerRadius: Layout.cardCornerRadius)
-                                .fill(primaryButtonBackgroundColor(isEnabled: isEnabled))
-                        )
-                }
-                .padding(.horizontal, Layout.horizontalPadding)
-                .padding(.top, Layout.stickyButtonTopPadding)
-            }
-            .background(
-                LinearGradient(
-                    stops: [
-                        .init(color: palette.background.page.opacity(0), location: 0),
-                        .init(color: palette.background.page.opacity(0.036), location: 0.13),
-                        .init(color: palette.background.page.opacity(0.147), location: 0.27),
-                        .init(color: palette.background.page.opacity(0.332), location: 0.40),
-                        .init(color: palette.background.page.opacity(0.557), location: 0.53),
-                        .init(color: palette.background.page.opacity(0.768), location: 0.67),
-                        .init(color: palette.background.page.opacity(0.918), location: 0.80),
-                        .init(color: palette.background.page, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea(edges: .bottom)
-            )
-        }
-    }
-
     var balanceIconColor: Color {
         guard viewModel.accountState.isActive else { return palette.icon.secondary }
-        return viewModel.isTestnet ? palette.accent.orange : palette.accent.blue
+        return palette.accent.blue
     }
 
     var balanceIconBackgroundOpacity: Double {
         viewModel.accountState.isActive ? 0.12 : 0.16
-    }
-
-    func primaryButtonBackgroundColor(isEnabled: Bool) -> Color {
-        isEnabled ? palette.button.primaryBackground : palette.button.primaryBackgroundDisabled
-    }
-
-    func primaryButtonTextOpacity(isEnabled: Bool) -> Double {
-        isEnabled ? 1 : Layout.disabledButtonTextOpacity
-    }
-}
-
-private extension PerpsViewModel.ActivationToast {
-    var title: String {
-        switch self {
-        case .activating:
-            return TKLocales.Perps.activatingToast
-        case .success:
-            return TKLocales.Perps.accountActivated
-        }
     }
 }
 
@@ -348,8 +236,8 @@ private enum Layout {
     static let horizontalPadding: CGFloat = 16
     static let headerVerticalPadding: CGFloat = 6
     static let headerCaptionSpacing: CGFloat = -3
-    static let sectionSpacing: CGFloat = 16
-    static let exploreSpacing: CGFloat = 11
+    static let sectionSpacing: CGFloat = 28
+    static let sectionTitleSpacing: CGFloat = 12
     static let errorVerticalPadding: CGFloat = 15
     static let bottomPadding: CGFloat = 16
     static let navButtonSide: CGFloat = 32
@@ -361,15 +249,6 @@ private enum Layout {
     static let balanceTextBottomPadding: CGFloat = -1
     static let cardCornerRadius: CGFloat = 16
     static let balanceIconSide: CGFloat = 44
-    static let depositButtonHeight: CGFloat = 36
-    static let depositButtonHorizontalPadding: CGFloat = 16
-    static let toastHeight: CGFloat = 48
-    static let toastIconSide: CGFloat = 16
-    static let toastSpacing: CGFloat = 8
-    static let toastLeadingPadding: CGFloat = 16
-    static let toastTrailingPadding: CGFloat = 24
-    static let toastTopPadding: CGFloat = 8
-    static let stickyButtonHeight: CGFloat = 56
-    static let stickyButtonTopPadding: CGFloat = 16
-    static let disabledButtonTextOpacity: Double = 0.48
+    static let balanceButtonSide: CGFloat = 36
+    static let balanceButtonSpacing: CGFloat = 12
 }

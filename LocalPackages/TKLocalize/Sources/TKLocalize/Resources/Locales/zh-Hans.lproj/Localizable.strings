@@ -25,6 +25,8 @@
 "perps.activate_account" = "激活账户";
 "perps.activating_toast" = "正在此设备上激活账户";
 "perps.account_activated" = "账户激活成功";
+"perps.open_positions" = "未平仓头寸";
+"perps.total_amount" = "总金额";
 "perps.explore" = "探索 Perps";
 "perps.volume" = "成交量";
 "perps.volume_short" = "vol";
@@ -81,11 +83,11 @@
 "perps.chart.high" = "最高";
 "perps.chart.low" = "最低";
 "perps.chart.volume" = "成交量";
-"perps.open_position.price" = "价格";
+"perps.open_position.price" = "当前价格";
 "perps.open_position.market" = "市价";
 "perps.open_position.size" = "规模：";
 "perps.open_position.max" = "MAX";
-"perps.open_position.balance" = "余额：";
+"perps.open_position.balance" = "可用：";
 "perps.open_position.deposit" = "存入";
 "perps.open_position.leverage" = "杠杆";
 "perps.open_position.auto_close" = "自动平仓";
@@ -204,6 +206,18 @@
 "multichain_history.placeholder.buttons.add_funds" = "添加资金";
 "multichain_history.placeholder.filtered.title" = "无内容可显示";
 "multichain_history.placeholder.filtered.subtitle" = "没有符合当前筛选的内容。";
+"multichain_history.perps.opened_long" = "开多";
+"multichain_history.perps.opened_short" = "开空";
+"multichain_history.perps.opened" = "已开仓";
+"multichain_history.perps.closed_long" = "平多";
+"multichain_history.perps.closed_short" = "平空";
+"multichain_history.perps.closed" = "已平仓";
+"multichain_history.perps.liquidated_long" = "多头被强平";
+"multichain_history.perps.liquidated_short" = "空头被强平";
+"multichain_history.perps.liquidated" = "已强平";
+"multichain_history.perps.take_profit_executed" = "止盈已执行";
+"multichain_history.perps.stop_loss_executed" = "止损已执行";
+"multichain_history.perps.subtitle" = "%@ Perps";
 "browser.tab.explore" = "探索";
 "browser.tab.connected" = "已连接";
 "browser.list.all" = "全部";
@@ -369,21 +383,21 @@
 "receive.multichain.disclaimer" = "仅将 %1$@（%2$@）和 %3$@ 网络中的代币发送到此地址，否则您可能会丢失资金。";
 "receive.multichain.network_picker.title" = "选择网络";
 "receive.multichain.networks.ton.title" = "TON";
-"receive.multichain.networks.ton.display_title" = "TON (TON)";
+"receive.multichain.networks.ton.display_title" = "TON";
 "receive.multichain.networks.ton.disclaimer_title" = "Gram";
 "receive.multichain.networks.ethereum.title" = "Ethereum";
-"receive.multichain.networks.ethereum.display_title" = "Ethereum (ERC20)";
+"receive.multichain.networks.ethereum.display_title" = "Ethereum";
 "receive.multichain.networks.bitcoin.title" = "Bitcoin";
-"receive.multichain.networks.bitcoin.display_title" = "Bitcoin (BTC)";
+"receive.multichain.networks.bitcoin.display_title" = "Bitcoin";
 "receive.multichain.networks.base.title" = "Base";
-"receive.multichain.networks.base.display_title" = "Base (Base)";
+"receive.multichain.networks.base.display_title" = "Base";
 "receive.multichain.networks.smartchain.title" = "BSC";
-"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain (BEP20)";
+"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain";
 "receive.multichain.networks.smartchain.disclaimer_title" = "BNB Smart Chain";
 "receive.multichain.networks.arbitrum.title" = "Arbitrum";
-"receive.multichain.networks.arbitrum.display_title" = "Arbitrum (ARB)";
+"receive.multichain.networks.arbitrum.display_title" = "Arbitrum";
 "receive.multichain.networks.tron.title" = "TRON";
-"receive.multichain.networks.tron.display_title" = "TRON (TRC20)";
+"receive.multichain.networks.tron.display_title" = "TRON";
 "receive.trx.description" = "仅将 Tron TRX 发送到此地址，否则您可能会丢失资金。";
 "watch_account.title" = "观看账户";
 "watch_account.description" = "监控钱包活动而无需恢复短语。您将收到此钱包的任何交易通知。";
@@ -480,6 +494,7 @@
 "history.tab.sent" = "已发送";
 "history.tab.received" = "已收到";
 "history.tab.spam" = "垃圾邮件";
+"history.tab.perpetuals" = "永续合约";
 "history.spam.footer.after_date" = "显示 %@ 之后的垃圾邮件";
 "history.spam.footer.no_spam" = "未发现垃圾邮件事件";
 "history.spam.folder.empty" = "垃圾邮件文件夹为空";
@@ -576,7 +591,7 @@
 "settings.purchases.details.items.token_id" = "代币ID";
 "settings.notifications.title" = "通知";
 "settings.notifications.notifications_item.title" = "推送通知";
-"settings.notifications.notifications_item.caption" = "当您收到 GRAM、令牌和 NFT 时收到通知。来自连接的应用程序的通知。";
+"settings.notifications.notifications_item.caption" = "当您收到令牌和 NFT 时收到通知。来自连接的应用程序的通知。";
 "settings.notifications.notifications_disabled.title" = "通知已禁用";
 "settings.notifications.notifications_disabled.caption" = "您在手机设置中关闭了通知。要激活通知，请转至此设备上的设置。";
 "settings.notifications.notifications_disabled.action_title" = "设置";
@@ -706,12 +721,9 @@
 "finish_setup.migration.wallets_left.few" = "剩余 %d 个钱包";
 "finish_setup.migration.wallets_left.many" = "剩余 %d 个钱包";
 "finish_setup.migration.wallets_left.other" = "剩余 %d 个钱包";
-"add_wallet.items.tetra.title" = "利乐L2";
-"add_wallet.items.tetra.subtitle" = "连接Tetra L2网络";
 "add_wallet.items.pair_keystone.title" = "与梯形校正配对";
 "add_wallet.items.pair_keystone.subtitle" = "AIR-GAP 硬件钱包提供高水平的安全性";
 "add_wallet.sections.other_options" = "其他选项";
-"add_wallet.sections.for_developers" = "对于开发商";
 "keystone.scan.subtitle" = "打开 Keystone » 连接软件钱包 » Keeper";
 "keystone.scan.about_keystone_button" = "关于鼎石";
 "balance_header.your_address" = "您的地址： ";
@@ -1227,7 +1239,7 @@
 "scanner.invalid_link" = "无效链接";
 "scanner.select_from_gallery" = "从相册选择";
 
-"receive.multichain.network_picker.subtitle" = "每个网络上的所有代币共用一个地址";
+"receive.multichain.network_picker.subtitle" = "每个网络一个地址";
 "receive.multichain.networks.solana.title" = "Solana";
 
 "tokens_picker.placeholder.error_title" = "出错了";
@@ -1272,7 +1284,7 @@
 "ramp.deposit.payment_qr_code.title" = "付款 QR 码";
 "ramp.deposit.payment_qr_code.subtitle" = "扫描 QR 码或复制地址以完成付款。";
 "ramp.deposit.receive_tokens" = "接收代币";
-"ramp.deposit.receive_tokens_subtitle" = "从另一个 TON/TRON 钱包";
+"ramp.deposit.receive_tokens_subtitle" = "从另一个钱包";
 "ramp.deposit.send_asset" = "发送 %@";
 "ramp.deposit.up_to_min" = "最多 %@ 分钟";
 

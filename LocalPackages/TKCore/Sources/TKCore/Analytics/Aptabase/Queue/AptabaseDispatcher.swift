@@ -19,13 +19,18 @@ struct AptabaseDispatcher {
 
     private static let retriableStatusCodes: Set<Int> = [408, 425, 429]
 
-    private let url: URL
+    private let endpointProvider: @Sendable () -> String
     private let headers: [String: String]
     private let session: AptabaseURLSession
 
-    init?(endpoint: String, appKey: String, environment: AptabaseEnvironment, session: AptabaseURLSession) {
-        guard let url = URL(string: "\(endpoint)/api/v0/events") else { return nil }
-        self.url = url
+    /// Read the host per send so queued events follow boot configuration updates.
+    init(
+        endpointProvider: @escaping @Sendable () -> String,
+        appKey: String,
+        environment: AptabaseEnvironment,
+        session: AptabaseURLSession
+    ) {
+        self.endpointProvider = endpointProvider
         headers = [
             "Content-Type": "application/json",
             "App-Key": appKey,
@@ -38,6 +43,11 @@ struct AptabaseDispatcher {
         guard !events.isEmpty else { return .delivered }
         guard let body = try? AptabaseCoding.wireEncoder.encode(events) else {
             Log.w("Aptabase: dropping \(events.count) events that failed to encode")
+            return .rejected
+        }
+
+        guard let url = URL(string: "\(endpointProvider())/api/v0/events") else {
+            Log.w("Aptabase: dropping \(events.count) events, endpoint is not a URL")
             return .rejected
         }
 

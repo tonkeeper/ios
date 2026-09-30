@@ -14,6 +14,9 @@ enum ProtobufWire {
         /// Tag and payload together, so a record can be replaced as a whole.
         let range: Range<Int>
         let varint: UInt64?
+        /// The payload alone, without tag or length prefix; `nil` unless the record is
+        /// length-delimited. A nested message is scanned from these bytes.
+        let payload: Range<Int>?
     }
 
     static func tag(fieldNumber: UInt32, wireType: UInt8) -> [UInt8] {
@@ -70,6 +73,7 @@ enum ProtobufWire {
             }
             let wireType = UInt8(tag & 0x07)
             var varint: UInt64?
+            var payload: Range<Int>?
             switch wireType {
             case 0:
                 varint = try decodeVarint(bytes, at: &index)
@@ -80,14 +84,22 @@ enum ProtobufWire {
                 guard length <= UInt64(bytes.count - index) else {
                     throw Error.malformed
                 }
+                let payloadStart = index
                 index = try advance(index, by: Int(length), in: bytes)
+                payload = payloadStart ..< index
             case 5:
                 index = try advance(index, by: 4, in: bytes)
             default:
                 throw Error.malformed
             }
             fields.append(
-                Field(number: UInt32(fieldNumber), wireType: wireType, range: start ..< index, varint: varint)
+                Field(
+                    number: UInt32(fieldNumber),
+                    wireType: wireType,
+                    range: start ..< index,
+                    varint: varint,
+                    payload: payload
+                )
             )
         }
         return fields

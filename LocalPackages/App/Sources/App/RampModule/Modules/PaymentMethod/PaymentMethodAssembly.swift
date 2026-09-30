@@ -18,7 +18,6 @@ struct PaymentMethodAssembly {
         let onRampService = keeperCoreMainAssembly.servicesAssembly.onRampService()
         let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
         let currenciesService = keeperCoreMainAssembly.servicesAssembly.currenciesService()
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
         let viewModel = PaymentMethodViewModelImplementation(
             flow: flow,
             asset: asset,
@@ -27,7 +26,6 @@ struct PaymentMethodAssembly {
             onRampService: onRampService,
             currencyStore: currencyStore,
             currenciesService: currenciesService,
-            configuration: configuration,
             initialDeeplink: initialDeeplink,
             fiatCurrency: fiatCurrency,
             walletId: walletId

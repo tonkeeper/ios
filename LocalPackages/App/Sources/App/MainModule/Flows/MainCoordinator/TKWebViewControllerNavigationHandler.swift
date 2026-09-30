@@ -4,11 +4,11 @@ import TKScreenKit
 
 struct TKWebViewControllerNavigationHandler: TKScreenKit.TKWebViewControllerNavigationHandler {
     private let deeplinkParser: DeeplinkParser
-    private let openDeeplinkHandler: (Deeplink) -> Void
+    private let openDeeplinkHandler: (_ deeplink: Deeplink, _ utm: UtmParameters) -> Void
 
     init(
         deeplinkParser: DeeplinkParser,
-        openDeeplinkHandler: @escaping (Deeplink) -> Void
+        openDeeplinkHandler: @escaping (_ deeplink: Deeplink, _ utm: UtmParameters) -> Void
     ) {
         self.deeplinkParser = deeplinkParser
         self.openDeeplinkHandler = openDeeplinkHandler
@@ -20,7 +20,7 @@ struct TKWebViewControllerNavigationHandler: TKScreenKit.TKWebViewControllerNavi
                 string: url.absoluteString,
                 source: .browser
             )
-            openDeeplinkHandler(deeplink)
+            openDeeplinkHandler(deeplink, UtmParameters(link: url.absoluteString))
             return .notOpen
         } catch let error where error.isSilent {
             return .notOpen

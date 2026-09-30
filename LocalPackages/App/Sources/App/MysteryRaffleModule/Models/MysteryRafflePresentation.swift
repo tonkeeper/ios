@@ -9,11 +9,10 @@ struct MysteryRafflePresentation: Equatable {
 
     init?(
         raffles: [MultichainRaffle],
-        isFeatureEnabled: Bool,
         dismissStore: MysteryRaffleTradeBannerDismissStore = UserDefaultsMysteryRaffleTradeBannerDismissStore(),
         walletsListDismissStore: MysteryRaffleWalletsListBannerDismissStore = UserDefaultsMysteryRaffleWalletsListBannerDismissStore()
     ) {
-        guard isFeatureEnabled, let raffle = Self.selectRaffle(from: raffles) else {
+        guard let raffle = Self.selectRaffle(from: raffles) else {
             return nil
         }
         self.raffle = raffle

@@ -69,10 +69,7 @@ struct WalletBalanceHomeBannersUIKitView: View {
 
     var body: some View {
         WalletBalanceHomeBannersContentView(viewModel: viewModel)
-            .frame(height: viewModel.sectionHeight, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .clipped()
-            .animation(Layout.animation, value: viewModel.sectionHeight)
     }
 }
 
@@ -123,10 +120,6 @@ private struct WalletBalanceHomeBannersDeckView: View {
 }
 
 private extension WalletBalanceHomeBannersView {
-    typealias Layout = WalletBalanceHomeBannersLayout
-}
-
-private extension WalletBalanceHomeBannersUIKitView {
     typealias Layout = WalletBalanceHomeBannersLayout
 }
 

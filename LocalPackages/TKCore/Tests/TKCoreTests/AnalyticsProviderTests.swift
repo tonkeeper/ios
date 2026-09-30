@@ -1,4 +1,5 @@
 import Foundation
+import KeeperCore
 @testable import TKCore
 import TKFeatureFlags
 import TKKeychain
@@ -84,14 +85,14 @@ final class AnalyticsProviderTests: XCTestCase {
     func testLogEncodableWithFeatureFlagsSendsEnabledOnesAsFlatOffSchemaFields() throws {
         let (provider, service) = makeSubject()
 
-        let featureFlags: [FeatureFlag: Bool] = [.perpsEnabled: true, .multichainEnabled: false]
+        let featureFlags: [FeatureFlag: Bool] = [.perpsEnabled: true, .swapKitEnabled: false]
 
         provider.log(LaunchApp().withExtraValues(featureFlags.analyticsParameters))
 
         let call = try XCTUnwrap(service.calls.first)
 
         XCTAssertEqual(call.args["ff_ios_perps_enabled"] as? String, "true")
-        XCTAssertNil(call.args["ff_ios_multichain_enabled"])
+        XCTAssertNil(call.args["ff_ios_swapkit_enabled"])
     }
 
     func testLogEncodableIncludesAnalyticsEventMobileNativeFields() throws {
@@ -161,6 +162,29 @@ final class AnalyticsProviderTests: XCTestCase {
         let call = try XCTUnwrap(service.calls.first)
 
         XCTAssertNil(call.args[AnalyticsEventMobileNative.CodingKeys.keysCountryCode.rawValue])
+    }
+
+    func testTaggedEventCarriesTheCampaignOfTheLinkThatOpenedTheFlow() throws {
+        let (provider, service) = makeSubject()
+
+        provider.log(
+            eventKey: .storyOpen,
+            utm: UtmParameters(link: "tonkeeper://staking?utm_source=newsletter&utm_campaign=autumn")
+        )
+
+        let call = try XCTUnwrap(service.calls.first)
+        XCTAssertEqual(call.args[AnalyticsEventMobileNative.CodingKeys.utmSource.rawValue] as? String, "newsletter")
+        XCTAssertEqual(call.args[AnalyticsEventMobileNative.CodingKeys.utmCampaign.rawValue] as? String, "autumn")
+        XCTAssertNil(call.args[AnalyticsEventMobileNative.CodingKeys.utmMedium.rawValue])
+    }
+
+    func testAnUntaggedEventCarriesNoCampaign() throws {
+        let (provider, service) = makeSubject()
+
+        provider.log(eventKey: .storyOpen)
+
+        let call = try XCTUnwrap(service.calls.first)
+        XCTAssertNil(call.args[AnalyticsEventMobileNative.CodingKeys.utmSource.rawValue])
     }
 }
 

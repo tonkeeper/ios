@@ -2,10 +2,7 @@ import Foundation
 
 public final class HomeBannersStore: Store<HomeBannersStore.Event, HomeBannersCatalogue> {
     public enum Event {
-        /// The decks themselves changed: an answer landed, or the dismissals were reset.
         case didUpdateBanners
-        /// One wallet dropped a card. Told apart from the above because the deck it came from is
-        /// animating that card away and must keep the items it is rendering until it is done.
         case didDismissBanner
     }
 
@@ -20,7 +17,6 @@ public final class HomeBannersStore: Store<HomeBannersStore.Event, HomeBannersCa
         .empty
     }
 
-    /// Wallets of one seed share a catalogue — the backend answers per seed — but dismiss apart.
     public func visibleBanners(for wallet: Wallet) -> [HomeBanner] {
         let dismissedIds = Set(repository.getDismissedBannerIds(walletId: wallet.id))
         return state
@@ -51,6 +47,11 @@ public final class HomeBannersStore: Store<HomeBannersStore.Event, HomeBannersCa
         forWalletId walletId: String?,
         completion: (() -> Void)? = nil
     ) {
+        guard getState().banners(forWalletId: walletId) != banners else {
+            completion?()
+            return
+        }
+
         updateState { state in
             StateUpdate(newState: state.setting(banners, forWalletId: walletId))
         } completion: { [weak self] _ in

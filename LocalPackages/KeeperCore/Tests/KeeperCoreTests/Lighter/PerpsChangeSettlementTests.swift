@@ -10,6 +10,25 @@ final class PerpsChangeSettlementTests: XCTestCase {
         XCTAssertFalse(PerpsChangeSettlement.sizeMoved(current: 0.008, before: 0.008, direction: .reduce))
     }
 
+    func testSizeChangeRequiresTheRequestedDelta() {
+        XCTAssertFalse(
+            PerpsChangeSettlement.sizeMoved(
+                current: 0.0085,
+                before: 0.008,
+                direction: .add,
+                expectedDelta: 0.001
+            )
+        )
+        XCTAssertTrue(
+            PerpsChangeSettlement.sizeMoved(
+                current: 0.009,
+                before: 0.008,
+                direction: .add,
+                expectedDelta: 0.001
+            )
+        )
+    }
+
     func testCloseConfirmsAnyRealPartialReduction() {
         XCTAssertTrue(PerpsChangeSettlement.closeMoved(current: 0.004, before: 0.008))
         XCTAssertFalse(PerpsChangeSettlement.closeMoved(current: 0.008, before: 0.008))

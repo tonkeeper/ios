@@ -13,18 +13,24 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
 
     private let wallet: Wallet
     private let item: StakingConfirmationItem
+    private let initiatedBy: InitiatedBy
+    private let utm: UtmParameters
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
 
     init(
         wallet: Wallet,
         item: StakingConfirmationItem,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter
     ) {
         self.wallet = wallet
         self.item = item
+        self.initiatedBy = initiatedBy
+        self.utm = utm
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
 
@@ -88,8 +94,7 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
         module.output.didStartConfirmTransaction = { [weak self] _ in
             guard let self else { return }
             let session = RedAnalyticsSessionHolder(
-                analytics: coreAssembly.analyticsProvider,
-                configurationAssembly: keeperCoreMainAssembly.configurationAssembly
+                analytics: coreAssembly.analyticsProvider
             )
             session.start(
                 flow: .stake,
@@ -115,9 +120,13 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
             )
             redSession = nil
             guard let self else { return }
-            let event = TransactionSent(wallet: wallet, model: model, origin: .user)
+            let event = TransactionSent(
+                wallet: wallet,
+                model: model,
+                origin: TransactionOrigin(initiatedBy: initiatedBy, utm: utm)
+            )
             if let event {
-                self.coreAssembly.analyticsProvider.log(event)
+                self.coreAssembly.analyticsProvider.log(event, utm: self.utm)
             }
             if case .deposit = item.operation {
                 self.coreAssembly.analyticsProvider.logStakeCompleted()

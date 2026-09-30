@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-Parse maestro_ui_tests/config.yaml clusters and emit GitHub Actions outputs.
+Parse maestro_ui_tests/config.yaml and emit GitHub Actions outputs.
 
-Shard layout:
-  ton-state:  flows/ton-state/<shard>/*
-  multichain: flows/multichain/<shard>/*
+One cluster (``multichain``), one simulator build. Shard layout:
+  flows/multichain/<shard>/*  →  shard id ``<shard>``
+
+Every shard runs on one funded wallet. ``ton_wallet_shards`` lists the sections
+imported with the TON seed (MAESTRO_WALLET_WITH_MONEY*); the rest use the
+multichain seed (MAESTRO_MC_WALLET_MONEY*). The matrix carries the choice as
+``wallet: ton | multichain`` so the workflow can map the secrets per shard.
 """
 
 from __future__ import annotations
@@ -21,8 +25,10 @@ try:
 except ImportError:  # pragma: no cover - CI installs PyYAML in discover job
     yaml = None  # type: ignore[assignment]
 
-TON_STATE_FLOW_RE = re.compile(r"^flows/ton-state/([^/*]+)/\*$")
-MULTICHAIN_FLOW_RE = re.compile(r"^flows/multichain/([^/*]+)/\*$")
+CLUSTER = "multichain"
+FLOW_RE = re.compile(r"^flows/multichain/([^/*]+)/\*$")
+WALLET_TON = "ton"
+WALLET_MULTICHAIN = "multichain"
 
 
 def _load_config(path: Path) -> dict:
@@ -35,69 +41,57 @@ def _load_config(path: Path) -> dict:
     raise RuntimeError("PyYAML is required; install with: pip install pyyaml")
 
 
-def _skip_auto_rerun_labels(cluster_cfg: dict) -> set[str]:
-    raw = cluster_cfg.get("skip_auto_rerun") or []
+def _section_names(cluster_cfg: dict, key: str) -> set[str]:
+    raw = cluster_cfg.get(key) or []
     if not isinstance(raw, list):
-        raise ValueError("skip_auto_rerun must be a list of section names")
+        raise ValueError(f"{key} must be a list of section names")
     return {str(item).strip() for item in raw if str(item).strip()}
 
 
 def _shard_entries(
-    cluster: str,
     patterns: list[str],
     repo_root: Path,
-    skip_auto_rerun: set[str] | None = None,
+    skip_auto_rerun: set[str],
+    ton_wallet_shards: set[str],
 ) -> list[dict[str, object]]:
     entries: list[dict[str, object]] = []
     seen: set[str] = set()
-    skip_auto_rerun = skip_auto_rerun or set()
 
     for raw in patterns:
         pattern = str(raw).strip().strip("'\"")
         if not pattern:
             continue
 
-        if cluster == "multichain":
-            match = MULTICHAIN_FLOW_RE.match(pattern)
-            if not match:
-                raise ValueError(
-                    f"multichain cluster: expected 'flows/multichain/<shard>/*', got {pattern!r}"
-                )
-            shard = match.group(1)
-            rel_path = f"flows/multichain/{shard}"
-            shard_id = f"multichain-{shard}"
-        else:
-            match = TON_STATE_FLOW_RE.match(pattern)
-            if not match:
-                raise ValueError(
-                    f"{cluster} cluster: expected 'flows/ton-state/<shard>/*', got {pattern!r}"
-                )
-            shard = match.group(1)
-            rel_path = f"flows/ton-state/{shard}"
-            shard_id = shard
+        match = FLOW_RE.match(pattern)
+        if not match:
+            raise ValueError(
+                f"{CLUSTER} cluster: expected 'flows/multichain/<shard>/*', got {pattern!r}"
+            )
+        shard = match.group(1)
+        rel_path = f"flows/multichain/{shard}"
 
         flow_dir = repo_root / "maestro_ui_tests" / rel_path
         if not flow_dir.is_dir():
             raise FileNotFoundError(f"Flow folder missing on disk: {flow_dir}")
 
-        if shard_id in seen:
+        if shard in seen:
             continue
-        seen.add(shard_id)
+        seen.add(shard)
         entry: dict[str, object] = {
-            "id": shard_id,
+            "id": shard,
             "path": rel_path,
-            "cluster": cluster,
+            "cluster": CLUSTER,
             "label": shard,
+            "wallet": WALLET_TON if shard in ton_wallet_shards else WALLET_MULTICHAIN,
         }
         if shard in skip_auto_rerun:
             entry["skip_auto_rerun"] = True
         entries.append(entry)
 
-    unknown = sorted(skip_auto_rerun - {str(e["label"]) for e in entries})
-    if unknown:
-        raise ValueError(
-            f"{cluster} skip_auto_rerun names not in flows: {', '.join(unknown)}"
-        )
+    for key, names in (("skip_auto_rerun", skip_auto_rerun), ("ton_wallet_shards", ton_wallet_shards)):
+        unknown = sorted(names - seen)
+        if unknown:
+            raise ValueError(f"{CLUSTER} {key} names not in flows: {', '.join(unknown)}")
 
     entries.sort(key=lambda item: str(item["id"]))
     return entries
@@ -108,37 +102,32 @@ def discover(repo_root: Path, config_path: Path) -> dict[str, object]:
     clusters = data.get("clusters")
     if not isinstance(clusters, dict):
         raise ValueError(f"{config_path}: missing 'clusters' mapping")
-
-    result: dict[str, object] = {}
-    for cluster_name, cluster_cfg in clusters.items():
-        if not isinstance(cluster_cfg, dict):
-            raise ValueError(f"{config_path}: cluster {cluster_name!r} must be a mapping")
-        flows = cluster_cfg.get("flows") or []
-        if not isinstance(flows, list):
-            raise ValueError(f"{config_path}: clusters.{cluster_name}.flows must be a list")
-
-        skip_auto_rerun = _skip_auto_rerun_labels(cluster_cfg)
-        shards = _shard_entries(
-            str(cluster_name),
-            [str(x) for x in flows],
-            repo_root,
-            skip_auto_rerun=skip_auto_rerun,
+    if set(clusters) != {CLUSTER}:
+        raise ValueError(
+            f"{config_path}: expected exactly one cluster {CLUSTER!r}, got {sorted(clusters)}"
         )
-        result[str(cluster_name)] = {
-            "gate_pipeline": bool(cluster_cfg.get("gate_pipeline", False)),
-            "build_artifact": str(cluster_cfg.get("build_artifact") or ""),
-            "feature_flags": _cluster_feature_flags(cluster_cfg, config_path),
-            "shards": shards,
-        }
+    cluster_cfg = clusters[CLUSTER]
+    if not isinstance(cluster_cfg, dict):
+        raise ValueError(f"{config_path}: cluster {CLUSTER!r} must be a mapping")
+    flows = cluster_cfg.get("flows") or []
+    if not isinstance(flows, list):
+        raise ValueError(f"{config_path}: clusters.{CLUSTER}.flows must be a list")
 
-    if "ton-state" not in result:
-        raise ValueError(f"{config_path}: required cluster 'ton-state' is missing")
+    shards = _shard_entries(
+        [str(x) for x in flows],
+        repo_root,
+        skip_auto_rerun=_section_names(cluster_cfg, "skip_auto_rerun"),
+        ton_wallet_shards=_section_names(cluster_cfg, "ton_wallet_shards"),
+    )
+    if not shards:
+        raise ValueError(f"{config_path}: {CLUSTER} cluster has no shards")
 
-    ton_shards = result["ton-state"]["shards"]  # type: ignore[index]
-    if not ton_shards:
-        raise ValueError(f"{config_path}: ton-state cluster has no shards")
-
-    return result
+    return {
+        "gate_pipeline": bool(cluster_cfg.get("gate_pipeline", False)),
+        "build_artifact": str(cluster_cfg.get("build_artifact") or ""),
+        "feature_flags": _cluster_feature_flags(cluster_cfg, config_path),
+        "shards": shards,
+    }
 
 
 def _cluster_feature_flags(cluster_cfg: dict, config_path: Path) -> dict:
@@ -165,34 +154,8 @@ def _cluster_feature_flags(cluster_cfg: dict, config_path: Path) -> dict:
     return inline if isinstance(inline, dict) else {}
 
 
-def _normalize_clusters_filter(raw: str) -> str:
-    value = (raw or "all").strip().lower()
-    if value not in {"all", "ton-state", "multichain"}:
-        raise ValueError(
-            f"invalid --clusters {raw!r}; expected one of: all, ton-state, multichain"
-        )
-    return value
-
-
-def _apply_clusters_filter(discovered: dict[str, object], clusters: str) -> dict[str, object]:
-    """Return a shallow-filtered discovery view for a manual CI clusters choice."""
-    if clusters == "all":
-        return discovered
-
-    filtered: dict[str, object] = {}
-    for name, cfg in discovered.items():
-        if not isinstance(cfg, dict):
-            continue
-        if clusters == "ton-state" and name != "ton-state":
-            continue
-        if clusters == "multichain" and name != "multichain":
-            continue
-        filtered[name] = cfg
-    return filtered
-
-
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Discover Maestro CI clusters and shards.")
+    ap = argparse.ArgumentParser(description="Discover Maestro CI shards.")
     ap.add_argument(
         "--config",
         type=Path,
@@ -206,14 +169,9 @@ def main() -> int:
         help="Repository root",
     )
     ap.add_argument(
-        "--clusters",
-        default="all",
-        help="Which clusters to emit: all | ton-state | multichain (manual CI filter)",
-    )
-    ap.add_argument(
         "--github-output",
         action="store_true",
-        help="Write ton_state_shards / multichain_shards outputs for GHA",
+        help="Write shards / has_shards / build_artifact outputs for GHA",
     )
     ap.add_argument(
         "--json-out",
@@ -225,36 +183,8 @@ def main() -> int:
 
     repo_root = args.repo_root.resolve()
     config_path = args.config if args.config.is_absolute() else repo_root / args.config
-    clusters_filter = _normalize_clusters_filter(args.clusters)
-    discovered = _apply_clusters_filter(discover(repo_root, config_path), clusters_filter)
-
-    ton_shards = discovered.get("ton-state", {}).get("shards", [])  # type: ignore[union-attr]
-    multichain_shards = discovered.get("multichain", {}).get("shards", [])  # type: ignore[union-attr]
-    if clusters_filter in {"all", "ton-state"} and not ton_shards:
-        raise ValueError(f"{config_path}: ton-state cluster has no shards")
-    if clusters_filter == "multichain" and not multichain_shards:
-        raise ValueError(f"{config_path}: multichain cluster has no shards")
-
-    build_targets: list[dict[str, object]] = []
-    if ton_shards:
-        build_targets.append(
-            {
-                "id": "ton-state",
-                "artifact": discovered["ton-state"]["build_artifact"],  # type: ignore[index]
-                "ensure_multichain_disabled": True,
-                "overlay": discovered["ton-state"]["feature_flags"],  # type: ignore[index]
-            }
-        )
-    if multichain_shards:
-        build_targets.append(
-            {
-                "id": "multichain",
-                "artifact": discovered.get("multichain", {}).get("build_artifact"),  # type: ignore[union-attr]
-                "ensure_multichain_disabled": False,
-                "ensure_multichain_enabled": True,
-                "overlay": discovered.get("multichain", {}).get("feature_flags", {}),  # type: ignore[union-attr]
-            }
-        )
+    discovered = discover(repo_root, config_path)
+    shards = discovered["shards"]
 
     if args.json_out is not None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
@@ -266,14 +196,11 @@ def main() -> int:
             print("discover_maestro_clusters: --github-output requires GITHUB_OUTPUT", file=sys.stderr)
             return 1
         with open(github_output, "a", encoding="utf-8") as fh:
-            fh.write(f"clusters={clusters_filter}\n")
-            fh.write(f"ton_state_shards={json.dumps(ton_shards, separators=(',', ':'))}\n")
-            fh.write(f"multichain_shards={json.dumps(multichain_shards, separators=(',', ':'))}\n")
-            fh.write(f"has_ton_state_shards={'true' if ton_shards else 'false'}\n")
-            fh.write(f"has_multichain_shards={'true' if multichain_shards else 'false'}\n")
-            fh.write(f"build_targets={json.dumps(build_targets, separators=(',', ':'))}\n")
+            fh.write(f"shards={json.dumps(shards, separators=(',', ':'))}\n")
+            fh.write(f"has_shards={'true' if shards else 'false'}\n")
+            fh.write(f"build_artifact={discovered['build_artifact']}\n")
     else:
-        print(json.dumps({"clusters": clusters_filter, **discovered}, indent=2))
+        print(json.dumps(discovered, indent=2))
 
     return 0
 

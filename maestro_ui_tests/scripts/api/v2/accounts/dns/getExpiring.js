@@ -115,13 +115,12 @@ const day = date.getUTCDate();
 const month = date.toLocaleString('en', { month: 'short', timeZone: 'UTC' });
 const year = date.getUTCFullYear();
 
+// The app renders the date with DateFormatter "dd MMM yyyy" ("12 Sep 2027"); Intl's en-GB
+// short month is "Sept" on newer ICU, so build it from fixed English abbreviations.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const d = new Date();
 d.setFullYear(d.getFullYear() + 1);
-const formatted = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-}).format(d);
+const formatted = String(d.getDate()).padStart(2, '0') + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
 
 output.dns = [];
 

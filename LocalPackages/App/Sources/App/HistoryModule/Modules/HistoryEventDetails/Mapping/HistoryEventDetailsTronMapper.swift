@@ -65,8 +65,8 @@ final class HistoryEventDetailsTronMapper {
 
         let title = amountFormatter.format(
             amount: event.amount,
-            fractionDigits: TronSwift.USDT.fractionDigits,
-            accessory: .tokenSymbol(TronSwift.USDT.symbol),
+            fractionDigits: event.token.fractionDigits,
+            accessory: .tokenSymbol(event.token.symbol),
             isNegative: amountType == .outcome
         )
 
@@ -91,12 +91,12 @@ final class HistoryEventDetailsTronMapper {
 
         let fiatPrice: String? = {
             let currency = currencyStore.getState()
-            guard let rate = tonRatesStore.getState().usdtRates.first(where: { $0.currency == currency }) else {
+            guard let rate = rate(for: event.token, currency: currency) else {
                 return nil
             }
             let fiat = rateConverter.convert(
                 amount: event.amount,
-                amountFractionLength: TronSwift.USDT.fractionDigits,
+                amountFractionLength: event.token.fractionDigits,
                 rate: rate
             )
 
@@ -107,16 +107,27 @@ final class HistoryEventDetailsTronMapper {
             )
         }()
 
+        let headerImage: TransactionConfirmationHeaderImageItemView.Configuration = switch event.token {
+        case .usdt:
+            TransactionConfirmationHeaderImageItemView.Configuration(
+                image: .image(.TKUIKit.Icons.Size96.currencyUsdt),
+                corners: .circle,
+                badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge(
+                    image: .image(.TKUIKit.Icons.Size44.currencyTrc20)
+                )
+            )
+        case .trx:
+            TransactionConfirmationHeaderImageItemView.Configuration(
+                image: .image(.TKUIKit.Icons.Size44.trxChain),
+                corners: .circle,
+                badge: nil
+            )
+        }
+
         return HistoryEventDetailsModel(
             headerImage: .transfer(
                 TransactionConfirmationHeaderImageItem(
-                    configuration: TransactionConfirmationHeaderImageItemView.Configuration(
-                        image: .image(.TKUIKit.Icons.Size96.currencyUsdt),
-                        corners: .circle,
-                        badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge(
-                            image: .image(.TKUIKit.Icons.Size44.currencyTrc20)
-                        )
-                    ),
+                    configuration: headerImage,
                     bottomSpace: 20
                 )
             ),
@@ -129,5 +140,18 @@ final class HistoryEventDetailsTronMapper {
             listItems: listItems,
             detailsButton: detailsButton
         )
+    }
+
+    private func rate(for token: TronToken, currency: Currency) -> Rates.Rate? {
+        let rates = tonRatesStore.getState()
+        let tokenRates: [Rates.Rate] = switch token {
+        case .usdt:
+            rates.usdtRates
+        case .trx:
+            rates.jettonRates
+                .first { $0.key.caseInsensitiveCompare(TronSwift.TRX.symbol) == .orderedSame }?
+                .value ?? []
+        }
+        return tokenRates.first { $0.currency == currency }
     }
 }

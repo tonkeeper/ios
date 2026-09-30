@@ -1,9 +1,9 @@
-/// The battery option comes first, in engine order, so a swap that can be relayed is preselected over
+/// The relayed methods come first, in engine order, so a swap that can be relayed is preselected over
 /// spending the chain's own coin.
 struct MultichainSwapFeeMethodResolver {
-    private let engines: [any MultichainSwapBatteryFeeEngine]
+    private let engines: [any MultichainSwapRelayedFeeEngine]
 
-    init(engines: [any MultichainSwapBatteryFeeEngine]) {
+    init(engines: [any MultichainSwapRelayedFeeEngine]) {
         self.engines = engines
     }
 
@@ -15,11 +15,8 @@ struct MultichainSwapFeeMethodResolver {
         var options = [MultichainSwapFeeOption]()
         // The engine that prices the swap is the one that would send it, so the row the user picks and
         // the engine that honours it cannot come apart.
-        if let context,
-           let engine = engine(payload: context.payload),
-           let option = await engine.option(context: context)
-        {
-            options.append(option)
+        if let context, let engine = engine(payload: context.payload) {
+            options.append(contentsOf: await engine.options(context: context))
         }
         if !nativeFees.isEmpty {
             options.append(
@@ -31,7 +28,7 @@ struct MultichainSwapFeeMethodResolver {
 
     func engine(
         payload: MultichainSwapBatteryPayload
-    ) -> (any MultichainSwapBatteryFeeEngine)? {
+    ) -> (any MultichainSwapRelayedFeeEngine)? {
         engines.first { $0.chain == payload.chain }
     }
 }

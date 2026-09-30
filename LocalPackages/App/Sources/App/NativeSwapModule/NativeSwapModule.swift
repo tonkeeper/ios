@@ -14,11 +14,13 @@ struct NativeSwapModule {
     func swapCoordinator(
         wallet: Wallet,
         nativeSwapContext: NativeSwapContext,
+        initiatedBy: InitiatedBy,
         router: NavigationControllerRouter
     ) -> NativeSwapCoordinator {
         NativeSwapCoordinator(
             wallet: wallet,
             nativeSwapContext: nativeSwapContext,
+            initiatedBy: initiatedBy,
             router: router,
             coreAssembly: dependencies.coreAssembly,
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly

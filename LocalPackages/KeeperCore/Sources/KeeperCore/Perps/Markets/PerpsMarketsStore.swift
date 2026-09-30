@@ -150,6 +150,10 @@ public final class PerpsMarketsStore: Store<PerpsMarketsStore.Event, PerpsMarket
         await controller.price(marketId: marketId)
     }
 
+    public func livePrice(marketId: Int64) async -> Double? {
+        await controller.livePrice(marketId: marketId)
+    }
+
     public func snapshot(marketId: Int64) async -> PerpsAssetMarketSnapshot? {
         await controller.snapshot(marketId: marketId)
     }
@@ -257,6 +261,10 @@ private actor PerpsMarketsController {
         }
         guard let index = itemIndexById[marketId], items[index].hasPrice else { return nil }
         return items[index].price
+    }
+
+    func livePrice(marketId: Int64) -> Double? {
+        livePrices[marketId]
     }
 
     func snapshot(marketId: Int64) async -> PerpsAssetMarketSnapshot? {

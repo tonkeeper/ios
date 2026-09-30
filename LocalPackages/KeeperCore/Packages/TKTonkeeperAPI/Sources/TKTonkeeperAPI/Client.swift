@@ -1546,6 +1546,13 @@ public struct Client: APIProtocol {
                     name: "features",
                     value: input.query.features
                 )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "is_new",
+                    value: input.query.is_new
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -1742,6 +1749,13 @@ public struct Client: APIProtocol {
                     name: "features",
                     value: input.query.features
                 )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "is_new",
+                    value: input.query.is_new
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -1934,6 +1948,13 @@ public struct Client: APIProtocol {
                     explode: true,
                     name: "features",
                     value: input.query.features
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "is_new",
+                    value: input.query.is_new
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,

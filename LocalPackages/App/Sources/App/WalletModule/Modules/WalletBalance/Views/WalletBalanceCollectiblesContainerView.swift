@@ -16,7 +16,7 @@ final class WalletBalanceCollectiblesContainerView: UIView {
     }
 
     func configure(viewModel: WalletBalanceMultichainCollectiblesViewModel) {
-        hostingView.setContent {
+        hostingView.setContent(id: viewModel.wallet.id) {
             WalletBalanceMultichainCollectiblesView(viewModel: viewModel)
         }
     }

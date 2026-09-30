@@ -1627,6 +1627,10 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/walletIdQuery`.
         public typealias walletIdQuery = Swift.String
+        /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+        ///
+        /// - Remark: Generated from `#/components/parameters/isNewUserQuery`.
+        public typealias isNewUserQuery = Swift.Bool
     }
     /// Types generated from the `#/components/requestBodies` section of the OpenAPI document.
     public enum RequestBodies {}
@@ -4600,6 +4604,10 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/stories/GET/query/features`.
                 public var features: Components.Parameters.featuresQuery?
+                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                ///
+                /// - Remark: Generated from `#/paths/stories/GET/query/is_new`.
+                public var is_new: Components.Parameters.isNewUserQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
@@ -4614,6 +4622,7 @@ public enum Operations {
                 ///   - is_vpn_active: Whether VPN is currently active
                 ///   - wallet_id: Stable wallet identifier
                 ///   - features: Comma-separated list of feature flags open on this client, e.g. "multichain". Free-form strings; names the server does not know are ignored.
+                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
                 public init(
                     ids: Components.Parameters.storyIdsQuery,
                     lang: Components.Parameters.langQuery? = nil,
@@ -4625,7 +4634,8 @@ public enum Operations {
                     timezone: Components.Parameters.timezoneQuery? = nil,
                     is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
                     wallet_id: Components.Parameters.walletIdQuery? = nil,
-                    features: Components.Parameters.featuresQuery? = nil
+                    features: Components.Parameters.featuresQuery? = nil,
+                    is_new: Components.Parameters.isNewUserQuery? = nil
                 ) {
                     self.ids = ids
                     self.lang = lang
@@ -4638,6 +4648,7 @@ public enum Operations {
                     self.is_vpn_active = is_vpn_active
                     self.wallet_id = wallet_id
                     self.features = features
+                    self.is_new = is_new
                 }
             }
             public var query: Operations.getStoriesBatch.Input.Query
@@ -4854,6 +4865,10 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/stories/{story_id}/GET/query/features`.
                 public var features: Components.Parameters.featuresQuery?
+                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                ///
+                /// - Remark: Generated from `#/paths/stories/{story_id}/GET/query/is_new`.
+                public var is_new: Components.Parameters.isNewUserQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
@@ -4867,6 +4882,7 @@ public enum Operations {
                 ///   - is_vpn_active: Whether VPN is currently active
                 ///   - wallet_id: Stable wallet identifier
                 ///   - features: Comma-separated list of feature flags open on this client, e.g. "multichain". Free-form strings; names the server does not know are ignored.
+                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
                 public init(
                     lang: Components.Parameters.langQuery? = nil,
                     build: Components.Parameters.buildQuery? = nil,
@@ -4877,7 +4893,8 @@ public enum Operations {
                     timezone: Components.Parameters.timezoneQuery? = nil,
                     is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
                     wallet_id: Components.Parameters.walletIdQuery? = nil,
-                    features: Components.Parameters.featuresQuery? = nil
+                    features: Components.Parameters.featuresQuery? = nil,
+                    is_new: Components.Parameters.isNewUserQuery? = nil
                 ) {
                     self.lang = lang
                     self.build = build
@@ -4889,6 +4906,7 @@ public enum Operations {
                     self.is_vpn_active = is_vpn_active
                     self.wallet_id = wallet_id
                     self.features = features
+                    self.is_new = is_new
                 }
             }
             public var query: Operations.getStories.Input.Query
@@ -5093,6 +5111,10 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/banners/GET/query/features`.
                 public var features: Components.Parameters.featuresQuery?
+                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
+                ///
+                /// - Remark: Generated from `#/paths/banners/GET/query/is_new`.
+                public var is_new: Components.Parameters.isNewUserQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
@@ -5106,6 +5128,7 @@ public enum Operations {
                 ///   - is_vpn_active: Whether VPN is currently active
                 ///   - wallet_id: Stable wallet identifier
                 ///   - features: Comma-separated list of feature flags open on this client, e.g. "multichain". Free-form strings; names the server does not know are ignored.
+                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
                 public init(
                     lang: Components.Parameters.langQuery? = nil,
                     build: Components.Parameters.buildQuery? = nil,
@@ -5116,7 +5139,8 @@ public enum Operations {
                     timezone: Components.Parameters.timezoneQuery? = nil,
                     is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
                     wallet_id: Components.Parameters.walletIdQuery? = nil,
-                    features: Components.Parameters.featuresQuery? = nil
+                    features: Components.Parameters.featuresQuery? = nil,
+                    is_new: Components.Parameters.isNewUserQuery? = nil
                 ) {
                     self.lang = lang
                     self.build = build
@@ -5128,6 +5152,7 @@ public enum Operations {
                     self.is_vpn_active = is_vpn_active
                     self.wallet_id = wallet_id
                     self.features = features
+                    self.is_new = is_new
                 }
             }
             public var query: Operations.getBanners.Input.Query

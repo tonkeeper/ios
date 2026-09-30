@@ -1,0 +1,50 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_ton_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 15000
+- extendedWaitUntil:
+    visible: Swap
+    timeout: 180000
+- tapOn: Swap
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    id: input_value
+    index: 0
+    waitToSettleTimeoutMs: 4000
+    retryTapIfNoChange: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 1500
+- eraseText
+- setClipboard: "1"
+- pasteText
+
+- tapOn:
+    id: token_title
+    index: 1
+- assertVisible: Crypto
+# The picker filters locally over the remote v2/swap/assets list — give it time to load
+# before searching (optional: don't hard-depend on USD₮'s position in the unfiltered list).
+- extendedWaitUntil:
+    visible: "USDT"
+    timeout: 20000
+    optional: true
+- tapOn: "Search"
+- inputText: "usde"
+# Several symbols/names contain "NO" and the sheet has no keyboard avoidance,
+# so the NOT row can be ranked below the keyboard — scroll the results to it.
+- scrollUntilVisible:
+    element: USDe
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    text: "USDe"
+    index: 1
+- assertVisible: USDe
+

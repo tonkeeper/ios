@@ -154,6 +154,26 @@ final class MultichainMiddlewaresTests: XCTestCase {
         XCTAssertNil(try request.headerFields[XCTUnwrap(.init("X-Wallet-Authorization"))])
     }
 
+    /// An extension can drop the graph that owns the session before a client is built from it.
+    /// The request still goes out with whatever was resolved, and a rejection stands: nothing is
+    /// left that could mint a fresh credential to replay with.
+    func test_walletAuthStack_withoutRecovery_sendsTheRequestAndDoesNotRetry() async throws {
+        let attempts = try await attempts(
+            middlewares: WalletAuthClientMiddlewares.make(
+                deviceJWT: "device-jwt",
+                walletId: "wallet-id",
+                walletAuthToken: "wallet-auth-token",
+                recovery: nil
+            ),
+            operationID: MultichainAPI.Operations.getWalletActivities.id,
+            responses: [HTTPResponse(status: .unauthorized), HTTPResponse(status: .ok)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 1)
+        XCTAssertEqual(attempts.response.status, .unauthorized)
+        XCTAssertEqual(attempts.requests.first?.headerFields[.authorization], "Bearer device-jwt")
+    }
+
     /// The access token these operations carry lives 15 minutes, so a rejected one has to be
     /// refreshed and the request replayed rather than surfaced as a failed load.
     func test_unauthorized_refreshesTheSessionAndReplaysTheRequest() async throws {
@@ -271,24 +291,191 @@ final class MultichainMiddlewaresTests: XCTestCase {
         XCTAssertEqual(attempts.requests.count, 2)
     }
 
-    /// Without a session the request never claimed to be authenticated, so a 401 is the backend's
-    /// verdict on the wallet rather than something a refresh can fix.
-    func test_unauthorized_withoutASession_isNotRetried() async throws {
-        let deviceAuth = DeviceAuthRecoveryFake(recovered: .init(deviceId: "device-1", accessToken: "fresh-jwt"))
+    /// The credentials are captured when the client is built, and on a cold launch the device
+    /// session is not resolved yet — the access token is memory-only. Rather than go out bare and
+    /// collect a `wallet_proof_required`, the request picks both up here, at the moment it is sent.
+    func test_missingCredentials_areResolvedBeforeTheFirstAttempt() async throws {
+        let deviceAuth = DeviceAuthRecoveryFake(recovered: nil)
         let attempts = try await attempts(
-            middlewares: [
-                WalletAuthRecoveryMiddleware(
-                    walletId: "wallet-id",
-                    accessToken: "",
-                    deviceAuth: deviceAuth,
-                    walletAuthTokenProvider: WalletAuthTokenFake()
-                ),
-            ],
-            responses: [HTTPResponse(status: .unauthorized)]
+            middlewares: stack(deviceJWT: "", walletAuthToken: nil, deviceAuth: deviceAuth)
         )
 
         XCTAssertEqual(attempts.requests.count, 1)
+        // Nothing was rejected, so the session is read rather than renewed.
         XCTAssertEqual(deviceAuth.invalidated, [])
+        let sent = try XCTUnwrap(attempts.requests.first)
+        XCTAssertEqual(sent.headerFields[.authorization], "Bearer stale-jwt")
+        XCTAssertEqual(
+            try sent.headerFields[XCTUnwrap(.init("X-Wallet-Authorization"))],
+            "signed(wallet-id,stale-jwt)"
+        )
+        XCTAssertEqual(try sent.headerFields[XCTUnwrap(.init("X-Wallet-ID"))], "wallet-id")
+    }
+
+    /// A session resolved here is the one a 401 then invalidates, so the recovery works for a
+    /// request the stack above could not credential at all.
+    func test_unauthorized_afterResolvingTheSessionHere_recoversAndReplays() async throws {
+        let deviceAuth = DeviceAuthRecoveryFake(recovered: .init(deviceId: "device-1", accessToken: "fresh-jwt"))
+        let attempts = try await attempts(
+            middlewares: stack(deviceJWT: "", walletAuthToken: nil, deviceAuth: deviceAuth),
+            responses: [HTTPResponse(status: .unauthorized), HTTPResponse(status: .ok)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 2)
+        XCTAssertEqual(attempts.response.status, .ok)
+        XCTAssertEqual(deviceAuth.invalidated, ["stale-jwt"])
+        let retried = try XCTUnwrap(attempts.requests.last)
+        XCTAssertEqual(retried.headerFields[.authorization], "Bearer fresh-jwt")
+        XCTAssertEqual(
+            try retried.headerFields[XCTUnwrap(.init("X-Wallet-Authorization"))],
+            "signed(wallet-id,fresh-jwt)"
+        )
+    }
+
+    /// Credentials the stack above did apply are left alone: re-resolving them would be a Keychain
+    /// read on every request for a token that is already there.
+    func test_appliedCredentials_areNotReresolved() async throws {
+        let walletAuth = WalletAuthTokenFake()
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "stale-jwt",
+                walletAuthToken: "stale-credential",
+                deviceAuth: DeviceAuthRecoveryFake(recovered: nil),
+                walletAuth: walletAuth
+            )
+        )
+
+        let sent = try XCTUnwrap(attempts.requests.first)
+        XCTAssertEqual(sent.headerFields[.authorization], "Bearer stale-jwt")
+        XCTAssertEqual(
+            try sent.headerFields[XCTUnwrap(.init("X-Wallet-Authorization"))],
+            "stale-credential"
+        )
+        XCTAssertEqual(walletAuth.invalidated, [])
+    }
+
+    /// The 403 the ticket reports: the device session was accepted and the wallet credential was
+    /// not, so the credential is dropped and reminted rather than the session refreshed.
+    func test_forbidden_remintsTheWalletCredentialAndReplaysOnce() async throws {
+        let deviceAuth = DeviceAuthRecoveryFake(recovered: nil)
+        let walletAuth = WalletAuthTokenFake()
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "stale-jwt",
+                walletAuthToken: "stale-credential",
+                deviceAuth: deviceAuth,
+                walletAuth: walletAuth
+            ),
+            responses: [HTTPResponse(status: .forbidden), HTTPResponse(status: .ok)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 2)
+        XCTAssertEqual(attempts.response.status, .ok)
+        XCTAssertEqual(walletAuth.invalidated, ["wallet-id"])
+        // The device session is intact, so it is neither invalidated nor rotated.
+        XCTAssertEqual(deviceAuth.invalidated, [])
+        let retried = try XCTUnwrap(attempts.requests.last)
+        XCTAssertEqual(retried.headerFields[.authorization], "Bearer stale-jwt")
+        XCTAssertEqual(
+            try retried.headerFields[XCTUnwrap(.init("X-Wallet-Authorization"))],
+            "signed(wallet-id,stale-jwt)"
+        )
+        XCTAssertEqual(try retried.headerFields[XCTUnwrap(.init("X-Wallet-ID"))], "wallet-id")
+    }
+
+    /// A wallet this install has no app key for has nothing to remint, and a device the backend has
+    /// no binding for is not something the client can repair — so the 403 stands without spending a
+    /// second round trip on identical headers.
+    func test_forbidden_withNothingToRemint_isNotRetried() async throws {
+        let walletAuth = WalletAuthTokenFake(hasAppKey: false)
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "stale-jwt",
+                walletAuthToken: nil,
+                deviceAuth: DeviceAuthRecoveryFake(recovered: nil),
+                walletAuth: walletAuth
+            ),
+            responses: [HTTPResponse(status: .forbidden)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 1)
+        XCTAssertEqual(attempts.response.status, .forbidden)
+        XCTAssertEqual(walletAuth.invalidated, ["wallet-id"])
+    }
+
+    /// The remint buys one replay, not a loop.
+    func test_forbiddenTwice_retriesOnceAndReportsTheSecondRejection() async throws {
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "stale-jwt",
+                walletAuthToken: "stale-credential",
+                deviceAuth: DeviceAuthRecoveryFake(recovered: nil)
+            ),
+            responses: [HTTPResponse(status: .forbidden)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 2)
+        XCTAssertEqual(attempts.response.status, .forbidden)
+    }
+
+    /// Without a session there is nothing to sign a credential over — not before the request and
+    /// not after — so the 403 is left as it was rather than replayed with the same empty headers.
+    func test_forbidden_whenTheSessionCannotBeResolved_isNotRetried() async throws {
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "",
+                walletAuthToken: nil,
+                deviceAuth: DeviceAuthRecoveryFake(recovered: nil, sessionError: .connectionError)
+            ),
+            responses: [HTTPResponse(status: .forbidden)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 1)
+        XCTAssertEqual(attempts.response.status, .forbidden)
+    }
+
+    func test_forbidden_withASinglePassBody_isNotRetried() async throws {
+        let walletAuth = WalletAuthTokenFake()
+        let attempts = try await attempts(
+            middlewares: stack(
+                deviceJWT: "stale-jwt",
+                walletAuthToken: "stale-credential",
+                deviceAuth: DeviceAuthRecoveryFake(recovered: nil),
+                walletAuth: walletAuth
+            ),
+            body: HTTPBody(
+                AsyncStream<[UInt8]> { continuation in
+                    continuation.yield(Array("{}".utf8))
+                    continuation.finish()
+                },
+                length: .unknown,
+                iterationBehavior: .single
+            ),
+            responses: [HTTPResponse(status: .forbidden)]
+        )
+
+        XCTAssertEqual(attempts.requests.count, 1)
+        XCTAssertEqual(walletAuth.invalidated, [])
+    }
+
+    /// Only the two rejections the credentials can explain are repaired; anything else is the
+    /// caller's answer.
+    func test_otherStatuses_areNotRetried() async throws {
+        for status in [HTTPResponse.Status.notFound, .tooManyRequests, .internalServerError] {
+            let walletAuth = WalletAuthTokenFake()
+            let attempts = try await attempts(
+                middlewares: stack(
+                    deviceJWT: "stale-jwt",
+                    walletAuthToken: "stale-credential",
+                    deviceAuth: DeviceAuthRecoveryFake(recovered: nil),
+                    walletAuth: walletAuth
+                ),
+                responses: [HTTPResponse(status: status)]
+            )
+
+            XCTAssertEqual(attempts.requests.count, 1)
+            XCTAssertEqual(walletAuth.invalidated, [])
+        }
     }
 
     func test_deviceAuthStack_sendsFirebaseUserIdAndAuthorizationForBindings() async throws {
@@ -343,10 +530,24 @@ private extension MultichainMiddlewaresTests {
         walletAuth: WalletAuthTokenFake = WalletAuthTokenFake(),
         accessToken: String = "stale-jwt"
     ) -> [any ClientMiddleware] {
-        WalletAuthClientMiddlewares.make(
+        stack(
             deviceJWT: accessToken,
-            walletId: "wallet-id",
             walletAuthToken: "signed(wallet-id,\(accessToken))",
+            deviceAuth: deviceAuth,
+            walletAuth: walletAuth
+        )
+    }
+
+    func stack(
+        deviceJWT: String,
+        walletAuthToken: String?,
+        deviceAuth: DeviceAuthRecoveryFake,
+        walletAuth: WalletAuthTokenFake = WalletAuthTokenFake()
+    ) -> [any ClientMiddleware] {
+        WalletAuthClientMiddlewares.make(
+            deviceJWT: deviceJWT,
+            walletId: "wallet-id",
+            walletAuthToken: walletAuthToken,
             recovery: MultichainWalletAuthDependencies(
                 deviceAuth: deviceAuth,
                 walletAuthTokenProvider: walletAuth
@@ -448,6 +649,7 @@ private final class DeviceAuthRecoveryFake: DeviceAuthProviding, @unchecked Send
 
 private final class WalletAuthTokenFake: WalletAuthTokenProviding, @unchecked Sendable {
     private let hasAppKey: Bool
+    private(set) var invalidated = [String]()
 
     init(hasAppKey: Bool = true) {
         self.hasAppKey = hasAppKey
@@ -455,6 +657,10 @@ private final class WalletAuthTokenFake: WalletAuthTokenProviding, @unchecked Se
 
     func token(walletId: String, accessToken: String) async -> String? {
         hasAppKey ? "signed(\(walletId),\(accessToken))" : nil
+    }
+
+    func invalidateToken(walletId: String) async {
+        invalidated.append(walletId)
     }
 
     func hasPersistentAppKey(walletId _: String) async -> Bool {

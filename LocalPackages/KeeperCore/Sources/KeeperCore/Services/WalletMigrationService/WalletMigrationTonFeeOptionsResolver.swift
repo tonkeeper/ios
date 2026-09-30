@@ -1,6 +1,5 @@
 import BigInt
 import Foundation
-import TKFeatureFlags
 
 struct WalletMigrationTonFeeOptionsResolver {
     private let configuration: Configuration
@@ -23,9 +22,7 @@ struct WalletMigrationTonFeeOptionsResolver {
             methods.append(.ton(amountNano: selfTotalFees))
         }
 
-        guard !configuration.featureEnabled(.migrationBatteryDisabled),
-              wallet.isBatteryEnable
-        else {
+        guard wallet.isBatteryEnable else {
             return methods
         }
 

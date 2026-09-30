@@ -5,6 +5,7 @@ import TKCore
 import TKLocalize
 import TonSwift
 
+@MainActor
 final class WalletBalanceBalanceModel {
     struct Item {
         let balanceItem: ProcessedBalanceItem
@@ -28,126 +29,83 @@ final class WalletBalanceBalanceModel {
 
     var didUpdateItems: ((BalanceListItems) -> Void)?
 
-    private let actor = SerialActor<Void>()
+    private(set) var wallet: Wallet
 
-    private let walletsStore: WalletsStore
     private let balanceStore: ManagedBalanceStore
     private let stackingPoolsStore: StakingPoolsStore
     private let appSettingsStore: AppSettingsStore
     private let configuration: Configuration
 
     init(
+        wallet: Wallet,
         walletsStore: WalletsStore,
         balanceStore: ManagedBalanceStore,
         stackingPoolsStore: StakingPoolsStore,
         appSettingsStore: AppSettingsStore,
         configuration: Configuration
     ) {
-        self.walletsStore = walletsStore
+        self.wallet = wallet
         self.balanceStore = balanceStore
         self.stackingPoolsStore = stackingPoolsStore
         self.appSettingsStore = appSettingsStore
         self.configuration = configuration
 
         walletsStore.addObserver(self) { observer, event in
-            observer.didGetWalletsStoreEvent(event)
+            Task { @MainActor in
+                observer.didGetWalletsStoreEvent(event)
+            }
         }
 
         balanceStore.addObserver(self) { observer, event in
-            observer.didGetBalanceStoreEvent(event)
+            Task { @MainActor in
+                switch event {
+                case let .didUpdateManagedBalance(wallet):
+                    guard observer.wallet == wallet else { return }
+                    observer.notifyItems()
+                }
+            }
         }
 
         stackingPoolsStore.addObserver(self) { observer, event in
-            observer.didGetStackingPoolsStoreEvent(event)
+            Task { @MainActor in
+                switch event {
+                case let .didUpdateStakingPools(wallet):
+                    guard observer.wallet == wallet else { return }
+                    observer.notifyItems()
+                }
+            }
         }
 
-        appSettingsStore.addObserver(self) { observer, event in
-            observer.didGetAppSettingsStoreEvent(event)
+        appSettingsStore.addObserver(self) { observer, _ in
+            Task { @MainActor in
+                observer.notifyItems()
+            }
         }
     }
 
-    func getItems() throws -> BalanceListItems {
-        let activeWallet = try walletsStore.activeWallet
-        let isSecureMode = appSettingsStore.getState().isSecureMode
-        let balanceState = balanceStore.getState()[activeWallet]
-        let stakingPools = stackingPoolsStore.getState()[activeWallet]
-        return createItems(
-            wallet: activeWallet,
-            balanceState: balanceState,
-            stakingPools: stakingPools ?? [],
-            isSecureMode: isSecureMode
+    func getItems() -> BalanceListItems {
+        createItems(
+            wallet: wallet,
+            balanceState: balanceStore.getState()[wallet],
+            stakingPools: stackingPoolsStore.getState()[wallet] ?? [],
+            isSecureMode: appSettingsStore.getState().isSecureMode
         )
     }
 
     private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-        Task {
-            switch event {
-            case .didChangeActiveWallet:
-                await self.actor.addTask(block: { await self.updateItems() })
-            case .didUpdateWalletMetaData:
-                await self.actor.addTask(block: { await self.updateItems() })
-            case let .didUpdateWalletMultichain(wallet):
-                switch walletsStore.getState() {
-                case .empty: break
-                case let .wallets(state):
-                    guard state.activeWallet == wallet else { return }
-                    await self.actor.addTask(block: { await self.updateItems() })
-                }
-            default: break
-            }
+        switch event {
+        case let .didUpdateWalletMetaData(wallet),
+             let .didUpdateWalletMultichain(wallet):
+            guard self.wallet == wallet else { return }
+            self.wallet = wallet
+            notifyItems()
+        default:
+            break
         }
     }
 
-    private func didGetBalanceStoreEvent(_ event: ManagedBalanceStore.Event) {
-        Task {
-            switch event {
-            case let .didUpdateManagedBalance(wallet):
-                switch walletsStore.getState() {
-                case .empty: break
-                case let .wallets(state):
-                    guard state.activeWallet == wallet else { return }
-                    await self.actor.addTask(block: { await self.updateItems() })
-                }
-            }
-        }
-    }
-
-    private func didGetStackingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
-        Task {
-            switch event {
-            case let .didUpdateStakingPools(wallet):
-                switch walletsStore.getState() {
-                case .empty: break
-                case let .wallets(state):
-                    guard state.activeWallet == wallet else { return }
-                    await self.actor.addTask(block: { await self.updateItems() })
-                }
-            }
-        }
-    }
-
-    private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
-        Task {
-            await self.actor.addTask(block: { await self.updateItems() })
-        }
-    }
-
-    private func updateItems() async {
-        let walletsStoreState = walletsStore.state
-        switch walletsStoreState {
-        case .empty: break
-        case let .wallets(walletsState):
-            let isSecureMode = appSettingsStore.state.isSecureMode
-            let balanceState = balanceStore.state[walletsState.activeWallet]
-            let stakingPools = stackingPoolsStore.state[walletsState.activeWallet]
-            let items = createItems(
-                wallet: walletsState.activeWallet,
-                balanceState: balanceState,
-                stakingPools: stakingPools ?? [],
-                isSecureMode: isSecureMode
-            )
-            didUpdateItems?(items)
-        }
+    private func notifyItems() {
+        didUpdateItems?(getItems())
     }
 
     private func createItems(

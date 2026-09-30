@@ -298,16 +298,5 @@
       "disable_ledger": false,
       "disable_v5r1": false
     }
-  },
-  "tetra": {
-    "disable_battery": true,
-    "tonapiV2Endpoint": "https://tetra.tonapi.io",
-    "tonapiMainnetHost": "https://keeper.tonapi.io",
-    "tonApiV2Key": "AF77F5JNEUSNXPQAAAAMDXXG7RBQ3IRP6PC2HTHL4KYRWMZYOUQGDEKYFDKBETZ6FDVZJBI",
-    "tonkeeperNewsUrl": "https://t.me/tonkeeper_ru",
-    "telegram_global": "https://t.me/tonkeeper_ru",
-    "tonCommunityUrl": "https://t.me/toncoin_rus",
-    "tonCommunityChatUrl": "https://t.me/toncoin_rus_chat",
-    "faq_url": "https://tonkeeper.helpscoutdocs.com"
   }
 }

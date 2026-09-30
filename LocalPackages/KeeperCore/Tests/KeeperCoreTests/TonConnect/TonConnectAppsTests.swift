@@ -47,6 +47,52 @@ final class TonConnectAppsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(TonConnectApp.self, from: metadataData)
 
         XCTAssertEqual(decoded.connectionType, .remote)
+        XCTAssertNil(decoded.manifestURL)
+        XCTAssertFalse(decoded.hasVerifiedManifestOrigin)
+    }
+
+    func testLegacyAppWithoutManifestURLIsPreservedWithoutBeingVerified() {
+        let app = makeApp(clientId: "client", host: "example.com")
+
+        XCTAssertFalse(app.hasVerifiedManifestOrigin)
+        XCTAssertTrue(app.shouldPreserveStoredConnection)
+    }
+
+    func testAppWithMatchingManifestOriginIsVerified() {
+        let app = makeApp(
+            clientId: "client",
+            host: "example.com",
+            manifestURL: URL(string: "https://EXAMPLE.com:443/tonconnect-manifest.json")
+        )
+
+        XCTAssertTrue(app.hasVerifiedManifestOrigin)
+        XCTAssertTrue(app.shouldPreserveStoredConnection)
+    }
+
+    func testAppWithMismatchedManifestOriginIsNotVerified() {
+        let app = makeApp(
+            clientId: "client",
+            host: "legitimate.example",
+            manifestURL: URL(string: "https://attacker.example/tonconnect-manifest.json")
+        )
+
+        XCTAssertFalse(app.hasVerifiedManifestOrigin)
+        XCTAssertFalse(app.shouldPreserveStoredConnection)
+    }
+
+    func testManifestURLRoundTripsThroughPersistenceEncoding() throws {
+        let manifestURL = try XCTUnwrap(URL(string: "https://example.com/tonconnect-manifest.json"))
+        let app = makeApp(
+            clientId: "client",
+            host: "example.com",
+            manifestURL: manifestURL
+        )
+
+        let data = try JSONEncoder().encode(app)
+        let decoded = try JSONDecoder().decode(TonConnectApp.self, from: data)
+
+        XCTAssertEqual(decoded.manifestURL, manifestURL)
+        XCTAssertTrue(decoded.hasVerifiedManifestOrigin)
     }
 
     func testRecordConnectionMetadataStoresPendingSourceByActualClientId() {
@@ -135,7 +181,8 @@ final class TonConnectAppsTests: XCTestCase {
 private extension TonConnectAppsTests {
     func makeApp(
         clientId: String,
-        host: String
+        host: String,
+        manifestURL: URL? = nil
     ) -> TonConnectApp {
         TonConnectApp(
             clientId: clientId,
@@ -143,6 +190,7 @@ private extension TonConnectAppsTests {
                 url: URL(string: "https://\(host)")!,
                 name: "Example"
             ),
+            manifestURL: manifestURL,
             keyPair: KeyPair(
                 publicKey: PublicKey(data: Data(repeating: 1, count: 32)),
                 privateKey: PrivateKey(data: Data(repeating: 2, count: 64))

@@ -215,9 +215,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     private var shouldShowMigrationSection: Bool {
         WalletMigrationVisibility.shouldShowMigrationSection(
             wallet: wallet,
-            wallets: walletsStore.wallets,
-            multichainEnabled: configuration.featureEnabled(.multichainEnabled),
-            migrationEnabled: configuration.featureEnabled(.migrationEnabled)
+            wallets: walletsStore.wallets
         )
     }
 

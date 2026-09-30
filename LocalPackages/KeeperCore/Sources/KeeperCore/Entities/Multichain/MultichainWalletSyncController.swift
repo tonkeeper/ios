@@ -24,11 +24,6 @@ public protocol MultichainWalletSyncController {
 // MARK: -
 
 struct MultichainWalletSyncControllerDependencies {
-    var isFeatureEnabled: () -> Bool
-    /// Detaching a stale binding needs the enrichment sweep to have settled every wallet, so it
-    /// stays on the full feature: under import-only multichain a legacy wallet keeps no state and
-    /// would look like it is still awaiting enrichment forever.
-    var isBindingsReconcileEnabled: () -> Bool
     var getWallets: () -> [Wallet]
     var getMnemonics: (_ wallets: [Wallet], _ passcode: String) async throws -> [CoreMnemonicIdentifier: CoreMnemonic]
     var syncWallet: (_ mnemonic: String, _ state: MultichainWalletState) async throws(MultichainServiceError) -> Void
@@ -114,26 +109,16 @@ final class MultichainWalletSyncControllerImplementation {
 
 extension MultichainWalletSyncControllerImplementation: MultichainWalletSyncController {
     var needsStartupSync: Bool {
-        guard dependencies.isFeatureEnabled() else {
-            return false
-        }
-        return !walletsNeedingSync().isEmpty
+        !walletsNeedingSync().isEmpty
     }
 
     func needsStartupAppKeyWarm() async -> Bool {
-        guard dependencies.isFeatureEnabled() else {
-            return false
-        }
-        return !(await walletsNeedingAppKeyWarm()).isEmpty
+        !(await walletsNeedingAppKeyWarm()).isEmpty
     }
 
     func syncPendingWallets(passcode: String) async {
-        // Checked before the gate so a disabled call does not queue behind anything.
-        guard dependencies.isFeatureEnabled() else {
-            return
-        }
         guard await gate.acquire() else { return }
-        guard !Task.isCancelled, dependencies.isFeatureEnabled() else {
+        guard !Task.isCancelled else {
             await gate.release()
             return
         }
@@ -142,11 +127,8 @@ extension MultichainWalletSyncControllerImplementation: MultichainWalletSyncCont
     }
 
     func warmMissingAppKeys(passcode: String) async {
-        guard dependencies.isFeatureEnabled() else {
-            return
-        }
         guard await gate.acquire() else { return }
-        guard !Task.isCancelled, dependencies.isFeatureEnabled() else {
+        guard !Task.isCancelled else {
             await gate.release()
             return
         }
@@ -156,11 +138,8 @@ extension MultichainWalletSyncControllerImplementation: MultichainWalletSyncCont
 
     @discardableResult
     func reconcileBindings() async -> Bool {
-        guard dependencies.isBindingsReconcileEnabled() else {
-            return true
-        }
         guard await gate.acquire() else { return false }
-        guard !Task.isCancelled, dependencies.isBindingsReconcileEnabled() else {
+        guard !Task.isCancelled else {
             await gate.release()
             return false
         }

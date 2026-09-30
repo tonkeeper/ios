@@ -34,8 +34,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         let persistenceSpy = MultichainPersistenceSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.eth, .btc],
                 getWallets: {
                     [
@@ -109,8 +107,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         let persistenceSpy = MultichainPersistenceSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.eth, .btc],
                 getWallets: {
                     [
@@ -150,8 +146,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         let persistenceSpy = MultichainPersistenceSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.ton],
                 getWallets: { [v4Wallet, v5Wallet] },
                 getMnemonics: mnemonicsSpy.getMnemonics,
@@ -202,8 +196,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         ]
         let recheck = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.ton],
                 getWallets: { enrichedWallets },
                 getMnemonics: { _, _ in [:] },
@@ -230,8 +222,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         )
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { true },
-                isImportEnrichmentEnabled: { true },
                 supportedChains: [.eth],
                 getWallets: { [wallet] },
                 getMnemonics: { _, _ in [:] },
@@ -244,93 +234,6 @@ final class MultichainWalletEnricherTests: XCTestCase {
         )
 
         XCTAssertTrue(enricher.needsStartupEnrichment)
-    }
-
-    func test_enrichWallets_skipsWalletsOutsideTheGivenScope() async {
-        let importedWallet = makeWallet(id: "imported-wallet")
-        let legacyWallet = makeWallet(id: "legacy-wallet")
-        let mnemonicsSpy = MultichainMnemonicsSpy(
-            mnemonics: [
-                importedWallet.id: CoreMnemonic(
-                    mnemonicWords: Array(repeating: "abandon", count: 12),
-                    type: .bip39
-                ),
-                legacyWallet.id: CoreMnemonic(
-                    mnemonicWords: Array(repeating: "ability", count: 12),
-                    type: .bip39
-                ),
-            ]
-        )
-        let persistenceSpy = MultichainPersistenceSpy()
-        let enricher = MultichainWalletEnricherImplementation(
-            dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { false },
-                isImportEnrichmentEnabled: { true },
-                supportedChains: [.eth],
-                getWallets: { [importedWallet, legacyWallet] },
-                getMnemonics: mnemonicsSpy.getMnemonics,
-                deriveWallet: { _ in
-                    MultichainWalletState(
-                        walletId: "derived-wallet-id",
-                        addresses: [self.makeAddress(chain: .eth, address: "0xderived")]
-                    )
-                },
-                saveWallet: persistenceSpy.saveWallet
-            )
-        )
-
-        await enricher.enrichWallets([importedWallet], passcode: "1234")
-
-        XCTAssertEqual(mnemonicsSpy.requestedWalletIds, [[importedWallet.id]])
-        XCTAssertEqual(persistenceSpy.savedWalletIds, [importedWallet.id])
-    }
-
-    func test_enrichWallets_doesNothingWhenImportEnrichmentIsDisabled() async {
-        let wallet = makeWallet(id: "imported-wallet")
-        let mnemonicsSpy = MultichainMnemonicsSpy(mnemonics: [:])
-        let persistenceSpy = MultichainPersistenceSpy()
-        let enricher = MultichainWalletEnricherImplementation(
-            dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { false },
-                isImportEnrichmentEnabled: { false },
-                supportedChains: [.eth],
-                getWallets: { [wallet] },
-                getMnemonics: mnemonicsSpy.getMnemonics,
-                deriveWallet: { _ in
-                    XCTFail("Disabled enrichment must not derive")
-                    return MultichainWalletState(walletId: "unexpected", addresses: [])
-                },
-                saveWallet: persistenceSpy.saveWallet
-            )
-        )
-
-        await enricher.enrichWallets([wallet], passcode: "1234")
-
-        XCTAssertTrue(persistenceSpy.savedWalletIds.isEmpty)
-    }
-
-    func test_enrichMissingWallets_doesNotSweepWhenOnlyImportEnrichmentIsEnabled() async {
-        let wallet = makeWallet(id: "legacy-wallet")
-        let persistenceSpy = MultichainPersistenceSpy()
-        let enricher = MultichainWalletEnricherImplementation(
-            dependencies: MultichainWalletEnricherDependencies(
-                isFeatureEnabled: { false },
-                isImportEnrichmentEnabled: { true },
-                supportedChains: [.eth],
-                getWallets: { [wallet] },
-                getMnemonics: { _, _ in [:] },
-                deriveWallet: { _ in
-                    XCTFail("Sweep must not derive while the multichain rollout is off")
-                    return MultichainWalletState(walletId: "unexpected", addresses: [])
-                },
-                saveWallet: persistenceSpy.saveWallet
-            )
-        )
-
-        await enricher.enrichMissingWallets(passcode: "1234")
-
-        XCTAssertFalse(enricher.needsStartupEnrichment)
-        XCTAssertTrue(persistenceSpy.savedWalletIds.isEmpty)
     }
 }
 

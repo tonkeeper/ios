@@ -53,6 +53,7 @@ public struct TonConnectApp: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.clientId = try container.decode(String.self, forKey: .clientId)
         self.manifest = try container.decode(TonConnectManifest.self, forKey: .manifest)
+        self.manifestURL = try container.decodeIfPresent(URL.self, forKey: .manifestURL)
         self.keyPair = try container.decode(KeyPair.self, forKey: .keyPair)
         do {
             self.connectionType = try container.decode(TonConnectApp.ConnectionType.self, forKey: .connectionType)
@@ -64,17 +65,33 @@ public struct TonConnectApp: Codable, Equatable {
     public init(
         clientId: String,
         manifest: TonConnectManifest,
+        manifestURL: URL? = nil,
         keyPair: TonSwift.KeyPair,
         connectionType: ConnectionType
     ) {
         self.clientId = clientId
         self.manifest = manifest
+        self.manifestURL = manifestURL
         self.keyPair = keyPair
         self.connectionType = connectionType
     }
 
     public let clientId: String
     public let manifest: TonConnectManifest
+    public let manifestURL: URL?
     public let keyPair: TonSwift.KeyPair
     public let connectionType: ConnectionType
+
+    var hasVerifiedManifestOrigin: Bool {
+        guard let manifestURL,
+              let manifestOrigin = manifest.url.normalizedOrigin
+        else {
+            return false
+        }
+        return manifestURL.normalizedOrigin == manifestOrigin
+    }
+
+    var shouldPreserveStoredConnection: Bool {
+        manifestURL == nil || hasVerifiedManifestOrigin
+    }
 }

@@ -47,6 +47,7 @@ extension BootConfiguration {
         tronSwapUrl = (try? container.decode(String.self, forKey: .tronSwapUrl)) ?? empty.tronSwapUrl
         tronSwapTitle = (try? container.decode(String.self, forKey: .tronSwapTitle)) ?? empty.tronSwapTitle
         tonkeeperApiUrl = try? container.decodeIfPresent(String.self, forKey: .tonkeeperApiUrl)
+        aptabaseEndpoint = try? container.decodeIfPresent(String.self, forKey: .aptabaseEndpoint)
         multichainHelpUrl = try? container.decodeIfPresent(URL.self, forKey: .multichainHelpUrl) ?? empty.multichainHelpUrl
         multichain = (try? container.decode(Endpoint.self, forKey: .multichain)) ?? empty.multichain
         trading = (try? container.decode(Endpoint.self, forKey: .trading)) ?? empty.trading
@@ -95,6 +96,7 @@ extension BootConfiguration {
         case tronSwapUrl = "tron_swap_url"
         case tronSwapTitle = "tron_swap_title"
         case tonkeeperApiUrl = "tonkeeper_api_url"
+        case aptabaseEndpoint = "aptabase_endpoint"
         case multichainHelpUrl = "multichain_help_url"
         case multichain
         case trading
@@ -128,7 +130,6 @@ extension BootConfiguration.Flags {
         nftsDisabled = value(.nftsDisabled, default: defaults.nftsDisabled)
         nativeSwapDisabled = value(.nativeSwapDisabled, default: defaults.nativeSwapDisabled)
         trxOnlyRegion = value(.trxOnlyRegion, default: defaults.trxOnlyRegion)
-        multichainEnabled = value(.multichainEnabled, default: defaults.multichainEnabled)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -145,6 +146,5 @@ extension BootConfiguration.Flags {
         case onboardingStoryDisabled = "disable_onboarding_story"
         case nftsDisabled = "disable_nfts"
         case nativeSwapDisabled = "disable_native_swap"
-        case multichainEnabled = "multichain_enabled"
     }
 }

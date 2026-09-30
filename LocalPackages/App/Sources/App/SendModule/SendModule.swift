@@ -8,7 +8,7 @@ import TKUIKit
 enum SendAnalyticsSource {
     case walletScreen
     case jettonScreen
-    case deepLink
+    case deepLink(utm: UtmParameters)
     case tonconnectLocal(appId: String)
     case tonconnectRemote
     case qrCode

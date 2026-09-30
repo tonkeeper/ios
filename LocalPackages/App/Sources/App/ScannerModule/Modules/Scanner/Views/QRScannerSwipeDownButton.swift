@@ -1,10 +1,3 @@
-//
-//  QRScannerSwipeDownButton.swift
-//  Tonkeeper
-//
-//  Created by Grigory on 19.7.23..
-//
-
 import TKUIKit
 import UIKit
 

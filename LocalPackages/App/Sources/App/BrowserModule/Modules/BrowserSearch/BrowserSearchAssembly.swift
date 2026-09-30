@@ -12,8 +12,7 @@ struct BrowserSearchAssembly {
         let viewModel = BrowserSearchViewModelImplementation(
             popularAppsService: keeperCoreAssembly.servicesAssembly.popularAppsService(),
             appSettingsStore: keeperCoreAssembly.storesAssembly.appSettingsStore,
-            searchEngineService: keeperCoreAssembly.servicesAssembly.searchEngineService(),
-            isMultichainEnabled: keeperCoreAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
+            searchEngineService: keeperCoreAssembly.servicesAssembly.searchEngineService()
         )
         let viewController = BrowserSearchViewController(viewModel: viewModel)
 

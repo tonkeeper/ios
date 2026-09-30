@@ -1,0 +1,2443 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		385134366B28ECAA8F94E8E0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243CF004625834C4CD9CF75E /* NotificationService.swift */; };
+		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
+		7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */; };
+		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
+		7D1BB5BC2CFD0CA90021B4EA /* WalletExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */; };
+		7D1BB5BE2CFD0CAE0021B4EA /* WalletExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */; };
+		7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
+		7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
+		7D3F25DF2AC19417002DF1B7 /* KeeperWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25DE2AC19417002DF1B7 /* KeeperWidgetBundle.swift */; };
+		7D3F25E32AC19418002DF1B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7D3F25E22AC19418002DF1B7 /* Assets.xcassets */; };
+		7D3F25E72AC19418002DF1B7 /* KeeperWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D3F25DA2AC19417002DF1B7 /* KeeperWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */; };
+		7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */; };
+		7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */; };
+		7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */; };
+		7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */; };
+		7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */; };
+		7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */; };
+		7D3F260A2AC1990C002DF1B7 /* RateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */; };
+		7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5A18112A5406CB00793769 /* Kingfisher */; };
+		7D8A50A22AC861AE00AA396C /* BalanceWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */; };
+		7D8A50A42AC8624500AA396C /* BalanceWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A32AC8624500AA396C /* BalanceWidgetTimelineProvider.swift */; };
+		7D8A50A72AC8648200AA396C /* BalanceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A62AC8648200AA396C /* BalanceWidgetView.swift */; };
+		7D8A50AB2AC866E800AA396C /* TonIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50AA2AC866E800AA396C /* TonIconView.swift */; };
+		7D8A50AD2AC8675700AA396C /* BalanceWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50AC2AC8675700AA396C /* BalanceWidget.swift */; };
+		7D8A50AF2AC8693C00AA396C /* HomeScreenBalanceWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50AE2AC8693C00AA396C /* HomeScreenBalanceWidget.swift */; };
+		7D8A50B12AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */; };
+		7D8A50B32AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */; };
+		7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D9B767E2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D9B767F2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; };
+		7DB0579B2AC24C0C00306C00 /* RateWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579A2AC24C0C00306C00 /* RateWidget.swift */; };
+		7DB0579D2AC24CAB00306C00 /* RateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */; };
+		7DB0579F2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */; };
+		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
+		7DB46DF32AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */; };
+		7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */; };
+		7DB46DF72AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */; };
+		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
+		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
+		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
+		7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */; };
+		7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE73652CE269EC00FD4C72 /* TKCore */; };
+		7DCE736A2CE269FB00FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE73692CE269FB00FD4C72 /* TKCore */; };
+		7DCE736E2CE26A0800FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE736D2CE26A0800FD4C72 /* TKCore */; };
+		7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */; };
+		7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
+		7DDBBFF42ACCA10E00F811A5 /* KeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
+		7DF339922CB400F2003D689D /* TKStories in Frameworks */ = {isa = PBXBuildFile; productRef = 7DF339912CB400F2003D689D /* TKStories */; };
+		844BD3A72FDDAC1F003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */; };
+		844BD3A82FDDAC1F003DD2D0 /* TKUIKitResources in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		844BD3AA2FDDAC29003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */; };
+		844BD3AD2FDDAC31003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */; };
+		847B62E02F82499D006F7706 /* KeeperCore in Frameworks */ = {isa = PBXBuildFile; productRef = 847B62DF2F82499D006F7706 /* KeeperCore */; };
+		84AED6072FDD904C00AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED6062FDD904C00AC3EC6 /* TKUIKit */; };
+		84AED60A2FDD906000AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED6092FDD906000AC3EC6 /* TKUIKit */; };
+		84AED60D2FDD907000AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED60C2FDD907000AC3EC6 /* TKUIKit */; };
+		84AED7002FDD910000AC3EC6 /* KeeperCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 847B62DF2F82499D006F7706 /* KeeperCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		84AED7022FDD920000AC3EC6 /* TKFeatureFlagsFirebase in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */; };
+		84C1EEBF2F3E013400B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEBE2F3E013400B6D05F /* TKLogging */; };
+		84C1EEC12F3E016700B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEC02F3E016700B6D05F /* TKLogging */; };
+		84C1EEC32F3E016D00B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEC22F3E016D00B6D05F /* TKLogging */; };
+		84E5E8452F824E5300A1269B /* KeeperCore in Frameworks */ = {isa = PBXBuildFile; productRef = 84E5E8442F824E5300A1269B /* KeeperCore */; };
+		84E5E8472F824E5E00A1269B /* KeeperCore in Frameworks */ = {isa = PBXBuildFile; productRef = 84E5E8462F824E5E00A1269B /* KeeperCore */; };
+		A1B2C3D52E0000020000000A /* FlagsOverride.json in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D62E0000020000000B /* FlagsOverride.json */; };
+		C10480E6E60C08C647BD9D12 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 584B0158F2A0EC2C72569779 /* FirebaseMessaging */; };
+		C365E2742BDA695D006D33B9 /* App in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2732BDA695D006D33B9 /* App */; };
+		C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74412BE11EC6006022FE /* TKCoordinator */; };
+		C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3FAB42C2BE11D4400C81547 /* TKScreenKit */; };
+		D5D0EBA020B3C9683E29685D /* KeeperNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DC3BA2BA5CFB2899B6EE7B6C /* KeeperNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4D3D053F4A6175ABBE77EB49 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4E4E7E85DDF8EAAE78DE2027;
+			remoteInfo = KeeperNotificationService;
+		};
+		7D3F25E52AC19418002DF1B7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7D3F25D92AC19417002DF1B7;
+			remoteInfo = KeeperWidgetExtension;
+		};
+		7DDBBFF22ACCA10E00F811A5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7DDBBFEA2ACCA10E00F811A5;
+			remoteInfo = KeeperIntents;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7DDBBFF42ACCA10E00F811A5 /* KeeperIntents.appex in Embed Foundation Extensions */,
+				7D3F25E72AC19418002DF1B7 /* KeeperWidgetExtension.appex in Embed Foundation Extensions */,
+				D5D0EBA020B3C9683E29685D /* KeeperNotificationService.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D32F8C02A8CCB58002C130C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				844BD3A82FDDAC1F003DD2D0 /* TKUIKitResources in Embed Frameworks */,
+				84AED7002FDD910000AC3EC6 /* KeeperCore in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DDBC00E2ACCCCCD00F811A5 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DDBC02F2ACCD21F00F811A5 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		11521ACBA6548957391122FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		243CF004625834C4CD9CF75E /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		504D92722C32A46E00B12DA6 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92732C32A48100B12DA6 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92742C32A48600B12DA6 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92752C32A48F00B12DA6 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92762C32A4B300B12DA6 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
+		504D92772C32A74D00B12DA6 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		507683F32D4B014B008349F0 /* KeeperUK.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperUK.xcconfig; sourceTree = "<group>"; };
+		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
+		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7D1BB5BA2CFCFF0E0021B4EA /* WalletExtensions */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = WalletExtensions; sourceTree = "<group>"; };
+		7D3F25DA2AC19417002DF1B7 /* KeeperWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KeeperWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D3F25DE2AC19417002DF1B7 /* KeeperWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeeperWidgetBundle.swift; sourceTree = "<group>"; };
+		7D3F25E22AC19418002DF1B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7D3F25E42AC19418002DF1B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetConfiguration+ContentMargins.swift"; sourceTree = "<group>"; };
+		7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+WidgetBackground.swift"; sourceTree = "<group>"; };
+		7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetEntry.swift; sourceTree = "<group>"; };
+		7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetTimelineProvider.swift; sourceTree = "<group>"; };
+		7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartMock.swift; sourceTree = "<group>"; };
+		7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetDataView.swift; sourceTree = "<group>"; };
+		7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartView.swift; sourceTree = "<group>"; };
+		7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidgetView.swift; sourceTree = "<group>"; };
+		7D6587BF2CE670AA009797E8 /* TKFeatureFlags */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKFeatureFlags; sourceTree = "<group>"; };
+		7D6C62D02CF4BF6D00A40892 /* Stories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Stories; sourceTree = "<group>"; };
+		7D8A50922AC709F800AA396C /* Keeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Keeper.entitlements; sourceTree = "<group>"; };
+		7D8A50932AC709FF00AA396C /* KeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
+		7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetEntry.swift; sourceTree = "<group>"; };
+		7D8A50A32AC8624500AA396C /* BalanceWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetTimelineProvider.swift; sourceTree = "<group>"; };
+		7D8A50A62AC8648200AA396C /* BalanceWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetView.swift; sourceTree = "<group>"; };
+		7D8A50AA2AC866E800AA396C /* TonIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonIconView.swift; sourceTree = "<group>"; };
+		7D8A50AC2AC8675700AA396C /* BalanceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidget.swift; sourceTree = "<group>"; };
+		7D8A50AE2AC8693C00AA396C /* HomeScreenBalanceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidget.swift; sourceTree = "<group>"; };
+		7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetSmallContentView.swift; sourceTree = "<group>"; };
+		7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetMediumContentView.swift; sourceTree = "<group>"; };
+		7D9B767B2CA3E35B002AA2F3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/RateWidget.intentdefinition; sourceTree = "<group>"; };
+		7D9B76812CA3F999002AA2F3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76832CA3F99A002AA2F3 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/RateWidget.strings"; sourceTree = "<group>"; };
+		7D9B76852CA3F99A002AA2F3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76872CA3F99B002AA2F3 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76892CA3F99B002AA2F3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7DA6C14E2CFA2D1900E6B688 /* SignRaw */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = SignRaw; sourceTree = "<group>"; };
+		7DAF89E22CDAC08600D58260 /* TKKeychain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKKeychain; sourceTree = "<group>"; };
+		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
+		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
+		7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateWidgetView.swift; sourceTree = "<group>"; };
+		7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateChartWidgetView.swift; sourceTree = "<group>"; };
+		7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidget.swift; sourceTree = "<group>"; };
+		7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenMediumRateChartWidgetView.swift; sourceTree = "<group>"; };
+		7DB8FB622A1BCC92005B4B11 /* Keeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7DB8FB712A1BCC92005B4B11 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		7DB8FB732A1BCC92005B4B11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DC4AC782C21A45E001742C3 /* KeeperDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperDebug.xcconfig; sourceTree = "<group>"; };
+		7DD14F1A2C219DCF0077E03C /* KeeperRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperRelease.xcconfig; sourceTree = "<group>"; };
+		7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KeeperIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
+		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
+		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		843112B32FDDABDB005BCFEE /* TKUIKitResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitResources; sourceTree = "<group>"; };
+		84623DF42F3E010C00DFABEE /* TKLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLogging; sourceTree = "<group>"; };
+		A1B2C3D42E00000100000001 /* KeeperDevDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperDevDebug.xcconfig; sourceTree = "<group>"; };
+		A1B2C3D42E0000010000000A /* KeeperDevRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperDevRelease.xcconfig; sourceTree = "<group>"; };
+		A1B2C3D62E0000020000000B /* FlagsOverride.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FlagsOverride.json; sourceTree = "<group>"; };
+		A1B2C3D82F10000100000001 /* AppUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AppUI; sourceTree = "<group>"; };
+		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
+		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
+		C32C7C492BCD111100785B6A /* KeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KeeperIntents.entitlements; sourceTree = "<group>"; };
+		C34C705F2BE1151300143AC8 /* KeeperCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = KeeperCore; sourceTree = "<group>"; };
+		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
+		C38917222D93BC8400D519C3 /* TronSwift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TronSwift; sourceTree = "<group>"; };
+		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
+		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
+		C3D1EF422D537E260075CDAF /* TKAppInfo */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKAppInfo; sourceTree = "<group>"; };
+		DC3BA2BA5CFB2899B6EE7B6C /* KeeperNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KeeperNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E66F82AA2C2F2BB00009E7C2 /* Ledger */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Ledger; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7D3F25D72AC19417002DF1B7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D1BB5BE2CFD0CAE0021B4EA /* WalletExtensions in Frameworks */,
+				84E5E8452F824E5300A1269B /* KeeperCore in Frameworks */,
+				7DCE736A2CE269FB00FD4C72 /* TKCore in Frameworks */,
+				84C1EEC12F3E016700B6D05F /* TKLogging in Frameworks */,
+				84AED60A2FDD906000AC3EC6 /* TKUIKit in Frameworks */,
+				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
+				844BD3AA2FDDAC29003DD2D0 /* TKUIKitResources in Frameworks */,
+				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
+				50C356522BE39C0500539266 /* TKLocalize in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DB8FB5F2A1BCC92005B4B11 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84AED6072FDD904C00AC3EC6 /* TKUIKit in Frameworks */,
+				7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */,
+				844BD3A72FDDAC1F003DD2D0 /* TKUIKitResources in Frameworks */,
+				84AED7022FDD920000AC3EC6 /* TKFeatureFlagsFirebase in Frameworks */,
+				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
+				7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */,
+				847B62E02F82499D006F7706 /* KeeperCore in Frameworks */,
+				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
+				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
+				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
+				C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */,
+				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
+				84C1EEBF2F3E013400B6D05F /* TKLogging in Frameworks */,
+				C365E2742BDA695D006D33B9 /* App in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DDBBFE82ACCA10E00F811A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				844BD3AD2FDDAC31003DD2D0 /* TKUIKitResources in Frameworks */,
+				84AED60D2FDD907000AC3EC6 /* TKUIKit in Frameworks */,
+				7D1BB5BC2CFD0CA90021B4EA /* WalletExtensions in Frameworks */,
+				84C1EEC32F3E016D00B6D05F /* TKLogging in Frameworks */,
+				84E5E8472F824E5E00A1269B /* KeeperCore in Frameworks */,
+				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
+				7DCE736E2CE26A0800FD4C72 /* TKCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F50769DC5B48402A83EC9CC7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C10480E6E60C08C647BD9D12 /* FirebaseMessaging in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E64817736ECA539FD52ED0A /* KeeperNotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				243CF004625834C4CD9CF75E /* NotificationService.swift */,
+				11521ACBA6548957391122FB /* Info.plist */,
+			);
+			path = KeeperNotificationService;
+			sourceTree = "<group>";
+		};
+		7D19EB612ABDB58C00BDE7FA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */,
+				7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */,
+				7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7D3F25DD2AC19417002DF1B7 /* KeeperWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F25F02AC19442002DF1B7 /* Extensions */,
+				7D3F25EF2AC19434002DF1B7 /* RateWidget */,
+				7D8A50A02AC8619700AA396C /* BalanceWidget */,
+				7D3F25DE2AC19417002DF1B7 /* KeeperWidgetBundle.swift */,
+				7D3F25E22AC19418002DF1B7 /* Assets.xcassets */,
+				7D3F25E42AC19418002DF1B7 /* Info.plist */,
+			);
+			path = KeeperWidget;
+			sourceTree = "<group>";
+		};
+		7D3F25EF2AC19434002DF1B7 /* RateWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F26002AC1982F002DF1B7 /* Views */,
+				7D3F25FF2AC19826002DF1B7 /* Intents */,
+				7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */,
+				7DB0579A2AC24C0C00306C00 /* RateWidget.swift */,
+				7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */,
+				7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */,
+				7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */,
+			);
+			path = RateWidget;
+			sourceTree = "<group>";
+		};
+		7D3F25F02AC19442002DF1B7 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */,
+				7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7D3F25FF2AC19826002DF1B7 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+		7D3F26002AC1982F002DF1B7 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */,
+				7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */,
+				7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */,
+				7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */,
+				7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */,
+				7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */,
+				7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7D6C62CF2CF4BE9600A40892 /* AppModules */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D82F10000100000001 /* AppUI */,
+				7D1BB5BA2CFCFF0E0021B4EA /* WalletExtensions */,
+				7DA6C14E2CFA2D1900E6B688 /* SignRaw */,
+				7D6C62D02CF4BF6D00A40892 /* Stories */,
+			);
+			path = AppModules;
+			sourceTree = "<group>";
+		};
+		7D7CF6BF2AC7040900EB0BFF /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50942AC70A2500AA396C /* Entitlements */,
+				7DD14F1A2C219DCF0077E03C /* KeeperRelease.xcconfig */,
+				7DC4AC782C21A45E001742C3 /* KeeperDebug.xcconfig */,
+				A1B2C3D42E00000100000001 /* KeeperDevDebug.xcconfig */,
+				A1B2C3D42E0000010000000A /* KeeperDevRelease.xcconfig */,
+				507683F32D4B014B008349F0 /* KeeperUK.xcconfig */,
+			);
+			path = Configurations;
+			sourceTree = "<group>";
+		};
+		7D8A50942AC70A2500AA396C /* Entitlements */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50922AC709F800AA396C /* Keeper.entitlements */,
+				7D8A50932AC709FF00AA396C /* KeeperWidgetExtension.entitlements */,
+			);
+			path = Entitlements;
+			sourceTree = "<group>";
+		};
+		7D8A50A02AC8619700AA396C /* BalanceWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50A52AC8645200AA396C /* Views */,
+				7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */,
+				7D8A50A32AC8624500AA396C /* BalanceWidgetTimelineProvider.swift */,
+				7D8A50AC2AC8675700AA396C /* BalanceWidget.swift */,
+			);
+			path = BalanceWidget;
+			sourceTree = "<group>";
+		};
+		7D8A50A52AC8645200AA396C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50A62AC8648200AA396C /* BalanceWidgetView.swift */,
+				7D8A50AA2AC866E800AA396C /* TonIconView.swift */,
+				7D8A50AE2AC8693C00AA396C /* HomeScreenBalanceWidget.swift */,
+				7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */,
+				7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7DB8FB592A1BCC92005B4B11 = {
+			isa = PBXGroup;
+			children = (
+				C313EC0A2B50138D009DF825 /* LocalPackages */,
+				7DB8FB642A1BCC92005B4B11 /* Keeper */,
+				7D3F25DD2AC19417002DF1B7 /* KeeperWidget */,
+				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
+				7DDBBFEE2ACCA10E00F811A5 /* KeeperIntents */,
+				0E64817736ECA539FD52ED0A /* KeeperNotificationService */,
+				7D19EB612ABDB58C00BDE7FA /* Frameworks */,
+				7DB8FB632A1BCC92005B4B11 /* Products */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+		};
+		7DB8FB632A1BCC92005B4B11 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7DB8FB622A1BCC92005B4B11 /* Keeper.app */,
+				7D3F25DA2AC19417002DF1B7 /* KeeperWidgetExtension.appex */,
+				7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */,
+				DC3BA2BA5CFB2899B6EE7B6C /* KeeperNotificationService.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7DB8FB642A1BCC92005B4B11 /* Keeper */ = {
+			isa = PBXGroup;
+			children = (
+				7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */,
+				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
+				7DB8FB792A1BCFCD005B4B11 /* Resources */,
+			);
+			path = Keeper;
+			sourceTree = "<group>";
+		};
+		7DB8FB792A1BCFCD005B4B11 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */,
+				7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */,
+				7DB8FB732A1BCC92005B4B11 /* Info.plist */,
+				A1B2C3D62E0000020000000B /* FlagsOverride.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		7DDBBFEE2ACCA10E00F811A5 /* KeeperIntents */ = {
+			isa = PBXGroup;
+			children = (
+				C32C7C492BCD111100785B6A /* KeeperIntents.entitlements */,
+				7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */,
+				7DDBBFF12ACCA10E00F811A5 /* Info.plist */,
+			);
+			path = KeeperIntents;
+			sourceTree = "<group>";
+		};
+		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
+			isa = PBXGroup;
+			children = (
+				84623DF42F3E010C00DFABEE /* TKLogging */,
+				C3D1EF422D537E260075CDAF /* TKAppInfo */,
+				7D6C62CF2CF4BE9600A40892 /* AppModules */,
+				7D6587BF2CE670AA009797E8 /* TKFeatureFlags */,
+				7DAF89E22CDAC08600D58260 /* TKKeychain */,
+				E66F82AA2C2F2BB00009E7C2 /* Ledger */,
+				50ADFE3C2BE160D3000E1C0A /* TKLocalize */,
+				C39560142B737F12003303C7 /* App */,
+				C34C705F2BE1151300143AC8 /* KeeperCore */,
+				C313EC0B2B50138D009DF825 /* TKCoordinator */,
+				C3777E962BE11C9C00DC3C92 /* TKScreenKit */,
+				C392CE022BE11B0300E0C473 /* TKUIKit */,
+				843112B32FDDABDB005BCFEE /* TKUIKitResources */,
+				C313EC0D2B50138D009DF825 /* TKCore */,
+				C38917222D93BC8400D519C3 /* TronSwift */,
+			);
+			path = LocalPackages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4E4E7E85DDF8EAAE78DE2027 /* KeeperNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 52BC1FAF8A536CBE4F9390C5 /* Build configuration list for PBXNativeTarget "KeeperNotificationService" */;
+			buildPhases = (
+				3EB8D48D4206320785414723 /* Sources */,
+				F50769DC5B48402A83EC9CC7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KeeperNotificationService;
+			packageProductDependencies = (
+				584B0158F2A0EC2C72569779 /* FirebaseMessaging */,
+			);
+			productName = KeeperNotificationService;
+			productReference = DC3BA2BA5CFB2899B6EE7B6C /* KeeperNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		7D3F25D92AC19417002DF1B7 /* KeeperWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D3F25EA2AC19418002DF1B7 /* Build configuration list for PBXNativeTarget "KeeperWidgetExtension" */;
+			buildPhases = (
+				7D3F25D62AC19417002DF1B7 /* Sources */,
+				7D3F25D72AC19417002DF1B7 /* Frameworks */,
+				7D3F25D82AC19417002DF1B7 /* Resources */,
+				7DDBC00E2ACCCCCD00F811A5 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KeeperWidgetExtension;
+			packageProductDependencies = (
+				50C356512BE39C0500539266 /* TKLocalize */,
+				7DCE73692CE269FB00FD4C72 /* TKCore */,
+				7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */,
+				84C1EEC02F3E016700B6D05F /* TKLogging */,
+				84E5E8442F824E5300A1269B /* KeeperCore */,
+				84AED6092FDD906000AC3EC6 /* TKUIKit */,
+				844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */,
+			);
+			productName = KeeperWidgetExtension;
+			productReference = 7D3F25DA2AC19417002DF1B7 /* KeeperWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		7DB8FB612A1BCC92005B4B11 /* Keeper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Keeper" */;
+			buildPhases = (
+				846A23862F39D6C8001ECF0C /* Setup Hooks */,
+				5117A1D72F4000000000C0DE /* SwiftLint */,
+				7DB8FB5E2A1BCC92005B4B11 /* Sources */,
+				7DB8FB5F2A1BCC92005B4B11 /* Frameworks */,
+				7DB8FB602A1BCC92005B4B11 /* Resources */,
+				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
+				7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */,
+				C30297552B4EE30300DD6FFC /* Firebase plist */,
+				C30297502B4EDDDD00DD6FFC /* Crashlytics+dSYM */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7D3F25E62AC19418002DF1B7 /* PBXTargetDependency */,
+				7DDBBFF32ACCA10E00F811A5 /* PBXTargetDependency */,
+				8AC01DC75621162CE9DA02B1 /* PBXTargetDependency */,
+			);
+			name = Keeper;
+			packageProductDependencies = (
+				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
+				7D143C352A4EC0D300B5FCC0 /* Lottie */,
+				7D5A18112A5406CB00793769 /* Kingfisher */,
+				C365E2732BDA695D006D33B9 /* App */,
+				C3FAB42C2BE11D4400C81547 /* TKScreenKit */,
+				C3CC74412BE11EC6006022FE /* TKCoordinator */,
+				7DF339912CB400F2003D689D /* TKStories */,
+				7DCE73652CE269EC00FD4C72 /* TKCore */,
+				7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */,
+				84C1EEBE2F3E013400B6D05F /* TKLogging */,
+				847B62DF2F82499D006F7706 /* KeeperCore */,
+				84AED6062FDD904C00AC3EC6 /* TKUIKit */,
+				844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */,
+				84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */,
+			);
+			productName = Keeper;
+			productReference = 7DB8FB622A1BCC92005B4B11 /* Keeper.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7DDBBFEA2ACCA10E00F811A5 /* KeeperIntents */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7DDBBFF52ACCA10E00F811A5 /* Build configuration list for PBXNativeTarget "KeeperIntents" */;
+			buildPhases = (
+				7DDBBFE72ACCA10E00F811A5 /* Sources */,
+				7DDBBFE82ACCA10E00F811A5 /* Frameworks */,
+				7DDBBFE92ACCA10E00F811A5 /* Resources */,
+				7DDBC02F2ACCD21F00F811A5 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KeeperIntents;
+			packageProductDependencies = (
+				7DCE736D2CE26A0800FD4C72 /* TKCore */,
+				7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */,
+				84C1EEC22F3E016D00B6D05F /* TKLogging */,
+				84E5E8462F824E5E00A1269B /* KeeperCore */,
+				84AED60C2FDD907000AC3EC6 /* TKUIKit */,
+				844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */,
+			);
+			productName = KeeperIntents;
+			productReference = 7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7DB8FB5A2A1BCC92005B4B11 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					7D3F25D92AC19417002DF1B7 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					7DB8FB612A1BCC92005B4B11 = {
+						CreatedOnToolsVersion = 14.3;
+					};
+					7DDBBFEA2ACCA10E00F811A5 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 7DB8FB5D2A1BCC92005B4B11 /* Build configuration list for PBXProject "Keeper" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				ru,
+				tr,
+				uz,
+				id,
+				uk,
+				"zh-Hans",
+				de,
+			);
+			mainGroup = 7DB8FB592A1BCC92005B4B11;
+			packageReferences = (
+				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
+				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				4DC8CE76AA195F5C4F1FCABE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				2251CC574A8D4141B8A9E897 /* XCLocalSwiftPackageReference "LocalPackages/TKLocalize" */,
+				E5EEF10E43AC4AD9BE3112A8 /* XCLocalSwiftPackageReference "LocalPackages/TKKeychain" */,
+				FAA0EBD762D744EBBECDBAC0 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/WalletExtensions" */,
+				0EE26810F22145019CFD818B /* XCLocalSwiftPackageReference "LocalPackages/TKUIKit" */,
+				D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */,
+				EA091DBCED0E4135950F3AB6 /* XCLocalSwiftPackageReference "LocalPackages/KeeperCore" */,
+				D1EB183B90014E6A9D2F1483 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/Stories" */,
+				D7BFCA43DDF04845A6D2348C /* XCLocalSwiftPackageReference "LocalPackages/App" */,
+				529F5C356D354FF68B293DBD /* XCLocalSwiftPackageReference "LocalPackages/TKCoordinator" */,
+				71FC81BC9BB240B583160552 /* XCLocalSwiftPackageReference "LocalPackages/TKScreenKit" */,
+			);
+			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7DB8FB612A1BCC92005B4B11 /* Keeper */,
+				7D3F25D92AC19417002DF1B7 /* KeeperWidgetExtension */,
+				7DDBBFEA2ACCA10E00F811A5 /* KeeperIntents */,
+				4E4E7E85DDF8EAAE78DE2027 /* KeeperNotificationService */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7D3F25D82AC19417002DF1B7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D3F25E32AC19418002DF1B7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DB8FB602A1BCC92005B4B11 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */,
+				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
+				A1B2C3D52E0000020000000A /* FlagsOverride.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DDBBFE92ACCA10E00F811A5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5117A1D72F4000000000C0DE /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nTOOL=\"${SRCROOT}/scripts/tools/tool.sh\"\n\nif ! \"$TOOL\" swiftlint --version >/dev/null 2>&1; then\n    echo \"warning: pinned SwiftLint not installed, skipping lint. Install it with: make setup\"\n    exit 0\nfi\n\n\"$TOOL\" swiftlint lint --config \"${SRCROOT}/.swiftlint.yml\"\n";
+		};
+		846A23862F39D6C8001ECF0C /* Setup Hooks */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Setup Hooks";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nif [ -n \"$CI\" ]; then\n    exit 0\nfi\n\nmake hooks -C \"${SRCROOT}\"\n";
+		};
+		C30297502B4EDDDD00DD6FFC /* Crashlytics+dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Crashlytics+dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nSCRIPT_DIR=\"${CLONED_SOURCE_PACKAGES_DIR:-${BUILD_DIR%/Build/*}/SourcePackages}\"\nif [ ! -x \"${SCRIPT_DIR}/checkouts/firebase-ios-sdk/Crashlytics/run\" ]; then\n  SCRIPT_DIR=\"${BUILD_DIR%/Build/*}/SourcePackages\"\nfi\n\n\"${SCRIPT_DIR}/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+		C30297552B4EE30300DD6FFC /* Firebase plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/scripts/firebase/copy_google_service_info.sh",
+				"$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/Keeper/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/KeeperDev/GoogleService-Info.plist",
+				"$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/KeeperUK/GoogleService-Info.plist",
+			);
+			name = "Firebase plist";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\n\"${SRCROOT}/scripts/firebase/copy_google_service_info.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3EB8D48D4206320785414723 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				385134366B28ECAA8F94E8E0 /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3F25D62AC19417002DF1B7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D9B767E2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
+				7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */,
+				7D8A50A42AC8624500AA396C /* BalanceWidgetTimelineProvider.swift in Sources */,
+				7D3F260A2AC1990C002DF1B7 /* RateChartWidgetView.swift in Sources */,
+				7DB0579F2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift in Sources */,
+				7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */,
+				7D8A50A72AC8648200AA396C /* BalanceWidgetView.swift in Sources */,
+				7DB0579D2AC24CAB00306C00 /* RateWidgetView.swift in Sources */,
+				7D8A50AF2AC8693C00AA396C /* HomeScreenBalanceWidget.swift in Sources */,
+				7D8A50AB2AC866E800AA396C /* TonIconView.swift in Sources */,
+				7D8A50B12AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift in Sources */,
+				7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */,
+				7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */,
+				7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */,
+				7DB46DF32AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift in Sources */,
+				7D8A50A22AC861AE00AA396C /* BalanceWidgetEntry.swift in Sources */,
+				7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */,
+				7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */,
+				7D3F25DF2AC19417002DF1B7 /* KeeperWidgetBundle.swift in Sources */,
+				7D8A50AD2AC8675700AA396C /* BalanceWidget.swift in Sources */,
+				7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */,
+				7DB0579B2AC24C0C00306C00 /* RateWidget.swift in Sources */,
+				7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */,
+				7DB46DF72AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift in Sources */,
+				7D8A50B32AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DB8FB5E2A1BCC92005B4B11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
+				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DDBBFE72ACCA10E00F811A5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D9B767F2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
+				7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7D3F25E62AC19418002DF1B7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7D3F25D92AC19417002DF1B7 /* KeeperWidgetExtension */;
+			targetProxy = 7D3F25E52AC19418002DF1B7 /* PBXContainerItemProxy */;
+		};
+		7DDBBFF32ACCA10E00F811A5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7DDBBFEA2ACCA10E00F811A5 /* KeeperIntents */;
+			targetProxy = 7DDBBFF22ACCA10E00F811A5 /* PBXContainerItemProxy */;
+		};
+		8AC01DC75621162CE9DA02B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4E4E7E85DDF8EAAE78DE2027 /* KeeperNotificationService */;
+			targetProxy = 4D3D053F4A6175ABBE77EB49 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7D9B767B2CA3E35B002AA2F3 /* Base */,
+				7D9B76812CA3F999002AA2F3 /* en */,
+				7D9B76832CA3F99A002AA2F3 /* zh-Hans */,
+				7D9B76852CA3F99A002AA2F3 /* de */,
+				7D9B76872CA3F99B002AA2F3 /* id */,
+				7D9B76892CA3F99B002AA2F3 /* ru */,
+				7D9B768B2CA3F99C002AA2F3 /* tr */,
+				7D9B768D2CA3F99C002AA2F3 /* uk */,
+				7D9B768F2CA3F99D002AA2F3 /* uz */,
+			);
+			name = RateWidget.intentdefinition;
+			sourceTree = "<group>";
+		};
+		7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7DB8FB712A1BCC92005B4B11 /* Base */,
+				509051DD2BE1661E00B41894 /* ru */,
+				504D92722C32A46E00B12DA6 /* tr */,
+				504D92732C32A48100B12DA6 /* uz */,
+				504D92742C32A48600B12DA6 /* id */,
+				504D92752C32A48F00B12DA6 /* uk */,
+				504D92762C32A4B300B12DA6 /* zh-Hans */,
+				504D92772C32A74D00B12DA6 /* de */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		507683F42D4B0184008349F0 /* KeeperUKRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 507683F32D4B014B008349F0 /* KeeperUK.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = KeeperUKRelease;
+		};
+		507683F52D4B0184008349F0 /* KeeperUKRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperUKRelease;
+		};
+		507683F62D4B0184008349F0 /* KeeperUKRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKRelease;
+		};
+		507683F72D4B0184008349F0 /* KeeperUKRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKRelease;
+		};
+		507683F82D4B01AE008349F0 /* KeeperUKDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 507683F32D4B014B008349F0 /* KeeperUK.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = KeeperUKDebug;
+		};
+		507683F92D4B01AE008349F0 /* KeeperUKDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperUKDebug;
+		};
+		507683FA2D4B01AE008349F0 /* KeeperUKDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKDebug;
+		};
+		507683FB2D4B01AE008349F0 /* KeeperUKDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKDebug;
+		};
+		599CDC7A43A6A23437B51AA9 /* KeeperDevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevRelease;
+		};
+		7DD14F1E2C219E2D0077E03C /* KeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DD14F1A2C219DCF0077E03C /* KeeperRelease.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = KeeperDebug;
+		};
+		7DD14F1F2C219E2D0077E03C /* KeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperDebug;
+		};
+		7DD14F202C219E2D0077E03C /* KeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDebug;
+		};
+		7DD14F212C219E2D0077E03C /* KeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDebug;
+		};
+		7DD14F222C219E350077E03C /* KeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DD14F1A2C219DCF0077E03C /* KeeperRelease.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = KeeperRelease;
+		};
+		7DD14F232C219E350077E03C /* KeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperRelease;
+		};
+		7DD14F242C219E350077E03C /* KeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperRelease;
+		};
+		7DD14F252C219E350077E03C /* KeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperRelease;
+		};
+		9745DBD93DD1B076DD36A820 /* KeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperRelease;
+		};
+		A1B2C3D42E00000100000002 /* KeeperDevDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D42E00000100000001 /* KeeperDevDebug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = KeeperDevDebug;
+		};
+		A1B2C3D42E00000100000003 /* KeeperDevDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperDevDebug;
+		};
+		A1B2C3D42E00000100000004 /* KeeperDevDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevDebug;
+		};
+		A1B2C3D42E00000100000005 /* KeeperDevDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevDebug;
+		};
+		A1B2C3D42E00000100000006 /* KeeperDevRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D42E0000010000000A /* KeeperDevRelease.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = KeeperDevRelease;
+		};
+		A1B2C3D42E00000100000007 /* KeeperDevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "${ICON_NAME}";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Keeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Keeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Keeper uses bluetooth to connect your hardware Ledger Nano X";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Keeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Keeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is required for identity verification.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Keeper saves images to your photo library";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = KeeperDevRelease;
+		};
+		A1B2C3D42E00000100000008 /* KeeperDevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/KeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevRelease;
+		};
+		A1B2C3D42E00000100000009 /* KeeperDevRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = KeeperIntents/KeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevRelease;
+		};
+		C0C5A398D05292C273695D7D /* KeeperDevDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDevDebug;
+		};
+		C3CD017FE2E8E1827EF5171B /* KeeperUKRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKRelease;
+		};
+		D8314C31D38C9488B062AF98 /* KeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperDebug;
+		};
+		E526BAA565756C01D4C34794 /* KeeperUKDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = KeeperNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = KeeperNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = KeeperUKDebug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		52BC1FAF8A536CBE4F9390C5 /* Build configuration list for PBXNativeTarget "KeeperNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8314C31D38C9488B062AF98 /* KeeperDebug */,
+				C0C5A398D05292C273695D7D /* KeeperDevDebug */,
+				599CDC7A43A6A23437B51AA9 /* KeeperDevRelease */,
+				9745DBD93DD1B076DD36A820 /* KeeperRelease */,
+				C3CD017FE2E8E1827EF5171B /* KeeperUKRelease */,
+				E526BAA565756C01D4C34794 /* KeeperUKDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = KeeperDebug;
+		};
+		7D3F25EA2AC19418002DF1B7 /* Build configuration list for PBXNativeTarget "KeeperWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DD14F202C219E2D0077E03C /* KeeperDebug */,
+				A1B2C3D42E00000100000004 /* KeeperDevDebug */,
+				A1B2C3D42E00000100000008 /* KeeperDevRelease */,
+				7DD14F242C219E350077E03C /* KeeperRelease */,
+				507683F62D4B0184008349F0 /* KeeperUKRelease */,
+				507683FA2D4B01AE008349F0 /* KeeperUKDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = KeeperDebug;
+		};
+		7DB8FB5D2A1BCC92005B4B11 /* Build configuration list for PBXProject "Keeper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DD14F1E2C219E2D0077E03C /* KeeperDebug */,
+				A1B2C3D42E00000100000002 /* KeeperDevDebug */,
+				A1B2C3D42E00000100000006 /* KeeperDevRelease */,
+				7DD14F222C219E350077E03C /* KeeperRelease */,
+				507683F42D4B0184008349F0 /* KeeperUKRelease */,
+				507683F82D4B01AE008349F0 /* KeeperUKDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = KeeperDebug;
+		};
+		7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Keeper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DD14F1F2C219E2D0077E03C /* KeeperDebug */,
+				A1B2C3D42E00000100000003 /* KeeperDevDebug */,
+				A1B2C3D42E00000100000007 /* KeeperDevRelease */,
+				7DD14F232C219E350077E03C /* KeeperRelease */,
+				507683F52D4B0184008349F0 /* KeeperUKRelease */,
+				507683F92D4B01AE008349F0 /* KeeperUKDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = KeeperDebug;
+		};
+		7DDBBFF52ACCA10E00F811A5 /* Build configuration list for PBXNativeTarget "KeeperIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DD14F212C219E2D0077E03C /* KeeperDebug */,
+				A1B2C3D42E00000100000005 /* KeeperDevDebug */,
+				A1B2C3D42E00000100000009 /* KeeperDevRelease */,
+				7DD14F252C219E350077E03C /* KeeperRelease */,
+				507683F72D4B0184008349F0 /* KeeperUKRelease */,
+				507683FB2D4B01AE008349F0 /* KeeperUKDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = KeeperDebug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		0EE26810F22145019CFD818B /* XCLocalSwiftPackageReference "LocalPackages/TKUIKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKUIKit;
+		};
+		2251CC574A8D4141B8A9E897 /* XCLocalSwiftPackageReference "LocalPackages/TKLocalize" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKLocalize;
+		};
+		529F5C356D354FF68B293DBD /* XCLocalSwiftPackageReference "LocalPackages/TKCoordinator" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKCoordinator;
+		};
+		71FC81BC9BB240B583160552 /* XCLocalSwiftPackageReference "LocalPackages/TKScreenKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKScreenKit;
+		};
+		D1EB183B90014E6A9D2F1483 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/Stories" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/AppModules/Stories;
+		};
+		D7BFCA43DDF04845A6D2348C /* XCLocalSwiftPackageReference "LocalPackages/App" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/App;
+		};
+		D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKCore;
+		};
+		E5EEF10E43AC4AD9BE3112A8 /* XCLocalSwiftPackageReference "LocalPackages/TKKeychain" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/TKKeychain;
+		};
+		EA091DBCED0E4135950F3AB6 /* XCLocalSwiftPackageReference "LocalPackages/KeeperCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/KeeperCore;
+		};
+		FAA0EBD762D744EBBECDBAC0 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/WalletExtensions" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/AppModules/WalletExtensions;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4DC8CE76AA195F5C4F1FCABE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.8.0;
+			};
+		};
+		7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.0;
+			};
+		};
+		7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.8.1;
+			};
+		};
+		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
+			requirement = {
+				kind = exactVersion;
+				version = 2.5.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		50C356512BE39C0500539266 /* TKLocalize */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2251CC574A8D4141B8A9E897 /* XCLocalSwiftPackageReference "LocalPackages/TKLocalize" */;
+			productName = TKLocalize;
+		};
+		584B0158F2A0EC2C72569779 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4DC8CE76AA195F5C4F1FCABE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5EEF10E43AC4AD9BE3112A8 /* XCLocalSwiftPackageReference "LocalPackages/TKKeychain" */;
+			productName = TKKeychain;
+		};
+		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+		7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FAA0EBD762D744EBBECDBAC0 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/WalletExtensions" */;
+			productName = WalletExtensions;
+		};
+		7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FAA0EBD762D744EBBECDBAC0 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/WalletExtensions" */;
+			productName = WalletExtensions;
+		};
+		7D5A18112A5406CB00793769 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
+			productName = AnyFormatKit;
+		};
+		7DCE73652CE269EC00FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */;
+			productName = TKCore;
+		};
+		7DCE73692CE269FB00FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */;
+			productName = TKCore;
+		};
+		7DCE736D2CE26A0800FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */;
+			productName = TKCore;
+		};
+		7DF339912CB400F2003D689D /* TKStories */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D1EB183B90014E6A9D2F1483 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/Stories" */;
+			productName = TKStories;
+		};
+		844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitResources;
+		};
+		844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitResources;
+		};
+		844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitResources;
+		};
+		847B62DF2F82499D006F7706 /* KeeperCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeeperCore;
+		};
+		84AED6062FDD904C00AC3EC6 /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
+		};
+		84AED6092FDD906000AC3EC6 /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
+		};
+		84AED60C2FDD907000AC3EC6 /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
+		};
+		84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKFeatureFlagsFirebase;
+		};
+		84C1EEBE2F3E013400B6D05F /* TKLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKLogging;
+		};
+		84C1EEC02F3E016700B6D05F /* TKLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKLogging;
+		};
+		84C1EEC22F3E016D00B6D05F /* TKLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKLogging;
+		};
+		84E5E8442F824E5300A1269B /* KeeperCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeeperCore;
+		};
+		84E5E8462F824E5E00A1269B /* KeeperCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeeperCore;
+		};
+		C365E2732BDA695D006D33B9 /* App */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7BFCA43DDF04845A6D2348C /* XCLocalSwiftPackageReference "LocalPackages/App" */;
+			productName = App;
+		};
+		C3CC74412BE11EC6006022FE /* TKCoordinator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 529F5C356D354FF68B293DBD /* XCLocalSwiftPackageReference "LocalPackages/TKCoordinator" */;
+			productName = TKCoordinator;
+		};
+		C3FAB42C2BE11D4400C81547 /* TKScreenKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 71FC81BC9BB240B583160552 /* XCLocalSwiftPackageReference "LocalPackages/TKScreenKit" */;
+			productName = TKScreenKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
+}

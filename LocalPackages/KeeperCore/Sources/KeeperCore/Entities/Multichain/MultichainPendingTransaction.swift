@@ -3,10 +3,12 @@ public struct MultichainPendingTransaction: Sendable, Hashable {
         /// Absent for swaps the wallet routes itself, without a cross-chain quote.
         public struct QuoteAttribution: Sendable, Hashable {
             public let aggregator: String
+            public let routeId: String
             public let providerRouteId: String?
 
-            public init(aggregator: String, providerRouteId: String? = nil) {
+            public init(aggregator: String, routeId: String, providerRouteId: String? = nil) {
                 self.aggregator = aggregator
+                self.routeId = routeId
                 self.providerRouteId = providerRouteId
             }
         }

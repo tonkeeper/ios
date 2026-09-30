@@ -79,7 +79,11 @@ public final class WalletNotificationStore: Store<WalletNotificationStore.Event,
         completion: ((State) -> Void)?
     ) {
         keeperInfoStore.updateKeeperInfo { keeperInfo in
-            var updatedDappsNotifications = keeperInfo?.currentWallet.notificationSettings.dapps ?? [:]
+            var updatedDappsNotifications = keeperInfo?
+                .wallets
+                .first(where: { $0.id == wallet.id })?
+                .notificationSettings
+                .dapps ?? [:]
             updatedDappsNotifications[dappHost] = isOn
             return keeperInfo?.updateWallet(
                 wallet,

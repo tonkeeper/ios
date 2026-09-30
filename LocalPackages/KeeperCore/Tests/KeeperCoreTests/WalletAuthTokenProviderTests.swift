@@ -181,6 +181,56 @@ final class WalletAuthTokenProviderTests: XCTestCase {
         XCTAssertEqual(chainKit.signedAccessTokens, ["jwt-1", "jwt-2", "jwt-1"])
     }
 
+    /// What a 403 buys: the credential the backend refused is dropped from both caches, so the next
+    /// request signs a new one instead of replaying the rejected one from memory or the Keychain.
+    func test_invalidateToken_remintsOnTheNextRequest() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let vault = InMemoryKeychainVault()
+        let provider = makeProvider(chainKit: chainKit, vault: vault)
+        await provider.warm(walletId: "wallet-1", mnemonic: "phrase")
+        _ = await provider.token(walletId: "wallet-1", accessToken: "jwt-1")
+
+        await provider.invalidateToken(walletId: "wallet-1")
+        let reminted = await provider.token(walletId: "wallet-1", accessToken: "jwt-1")
+
+        XCTAssertEqual(reminted, "signed(key-phrase,jwt-1)")
+        XCTAssertEqual(chainKit.signedAccessTokens, ["jwt-1", "jwt-1"])
+        // The Keychain record went with it, so a relaunch does not resurrect the refused credential.
+        _ = await makeProvider(chainKit: chainKit, vault: vault)
+            .token(walletId: "wallet-1", accessToken: "jwt-1")
+        XCTAssertEqual(chainKit.signedAccessTokens, ["jwt-1", "jwt-1"])
+    }
+
+    /// The app key is what makes reminting free, so invalidation must never cost a passcode.
+    func test_invalidateToken_keepsTheAppKey() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let vault = InMemoryKeychainVault()
+        let provider = makeProvider(chainKit: chainKit, vault: vault)
+        await provider.warm(walletId: "wallet-1", mnemonic: "phrase")
+
+        await provider.invalidateToken(walletId: "wallet-1")
+
+        let hasKey = await provider.hasPersistentAppKey(walletId: "wallet-1")
+        XCTAssertTrue(hasKey)
+        let relaunched = await makeProvider(chainKit: chainKit, vault: vault)
+            .token(walletId: "wallet-1", accessToken: "jwt-1")
+        XCTAssertEqual(relaunched, "signed(key-phrase,jwt-1)")
+    }
+
+    func test_invalidateToken_leavesOtherWalletsAlone() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let provider = makeProvider(chainKit: chainKit)
+        await provider.warm(walletId: "wallet-1", mnemonic: "one")
+        await provider.warm(walletId: "wallet-2", mnemonic: "two")
+        _ = await provider.token(walletId: "wallet-1", accessToken: "jwt-1")
+        _ = await provider.token(walletId: "wallet-2", accessToken: "jwt-1")
+
+        await provider.invalidateToken(walletId: "wallet-1")
+        _ = await provider.token(walletId: "wallet-2", accessToken: "jwt-1")
+
+        XCTAssertEqual(chainKit.signedAccessTokens, ["jwt-1", "jwt-1"])
+    }
+
     func test_forget_removesOnlyThatWalletFromTheKeychain() async {
         let chainKit = ChainKitWalletAuthFake()
         let vault = InMemoryKeychainVault()
@@ -406,6 +456,46 @@ final class WalletAuthTokenProviderTests: XCTestCase {
         }
 
         XCTAssertNil(token)
+    }
+
+    /// A widget builds the graph per timeline request and drops it while the load is still running,
+    /// so the resolver can go away under a live provider. It has to degrade to an unsigned request
+    /// instead of taking the process down, and a token already on disk must still be served.
+    func test_resolverGoneAfterWarm_yieldsNoTokenInsteadOfCrashing() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let vault = InMemoryKeychainVault()
+        var owner: ChainKitOwner? = ChainKitOwner(service: chainKit)
+        let provider = WalletAuthTokenProvider(
+            chainKitService: { [weak owner] in owner?.service },
+            store: WalletAuthKeychainStore(keychainVault: vault)
+        )
+        await provider.warm(walletId: "wallet-1", mnemonic: "phrase")
+        let minted = await provider.token(walletId: "wallet-1", accessToken: "jwt-1")
+        XCTAssertEqual(minted, "signed(key-phrase,jwt-1)")
+
+        owner = nil
+
+        // Stored under the same access token: served without ever resolving the service.
+        let restarted = WalletAuthTokenProvider(
+            chainKitService: { nil },
+            store: WalletAuthKeychainStore(keychainVault: vault)
+        )
+        let cached = await restarted.token(walletId: "wallet-1", accessToken: "jwt-1")
+        XCTAssertEqual(cached, minted)
+
+        let rotated = await provider.token(walletId: "wallet-1", accessToken: "jwt-2")
+        XCTAssertNil(rotated)
+        await provider.warm(walletId: "wallet-2", mnemonic: "phrase")
+        let warmed = await provider.hasPersistentAppKey(walletId: "wallet-2")
+        XCTAssertFalse(warmed)
+    }
+}
+
+private final class ChainKitOwner {
+    let service: ChainKitService
+
+    init(service: ChainKitService) {
+        self.service = service
     }
 }
 

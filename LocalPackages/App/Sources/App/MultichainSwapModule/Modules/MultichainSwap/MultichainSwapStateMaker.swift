@@ -34,9 +34,7 @@ struct MultichainSwapStateMaker {
             receiveAsset: inputs.receiveAsset,
             slippage: inputs.slippage,
             sendCardRateText: calculator.sendCardRateText(
-                mode: inputs.sendAmountInputMode,
-                sendAmount: inputs.sendAmount,
-                asset: inputs.sendAsset,
+                inputs: inputs,
                 usdFiatRate: usdFiatRate,
                 routeUsdPrice: quote.sourceUsdPrice
             ),

@@ -37,6 +37,7 @@ final class RampCoordinator: RouterCoordinator<NavigationControllerRouter> {
         coreAssembly: TKCore.CoreAssembly,
         initialDeeplink: RampDeeplinkParameters?,
         entrySource: DepositAnalyticsSource,
+        utm: UtmParameters = .empty,
         depositPendingTracker: DepositPendingTracker
     ) {
         self.flow = flow
@@ -45,7 +46,7 @@ final class RampCoordinator: RouterCoordinator<NavigationControllerRouter> {
         self.coreAssembly = coreAssembly
         self.initialDeeplink = initialDeeplink
         self.entrySource = entrySource
-        self.flowContext = DepositFlowContext(source: entrySource)
+        self.flowContext = DepositFlowContext(source: entrySource, utm: utm)
         self.depositPendingTracker = depositPendingTracker
 
         super.init(router: router)
@@ -155,11 +156,6 @@ private extension RampCoordinator {
     }
 
     func openPaymentMethod(asset: RampAsset, rampLayoutItem: OnRampLayoutItem, initialDeeplink: RampDeeplinkParameters?) {
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        let fiatCurrency = configuration.featureEnabled(.multichainEnabled)
-            ? rampModuleInput?.currentFiatCurrency
-            : nil
-
         let paymentMethodModule = PaymentMethodAssembly.module(
             flow: flow,
             asset: asset,
@@ -167,7 +163,7 @@ private extension RampCoordinator {
             isTRC20Available: wallet.tron != nil,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             initialDeeplink: initialDeeplink,
-            fiatCurrency: fiatCurrency,
+            fiatCurrency: rampModuleInput?.currentFiatCurrency,
             walletId: wallet.multichainWalletId
         )
 

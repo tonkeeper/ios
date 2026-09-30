@@ -5,7 +5,7 @@
 #   ART, SCRIPTS, SHARD_ID
 # Optional env:
 #   FLOW_DIR — shard flow directory; disambiguates yaml line resolution when the same
-#   stem exists in both ton-state and multichain (e.g. tonstakers_*).
+#   stem exists in several shards (tonstakers_* in staking and ton_staking).
 
 set -euo pipefail
 

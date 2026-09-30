@@ -1,4 +1,4 @@
-# Sends AMOUNT of an asset to RECIPIENT, pays the fee with Tonkeeper Battery, signs,
+# Sends AMOUNT of an asset to RECIPIENT, pays the fee with Keeper Battery, signs,
 # and verifies History opens.
 # Env: SEARCH_QUERY, ASSET_ID, AMOUNT, TOKEN_SYMBOL, RECIPIENT, CHAIN_ID (optional,
 # see steps/token_picker/select_asset.yaml)
@@ -89,5 +89,5 @@ env:
     when:
       true: ${!output.batteryFeeSelected}
     commands:
-      - assertVisible: Tonkeeper Battery
+      - assertVisible: Keeper Battery
       - assertVisible: Deposit

@@ -1,27 +1,26 @@
+# One cluster, one simulator build. A shard = one section
+# folder = one funded wallet: the pasteboard is primed once per shard and the imported
+# wallet is reused across its flows, so sections never mix seeds.
 clusters:
-  ton-state:
-    gate_pipeline: true
-    build_artifact: maestro-ios-tonkeeper-app
-    # DefaultBootConfiguration.json ships disable_battery_crypto_recharge_module=true,
-    # which hides the crypto recharge entry the battery flows drive.
-    feature_flags_file: ci/ton-state-flags.json
-    flows:
-      - flows/ton-state/backup/*
-      - flows/ton-state/battery/*
-      - flows/ton-state/browser/*
-      - flows/ton-state/collectibles/*
-      - flows/ton-state/transactions/*
-      - flows/ton-state/staking/*
-      - flows/ton-state/trade/*
-      - flows/ton-state/tonconnect/*
-
   multichain:
     gate_pipeline: true
     build_artifact: maestro-ios-tonkeeper-app-multichain
     # Same JSON shape as MAESTRO_FEATURE_FLAG_OVERRIDES (disable_swap, disable_battery, …).
-    # Merged into FlagsOverride.json on the multichain simulator build — not via GHA job output.
+    # Merged into FlagsOverride.json on the simulator build — not via GHA job output.
     feature_flags_file: ci/multichain-flags.json
+    # Shards imported with the TON seed (MAESTRO_WALLET_WITH_MONEY*) instead of the
+    # multichain seed (MAESTRO_MC_WALLET_MONEY*). The ton_ prefix keeps the wallet
+    # visible in the shard id; every other section runs on the multichain seed.
+    ton_wallet_shards:
+      - ton_battery
+      - ton_browser
+      - ton_collectibles
+      - ton_staking
+      - ton_tonconnect
+      - ton_trade
+      - ton_transactions
     flows:
+      - flows/multichain/backup/*
       - flows/multichain/portfolio/*
       - flows/multichain/wallet/*
       - flows/multichain/import/*
@@ -32,5 +31,12 @@ clusters:
       - flows/multichain/send/*
       - flows/multichain/trade/*
       - flows/multichain/staking/*
+      - flows/multichain/ton_battery/*
+      - flows/multichain/ton_browser/*
+      - flows/multichain/ton_collectibles/*
+      - flows/multichain/ton_staking/*
+      - flows/multichain/ton_tonconnect/*
+      - flows/multichain/ton_trade/*
+      - flows/multichain/ton_transactions/*
 
 testOutputDir: ../build/maestro-output

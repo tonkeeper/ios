@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: tk-perps API
-  version: 1.0.336
+  version: 1.0.536
   description: An aggregating BFF proxy sitting between self-custody TonKeeper clients and the Lighter perpetuals exchange. It serves screen-shaped read responses so the client can render a full screen in a single round-trip.
 servers:
   - url: https://{host}/tk-perps/public-api/v1
@@ -21,8 +21,14 @@ tags:
     description: Funding a perps account — deposits and their progress.
   - name: positions
     description: The caller's positions, one resource per venue and market.
+  - name: orders
+    description: The caller's orders — what is resting on the book, and what became of one.
+  - name: portfolio
+    description: Balance, positions and open orders in a single read.
   - name: orderbook
     description: Order book depth, truncated to what a given notional consumes.
+  - name: integrator
+    description: Partner attribution — what the client signs into its transactions so fees accrue here.
 paths:
   /account:
     get:
@@ -30,7 +36,9 @@ paths:
         - account
       operationId: getAccount
       summary: Get the caller's Lighter main account
-      description: 'Resolves the caller''s Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter''s own account status, while has_l2_key is read from the account''s API keys. One user maps to exactly one Lighter main account.'
+      description: |-
+        Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
+        This is also what a client polls while it waits for an account to exist: the index is resolved against Lighter live for as long as the binding has none, so not_registered turns into an account as soon as there is one. A wallet with no binding at all is answered not_registered too, and stays so until POST /account/bind records one -- a deposit made outside this service tells us nothing by itself.
       parameters:
         - $ref: '#/components/parameters/WalletIDHeader'
         - $ref: '#/components/parameters/WalletAuthHeader'
@@ -47,6 +55,53 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /account/bind:
+    post:
+      tags:
+        - account
+      operationId: bindAccount
+      summary: Bind the caller's wallet to its L1 address
+      description: |-
+        Records which L1 (Ethereum) address a wallet owns, and the Lighter account that address holds when there is one. It is the only endpoint whose whole job is that binding; everywhere else it is a side effect of a write that needed it anyway.
+        A caller whose Lighter account was funded outside this service has no other way in. Every read here answers from the binding, so until one exists its account is invisible to us, and so is every event Lighter reports about it. A caller that deposited through this service is already bound by that deposit, and calls this only to have the account index recorded once there is one.
+        The address is never taken from the caller. It is recovered from the signature, and afterwards read back from what that recovered, so deadline and signature are read only while the wallet has proved nothing. Send them anyway: whether they are needed depends on what this service has recorded, which the caller cannot know, and by the time a refusal came back the vault would be locked again. This is what keeps the passcode prompt to once per wallet.
+        The account index is Lighter's to say, and it is asked for on every call. A wallet whose account does not exist yet is bound to its address alone and answered not_registered, which is not a failure but where every wallet starts: poll GET /account and continue as soon as account_index is set. It is filled in by whichever write learns it first, this one included.
+        Not knowing is not the same as not having, so when Lighter cannot say what the address owns the request is refused with 503 and nothing is recorded -- a not_registered on a timeout would report a state this service never established. The reads answer the same way. Retrying inside the signature's deadline needs no new signature, so the refusal costs no second prompt.
+        A 503 says nothing was learned, never that something was undone. The binding is written before the account is read, so a refusal can arrive with the row already recorded -- and the answer is to call again rather than to report a failed registration. The repeat is free: the address is read back from the row, so no signature is needed for it, and re-binding what is recorded writes nothing.
+        The answer names l1_address either way, and that is worth reading: the address was recovered from a signature rather than sent, so a wallet bound to one it did not expect would otherwise find out only when a later proof, signed over the address it believes in, is refused.
+        A binding never moves, and there is nothing here with which to redirect it: a bound wallet is served the address it recorded whatever it signs now, so re-binding is accepted and changes nothing, which is the ordinary case.
+        A 409 therefore reports a collision with another wallet rather than a caller changing its mind: l1_address_taken when that address is already held elsewhere, lighter_account_taken when the account behind it is. The usual cause is one wallet re-imported under a new wallet_id, while the old id still holds the row; somebody has to remove it, which is not something this endpoint can do. wallet_already_bound is the third and is all but unreachable -- it needs two first binds for one wallet to race each other, or Lighter to name a different account for an address it has already placed.
+        A proof made over some other address is not a conflict but a refused proof, 401: it was signed for a statement this service is not making. Read l1_address in the answer above, or from GET /account, to see which address that is.
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      security:
+        - KeeperAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindAccountRequest'
+      responses:
+        "200":
+          description: The binding as it now stands, with the account when there is one.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
         "500":
           $ref: '#/components/responses/InternalError'
         "503":
@@ -122,7 +177,8 @@ paths:
                 $ref: '#/components/schemas/SendTransactionsResponse'
         "400":
           description: |-
-            The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account.
+            The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account, integrator_fee_mismatch.
+            integrator_fee_mismatch means a transaction that can produce a fill (14 CreateOrder, 17 ModifyOrder, 28 CreateGroupedOrders) does not carry exactly the partner attribution this service serves: read GET /integrator and sign in all three values as given. Any other rate is refused, below the served one as well as above it.
             A refused submission never reached a block; a retry has to be signed again against a fresh nonce.
           content:
             application/json:
@@ -187,13 +243,49 @@ paths:
           $ref: '#/components/responses/InternalError'
         "503":
           $ref: '#/components/responses/ServiceUnavailable'
+  /integrator:
+    get:
+      tags:
+        - integrator
+      operationId: getIntegrator
+      summary: Partner-attribution values the caller signs into its Lighter transactions
+      description: |-
+        What the client copies, unchanged, into the transactions it signs. Two of them consume these values: an order takes integrator_account_index and the two fees, while ApproveIntegrator -- signed once, before the first order that carries a fee -- takes the account index and the four maximums, with an expiry of now plus approval_ttl_ms.
+        Fees are millionths of a fill's notional, Lighter's own unit, so 900 is 9 basis points. A zero account index means attribution is off and the client signs no integrator fields at all; that is also the answer while this service has no integrator account configured.
+        Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
+        Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      security:
+        - KeeperAuth: []
+      responses:
+        "200":
+          description: The attribution to sign.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integrator'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
   /account/ro-token:
     post:
       tags:
         - account
       operationId: saveRoToken
-      summary: Store the caller's Lighter read-only token
+      summary: Store the caller's Lighter read-only token (deprecated)
+      deprecated: true
       description: |-
+        Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
+        Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
         Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
         The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
         The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- its first deposit, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
@@ -226,6 +318,48 @@ paths:
           $ref: '#/components/responses/InternalError'
         "503":
           $ref: '#/components/responses/ServiceUnavailable'
+  /account/ro-token/issue:
+    post:
+      tags:
+        - account
+      operationId: issueRoToken
+      summary: Mint the caller's Lighter read-only token and store it
+      description: |-
+        Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
+        What the caller supplies is lighter_auth: the short-lived credential its Lighter L2 key produced locally. It is a bearer credential and not a signature over this request, so it authorises anything Lighter accepts it for until it expires, and it is passed straight through without being stored or logged. The L2 private key itself never travels.
+        The account is not named by the caller. It is the one the wallet's proved L1 address owns, which is also what the token is minted against, so a wallet with no Lighter account yet -- one whose first deposit has not been credited -- has nothing to mint for and is answered 409.
+        The token's expiry and its reach are this service's to set, not the caller's, and are therefore absent from the body: it is minted long-lived, because the private reads this service makes on the caller's behalf run on it and nothing renews it, and scoped to the main account, because a wallet maps to exactly one.
+        Minting supersedes whatever token the account had. Superseded tokens are revoked at Lighter on a best-effort basis, in this request and only here: revoking takes the same short-lived authorization the mint did, so once this request ends nothing can revoke them any more.
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      security:
+        - KeeperAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRoTokenRequest'
+      responses:
+        "200":
+          description: Token minted and stored (encrypted at rest).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuedRoToken'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
   /positions:
     get:
       tags:
@@ -234,7 +368,7 @@ paths:
       summary: The caller's open positions
       description: |-
         Every position the wallet currently holds, one per venue and market, with the numbers a position card renders. Only open ones: Lighter keeps a row for every market an account has ever traded, and on a long-lived account the closed rows outnumber the open ones many times over, so a zero size is filtered here rather than on the client.
-        Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no X-Lighter-Auth is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need that token.
+        Built from public reads -- the account snapshot Lighter serves by index, and the cached markets snapshot for mark prices -- so no read-only token is involved. Take-profit and stop-loss legs are not here: they are open orders, which do need one.
         Neither paginated nor filtered on purpose. One position per market caps the list at the number of active markets, and the upstream snapshot is unpaginated anyway, so a cursor would add failure modes without bounding anything.
         A wallet with no account yet, and an account with nothing open, both get an empty list rather than an error: that is what a client renders before the first position.
       security:
@@ -296,6 +430,164 @@ paths:
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /positions/{id}/state:
+    get:
+      tags:
+        - positions
+      operationId: getPositionState
+      summary: What became of a market's position, and of the order just sent
+      description: |-
+        Answers the question a client has right after submitting an order: did anything happen. It reads this service's own record and nothing else, so it is cheap to poll -- no Lighter call, no read-only token, no markets snapshot.
+        Two things are answered. `open` is the position the market holds now, and `last_closed` is the one that ended most recently; a client that closed a position needs the second, because an absent position alone cannot tell "it closed" from "there never was one". Both are episodes: one life of a position, from the fill that opened it to the fill that closed it. Lighter keeps only the current size, so a closed position leaves no trace there at all -- `/positions/{id}` answers 404 for a market whose position closed a minute ago.
+        `orders` is what the venue said about the orders carrying `client_order_index`, and it is empty until an order event arrives. An empty list therefore means "nothing heard yet", which is the state to keep polling on; a client knows it submitted, so this service does not repeat that back. Several entries are a legitimate answer: nothing makes that number unique, and a client that reused it is told about every order rather than being handed a guess. Without the parameter the list is empty and only the position halves are answered.
+        A market this wallet has never traded is `open: null`, `last_closed: null`, `orders: []` -- not a 404. The question "what is the state" always has an answer, and "nothing" is one.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+        - name: id
+          in: path
+          required: true
+          description: Position id as the list reports it, e.g. `lighter:1`. Only the market it names is read here; the episode is addressed by its own id inside the response.
+          schema:
+            type: string
+          example: lighter:1
+        - name: client_order_index
+          in: query
+          required: false
+          description: 'The number the caller chose for its order when it signed it. Optional, and the only way to be told what became of one particular order: it is inside the signed payload, so this service reads it and never assigns one. Zero is refused rather than looked up -- it is what an order carries when nobody chose a number, so it addresses nothing.'
+          schema:
+            type: integer
+            format: int64
+          example: 1756280400123
+      responses:
+        "200":
+          description: The market's position state, and the orders the number names.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionState'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /portfolio:
+    get:
+      tags:
+        - portfolio
+      operationId: getPortfolio
+      summary: Balance, open positions and open orders
+      description: |-
+        Everything the portfolio section renders in one read: the account balance, every open position with the numbers a position card needs, and the orders resting on the book. Replaces /screens/portfolio, which carries a thinner position and no orders at all.
+        Balance and positions come from the account snapshot Lighter serves by index, and mark prices from the cached markets snapshot; neither needs a token. open_orders does, and this service uses the read-only token it stored for the wallet rather than asking the caller.
+        open_orders_known says whether the orders were read at all. False means the section could not be filled -- no stored token, an expired one, one Vault would not decrypt, or an upstream that did not answer -- and open_orders is then empty because nothing was seen, not because nothing is resting. Render "temporarily unavailable" on false, never "no open orders". Orders never turn this endpoint into a 503: the balance and the positions are an answer of their own.
+        Take-profit and stop-loss legs are not here. They belong to a position and are served with it by /positions/{id}.
+        A wallet with no account yet gets empty sections rather than an error.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      responses:
+        "200":
+          description: The caller's balance, positions and open orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /orders:
+    get:
+      tags:
+        - orders
+      operationId: listOpenOrders
+      summary: The caller's open orders
+      description: |-
+        Every order resting on the book across all markets. An unfilled order is not a position -- it holds no entry price, no PnL and no liquidation price -- so it appears here and never in /positions.
+        Take-profit and stop-loss legs are filtered out: they are attached to a position and are served with it by /positions/{id}, and listing them here would show the same leg twice.
+        Reading orders needs the wallet's stored read-only token, so unlike /positions this endpoint depends on Vault. orders_known carries that: false means the list could not be read and is empty for that reason alone. It is a 200, not a 503 -- a wallet without an active token is a state that no retry changes, and the client renders its unavailable block from the flag. A genuine upstream failure is still a 503.
+        Neither paginated nor filtered: an account's resting orders are bounded by what it can afford to place.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      responses:
+        "200":
+          description: The caller's open orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenOrdersPage'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /orders/{id}:
+    get:
+      tags:
+        - orders
+      operationId: getOrder
+      summary: One order, resting or finished, with its fills
+      description: |-
+        The order the id names, wherever it is now. Resting orders are read from the book; one that has left it -- filled, cancelled or expired -- is looked up in the account's order history, which is walked page by page because the venue offers no lookup by order id. `resting` says which of the two answered.
+        The history walk is bounded. An order older than the walk reaches is a 404, which is therefore "not found within the window this endpoint looks at" rather than a claim that it never existed.
+        `fills` is the execution broken down into trades, which the order itself does not carry -- it holds only the filled totals. That lookup is walked and bounded like the one above, so fills_known is false both when it failed and when the cap cut it short with pages still to come. Only under a true flag does an empty list mean the order has not traded.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+        - name: id
+          in: path
+          required: true
+          description: Order id as the list reports it, e.g. `lighter:281474976712112`.
+          schema:
+            type: string
+          example: lighter:281474976712112
+      responses:
+        "200":
+          description: The order, and the trades it produced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
         "500":
           $ref: '#/components/responses/InternalError'
         "503":
@@ -362,11 +654,10 @@ paths:
       summary: Trading screen bootstrap
       description: |-
         Single-call bootstrap for the trading screen: contract metadata for the market, the caller's current position, open orders, balance, and the action flags that drive UI affordances. Live orderbook and candles are delivered out-of-band over the Hermes WebSocket and are NOT part of this payload.
-        The market data is public; the private sections are the wallet's. X-Lighter-Auth is optional: without it, and for a wallet whose address owns no Lighter account yet, the position, open orders and private balance details are empty rather than an error.
+        The market data is public; the private sections are the wallet's, and the caller carries no credential for them: the read-only token comes from this service's own store.
+        The two absences differ. A wallet whose address owns no Lighter account yet, or one Lighter would not name an account for, gets the market and empty private sections throughout. A wallet with an account but no usable stored token keeps its position and balance, which come from the account snapshot and need no token, and loses only open_orders and what is derived from it -- position.auto_close and flags.cancel_enabled. Neither is an error.
       security:
         - KeeperAuth: []
-        - KeeperAuth: []
-          LighterAuth: []
       parameters:
         - name: market
           in: query
@@ -401,8 +692,11 @@ paths:
       tags:
         - screens
       operationId: getPortfolioScreen
-      summary: Portfolio screen
-      description: Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
+      summary: Portfolio screen (deprecated)
+      deprecated: true
+      description: |-
+        Superseded by /portfolio, which carries the same balance, a fuller position -- with id, mark price, margin, equity and ROI -- and the open orders this one has no room for. Frozen: it keeps answering exactly as it does today and gains nothing further.
+        Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
       parameters:
         - $ref: '#/components/parameters/WalletIDHeader'
         - $ref: '#/components/parameters/WalletAuthHeader'
@@ -496,11 +790,9 @@ paths:
       summary: Account activity timeline
       description: |-
         Merged, cursor-paginated timeline of fills, funding payments, deposits, and withdrawals. Uses an opaque keyset cursor and returns last_sort_ts so the client can detect ranking shifts between polls. Deposits appear from the moment they are registered, as items of type deposit with status pending; the one Lighter reports once the money lands is the same item under the same id, with a new status, so the client updates a row rather than replacing it. A deposit that is never confirmed leaves the feed when it is closed, and its outcome is then only on /funding/deposit/{deposit_id}.
-        The feed belongs to the wallet. Everything Lighter holds needs X-Lighter-Auth as well; without it -- or for a wallet whose address owns no Lighter account yet -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account, and which then covers a deposit that was credited before the client had a token. A wallet that has proved no address gets an empty page rather than an error.
+        The feed belongs to the wallet, and the caller carries no credential for it -- everything Lighter holds is read with the token this service keeps. Without a usable one -- or for a wallet whose address owns no Lighter account yet, or one Lighter will not name an account for right now -- the page carries only this service's own record of the wallet's deposits, which is what a first deposit has instead of an account. A wallet that has proved no address gets an empty page rather than an error, and so does an outage this service can still read its own rows through.
       security:
         - KeeperAuth: []
-        - KeeperAuth: []
-          LighterAuth: []
       parameters:
         - name: type
           in: query
@@ -632,6 +924,91 @@ paths:
           $ref: '#/components/responses/InternalError'
         "503":
           $ref: '#/components/responses/ServiceUnavailable'
+  /funding/quote:
+    post:
+      tags:
+        - funding
+      operationId: quoteDeposit
+      summary: Quote a deposit from another asset
+      description: |-
+        Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
+        The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
+        The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
+        source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why expected_amount and min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+        A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
+        The quote is good for the seconds expires_at says. The aggregator revalidates at fill time, so a stale one is refunded rather than filled at a worse price -- ask again instead of signing an old one.
+        The wallet's L1 address is destination_address, and the two must agree once the wallet has proved one: a quote for somebody else's account is refused. A wallet that has proved nothing yet -- the first deposit is what creates the account -- is quoted for the address it names, and proves it when it records the deposit.
+        What this does not do yet: it does not initialise the Lighter account's signing key. A first deposit creates the account, and registering a key on it is a separate step the client takes once the account exists.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositQuoteRequest'
+      responses:
+        "200":
+          description: The quote and the payloads to sign.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositQuote'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
+  /funding/status/{execution_id}:
+    get:
+      tags:
+        - funding
+      operationId: getFundingStatus
+      summary: Follow a quoted deposit through the aggregator
+      description: |-
+        Reports where a cross-chain deposit is, by the execution_id its quote returned: whether the aggregator has seen the source transaction, filled on Ethereum, failed, or refunded. The execution lives at swaps-backend, which follows the fill by the id the aggregator quoted it under, so nothing has to be submitted there first: the wallet broadcasts on its own and polls.
+        This is how a client that paid from another chain learns the Ethereum transaction hash: the aggregator's fill is the transaction that called the gateway, so once status is success the first entry of tx_hashes is what POST /funding/deposit takes as l1_tx_hash. Until then there is nothing to record.
+        Poll while status is pending. success, failure and refund are final. unknown means the aggregator has no such execution, which is also what an expired, never-broadcast quote looks like.
+      security:
+        - KeeperAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletIDHeader'
+        - $ref: '#/components/parameters/WalletAuthHeader'
+        - name: execution_id
+          in: path
+          required: true
+          description: The tracking.execution_id a quote returned.
+          schema:
+            type: string
+            maxLength: 128
+            example: a3f1c2d4-5b6e-4f70-8a9b-0c1d2e3f4a5b
+      responses:
+        "200":
+          description: Where the deposit is.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FundingStatus'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalError'
+        "503":
+          $ref: '#/components/responses/ServiceUnavailable'
 components:
   securitySchemes:
     KeeperAuth:
@@ -687,7 +1064,7 @@ components:
         Tonkeeper wallet_id the request is about. The access token names the device, and a device carries up to two hundred wallets, so which one a request concerns is something only the client knows.
         Required, and never taken on trust where an endpoint acts on it. On the writes it is checked against X-Wallet-Authorization: the id is recomputed from the key recovered out of that signature and must come out equal, so naming a wallet you hold no key to fails as 401 wallet_auth_invalid. It is inside every operation proof as well, which is what stops one being moved to another wallet. A blank header is 400.
         The reads check it the same way, and take the Lighter account from it rather than from a header: the account a request acts on is the one the wallet's proved address owns, so no caller can read a balance, an address or a position by naming an index. A wallet that has proved no address yet, or whose address owns no Lighter account, is served the public parts and empty private ones.
-        Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account, /screens/portfolio and /activity answer 503 rather than report an account state they did not establish. Only /screens/trading degrades there, because its market data is the answer and its private sections already come back empty on an upstream failure.
+        Not knowing is not the same as not having: when Lighter cannot say which account an address owns, /account and /screens/portfolio answer 503 rather than report an account state they did not establish. /screens/trading and /activity degrade instead, because each has an answer that does not depend on the account -- the market data for one, this service's own deposit records for the other -- and their private halves already come back empty on an upstream failure.
       schema:
         $ref: '#/components/schemas/WalletID'
   schemas:
@@ -700,6 +1077,104 @@ components:
       maxLength: 36
       pattern: ^[a-z2-7]{36}$
       example: aiay32vhbx3wgqvssxk2jvp2ec65fyry2lja
+    BindAccountRequest:
+      type: object
+      description: 'The proof of the address to bind and this wallet''s consent to being bound to it. Nothing else is here: the account is not the caller''s to name, and the address is not the caller''s to claim.'
+      required:
+        - proof
+      properties:
+        deadline:
+          type: integer
+          format: int64
+          description: 'Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.'
+          example: 1755600000
+        signature:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{130}$
+          description: |-
+            EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            Read only while the wallet has proved no L1 address yet; missing when it is needed answers 400 address_proof_required.
+          example: 0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c
+        proof:
+          type: string
+          pattern: ^[0-9a-fA-F]{130}$
+          description: |-
+            The wallet's consent to this binding, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.account.bind.v1") | LP(wallet_id) | LP(l1_address), in the same length-prefixed framing the other writes use. l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            The signature above shows that somebody holds the key to an address; this shows that this wallet meant to be bound to it, which is what makes the binding irreversible. Required, and absent answers 401 operation_proof_required.
+          example: 4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c
+    IssueRoTokenRequest:
+      type: object
+      description: 'What it takes to have a read-only token minted: the Lighter authorization to mint it with, a label to remember it by, this wallet''s consent, and the proof of its L1 address when it has none recorded yet. The account, the expiry and the reach are not here -- none of them is the caller''s to choose.'
+      required:
+        - lighter_auth
+        - proof
+      properties:
+        lighter_auth:
+          type: string
+          description: The short-lived Lighter authorization the caller's L2 key produced locally, typically good for ten minutes. Carried in the body rather than a header so it is never confused with this API's own authorization, which is a different credential answering a different question. Passed through to Lighter and never stored.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        name:
+          type: string
+          description: Optional client-supplied label for the token.
+          example: mobile-app
+        deadline:
+          type: integer
+          format: int64
+          description: 'Unix seconds past which the signature below is refused, capped by the service at ten minutes ahead. Travels with signature: one without the other is a 400.'
+          example: 1755600000
+        signature:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{130}$
+          description: |-
+            EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            Read only while the wallet has proved no L1 address yet; missing when it is needed answers 400 address_proof_required.
+          example: 0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c
+        proof:
+          type: string
+          pattern: ^[0-9a-fA-F]{130}$
+          description: |-
+            The wallet's consent to this mint, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.rotoken.issue.v1") | LP(wallet_id) | LP(l1_address) | LP(auth_hash) | LP(name), in the same length-prefixed framing the other writes use. auth_hash is sha256 of lighter_auth in lowercase hex; name is what this body carries, empty string when omitted; l1_address is lowercase with its 0x and is named here and nowhere in the body.
+            The token cannot be signed here the way the store endpoint signs it, because it does not exist yet. The authorization stands in for it and pins the consent to this one mint: the proof cannot be replayed with a different authorization, and the one it names expires within minutes, which bounds the replay window on its own.
+            Nothing else in the body is signed, because nothing else in it reaches Lighter. Required, and absent answers 401 operation_proof_required.
+          example: 4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c
+    IssuedRoToken:
+      type: object
+      description: The minted token and what was recorded about it.
+      required:
+        - token
+        - token_id
+        - account_index
+        - issued_at
+        - expires_at
+      properties:
+        token:
+          type: string
+          description: 'The read-only token itself, "ro:{account}:{scope}:{expiry}:{secret}". A credential: hold it as one. This service keeps its own encrypted copy, so a client that has no direct use for it can discard it.'
+          example: ro:738887:single:1946678400:8f3c1d...
+        token_id:
+          type: integer
+          format: int64
+          description: Lighter's id for the token, and the only handle its revocation takes. Keep it if you intend to revoke the token yourself later.
+          example: 41207
+        name:
+          type: string
+          description: The label the token was minted and stored under.
+          example: mobile-app
+        account_index:
+          type: integer
+          format: int64
+          description: The Lighter account the token belongs to, which is the one this wallet's address owns.
+          example: 738887
+        issued_at:
+          type: string
+          format: date-time
+          description: When this service minted the token.
+          example: "2026-09-09T10:00:00Z"
+        expires_at:
+          type: string
+          format: date-time
+          description: When the token stops working, as the token itself states it rather than as it was asked for. Far ahead by design; nothing renews it.
+          example: "2031-09-08T10:00:00Z"
     SaveRoTokenRequest:
       type: object
       description: 'What travels with a Lighter read-only token: a label to remember it by, this wallet''s consent to storing it, and the proof of its L1 address when it has none recorded yet. The token itself is in the X-Lighter-Auth header, and its account index and expiry are read out of it rather than declared here.'
@@ -804,7 +1279,9 @@ components:
         signature:
           type: string
           pattern: ^0x[0-9a-fA-F]{130}$
-          description: 'EIP-712 signature proving this wallet''s L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1}. Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.'
+          description: |-
+            EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
+            Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.
           example: 0x99ce24c2b78cd46c35a3608007ccece84254a4696045b7f5962a6e758ebeadcc250da971d87099ce2e03e429f0321c42ed4de6cd0c468507480a63b65e64ab801b
         proof:
           type: string
@@ -1003,13 +1480,20 @@ components:
           type: integer
         l1_address:
           type: string
-          description: L1 (Ethereum) address keying this main account.
-          example: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984
+          description: |-
+            L1 (Ethereum) address keying this main account. Present whenever the wallet has proved one, status not_registered included: the address is never sent by the caller, so this is the only place to read back what the wallet is bound to. Absent only while it has proved nothing at all.
+            Always lowercase, whatever case Lighter reports, because it is signed over verbatim: an operation proof is checked against the address in the form recorded here, and the same address in two casings is two different statements.
+          example: 0x1f9840a85d5af5bf1d1762f925bdaddc4201f984
         status:
           $ref: '#/components/schemas/AccountStatus'
         has_l2_key:
           type: boolean
-          description: 'Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account''s API keys, not from the account record.'
+          description: 'Whether an L2 signing key is registered (ChangePubKey done). Independent of status: it comes from the account''s API keys, not from the account record. True exactly when api_keys below is non-empty.'
+        api_keys:
+          type: array
+          description: The L2 signing keys registered on this account, one entry per occupied slot. Only occupied slots are listed, so an index absent here is one a client may register into, and an empty array means the account has no signing key at all. Absent while the wallet has no account.
+          items:
+            $ref: '#/components/schemas/AccountAPIKey'
         collateral:
           type: string
           description: Total collateral, human-unit decimal string.
@@ -1023,6 +1507,68 @@ components:
           format: date-time
           nullable: true
           example: "2026-01-14T09:32:11Z"
+    AccountAPIKey:
+      type: object
+      description: One L2 signing key registered on the account, as Lighter reports it.
+      required:
+        - api_key_index
+        - public_key
+      properties:
+        api_key_index:
+          type: integer
+          description: The slot this key occupies. It is what a client names when it signs a transaction and when it reads a nonce from GET /transactions/next-nonce.
+          example: 3
+        public_key:
+          type: string
+          description: The key's public part. A client finds its own slot by comparing this against the key it holds, which is the only way to tell its key from another device's.
+          example: 0x8e4ee0a2d3b1f2b9d1bb8a7ff2f3e4c6b5a49788c1d2e3f405162738495a6b7c
+    Integrator:
+      type: object
+      description: Partner attribution for one caller. Every field is an integer in Lighter's own units and is signed verbatim; nothing here is a display value.
+      required:
+        - integrator_account_index
+        - integrator_taker_fee
+        - integrator_maker_fee
+        - max_perps_taker_fee
+        - max_perps_maker_fee
+        - max_spot_taker_fee
+        - max_spot_maker_fee
+        - approval_ttl_ms
+      properties:
+        integrator_account_index:
+          type: integer
+          format: int64
+          description: Lighter account the fees accrue to. Zero means attribution is off.
+          example: 745796
+        integrator_taker_fee:
+          type: integer
+          description: Taker fee in millionths of the fill's notional. 900 is 9 basis points.
+          example: 900
+        integrator_maker_fee:
+          type: integer
+          description: Maker fee in millionths of the fill's notional.
+          example: 900
+        max_perps_taker_fee:
+          type: integer
+          description: Perpetual taker ceiling to sign into ApproveIntegrator. Never below integrator_taker_fee, and raising it later needs a fresh approval from the same wallet.
+          example: 1000
+        max_perps_maker_fee:
+          type: integer
+          description: Perpetual maker ceiling to sign into ApproveIntegrator.
+          example: 1000
+        max_spot_taker_fee:
+          type: integer
+          description: Always zero -- this service does not trade spot.
+          example: 0
+        max_spot_maker_fee:
+          type: integer
+          description: Always zero.
+          example: 0
+        approval_ttl_ms:
+          type: integer
+          format: int64
+          description: How far ahead of now the approval_expiry signed into ApproveIntegrator should sit, in milliseconds. Zero alongside a zero account index means there is nothing to approve.
+          example: 31536000000
     Market:
       type: object
       description: A perpetual market and its live stats. All monetary/price/size fields are human-unit decimal strings; the *_decimals fields tell the client how to scale those values back into integer units when building/signing a tx.
@@ -1370,6 +1916,104 @@ components:
           description: Attached TP/SL configuration, or null if none.
         open_order_count:
           type: integer
+    PositionState:
+      type: object
+      description: 'The state of one market for the caller: the position it holds, the one that ended last, and what the venue said about the orders a client order index names.'
+      required:
+        - market_index
+        - open
+        - last_closed
+        - orders
+      properties:
+        market_index:
+          type: integer
+          description: 'The market the id named. No symbol here on purpose: naming it means reading the venue''s market list, and this endpoint is meant to be polled without touching the venue at all.'
+          example: 1
+        open:
+          allOf:
+            - $ref: '#/components/schemas/PositionEpisode'
+          nullable: true
+          description: 'The position this market holds now, or null when it holds none. There is no separate status field: null is the whole answer, and two ways to say it would let them disagree. Always present, null included, so a decoder that distinguishes an absent key from a null one does not have to.'
+        last_closed:
+          allOf:
+            - $ref: '#/components/schemas/PositionEpisode'
+          nullable: true
+          description: The episode that ended most recently, or null if none ever did. What tells a client that watched a position that it closed, rather than that it never existed.
+        orders:
+          type: array
+          description: Newest first, and capped. Empty without the client_order_index parameter, and empty while no event has arrived for it yet.
+          items:
+            $ref: '#/components/schemas/PositionStateOrder'
+    PositionEpisode:
+      type: object
+      description: One life of a position on one market, from the fill that opened it to the one that closed it.
+      required:
+        - episode_id
+        - side
+        - opened_at
+        - open_seen
+        - closed_at
+        - close_reason
+      properties:
+        episode_id:
+          type: string
+          description: Lighter's trade id of the fill that opened the episode, which is also its identity. Opaque; a string because it is an identifier and not a number to do arithmetic on.
+          example: "29800309063"
+        side:
+          $ref: '#/components/schemas/PositionSide'
+        opened_at:
+          type: string
+          format: date-time
+          description: When the opening fill traded, in the venue's own time.
+          example: "2026-09-08T18:50:14Z"
+        open_seen:
+          type: boolean
+          description: 'false when this service adopted the episode mid-flight: the first fill it saw already found a position, so opened_at is that fill''s time and not when the position opened. A client should not present it as an opening time when this is false.'
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null while the episode is open.
+        close_reason:
+          type: string
+          nullable: true
+          description: 'What ended it. `fill` is an ordinary close and `liquidation` a fill the venue marked as one. `event` is every close with no fill of ours behind it -- an auto-deleverage, or one whose fill this service never saw: the venue reported the position gone without saying why, and this does not claim to know either. Treat the set as open-ended; a later release may name a reason `event` covers today.'
+          enum:
+            - fill
+            - liquidation
+            - event
+    PositionStateOrder:
+      type: object
+      description: What the venue said about one order, as this service recorded it.
+      required:
+        - order_index
+        - status
+      properties:
+        order_index:
+          type: integer
+          format: int64
+          description: Lighter's own number for the order. A cancel or a modify is addressed by `market_index` plus this.
+          example: 844421542005799
+        kind:
+          type: string
+          description: The venue's own word for what kind of order it was, e.g. `market`, `take-profit`, `stop-loss`, `liquidation`.
+          example: market
+        status:
+          type: string
+          description: The venue's own word, passed through unmapped -- Lighter does not document the set of values it uses, and mapping them by guess would report a state nobody established. An order still working carries something other than `filled` or `canceled`.
+          example: filled
+        filled_base:
+          type: string
+          description: What the venue says was filled, in base units. Zero for an order still resting in the book.
+          example: "0.00014"
+        reduce_only:
+          type: boolean
+          description: True for a closing order, which is how a close is told from an open before any fill lands.
+        recorded_at:
+          type: string
+          format: date-time
+          description: 'This service''s own clock: when the order was first written here, not when the venue created it. An order can rest in the book for twenty minutes before an event brings it.'
+          example: "2026-09-08T19:45:02Z"
     OrderFees:
       type: object
       description: Fee breakdown for an order, all human-unit decimal strings.
@@ -1387,13 +2031,20 @@ components:
       type: object
       description: A single order and its execution state.
       properties:
-        order_id:
+        id:
           type: string
-          example: "84512377281"
-        client_order_id:
-          type: string
-          nullable: true
-          example: c-9f1a2b
+          description: Identifies the order for the detail endpoint. Opaque -- read it from here and hand it back, do not parse it. It names the venue and the venue's own order number.
+          example: lighter:281474976712112
+        order_index:
+          type: integer
+          format: int64
+          description: Lighter's own number for the order, assigned when it entered the book. A cancel or a modify is addressed by `market_index` plus this.
+          example: 84512377281
+        client_order_index:
+          type: integer
+          format: int64
+          description: 'The number whoever created the order chose for it: Lighter stores and echoes it back, and never assigns one itself. Zero means nobody chose one -- it is a real value in the payload rather than an absent field. Match an order to your own record of placing it, and treat it as opaque otherwise.'
+          example: 1756280400123
         market_index:
           type: integer
         symbol:
@@ -1576,7 +2227,7 @@ components:
             $ref: '#/components/schemas/Market'
     TradingScreen:
       type: object
-      description: 'Perps asset details payload for a single market. Only open_orders needs X-Lighter-Auth: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. Without the token open_orders is empty, and two fields derived from it go with it -- flags.cancel_enabled is false and position.auto_close is null, since the TP/SL legs are themselves open orders.'
+      description: 'Perps asset details payload for a single market. Only open_orders needs a read-only token, and this service reads it from its own store rather than from the caller: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. Without a usable token open_orders is empty, and two fields derived from it go with it -- flags.cancel_enabled is false and position.auto_close is null, since the TP/SL legs are themselves open orders.'
       properties:
         type:
           $ref: '#/components/schemas/AssetDetailsType'
@@ -1589,7 +2240,7 @@ components:
           description: Caller's position in this market, or null if none.
         open_orders:
           type: array
-          description: Caller's open orders in this market (empty without X-Lighter-Auth).
+          description: Caller's open orders in this market (empty without a usable stored token).
           items:
             $ref: '#/components/schemas/Order'
         balance:
@@ -1606,6 +2257,87 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Position'
+    Portfolio:
+      type: object
+      description: 'Balance, open positions and resting orders in one payload. The two sections are independent: a position is what the account holds, an order is what it is waiting for.'
+      properties:
+        balance:
+          $ref: '#/components/schemas/Balance'
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenPosition'
+        open_orders:
+          type: array
+          description: Orders resting on the book, across every market. Empty when open_orders_known is false, which is a different thing from having none. Take-profit and stop-loss legs are not among them.
+          items:
+            $ref: '#/components/schemas/Order'
+        open_orders_known:
+          type: boolean
+          description: Whether open_orders was read at all. False without a usable stored read-only token, and when the venue did not answer. Never a reason to fail the response.
+          example: true
+    OpenOrdersPage:
+      type: object
+      description: The caller's resting orders. An object rather than a bare array so the flag rides alongside and aggregates can be added later.
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        orders_known:
+          type: boolean
+          description: Whether the list was read at all. False means `orders` is empty because nothing could be read, not because nothing is resting -- the same flag Portfolio carries.
+          example: true
+    OrderDetail:
+      type: object
+      description: One order and the trades it produced.
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        resting:
+          type: boolean
+          description: True when the order is still on the book, false when it was found in history.
+          example: false
+        fills:
+          type: array
+          description: The trades this order took part in, newest first. Empty when it never traded, and also when fills_known is false.
+          items:
+            $ref: '#/components/schemas/OrderFill'
+        fills_known:
+          type: boolean
+          description: Whether the fills were read in full. False when the lookup failed and when its page cap ended it early; `fills` is then empty rather than partial. The order is the answer without them, so neither fails the request.
+          example: true
+    OrderFill:
+      type: object
+      description: One trade an order took part in. Money is in quote units, sizes in the traded asset.
+      properties:
+        trade_id:
+          type: integer
+          format: int64
+          description: The venue's own number for the trade.
+          example: 1043773
+        size:
+          type: string
+          example: "0.00014"
+        price:
+          type: string
+          example: "77771.30"
+        quote_amount:
+          type: string
+          description: What the trade was worth in quote units.
+          example: "10.89"
+        is_maker:
+          type: boolean
+          description: True when this order sat in the book and the other side took it.
+          example: false
+        tx_hash:
+          type: string
+          description: The hash of the transaction that produced the trade, which is the taker's order submission. Occasionally a placeholder on the venue's side.
+          example: 0x8f2c...
+        traded_at:
+          type: string
+          format: date-time
+          example: "2026-09-18T12:41:03Z"
     ActivityPage:
       type: object
       description: A page of the account activity feed.
@@ -1765,6 +2497,258 @@ components:
           description: Present for side=buy. Absent otherwise.
           items:
             $ref: '#/components/schemas/OrderBookLevel'
+    DepositQuoteRequest:
+      type: object
+      required:
+        - source_asset
+        - source_amount
+        - sender_address
+        - destination_address
+      properties:
+        source_asset:
+          type: string
+          maxLength: 128
+          description: 'What the caller pays with, as `<chain>/mainnet/coin` for a chain''s own coin or `<chain>/mainnet/erc20/<address>` for a token. Chains quoted today: ton, eth, bsc, base, arb. Anything else answers 400 unsupported_source_asset.'
+          example: ton/mainnet/coin
+        source_amount:
+          type: string
+          pattern: ^[1-9][0-9]{0,77}$
+          description: How much of source_asset the caller is willing to spend, in the asset's smallest unit (nanoton, wei, the token's own decimals). The payloads never ask for more than this.
+          example: "25000000000"
+        sender_address:
+          type: string
+          maxLength: 128
+          description: The address on the source chain the payloads are sent from, in that chain's own form. It is also where a failed fill is refunded to.
+          example: UQARERERERERERERERERERERERERERERERERERERERERERbvW
+        destination_address:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{40}$
+          description: The Ethereum address whose Lighter account is credited. Must be the L1 address this wallet has proved, once it has proved one; a first deposit is quoted for the address it names.
+          example: 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984
+    DepositQuote:
+      type: object
+      required:
+        - quote_id
+        - provider
+        - created_at
+        - expires_at
+        - input
+        - output
+        - payloads
+      properties:
+        quote_id:
+          type: string
+          description: Names this quote in logs and support. Not a lookup key.
+          example: q_3f9c2b1e4a7d4f619c3a1b2d3e4f5a6b
+        provider:
+          type: string
+          enum:
+            - relay
+            - direct
+          description: Who fills the order. relay is the cross-chain aggregator; direct means the source asset is already USDC on Ethereum and the payloads call the gateway themselves.
+          example: relay
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          description: Past this, ask again rather than sign.
+        input:
+          $ref: '#/components/schemas/DepositQuoteInput'
+        output:
+          $ref: '#/components/schemas/DepositQuoteOutput'
+        slippage_bps:
+          type: integer
+          description: 'The slippage the quote allowed for, in basis points. It applies to the source side: the deposit itself is exact.'
+          example: 100
+        payloads:
+          type: array
+          description: What to sign and broadcast, in this order.
+          items:
+            $ref: '#/components/schemas/QuotePayload'
+        tracking:
+          $ref: '#/components/schemas/QuoteTracking'
+    DepositQuoteInput:
+      type: object
+      description: The request, echoed.
+      required:
+        - source_asset
+        - source_amount
+        - sender_address
+      properties:
+        source_asset:
+          type: string
+          example: ton/mainnet/coin
+        source_amount:
+          type: string
+          example: "25000000000"
+        sender_address:
+          type: string
+          example: UQARERERERERERERERERERERERERERERERERERERERERERbvW
+    DepositQuoteOutput:
+      type: object
+      required:
+        - asset_id
+        - destination_address
+        - expected_amount
+        - min_amount
+      properties:
+        asset_id:
+          type: string
+          description: What arrives, always USDC on Ethereum.
+          example: eth/mainnet/erc20/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+        destination_address:
+          type: string
+          example: 0x1f9840a85d5af5bf1d1762f925bdaddc4201f984
+        expected_amount:
+          type: string
+          description: What is deposited, in USDC's smallest unit (6 decimals).
+          example: "34746294"
+        min_amount:
+          type: string
+          description: 'Equal to expected_amount: the deposit is exact.'
+          example: "34746294"
+    QuotePayload:
+      type: object
+      description: 'One thing to sign. Which fields of meta are set depends on the chain: a TON message carries to, value, data (the body as a base64 BOC), bounce and mode; an EVM transaction carries to, value and data (0x calldata).'
+      required:
+        - payload_id
+        - type
+        - chain_id
+        - meta
+      properties:
+        payload_id:
+          type: string
+          example: p_01
+        type:
+          type: string
+          enum:
+            - main
+            - approval
+          description: approval is a token allowance the main transaction needs; main moves the funds. An approval always precedes its main.
+          example: main
+        chain_id:
+          type: string
+          description: The chain to broadcast on, as `<chain>/mainnet`.
+          example: ton/mainnet
+        fee:
+          $ref: '#/components/schemas/PayloadFee'
+        meta:
+          $ref: '#/components/schemas/PayloadMeta'
+    PayloadMeta:
+      type: object
+      required:
+        - to
+        - value
+      properties:
+        to:
+          type: string
+          example: EQCrdGsDTqA2t6xRR4N6V4J705F7w_VQbUdHnofsh-8lVIPs
+        value:
+          type: string
+          description: In the chain's smallest unit.
+          example: "25000000000"
+        data:
+          type: string
+          description: A base64 BOC on TON, 0x calldata on an EVM chain. Absent when there is none.
+          example: te6cckEBAQEASAAAjAAAAAAweGYwNWExZmJj
+        bounce:
+          type: boolean
+          description: TON only.
+          example: false
+        mode:
+          type: integer
+          description: TON only, the send mode.
+          example: 1
+    PayloadFee:
+      type: object
+      description: 'The network fee the wallet should expect, when the quote knows it, in the chain''s smallest unit. Which fields of data are set depends on type: value is a flat amount and nothing else; evm is a legacy gas transaction, limit and price with amount their product; eip1559 is limit, max_price and miner_price with amount as limit times max_price, and network_price only when the quote stated a base fee. Absent when the quote knows no fee -- a direct quote, or a chain whose fee the wallet estimates itself.'
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          enum:
+            - value
+            - evm
+            - eip1559
+          example: eip1559
+        data:
+          type: object
+          required:
+            - amount
+          properties:
+            amount:
+              type: string
+              example: "1000000000000"
+            limit:
+              type: string
+              description: evm and eip1559.
+              example: "100000"
+            price:
+              type: string
+              description: evm only.
+              example: "10000000"
+            network_price:
+              type: string
+              description: eip1559 only, and only when known.
+              example: "10000000"
+            max_price:
+              type: string
+              description: eip1559 only.
+              example: "20000000"
+            miner_price:
+              type: string
+              description: eip1559 only.
+              example: "0"
+    QuoteTracking:
+      type: object
+      description: 'How to follow the fill. Absent when provider is direct: the client broadcast the gateway call itself and holds its hash.'
+      required:
+        - execution_id
+        - status_url
+      properties:
+        execution_id:
+          type: string
+          description: swaps-backend's execution id for the fill.
+          example: a3f1c2d4-5b6e-4f70-8a9b-0c1d2e3f4a5b
+        status_url:
+          type: string
+          description: The path to poll, under this API's base path.
+          example: /tk-perps/public-api/v1/funding/status/a3f1c2d4-5b6e-4f70-8a9b-0c1d2e3f4a5b
+    FundingStatus:
+      type: object
+      required:
+        - execution_id
+        - status
+      properties:
+        execution_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - success
+            - failure
+            - refund
+            - unknown
+          description: pending until the aggregator settles it. success, failure and refund are final. unknown is an execution nobody has heard of, which is also what a quote nobody paid becomes once swaps-backend closes it out.
+          example: pending
+        details:
+          type: string
+          description: The aggregator's own words about a failure or refund, when it has any.
+        tx_hashes:
+          type: array
+          description: The Ethereum transactions of the fill, once there are any. The first is the one that called the gateway, and what POST /funding/deposit takes as l1_tx_hash.
+          items:
+            type: string
+        in_tx_hashes:
+          type: array
+          description: The source-chain transactions the aggregator saw.
+          items:
+            type: string
   responses:
     Unauthorized:
       description: |-
@@ -1787,7 +2771,9 @@ components:
         A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
       content: *id001
     Conflict:
-      description: 'The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.'
+      description: |-
+        The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
+        Code readonly_token_unavailable is the same shape of answer about a different record: the wallet has no usable read-only token, and an endpoint that can read nothing without one says so here rather than as a 503. The service is up; what is missing is the wallet's own credential, minted through /account/ro-token/issue.
       content: *id001
     ServiceUnavailable:
       description: A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.

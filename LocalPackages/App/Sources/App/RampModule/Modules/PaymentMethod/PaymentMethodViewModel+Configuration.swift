@@ -31,9 +31,7 @@ extension PaymentMethodViewModelImplementation {
 
         switch rampLayoutItem.type {
         case .fiat:
-            let cashSection = PaymentMethodViewController.Section.cashMethods(
-                title: showsFiatCurrencyPicker ? cashSectionTitle : nil
-            )
+            let cashSection = PaymentMethodViewController.Section.cashMethods(title: nil)
             snapshot.appendSections([cashSection])
             if onRampLayout != nil, !asset.cashMethods.isEmpty {
                 snapshot.appendItems(asset.cashMethods.map { .cashMethod($0) }, toSection: cashSection)
@@ -125,13 +123,6 @@ extension PaymentMethodViewModelImplementation {
             return TKLocales.Ramp.Withdraw.PaymentMethod.assetToReceiveTitle
         default:
             return TKLocales.Ramp.Deposit.PaymentMethod.title
-        }
-    }
-
-    var cashSectionTitle: String {
-        switch flow {
-        case .deposit: return TKLocales.Ramp.Deposit.PaymentMethod.buyWithCash
-        case .withdraw: return TKLocales.Ramp.Withdraw.PaymentMethod.sellToCash
         }
     }
 

@@ -229,7 +229,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         // Before the deeplink dispatch below, so a deeplink or a push arriving on the way in
         // has something to cancel the boot stories on.
         setupStoriesController()
-        try? setupTONWalletKitIfNeeded()
         setupWalletConnectIfNeeded()
         DispatchQueue.main.async {
             _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
@@ -249,15 +248,30 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         walletsResolveService.resolveWalletsByPubkey(wallets)
     }
 
-    func handleDeeplink(deeplink: CoordinatorDeeplink?, fromStories: Bool) -> Bool {
+    func handleDeeplink(
+        deeplink: CoordinatorDeeplink?,
+        fromStories: Bool,
+        dappOpenFrom: DappOpenSource = .deepLink,
+        utm: UtmParameters = .empty
+    ) -> Bool {
         let didHandle: Bool
         switch deeplink {
         case let tonkeeperDeeplink as KeeperCore.Deeplink:
-            didHandle = handleTonkeeperDeeplink(tonkeeperDeeplink, fromStories: fromStories, sendSource: .deepLink)
+            didHandle = handleTonkeeperDeeplink(
+                tonkeeperDeeplink,
+                fromStories: fromStories,
+                sendSource: .deepLink(utm: utm),
+                dappOpenFrom: dappOpenFrom
+            )
         case let string as String:
             do {
                 let deeplink = try mainController.parseDeeplink(deeplink: string)
-                didHandle = handleTonkeeperDeeplink(deeplink, fromStories: fromStories, sendSource: .deepLink)
+                didHandle = handleTonkeeperDeeplink(
+                    deeplink,
+                    fromStories: fromStories,
+                    sendSource: .deepLink(utm: utm.isEmpty ? UtmParameters(link: string) : utm),
+                    dappOpenFrom: dappOpenFrom
+                )
             } catch let error as DeeplinkParserError where error.isSilent {
                 didHandle = true
             } catch {
@@ -347,7 +361,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             walletFlow.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, _ in
                 self?.openStakingItemDetails(
                     wallet: wallet,
-                    stakingPoolInfo: stakingPoolInfo
+                    stakingPoolInfo: stakingPoolInfo,
+                    initiatedBy: .user
                 )
             }
 
@@ -355,7 +370,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 self?.openStakingCollect(
                     wallet: wallet,
                     stakingPoolInfo: stakingPoolInfo,
-                    accountStackingInfo: accountStackingInfo
+                    accountStackingInfo: accountStackingInfo,
+                    initiatedBy: .user
                 )
             }
 
@@ -375,16 +391,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             }
 
             walletFlow.didTapStake = { [weak self] wallet in
-                self?.openStake(wallet: wallet)
+                self?.openStake(wallet: wallet, initiatedBy: .user)
             }
 
             walletFlow.didTapBackup = { [weak self] wallet in
-                self?.openBackup(wallet: wallet)
+                self?.openBackup(wallet: wallet, source: .walletSetupSection)
             }
 
             walletFlow.didTapBattery = { [weak self] wallet in
                 self?.openBattery(
-                    wallet: wallet
+                    wallet: wallet,
+                    initiatedBy: .user
                 )
             }
 
@@ -394,19 +411,24 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         walletCoordinator.collectiblesDidOpenDapp = { [weak self] url, title in
-            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
+            self?.openDapp(title: title, url: url, analyticsFrom: .collectibles)
         }
         walletCoordinator.collectiblesDidRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
-            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing, entrySource: .collectibles)
         }
         walletCoordinator.collectiblesDidRequestDepositTon = { [weak self] wallet in
-            self?.openDepositTon(wallet: wallet)
+            self?.openDepositTon(wallet: wallet, entrySource: .collectibles)
         }
-        walletCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
+        walletCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
         }
-        walletCoordinator.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink, origin: .banner)
+        walletCoordinator.didRequestBannerDeeplinkHandling = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(
+                deeplink,
+                fromStories: false,
+                sendSource: .deepLink(utm: utm),
+                origin: .banner
+            )
         }
 
         let isPerpsEntryPointEnabled = keeperCoreMainAssembly
@@ -434,6 +456,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                 wallet: wallet,
                                 fromToken: address(from),
                                 toToken: address(to),
+                                initiatedBy: .user,
                                 presentingViewController: navigationController
                             )
                         } else {
@@ -446,6 +469,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                         $0[Self.preservePresentedStackKey] = navigationController
                                     }
                                 ),
+                                initiatedBy: .user,
                                 presentingViewController: navigationController
                             )
                         }
@@ -459,6 +483,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                             wallet: wallet,
                             multichainState: multichainState,
                             initialSelection: initialSelection,
+                            initiatedBy: .user,
                             presentingViewController: navigationController
                         )
                     }
@@ -521,7 +546,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     self?.handleTronUsdtFees(wallet: wallet, snapshot: snapshot, trigger: trigger)
                 },
                 onOpenStaking: { [weak self] wallet in
-                    self?.openStake(wallet: wallet)
+                    self?.openStake(wallet: wallet, initiatedBy: .user)
                 },
                 onOpenPerps: isPerpsEntryPointEnabled ? { [weak self] navigationController in
                     self?.openPerps(on: navigationController)
@@ -578,12 +603,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         let browserCoordinator = browserModule.createBrowserCoordinator()
 
-        browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
+        browserCoordinator.didHandleDeeplink = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
         }
 
         browserCoordinator.didRequestOpenBuySell = { [weak self] wallet in
-            self?.openBuy(wallet: wallet)
+            self?.openBuy(wallet: wallet, entrySource: .browser)
         }
 
         self.walletCoordinator = walletCoordinator
@@ -592,19 +617,24 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.browserCoordinator = browserCoordinator
 
         multichainWalletCoordinator?.collectiblesDidOpenDapp = { [weak self] url, title in
-            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
+            self?.openDapp(title: title, url: url, analyticsFrom: .collectibles)
         }
-        multichainWalletCoordinator?.collectiblesDidRequestDeeplinkHandling = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
+        multichainWalletCoordinator?.collectiblesDidRequestDeeplinkHandling = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
         }
-        multichainWalletCoordinator?.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink, origin: .banner)
+        multichainWalletCoordinator?.didRequestBannerDeeplinkHandling = { [weak self] deeplink, utm in
+            _ = self?.handleTonkeeperDeeplink(
+                deeplink,
+                fromStories: false,
+                sendSource: .deepLink(utm: utm),
+                origin: .banner
+            )
         }
         multichainWalletCoordinator?.collectiblesDidRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
-            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing, entrySource: .collectibles)
         }
         multichainWalletCoordinator?.collectiblesDidRequestDepositTon = { [weak self] wallet in
-            self?.openDepositTon(wallet: wallet)
+            self?.openDepositTon(wallet: wallet, entrySource: .collectibles)
         }
         multichainWalletCoordinator?.didRequestDeeplinkHandling = { [weak self] deeplink in
             self?.handleRaffleDeeplink(deeplink)
@@ -767,14 +797,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     self?.openDapp(
                         title: title,
                         url: url,
-                        analyticsFrom: .deepLink
+                        analyticsFrom: .history
                     )
                 },
                 didTapAddFunds: { [weak self] wallet in
-                    self?.openDeposit(wallet: wallet, entrySource: .walletScreen /* TODO: add history source */ )
+                    self?.openDeposit(wallet: wallet, entrySource: .historyScreen)
                 },
                 didRequestDepositTon: { [weak self] wallet in
-                    self?.openDepositTon(wallet: wallet)
+                    self?.openDepositTon(wallet: wallet, entrySource: .historyScreen)
                 }
             )
         )
@@ -885,10 +915,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     private var shouldShowAddMultichainWalletTooltip: Bool {
-        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
-            return false
-        }
-        return keeperCoreMainAssembly.storesAssembly.walletsStore.wallets.filter(\.isMultichain).isEmpty
+        keeperCoreMainAssembly.storesAssembly.walletsStore.wallets.filter(\.isMultichain).isEmpty
     }
 
     @MainActor
@@ -1010,7 +1037,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
-            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            guard let self else { return }
+            openBuy(
+                wallet: wallet,
+                isInternalPurchasing: isInternalPurchasing,
+                entrySource: depositAnalyticsSource(for: sendSource)
+            )
         }
         sendTokenCoordinator.didRequestRefill = { [weak self] token, onRefill in
             self?.openFeeRefill(token: token, wallet: wallet, onRefill: onRefill)
@@ -1019,6 +1051,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openBattery(
                 wallet: wallet,
                 keepCurrentModal: true,
+                initiatedBy: sendSource.initiatedBy,
                 onRechargeSuccess: onRechargeSuccess
             )
         }
@@ -1094,6 +1127,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openBattery(
                 wallet: wallet,
                 keepCurrentModal: true,
+                initiatedBy: sendSource.initiatedBy,
                 onRechargeSuccess: onRechargeSuccess
             )
         }
@@ -1165,7 +1199,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
-            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            guard let self else { return }
+            openBuy(
+                wallet: wallet,
+                isInternalPurchasing: isInternalPurchasing,
+                entrySource: depositAnalyticsSource(for: sendSource)
+            )
         }
         sendTokenCoordinator.didRequestRefill = { [weak self] token, onRefill in
             self?.openFeeRefill(token: token, wallet: wallet, onRefill: onRefill)
@@ -1174,6 +1213,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openBattery(
                 wallet: wallet,
                 keepCurrentModal: true,
+                initiatedBy: sendSource.initiatedBy,
                 onRechargeSuccess: onRechargeSuccess
             )
         }
@@ -1210,7 +1250,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 openWebSwap(
                     wallet: wallet,
                     fromToken: fromToken,
-                    toToken: toToken
+                    toToken: toToken,
+                    initiatedBy: .user
                 )
             } else {
                 if let state = wallet.multichainWalletState {
@@ -1220,7 +1261,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                         nativeSwapContext: NativeSwapContext(
                             fromTokenAddress: fromToken,
                             toTokenAddress: toToken
-                        )
+                        ),
+                        initiatedBy: .user
                     )
                 } else {
                     openNativeSwap(
@@ -1228,7 +1270,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                         nativeSwapContext: NativeSwapContext(
                             fromTokenAddress: fromToken,
                             toTokenAddress: toToken
-                        )
+                        ),
+                        initiatedBy: .user
                     )
                 }
             }
@@ -1242,6 +1285,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         multichainState: MultichainWalletState,
         nativeSwapContext: NativeSwapContext = NativeSwapContext(),
         initialSelection: MultichainSwapInitialAssetSelection? = nil,
+        initiatedBy: InitiatedBy,
         presentingViewController: UIViewController? = nil
     ) {
         let navigationController = TKNavigationController()
@@ -1253,6 +1297,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             multichainState: multichainState,
             nativeSwapContext: nativeSwapContext,
             initialSelection: initialSelection,
+            initiatedBy: initiatedBy,
             router: NavigationControllerRouter(rootViewController: navigationController),
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -1292,7 +1337,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             guard let self else { return }
 
-            openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            openBuy(
+                wallet: wallet,
+                isInternalPurchasing: isInternalPurchasing,
+                entrySource: depositAnalyticsSource(for: initiatedBy)
+            )
         }
 
         coordinator.didRequestFeeDeposit = { [weak self, weak navigationController] assetId, onDismiss in
@@ -1314,6 +1363,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openBattery(
                 wallet: wallet,
                 keepCurrentModal: true,
+                initiatedBy: initiatedBy,
                 onRechargeSuccess: onRechargeSuccess
             )
         }
@@ -1341,6 +1391,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     func openNativeSwap(
         wallet: Wallet,
         nativeSwapContext: NativeSwapContext = NativeSwapContext(),
+        initiatedBy: InitiatedBy,
         presentingViewController: UIViewController? = nil
     ) {
         let navigationController = TKNavigationController()
@@ -1355,6 +1406,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         ).swapCoordinator(
             wallet: wallet,
             nativeSwapContext: nativeSwapContext,
+            initiatedBy: initiatedBy,
             router: NavigationControllerRouter(rootViewController: navigationController)
         )
 
@@ -1370,7 +1422,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             guard let self else { return }
 
-            openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+            openBuy(
+                wallet: wallet,
+                isInternalPurchasing: isInternalPurchasing,
+                entrySource: depositAnalyticsSource(for: initiatedBy)
+            )
         }
 
         addChild(coordinator)
@@ -1436,6 +1492,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         wallet: Wallet,
         fromToken: String? = nil,
         toToken: String? = nil,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         presentingViewController: UIViewController? = nil
     ) {
         let navigationController = TKNavigationController()
@@ -1451,6 +1509,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             wallet: wallet,
             fromToken: fromToken,
             toToken: toToken,
+            initiatedBy: initiatedBy,
+            utm: utm,
             router: NavigationControllerRouter(rootViewController: navigationController)
         )
 
@@ -1513,8 +1573,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         _ deeplink: KeeperCore.Deeplink,
         fromStories: Bool,
         sendSource: SendAnalyticsSource,
-        origin: DeeplinkOrigin = .app
+        origin: DeeplinkOrigin = .app,
+        dappOpenFrom: DappOpenSource = .deepLink
     ) -> Bool {
+        let utm = sendSource.utm
         switch deeplink {
         case let .transfer(data):
             switch data {
@@ -1549,13 +1611,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 return true
             }
         case .staking:
-            openStakingDeeplink()
+            openStakingDeeplink(utm: utm)
             return true
         case let .pool(poolAddress):
-            openPoolDetailsDeeplink(poolAddress: poolAddress)
+            openPoolDetailsDeeplink(poolAddress: poolAddress, utm: utm)
             return true
         case let .swap(data):
-            openSwapDeeplink(fromToken: data.fromToken, toToken: data.toToken)
+            openSwapDeeplink(fromToken: data.fromToken, toToken: data.toToken, utm: utm)
             return true
         case let .action(eventId):
             openActionDeeplink(eventId: eventId)
@@ -1620,10 +1682,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         case let .walletConnect(payload):
             return handleWalletConnectDeeplink(payload)
         case let .dapp(dappURL):
-            return handleDappDeeplink(url: dappURL)
+            return handleDappDeeplink(url: dappURL, analyticsFrom: dappOpenFrom, utm: utm)
         case let .browser(network):
             openBrowserTabExplore(network: network)
-            browserCoordinator?.logBrowserOpen(from: fromStories ? .story : .deepLink)
+            browserCoordinator?.logBrowserOpen(
+                from: fromStories ? .story : .deepLink,
+                utm: utm
+            )
             return true
         case .migration:
             openMigrationDeeplink(source: migrationSource(fromStories: fromStories, origin: origin))
@@ -1639,7 +1704,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 source: assetViewAnalyticsSource(for: sendSource)
             )
         case let .battery(battery):
-            handleBatteryDeeplink(battery)
+            handleBatteryDeeplink(battery, utm: utm)
             return true
         case let .story(storyId):
             handleStoryDeeplink(storyId: storyId)
@@ -1660,10 +1725,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             openMysteryRaffleDeeplink()
             return true
         case let .deposit(parameters):
-            openRampDeeplink(flow: .deposit, parameters: parameters, entrySource: depositAnalyticsSource(for: sendSource))
+            openRampDeeplink(
+                flow: .deposit,
+                parameters: parameters,
+                entrySource: depositAnalyticsSource(for: sendSource),
+                utm: utm
+            )
             return true
         case let .withdraw(parameters):
-            openRampDeeplink(flow: .withdraw, parameters: parameters, entrySource: depositAnalyticsSource(for: sendSource))
+            openRampDeeplink(
+                flow: .withdraw,
+                parameters: parameters,
+                entrySource: depositAnalyticsSource(for: sendSource),
+                utm: utm
+            )
             return true
         }
     }
@@ -1674,51 +1749,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         switch payload {
         case .empty:
             return false
-        case let .withParameters(parameters, url):
-            if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.walletKitEnabled) {
-                return handleTonConnectDeeplink(
-                    url: url,
-                    parameters: parameters
-                )
-            } else {
-                return handleTonConnectDeeplink(parameters: parameters)
-            }
+        case let .withParameters(parameters, _):
+            return handleTonConnectDeeplink(parameters: parameters)
         }
-    }
-
-    private func handleTonConnectDeeplink(
-        url: URL,
-        parameters: TonConnectParameters
-    ) -> Bool {
-        ToastPresenter.hideAll()
-        ToastPresenter.showToast(configuration: .loading)
-
-        keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
-            .setPendingConnectionSource(
-                parameters.source,
-                clientId: parameters.clientId,
-                manifestURL: parameters.requestPayload.manifestUrl
-            )
-
-        Task {
-            do {
-                try await keeperCoreMainAssembly.tonWalletKitAssembly.tonWalletKit.connect(url: url.absoluteString)
-
-                await MainActor.run {
-                    ToastPresenter.hideToast()
-                }
-            } catch {
-                await MainActor.run {
-                    ToastPresenter.hideToast()
-                    ToastPresenter.showToast(
-                        configuration: ToastPresenter.Configuration(
-                            title: error.localizedDescription
-                        )
-                    )
-                }
-            }
-        }
-        return true
     }
 
     private func handleTonConnectDeeplink(parameters: TonConnectParameters) -> Bool {
@@ -1765,7 +1798,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     }
 
                     coordinator.didRequestOpeningBrowser = { [weak self] manifest in
-                        self?.openDapp(title: manifest.name, url: manifest.url, analyticsFrom: .deepLink)
+                        self?.openDapp(title: manifest.name, url: manifest.url, analyticsFrom: .tonconnect)
                     }
 
                     addChild(coordinator)
@@ -1805,10 +1838,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 router: NavigationControllerRouter(
                     rootViewController: navigationController
                 ),
-                analyticsContext: WalletFlowAnalyticsContext(
-                    from: .main,
-                    multichainEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
-                )
+                analyticsContext: WalletFlowAnalyticsContext(from: .main)
             )
 
             coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
@@ -1850,7 +1880,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             ),
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
-            isMysteryRaffleEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
             analyticsProvider: coreAssembly.analyticsProvider,
             tooltipsService: coreAssembly.tooltipsAssembly.service,
             shouldShowAddMultichainWalletTooltip: shouldShowAddMultichainWalletTooltip
@@ -2016,20 +2045,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
         )
 
-        let multichainEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.multichainEnabled)
-
         let coordinator = module.createAddWalletCoordinator(
             options: [
-                multichainEnabled ? .createMultichain : .createRegular,
+                .createMultichain,
                 .importRegular,
                 .signer,
                 .keystone,
                 .ledger,
                 .importWatchOnly,
-                .importTetra,
             ],
             router: router,
             analyticsContext: module.makeWalletFlowAnalyticsContext(from: .main)
@@ -2184,7 +2207,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         coordinator.didTapBattery = { [weak self] wallet in
             self?.openBattery(
-                wallet: wallet
+                wallet: wallet,
+                initiatedBy: .user
             )
         }
 
@@ -2522,6 +2546,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             return
         }
 
+        let historyListModule = HistoryModule(
+            dependencies: HistoryModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        ).createTronTRXHistoryListModule(wallet: wallet)
+
+        historyListModule.output.didSelectEvent = { [weak self] event in
+            switch event {
+            case let .tonEvent(event):
+                self?.openHistoryEventDetails(wallet: wallet, event: event, network: wallet.network, fromViewController: nil)
+            case let .tronEvent(event):
+                self?.openTronEventDetails(wallet: wallet, event: event, network: wallet.network, fromViewController: nil)
+            }
+        }
+
         let module = TokenDetailsAssembly.module(
             wallet: wallet,
             balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
@@ -2534,9 +2574,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     rateConverter: RateConverter()
                 )
             ),
-            // The only TRON history available here is the USDT TRC20 feed, which says nothing
-            // about TRX, so the screen shows the header alone.
-            tokenDetailsListContentViewController: TokenDetailsHeaderContentViewController(),
+            tokenDetailsListContentViewController: historyListModule.view,
             chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
                 ChartAssembly.module(
                     token: .tron(.trx),
@@ -2550,6 +2588,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         module.output.didTapReceive = { [weak self] token in
             self?.openReceive(token: token, wallet: wallet)
+        }
+
+        module.output.didTapSend = { [weak self] token in
+            self?.openSendResolvingMultichain(
+                wallet: wallet,
+                sendInput: .direct(item: token.sendV3Item),
+                sendSource: .jettonScreen,
+                comment: nil
+            )
         }
 
         module.output.didOpenURL = { [weak self] url in
@@ -2607,7 +2654,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             router: NavigationControllerRouter(rootViewController: navigationController)
         )
         coordinator.openBattery = { [weak self] in
-            self?.openBattery(wallet: wallet, keepCurrentModal: true)
+            self?.openBattery(wallet: wallet, keepCurrentModal: true, initiatedBy: .user)
         }
         self.topUpCoordinator = coordinator
 
@@ -2724,15 +2771,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         module.output.didTapStake = { [weak self] wallet, stakingPoolInfo in
-            self?.openStake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+            self?.openStake(wallet: wallet, stakingPoolInfo: stakingPoolInfo, initiatedBy: .user)
         }
 
         module.output.didTapUnstake = { [weak self] wallet, stakingPoolInfo in
-            self?.openUnstake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+            self?.openUnstake(wallet: wallet, stakingPoolInfo: stakingPoolInfo, initiatedBy: .user)
         }
 
         module.output.didTapCollect = { [weak self] in
-            self?.openStakingCollect(wallet: $0, stakingPoolInfo: $1, accountStackingInfo: $2)
+            self?.openStakingCollect(
+                wallet: $0,
+                stakingPoolInfo: $1,
+                accountStackingInfo: $2,
+                initiatedBy: .user
+            )
         }
 
         navigationController.pushViewController(module.view, animated: true)
@@ -2740,7 +2792,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func openStakingItemDetails(
         wallet: Wallet,
-        stakingPoolInfo: StackingPoolInfo
+        stakingPoolInfo: StackingPoolInfo,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty
     ) {
         guard let navigationController = router.rootViewController.navigationController else { return }
 
@@ -2763,15 +2817,31 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         module.output.didTapStake = { [weak self] wallet, stakingPoolInfo in
-            self?.openStake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+            self?.openStake(
+                wallet: wallet,
+                stakingPoolInfo: stakingPoolInfo,
+                initiatedBy: initiatedBy,
+                utm: utm
+            )
         }
 
         module.output.didTapUnstake = { [weak self] wallet, stakingPoolInfo in
-            self?.openUnstake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+            self?.openUnstake(
+                wallet: wallet,
+                stakingPoolInfo: stakingPoolInfo,
+                initiatedBy: initiatedBy,
+                utm: utm
+            )
         }
 
         module.output.didTapCollect = { [weak self] in
-            self?.openStakingCollect(wallet: $0, stakingPoolInfo: $1, accountStackingInfo: $2)
+            self?.openStakingCollect(
+                wallet: $0,
+                stakingPoolInfo: $1,
+                accountStackingInfo: $2,
+                initiatedBy: initiatedBy,
+                utm: utm
+            )
         }
 
         navigationController.pushViewController(module.view, animated: true)
@@ -2780,7 +2850,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     func openStakingCollect(
         wallet: Wallet,
         stakingPoolInfo: StackingPoolInfo,
-        accountStackingInfo: AccountStackingInfo
+        accountStackingInfo: AccountStackingInfo,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty
     ) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
@@ -2791,6 +2863,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 operation: .withdraw(stakingPoolInfo, isCollect: true),
                 amount: BigUInt(accountStackingInfo.readyWithdraw)
             ),
+            initiatedBy: initiatedBy,
+            utm: utm,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: NavigationControllerRouter(rootViewController: navigationController)
@@ -2817,7 +2891,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         if let deeplink = try? keeperCoreMainAssembly.deeplinkParser.parse(
             string: url.absoluteString,
             source: .browser
-        ), handleDeeplink(deeplink: deeplink, fromStories: false) {
+        ), handleDeeplink(
+            deeplink: deeplink,
+            fromStories: false,
+            utm: UtmParameters(link: url.absoluteString)
+        ) {
             return
         }
         router.rootViewController.modalPresentationSourceViewController().present(
@@ -2839,7 +2917,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                         string: url,
                         source: .browser
                     )
-                    _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+                    _ = self.handleDeeplink(
+                        deeplink: deeplink,
+                        fromStories: false,
+                        utm: UtmParameters(link: url)
+                    )
                 } catch let error as DeeplinkParserError where error.isSilent {
                     return
                 } catch {
@@ -2857,8 +2939,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
         let deeplinkHandler = TKWebViewControllerNavigationHandler(
             deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
-            openDeeplinkHandler: { [weak self] deeplink in
-                _ = self?.handleDeeplink(deeplink: deeplink, fromStories: false)
+            openDeeplinkHandler: { [weak self] deeplink, utm in
+                _ = self?.handleDeeplink(
+                    deeplink: deeplink,
+                    fromStories: false,
+                    utm: utm
+                )
             }
         )
 
@@ -2869,13 +2955,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         fromViewController.present(navigationController, animated: true)
     }
 
-    func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
+    func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo, initiatedBy: InitiatedBy, utm: UtmParameters = .empty) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
 
         let coordinator = StakingStakeCoordinator(
             wallet: wallet,
             stakingPoolInfo: stakingPoolInfo,
+            initiatedBy: initiatedBy,
+            utm: utm,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: NavigationControllerRouter(rootViewController: navigationController)
@@ -2903,13 +2991,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
+    func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo, initiatedBy: InitiatedBy, utm: UtmParameters = .empty) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
 
         let coordinator = StakingUnstakeCoordinator(
             wallet: wallet,
             stakingPoolInfo: stakingPoolInfo,
+            initiatedBy: initiatedBy,
+            utm: utm,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: NavigationControllerRouter(rootViewController: navigationController)
@@ -2940,6 +3030,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         wallet: Wallet,
         initialDeeplink: RampDeeplinkParameters? = nil,
         entrySource: DepositAnalyticsSource,
+        utm: UtmParameters = .empty,
         presentingViewController: UIViewController? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
@@ -2955,6 +3046,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             coreAssembly: coreAssembly,
             initialDeeplink: initialDeeplink,
             entrySource: entrySource,
+            utm: utm,
             depositPendingTracker: depositPendingTracker
         )
 
@@ -2966,7 +3058,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 onDidDisplayToken: { [weak self] token in
                     guard let self, flow == .deposit else { return }
                     self.coreAssembly.analyticsProvider.log(
-                        entrySource.makeDepositViewReceiveTokens(token: token)
+                        entrySource.makeDepositViewReceiveTokens(token: token),
+                        utm: utm
                     )
                 }
             )
@@ -2982,10 +3075,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         coordinator.didTapOpenSendFromWithdraw = { [weak self] wallet, sendInput in
-            self?.openSendPushedOnto(
+            guard let self else { return }
+            self.openSendPushedOnto(
                 wallet: wallet,
                 sendInput: sendInput,
-                sendSource: .walletScreen,
+                sendSource: sendAnalyticsSource(for: entrySource, utm: utm),
                 comment: nil,
                 pushRouter: rampRouter
             )
@@ -3166,7 +3260,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
     }
 
-    func openDepositTon(wallet: Wallet) {
+    func openDepositTon(wallet: Wallet, entrySource: DepositAnalyticsSource) {
         let presentingViewController = router.rootViewController
         let reloadBalance: () -> Void = { [weak self] in
             guard let balanceLoader = self?.keeperCoreMainAssembly.loadersAssembly.balanceLoader else { return }
@@ -3187,7 +3281,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     cashMethod: nil,
                     itemType: .fiat
                 ),
-                entrySource: .walletScreen,
+                entrySource: entrySource,
                 presentingViewController: presentingViewController,
                 onDismiss: reloadBalance
             )
@@ -3367,12 +3461,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         completion?()
     }
 
-    func openStake(wallet: Wallet) {
+    func openStake(wallet: Wallet, initiatedBy: InitiatedBy, utm: UtmParameters = .empty) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
 
         let coordinator = StakingCoordinator(
             wallet: wallet,
+            initiatedBy: initiatedBy,
+            utm: utm,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: NavigationControllerRouter(rootViewController: navigationController)
@@ -3400,22 +3496,28 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    func openBuy(wallet: Wallet, isInternalPurchasing: Bool) {
+    func openBuy(
+        wallet: Wallet,
+        isInternalPurchasing: Bool,
+        entrySource: DepositAnalyticsSource,
+        utm: UtmParameters = .empty
+    ) {
         if isInternalPurchasing {
-            openDeposit(wallet: wallet, entrySource: .walletScreen)
+            openDeposit(wallet: wallet, entrySource: entrySource, utm: utm)
         } else {
             openBrowserDefiFlow()
         }
     }
 
-    func openBuy(wallet: Wallet) {
-        openDeposit(wallet: wallet, entrySource: .walletScreen)
+    func openBuy(wallet: Wallet, entrySource: DepositAnalyticsSource, utm: UtmParameters = .empty) {
+        openDeposit(wallet: wallet, entrySource: entrySource, utm: utm)
     }
 
     func openDeposit(
         wallet: Wallet,
         entrySource: DepositAnalyticsSource,
-        initialDeeplink: RampDeeplinkParameters? = nil
+        initialDeeplink: RampDeeplinkParameters? = nil,
+        utm: UtmParameters = .empty
     ) {
         if wallet.isMultichain {
             openMultichainRamp(mode: .deposit(nil), wallet: wallet)
@@ -3424,7 +3526,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 flow: .deposit,
                 wallet: wallet,
                 initialDeeplink: initialDeeplink,
-                entrySource: entrySource
+                entrySource: entrySource,
+                utm: utm
             )
         }
     }
@@ -3432,12 +3535,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     func openWithdraw(
         wallet: Wallet,
         entrySource: DepositAnalyticsSource,
-        initialDeeplink: RampDeeplinkParameters? = nil
+        initialDeeplink: RampDeeplinkParameters? = nil,
+        utm: UtmParameters = .empty
     ) {
         if wallet.isMultichain {
             openSendWithTokenPicker(
                 wallet: wallet,
-                sendSource: sendAnalyticsSource(for: entrySource)
+                sendSource: sendAnalyticsSource(for: entrySource, utm: utm)
             )
             return
         }
@@ -3446,7 +3550,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             flow: .withdraw,
             wallet: wallet,
             initialDeeplink: initialDeeplink,
-            entrySource: entrySource
+            entrySource: entrySource,
+            utm: utm
         )
     }
 
@@ -3476,7 +3581,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openDapp(
                 title: title,
                 url: url,
-                analyticsFrom: .deepLink
+                analyticsFrom: .history
             )
         }
         if let fromViewController {
@@ -3511,7 +3616,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openDapp(
                 title: title,
                 url: url,
-                analyticsFrom: .deepLink
+                analyticsFrom: .history
             )
         }
 
@@ -3525,7 +3630,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    func openBackup(wallet: Wallet, source: BackupSource = .walletSetupSection) {
+    func openBackup(wallet: Wallet, source: BackupSource) {
         guard let navigationController = router.rootViewController.navigationController else { return }
         let configuration = SettingsListBackupConfigurator(
             wallet: wallet,
@@ -3558,6 +3663,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         wallet: Wallet,
         jettonMasterAddress: TonSwift.Address? = nil,
         keepCurrentModal: Bool = false,
+        initiatedBy: InitiatedBy,
+        utm: UtmParameters = .empty,
         onRechargeSuccess: (() -> Void)? = nil
     ) {
         let navigationController = TKNavigationController()
@@ -3567,6 +3674,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             router: NavigationControllerRouter(rootViewController: navigationController),
             wallet: wallet,
             jettonMasterAddress: jettonMasterAddress,
+            initiatedBy: initiatedBy,
+            utm: utm,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
@@ -3651,7 +3760,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func openManuallyBackup(
         wallet: Wallet,
-        source: BackupSource = .settings,
+        source: BackupSource,
         onComplete: (() -> Void)? = nil
     ) {
         guard let navigationController = router.rootViewController.navigationController else { return }
@@ -3821,23 +3930,45 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    private func depositAnalyticsSource(for sendSource: SendAnalyticsSource) -> DepositAnalyticsSource {
+    func depositAnalyticsSource(for sendSource: SendAnalyticsSource) -> DepositAnalyticsSource {
         switch sendSource {
-        case .qrCode:
-            .qrCode
-        default:
-            .deepLink
-        }
-    }
-
-    private func sendAnalyticsSource(for entrySource: DepositAnalyticsSource) -> SendAnalyticsSource {
-        switch entrySource {
         case .walletScreen:
             .walletScreen
         case .jettonScreen:
             .jettonScreen
         case .deepLink:
             .deepLink
+        case .qrCode:
+            .qrCode
+        case .tonconnectLocal, .tonconnectRemote:
+            .deepLink
+        }
+    }
+
+    func depositAnalyticsSource(for initiatedBy: InitiatedBy) -> DepositAnalyticsSource {
+        switch initiatedBy {
+        case .user:
+            .walletScreen
+        case .deepLink:
+            .deepLink
+        case .qrCode:
+            .qrCode
+        case .tonconnectLocal, .tonconnectRemote, .walletconnect, .evmInjected:
+            .deepLink
+        }
+    }
+
+    private func sendAnalyticsSource(
+        for entrySource: DepositAnalyticsSource,
+        utm: UtmParameters = .empty
+    ) -> SendAnalyticsSource {
+        switch entrySource {
+        case .walletScreen, .historyScreen, .browser, .collectibles:
+            .walletScreen
+        case .jettonScreen:
+            .jettonScreen
+        case .deepLink:
+            .deepLink(utm: utm)
         case .qrCode:
             .qrCode
         }
@@ -3932,22 +4063,46 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let deeplink = userInfo?["deeplink"] as? String
 
         let resolvedDeeplink: String?
+        let utm: UtmParameters
         if let link, let linkURL = URL(string: link) {
             resolvedDeeplink = link
-            openURL(linkURL, title: nil)
+            utm = UtmParameters(link: link)
+            if let deeplink = try? keeperCoreMainAssembly.deeplinkParser.parse(
+                string: link,
+                source: .browser
+            ), handleDeeplink(
+                deeplink: deeplink,
+                fromStories: false,
+                dappOpenFrom: .push,
+                utm: utm
+            ) {
+                // Push delivered a tonkeeper deeplink — handled above.
+            } else {
+                openURL(linkURL, title: nil)
+            }
         } else if let dappUrl, let dappUrlURL = URL(string: dappUrl) {
             resolvedDeeplink = dappUrl
-            openDapp(title: nil, url: dappUrlURL, analyticsFrom: .push)
+            utm = UtmParameters(link: dappUrl)
+            openDapp(title: nil, url: dappUrlURL, analyticsFrom: .push, utm: utm)
         } else {
             let deeplink = link ?? dappUrl ?? deeplink
             resolvedDeeplink = deeplink
-            _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+            utm = UtmParameters(link: deeplink)
+            _ = self.handleDeeplink(
+                deeplink: deeplink,
+                fromStories: false,
+                dappOpenFrom: .push,
+                utm: utm
+            )
         }
 
-        coreAssembly.analyticsProvider.log(PushClick(
-            pushId: pushId,
-            deepLink: resolvedDeeplink.map(Self.removePrivateDataFromUrl)
-        ))
+        coreAssembly.analyticsProvider.log(
+            PushClick(
+                pushId: pushId,
+                deepLink: resolvedDeeplink.map(Self.removePrivateDataFromUrl)
+            ),
+            utm: utm
+        )
     }
 
     private static let regexPrivateData = try! NSRegularExpression(pattern: "[a-fA-F0-9]{64}|0:[a-fA-F0-9]{64}")

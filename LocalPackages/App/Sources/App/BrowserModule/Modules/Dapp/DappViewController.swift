@@ -8,17 +8,26 @@ import TKUIKit
 import UIKit
 
 final class DappViewController: UIViewController {
+    private static let headerFallbackTimeout: TimeInterval = 15
+
     private let viewModel: DappViewModel
 
     private var bridgeWebViewController: TKBridgeWebViewController?
-    private let deeplinkHandler: (_ deeplink: Deeplink) -> Void
+    var currentURL: URL? {
+        bridgeWebViewController?.currentURL
+    }
+
+    private var headerFallbackWorkItem: DispatchWorkItem?
+    private var isHeaderForcedVisible = false
+
+    private let deeplinkHandler: (_ deeplink: Deeplink, _ utm: UtmParameters) -> Void
     private let deeplinkParser: DeeplinkParser
     private let logger: Logger
 
     init(
         viewModel: DappViewModel,
         logger: Logger,
-        deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void,
+        deeplinkHandler: @escaping (_ deeplink: Deeplink, _ utm: UtmParameters) -> Void,
         deeplinkParser: DeeplinkParser
     ) {
         self.viewModel = viewModel
@@ -58,6 +67,31 @@ final class DappViewController: UIViewController {
 }
 
 private extension DappViewController {
+    func scheduleHeaderFallback() {
+        cancelHeaderFallback()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.forceHeaderVisible()
+        }
+        headerFallbackWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.headerFallbackTimeout, execute: workItem)
+    }
+
+    func cancelHeaderFallback() {
+        headerFallbackWorkItem?.cancel()
+        headerFallbackWorkItem = nil
+    }
+
+    func forceHeaderVisible() {
+        cancelHeaderFallback()
+        isHeaderForcedVisible = true
+        bridgeWebViewController?.isHeaderHidden = false
+    }
+
+    func applyHeaderVisibility(for url: URL) {
+        guard !isHeaderForcedVisible else { return }
+        bridgeWebViewController?.isHeaderHidden = viewModel.isNativeHeaderHidden(for: url)
+    }
+
     func setupBinding() {
         viewModel.didOpenApp = { [weak self] url, title in
             guard let self, let url else { return }
@@ -84,19 +118,31 @@ private extension DappViewController {
                             string: url,
                             source: .dapp
                         )
-                        self.deeplinkHandler(deeplink)
+                        self.deeplinkHandler(deeplink, UtmParameters(link: url))
                     } catch let error as DeeplinkParserError where error.isSilent {
                         return
                     } catch {
                         throw error
                     }
-                },
-                customizeWebView: { [weak self] webView in
-                    self?.viewModel.webViewCustomizationHandler?(webView)
                 }
             )
+            bridgeWebViewController.isHeaderHidden = viewModel.isNativeHeaderHidden(for: url)
+            if bridgeWebViewController.isHeaderHidden {
+                scheduleHeaderFallback()
+            }
             bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
                 self?.viewModel.didLoadInitialRequest()
+            }
+            bridgeWebViewController.didCommitLoad = { [weak self] url in
+                self?.applyHeaderVisibility(for: url)
+            }
+            bridgeWebViewController.didFinishLoad = { [weak self] url in
+                guard let self else { return }
+                cancelHeaderFallback()
+                applyHeaderVisibility(for: url)
+            }
+            bridgeWebViewController.didFailLoad = { [weak self] in
+                self?.forceHeaderVisible()
             }
             self.addChild(bridgeWebViewController)
             self.view.addSubview(bridgeWebViewController.view)
@@ -117,6 +163,10 @@ private extension DappViewController {
             }
 
             self.bridgeWebViewController = bridgeWebViewController
+        }
+
+        viewModel.currentURLProvider = { [weak self] in
+            self?.bridgeWebViewController?.currentURL
         }
 
         viewModel.injectHandler = { [weak self] jsInjection in

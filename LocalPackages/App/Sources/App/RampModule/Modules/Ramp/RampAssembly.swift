@@ -15,7 +15,6 @@ struct RampAssembly {
         let viewModel = RampViewModelImplementation(
             flow: flow,
             wallet: wallet,
-            configuration: keeperCoreAssembly.configurationAssembly.configuration,
             onRampService: onRampService,
             currenciesService: keeperCoreAssembly.servicesAssembly.currenciesService(),
             currencyStore: keeperCoreAssembly.storesAssembly.currencyStore,

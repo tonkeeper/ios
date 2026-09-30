@@ -1,0 +1,39 @@
+appId: com.jbig.tonkeeper
+---
+- launchApp:
+    clearState: true
+
+- runFlow: "../../../steps/wallet/create_multichain_wallet.yaml"
+
+- runFlow: "../../../steps/backup/open_backup_warning_continue.yaml"
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- extendedWaitUntil:
+    visible:
+      id: "mnemonic.word.0"
+    timeout: 15000
+
+- evalScript: ${output.captured = []}
+- evalScript: ${output.i = 0}
+
+# A multichain wallet gets a 12-word BIP39 phrase, a TON-only one 24 words — collect
+# until the next word cell is missing instead of assuming a length.
+- repeat:
+    times: 24
+    while:
+      visible:
+        id: "mnemonic.word.${output.i}"
+    commands:
+      - copyTextFrom:
+          id: "mnemonic.word.${output.i}"
+      - evalScript: ${output.captured[output.i] = maestro.copiedText}
+      - assertTrue:
+          condition: ${output.captured[output.i] != null && output.captured[output.i].length > 0}
+          label: "Captured word ${output.i} must be non-empty"
+      - evalScript: ${output.i = output.i + 1}
+- assertTrue:
+    condition: ${output.i == 12 || output.i == 24}
+    label: "Expected a 12- or 24-word phrase, captured ${output.i}"
+
+- runFlow: "../../../steps/backup/complete_backup_check.yaml"
