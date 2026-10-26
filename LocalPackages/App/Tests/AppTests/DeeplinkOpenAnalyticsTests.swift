@@ -8,6 +8,7 @@ final class DeeplinkOpenAnalyticsTests: XCTestCase {
         XCTAssertEqual(DeeplinkOpen.From(link: "https://app.tonkeeper.com/transfer/EQD?amount=1"), .universalLink)
         XCTAssertEqual(DeeplinkOpen.From(link: "HTTPS://app.tonkeeper.com/staking"), .universalLink)
         XCTAssertEqual(DeeplinkOpen.From(link: "tonkeeper://staking"), .appLink)
+        XCTAssertEqual(DeeplinkOpen.From(link: "keeper://staking"), .appLink)
         XCTAssertEqual(DeeplinkOpen.From(link: "ton://transfer/EQD"), .appLink)
         XCTAssertEqual(DeeplinkOpen.From(link: "tc://?v=2&id=abc"), .appLink)
     }

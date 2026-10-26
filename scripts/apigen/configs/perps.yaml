@@ -1,0 +1,8 @@
+generate:
+  - types
+  - client
+typeOverrides:
+  schemas:
+    # ChainKit parses and signs these payloads; typed round trips would drop unknown fields.
+    QuotePayload: OpenAPIRuntime.OpenAPIObjectContainer
+    SignedPayload: OpenAPIRuntime.OpenAPIObjectContainer

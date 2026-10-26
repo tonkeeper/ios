@@ -177,7 +177,7 @@ public struct OffRampProvider: Equatable, Codable {
 
 // MARK: - Quotes
 
-public enum OnRampUnavailableReason: String, Equatable, Codable {
+@frozen public enum OnRampUnavailableReason: String, Equatable, Codable {
     case countryBlocked = "country_blocked"
     case amountBelowMin = "amount_below_min"
     case amountAboveMax = "amount_above_max"
@@ -280,7 +280,7 @@ public struct OffRampQuoteRequest: Sendable, Hashable {
 
 // MARK: - Orders
 
-public enum OnRampOrderStatus: String, Equatable, Codable {
+@frozen public enum OnRampOrderStatus: String, Equatable, Codable {
     case created
     case awaitingPayment = "awaiting_payment"
     case paymentReceived = "payment_received"
@@ -356,7 +356,7 @@ public struct OnRampOrder: Equatable {
     public let dateUpdate: Date?
 }
 
-public enum OffRampOrderStatus: String, Equatable, Codable {
+@frozen public enum OffRampOrderStatus: String, Equatable, Codable {
     case created
     case awaitingFunds = "awaiting_funds"
     case fundsReceived = "funds_received"

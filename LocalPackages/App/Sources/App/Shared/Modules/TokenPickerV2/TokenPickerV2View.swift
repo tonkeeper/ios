@@ -1,4 +1,6 @@
 import Combine
+import Perps
+import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -69,7 +71,7 @@ struct TokenPickerV2HeaderView: View {
                 accessibilityIdentifier: "token_picker_search"
             )
 
-            if viewModel.tabs.count > 1 {
+            if viewModel.tabs.count > 1, viewModel.assetType != .perpetuals {
                 TabCategoriesView(
                     items: viewModel.tabs.map { tab in
                         TabCategoriesView<TokenPickerV2ChainFilter>.Item(
@@ -145,19 +147,20 @@ struct TokenPickerV2Screen: View {
                     TokenPickerV2ContentView(
                         queryViewModel: queryViewModel,
                         searchText: viewModel.searchText,
-                        showsCatalogSortControl: viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl,
+                        showsCatalogSortControl: showsBottomControls,
+                        listTitle: listTitle,
                         onSelectRow: viewModel.selectRow(_:)
                     )
                 } else {
                     TokenPickerV2ContentView.skeleton(
-                        showsCatalogSortControl: viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl,
+                        showsCatalogSortControl: showsBottomControls,
                         palette: palette
                     )
                 }
             }
             .background(.backgroundPage)
 
-            if viewModel.showsCatalogSortControl {
+            if showsBottomControls {
                 LinearGradient(
                     colors: [
                         palette.background.page.opacity(0),
@@ -167,32 +170,50 @@ struct TokenPickerV2Screen: View {
                     endPoint: .bottom
                 )
                 .frame(height: Layout.fadeHeight)
-                TokenPickerV2CatalogSortView(viewModel: viewModel)
-                    .padding(.bottom, Layout.bottomPadding)
-            } else if viewModel.showsPerpsSortControl {
-                LinearGradient(
-                    colors: [
-                        palette.background.page.opacity(0),
-                        palette.background.page,
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: Layout.fadeHeight)
-                PerpsSortMenuButton(
-                    sort: viewModel.perpsSearchSort,
-                    menuPosition: .top,
-                    onSelect: viewModel.selectPerpsSort
-                )
+                HStack(spacing: Layout.controlsSpacing) {
+                    if viewModel.showsCatalogSortControl {
+                        TokenPickerV2MenuButton(
+                            options: [.marketCap, .volume, .priceDiffDesc, .priceDiffAsc],
+                            selected: viewModel.catalogSearchSort,
+                            title: TokenPickerV2ViewModelImplementation.catalogSortTitle(for:),
+                            onSelect: viewModel.selectCatalogSort
+                        )
+                    } else if viewModel.showsPerpsSortControl {
+                        TokenPickerV2MenuButton(
+                            options: PerpsMarketsSort.allCases,
+                            selected: viewModel.perpsSearchSort,
+                            title: \.title,
+                            onSelect: viewModel.selectPerpsSort
+                        )
+                    }
+                    if !viewModel.assetTypes.isEmpty {
+                        TokenPickerV2MenuButton(
+                            options: viewModel.assetTypes,
+                            selected: viewModel.assetType,
+                            title: \.title,
+                            onSelect: viewModel.selectAssetType
+                        )
+                        .accessibilityIdentifier("token_picker_asset_type")
+                    }
+                }
                 .padding(.bottom, Layout.bottomPadding)
             }
         }
         .background(.backgroundPage)
-        .ignoresSafeArea(.all, edges: ignoresSafeArea ? .all : .bottom)
+        .ignoresSafeArea(.container, edges: ignoresSafeArea ? .all : .bottom)
+    }
+
+    private var showsBottomControls: Bool {
+        viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl || !viewModel.assetTypes.isEmpty
+    }
+
+    private var listTitle: String? {
+        viewModel.assetTypes.isEmpty ? nil : viewModel.assetType.title
     }
 
     private enum Layout {
-        static let bottomPadding: CGFloat = 24
+        static let bottomPadding: CGFloat = 36
+        static let controlsSpacing: CGFloat = 8
         static let fadeHeight: CGFloat = 68
     }
 }
@@ -212,6 +233,7 @@ private struct TokenPickerV2ContentView: View {
     @ObservedObject var queryViewModel: TokenPickerV2QueryViewModel
     let searchText: String
     let showsCatalogSortControl: Bool
+    var listTitle: String?
     let onSelectRow: (String) -> Void
     @Environment(\.tkPalette) private var palette
 
@@ -220,14 +242,20 @@ private struct TokenPickerV2ContentView: View {
         palette: TKPalette
     ) -> some View {
         rows(
-            content: (0 ..< Layout.skeletonRowCount).map(SkeletonRow.init),
+            sections: [
+                RowSection(
+                    id: "skeleton",
+                    title: nil,
+                    items: (0 ..< Layout.skeletonRowCount).map(SkeletonRow.init)
+                ),
+            ],
             showsLoadingMore: false,
             showsCatalogSortControl: showsCatalogSortControl,
             palette: palette
-        ) { index, _ in
+        ) { index, total, _ in
             TokenPickerV2RowView(
                 content: .skeleton,
-                showsDivider: index < Layout.skeletonRowCount - 1,
+                showsDivider: index < total - 1,
                 action: nil
             )
         }
@@ -245,14 +273,14 @@ private struct TokenPickerV2ContentView: View {
                 placeholderView(placeholder)
             } else {
                 Self.rows(
-                    content: presentation.items,
+                    sections: sections(for: presentation.items),
                     showsLoadingMore: presentation.isLoadingMore,
                     showsCatalogSortControl: showsCatalogSortControl,
                     palette: palette
-                ) { index, item in
+                ) { index, total, item in
                     tokenPickerRow(
                         item: item,
-                        showsDivider: index < presentation.items.count - 1,
+                        showsDivider: index < total - 1,
                         onSelect: { onSelectRow(item.id) }
                     )
                     .onAppear {
@@ -270,6 +298,26 @@ private struct TokenPickerV2ContentView: View {
 private extension TokenPickerV2ContentView {
     struct SkeletonRow: Identifiable {
         let id: Int
+    }
+
+    struct RowSection<Item: Identifiable>: Identifiable {
+        let id: String
+        let title: String?
+        let items: [Item]
+    }
+
+    func sections(
+        for items: [TokenPickerV2QueryViewModel.Item]
+    ) -> [RowSection<TokenPickerV2QueryViewModel.Item>] {
+        let perpetuals = items.filter(\.isPerpetualMarket)
+        guard queryViewModel.splitsPerpetualsIntoSections, !perpetuals.isEmpty else {
+            return [RowSection(id: "items", title: listTitle, items: items)]
+        }
+        let tokens = items.filter { !$0.isPerpetualMarket }
+        return [
+            RowSection(id: "tokens", title: TKLocales.Trade.Assets.Categories.tokens, items: tokens),
+            RowSection(id: "perpetuals", title: TKLocales.Perps.title, items: perpetuals),
+        ].filter { !$0.items.isEmpty }
     }
 
     @ViewBuilder
@@ -307,22 +355,27 @@ private extension TokenPickerV2ContentView {
     }
 
     static func rows<Item: Identifiable, Row: View>(
-        content: [Item],
+        sections: [RowSection<Item>],
         showsLoadingMore: Bool,
         showsCatalogSortControl: Bool,
         palette: TKPalette,
-        @ViewBuilder row: @escaping (_ index: Int, _ item: Item) -> Row
+        @ViewBuilder row: @escaping (_ index: Int, _ total: Int, _ item: Item) -> Row
     ) -> some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 0) {
-                ForEach(Array(content.enumerated()), id: \.element.id) { index, item in
-                    row(index, item)
-                        .background(.backgroundContent)
-                        .roundIfNeeded(
-                            index: index,
-                            total: content.count,
-                            radius: Layout.rowCornerRadius
-                        )
+                ForEach(sections) { section in
+                    if let title = section.title {
+                        ListTitleView(config: .text(title))
+                    }
+                    ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
+                        row(index, section.items.count, item)
+                            .background(.backgroundContent)
+                            .roundIfNeeded(
+                                index: index,
+                                total: section.items.count,
+                                radius: Layout.rowCornerRadius
+                            )
+                    }
                 }
 
                 if showsLoadingMore {
@@ -416,26 +469,24 @@ private extension TokenPickerV2ContentView {
     }
 }
 
-private struct TokenPickerV2CatalogSortView: View {
-    private enum Layout {
-        static let bottomPadding: CGFloat = 12
-        static let popupMinimumWidth: CGFloat = 200
-    }
-
-    @ObservedObject var viewModel: TokenPickerV2ViewModelImplementation
+private struct TokenPickerV2MenuButton<Option: Equatable>: View {
+    let options: [Option]
+    let selected: Option
+    let title: (Option) -> String
+    let onSelect: (Option) -> Void
     @State private var anchorView: UIView?
 
     var body: some View {
         ButtonView(
             config: ButtonView.Config(
-                title: viewModel.catalogSortButtonTitle,
+                title: title(selected),
                 size: .small,
                 appearance: .tertiary,
                 icon: ButtonView.Icon(
                     image: .TKUIKit.Icons.Size16.switch,
                     alignment: .trailing
                 ),
-                action: showSortPicker
+                action: showMenu
             )
         )
         .background(
@@ -443,27 +494,9 @@ private struct TokenPickerV2CatalogSortView: View {
                 anchorView = view
             }
         )
-        .padding(.bottom, Layout.bottomPadding)
-        .frame(maxWidth: .infinity)
-        .allowsHitTesting(true)
-    }
-}
-
-private extension TokenPickerV2CatalogSortView {
-    var catalogSortSelectedIndex: Int? {
-        switch viewModel.catalogSearchSort {
-        case .marketCap:
-            return 0
-        case .volume:
-            return 1
-        case .priceDiffDesc:
-            return 2
-        case .priceDiffAsc:
-            return 3
-        }
     }
 
-    func showSortPicker() {
+    func showMenu() {
         guard let anchorView else {
             return
         }
@@ -471,42 +504,16 @@ private extension TokenPickerV2CatalogSortView {
         TKPopupMenuController.show(
             sourceView: anchorView,
             position: .top,
-            minimumWidth: Layout.popupMinimumWidth,
-            items: [
+            minimumWidth: 200,
+            items: options.enumerated().map { index, option in
                 TKPopupMenuItem(
-                    title: TKLocales.TokensPicker.Sort.marketCap,
-                    icon: nil,
-                    hasSeparator: true,
-                    selectionHandler: { [weak viewModel] in
-                        viewModel?.selectCatalogSort(.marketCap)
-                    }
-                ),
-                TKPopupMenuItem(
-                    title: TKLocales.TokensPicker.Sort.volume,
-                    icon: nil,
-                    hasSeparator: true,
-                    selectionHandler: { [weak viewModel] in
-                        viewModel?.selectCatalogSort(.volume)
-                    }
-                ),
-                TKPopupMenuItem(
-                    title: TKLocales.TokensPicker.Sort.topGainers,
-                    icon: nil,
-                    hasSeparator: true,
-                    selectionHandler: { [weak viewModel] in
-                        viewModel?.selectCatalogSort(.priceDiffDesc)
-                    }
-                ),
-                TKPopupMenuItem(
-                    title: TKLocales.TokensPicker.Sort.topLosers,
-                    icon: nil,
-                    selectionHandler: { [weak viewModel] in
-                        viewModel?.selectCatalogSort(.priceDiffAsc)
-                    }
-                ),
-            ],
+                    title: title(option),
+                    hasSeparator: index + 1 < options.count,
+                    selectionHandler: { onSelect(option) }
+                )
+            },
             isSelectable: true,
-            selectedIndex: catalogSortSelectedIndex
+            selectedIndex: options.firstIndex(of: selected)
         )
     }
 }

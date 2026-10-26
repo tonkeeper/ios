@@ -1,13 +1,13 @@
 import Foundation
 
 public struct NotificationModel: Codable, Hashable {
-    public enum Mode: String, Codable {
+    @frozen public enum Mode: String, Codable {
         case critical
         case warning
     }
 
     public struct Action: Equatable, Codable {
-        public enum ActionType: Equatable, Codable {
+        @frozen public enum ActionType: Equatable, Codable {
             case openLink(URL?)
         }
 

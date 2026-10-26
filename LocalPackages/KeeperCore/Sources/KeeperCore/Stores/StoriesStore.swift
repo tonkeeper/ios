@@ -5,7 +5,7 @@ public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
         public let watched: [String]
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateState(state: State)
     }
 

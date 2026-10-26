@@ -50,13 +50,6 @@ public struct PriceLevelMarker: Codable, Sendable {
 }
 
 public struct PriceLevelMarkersOptions: Codable, Sendable {
-    public enum AxisLabelMode: String, Codable, Sendable {
-        /// Nice-stepped price ticks in the axis gutter (candle mode).
-        case ladder
-        /// Only the top/bottom price, overlaid over the full-width chart (line mode).
-        case bounds
-    }
-
     public var markers: [PriceLevelMarker]
     public var priceDecimals: Int?
     public var currentPriceUpLabelColor: ChartColor?
@@ -70,10 +63,8 @@ public struct PriceLevelMarkersOptions: Codable, Sendable {
     public var crosshairLabelColor: ChartColor?
     public var crosshairLabelBackgroundColor: ChartColor?
     public var gridColor: ChartColor?
-    public var axisLabelMode: AxisLabelMode?
-    public var crosshairHorizontalVisible: Bool?
-    public var crosshairLabelVisible: Bool?
     public var crosshairDotOnSeries: Bool?
+    public var pinnedTagsBottomY: Double?
 
     public init(
         markers: [PriceLevelMarker] = [],
@@ -89,10 +80,8 @@ public struct PriceLevelMarkersOptions: Codable, Sendable {
         crosshairLabelColor: ChartColor? = nil,
         crosshairLabelBackgroundColor: ChartColor? = nil,
         gridColor: ChartColor? = nil,
-        axisLabelMode: AxisLabelMode? = nil,
-        crosshairHorizontalVisible: Bool? = nil,
-        crosshairLabelVisible: Bool? = nil,
-        crosshairDotOnSeries: Bool? = nil
+        crosshairDotOnSeries: Bool? = nil,
+        pinnedTagsBottomY: Double? = nil
     ) {
         self.markers = markers
         self.priceDecimals = priceDecimals
@@ -107,9 +96,7 @@ public struct PriceLevelMarkersOptions: Codable, Sendable {
         self.crosshairLabelColor = crosshairLabelColor
         self.crosshairLabelBackgroundColor = crosshairLabelBackgroundColor
         self.gridColor = gridColor
-        self.axisLabelMode = axisLabelMode
-        self.crosshairHorizontalVisible = crosshairHorizontalVisible
-        self.crosshairLabelVisible = crosshairLabelVisible
         self.crosshairDotOnSeries = crosshairDotOnSeries
+        self.pinnedTagsBottomY = pinnedTagsBottomY
     }
 }

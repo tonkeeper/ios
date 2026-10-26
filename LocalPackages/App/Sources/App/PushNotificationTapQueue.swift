@@ -1,9 +1,14 @@
 import Foundation
 
+public extension Notification.Name {
+    static let foregroundPushReceived = Notification.Name("foregroundPushReceived")
+}
+
 public enum PushNotificationTapQueue {
     private static let syncQueue = DispatchQueue(label: "PushNotificationTapQueue")
     private static var pending: [[AnyHashable: Any]?] = []
     private static var onTap: (([AnyHashable: Any]?) -> Void)?
+    @MainActor public internal(set) static var isShowingDestination: (@MainActor ([AnyHashable: Any]) -> Bool)?
 
     public static func enqueue(userInfo: [AnyHashable: Any]?) {
         syncQueue.sync {

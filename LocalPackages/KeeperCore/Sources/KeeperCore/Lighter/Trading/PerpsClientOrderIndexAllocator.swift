@@ -2,6 +2,21 @@ import ChainKit
 import Darwin
 import Foundation
 
+/// The client order indices one plan hands out: the order itself, then its auto-close legs.
+struct PerpsClientOrderIndices: Equatable {
+    static let count: Int64 = 3
+
+    let order: Int64
+    let takeProfit: Int64
+    let stopLoss: Int64
+
+    init(first: Int64) {
+        order = first
+        takeProfit = first + 1
+        stopLoss = first + 2
+    }
+}
+
 final class PerpsClientOrderIndexAllocator: @unchecked Sendable {
     private struct Contents: Codable {
         let last: Int64
@@ -9,10 +24,11 @@ final class PerpsClientOrderIndexAllocator: @unchecked Sendable {
 
     private enum AllocationError: Error {
         case exhausted
-        case invalidPersistedValue
     }
 
-    private let lock = NSLock()
+    // A reservation ends in `F_FULLFSYNC`, which must not hold a cooperative thread. The queue
+    // is also the only place `last` is read or written.
+    private let queue = DispatchQueue(label: "PerpsClientOrderIndexAllocator.io")
     private let fileManager: FileManager
     private let fileURL: URL
     private var last: Int64?
@@ -26,23 +42,29 @@ final class PerpsClientOrderIndexAllocator: @unchecked Sendable {
         fileURL = directory.appendingPathComponent("client-order-index.json")
     }
 
-    func next(nowUnixMs: Int64) throws -> Int64 {
-        lock.lock()
-        defer { lock.unlock() }
+    func reserve(nowUnixMs: Int64) async throws -> PerpsClientOrderIndices {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                continuation.resume(with: Result { try self.reserveOnQueue(nowUnixMs: nowUnixMs) })
+            }
+        }
+    }
 
+    private func reserveOnQueue(nowUnixMs: Int64) throws -> PerpsClientOrderIndices {
         let minimum = LighterConstants.shared.MinClientOrderIndex
         let maximum = LighterConstants.shared.MaxClientOrderIndex
-        let persisted = try read()
+        // A file that cannot be read, or holds a number outside the protocol's range,
+        // is no worse than no file: the clock alone already answers above every index
+        // handed out before now, and the planner refuses an index a live order already answers for.
+        let persisted = ((try? read()) ?? nil).flatMap { ($0 >= minimum && $0 < maximum) ? $0 : nil }
         let previous = max(last ?? minimum - 1, persisted ?? minimum - 1)
-        guard previous >= minimum - 1, previous < maximum else {
-            throw AllocationError.invalidPersistedValue
-        }
         let candidate = max(nowUnixMs % maximum, minimum)
-        let next = max(candidate, previous + 1)
-        guard next < maximum else { throw AllocationError.exhausted }
-        try write(Contents(last: next))
-        last = next
-        return next
+        let first = max(candidate, previous + 1)
+        let lastReserved = first + PerpsClientOrderIndices.count - 1
+        guard lastReserved < maximum else { throw AllocationError.exhausted }
+        try write(Contents(last: lastReserved))
+        last = lastReserved
+        return PerpsClientOrderIndices(first: first)
     }
 
     private func read() throws -> Int64? {

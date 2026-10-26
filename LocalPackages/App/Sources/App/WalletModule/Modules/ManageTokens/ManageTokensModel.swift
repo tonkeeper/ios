@@ -134,9 +134,6 @@ final class ManageTokensModel {
         var pinnedItems = [BalanceItem]()
         var unpinnedItems = [UnpinnedItem]()
         for item in balanceItems.items {
-            if case .ton = item {
-                continue
-            }
             if statePinnedItems.contains(item.identifier) {
                 pinnedItems.append(item)
             } else {

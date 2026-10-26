@@ -14,6 +14,26 @@ struct WalletConnectChainKitMessageSigningUtilities {
         message: String,
         kind: WalletConnectEVMMessageKind
     ) async throws(WalletConnectSigningError) -> String {
+        let messageType: ChainKit.MessageType = switch kind {
+        case .personal: .legacy
+        case .typedDataV4: .typedmessage
+        }
+        return try await sign(
+            client: client,
+            chain: chain,
+            cryptoWallet: cryptoWallet,
+            message: message,
+            messageType: messageType
+        )
+    }
+
+    func sign(
+        client: CryptoKitClient,
+        chain: WalletConnectChain,
+        cryptoWallet: CryptoWallet,
+        message: String,
+        messageType: ChainKit.MessageType
+    ) async throws(WalletConnectSigningError) -> String {
         let chainKitChain = chain.multichainChain.asChainKitChain
         guard let messageSigner = client.blockchain
             .getMediator(network: chainKitChain.network.type)
@@ -23,10 +43,6 @@ struct WalletConnectChainKitMessageSigningUtilities {
             throw .failedToSign(reason: "chainkit message signer is not available for \(chain.caip2)")
         }
 
-        let messageType: ChainKit.MessageType = switch kind {
-        case .personal: .legacy
-        case .typedDataV4: .typedmessage
-        }
         let privateKey = cryptoWallet.getPrivateKey(chain: chainKitChain)
         return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<String, WalletConnectSigningError>, Never>) in
             messageSigner.sign(

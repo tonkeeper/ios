@@ -82,7 +82,7 @@ public final class TKSlider: UIView {
 
     public func reset() {
         isLocked = false
-        resetDragViewPosition()
+        resetDragViewPosition(playsErrorHaptic: false)
     }
 
     @available(*, unavailable)
@@ -186,8 +186,10 @@ private extension TKSlider {
         }
     }
 
-    func resetDragViewPosition() {
-        UINotificationFeedbackGenerator().notificationOccurred(.error)
+    func resetDragViewPosition(playsErrorHaptic: Bool = true) {
+        if playsErrorHaptic {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+        }
         dragViewLeftConstraint?.update(offset: 0)
         UIView.animate(
             withDuration: 0.4,

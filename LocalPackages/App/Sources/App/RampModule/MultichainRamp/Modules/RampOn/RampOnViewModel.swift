@@ -17,6 +17,7 @@ final class RampOnViewModel: ObservableObject {
     let flow: RampFlow
 
     var onClose: (() -> Void)?
+    var onDidPresent: ((Bool) -> Void)?
     var onTapReceiveTokens: (() -> Void)?
     var onTapLayoutCard: ((OnRampLayoutCard) -> Void)?
 
@@ -25,6 +26,7 @@ final class RampOnViewModel: ObservableObject {
 
     private let multichainRampService: MultichainRampService
     private let currencyStore: CurrencyStore
+    private var didReportPresentation = false
 
     init(
         flow: RampFlow,
@@ -87,6 +89,12 @@ final class RampOnViewModel: ObservableObject {
 }
 
 private extension RampOnViewModel {
+    func reportPresentation(hasFiatCards: Bool) {
+        guard !didReportPresentation else { return }
+        didReportPresentation = true
+        onDidPresent?(hasFiatCards)
+    }
+
     func loadLayoutCards() async {
         state = .loading
         layoutCards = nil
@@ -99,6 +107,7 @@ private extension RampOnViewModel {
             )
             layoutCards = cards
             state = .loaded
+            reportPresentation(hasFiatCards: !cards.items.isEmpty)
             Log.multichainRamp.i(
                 "layout cards loaded",
                 extraInfo: ["flow": flow.api, "currency": currency, "cards": "\(cards.items.count)"]

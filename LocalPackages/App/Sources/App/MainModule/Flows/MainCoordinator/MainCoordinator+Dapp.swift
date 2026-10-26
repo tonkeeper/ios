@@ -2,6 +2,8 @@ import Foundation
 import KeeperCore
 import TKCoordinator
 import TKLogging
+import TKUIKit
+import UIKit
 
 extension MainCoordinator {
     func openDapp(
@@ -18,6 +20,14 @@ extension MainCoordinator {
             utm: utm
         )
         openDapp(request, isSilentConnect: isSilentConnect)
+    }
+
+    func openEarnDapp(url: URL, analyticsFrom: DappOpenSource, on navigationController: UINavigationController?) {
+        let dapp = makeDapp(title: nil, url: url)
+        let request = dappBrowserAnalyticsController.directOpenRequest(source: analyticsFrom, dapp: dapp)
+        let hostNavigationController = (navigationController ?? router.rootViewController.navigationController)?
+            .tabBarHostNavigationController
+        openDapp(request, presentation: hostNavigationController.map(DappPresentation.push) ?? .modal)
     }
 
     func openDapp(
@@ -57,20 +67,31 @@ extension MainCoordinator {
 private extension MainCoordinator {
     func openDapp(
         _ request: DappOpenRequest,
-        isSilentConnect: Bool = false
+        isSilentConnect: Bool = false,
+        presentation: DappPresentation = .modal
     ) {
-        let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
+        let rootViewController: UIViewController = switch presentation {
+        case .modal:
+            router.rootViewController
+        case let .push(navigationController):
+            navigationController
+        }
+        let controllerRouter = ViewControllerRouter(rootViewController: rootViewController)
         let coordinator = DappCoordinator(
             router: controllerRouter,
             dapp: request.dapp,
             analyticsSession: request.analyticsSession,
             isSilentConnect: isSilentConnect,
+            presentation: presentation,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
         coordinator.didHandleDeeplink = { [weak self] deeplink, utm in
             _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
+        }
+        coordinator.didFinish = { [weak self] finished in
+            self?.removeChild(finished)
         }
 
         addChild(coordinator)

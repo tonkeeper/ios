@@ -3,7 +3,7 @@ import Foundation
 import TonSwift
 
 public struct DeeplinkGenerator {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case failed
     }
 

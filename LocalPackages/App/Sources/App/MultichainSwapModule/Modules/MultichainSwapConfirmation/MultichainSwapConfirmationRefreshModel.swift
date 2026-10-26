@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKLocalize
 import TKLogging
 
 @MainActor
@@ -7,10 +8,10 @@ final class MultichainSwapConfirmationRefreshModel {
     var onQuoteStateChange: ((MultichainSwapConfirmationQuoteState) -> Void)?
     var onExecutionPlanChange: ((MultichainSwapExecutionPlan?) -> Void)?
     var onPreparationFailure: ((MultichainSwapConfirmationRefreshReason, MultichainSwapExecutionFailure) -> Void)?
-    var onQuoteRefreshFailed: ((MultichainSwapConfirmationRefreshReason, _ providerMessage: String?) -> Void)?
+    var onQuoteRefreshFailed: ((MultichainSwapConfirmationRefreshReason, _ message: String?) -> Void)?
     var onRefreshCycleCompleted: (() -> Void)?
 
-    private let wallet: Wallet
+    private let swapWallet: MultichainSwapWallet
     private let quoteRefresher: MultichainSwapConfirmationQuoteRefresher
     private let executionService: MultichainSwapExecutionService
     private let routeRecovery: MultichainSwapRouteRecovery
@@ -18,13 +19,13 @@ final class MultichainSwapConfirmationRefreshModel {
     private var refreshTask: Task<Void, Never>?
 
     init(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         quoteRefresher: MultichainSwapConfirmationQuoteRefresher,
         executionService: MultichainSwapExecutionService,
         routeRecovery: MultichainSwapRouteRecovery,
         logInfoMaker: MultichainSwapConfirmationLogInfoMaker
     ) {
-        self.wallet = wallet
+        self.swapWallet = swapWallet
         self.quoteRefresher = quoteRefresher
         self.executionService = executionService
         self.routeRecovery = routeRecovery
@@ -112,7 +113,7 @@ private extension MultichainSwapConfirmationRefreshModel {
             refreshedQuoteState = try await quoteRefresher.refresh(
                 input: input,
                 selectedSlippageBps: selectedSlippageBps,
-                wallet: wallet
+                swapWallet: swapWallet
             )
         } catch MultichainSwapConfirmationQuoteRefreshError.missingWalletAddress {
             guard !Task.isCancelled else { return }
@@ -146,7 +147,11 @@ private extension MultichainSwapConfirmationRefreshModel {
                 error: error,
                 extraInfo: logInfo(input: input)
             )
-            onQuoteRefreshFailed?(reason, nil)
+            let isTransportFailure = if case MultichainSwapAPIError.transportError = error { true } else { false }
+            onQuoteRefreshFailed?(
+                reason,
+                isTransportFailure ? TKLocales.MultichainSwap.Screen.Confirm.Error.networkError : nil
+            )
             return
         }
 
@@ -187,7 +192,7 @@ private extension MultichainSwapConfirmationRefreshModel {
         )
         do {
             let executionPlan = try await executionService.prepareExecutionPlan(
-                wallet: wallet,
+                swapWallet: swapWallet,
                 sourceAsset: input.userInput.sendAsset,
                 destinationAsset: input.userInput.receiveAsset,
                 route: input.quoteState.route
@@ -287,7 +292,7 @@ private extension MultichainSwapConfirmationRefreshModel {
             refreshedQuoteState = try await quoteRefresher.refresh(
                 input: input,
                 selectedSlippageBps: selectedSlippageBps,
-                wallet: wallet
+                swapWallet: swapWallet
             )
         } catch {
             guard !Task.isCancelled else { return }

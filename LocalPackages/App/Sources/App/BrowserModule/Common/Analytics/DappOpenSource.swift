@@ -11,6 +11,9 @@ enum DappOpenSource {
     case history
     case collectibles
     case tonconnect
+    case earnFeatured
+    case earnYourVaults
+    case earnApy
 }
 
 extension DappOpenSource {
@@ -36,6 +39,12 @@ extension DappOpenSource {
             return .collectibles
         case .tonconnect:
             return .tonconnect
+        case .earnFeatured:
+            return .earnFeatured
+        case .earnYourVaults:
+            return .earnYourVaults
+        case .earnApy:
+            return .earnApy
         }
     }
 }

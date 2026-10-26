@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 final class PerpsChartTimelineTests: XCTestCase {
@@ -16,6 +17,23 @@ final class PerpsChartTimelineTests: XCTestCase {
             preserving: [timestamp]
         )
         XCTAssertEqual(timeline.publishedCandles.map(\.close), [110])
+    }
+
+    func test_volumes_keepLargerBaseVolumePricedAtCurrentClose() {
+        let start: Int64 = 1_700_000_000_000
+        let step = PerpsChartTimeframe.h1.wireStepMilliseconds
+        var timeline = PerpsChartTimeline(timeframe: .h1)
+        timeline.merge(makeBatch([(start, 100)], volumes: [start: 0.5]))
+
+        timeline.mergeVolumes([start: 0.25, start + step: 2])
+        XCTAssertEqual(timeline.publishedCandles.map(\.volume), [50])
+
+        timeline.merge(makeBatch([(start, 200)]))
+        XCTAssertEqual(timeline.publishedCandles.map(\.volume), [100])
+
+        timeline.mergeVolumes([start: 1, start + step: 1])
+        timeline.merge(makeBatch([(start + step, 10)]))
+        XCTAssertEqual(timeline.publishedCandles.map(\.volume), [200, 20])
     }
 
     func test_merge_usesWireTimestampsForContinuityAndTrimsAtRealGap() {
@@ -48,7 +66,8 @@ final class PerpsChartTimelineTests: XCTestCase {
 
 private func makeBatch(
     _ values: [(timestamp: Int64, close: Double)],
-    wireTimestamps: Set<Int64>? = nil
+    wireTimestamps: Set<Int64>? = nil,
+    volumes: [Int64: Double] = [:]
 ) -> PerpsChartCandleMapper.Batch {
     let candles = values.map { value in
         PerpsChartCandle(
@@ -64,6 +83,7 @@ private func makeBatch(
     return PerpsChartCandleMapper.Batch(
         candles: candles,
         wireTimestamps: wireTimestamps ?? candleTimestamps,
-        candleTimestamps: candleTimestamps
+        candleTimestamps: candleTimestamps,
+        volumes: volumes
     )
 }

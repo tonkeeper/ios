@@ -28,7 +28,13 @@ private extension KotlinThrowable {
 
 extension NodeError {
     var logValue: String {
-        "type=\(String(reflecting: type(of: self)))"
+        let described = "type=\(String(reflecting: type(of: self)))"
+        switch self {
+        case let wrapped as NodeError.NetworkWrap: return "\(described), error=\(wrapped.value.description())"
+        case let rejected as NodeError.Rejected: return "\(described), code=\(rejected.code), message=\(rejected.message)"
+        case let unknown as NodeError.Unknown: return "\(described), error=\(unknown.error?.description() ?? "unknown")"
+        default: return described
+        }
     }
 }
 

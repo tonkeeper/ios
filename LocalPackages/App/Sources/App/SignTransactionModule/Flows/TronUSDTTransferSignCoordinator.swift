@@ -74,6 +74,7 @@ private extension TronUSDTTransferSignCoordinator {
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .confirmTransfer,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },

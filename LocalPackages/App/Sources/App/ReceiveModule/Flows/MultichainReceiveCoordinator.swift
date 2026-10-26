@@ -77,7 +77,8 @@ extension MultichainReceiveCoordinator {
         let module = PickMultichainAddressModule()
         let coordinator = module.makeCoordinator(
             router: router,
-            addresses: addresses.map(\.walletAddress)
+            addresses: addresses.map(\.walletAddress),
+            newChainBadgeService: keeperCoreMainAssembly.multichainAssembly.newChainBadgeService
         )
         addChild(coordinator)
 

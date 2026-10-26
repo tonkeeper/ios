@@ -1,5 +1,6 @@
 import Foundation
 @testable import TKCore
+@testable import TKServices
 import XCTest
 
 final class AnalyticsEventSequenceTests: XCTestCase {

@@ -1,4 +1,4 @@
-public enum MultichainTransactionEmulationFailure: Error {
+@frozen public enum MultichainTransactionEmulationFailure: Error {
     case unsupportedChain(MultichainChain)
     case unsupportedAsset(id: String)
     case invalidSenderAddress(String)

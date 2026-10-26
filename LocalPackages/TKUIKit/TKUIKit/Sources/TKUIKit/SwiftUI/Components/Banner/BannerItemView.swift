@@ -1,4 +1,3 @@
-import Kingfisher
 import SwiftUI
 import UIKit
 
@@ -128,7 +127,13 @@ public struct BannerItemView: View {
     @ViewBuilder
     private func bannerImage(width: CGFloat) -> some View {
         if let imageURL = item.imageURL {
-            BannerRemoteImageView(url: imageURL, width: width, height: height)
+            TKRemoteImage(url: imageURL, downsampleSize: CGSize(width: width, height: height)) {
+                ShimmerSwiftUIView(config: ShimmerSwiftUIView.Config(color: .backgroundContentTint))
+            } failure: {
+                defaultBannerImage(width: width)
+            }
+            .frame(width: width, height: height)
+            .clipped()
         } else {
             defaultBannerImage(width: width)
         }
@@ -209,62 +214,5 @@ private struct BannerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .onChange(of: configuration.isPressed) { isPressed = $0 }
-    }
-}
-
-private struct BannerRemoteImageView: View {
-    let url: URL
-    let width: CGFloat
-    let height: CGFloat
-
-    @State private var didFail = false
-
-    var body: some View {
-        Group {
-            if didFail {
-                fallbackImage
-            } else {
-                KFImage
-                    .url(url)
-                    .setProcessor(
-                        DownsamplingImageProcessor(
-                            size: CGSize(
-                                width: max(width, 1) * UIScreen.main.scale,
-                                height: max(height, 1) * UIScreen.main.scale
-                            )
-                        )
-                    )
-                    .loadDiskFileSynchronously()
-                    .fade(duration: 0)
-                    .placeholder {
-                        ShimmerSwiftUIView(config: shimmerConfig)
-                            .frame(width: width, height: height)
-                    }
-                    .onSuccess { _ in
-                        didFail = false
-                    }
-                    .onFailure { _ in
-                        didFail = true
-                    }
-                    .cancelOnDisappear(true)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: width, height: height)
-                    .clipped()
-            }
-        }
-        .id(url)
-    }
-
-    private var fallbackImage: some View {
-        Image(uiImage: .TKUIKit.Artwork.Banners.multichain)
-            .resizable()
-            .scaledToFill()
-            .frame(width: width, height: height)
-            .clipped()
-    }
-
-    private var shimmerConfig: ShimmerSwiftUIView.Config {
-        ShimmerSwiftUIView.Config(color: .backgroundContentTint)
     }
 }

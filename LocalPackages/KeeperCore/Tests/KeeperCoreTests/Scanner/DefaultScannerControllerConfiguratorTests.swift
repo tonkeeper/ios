@@ -35,7 +35,55 @@ final class DefaultScannerControllerConfiguratorTests: XCTestCase {
             return XCTFail("Expected a multichain send transfer")
         }
         XCTAssertEqual(candidates.address, address)
-        XCTAssertEqual(Set(candidates.chains), [.eth, .base, .arb, .bsc])
+        XCTAssertEqual(Set(candidates.chains), [.eth, .base, .arb, .bsc, .polygon, .avax, .robinhood])
+    }
+
+    func testHandleQRCodeDropsQueryAfterPlainTonAddress() throws {
+        let address = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+
+        let deeplink = try configurator.handleQRCode("\(address)?amount=200")
+
+        XCTAssertEqual(deeplink, transferDeeplink(recipient: address, chains: [.ton]))
+    }
+
+    func testHandleQRCodeDropsQueryAfterPlainTronAddress() throws {
+        let address = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+
+        let deeplink = try configurator.handleQRCode("\(address)?amount=200")
+
+        XCTAssertEqual(deeplink, transferDeeplink(recipient: address, chains: [.tron]))
+    }
+
+    func testHandleQRCodeKeepsTransferLinkQuery() throws {
+        let address = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+
+        let deeplink = try configurator.handleQRCode("ton://transfer/\(address)?amount=200")
+
+        guard case let .transfer(.sendTransfer(transfer)) = deeplink else {
+            return XCTFail("Expected a send transfer")
+        }
+        XCTAssertEqual(transfer.recipient, address)
+        XCTAssertEqual(transfer.amount, 200)
+    }
+
+    func testHandleQRCodeRejectsQueryAfterNonAddress() {
+        for payload in ["hello?amount=200", "?amount=200"] {
+            XCTAssertThrowsError(try configurator.handleQRCode(payload), payload)
+        }
+    }
+
+    func testHandleQRCodeRejectsPlainAddressWithParametersBesidesAmount() {
+        let address = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+        let payloads = [
+            "\(address)?text=123456",
+            "\(address)?amount=200&text=123456",
+            "\(address)?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
+        ]
+
+        for payload in payloads {
+            XCTAssertThrowsError(try configurator.handleQRCode(payload), payload)
+            XCTAssertThrowsError(try legacyConfigurator.handleQRCode(payload), payload)
+        }
     }
 
     func testHandleQRCodeRejectsSchemePrefixedPayloads() {
@@ -76,6 +124,25 @@ final class DefaultScannerControllerConfiguratorTests: XCTestCase {
         }
     }
 
+    func testHandleQRCodeCreatesSolanaTransferForSolanaPayPayload() throws {
+        let recipient = "HLT1cw2FTfgMJ2DNZHQpcr19n5bqrfqBGxEuFSEWgE4r"
+
+        let deeplink = try configurator.handleQRCode("solana:\(recipient)?amount=0.001")
+
+        XCTAssertEqual(
+            deeplink,
+            .transfer(
+                .solanaSendTransfer(
+                    Deeplink.SolanaTransferData(
+                        recipient: recipient,
+                        asset: .native,
+                        amount: Deeplink.DecimalAmount("0.001")
+                    )
+                )
+            )
+        )
+    }
+
     func testLegacyHandleQRCodeCreatesSendTransferForPlainTonAddress() throws {
         let address = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
 
@@ -88,6 +155,14 @@ final class DefaultScannerControllerConfiguratorTests: XCTestCase {
         let address = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
 
         let deeplink = try legacyConfigurator.handleQRCode(address)
+
+        XCTAssertEqual(deeplink, legacySendTransferDeeplink(recipient: address))
+    }
+
+    func testLegacyHandleQRCodeDropsQueryAfterPlainTonAddress() throws {
+        let address = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+
+        let deeplink = try legacyConfigurator.handleQRCode("\(address)?amount=200")
 
         XCTAssertEqual(deeplink, legacySendTransferDeeplink(recipient: address))
     }

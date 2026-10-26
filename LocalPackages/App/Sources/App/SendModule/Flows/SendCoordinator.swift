@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import TKCoordinator
 import TronSwift
+import UIKit
 
 @MainActor
 protocol SendCoordinator: Coordinator {
@@ -39,5 +40,17 @@ extension SendCoordinator {
                 didRequestRefill?(.ton(.jetton(JettonItem(jettonInfo: token, walletAddress: token.address))), onRefresh)
             }
         }
+    }
+
+    /// A popped confirmation still finishes its fee calculation, and a sheet stacked on one being
+    /// dismissed is what that dismissal takes down, leaving an invisible overlay that swallows taps.
+    func feePopupHost(for confirmation: UIViewController?) -> UIViewController? {
+        guard let navigationController = confirmation?.navigationController,
+              navigationController.topViewController === confirmation,
+              navigationController.presentedViewController == nil
+        else {
+            return nil
+        }
+        return navigationController
     }
 }

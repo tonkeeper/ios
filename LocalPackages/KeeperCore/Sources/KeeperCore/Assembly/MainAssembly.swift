@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import PerpsModels
 import TKFeatureFlags
 import TonSwift
 import URKit
@@ -115,7 +116,10 @@ public final class MainAssembly {
         walletAuth: { [multichainAssembly] in
             multichainAssembly.walletAuthDependencies()
         },
-        chainKitClient: multichainAssembly.chainKitClient
+        chainKitClient: multichainAssembly.chainKitClient,
+        multichainService: { [servicesAssembly] in
+            servicesAssembly.multichainService()
+        }
     )
 
     public var perpsChartService: PerpsChartProviding {
@@ -154,9 +158,44 @@ public final class MainAssembly {
                         chainKitService: multichainAssembly.chainKitService,
                         mnemonicAccess: secureAssembly.mnemonicAccess
                     ),
-                ]
+                ] + evmSwapRelayedFeeEngines()
             )
         )
+
+    private func evmSwapRelayedFeeEngines() -> [any MultichainSwapRelayedFeeEngine] {
+        let configuration = configurationAssembly.configuration
+        let chargesReader = BatteryChargesReader(
+            batteryService: batteryAssembly.batteryService(),
+            batteryCalculation: batteryAssembly.batteryCalculation
+        )
+        let balanceProvider = multichainAssembly.multichainAssetBalanceProvider
+        let relayer = BatteryEVMGaslessRelayer(service: batteryAssembly.batteryGaslessService())
+        let signer = multichainAssembly.relayedOperationSigner
+        let relayedChains = evmGaslessRelayedChains
+        return MultichainChain.allCases
+            .filter(\.isEVM)
+            .sorted { $0.rawValue < $1.rawValue }
+            .map { chain in
+                MultichainSwapEVMRelayedFeeEngine(
+                    chain: chain,
+                    relayer: relayer,
+                    signer: signer,
+                    relayedChains: { await relayedChains.chains() },
+                    isRelayerEnabled: { wallet in
+                        guard await configuration.isBatteryEnable(network: wallet.network) else {
+                            return false
+                        }
+                        return await configuration.isBatterySendEnable(network: wallet.network)
+                    },
+                    batteryCharges: { wallet in
+                        await chargesReader.availableCharges(wallet: wallet)
+                    },
+                    walletTokens: { assetIds, wallet in
+                        await balanceProvider.loadAssets(named: assetIds, wallet: wallet)
+                    }
+                )
+            }
+    }
 
     public func mainController() -> MainController {
         MainController(
@@ -353,7 +392,7 @@ public final class MainAssembly {
             isMaxAmount: isMaxAmount,
             chainKitService: multichainAssembly.chainKitService,
             passcodeProvider: passcodeProvider,
-            engineResolver: MultichainFeeEngineResolver(),
+            engineResolver: MultichainFeeEngineResolver(relayedEVMChains: batteryRelayedEVMChains),
             tonJettonEngineFactory: MultichainTonJettonEngineFactory(
                 api: apiAssembly.api,
                 sendService: servicesAssembly.sendService(),
@@ -371,7 +410,44 @@ public final class MainAssembly {
             configuration: configurationAssembly.configuration,
             batteryService: batteryAssembly.batteryService(),
             batteryCalculation: batteryAssembly.batteryCalculation,
-            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider
+            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider,
+            evmGaslessFeeEngine: evmGaslessFeeEngine()
+        )
+    }
+
+    private lazy var evmGaslessRelayedChains = EVMGaslessRelayedChains(
+        loadConfig: { [service = batteryAssembly.batteryGaslessService()] in
+            try await service.gaslessConfig()
+        }
+    )
+
+    /// The EVM chains the battery's relayer pays fees on, `nil` until its config has been read.
+    public var batteryRelayedEVMChains: @Sendable () async -> Set<MultichainChain>? {
+        { [relayedChains = evmGaslessRelayedChains] in await relayedChains.chains() }
+    }
+
+    private func evmGaslessFeeEngine() -> EVMGaslessFeeEngine {
+        let configuration = configurationAssembly.configuration
+        let chargesReader = BatteryChargesReader(
+            batteryService: batteryAssembly.batteryService(),
+            batteryCalculation: batteryAssembly.batteryCalculation
+        )
+        let balanceProvider = multichainAssembly.multichainAssetBalanceProvider
+        return EVMGaslessFeeEngine(
+            relayer: BatteryEVMGaslessRelayer(service: batteryAssembly.batteryGaslessService()),
+            signer: multichainAssembly.relayedOperationSigner,
+            isEnabled: { wallet in
+                guard await configuration.isBatteryEnable(network: wallet.network) else {
+                    return false
+                }
+                return await configuration.isBatterySendEnable(network: wallet.network)
+            },
+            batteryCharges: { wallet in
+                await chargesReader.availableCharges(wallet: wallet)
+            },
+            walletTokens: { assetIds, wallet in
+                await balanceProvider.loadAssets(named: assetIds, wallet: wallet)
+            }
         )
     }
 

@@ -17,7 +17,18 @@ extension MultichainSwapFeeOption {
             return .multichain(token: asset)
         case .gram:
             return .default
+        case let .token(asset, _, _):
+            return .multichain(token: asset)
         }
+    }
+
+    var refundedChargesText: String? {
+        guard case let .batteryCharges(count, excess, _) = cost,
+              let excess, excess > 0, excess < count
+        else {
+            return nil
+        }
+        return "\(TKLocales.Common.Numbers.approximate) \(excess) \(TKLocales.Battery.Refill.refunded(count: excess))"
     }
 
     func feeValueText(amountFormatter: AmountFormatter) -> String {
@@ -40,6 +51,13 @@ extension MultichainSwapFeeOption {
                 amount: amountNano,
                 fractionDigits: MultichainAssetDetails.gram.decimals,
                 accessory: .tokenSymbol(MultichainAssetDetails.gram.symbol),
+                style: .compact
+            )
+        case let .token(asset, amount, _):
+            return amountFormatter.format(
+                amount: amount,
+                fractionDigits: asset.decimals,
+                accessory: .tokenSymbol(asset.symbol),
                 style: .compact
             )
         }

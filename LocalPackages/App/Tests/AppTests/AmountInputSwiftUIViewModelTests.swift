@@ -73,6 +73,75 @@ final class AmountInputSwiftUIViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.converted.isHidden)
     }
 
+    func test_quickOptionSetsAmountAndBecomesSelected() {
+        let viewModel = makeViewModel(
+            sourceUnit: StubUnit(inputSymbol: .text("USD"), fractionalDigits: 2, symbol: "USD"),
+            destinationUnit: StubUnit(inputSymbol: .text("USDT"), fractionalDigits: 6, symbol: "USDT")
+        )
+        viewModel.isBalanceVisible = false
+        viewModel.quickOptions = [
+            AmountInputQuickOption(id: "50", title: "$50", amount: 50),
+            AmountInputQuickOption(id: "100", title: "$100", amount: 100),
+        ]
+
+        viewModel.selectQuickOption(id: "100")
+
+        XCTAssertEqual(viewModel.text, "100")
+        XCTAssertEqual(viewModel.selectedQuickOptionID, "100")
+        XCTAssertTrue(viewModel.showsQuickOptions)
+    }
+
+    func test_editingAmountClearsQuickOptionSelection() {
+        let viewModel = makeViewModel(
+            sourceUnit: StubUnit(inputSymbol: .text("USD"), fractionalDigits: 2, symbol: "USD"),
+            destinationUnit: StubUnit(inputSymbol: .text("USDT"), fractionalDigits: 6, symbol: "USDT")
+        )
+        viewModel.quickOptions = [
+            AmountInputQuickOption(id: "50", title: "$50", amount: 50),
+        ]
+        viewModel.selectQuickOption(id: "50")
+        XCTAssertEqual(viewModel.selectedQuickOptionID, "50")
+
+        viewModel.setText("51")
+
+        XCTAssertNil(viewModel.selectedQuickOptionID)
+    }
+
+    func test_replacingDestinationUnitKeepsSourceAmount() {
+        let viewModel = makeViewModel(
+            sourceUnit: StubUnit(inputSymbol: .text("USD"), fractionalDigits: 2, symbol: "USD"),
+            destinationUnit: StubUnit(inputSymbol: .text("USDT"), fractionalDigits: 6, symbol: "USDT")
+        )
+        viewModel.rate = 2
+        viewModel.setText("10")
+
+        viewModel.replaceDestinationUnit(
+            StubUnit(inputSymbol: .text("BTC"), fractionalDigits: 8, symbol: "BTC")
+        )
+
+        XCTAssertEqual(viewModel.text, "10")
+        guard case let .text(symbol) = viewModel.converted.symbol else {
+            return XCTFail("Expected a text symbol")
+        }
+        XCTAssertEqual(symbol, "BTC")
+    }
+
+    func test_convertedTapDoesNotToggleWhenSelectable() {
+        let viewModel = makeViewModel()
+        viewModel.rate = 3
+        viewModel.isConvertedSelectable = true
+        viewModel.setText("2")
+        var taps = 0
+        viewModel.didTapConverted = { taps += 1 }
+
+        viewModel.tapConverted()
+
+        XCTAssertEqual(taps, 1)
+        XCTAssertEqual(viewModel.text, "2")
+        XCTAssertTrue(viewModel.converted.showsChevron)
+        XCTAssertFalse(viewModel.converted.showsSwitchIcon)
+    }
+
     func test_convertedAmount_usdtNearParity() {
         let viewModel = makeViewModel(
             sourceUnit: StubUnit(inputSymbol: .text("USD"), fractionalDigits: 2, symbol: "USD"),

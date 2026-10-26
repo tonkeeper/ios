@@ -9,7 +9,7 @@ import UIKit
 /// NOTE: the feature is fully backend-driven — the backend sends icon asset
 /// names (or URLs) and the client resolves them. The `ticket / fire / rocket /
 /// shield` glyphs are the Figma-designed 28pt icons exported into
-/// `TKUIKitResources`. There is no designed 84pt variant of `ticket / done`, so
+/// `KeeperResources`. There is no designed 84pt variant of `ticket / done`, so
 /// the "Large" cases reuse the vector 28pt glyphs; they scale crisply and only
 /// show as the hero fallback when `hero.image` is missing or fails to load.
 enum RaffleSymbol {

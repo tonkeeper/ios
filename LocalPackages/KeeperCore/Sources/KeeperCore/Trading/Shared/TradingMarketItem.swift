@@ -44,7 +44,7 @@ private extension String {
 extension Components.Schemas.AssetType {
     var asCategory: TradingAssetCategory {
         switch self {
-        case .asset, .commodities, .perpetuals:
+        case .asset, .commodities, .perpetuals, .unknown:
             .tokens
         case .stocks:
             .stocks

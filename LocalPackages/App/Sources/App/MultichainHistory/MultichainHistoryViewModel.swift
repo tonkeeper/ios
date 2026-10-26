@@ -20,6 +20,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     @Published private(set) var selectedTypeFilter: MultichainHistoryTypeFilter = .all
     @Published private(set) var hidesDustTransactions: Bool
     @Published private(set) var contentDescriptors = [MultichainHistoryContentDescriptor]()
+    @Published private(set) var activityToOpen: MultichainActivity?
 
     var currentQueryViewModel: MultichainHistoryQueryViewModel? {
         contentDescriptors.first(where: \.isActive)?.queryViewModel
@@ -65,10 +66,14 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     private let nftResolver: MultichainActivityNFTResolver
     private let currentDateProvider: () -> Date
     private let chainImageProvider: (MultichainChain) -> UIImage?
-    private let onAddFunds: () -> Void
+    private let onAddFunds: (() -> Void)?
 
     private var categoryViewModels = [MultichainHistoryCategory: MultichainHistoryCategoryViewModel]()
     private var nftResolutionObservation: AnyCancellable?
+    private var pendingEventId: String?
+    private var pendingEventObservation: AnyCancellable?
+    private var resolvedPendingActivity: MultichainActivity?
+    private var hasAppeared = false
     private var hasLoaded = false
 
     init(
@@ -84,7 +89,8 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         nftResolver: MultichainActivityNFTResolver,
         currentDateProvider: @escaping () -> Date = Date.init,
         chainImageProvider: @escaping (MultichainChain) -> UIImage? = { $0.addressConfiguration.icon },
-        onAddFunds: @escaping () -> Void = {}
+        onAddFunds: (() -> Void)? = nil,
+        pendingEventId: String? = nil
     ) {
         self.multichainState = multichainState
         self.assetId = assetId
@@ -99,6 +105,8 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         self.currentDateProvider = currentDateProvider
         self.chainImageProvider = chainImageProvider
         self.onAddFunds = onAddFunds
+        let pendingEventId = pendingEventId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.pendingEventId = pendingEventId?.isEmpty == false ? pendingEventId : nil
         self.nftResolutionObservation = nftResolver.$revision
             .dropFirst()
             .sink { [weak self] _ in
@@ -129,6 +137,16 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         hasLoaded = true
         reachabilityTracker?.addObserver(self)
         activateCurrentCategory()
+        observePendingEvent()
+    }
+
+    func screenDidAppear() {
+        hasAppeared = true
+        publishResolvedPendingActivity()
+    }
+
+    func didOpenPendingActivity() {
+        activityToOpen = nil
     }
 
     func selectChainFilter(_ filter: MultichainHistoryChainFilter) {
@@ -204,6 +222,42 @@ private extension MultichainHistoryViewModelImplementation {
             return .asset(assetId: assetId, typeFilter: selectedTypeFilter)
         }
         return .chain(chainFilter: selectedChainFilter, typeFilter: selectedTypeFilter)
+    }
+
+    func observePendingEvent() {
+        guard pendingEventId != nil else {
+            return
+        }
+        let queryViewModel = contentViewModel(for: .chain(chainFilter: .all, typeFilter: .all))
+        pendingEventObservation = queryViewModel.$state.sink { [weak self] state in
+            Task { @MainActor in
+                self?.resolvePendingEvent(in: state)
+            }
+        }
+    }
+
+    func resolvePendingEvent(in state: MultichainHistoryQueryViewModel.State) {
+        guard let eventId = pendingEventId else {
+            return
+        }
+        guard let activity = MultichainHistoryEventTarget.activity(
+            eventId: eventId,
+            in: state.activities
+        ) else {
+            return
+        }
+        pendingEventId = nil
+        pendingEventObservation = nil
+        resolvedPendingActivity = activity
+        publishResolvedPendingActivity()
+    }
+
+    func publishResolvedPendingActivity() {
+        guard hasAppeared, let activity = resolvedPendingActivity else {
+            return
+        }
+        resolvedPendingActivity = nil
+        activityToOpen = activity
     }
 
     func activateCurrentCategory() {

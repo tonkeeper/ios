@@ -14,7 +14,7 @@ public struct MultichainSwapProviderError: Sendable, Hashable {
     }
 }
 
-public enum MultichainSwapProviderErrorCode: String, Sendable, Hashable, CaseIterable {
+@frozen public enum MultichainSwapProviderErrorCode: String, Sendable, Hashable, CaseIterable {
     case noRoute = "no_route"
     case assetNotSupported = "asset_not_supported"
     case minAmountNotMet = "min_amount_not_met"

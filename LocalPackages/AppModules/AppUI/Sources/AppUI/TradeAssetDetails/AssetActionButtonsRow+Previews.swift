@@ -39,6 +39,21 @@ import TKUIKit
                 action: {}
             ),
         ])
+        AssetActionButtonsRow(items: [
+            AssetActionButtonsRow.Item(
+                id: "send",
+                icon: .TKUIKit.Icons.Size16.linkSmall,
+                title: TKLocales.WalletButtons.send,
+                isEnabled: false,
+                action: {}
+            ),
+            AssetActionButtonsRow.Item(
+                id: "receive",
+                icon: .TKUIKit.Icons.Size16.qrCode,
+                title: TKLocales.WalletButtons.receive,
+                action: {}
+            ),
+        ])
     }
     .padding()
     .background(.backgroundPage)

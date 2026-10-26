@@ -1,5 +1,5 @@
 {
-  "originHash" : "1990e3c8f5cd52a94c875d8cad66787827877d4027806ad5e64a303bac3b569d",
+  "originHash" : "124665721250ea02bd13303c32a8fe86ccb5b15bc2014b624f3ce0c46b78cf29",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -44,15 +44,6 @@
       "state" : {
         "revision" : "cfd67fac2a228d448d9d2ac92ffc71589cc3ef00",
         "version" : "0.3.11"
-      }
-    },
-    {
-      "identity" : "battery-api-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/battery-api-swift",
-      "state" : {
-        "revision" : "c696bad79fc26e4129d0a7418b13833fed4cb78a",
-        "version" : "4.0.1"
       }
     },
     {
@@ -101,12 +92,12 @@
       }
     },
     {
-      "identity" : "chainkit-swift",
+      "identity" : "chainkit-publishing",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/chainkit-swift",
+      "location" : "https://github.com/tonkeeper/chainkit-publishing",
       "state" : {
-        "revision" : "3524fed8e5ff81593a747b6e8465d443755d9350",
-        "version" : "0.1.28"
+        "revision" : "f5e43098397b95d1b9c3cb30cb799a591955b430",
+        "version" : "26.10.8"
       }
     },
     {
@@ -208,6 +199,15 @@
       }
     },
     {
+      "identity" : "ios-branch-sdk-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/BranchMetrics/ios-branch-sdk-spm",
+      "state" : {
+        "revision" : "ec34dd77d08cb8ae017def1e66b4bf59a62a5bce",
+        "version" : "3.14.2"
+      }
+    },
+    {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher",
@@ -223,6 +223,15 @@
       "state" : {
         "revision" : "a0bc79961d7be727d258d33d5a6b2f1023270ba1",
         "version" : "1.22.5"
+      }
+    },
+    {
+      "identity" : "linkrunner-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/linkrunner-labs/linkrunner-ios.git",
+      "state" : {
+        "revision" : "f2b24de32fbff82dad4e019137d483611c32b61b",
+        "version" : "4.1.0"
       }
     },
     {
@@ -301,8 +310,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
-        "revision" : "db774a277f60063a32d854f2980299caf06da041",
-        "version" : "1.6.0"
+        "revision" : "bff4b6903cdc99dda49649dd52f46c11cfd3ed50",
+        "version" : "1.8.0"
       }
     },
     {
@@ -310,8 +319,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log",
       "state" : {
-        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
-        "version" : "1.15.0"
+        "revision" : "9c6fb14227f55d8f711ce3847dc2f419fb0ecacb",
+        "version" : "1.15.1"
       }
     },
     {
@@ -328,8 +337,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-runtime",
       "state" : {
-        "revision" : "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
-        "version" : "0.3.6"
+        "revision" : "50ad7976f18fec6c09466d2aebf7be3dc9476cfb",
+        "version" : "1.13.0"
       }
     },
     {
@@ -386,21 +395,12 @@
       }
     },
     {
-      "identity" : "ton-api-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/ton-api-swift",
-      "state" : {
-        "revision" : "716f7491aaa909bd4bcea23b1bd02f18e7de3e3c",
-        "version" : "0.8.0"
-      }
-    },
-    {
       "identity" : "ton-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "aacae64c40f40500a9485b6b2d8d060a4777cf72",
-        "version" : "1.0.36"
+        "revision" : "d2b791fe5288d064787a806f0586dac4cb2791b9",
+        "version" : "1.0.37"
       }
     },
     {

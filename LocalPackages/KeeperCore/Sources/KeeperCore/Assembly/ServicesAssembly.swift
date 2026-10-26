@@ -6,7 +6,6 @@ public final class ServicesAssembly {
     private let storesAssembly: StoresAssembly
     private let apiAssembly: APIAssembly
     private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
-    private let scamAPIAssembly: ScamAPIAssembly
     private let coreAssembly: CoreAssembly
     private let secureAssembly: SecureAssembly
     private let batteryAssembly: BatteryAssembly
@@ -30,7 +29,6 @@ public final class ServicesAssembly {
         storesAssembly: StoresAssembly,
         apiAssembly: APIAssembly,
         tonkeeperAPIAssembly: TonkeeperAPIAssembly,
-        scamAPIAssembly: ScamAPIAssembly,
         coreAssembly: CoreAssembly,
         secureAssembly: SecureAssembly,
         batteryAssembly: BatteryAssembly,
@@ -50,7 +48,6 @@ public final class ServicesAssembly {
         self.storesAssembly = storesAssembly
         self.apiAssembly = apiAssembly
         self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
-        self.scamAPIAssembly = scamAPIAssembly
         self.coreAssembly = coreAssembly
         self.secureAssembly = secureAssembly
         self.batteryAssembly = batteryAssembly
@@ -175,7 +172,6 @@ public final class ServicesAssembly {
     public func nftService() -> NFTService {
         NFTServiceImplementation(
             apiProvider: apiAssembly.apiProvider,
-            scamAPI: scamAPIAssembly.api,
             nftRepository: repositoriesAssembly.nftRepository()
         )
     }

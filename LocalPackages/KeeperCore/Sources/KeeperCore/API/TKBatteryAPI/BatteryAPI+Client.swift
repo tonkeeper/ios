@@ -10,10 +10,6 @@ import TKBatteryAPI
 /// `tonConnectAuth`, `walletAuth` and `xWalletId` as their own headers — which the generator turns
 /// into no operation parameters at all, so they are set here instead of per call site.
 struct BatteryAuthHeaderMiddleware: ClientMiddleware {
-    private static let tonConnectAuth = HTTPField.Name("X-TonConnect-Auth")!
-    private static let walletId = HTTPField.Name("X-Wallet-ID")!
-    private static let walletAuthorization = HTTPField.Name("X-Wallet-Authorization")!
-
     private let authorization: BatteryAuthorization
 
     init(authorization: BatteryAuthorization) {
@@ -28,17 +24,11 @@ struct BatteryAuthHeaderMiddleware: ClientMiddleware {
         next: @Sendable (HTTPRequest, HTTPBody?, URL) async throws -> (HTTPResponse, HTTPBody?)
     ) async throws -> (HTTPResponse, HTTPBody?) {
         var request = request
-        if let tonProof = authorization.tonProof {
-            request.headerFields[Self.tonConnectAuth] = tonProof
-        }
-        if let walletId = authorization.walletId {
-            request.headerFields[Self.walletId] = walletId
-        }
-        if let deviceAccessToken = authorization.deviceAccessToken {
-            request.headerFields[.authorization] = "Bearer \(deviceAccessToken)"
-        }
-        if let walletAuthToken = authorization.walletAuthToken {
-            request.headerFields[Self.walletAuthorization] = walletAuthToken
+        for field in authorization.httpHeaderFields {
+            guard let name = HTTPField.Name(field.name) else {
+                continue
+            }
+            request.headerFields[name] = field.value
         }
         return try await next(request, body, baseURL)
     }
@@ -95,6 +85,7 @@ extension TKBatteryAPI.Client {
         }
         self = Client(
             serverURL: hostUrl,
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
             transport: URLSessionTransport(urlSession: urlSession),
             middlewares: middlewares
         )

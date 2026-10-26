@@ -1,17 +1,17 @@
 import TonAPI
 
 public extension StakingPoolImplementation {
-    init(from: PoolImplementationType) {
+    init(from: TonAPI.Components.Schemas.PoolImplementationType) {
         switch from {
         case .tf:
             self = .tf
-        case .liquidtf:
+        case .liquidTF:
             self = .liquidTF
-        case .ffvault:
+        case .ffvault, .hipo:
             self = .unknown
         case .whales:
             self = .whales
-        case .unknownDefaultOpenApi:
+        case .unknown:
             self = .unknown
         }
     }

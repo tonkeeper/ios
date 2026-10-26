@@ -6,6 +6,8 @@ protocol StakingInputViewModelConfiguration: AnyObject {
     var title: String { get }
     var balance: BigUInt { get }
     var minimumInput: BigUInt? { get }
+    var maxReserve: BigUInt { get }
+    var maxHint: String? { get }
 
     var didUpdateBalance: (() -> Void)? { get set }
     var didUpdateMinimumInput: (() -> Void)? { get set }

@@ -187,7 +187,7 @@ final class DappBrowserAnalyticsController {
         )
     }
 
-    static func assetChain(from chain: MultichainChain?) -> AssetChain? {
+    nonisolated static func assetChain(from chain: MultichainChain?) -> AssetChain? {
         guard let chain else {
             return nil
         }
@@ -207,6 +207,14 @@ final class DappBrowserAnalyticsController {
             return .arb
         case .bsc:
             return .bnb
+        case .sol:
+            return .sol
+        case .polygon:
+            return .pol
+        case .avax:
+            return .avax
+        case .robinhood:
+            return .robinhood
         }
     }
 

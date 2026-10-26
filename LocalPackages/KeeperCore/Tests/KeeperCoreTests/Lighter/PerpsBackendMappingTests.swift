@@ -1,38 +1,10 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKPerpsAPI
 import XCTest
 
 final class PerpsBackendMappingTests: XCTestCase {
-    func testAClosingFillBelongsToThePositionOppositeItsOrderSide() {
-        let closedShort = makeActivityItem(side: .long, realizedPnl: "12.5")
-        XCTAssertEqual(closedShort.outcome, .closed)
-        XCTAssertEqual(closedShort.side, .long)
-        XCTAssertEqual(closedShort.positionSide, .short)
-
-        let closedLong = makeActivityItem(side: .short, realizedPnl: "-3")
-        XCTAssertEqual(closedLong.positionSide, .long)
-    }
-
-    func testAnOpeningFillKeepsItsOrderSide() {
-        let openedShort = makeActivityItem(side: .short, realizedPnl: nil)
-        XCTAssertEqual(openedShort.outcome, .opened)
-        XCTAssertEqual(openedShort.positionSide, .short)
-
-        let openedLong = makeActivityItem(side: .long, realizedPnl: nil)
-        XCTAssertEqual(openedLong.positionSide, .long)
-    }
-
-    func testALiquidationBelongsToThePositionItClosed() {
-        let liquidatedLong = makeActivityItem(side: .short, realizedPnl: "-40", type: .liquidation)
-        XCTAssertEqual(liquidatedLong.outcome, .liquidated)
-        XCTAssertEqual(liquidatedLong.positionSide, .long)
-    }
-
-    func testAnItemWithoutASideHasNoPositionSide() {
-        XCTAssertNil(makeActivityItem(side: nil, realizedPnl: "1").positionSide)
-    }
-
     func testPositionIgnoresZeroSize() {
         let position = Components.Schemas.OpenPosition(
             market_index: 1,
@@ -152,10 +124,28 @@ final class PerpsBackendMappingTests: XCTestCase {
         XCTAssertNil(try XCTUnwrap(PerpsBackendMapping.position(marginless)).effectiveLeverage)
     }
 
-    func testOpenOrdersAreHiddenUnlessCancelEnabled() {
-        XCTAssertFalse(PerpsBackendMapping.ordersVisible(nil))
-        XCTAssertFalse(PerpsBackendMapping.ordersVisible(.init(cancel_enabled: false)))
-        XCTAssertTrue(PerpsBackendMapping.ordersVisible(.init(cancel_enabled: true)))
+    func testOrdersAreReadableWhenTheScreenCarriesTheList() {
+        XCTAssertFalse(PerpsBackendMapping.ordersReadable(Components.Schemas.TradingScreen()))
+        XCTAssertTrue(
+            PerpsBackendMapping.ordersReadable(Components.Schemas.TradingScreen(open_orders: []))
+        )
+    }
+
+    func testAMissingOpenFlagDoesNotReadAsARefusal() {
+        XCTAssertTrue(PerpsBackendMapping.openEnabled(nil))
+        XCTAssertTrue(PerpsBackendMapping.openEnabled(Components.Schemas.TradingFlags()))
+        XCTAssertFalse(
+            PerpsBackendMapping.openEnabled(Components.Schemas.TradingFlags(open_enabled: false))
+        )
+    }
+
+    func testAMarketWithNothingToCancelStillReadsItsOrders() {
+        let screen = Components.Schemas.TradingScreen(
+            open_orders: [],
+            flags: Components.Schemas.TradingFlags(cancel_enabled: false)
+        )
+
+        XCTAssertTrue(PerpsBackendMapping.ordersReadable(screen))
     }
 
     func testLimitAndTriggerOrdersSplitByCategory() {
@@ -181,6 +171,55 @@ final class PerpsBackendMappingTests: XCTestCase {
         let orders = [limit, takeProfit]
         XCTAssertEqual(PerpsBackendMapping.limitOrders(orders).map(\.orderIndex), [11])
         XCTAssertEqual(PerpsBackendMapping.triggerOrders(orders).map(\.kind), [.takeProfit])
+    }
+
+    func testPortfolioOrdersKeepEveryRestingOrderTheHomeCanName() {
+        let btc = Components.Schemas.Order(
+            order_index: 21,
+            market_index: 1,
+            symbol: "BTC",
+            side: .short,
+            _type: .limit,
+            category: .open,
+            base_size: "0.0003",
+            price: "90000"
+        )
+        let reduceOnly = Components.Schemas.Order(
+            order_index: 24,
+            market_index: 2,
+            symbol: "ETH",
+            side: .short,
+            _type: .limit,
+            category: .open,
+            base_size: "0.5",
+            price: "3200",
+            reduce_only: true
+        )
+        let unnamed = Components.Schemas.Order(
+            order_index: 22,
+            market_index: 2,
+            side: .long,
+            _type: .limit,
+            category: .open,
+            base_size: "1",
+            price: "3000"
+        )
+        let takeProfit = Components.Schemas.Order(
+            order_index: 23,
+            market_index: 1,
+            symbol: "BTC",
+            side: .short,
+            _type: .limit,
+            category: .take_profit,
+            trigger_price: "95000"
+        )
+
+        let orders = PerpsBackendMapping.portfolioOrders([btc, reduceOnly, unnamed, takeProfit])
+
+        XCTAssertEqual(orders.map(\.order.orderIndex), [21, 24])
+        XCTAssertEqual(orders.first?.symbol, "BTC")
+        XCTAssertEqual(orders.first?.order.orderIndex, 21)
+        XCTAssertEqual(orders.first?.order.side, .short)
     }
 
     func testPendingWithoutOrderRefsSurvivesTheJournalRoundTrip() throws {
@@ -220,9 +259,11 @@ final class PerpsBackendMappingTests: XCTestCase {
         )
         let snapshot = PerpsBackendMapping.snapshot(
             availableBalance: "12.5",
+            equity: "402.5",
             positions: [position]
         )
         XCTAssertEqual(snapshot.availableBalance, "12.5")
+        XCTAssertEqual(snapshot.equity, "402.5")
         let mapped = try XCTUnwrap(snapshot.positions.first)
         XCTAssertEqual(mapped.marketId, 7)
         XCTAssertEqual(mapped.baseSize, 1.5)
@@ -282,6 +323,15 @@ final class PerpsBackendMappingTests: XCTestCase {
         XCTAssertNil(mapped.autoCloseEnabled)
     }
 
+    func testSnapshotWithoutEquityFallsBackToTheFreeBalance() {
+        let snapshot = PerpsBackendMapping.snapshot(
+            availableBalance: "12.5",
+            equity: nil,
+            positions: nil
+        )
+        XCTAssertEqual(snapshot.equity, "12.5")
+    }
+
     func testTkPositionIdMatchesListIdShape() {
         XCTAssertEqual(PerpsPlannerMapping.tkPositionId(marketId: 1), "lighter:1")
     }
@@ -308,6 +358,39 @@ final class PerpsTkReconcileTests: XCTestCase {
         )
     }
 
+    func testAnAcceptedLimitPlacementIsConfirmedBeforeTheVenueSpeaks() {
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(),
+                isLimit: true,
+                placementAccepted: true
+            ),
+            .confirmed
+        )
+    }
+
+    func testALimitPlacementNobodyAcceptedStaysPending() {
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(),
+                isLimit: true,
+                placementAccepted: false
+            ),
+            .pending
+        )
+    }
+
+    func testWhatTheVenueSaysOutranksTheAcceptedPlacement() {
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(orders: [stateOrder(status: "canceled", kind: "limit")]),
+                isLimit: true,
+                placementAccepted: true
+            ),
+            .failed("canceled")
+        )
+    }
+
     func testAPartiallyFilledOrderCountsAsATradeWhateverItsStatusSays() {
         XCTAssertEqual(
             PerpsTkReconcile.open(
@@ -318,14 +401,22 @@ final class PerpsTkReconcileTests: XCTestCase {
         )
     }
 
-    func testMarketOpenPartialFillDoesNotConfirmWhenExpectedSizeIsKnown() {
+    func testAMarketOpenThatFilledShortIsATradeNotARefusal() {
         XCTAssertEqual(
             PerpsTkReconcile.open(
                 state: positionState(orders: [stateOrder(status: "canceled", filledBase: "0.4")]),
                 isLimit: false,
                 expectedBaseSize: 1
             ),
-            .failed("partial_fill")
+            .partiallyFilled
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(orders: [stateOrder(status: "filled", filledBase: "0.4")]),
+                isLimit: false,
+                expectedBaseSize: 1
+            ),
+            .partiallyFilled
         )
         XCTAssertEqual(
             PerpsTkReconcile.open(
@@ -345,6 +436,28 @@ final class PerpsTkReconcileTests: XCTestCase {
             ),
             .failed("canceled")
         )
+    }
+
+    func testTheVenuesCancelSubStatusesAreCancelsToo() {
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(orders: [stateOrder(status: "canceled-too-much-slippage")]),
+                isLimit: false,
+                expectedBaseSize: 1
+            ),
+            .failed("canceled-too-much-slippage")
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.open(
+                state: positionState(orders: [stateOrder(status: "canceled-post-only", kind: "limit")]),
+                isLimit: true,
+                placementAccepted: true
+            ),
+            .failed("canceled-post-only")
+        )
+        XCTAssertTrue(PerpsBackendMapping.isSlippageCancel("canceled-too-much-slippage"))
+        XCTAssertFalse(PerpsBackendMapping.isSlippageCancel("canceled-post-only"))
+        XCTAssertFalse(PerpsBackendMapping.isSlippageCancel("canceled"))
     }
 
     func testLimitOpenConfirmsOnWorkingOrder() {
@@ -400,7 +513,7 @@ final class PerpsTkReconcileTests: XCTestCase {
         )
     }
 
-    func testFullClosePartialFillDoesNotConfirm() {
+    func testACloseThatFilledShortIsNotARefusalEither() {
         let open = Components.Schemas.PositionEpisode(
             episode_id: "1",
             side: .long,
@@ -415,7 +528,7 @@ final class PerpsTkReconcileTests: XCTestCase {
                 ),
                 expectedBaseSize: 1
             ),
-            .failed("partial_fill")
+            .partiallyFilled
         )
     }
 
@@ -438,10 +551,47 @@ final class PerpsTkReconcileTests: XCTestCase {
         )
     }
 
-    func testCancelDoesNotConfirmWhenOrdersAreUnknown() {
+    func testCancelDoesNotConfirmWhenOrdersAreUnknownAndNothingWasAccepted() {
         let change = PerpsPendingLimitOrderChange(orderIndex: 7, kind: .cancel, limitPrice: nil)
         XCTAssertEqual(
-            PerpsTkReconcile.limitChange(change: change, ordersVisible: false, matching: nil),
+            PerpsTkReconcile.limitChange(
+                change: change,
+                ordersReadable: false,
+                matching: nil,
+                placementAccepted: false
+            ),
+            .pending
+        )
+    }
+
+    func testAnAcceptedCancelSettlesWhenTheBookCannotBeRead() {
+        let change = PerpsPendingLimitOrderChange(orderIndex: 7, kind: .cancel, limitPrice: nil)
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                ordersReadable: false,
+                matching: nil,
+                placementAccepted: true
+            ),
+            .confirmed
+        )
+    }
+
+    func testAReadableBookOutranksTheAcceptedCancel() {
+        let change = PerpsPendingLimitOrderChange(orderIndex: 7, kind: .cancel, limitPrice: nil)
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                ordersReadable: true,
+                matching: Components.Schemas.Order(
+                    order_index: 7,
+                    _type: .limit,
+                    status: .open,
+                    category: .open,
+                    price: "100"
+                ),
+                placementAccepted: true
+            ),
             .pending
         )
     }
@@ -449,8 +599,151 @@ final class PerpsTkReconcileTests: XCTestCase {
     func testCancelConfirmsWhenVisibleBookNoLongerHasTheOrder() {
         let change = PerpsPendingLimitOrderChange(orderIndex: 7, kind: .cancel, limitPrice: nil)
         XCTAssertEqual(
-            PerpsTkReconcile.limitChange(change: change, ordersVisible: true, matching: nil),
+            PerpsTkReconcile.limitChange(
+                change: change,
+                ordersReadable: true,
+                matching: nil,
+                placementAccepted: false
+            ),
             .confirmed
+        )
+    }
+
+    func testTheOrderItselfAnswersACancelWhereverItIsNow() {
+        let change = PerpsPendingLimitOrderChange(
+            orderIndex: 7,
+            kind: .cancel,
+            limitPrice: nil,
+            orderId: "lighter:7"
+        )
+
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                detail: orderDetail(resting: true, status: .open, price: "100")
+            ),
+            .pending
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                detail: orderDetail(resting: false, status: .canceled, price: "100")
+            ),
+            .confirmed
+        )
+    }
+
+    func testTheOrderItselfAnswersAModifyByItsNewPrice() {
+        let change = PerpsPendingLimitOrderChange(
+            orderIndex: 7,
+            kind: .modify,
+            limitPrice: 105,
+            orderId: "lighter:7"
+        )
+
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                detail: orderDetail(resting: true, status: .open, price: "105")
+            ),
+            .confirmed
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                detail: orderDetail(resting: true, status: .open, price: "100")
+            ),
+            .pending
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.limitChange(
+                change: change,
+                detail: orderDetail(resting: false, status: .canceled, price: "100")
+            ),
+            .failed("order_gone")
+        )
+    }
+
+    private func orderDetail(
+        resting: Bool,
+        status: Components.Schemas.OrderStatus,
+        price: String
+    ) -> Components.Schemas.OrderDetail {
+        Components.Schemas.OrderDetail(
+            order: Components.Schemas.Order(
+                id: "lighter:7",
+                order_index: 7,
+                _type: .limit,
+                status: status,
+                category: .open,
+                price: price
+            ),
+            resting: resting,
+            fills: [],
+            fills_known: true
+        )
+    }
+
+    func testATriggerOrderTheVenueHasNotHeardOfStillConfirmsFromTheBook() {
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [.pending],
+                restingMatchesTarget: true,
+                placementAccepted: false
+            ),
+            .confirmed
+        )
+    }
+
+    func testABookThatDoesNotHoldTheChangeKeepsItPending() {
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [.confirmed],
+                restingMatchesTarget: false,
+                placementAccepted: true
+            ),
+            .pending
+        )
+    }
+
+    func testARefusedLegSettlesTheChangeWhateverTheBookShows() {
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [.confirmed, .failed("rejected")],
+                restingMatchesTarget: true,
+                placementAccepted: true
+            ),
+            .failed("rejected")
+        )
+    }
+
+    func testLegsThatConfirmThemselvesStandInForABookNobodyCanRead() {
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [.confirmed],
+                restingMatchesTarget: nil,
+                placementAccepted: false
+            ),
+            .confirmed
+        )
+    }
+
+    func testAnAcceptedAutoCloseSettlesWhenNothingCanBeRead() {
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [.pending],
+                restingMatchesTarget: nil,
+                placementAccepted: true
+            ),
+            .confirmed
+        )
+        XCTAssertEqual(
+            PerpsTkReconcile.autoCloseChange(
+                legs: [],
+                restingMatchesTarget: nil,
+                placementAccepted: false
+            ),
+            .pending
         )
     }
 }
@@ -481,22 +774,4 @@ private func stateOrder(
         filled_base: filledBase,
         reduce_only: reduceOnly
     )
-}
-
-private func makeActivityItem(
-    side: Components.Schemas.OrderSide?,
-    realizedPnl: String?,
-    type: Components.Schemas.ActivityType = .fill
-) -> PerpsActivityItem {
-    let item = Components.Schemas.ActivityItem(
-        id: "act_1",
-        _type: type,
-        timestamp: Date(timeIntervalSince1970: 0),
-        market_index: 1,
-        side: side.map { .init(value1: $0) },
-        size: "1",
-        price: "100",
-        realized_pnl: realizedPnl
-    )
-    return PerpsBackendMapping.activity(item)!
 }

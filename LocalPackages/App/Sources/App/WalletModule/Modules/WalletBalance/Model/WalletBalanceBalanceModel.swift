@@ -118,8 +118,7 @@ final class WalletBalanceBalanceModel {
             return BalanceListItems(wallet: wallet, items: [], canManage: false, isSecure: isSecureMode)
         }
 
-        let items = balance.tonItems.map { Item(balanceItem: .ton($0), isPinned: false) }
-            + balance.pinnedItems.map { Item(balanceItem: $0, isPinned: true) }
+        let items = balance.pinnedItems.map { Item(balanceItem: $0, isPinned: true) }
             + balance.unpinnedItems.map { Item(balanceItem: $0, isPinned: false) }
 
         let isUSDeAvailable = isUSDeAvailable(wallet: wallet)

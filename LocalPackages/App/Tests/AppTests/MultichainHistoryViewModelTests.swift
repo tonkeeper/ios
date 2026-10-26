@@ -3,6 +3,7 @@ import AppUI
 import Combine
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKLocalize
 import TKUIKit
 import TonSwift
@@ -39,6 +40,124 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 for: XCTUnwrap(viewModel.currentQueryViewModel)
             )
         )
+    }
+
+    func test_eventTarget_matchesTransactionIdAndIndexedEventId() {
+        let first = activity(id: "first", txIds: ["ton:abc123"], fromAddress: "first")
+        let second = activity(id: "second", txIds: ["ton:abc123"], fromAddress: "second")
+        let indexed = activity(id: "indexed", txIds: ["ton:abc123:0"], fromAddress: "indexed")
+
+        XCTAssertEqual(
+            MultichainHistoryEventTarget.activity(eventId: "ton:abc123", in: [first, second])?.fromAddress,
+            "first"
+        )
+        XCTAssertEqual(
+            MultichainHistoryEventTarget.activity(eventId: "TON:ABC123:1", in: [first, second])?.fromAddress,
+            "second"
+        )
+        XCTAssertEqual(
+            MultichainHistoryEventTarget.activity(eventId: "ton:abc123:0", in: [indexed, first])?.fromAddress,
+            "indexed"
+        )
+        XCTAssertNil(
+            MultichainHistoryEventTarget.activity(eventId: "ton:missing:0", in: [first, second])
+        )
+    }
+
+    func test_eventTarget_matchesTransactionHashWhateverItsChainPrefixIndexAndHexSpelling() {
+        let deposit = activity(id: "deposit", activityType: .perpsBalanceDeposit, txIds: ["ethereum:0xABC"], fromAddress: "deposit")
+        let withdraw = activity(id: "withdraw", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:def:0"], fromAddress: "withdraw")
+        let older = activity(id: "older", activityType: .perpsBalanceDeposit, txIds: ["lighter:abc"], fromAddress: "older")
+
+        XCTAssertEqual(
+            MultichainHistoryEventTarget.activity(transactionHashes: ["abc"], in: [withdraw, deposit, older])?.fromAddress,
+            "deposit"
+        )
+        XCTAssertEqual(
+            MultichainHistoryEventTarget.activity(transactionHashes: ["0xDEF", "missing"], in: [deposit, withdraw])?.fromAddress,
+            "withdraw"
+        )
+        XCTAssertNil(MultichainHistoryEventTarget.activity(transactionHashes: ["lighter"], in: [deposit, withdraw]))
+        XCTAssertNil(MultichainHistoryEventTarget.activity(transactionHashes: [" ", ""], in: [deposit, withdraw]))
+    }
+
+    func test_eventTarget_currentFollowsTheShownActivityIntoAFreshPage() {
+        let pending = activity(id: "pending", activityType: .perpsBalanceDeposit, status: .pending, txIds: ["eth:0xABC"])
+        let settled = activity(id: "settled", activityType: .perpsBalanceDeposit, txIds: ["eth:0xABC"])
+        let reindexed = activity(id: "reindexed", activityType: .perpsBalanceDeposit, txIds: ["lighter:abc"], fromAddress: "lighter")
+        let other = activity(id: "other", txIds: ["eth:def"])
+
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [other, settled])?.status, .confirmed)
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [other, reindexed])?.fromAddress, "lighter")
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [other]))
+    }
+
+    func test_eventTarget_currentKeepsTheShownActivityWhenItsHashIsAmbiguous() {
+        let shown = activity(id: "shown", status: .pending, txIds: ["ton:abc"], fromAddress: "shown")
+        let first = activity(id: "first", txIds: ["ton:abc"], fromAddress: "first")
+        let second = activity(id: "second", txIds: ["ton:abc"], fromAddress: "second")
+        let sameRow = activity(id: "same", txIds: ["ton:abc"], fromAddress: "shown")
+
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: shown, in: [first, second]))
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: shown, in: [first, sameRow, second])?.status, .confirmed)
+    }
+
+    @MainActor
+    func test_pendingEventId_opensMatchingActivityOnceItLoads() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [
+                activity(id: "other", txIds: ["eth:other"]),
+                activity(id: "target", txIds: ["ton:abc123"]),
+            ], nextCursor: nil)),
+        ])
+        let viewModel = makeViewModel(
+            multichainService: service,
+            pendingEventId: "ton:abc123:0"
+        )
+
+        viewModel.viewDidLoad()
+
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: viewModel.currentQueryViewModel).count == 2
+            }
+        }
+        await Task.yield()
+        XCTAssertNil(viewModel.activityToOpen)
+
+        viewModel.screenDidAppear()
+
+        await waitUntil {
+            await MainActor.run { viewModel.activityToOpen != nil }
+        }
+
+        XCTAssertEqual(viewModel.activityToOpen?.txIds, ["ton:abc123"])
+    }
+
+    @MainActor
+    func test_pendingEventId_staysClosedWhenActivityIsMissing() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [
+                activity(id: "other", txIds: ["eth:other"]),
+            ], nextCursor: nil)),
+        ])
+        let viewModel = makeViewModel(
+            multichainService: service,
+            pendingEventId: "ton:abc123:0"
+        )
+
+        viewModel.viewDidLoad()
+        viewModel.screenDidAppear()
+
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: viewModel.currentQueryViewModel).count == 1
+            }
+        }
+
+        XCTAssertNil(viewModel.activityToOpen)
     }
 
     @MainActor
@@ -122,6 +241,467 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_perpsHistoryScreen_requestsPerpsAcrossEveryChain() async throws {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([.success(page(activities: [], nextCursor: nil))])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.query.appeared()
+
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return !requests.isEmpty
+        }
+        let requests = await service.activityRequests()
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.activityTypeFilter, .perps)
+        XCTAssertEqual(request.showPerps, true)
+        XCTAssertNil(request.chain)
+        XCTAssertNil(request.assetId)
+        XCTAssertNil(request.hideDust)
+        XCTAssertNil(viewModel.query.onAddFunds)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_scopedToMarket_requestsThatMarketsPerps() async throws {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([.success(page(activities: [], nextCursor: nil))])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: 1,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.query.appeared()
+
+        await waitUntil {
+            let requests = await service.activityRequests()
+            return !requests.isEmpty
+        }
+        let requests = await service.activityRequests()
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.assetId, "lighter/mainnet/market/1")
+        XCTAssertEqual(request.activityTypeFilter, .perps)
+        XCTAssertEqual(request.showPerps, true)
+        XCTAssertNil(request.chain)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_automaticallyLoadsWithdrawalMissingFromTheFirstPage() async {
+        let service = MultichainServiceSpy()
+        let withdrawal = activity(id: "withdrawal", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:withdrawal"])
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [withdrawal], nextCursor: nil)),
+        ])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            withdrawalOperationId: "withdrawal-op",
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.screenDidAppear()
+        viewModel.query.appeared()
+        await waitUntil {
+            if case .loaded = viewModel.query.state { return true }
+            return false
+        }
+        XCTAssertTrue(viewModel.query.state.activities.isEmpty)
+
+        await waitUntil(timeout: 3) { viewModel.query.state.activities == [withdrawal] }
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertTrue(requests.allSatisfy { $0.cursor == nil && $0.activityTypeFilter == .perps && $0.showPerps == true })
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_retriesWithdrawalForOneMinuteIncludingAfterRequestFailure() async {
+        let service = MultichainServiceSpy()
+        let withdrawal = activity(id: "withdrawal", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:withdrawal"])
+        var plans: [MultichainServiceSpy.Plan] = [.failure(.connectionError)]
+        plans += Array(repeating: .success(page(activities: [], nextCursor: nil)), count: 7)
+        plans.append(.success(page(activities: [withdrawal], nextCursor: nil)))
+        await service.setActivityPlans(plans)
+        var delays: [UInt64] = []
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            withdrawalOperationId: "withdrawal-op",
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            withdrawalRefreshSleep: { delays.append($0) }
+        )
+
+        viewModel.screenDidAppear()
+        await waitUntil { viewModel.query.state.activities == [withdrawal] }
+
+        XCTAssertEqual(Array(delays.prefix(4)), [500_000_000, 2_000_000_000, 5_000_000_000, 10_000_000_000])
+        XCTAssertEqual(delays.reduce(0, +), 60_000_000_000)
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.count, 9)
+        await Task.yield()
+        let finalRequestCount = await service.activityRequests().count
+        XCTAssertEqual(finalRequestCount, 9, "retries stay bounded")
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_doesNotRefreshWithdrawalAfterDeinit() async {
+        let service = MultichainServiceSpy()
+        let gate = MultichainHistoryTestGate()
+        var viewModel: PerpsHistoryViewModel? = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            withdrawalOperationId: "withdrawal-op",
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            withdrawalRefreshSleep: { _ in await gate.enter() }
+        )
+        viewModel?.screenDidAppear()
+        let isReleased = { [weak viewModel] in viewModel == nil }
+        await gate.waitUntilEntered()
+
+        viewModel = nil
+        XCTAssertTrue(isReleased())
+        await gate.open()
+        await Task.yield()
+
+        let requests = await service.activityRequests()
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_pausesWithdrawalRefreshWhileHiddenAndResumesTheSchedule() async {
+        let service = MultichainServiceSpy()
+        let withdrawal = activity(id: "withdrawal", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:withdrawal"])
+        var plans = Array(repeating: MultichainServiceSpy.Plan.success(page(activities: [], nextCursor: nil)), count: 8)
+        plans.append(.success(page(activities: [withdrawal], nextCursor: nil)))
+        await service.setActivityPlans(plans)
+        let gate = MultichainHistoryTestGate()
+        var delays: [UInt64] = []
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            withdrawalOperationId: "withdrawal-op",
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            withdrawalRefreshSleep: { delay in
+                delays.append(delay)
+                await gate.enter()
+            }
+        )
+
+        viewModel.screenDidAppear()
+        await gate.waitUntilEntered()
+        viewModel.screenWillDisappear()
+        await gate.open()
+        await Task.yield()
+        let hiddenRequests = await service.activityRequests()
+        XCTAssertTrue(hiddenRequests.isEmpty)
+
+        viewModel.screenDidAppear()
+        await waitUntil { viewModel.query.state.activities == [withdrawal] }
+
+        XCTAssertEqual(Array(delays.prefix(3)), [500_000_000, 500_000_000, 2_000_000_000])
+        XCTAssertEqual(delays.dropFirst().reduce(0, +), 60_000_000_000)
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.count, 9)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_opensTheFocusedOperationOnceItLoadsAndTheScreenIsUp() async {
+        let service = MultichainServiceSpy()
+        let other = activity(id: "other", activityType: .perpsBalanceDeposit, txIds: ["ethereum:0xother"], fromAddress: "other")
+        let focused = activity(id: "focused", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:0xABC"], fromAddress: "focused")
+        await service.setActivityPlans([.success(page(activities: [other, focused], nextCursor: nil))])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            focusedTransactions: ["abc"],
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.query.appeared()
+        await waitUntil { !viewModel.query.state.activities.isEmpty }
+        XCTAssertNil(viewModel.activityToOpen, "a sheet cannot go up before the screen is on")
+
+        viewModel.screenDidAppear()
+        await waitUntil { viewModel.activityToOpen != nil }
+        XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+
+        viewModel.didOpenFocusedActivity()
+        viewModel.screenDidAppear()
+        XCTAssertNil(viewModel.activityToOpen, "the focus opens once")
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_focusesPendingFundingWhenItsHashesLoadLater() async {
+        for type in [MultichainActivityType.perpsBalanceDeposit, .perpsBalanceWithdrawal] {
+            let service = MultichainServiceSpy()
+            let focused = activity(id: "focused", activityType: type, status: .pending, txIds: ["lighter:0xABC"], fromAddress: "focused")
+            let other = activity(id: "other", activityType: type, txIds: ["lighter:0xOTHER"], fromAddress: "other")
+            await service.setActivityPlans([
+                .success(page(activities: [other], nextCursor: nil)),
+                .success(page(activities: [other, focused], nextCursor: nil)),
+            ])
+            let account = FundingAccountStoreStub()
+            let gate = MultichainHistoryTestGate()
+            let viewModel = PerpsHistoryViewModel(
+                multichainState: makeMultichainState(),
+                marketId: nil,
+                focusedFundingOperationId: "funding-op",
+                accountStore: account,
+                multichainService: service,
+                amountFormatter: makeAmountFormatter(),
+                dateFormatter: makeDateFormatter(),
+                nftResolver: makeNFTResolver(),
+                withdrawalRefreshSleep: { _ in await gate.enter() }
+            )
+
+            viewModel.screenDidAppear()
+            viewModel.query.appeared()
+            await gate.waitUntilEntered()
+            await waitUntil { viewModel.query.state.activities == [other] }
+            XCTAssertNil(viewModel.activityToOpen)
+            viewModel.screenWillDisappear()
+
+            account.activity = PerpsFundingActivity(
+                inFlight: ["FUNDING-OP"],
+                transactions: ["FUNDING-OP": ["abc"], "other-op": ["other"]]
+            )
+            account.notify()
+            await waitUntil { viewModel.query.state.activities == [other, focused] }
+            XCTAssertNil(viewModel.activityToOpen, "a hidden history must wait before presenting details")
+            viewModel.screenDidAppear()
+            await waitUntil { viewModel.activityToOpen != nil }
+            XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+
+            viewModel.didOpenFocusedActivity()
+            account.notify()
+            await Task.yield()
+            XCTAssertNil(viewModel.activityToOpen)
+            viewModel.screenWillDisappear()
+            await gate.open()
+        }
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_retriesFundingFocusWithoutAnInitialHashSnapshot() async {
+        let service = MultichainServiceSpy()
+        let focused = activity(id: "focused", activityType: .perpsBalanceDeposit, status: .pending, txIds: ["ethereum:0xABC"], fromAddress: "focused")
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [focused], nextCursor: nil)),
+        ])
+        let account = FundingAccountStoreStub()
+        account.activity = PerpsFundingActivity(inFlight: ["FUNDING-OP"], transactions: ["FUNDING-OP": ["abc"]])
+        let gate = MultichainHistoryTestGate()
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            focusedFundingOperationId: "funding-op",
+            accountStore: account,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            withdrawalRefreshSleep: { _ in await gate.enter() }
+        )
+
+        viewModel.screenDidAppear()
+        viewModel.query.appeared()
+        await gate.waitUntilEntered()
+        await waitUntil {
+            if case .loaded = viewModel.query.state { return true }
+            return false
+        }
+        await gate.open()
+        await waitUntil { viewModel.activityToOpen != nil }
+
+        XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+        let requests = await service.activityRequests()
+        XCTAssertEqual(requests.count, 2)
+        viewModel.screenWillDisappear()
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_keepsKnownFundingHashesAfterJournalCleanup() async {
+        let service = MultichainServiceSpy()
+        let focused = activity(id: "focused", activityType: .perpsBalanceDeposit, txIds: ["ethereum:0xABC"], fromAddress: "focused")
+        let feedGate = MultichainHistoryTestGate()
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [focused], nextCursor: nil), gate: feedGate),
+        ])
+        let account = FundingAccountStoreStub()
+        account.activity = PerpsFundingActivity(completed: ["funding-op"], transactions: ["funding-op": ["abc"]])
+        let refreshGate = MultichainHistoryTestGate()
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            focusedFundingOperationId: "funding-op",
+            accountStore: account,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            withdrawalRefreshSleep: { _ in await refreshGate.enter() }
+        )
+
+        viewModel.screenDidAppear()
+        viewModel.query.appeared()
+        await refreshGate.waitUntilEntered()
+        await waitUntil {
+            if case .loaded = viewModel.query.state { return true }
+            return false
+        }
+        let refresh = Task { await viewModel.query.refresh() }
+        await feedGate.waitUntilEntered()
+
+        account.activity = PerpsFundingActivity()
+        account.notify()
+        await Task.yield()
+        await feedGate.open()
+        await refresh.value
+        await waitUntil { viewModel.activityToOpen != nil }
+
+        XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+        viewModel.screenWillDisappear()
+        await refreshGate.open()
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_retriesUntilTheCompletedFundingActivityReachesTheFeed() async {
+        let service = MultichainServiceSpy()
+        let focused = activity(id: "focused", activityType: .perpsBalanceDeposit, txIds: ["ethereum:0xABC"], fromAddress: "focused")
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [focused], nextCursor: nil)),
+            .success(page(activities: [focused], nextCursor: nil)),
+        ])
+        let account = FundingAccountStoreStub()
+        account.activity = PerpsFundingActivity(inFlight: ["deposit"])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            focusedTransactions: ["abc"],
+            accountStore: account,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.query.appeared()
+        await waitUntil {
+            if case .loaded = viewModel.query.state { return true }
+            return false
+        }
+        viewModel.screenDidAppear()
+        XCTAssertNil(viewModel.activityToOpen)
+
+        account.activity = PerpsFundingActivity(completed: ["deposit"])
+        account.notify()
+        await waitUntil { await service.activityRequests().count >= 2 }
+        await waitUntil(timeout: 3) { viewModel.activityToOpen != nil }
+
+        XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+        var requestCount = await service.activityRequests().count
+        XCTAssertEqual(requestCount, 3)
+
+        viewModel.didOpenFocusedActivity()
+        account.activity = PerpsFundingActivity(completed: ["deposit", "unrelated"])
+        account.notify()
+        await waitUntil { await service.activityRequests().count == 4 }
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertNil(viewModel.activityToOpen, "another arrival refreshes the list without reopening the focus")
+        requestCount = await service.activityRequests().count
+        XCTAssertEqual(requestCount, 4)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_retriesWhenFundingWasAlreadyCompletedBeforeOpening() async {
+        let service = MultichainServiceSpy()
+        let focused = activity(id: "focused", activityType: .perpsBalanceWithdrawal, txIds: ["lighter:0xABC"], fromAddress: "focused")
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [focused], nextCursor: nil)),
+        ])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            focusedTransactions: ["abc"],
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+
+        viewModel.screenDidAppear()
+        viewModel.query.appeared()
+        await waitUntil(timeout: 3) { viewModel.activityToOpen != nil }
+
+        XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
+        let requestCount = await service.activityRequests().count
+        XCTAssertEqual(requestCount, 2)
+    }
+
+    @MainActor
+    func test_perpsHistoryScreen_reloadsWhenAFundingOperationArrives() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
+            .success(page(activities: [], nextCursor: nil)),
+        ])
+        let account = FundingAccountStoreStub()
+        account.activity = PerpsFundingActivity(inFlight: ["new"], completed: ["old"])
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            accountStore: account,
+            multichainService: service,
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver()
+        )
+        viewModel.query.appeared()
+        await waitUntil { await service.activityRequests().count == 1 }
+
+        account.activity = PerpsFundingActivity(pending: ["new"], completed: ["old"])
+        account.notify()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        let afterUnrelatedChange = await service.activityRequests().count
+        XCTAssertEqual(afterUnrelatedChange, 1, "a stage change on the way leaves the list alone")
+
+        account.activity = PerpsFundingActivity(completed: ["old", "new"])
+        account.notify()
+        await waitUntil { await service.activityRequests().count == 2 }
+    }
+
+    @MainActor
     func test_contentViewModel_keepsIndependentInstancesForNetworkAndTypeCategories() {
         let service = MultichainServiceSpy()
         let viewModel = makeViewModel(multichainService: service)
@@ -200,7 +780,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.chainTabs.map(\.id),
-            [.all, .chain(.ton), .chain(.tron), .chain(.eth), .chain(.btc), .chain(.base)]
+            [.all, .chain(.ton), .chain(.eth), .chain(.tron), .chain(.btc), .chain(.base)]
         )
     }
 
@@ -662,7 +1242,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 typeFilter: .all
             )
         )
-        queryViewModel.addFunds()
+        queryViewModel.onAddFunds?()
 
         XCTAssertTrue(didAddFunds)
     }
@@ -703,6 +1283,27 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         }
 
         XCTAssertEqual(currentItems(in: queryViewModel).first?.subtitle, "UQAA...AJKZ")
+    }
+
+    @MainActor
+    func test_perpsBalanceMoves_areLabelledOnlyOutsidePerpsLists() async {
+        let categories: [(MultichainHistoryCategory, String?)] = [
+            (.chain(chainFilter: .all, typeFilter: .all), TKLocales.MultichainHistory.Perps.toPerps),
+            (.perps, nil),
+            (.asset(assetId: "lighter/mainnet/market/0", typeFilter: .perps), nil),
+        ]
+        for (category, expectedSubtitle) in categories {
+            let service = MultichainServiceSpy()
+            await service.setActivityPlans([
+                .success(page(activities: [activity(id: "deposit", activityType: .perpsBalanceDeposit)], nextCursor: nil)),
+            ])
+            let queryViewModel = makeQueryViewModel(multichainService: service, category: category)
+
+            queryViewModel.appeared()
+            await waitUntil { self.currentItems(in: queryViewModel).count == 1 }
+
+            XCTAssertEqual(currentItems(in: queryViewModel).first?.subtitle, expectedSubtitle, "\(category)")
+        }
     }
 
     func test_transactionDetails_formatsTonRawAddressAsNonBounceableFriendlyAddress() throws {
@@ -3376,7 +3977,8 @@ private extension MultichainHistoryViewModelTests {
         nftResolver: MultichainActivityNFTResolver? = nil,
         currentDateProvider: @escaping () -> Date = Date.init,
         addresses: [MultichainWalletAddress]? = nil,
-        onAddFunds: @escaping () -> Void = {}
+        onAddFunds: (() -> Void)? = nil,
+        pendingEventId: String? = nil
     ) -> MultichainHistoryViewModelImplementation {
         MultichainHistoryViewModelImplementation(
             multichainState: makeMultichainState(addresses: addresses),
@@ -3388,7 +3990,8 @@ private extension MultichainHistoryViewModelTests {
             nftResolver: nftResolver ?? makeNFTResolver(),
             currentDateProvider: currentDateProvider,
             chainImageProvider: { _ in nil },
-            onAddFunds: onAddFunds
+            onAddFunds: onAddFunds,
+            pendingEventId: pendingEventId
         )
     }
 
@@ -3804,6 +4407,56 @@ private extension MultichainHistoryViewModelTests {
     }
 }
 
+private final class FundingAccountStoreStub: PerpsAccountStoring {
+    var activity = PerpsFundingActivity()
+    private var observers: [() -> Void] = []
+
+    func notify() {
+        observers.forEach { $0() }
+    }
+
+    func addChangeObserver<T: AnyObject>(_ observer: T, onChange: @escaping (T) -> Void) {
+        observers.append { [weak observer] in observer.map(onChange) }
+    }
+
+    func currentWalletState() -> PerpsWalletAccountState {
+        .inactive
+    }
+
+    func resolveIfNeeded() {}
+    func refresh() {}
+    func fundingActivity() -> PerpsFundingActivity {
+        activity
+    }
+
+    func lifecycle(marketId _: Int64) -> PerpsMarketLifecycle {
+        .flat
+    }
+
+    func matchingPosition(marketId _: Int64) -> PerpsPositionSummary? {
+        nil
+    }
+
+    func beginOpening(_: PerpsOpeningDescriptor) {}
+    func beginClosing(marketId _: Int64) {}
+    func beginAdjusting(marketId _: Int64, direction _: PerpsSizeChangeDirection, baseSizeBefore _: Double) {}
+    func beginAdjustingMargin(
+        marketId _: Int64,
+        direction _: PerpsMarginChangeDirection,
+        allocatedMarginBefore _: Double,
+        amountUsd _: Double
+    ) {}
+    func clearPending(marketId _: Int64) {}
+    func marketExtras(marketId _: Int64) -> PerpsMarketExtras? {
+        nil
+    }
+
+    func loadMarketExtras(marketId _: Int64, clearingPending _: Bool) {}
+    func releaseMarketExtras(marketId _: Int64) {}
+    func subscribePositions(cadence _: PerpsPositionsCadence) {}
+    func unsubscribePositions(cadence _: PerpsPositionsCadence) {}
+}
+
 private actor MultichainHistoryTestGate {
     private var didEnter = false
     private var isOpen = false
@@ -3904,6 +4557,7 @@ private actor MultichainServiceSpy: MultichainService {
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         recordedActivityRequests.append(
@@ -3977,6 +4631,7 @@ private actor MultichainServiceSpy: MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit: Int?,
         cursor: String?
@@ -4004,7 +4659,6 @@ private actor MultichainServiceSpy: MultichainService {
         walletId: String,
         lang: String?,
         ids: [String]?,
-        debugNow: Date?,
         isNewUser: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .apiError(message: "Unimplemented")
@@ -4015,14 +4669,6 @@ private actor MultichainServiceSpy: MultichainService {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .apiError(message: "Unimplemented")
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
     }
 }

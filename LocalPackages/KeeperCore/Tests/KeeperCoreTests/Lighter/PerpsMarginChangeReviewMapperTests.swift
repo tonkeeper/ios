@@ -1,5 +1,6 @@
 import ChainKit
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 /// The scale comes from the market, never from an assumption, so every figure is

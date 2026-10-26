@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 import TonSwift
 
-public enum InsufficientFundsError: Error {
+@frozen public enum InsufficientFundsError: Error {
     case unknownJetton
     case blockchainFee(
         wallet: Wallet,
@@ -113,8 +113,14 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
         let formattedTonBalance = BigUInt(tonBalanceAmount)
 
         switch emulationModel.transaction {
-        case .staking:
-            return
+        case let .staking(staking):
+            guard case .withdraw = staking.flow else {
+                return
+            }
+            let requiredAmount = staking.pool.implementation.withdrawalRequiredBalance
+            guard formattedTonBalance >= requiredAmount else {
+                throw .blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: requiredAmount)
+            }
         case let .transfer(transfer):
             switch transfer {
             case let .ton(isMaxAmount):

@@ -12,6 +12,9 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         var isSwitchEnabled: Bool
         var isHidden: Bool
         var showsShimmer: Bool
+        var showsChevron: Bool
+        var leadingImage: UIImage?
+        var leadingImageURL: URL?
     }
 
     struct BalanceState {
@@ -19,12 +22,15 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         var isError: Bool
         var showsMaxButton: Bool
         var isMaxSelected: Bool
+        var maxHint: String?
+        var errorHint: String?
     }
 
     // MARK: - AmountInputModuleOutput
 
     var didUpdateSourceAmount: ((BigUInt) -> Void)?
     var didUpdateIsEnableState: ((Bool) -> Void)?
+    var didTapConverted: (() -> Void)?
 
     private(set) var isEnable = false {
         didSet {
@@ -42,6 +48,7 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             updateBalanceState()
             updateInputText()
             updateIsEnableState()
+            updateQuickOptionSelection()
         }
     }
 
@@ -88,6 +95,28 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         }
     }
 
+    var maxReserve: BigUInt = 0 {
+        didSet {
+            updateIsMax()
+            updateBalanceState()
+            updateIsEnableState()
+        }
+    }
+
+    var maxHint: String? {
+        didSet {
+            updateBalanceState()
+        }
+    }
+
+    private var maxAmount: BigUInt {
+        sourceBalance > maxReserve ? sourceBalance - maxReserve : 0
+    }
+
+    private var exceedsAvailableBalance: Bool {
+        sourceAmount + maxReserve > sourceBalance
+    }
+
     var isBalanceVisible = true {
         didSet {
             showsBalance = isBalanceVisible
@@ -112,6 +141,32 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         }
     }
 
+    var quickOptions: [AmountInputQuickOption] = [] {
+        didSet {
+            quickOptionRows = quickOptions
+            showsQuickOptions = !quickOptions.isEmpty
+            updateQuickOptionSelection()
+        }
+    }
+
+    var isConvertedSelectable = false {
+        didSet {
+            updateValueState()
+        }
+    }
+
+    var convertedLeadingImage: UIImage? {
+        didSet {
+            updateValueState()
+        }
+    }
+
+    var convertedLeadingImageURL: URL? {
+        didSet {
+            updateValueState()
+        }
+    }
+
     func reset() {
         sourceAmount = 0
         mode = .source
@@ -119,6 +174,7 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         updateBalanceState()
         updateInputText()
         updateIsEnableState()
+        updateQuickOptionSelection()
     }
 
     func setInitialSourceAmount(amount: BigUInt) {
@@ -127,6 +183,13 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         updateBalanceState()
         updateInputText()
         updateIsEnableState()
+        updateQuickOptionSelection()
+    }
+
+    func replaceDestinationUnit(_ unit: AmountInputUnit) {
+        let preservedSourceAmount = _sourceAmount
+        destinationUnit = unit
+        setInitialSourceAmount(amount: preservedSourceAmount)
     }
 
     // MARK: - State
@@ -136,6 +199,10 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
     @Published private(set) var converted: ConvertedState
     @Published private(set) var balance: BalanceState
     @Published private(set) var showsBalance = true
+    @Published private(set) var showsQuickOptions = false
+    @Published private(set) var quickOptionRows: [AmountInputQuickOption] = []
+    @Published private(set) var selectedQuickOptionID: String?
+    @Published private(set) var focusRequest = 0
 
     private(set) var maximumFractionDigits: Int
 
@@ -211,17 +278,25 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             showsSwitchIcon: true,
             isSwitchEnabled: true,
             isHidden: false,
-            showsShimmer: false
+            showsShimmer: false,
+            showsChevron: false,
+            leadingImage: nil,
+            leadingImageURL: nil
         )
         balance = BalanceState(
             text: "",
             isError: false,
             showsMaxButton: false,
-            isMaxSelected: false
+            isMaxSelected: false,
+            maxHint: nil
         )
         updateValueState()
         updateBalanceState()
         updateIsEnableState()
+    }
+
+    func requestFocus() {
+        focusRequest += 1
     }
 
     // MARK: - View actions
@@ -246,6 +321,23 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         updateValueState()
         updateBalanceState()
         updateIsEnableState()
+        updateQuickOptionSelection()
+    }
+
+    func selectQuickOption(id: String) {
+        guard let option = quickOptions.first(where: { $0.id == id }) else { return }
+        if mode != .source {
+            mode = .source
+        }
+        setText(Self.plainAmountString(option.amount))
+    }
+
+    func tapConverted() {
+        if isConvertedSelectable {
+            didTapConverted?()
+            return
+        }
+        toggle()
     }
 
     func toggle() {
@@ -253,11 +345,11 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
     }
 
     func tapMax() {
-        guard !sourceBalance.isZero else { return }
-        if sourceAmount == sourceBalance {
+        guard !maxAmount.isZero else { return }
+        if sourceAmount == maxAmount {
             sourceAmount = 0
         } else {
-            sourceAmount = sourceBalance
+            sourceAmount = maxAmount
         }
 
         updateValueState()
@@ -299,10 +391,13 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
                     sourceUnit.inputSymbol
                 }
             }(),
-            showsSwitchIcon: isCurrencySwitchEnabled,
+            showsSwitchIcon: isCurrencySwitchEnabled && !isConvertedSelectable,
             isSwitchEnabled: isCurrencySwitchEnabled,
             isHidden: isConvertedAmountHidden,
-            showsShimmer: isConvertedShimmering
+            showsShimmer: isConvertedShimmering,
+            showsChevron: isConvertedSelectable,
+            leadingImage: convertedLeadingImage,
+            leadingImageURL: convertedLeadingImageURL
         )
     }
 
@@ -324,6 +419,7 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
     private func updateBalanceState() {
         let text: String
         let isError: Bool
+        var errorHint: String?
         if sourceAmount.isZero {
             let formattedBalance = amountFormatter.format(
                 amount: sourceBalance,
@@ -332,9 +428,10 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             )
             text = TKLocales.StakingInput.availableBalance(formattedBalance)
             isError = false
-        } else if sourceAmount > sourceBalance {
+        } else if exceedsAvailableBalance {
             text = TKLocales.StakingInput.insufficientBalance
             isError = true
+            errorHint = maxHint
         } else if let minimumSourceAmount, sourceAmount < minimumSourceAmount {
             let formattedMinimum = amountFormatter.format(
                 amount: minimumSourceAmount,
@@ -357,7 +454,9 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             text: text,
             isError: isError,
             showsMaxButton: isMaxButtonVisible,
-            isMaxSelected: isMax
+            isMaxSelected: isMax,
+            maxHint: maxHint,
+            errorHint: errorHint
         )
     }
 
@@ -393,7 +492,7 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
 
         isEnable = isEnable && (sourceAmount > 0)
         if isBalanceVisible {
-            isEnable = isEnable && (sourceAmount <= sourceBalance)
+            isEnable = isEnable && !exceedsAvailableBalance
         }
         if let minimumSourceAmount {
             isEnable = isEnable && (sourceAmount >= minimumSourceAmount)
@@ -402,8 +501,37 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         self.isEnable = isEnable
     }
 
+    private func updateQuickOptionSelection() {
+        let match = quickOptions.first { option in
+            let minor = Self.minorUnits(option.amount, fractionDigits: sourceUnit.fractionalDigits)
+            return minor == sourceAmount && !sourceAmount.isZero
+        }
+        selectedQuickOptionID = match?.id
+    }
+
+    private static func plainAmountString(_ amount: Decimal) -> String {
+        let number = NSDecimalNumber(decimal: amount)
+        if number == number.rounding(accordingToBehavior: integerRounding) {
+            return number.rounding(accordingToBehavior: integerRounding).stringValue
+        }
+        return number.stringValue
+    }
+
+    private static func minorUnits(_ amount: Decimal, fractionDigits: Int) -> BigUInt {
+        guard amount > 0 else { return 0 }
+        var scaled = amount
+        var remainingDigits = fractionDigits
+        while remainingDigits > 0 {
+            scaled *= 10
+            remainingDigits -= 1
+        }
+        let rounded = NSDecimalNumber(decimal: scaled).rounding(accordingToBehavior: integerRounding)
+        guard rounded.compare(NSDecimalNumber.zero) == .orderedDescending else { return 0 }
+        return BigUInt(rounded.stringValue) ?? 0
+    }
+
     private func updateIsMax() {
-        isMax = (_sourceAmount == sourceBalance) && !_sourceAmount.isZero && !sourceBalance.isZero
+        isMax = (_sourceAmount == maxAmount) && !_sourceAmount.isZero && !maxAmount.isZero
     }
 
     private func recalculateSource() {
@@ -446,3 +574,12 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
 private extension Int {
     static let maximumIntegerDigits = 16
 }
+
+private let integerRounding = NSDecimalNumberHandler(
+    roundingMode: .plain,
+    scale: 0,
+    raiseOnExactness: false,
+    raiseOnOverflow: false,
+    raiseOnUnderflow: false,
+    raiseOnDivideByZero: false
+)

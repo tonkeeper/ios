@@ -4,7 +4,7 @@ import TonSwift
 public final class TotalBalanceStore: Store<TotalBalanceStore.Event, TotalBalanceStore.State> {
     public typealias State = [Wallet: TotalBalanceState]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateTotalBalance(wallet: Wallet)
     }
 
@@ -47,10 +47,7 @@ public final class TotalBalanceStore: Store<TotalBalanceStore.Event, TotalBalanc
 
     private func recalculateTotalBalance(_ balanceState: ManagedBalanceState) -> TotalBalanceState {
         func calculateTotal(balance: ManagedBalance) -> TotalBalance {
-            let items: [ProcessedBalanceItem] = balance.tonItems
-                .map {
-                    .ton($0)
-                } + balance.pinnedItems + balance.unpinnedItems
+            let items: [ProcessedBalanceItem] = balance.pinnedItems + balance.unpinnedItems
                 .filter { $0.shouldCalculateInTotal }
 
             let total = items.reduce(Decimal(0)) { partialResult, item in

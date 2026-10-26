@@ -185,4 +185,100 @@ public struct Client: APIProtocol {
             }
         )
     }
+    /// Get candles (batch)
+    ///
+    /// Get candles for multiple requests in one call. Request and response are arrays (same order).
+    ///
+    /// **Limits:**
+    /// - Number of requests in `requests` array must not exceed 20.
+    /// - Sum of estimated candles across all requests must not exceed 3000.
+    /// Exceeding either limit returns 400.
+    ///
+    ///
+    /// - Remark: HTTP `POST /kandelabr/public-api/v1/candles/batch`.
+    /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)`.
+    public func getCandlesBatch(_ input: Operations.getCandlesBatch.Input) async throws -> Operations.getCandlesBatch.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getCandlesBatch.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/kandelabr/public-api/v1/candles/batch",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getCandlesBatch.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.GetCandlesBatchResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 400:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getCandlesBatch.Output.BadRequest.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas._Error.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .badRequest(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
+                }
+            }
+        )
+    }
 }

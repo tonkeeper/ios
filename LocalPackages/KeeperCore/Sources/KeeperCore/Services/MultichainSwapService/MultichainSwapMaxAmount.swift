@@ -1,6 +1,6 @@
 import BigInt
 
-public enum MultichainSwapMaxAmount {
+@frozen public enum MultichainSwapMaxAmount {
     public static func maxSwapInputAmount(for asset: MultichainAsset) -> BigUInt {
         guard asset.asset.isNative, asset.asset.chain == .ton else {
             return asset.balance

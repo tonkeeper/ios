@@ -17,7 +17,7 @@ public struct AccountEventAction: Codable, Sendable {
         public let accounts: [WalletAccount]
     }
 
-    public enum ActionType: Codable, Sendable {
+    @frozen public enum ActionType: Codable, Sendable {
         case tonTransfer(TonTransfer)
         case contractDeploy(ContractDeploy)
         case jettonTransfer(JettonTransfer)

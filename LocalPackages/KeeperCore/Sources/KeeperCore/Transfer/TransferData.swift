@@ -121,7 +121,7 @@ public struct TransferData {
         }
     }
 
-    public enum ChangeDNSRecord {
+    @frozen public enum ChangeDNSRecord {
         public struct LinkDNS {
             public let nftAddress: Address
             public let linkAddress: Address?
@@ -155,7 +155,7 @@ public struct TransferData {
         case renew(RenewDNS)
     }
 
-    public enum Stake {
+    @frozen public enum Stake {
         case deposit(StakeDeposit)
         case withdraw(StakeWithdraw)
     }
@@ -174,7 +174,7 @@ public struct TransferData {
         public let jettonWalletAddress: (_ wallet: Wallet, _ jettonMasterAddress: Address?) async throws -> Address
     }
 
-    public enum Transfer {
+    @frozen public enum Transfer {
         case ton(Ton)
         case jetton(Jetton)
         case nft(NFT)

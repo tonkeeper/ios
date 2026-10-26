@@ -76,7 +76,7 @@ public struct TonInfo {
 }
 
 public struct JettonInfo: Codable, Equatable, Hashable {
-    public enum Verification: Codable {
+    @frozen public enum Verification: Codable {
         case none
         case whitelist
         case blacklist
@@ -150,6 +150,10 @@ public extension JettonInfo {
             )
     }
 
+    func scaledAmount(_ amount: BigUInt) -> BigUInt {
+        scaleValue.flatMap { BigUInt.mulFixed(amount, $0, fractionDigits: fractionDigits) } ?? amount
+    }
+
     var isUnverified: Bool {
         switch verification {
         case .whitelist, .graylist:
@@ -160,7 +164,7 @@ public extension JettonInfo {
     }
 }
 
-public enum JettonMasterAddress {
+@frozen public enum JettonMasterAddress {
     public static let tonUSDT = try! Address.parse("0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe")
     public static let SPYx = try! Address.parse("0:757f204003da900cfe8b106685ddc6d4f976ebfa9e844816469ea94790720700")
     public static let tonstakers = try! Address.parse("0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000")

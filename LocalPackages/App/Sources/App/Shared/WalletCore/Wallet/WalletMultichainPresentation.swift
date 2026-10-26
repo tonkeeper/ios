@@ -13,7 +13,7 @@ enum WalletMultichainPresentation {
         .accentTag(text: badgeTitle, accent: .accentBlue)
     }
 
-    private static let networksDisplayOrder: [MultichainChain] = [.ton, .btc, .eth, .bsc, .tron, .base, .arb]
+    private static let networksDisplayOrder: [MultichainChain] = [.ton, .btc, .eth, .bsc, .tron, .base, .arb, .sol, .polygon, .avax, .robinhood]
 
     static func networksRowImage(chains: [MultichainChain], maxVisibleCount: Int = 4) -> UIImage {
         let iconSize: CGFloat = 18

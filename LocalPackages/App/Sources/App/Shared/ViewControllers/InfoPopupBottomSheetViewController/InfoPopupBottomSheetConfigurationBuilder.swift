@@ -14,6 +14,7 @@ struct InfoPopupBottomSheetConfigurationBuilder {
     func insufficientTokenConfiguration(
         walletLabel: String?,
         caption: String? = nil,
+        footnote: String? = nil,
         tokenSymbol: String,
         tokenFractionalDigits: Int,
         required: BigUInt,
@@ -48,6 +49,7 @@ struct InfoPopupBottomSheetConfigurationBuilder {
             imageTintColor: .Icon.secondary,
             title: title,
             caption: resultCaption,
+            footnote: footnote,
             bodyContent: nil,
             buttons: buttons
         )

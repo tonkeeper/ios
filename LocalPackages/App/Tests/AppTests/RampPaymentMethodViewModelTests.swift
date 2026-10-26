@@ -144,7 +144,7 @@ private extension RampPaymentMethodViewModelTests {
                     decimals: 18,
                     image: ""
                 ),
-                price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+                price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
                 balance: BigUInt(0)
             ),
             flow: flow,
@@ -161,7 +161,7 @@ private extension RampPaymentMethodViewModelTests {
     }
 
     func makeCurrency(_ code: String) -> RemoteCurrency {
-        RemoteCurrency(code: code, name: code, image: "", type: "fiat")
+        RemoteCurrency(code: code, name: code, image: "", type: "fiat", symbol: code)
     }
 
     func makeDetail(methodTypes: [String] = ["card"], fiats: [String]) -> OnRampAssetDetail {
@@ -307,6 +307,10 @@ private final class MultichainRampServiceFake: MultichainRampService, @unchecked
     }
 
     func getOfframpOrder(orderId _: String) async throws -> OffRampOrder {
+        fatalError("unused")
+    }
+
+    func createMoonPaySession(sandbox _: Bool) async throws -> String {
         fatalError("unused")
     }
 }

@@ -41,7 +41,7 @@ public extension TonConnect.TonProofItemReplySigned {
 }
 
 public extension TonConnect.TonAddressItemReply {
-    enum CodingKeys: String, CodingKey {
+    @frozen enum CodingKeys: String, CodingKey {
         case name
         case address
         case network
@@ -66,7 +66,7 @@ public extension TonConnect.TonAddressItemReply {
 }
 
 public extension TonConnect.TonProofItemReplySignedSuccess.Proof {
-    enum CodingKeys: String, CodingKey {
+    @frozen enum CodingKeys: String, CodingKey {
         case timestamp
         case domain
         case signature
@@ -84,7 +84,7 @@ public extension TonConnect.TonProofItemReplySignedSuccess.Proof {
 }
 
 public extension TonConnect.TonProofItemReplySuccess.Proof {
-    enum CodingKeys: String, CodingKey {
+    @frozen enum CodingKeys: String, CodingKey {
         case timestamp
         case domain
         case signature

@@ -1,14 +1,14 @@
 import Foundation
 import TonSwift
 
-public enum USDe {
+@frozen public enum USDe {
     public static let address = JettonMasterAddress.USDe
     public static let fractionDigits: Int = 6
     public static let symbol = "USDe"
     public static let name = "USDe"
 }
 
-public enum StakedUSDe {
+@frozen public enum StakedUSDe {
     public static let fractionDigits: Int = 6
     public static let symbol = "USDe"
     public static let name = "Staked USDe"

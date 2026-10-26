@@ -1,6 +1,6 @@
 import Foundation
 
-public enum DefaultWalletName {
+@frozen public enum DefaultWalletName {
     public static func suggest(base: String, existingLabels: [String]) -> String {
         let base = base.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !base.isEmpty else { return base }

@@ -40,9 +40,6 @@ final class DepositCompletedAnalyticsObserver {
 
     private func amounts(for balance: ManagedBalance) -> [String: BigUInt] {
         var result: [String: BigUInt] = [:]
-        for item in balance.tonItems {
-            result[item.id] = BigUInt(item.amount)
-        }
         for item in balance.pinnedItems + balance.unpinnedItems {
             result[item.identifier] = rawAmount(for: item)
         }

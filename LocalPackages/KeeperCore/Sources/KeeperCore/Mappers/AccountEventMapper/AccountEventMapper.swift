@@ -358,9 +358,7 @@ private extension AccountEventMapper {
             amountType = .income
         }
 
-        let scaledAmount = action.jettonInfo.scaleValue.flatMap {
-            BigUInt.mulFixed(action.amount, $0, fractionDigits: action.jettonInfo.fractionDigits)
-        } ?? action.amount
+        let scaledAmount = action.jettonInfo.scaledAmount(action.amount)
 
         let amount = amountMapper
             .mapAmount(
@@ -786,9 +784,7 @@ private extension AccountEventMapper {
                 fractionDigits = TonInfo.fractionDigits
                 symbol = TonInfo.symbol
             } else if let jettonInfoOut = action.jettonInfoOut {
-                amount = jettonInfoOut.scaleValue.flatMap {
-                    BigUInt.mulFixed(action.amountOut, $0, fractionDigits: jettonInfoOut.fractionDigits)
-                } ?? action.amountOut
+                amount = jettonInfoOut.scaledAmount(action.amountOut)
                 fractionDigits = jettonInfoOut.fractionDigits
                 symbol = jettonInfoOut.symbol
             } else {
@@ -813,9 +809,7 @@ private extension AccountEventMapper {
                 fractionDigits = TonInfo.fractionDigits
                 symbol = TonInfo.symbol
             } else if let jettonInfoIn = action.jettonInfoIn {
-                amount = jettonInfoIn.scaleValue.flatMap {
-                    BigUInt.mulFixed(action.amountIn, $0, fractionDigits: jettonInfoIn.fractionDigits)
-                } ?? action.amountIn
+                amount = jettonInfoIn.scaledAmount(action.amountIn)
                 fractionDigits = jettonInfoIn.fractionDigits
                 symbol = jettonInfoIn.symbol
             } else {

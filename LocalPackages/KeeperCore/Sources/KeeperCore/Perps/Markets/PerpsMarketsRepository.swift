@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKLogging
 import TKTradingAPI
 
@@ -28,7 +29,11 @@ public actor PerpsMarketsRepository {
         try await markets(query: query, sort: sort, cursor: cursor, pageSize: Self.pageSize)
     }
 
-    public func markets(query: String?, sort: PerpsMarketsSort, cursor: String?, pageSize: Int) async throws -> PerpsMarketsPage {
+    public func markets(query: String?, sort: PerpsMarketsSort, cursor: String?, filter: PerpsMarketFilter) async throws -> PerpsMarketsPage {
+        try await markets(query: query, sort: sort, cursor: cursor, pageSize: Self.pageSize, filter: filter)
+    }
+
+    public func markets(query: String?, sort: PerpsMarketsSort, cursor: String?, pageSize: Int, filter: PerpsMarketFilter = .all) async throws -> PerpsMarketsPage {
         let requestContext = await requestContextProvider.makeRequestContext()
         let response = try await api.getAssetsCatalogV2(
             requestContext: requestContext.withCurrency(.USD),
@@ -38,12 +43,15 @@ public actor PerpsMarketsRepository {
             order: .desc,
             cursor: cursor,
             pageSize: pageSize,
-            sourceShelf: nil
+            sourceShelf: nil,
+            showPerps: nil,
+            chain: nil,
+            filter: filter == .all ? nil : Components.Schemas.AssetsFilter(rawValue: filter.rawValue)
         )
         let items = response.items.compactMap(PerpsMarketSummary.init(item:))
         let skipped = response.items.count - items.count
         if skipped > 0 {
-            Log.w("🪵 Perps: skipped \(skipped) catalog rows without a perp market id")
+            Log.perps.w("skipped \(skipped) catalog rows without a perp market id")
         }
         for item in items {
             symbolsById[item.marketId] = item.symbol
@@ -57,7 +65,8 @@ public actor PerpsMarketsRepository {
         showPerps: Bool,
         sort: MultichainAssetSearchSort,
         cursor: String?,
-        pageSize: Int
+        pageSize: Int,
+        category: TradingAssetCategory = .all
     ) async throws -> TradingCatalogPage {
         let requestContext = await requestContextProvider.makeRequestContext()
         let tradingSort = sort.tradingCatalogSort
@@ -72,7 +81,7 @@ public actor PerpsMarketsRepository {
             sourceShelf: nil,
             showPerps: (showPerps && chain == nil) ? true : nil,
             chain: chain,
-            filter: nil
+            filter: category == .all ? nil : Components.Schemas.AssetsFilter(rawValue: category.rawValue)
         )
         return TradingCatalogPage(
             rows: response.items.compactMap(TradingCatalogRow.init(item:)),
@@ -99,14 +108,21 @@ public actor PerpsMarketsRepository {
     }
 
     func reloadMarketDetails(marketId: Int64) async throws -> PerpsMarketDetails {
-        try await fetchDetails(marketId: marketId)
+        do {
+            return try await fetchDetails(marketId: marketId)
+        } catch PerpsMarketsRepositoryError.marketNotFound {
+            throw PerpsMarketsRepositoryError.marketNotFound
+        } catch {
+            guard let cached = detailsById[marketId] else { throw error }
+            return cached
+        }
     }
 
     func market(marketId: Int64) async -> PerpsMarketMetadata? {
         do {
             return try await marketDetails(marketId: marketId).metadata
         } catch {
-            Log.w("🪵 Perps: market \(marketId) details lookup failed — \(error)")
+            Log.perps.w("market \(marketId) details lookup failed — \(error)")
             return nil
         }
     }

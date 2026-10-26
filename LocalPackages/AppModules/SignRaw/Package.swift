@@ -19,7 +19,7 @@ let package = Package(
         .package(path: "../../KeeperCore"),
         .package(path: "../WalletExtensions"),
         .package(path: "../../TKLocalize"),
-        .package(url: "https://github.com/tonkeeper/ton-swift", exact: "1.0.36"),
+        .package(url: "https://github.com/tonkeeper/ton-swift", exact: "1.0.37"),
         .package(url: "https://github.com/attaswift/BigInt", exact: "5.3.0"),
     ],
     targets: [

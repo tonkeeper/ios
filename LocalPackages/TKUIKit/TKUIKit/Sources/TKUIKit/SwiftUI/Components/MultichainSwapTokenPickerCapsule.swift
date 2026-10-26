@@ -4,13 +4,13 @@ public struct MultichainSwapTokenPickerCapsule: View {
     private let imageSource: AssetAvatarViewImageSource
     private let symbol: String
     private let accessibilityIdentifier: String?
-    private let action: () -> Void
+    private let action: (() -> Void)?
 
     public init(
         imageSource: AssetAvatarViewImageSource,
         symbol: String,
         accessibilityIdentifier: String? = nil,
-        action: @escaping () -> Void
+        action: (() -> Void)?
     ) {
         self.imageSource = imageSource
         self.symbol = symbol
@@ -19,14 +19,27 @@ public struct MultichainSwapTokenPickerCapsule: View {
     }
 
     public var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                AssetAvatarView(imageSource: imageSource, size: .extraSmall)
-                HStack(spacing: 0) {
-                    Text(symbol)
-                        .textStyle(.label2)
-                        .foregroundStyle(.textPrimary)
-                }
+        if let action {
+            Button(action: action) {
+                capsule(showsSwitchIcon: true)
+            }
+            .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
+            .accessibilityIdentifier(accessibilityIdentifier)
+        } else {
+            capsule(showsSwitchIcon: false)
+                .accessibilityIdentifier(accessibilityIdentifier)
+        }
+    }
+
+    private func capsule(showsSwitchIcon: Bool) -> some View {
+        HStack(spacing: 6) {
+            AssetAvatarView(imageSource: imageSource, size: .extraSmall)
+            HStack(spacing: 0) {
+                Text(symbol)
+                    .textStyle(.label2)
+                    .foregroundStyle(.textPrimary)
+            }
+            if showsSwitchIcon {
                 SwiftUI.Image.TKUIKit.Icons.Size16.switch
                     .renderingMode(.template)
                     .resizable()
@@ -34,13 +47,11 @@ public struct MultichainSwapTokenPickerCapsule: View {
                     .frame(width: 16, height: 16)
                     .foregroundStyle(.iconSecondary)
             }
-            .padding(.leading, 8)
-            .padding(.trailing, 12)
-            .padding(.vertical, 8)
-            .background(.backgroundContentTint)
-            .clipShape(Capsule())
         }
-        .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
-        .accessibilityIdentifier(accessibilityIdentifier)
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .background(.backgroundContentTint)
+        .clipShape(Capsule())
     }
 }

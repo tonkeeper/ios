@@ -1,6 +1,8 @@
+import BigInt
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKLocalize
 import TKScreenKit
 import TKUIKit
 import TonSwift
@@ -8,6 +10,7 @@ import UIKit
 
 final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didClose: (() -> Void)?
+    var didRequestOpenDeposit: (() -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
 
@@ -142,6 +145,17 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
             redSession = nil
         }
 
+        module.output.didProduceInsufficientFundsError = { [weak self] error in
+            guard case let .blockchainFee(_, balance, requiredAmount) = error,
+                  case let .withdraw(pool, _) = item.operation
+            else { return }
+            self?.showInsufficientFundsPopup(
+                requiredAmount: requiredAmount,
+                reservedAmount: pool.implementation.temporaryReserve,
+                balance: balance
+            )
+        }
+
         module.output.didClose = { [weak self] in
             self?.didClose?()
         }
@@ -153,6 +167,53 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
 }
 
 private extension StakingConfirmationCoordinator {
+    func showInsufficientFundsPopup(requiredAmount: BigUInt, reservedAmount: BigUInt, balance: BigUInt) {
+        let amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let token = TonToken.ton
+        let requiredFormatted = amountFormatter.format(
+            amount: requiredAmount,
+            fractionDigits: token.fractionDigits,
+            accessory: .tokenSymbol(token.symbol)
+        )
+        let reservedFormatted = amountFormatter.format(
+            amount: reservedAmount,
+            fractionDigits: token.fractionDigits,
+            accessory: .tokenSymbol(token.symbol)
+        )
+        let balanceFormatted = amountFormatter.format(
+            amount: balance,
+            fractionDigits: token.fractionDigits,
+            accessory: .tokenSymbol(token.symbol)
+        )
+
+        var depositButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+        depositButton.content = TKButton.Configuration.Content(
+            title: .plainString(TKLocales.InsufficientFunds.depositWallet)
+        )
+        depositButton.action = { [weak self] in
+            self?.router.dismiss(animated: true) {
+                self?.didRequestOpenDeposit?()
+            }
+        }
+
+        let configuration = InfoPopupBottomSheetConfigurationBuilder(amountFormatter: amountFormatter)
+            .insufficientTokenConfiguration(
+                walletLabel: nil,
+                caption: TKLocales.InsufficientFunds.actionRequired(requiredFormatted, balanceFormatted),
+                footnote: TKLocales.InsufficientFunds.unstakeReserved(reservedFormatted),
+                tokenSymbol: token.symbol,
+                tokenFractionalDigits: token.fractionDigits,
+                required: requiredAmount,
+                available: balance,
+                buttons: [depositButton]
+            )
+
+        let viewController = InfoPopupBottomSheetViewController()
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+        viewController.configuration = configuration
+        bottomSheetViewController.present(fromViewController: router.rootViewController)
+    }
+
     func redMetadata(for item: StakingConfirmationItem) -> RedAnalyticsMetadata {
         let pool: StackingPoolInfo
         switch item.operation {

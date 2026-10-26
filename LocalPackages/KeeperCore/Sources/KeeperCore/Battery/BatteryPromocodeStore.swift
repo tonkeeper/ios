@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BatteryPromocodeResolveState: Equatable {
+@frozen public enum BatteryPromocodeResolveState: Equatable {
     case none
     case success(promocode: String)
     case failed(promocode: String)
@@ -8,7 +8,7 @@ public enum BatteryPromocodeResolveState: Equatable {
 }
 
 public final class BatteryPromocodeStore: Store<BatteryPromocodeStore.Event, BatteryPromocodeResolveState> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateResolverState
     }
 

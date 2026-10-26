@@ -166,6 +166,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     }
 
     private let wallet: Wallet
+    private let mode: SignRawConfirmationMode
     private let signRawController: SignRawController
     private let signRawConfirmationMapper: SignRawConfirmationMapper
     private let fundsValidator: InsufficientFundsValidator
@@ -173,12 +174,14 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
 
     init(
         wallet: Wallet,
+        mode: SignRawConfirmationMode,
         signRawController: SignRawController,
         signRawConfirmationMapper: SignRawConfirmationMapper,
         fundsValidator: InsufficientFundsValidator,
         configurationAssembly: ConfigurationAssembly
     ) {
         self.wallet = wallet
+        self.mode = mode
         self.signRawController = signRawController
         self.signRawConfirmationMapper = signRawConfirmationMapper
         self.fundsValidator = fundsValidator
@@ -190,27 +193,11 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
             guard let self else { return }
 
             do {
-                let emulationResult = try await signRawController.emulate()
-                let model = signRawConfirmationMapper.mapEmulationResult(
-                    emulation: emulationResult,
-                    wallet: wallet
-                )
-                try fundsValidator
-                    .validateEmulationResultIfNeeded(
-                        emulationResult,
-                        wallet: wallet,
-                        numOfInternals: await signRawController.numOfMessages()
-                    )
-                state.emulationState = .success(
-                    model: model,
-                    emulation: emulationResult,
-                    transferType: emulationResult.transferType
-                )
-                if case let .send(payload, _, _) = makeSendAnalyticsPayload(
-                    emulation: emulationResult,
-                    transferType: emulationResult.transferType
-                ) {
-                    didRequestSendOpen?(payload)
+                switch mode {
+                case .sendTransaction:
+                    try await emulateSendTransaction()
+                case .signMessage:
+                    try await emulateSignMessage()
                 }
             } catch {
                 if let error = error as? InsufficientFundsError {
@@ -222,6 +209,46 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         }
     }
 
+    private func emulateSendTransaction() async throws {
+        let emulationResult = try await signRawController.emulate()
+        let model = signRawConfirmationMapper.mapEmulationResult(
+            emulation: emulationResult,
+            wallet: wallet
+        )
+        try fundsValidator
+            .validateEmulationResultIfNeeded(
+                emulationResult,
+                wallet: wallet,
+                numOfInternals: await signRawController.numOfMessages()
+            )
+        state.emulationState = .success(
+            model: model,
+            emulation: emulationResult,
+            transferType: emulationResult.transferType
+        )
+        if case let .send(payload, _, _) = makeSendAnalyticsPayload(
+            emulation: emulationResult,
+            transferType: emulationResult.transferType
+        ) {
+            didRequestSendOpen?(payload)
+        }
+    }
+
+    private func emulateSignMessage() async throws {
+        async let gaslessRelayAddress = signRawController.gaslessRelayAddress()
+        let emulationResult = try await signRawController.emulateSignMessage()
+        let model = await signRawConfirmationMapper.mapSignMessageEmulationResult(
+            emulation: emulationResult,
+            wallet: wallet,
+            gaslessRelayAddress: gaslessRelayAddress
+        )
+        state.emulationState = .success(
+            model: model,
+            emulation: emulationResult,
+            transferType: emulationResult.transferType
+        )
+    }
+
     private func updateConfiguration() {
         var items = [TKPopUp.Item]()
         if let loaderItem = createLoaderItem() {
@@ -229,6 +256,9 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         }
         if let contentItem = createContentItem() {
             items.append(contentItem)
+        }
+        if let notSentNoticeItem = createNotSentNoticeItem() {
+            items.append(notSentNoticeItem)
         }
         items.append(createProcessItem())
 
@@ -275,7 +305,14 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
                     return .failed
                 }
             }(),
-            successTitle: TKLocales.Result.success,
+            successTitle: {
+                switch mode {
+                case .sendTransaction:
+                    return TKLocales.Result.success
+                case .signMessage:
+                    return TKLocales.SignMessage.signed
+                }
+            }(),
             errorTitle: TKLocales.Result.failure
         )
     }
@@ -296,7 +333,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         }
 
         var confirmButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-        confirmButtonConfiguration.content = .init(title: .plainString(TKLocales.Actions.Confirm.title))
+        confirmButtonConfiguration.content = .init(title: .plainString(confirmTitle))
         confirmButtonConfiguration.isEnabled = isEnable
         confirmButtonConfiguration.action = { [weak self] in
             self?.confirmTransaction()
@@ -347,7 +384,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         }
 
         let sliderItem = TKPopUp.Component.Slider(
-            title: TKLocales.Actions.Confirm.title.withTextStyle(.label1, color: .Text.tertiary, alignment: .center),
+            title: confirmTitle.withTextStyle(.label1, color: .Text.tertiary, alignment: .center),
             isEnable: isEnable,
             appearance: isWarning ? .warning : .standart,
             didConfirm: { [weak self] in
@@ -361,6 +398,34 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
                 sliderItem,
             ]
         )
+    }
+
+    private var confirmTitle: String {
+        switch mode {
+        case .sendTransaction:
+            return TKLocales.Actions.Confirm.title
+        case .signMessage:
+            return TKLocales.SignMessage.sign
+        }
+    }
+
+    private func createNotSentNoticeItem() -> TKPopUp.Item? {
+        guard case let .signMessage(appName) = mode, !isEmulating else {
+            return nil
+        }
+        return TKPopUp.Component.GroupComponent(
+            padding: UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16),
+            items: [
+                TKPopUp.Component.WarningBanner(title: TKLocales.SignMessage.notSentWarning(appName)),
+            ]
+        )
+    }
+
+    private var isEmulating: Bool {
+        guard case .emulating = state.emulationState else {
+            return false
+        }
+        return true
     }
 
     private func createWarningBanner() -> TKPopUp.Item {
@@ -485,7 +550,12 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         }
         state.confirmationState = .process
         do {
-            try await signRawController.sendTransaction(transactionType: state.emulationState.transferType)
+            switch mode {
+            case .sendTransaction:
+                try await signRawController.sendTransaction(transactionType: state.emulationState.transferType)
+            case .signMessage:
+                try await signRawController.signMessage()
+            }
             state.confirmationState = .success
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             didConfirm?()

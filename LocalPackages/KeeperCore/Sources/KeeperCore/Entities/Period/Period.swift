@@ -1,7 +1,7 @@
 import Foundation
 import TKLocalize
 
-public enum Period: CaseIterable {
+@frozen public enum Period: CaseIterable {
     case hour
     case day
     case week

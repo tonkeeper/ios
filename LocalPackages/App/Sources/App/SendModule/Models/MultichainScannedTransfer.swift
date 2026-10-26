@@ -4,6 +4,9 @@ import KeeperCore
 struct MultichainScannedTransfer {
     let candidates: MultichainRecipientCandidates
     let amount: BigUInt?
+    /// A Solana Pay amount counts whole units of the asset the link pins, so it has an atomic
+    /// value only against that asset's decimals.
+    let decimalAmount: Deeplink.DecimalAmount?
     let comment: String?
     /// Set only when the scanned link pins one specific asset. The send screen switches to it
     /// before applying the amount, so an amount can never land on an unrelated token.
@@ -17,6 +20,7 @@ struct MultichainScannedTransfer {
         case let .multichainSendTransfer(candidates):
             self.candidates = candidates
             amount = nil
+            decimalAmount = nil
             comment = nil
             assetId = nil
         case let .sendTransfer(data):
@@ -37,6 +41,7 @@ struct MultichainScannedTransfer {
                 amount = data.assetId == nil ? data.amount : nil
                 assetId = nil
             }
+            decimalAmount = nil
             comment = data.comment
         case let .evmSendTransfer(data):
             guard let detected = MultichainRecipientCandidates(string: data.recipient) else {
@@ -51,9 +56,33 @@ struct MultichainScannedTransfer {
                 amount = nil
                 assetId = nil
             }
+            decimalAmount = nil
+            comment = nil
+        case let .solanaSendTransfer(data):
+            guard let detected = MultichainRecipientCandidates(string: data.recipient),
+                  detected.chains.contains(.sol)
+            else {
+                return nil
+            }
+            candidates = MultichainRecipientCandidates(address: data.recipient, chains: [.sol])
+            amount = nil
+            decimalAmount = data.amount
+            assetId = data.asset.assetId
             comment = nil
         case .signRawTransfer:
             return nil
         }
+    }
+
+    /// The amount in atomic units of `asset`. A Solana Pay amount finer than the asset's decimals
+    /// has none, so it is left out rather than rounded.
+    func atomicAmount(for asset: MultichainAsset?) -> BigUInt? {
+        if let amount {
+            return amount
+        }
+        guard let decimalAmount, let asset else {
+            return nil
+        }
+        return decimalAmount.atomicUnits(decimals: asset.asset.decimals)
     }
 }

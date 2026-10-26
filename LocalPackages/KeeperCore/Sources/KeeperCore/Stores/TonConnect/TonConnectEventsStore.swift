@@ -10,7 +10,7 @@ public protocol TonConnectEventsStoreObserver: AnyObject {
 }
 
 public actor TonConnectEventsStore {
-    public enum Event {
+    @frozen public enum Event {
         case request(request: TonConnect.AppRequest, wallet: Wallet, app: TonConnectApp)
     }
 

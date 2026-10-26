@@ -4,6 +4,7 @@ import UIKit
 public struct HintButton<Label: View, Content: View>: View {
     private let configuration: HintConfiguration
     private let doubleTapAction: (() -> Void)?
+    private let tapAction: (() -> Void)?
     private let content: (HintPosition.Direction?) -> Content
     private let label: () -> Label
 
@@ -13,11 +14,13 @@ public struct HintButton<Label: View, Content: View>: View {
     public init(
         configuration: HintConfiguration,
         doubleTapAction: (() -> Void)? = nil,
+        tapAction: (() -> Void)? = nil,
         @ViewBuilder content: @escaping (HintPosition.Direction?) -> Content,
         @ViewBuilder label: @escaping () -> Label
     ) {
         self.configuration = configuration
         self.doubleTapAction = doubleTapAction
+        self.tapAction = tapAction
         self.content = content
         self.label = label
     }
@@ -45,7 +48,10 @@ public struct HintButton<Label: View, Content: View>: View {
                         toggleHint()
                     }
             } else {
-                Button(action: toggleHint) {
+                Button {
+                    tapAction?()
+                    toggleHint()
+                } label: {
                     label()
                 }
                 .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))

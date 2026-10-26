@@ -1373,6 +1373,10 @@ public enum Components {
             public var button: Components.Schemas.Button?
             /// - Remark: Generated from `#/components/schemas/StoryPage/buttons`.
             public var buttons: [Components.Schemas.Button]?
+            /// Substrings of description the client makes tappable
+            ///
+            /// - Remark: Generated from `#/components/schemas/StoryPage/links`.
+            public var links: [Components.Schemas.StoryLink]?
             /// Creates a new `StoryPage`.
             ///
             /// - Parameters:
@@ -1382,13 +1386,15 @@ public enum Components {
             ///   - include_wallets:
             ///   - button:
             ///   - buttons:
+            ///   - links: Substrings of description the client makes tappable
             public init(
                 title: Swift.String,
                 description: Swift.String,
                 image: Swift.String,
                 include_wallets: Components.Schemas.StoryPage.include_walletsPayload,
                 button: Components.Schemas.Button? = nil,
-                buttons: [Components.Schemas.Button]? = nil
+                buttons: [Components.Schemas.Button]? = nil,
+                links: [Components.Schemas.StoryLink]? = nil
             ) {
                 self.title = title
                 self.description = description
@@ -1396,6 +1402,7 @@ public enum Components {
                 self.include_wallets = include_wallets
                 self.button = button
                 self.buttons = buttons
+                self.links = links
             }
             public enum CodingKeys: String, CodingKey {
                 case title
@@ -1404,6 +1411,30 @@ public enum Components {
                 case include_wallets
                 case button
                 case buttons
+                case links
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/StoryLink`.
+        public struct StoryLink: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/StoryLink/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/StoryLink/url`.
+            public var url: Swift.String
+            /// Creates a new `StoryLink`.
+            ///
+            /// - Parameters:
+            ///   - text:
+            ///   - url:
+            public init(
+                text: Swift.String,
+                url: Swift.String
+            ) {
+                self.text = text
+                self.url = url
+            }
+            public enum CodingKeys: String, CodingKey {
+                case text
+                case url
             }
         }
         /// - Remark: Generated from `#/components/schemas/StakingEthenaMethod`.

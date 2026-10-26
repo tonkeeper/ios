@@ -1,7 +1,7 @@
 import Foundation
 
 public struct TonConnectParameters: Equatable {
-    public enum Version: String {
+    @frozen public enum Version: String {
         case v2 = "2"
     }
 
@@ -26,7 +26,7 @@ public struct TonConnectParameters: Equatable {
     }
 }
 
-public enum TonConnectPayload: Equatable {
+@frozen public enum TonConnectPayload: Equatable {
     case withParameters(TonConnectParameters, URL)
     case empty
 }

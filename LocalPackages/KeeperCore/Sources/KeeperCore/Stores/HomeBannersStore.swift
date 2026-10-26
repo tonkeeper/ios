@@ -1,7 +1,7 @@
 import Foundation
 
 public final class HomeBannersStore: Store<HomeBannersStore.Event, HomeBannersCatalogue> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateBanners
         case didDismissBanner
     }

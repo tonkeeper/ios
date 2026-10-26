@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKTradingAPI
 
 struct PerpsMarketDetails: Equatable, Sendable {
@@ -31,11 +32,8 @@ extension PerpsMarketMetadata {
     init?(perps value: Components.Schemas.PerpMarket) {
         guard let marketId = Int64(exactly: value.market_index),
               let symbol = value.symbol.nilIfEmpty,
-              let minBaseSize = PerpsMarketMath.optionalDouble(value.min_size_base),
               value.price_decimals >= 0,
-              value.size_decimals >= 0,
-              value.max_leverage > 0,
-              minBaseSize > 0
+              value.size_decimals >= 0
         else {
             return nil
         }
@@ -49,11 +47,12 @@ extension PerpsMarketMetadata {
             priceChangePercent: PerpsMarketMath.optionalDouble(value.price_change_24h) ?? 0,
             volume24h: PerpsMarketMath.optionalDouble(value.volume_24h_usd) ?? 0,
             openInterest: PerpsMarketMath.optionalDouble(value.open_interest_usd) ?? 0,
-            maxLeverage: Double(value.max_leverage),
+            maxLeverage: Double(max(0, value.max_leverage)),
             fundingRatePercent: PerpsMarketMath.optionalDouble(value.funding_rate_hourly).map { $0 * 100 },
             priceDecimals: value.price_decimals,
             sizeDecimals: value.size_decimals,
-            minBaseSize: minBaseSize
+            minBaseSize: PerpsMarketMath.optionalDouble(value.min_size_base) ?? 0,
+            minNotionalUsd: PerpsMarketMath.optionalDouble(value.min_size_quote) ?? 0
         )
     }
 }

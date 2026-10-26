@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKKandelabrAPI
 
 actor PerpsChartSession {
@@ -131,8 +132,12 @@ actor PerpsChartSession {
         priceDecimals = market.priceDecimals
         let watch = hermes.watch(
             feedId: "\(market.ticker)/\(timeframe.resolution)",
+            volumeFeedId: "\(PerpsChartCandleMapper.volumeTicker(market.ticker))/\(timeframe.resolution)",
             onUpdate: { [weak self] batch in
                 await self?.receiveLive(batch)
+            },
+            onVolumeUpdate: { [weak self] batch in
+                await self?.receiveLiveVolumes(batch)
             },
             onSubscribed: { [weak self] in
                 await self?.didSubscribe()
@@ -238,7 +243,11 @@ actor PerpsChartSession {
     }
 
     private func receiveLive(_ batch: TKKandelabrAPI.Components.Schemas.GetCandlesResponse) {
-        guard let incoming = mappedBatch(batch) else { return }
+        var markPrices = batch
+        for index in markPrices.candles.indices {
+            markPrices.candles[index].v = nil
+        }
+        guard let incoming = mappedBatch(markPrices) else { return }
         switch phase {
         case .loadingInitialHistory:
             merge(incoming, publish: false)
@@ -250,6 +259,14 @@ actor PerpsChartSession {
             merge(incoming)
         case .idle, .finished:
             break
+        }
+    }
+
+    private func receiveLiveVolumes(_ batch: TKKandelabrAPI.Components.Schemas.GetCandlesResponse) {
+        guard phase != .finished else { return }
+        timeline.mergeVolumes(PerpsChartCandleMapper.mapBatch(from: batch, timeframe: timeframe).volumes)
+        if case .ready = phase, !timeline.isEmpty {
+            publishSnapshot()
         }
     }
 

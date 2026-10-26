@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 /// Human-visible address that can be resolved dynamically
-public enum ResolvableAddress: Hashable, Codable {
+@frozen public enum ResolvableAddress: Hashable, Codable {
     /// Raw TON address (e.g. "EQf85gAj...")
     case Resolved(TonSwift.Address)
     /// TON.DNS name (e.g. "oleganza.ton")

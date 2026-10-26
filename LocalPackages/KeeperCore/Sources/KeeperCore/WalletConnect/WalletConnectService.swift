@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import ReownWalletKit
 import TKLogging
 
-public enum WalletConnectServiceEvent: Sendable, Equatable {
+@frozen public enum WalletConnectServiceEvent: Sendable, Equatable {
     case pairingStarted(pairingTopic: String, source: DappConnectionSource)
     case pairingExpired(pairingTopic: String, source: DappConnectionSource)
 
@@ -392,6 +392,8 @@ private extension WalletConnectServiceImplementation {
                     sessionRequest,
                     targetChain: targetChain
                 )
+            } else if case .solanaAccounts = sessionRequest.payload {
+                await handleSolanaAccountsRequest(sessionRequest)
             } else {
                 emit(.sessionRequest(sessionRequest))
             }
@@ -416,7 +418,7 @@ private extension WalletConnectServiceImplementation {
         capabilities: WalletConnectWalletCapabilitiesRequest
     ) async {
         guard let scope = network.walletCapabilitiesScope(topic: request.topic) else {
-            await rejectWalletGetCapabilitiesRequest(request, error: .walletConnectUnauthorized)
+            await rejectAutoHandledRequest(request, error: .walletConnectUnauthorized)
             return
         }
 
@@ -432,11 +434,29 @@ private extension WalletConnectServiceImplementation {
                 emit(.error(WalletConnectErrorEvent(topic: request.topic, message: "\(error)")))
             }
         case .unauthorized:
-            await rejectWalletGetCapabilitiesRequest(request, error: .walletConnectUnauthorized)
+            await rejectAutoHandledRequest(request, error: .walletConnectUnauthorized)
         }
     }
 
-    func rejectWalletGetCapabilitiesRequest(
+    func handleSolanaAccountsRequest(_ request: WalletConnectSessionRequest) async {
+        let addresses = network.sessionAccountAddresses(topic: request.topic, chain: request.chain)
+        guard !addresses.isEmpty else {
+            await rejectAutoHandledRequest(request, error: .walletConnectUnauthorized)
+            return
+        }
+
+        do {
+            try await requestCoordinator.approve(
+                id: request.id,
+                topic: request.topic,
+                result: .solanaAccounts(addresses)
+            )
+        } catch {
+            emit(.error(WalletConnectErrorEvent(topic: request.topic, message: "\(error)")))
+        }
+    }
+
+    func rejectAutoHandledRequest(
         _ request: WalletConnectSessionRequest,
         error: JSONRPCError
     ) async {

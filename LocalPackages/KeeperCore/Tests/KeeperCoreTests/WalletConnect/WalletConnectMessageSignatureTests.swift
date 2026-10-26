@@ -2,7 +2,9 @@ import ChainKit
 import CryptoSwift
 import Foundation
 @testable import KeeperCore
+import TKCryptoKit
 import TronSwift
+import TweetNacl
 import XCTest
 
 final class WalletConnectMessageSignatureTests: XCTestCase {
@@ -119,6 +121,82 @@ final class WalletConnectMessageSignatureTests: XCTestCase {
                 "\(chain.caip2) signed the same typed data differently from eip155:1"
             )
         }
+    }
+
+    func testSolanaMessageSignatureVerifiesAgainstTheSolanaPublicKey() async throws {
+        let message = Data("Sign in to example.com\nNonce: 42".utf8)
+        let cryptoWallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
+
+        let signature = try await WalletConnectSolanaSigningUtilities().signMessage(
+            message.encodeBase58,
+            client: client,
+            cryptoWallet: cryptoWallet
+        )
+
+        let signatureBytes = signature.decodeBase58
+        XCTAssertEqual(signatureBytes.count, 64)
+        XCTAssertTrue(try NaclSign.signDetachedVerify(
+            message: message,
+            sig: signatureBytes,
+            publicKey: solanaPublicKey(cryptoWallet)
+        ))
+    }
+
+    func testSolanaTransactionSignatureFillsTheWalletsSignatureSlot() async throws {
+        let cryptoWallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
+        let publicKey = solanaPublicKey(cryptoWallet)
+        let unsigned = unsignedSolanaTransaction(signer: publicKey)
+
+        let signed = try await WalletConnectSolanaSigningUtilities().signTransaction(
+            unsigned.base64EncodedString(),
+            client: client,
+            cryptoWallet: cryptoWallet
+        )
+
+        let signedBytes = try XCTUnwrap(Data(base64Encoded: signed.transaction))
+        let message = unsigned.dropFirst(1 + 64)
+        XCTAssertEqual(signedBytes.dropFirst(1 + 64), message)
+        let signatureBytes = signedBytes[1 ..< 65]
+        XCTAssertEqual(signatureBytes.encodeBase58, signed.signature)
+        XCTAssertTrue(try NaclSign.signDetachedVerify(
+            message: Data(message),
+            sig: Data(signatureBytes),
+            publicKey: publicKey
+        ))
+    }
+
+    func testSolanaTransactionWithoutTheWalletAsSignerIsRejected() async throws {
+        let cryptoWallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
+        let foreign = unsignedSolanaTransaction(signer: Data(repeating: 0x42, count: 32))
+
+        do {
+            _ = try await WalletConnectSolanaSigningUtilities().signTransaction(
+                foreign.base64EncodedString(),
+                client: client,
+                cryptoWallet: cryptoWallet
+            )
+            XCTFail("Expected the signer to refuse a transaction it is not party to")
+        } catch {
+            guard case .failedToSign = error else {
+                return XCTFail("Unexpected error \(error)")
+            }
+        }
+    }
+
+    private func solanaPublicKey(_ cryptoWallet: CryptoWallet) -> Data {
+        cryptoWallet.getPublicKey(chain: MultichainChain.sol.asChainKitChain).defaultData.asData
+    }
+
+    /// A legacy transaction with one required signature: `[signer, system program]`, a zero blockhash
+    /// and a single empty system-program instruction, which is enough for the wire-format parser.
+    private func unsignedSolanaTransaction(signer: Data) -> Data {
+        var message = Data([1, 0, 1])
+        message.append(2)
+        message.append(signer)
+        message.append(Data(repeating: 0, count: 32))
+        message.append(Data(repeating: 0, count: 32))
+        message.append(contentsOf: [1, 1, 1, 0, 0])
+        return Data([1]) + Data(repeating: 0, count: 64) + message
     }
 
     private func assertPlainRecoveryId(

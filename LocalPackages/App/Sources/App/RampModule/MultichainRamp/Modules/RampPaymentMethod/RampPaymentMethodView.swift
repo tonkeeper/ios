@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKUIKit
 
@@ -80,18 +81,19 @@ private extension RampPaymentMethodView {
     }
 
     var rowsList: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
-                RampPaymentMethodCell(
-                    row: row,
-                    showsDivider: index < viewModel.rows.count - 1,
-                    onTap: {
-                        viewModel.select(row: row)
-                    }
+        AssetPickerList(
+            rows: viewModel.rows.map { row in
+                AssetPickerRowState(
+                    id: row.id,
+                    icon: .logo(row.imageURL, placeholder: .TKUIKit.Icons.Size28.purchase),
+                    title: row.title
                 )
+            },
+            onSelect: { picked in
+                guard let row = viewModel.rows.first(where: { $0.id == picked.id }) else { return }
+                viewModel.select(row: row)
             }
-        }
-        .asCellsGroup()
+        )
         .padding(.bottom, 16)
     }
 }

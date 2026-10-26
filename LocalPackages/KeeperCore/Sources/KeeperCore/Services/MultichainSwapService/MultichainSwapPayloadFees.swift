@@ -2,14 +2,15 @@ import BigInt
 import ChainKit
 
 struct MultichainSwapPayloadFees {
-    private let storage: [String: MultichainSwapFeeSnapshot]
+    private let storage: [String: (snapshot: MultichainSwapFeeSnapshot, asset: any ChainKit.Asset)]
 
     init(_ storage: [String: any Fee] = [:]) {
-        self.storage = storage.mapValues(MultichainSwapFeeSnapshot.init)
+        self.storage = storage.mapValues { (MultichainSwapFeeSnapshot(fee: $0), $0.asset) }
     }
 
     func fee(for payloadId: String) throws(MultichainSwapExecutionFailure) -> (any Fee)? {
-        try storage[payloadId]?.makeFee()
+        guard let entry = storage[payloadId] else { return nil }
+        return try entry.snapshot.makeFee(asset: entry.asset)
     }
 
     var payloadIds: [String] {
@@ -19,9 +20,9 @@ struct MultichainSwapPayloadFees {
 
 extension MultichainSwapPayloadFees: ExpressibleByDictionaryLiteral {
     init(dictionaryLiteral elements: (String, any Fee)...) {
-        var snapshots = [String: MultichainSwapFeeSnapshot]()
+        var snapshots = [String: (snapshot: MultichainSwapFeeSnapshot, asset: any ChainKit.Asset)]()
         for (payloadId, fee) in elements where snapshots[payloadId] == nil {
-            snapshots[payloadId] = MultichainSwapFeeSnapshot(fee: fee)
+            snapshots[payloadId] = (MultichainSwapFeeSnapshot(fee: fee), fee.asset)
         }
         storage = snapshots
     }
@@ -68,20 +69,22 @@ private enum MultichainSwapFeeSnapshot: Hashable {
         }
     }
 
-    func makeFee() throws(MultichainSwapExecutionFailure) -> any Fee {
+    func makeFee(asset: any ChainKit.Asset) throws(MultichainSwapExecutionFailure) -> any Fee {
         switch self {
         case .none:
-            return FeeNone.shared
+            return FeeNone(asset: asset)
         case let .value(amount):
-            return try FeeValue(amount: Self.bigInteger(amount, field: "amount"))
+            return try FeeValue(asset: asset, amount: Self.bigInteger(amount, field: "amount"))
         case let .gas(limit, price, amount):
             return try FeeGas(
+                asset: asset,
                 limit: Self.bigInteger(limit, field: "limit"),
                 price: Self.bigInteger(price, field: "price"),
                 amount: Self.bigInteger(amount, field: "amount")
             )
         case let .eip1559(limit, networkPrice, maxPrice, minerPrice, amount):
             return try FeeEip1559(
+                asset: asset,
                 limit: Self.bigInteger(limit, field: "limit"),
                 networkPrice: Self.bigInteger(networkPrice, field: "networkPrice"),
                 maxPrice: Self.bigInteger(maxPrice, field: "maxPrice"),

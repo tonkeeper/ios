@@ -9,27 +9,24 @@ struct TonConnectManifestLoader {
     }
 
     func load(url: URL) async throws -> TonConnectManifest {
-        guard let expectedOrigin = url.normalizedOrigin else {
-            logManifestLoadingFailed(error: .invalidManifest, url: url)
+        let manifest = try await fetchManifest(url: url)
+        guard manifest.url.host?.contains(".") == true else {
             throw TonConnectManifestError.invalidManifest
         }
+        return manifest
+    }
+}
 
-        let urls = [url, url.proxyURL].compactMap { $0 }
+private extension TonConnectManifestLoader {
+    func fetchManifest(url: URL) async throws -> TonConnectManifest {
+        let urls = [url, url.proxyURL(noCache: true)].compactMap { $0 }
 
         for (index, fetchURL) in urls.enumerated() {
-            let isLastURL = index == urls.count - 1
-
             do {
-                let manifest = try await fetchManifest(url: fetchURL)
-                guard manifest.url.normalizedOrigin == expectedOrigin else {
-                    logManifestLoadingFailed(error: .invalidManifest, url: url)
-                    throw TonConnectManifestError.invalidManifest
-                }
-                return manifest
-            } catch let error as TonConnectManifestError {
-                throw error
+                let (data, _) = try await urlSession.data(from: fetchURL)
+                return try JSONDecoder().decode(TonConnectManifest.self, from: data)
             } catch {
-                guard isLastURL else {
+                guard index == urls.count - 1 else {
                     continue
                 }
                 throw mappedError(error, url: url)
@@ -37,30 +34,6 @@ struct TonConnectManifestLoader {
         }
 
         throw TonConnectManifestError.incorrectURL
-    }
-}
-
-private extension TonConnectManifestLoader {
-    func fetchManifest(url: URL) async throws -> TonConnectManifest {
-        let redirectBlocker = ManifestRedirectBlocker()
-
-        do {
-            let (data, response) = try await urlSession.data(
-                for: URLRequest(url: url),
-                delegate: redirectBlocker
-            )
-            guard !redirectBlocker.didReceiveRedirect,
-                  !(response as? HTTPURLResponse).isRedirect
-            else {
-                throw TonConnectManifestError.invalidManifest
-            }
-            return try JSONDecoder().decode(TonConnectManifest.self, from: data)
-        } catch {
-            guard !redirectBlocker.didReceiveRedirect else {
-                throw TonConnectManifestError.invalidManifest
-            }
-            throw error
-        }
     }
 
     func mappedError(_ error: Error, url: URL) -> TonConnectManifestError {
@@ -98,38 +71,5 @@ private extension TonConnectManifestLoader {
                 "url": url.absoluteString,
             ]
         )
-    }
-}
-
-private extension Optional where Wrapped == HTTPURLResponse {
-    var isRedirect: Bool {
-        guard let statusCode = self?.statusCode else {
-            return false
-        }
-        return (300 ..< 400).contains(statusCode)
-    }
-}
-
-private final class ManifestRedirectBlocker: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let lock = NSLock()
-    private var receivedRedirect = false
-
-    var didReceiveRedirect: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return receivedRedirect
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        willPerformHTTPRedirection response: HTTPURLResponse,
-        newRequest request: URLRequest,
-        completionHandler: @escaping (URLRequest?) -> Void
-    ) {
-        lock.lock()
-        receivedRedirect = true
-        lock.unlock()
-        completionHandler(nil)
     }
 }

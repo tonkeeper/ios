@@ -38,7 +38,6 @@ public struct BootConfiguration: Codable, Equatable {
     public let disableBattery: Bool
     public let disableBatterySend: Bool
     public let disableBatteryCryptoRechargeModule: Bool
-    public let scamApiURL: URL?
     public let flags: Flags
     public let stories: [String]?
     public let reportAmount: String?
@@ -56,6 +55,8 @@ public struct BootConfiguration: Codable, Equatable {
     public let multichain: Endpoint
     public let trading: Endpoint
     public let explorers: [ChainExplorer]
+    public let earnUrl: URL?
+    public let earnFeaturedVaults: [EarnFeaturedVault]
 
     public struct Endpoint: Codable, Equatable {
         public let domain: URL
@@ -143,7 +144,6 @@ extension BootConfiguration {
             disableBattery: false,
             disableBatterySend: false,
             disableBatteryCryptoRechargeModule: true,
-            scamApiURL: nil,
             flags: .default,
             stories: [],
             reportAmount: nil,
@@ -161,7 +161,9 @@ extension BootConfiguration {
                 realtime: defaultMultichainRealtimeURL
             ),
             trading: Endpoint(domain: URL(string: "https://trading.tonkeeper.com")!, realtime: nil),
-            explorers: []
+            explorers: [],
+            earnUrl: nil,
+            earnFeaturedVaults: []
         )
     }
 }

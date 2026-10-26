@@ -43,6 +43,8 @@ protocol WalletConnectWalletKitClientProtocol: AnyObject, Sendable {
 
     func walletCapabilitiesScope(topic: String) -> WalletConnectWalletCapabilitiesScope?
 
+    func sessionAccountAddresses(topic: String, chain: WalletConnectChain) -> [String]
+
     func emitChainChanged(
         topic: String,
         chain: WalletConnectChain
@@ -283,6 +285,22 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
                 )
             }
         return WalletConnectWalletCapabilitiesScope(accounts: accounts)
+    }
+
+    func sessionAccountAddresses(topic: String, chain: WalletConnectChain) -> [String] {
+        guard let session = WalletKit.instance.getSessions().first(where: { $0.topic == topic }) else {
+            return []
+        }
+        var addresses = [String]()
+        for account in session.namespaces.values.flatMap(\.accounts) {
+            guard WalletConnectChain(caip2: account.blockchain.absoluteString) == chain,
+                  !addresses.contains(account.address)
+            else {
+                continue
+            }
+            addresses.append(account.address)
+        }
+        return addresses
     }
 
     func emitChainChanged(

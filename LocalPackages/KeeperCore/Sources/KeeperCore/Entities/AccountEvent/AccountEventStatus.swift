@@ -1,7 +1,7 @@
 import Foundation
 import TKLocalize
 
-public enum AccountEventStatus: Codable, Sendable {
+@frozen public enum AccountEventStatus: Codable, Sendable {
     case ok
     case failed
     case unknown(String)

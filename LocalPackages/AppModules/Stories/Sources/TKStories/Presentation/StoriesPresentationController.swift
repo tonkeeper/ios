@@ -26,9 +26,6 @@ public final class StoriesPresentationController: UIPresentationController {
 
         setupPanGesture()
 
-        presentedView?.layer.cornerRadius = 20
-        presentedView?.layer.masksToBounds = true
-
         dimmingView.snp.makeConstraints { make in
             make.edges.equalTo(containerView)
         }
@@ -62,23 +59,12 @@ public final class StoriesPresentationController: UIPresentationController {
     }
 
     override public var frameOfPresentedViewInContainerView: CGRect {
-        guard let containerView else { return .zero }
-        return CGRect(
-            origin: CGPoint(x: 0, y: containerView.safeAreaInsets.top),
-            size: CGSize(
-                width: containerView.bounds.width,
-                height: containerView.bounds.height - presentedViewTopPadding - containerView.safeAreaInsets.bottom
-            )
-        )
+        containerView?.bounds ?? .zero
     }
 
     private func setupPanGesture() {
         gesture.delegate = self
         containerView?.addGestureRecognizer(gesture)
-    }
-
-    private var presentedViewTopPadding: CGFloat {
-        containerView?.safeAreaInsets.top ?? 0
     }
 
     @objc
@@ -88,21 +74,20 @@ public final class StoriesPresentationController: UIPresentationController {
         let translation = gesture.translation(in: containerView)
         let velocity = gesture.velocity(in: containerView)
         let progress = translation.y / containerViewFrame.height
-        let maxY = presentedViewTopPadding / 2
-        let offset = max(presentedViewTopPadding + translation.y, maxY)
+        let offset = max(translation.y, 0)
 
         switch gesture.state {
         case .changed:
             updatePresentedViewOriginY(offset, animated: false)
             updateDimmingViewAlpha(.dimmingViewPresentedAlpha - progress, animated: false)
         case .failed, .cancelled:
-            updatePresentedViewOriginY(presentedViewTopPadding, animated: true)
+            updatePresentedViewOriginY(0, animated: true)
             updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
         case .ended:
             if progress > 0.5 || velocity.y > 900 {
                 presentedViewController.dismiss(animated: true)
             } else {
-                updatePresentedViewOriginY(presentedViewTopPadding, animated: true)
+                updatePresentedViewOriginY(0, animated: true)
                 updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
             }
         default: break
@@ -135,6 +120,10 @@ public final class StoriesPresentationController: UIPresentationController {
 }
 
 extension StoriesPresentationController: UIGestureRecognizerDelegate {
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        !presentedViewController.isModalInPresentation
+    }
+
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }

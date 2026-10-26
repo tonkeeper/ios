@@ -87,7 +87,8 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
                 wallet: wallet,
                 transferData: transferData,
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
-                coreAssembly: coreAssembly
+                coreAssembly: coreAssembly,
+                reason: .confirmSwap
             )
 
             walletTransferSignCoordinator = coordinator

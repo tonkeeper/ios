@@ -234,6 +234,7 @@ public struct ButtonView: View {
         public var layoutMode: LayoutMode
         public var icon: Icon?
         public var showsLoader: Bool
+        public var showsTextShimmer: Bool
         public var minimumTitleScaleFactor: CGFloat?
         public var action: () -> Void
 
@@ -244,6 +245,7 @@ public struct ButtonView: View {
             appearance: Appearance,
             icon: Icon? = nil,
             showsLoader: Bool = false,
+            showsTextShimmer: Bool = false,
             minimumTitleScaleFactor: CGFloat? = nil,
             action: @escaping () -> Void
         ) {
@@ -253,6 +255,7 @@ public struct ButtonView: View {
             self.layoutMode = layoutMode
             self.icon = icon
             self.showsLoader = showsLoader
+            self.showsTextShimmer = showsTextShimmer
             self.minimumTitleScaleFactor = minimumTitleScaleFactor
             self.action = action
         }
@@ -264,6 +267,7 @@ public struct ButtonView: View {
             appearance: Appearance,
             icon: Icon? = nil,
             showsLoader: Bool = false,
+            showsTextShimmer: Bool = false,
             minimumTitleScaleFactor: CGFloat? = nil,
             action: @escaping () -> Void
         ) {
@@ -273,6 +277,7 @@ public struct ButtonView: View {
             self.layoutMode = layoutMode
             self.icon = icon
             self.showsLoader = showsLoader
+            self.showsTextShimmer = showsTextShimmer
             self.minimumTitleScaleFactor = minimumTitleScaleFactor
             self.action = action
         }
@@ -386,6 +391,7 @@ public struct ButtonView: View {
             lineHeight: textStyle.lineHeight
         )
         .titlePadding(config: config)
+        .tkTextShimmer(isActive: config.showsTextShimmer)
     }
 
     private var iconSize: CGFloat {

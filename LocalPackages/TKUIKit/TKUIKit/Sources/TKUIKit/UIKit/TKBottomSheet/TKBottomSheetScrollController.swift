@@ -4,6 +4,7 @@ final class TKBottomSheetScrollController {
     var didStartDragging: (() -> Void)?
     var didDrag: ((_ offset: CGFloat) -> Void)?
     var didEndDragging: ((_ offset: CGFloat, _ velocity: CGFloat) -> Void)?
+    var didCancelDragging: (() -> Void)?
 
     // MARK: - Dependencies
 
@@ -66,6 +67,11 @@ private extension TKBottomSheetScrollController {
             if self.isDragging {
                 self.isDragging = false
                 didEndDragging?(yTranslation, yVelocity)
+            }
+        case .cancelled, .failed:
+            if self.isDragging {
+                self.isDragging = false
+                didCancelDragging?()
             }
         default: break
         }

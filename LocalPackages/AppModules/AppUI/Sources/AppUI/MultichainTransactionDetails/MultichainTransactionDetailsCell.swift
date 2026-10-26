@@ -104,7 +104,7 @@ struct MultichainTransactionDetailsCell: View {
                         },
                         contentInsets: contentInsets
                     )
-                case let .fee(title, amount, fiatAmount):
+                case let .fee(title, amount, fiatAmount), let .value(title, amount, fiatAmount):
                     CellCenter(
                         primaryRow: {
                             CellCenterPrimaryRow(

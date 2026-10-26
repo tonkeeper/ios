@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SignDataSignerProvider {
+@frozen public enum SignDataSignerProvider {
     public static func getSigner(signDataPayload: TonConnect.SignDataRequest) -> SignDataSigner {
         switch signDataPayload.params {
         case .text, .binary:

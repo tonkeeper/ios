@@ -3,7 +3,7 @@ import Foundation
 
 /// Where the asset a caller is about to render came from: a listing that answered for it, or the
 /// cache that stood in when one did not.
-public enum MultichainAssetRefreshResult {
+@frozen public enum MultichainAssetRefreshResult {
     case delivered(MultichainAsset)
     /// The request failed, or the listing no longer carries the asset.
     case cached(MultichainAsset?)
@@ -173,6 +173,31 @@ public struct MultichainAssetBalanceProvider {
         }
     }
 
+    /// The wallet's own entries for assets another service names in its own spelling — a chain
+    /// alias, another type label, another address case — which an exact `asset_ids` lookup would
+    /// miss, keyed by the names asked for. The wallet's listing of their chain is read a page at a
+    /// time, and only until every one of them turns up: a wallet can list thousands of assets. An
+    /// asset the listing does not reach, or cannot be read for, is missing from the answer.
+    func loadAssets(named assetIds: [String], wallet: Wallet) async -> [String: MultichainAsset] {
+        guard case let .multichain(state) = wallet.multichain else {
+            return [:]
+        }
+        let assetIdsByChain = Dictionary(grouping: Set(assetIds)) { assetId in
+            AssetIdComponents(assetId: assetId).flatMap { MultichainChain(assetIdChain: $0.chain) }
+        }
+        var assets = [String: MultichainAsset]()
+        for case let (chain?, chainAssetIds) in assetIdsByChain {
+            let found = await scanAssets(of: chainAssetIds, chain: chain, state: state)
+            assets.merge(found) { current, _ in current }
+        }
+        return assets
+    }
+
+    /// The balances of the assets `loadAssets(named:wallet:)` finds, by the names asked for.
+    func loadBalances(ofAssetsNamed assetIds: [String], wallet: Wallet) async -> [String: BigUInt] {
+        await loadAssets(named: assetIds, wallet: wallet).mapValues(\.balance)
+    }
+
     /// Fills gaps from an already fetched asset page so a details screen can render a
     /// known balance without waiting for its own request. Existing entries are left
     /// alone: refreshing them is `loadAsset`'s job, which also resolves the visibility
@@ -259,6 +284,45 @@ private extension MultichainAssetBalanceProvider {
         } catch {
             return .failed
         }
+    }
+
+    func scanAssets(
+        of assetIds: [String],
+        chain: MultichainChain,
+        state: MultichainWalletState
+    ) async -> [String: MultichainAsset] {
+        var assets = [String: MultichainAsset]()
+        var cursor: String?
+        var seenCursors = Set<String>()
+        for _ in 0 ..< WalletAssetsPagination.maxPages {
+            guard let page = try? await balanceService.getWalletAssets(
+                state: state,
+                currencies: requestedCurrencyCodes(for: currencyStore.state),
+                assetIds: nil,
+                capabilities: nil,
+                chain: chain,
+                search: nil,
+                availableOnly: nil,
+                showHidden: true,
+                showAll: nil,
+                hideDust: false,
+                limit: WalletAssetsPagination.pageLimit,
+                cursor: cursor
+            ) else {
+                break
+            }
+            for assetId in assetIds where assets[assetId] == nil {
+                assets[assetId] = page.assets.first { AssetIdComponents.isSameAsset($0.asset.assetId, assetId) }
+            }
+            guard assets.count < assetIds.count,
+                  let nextCursor = page.nextCursor,
+                  seenCursors.insert(nextCursor).inserted
+            else {
+                break
+            }
+            cursor = nextCursor
+        }
+        return assets
     }
 
     struct Scope {

@@ -1,7 +1,7 @@
 import Foundation
 import TKTonkeeperAPI
 
-public enum TonkeeperAPIError: Swift.Error {
+@frozen public enum TonkeeperAPIError: Swift.Error {
     case cancelled
     case incorrectUrl
     case badStatus(

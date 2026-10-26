@@ -24,6 +24,7 @@ public struct MultichainTransactionDetailsView: View {
             hero
             detailsList
             transactionButton
+            actionButton
         }
         .frame(maxWidth: .infinity, alignment: .top)
         .background(.backgroundPage)
@@ -72,6 +73,13 @@ private extension MultichainTransactionDetailsView {
             if let pendingTitle = model.pendingTitle {
                 pendingStatus(pendingTitle)
                     .padding(.top, 7)
+            }
+
+            if !model.tags.isEmpty {
+                HStack(spacing: 0) {
+                    ForEach(model.tags, id: \.self) { TKTagSwiftUIView(config: $0) }
+                }
+                .padding(.top, Layout.tagsTopPadding)
             }
         }
         .multilineTextAlignment(.center)
@@ -230,6 +238,23 @@ private extension MultichainTransactionDetailsView {
         }
     }
 
+    @ViewBuilder
+    var actionButton: some View {
+        if let actionButton = model.actionButton {
+            ButtonView(
+                config: ButtonView.Config(
+                    title: actionButton.title,
+                    size: .small,
+                    appearance: .secondary,
+                    icon: ButtonView.Icon(image: actionButton.icon, alignment: .leading),
+                    action: actionButton.action
+                )
+            )
+            .padding(.top, Layout.transactionButtonTopPadding)
+            .padding(.bottom, Layout.transactionButtonBottomPadding)
+        }
+    }
+
     enum Layout {
         static let nftImageCornerRadius: CGFloat = 20
         static let nftContentBottomPadding: CGFloat = 30
@@ -241,6 +266,7 @@ private extension MultichainTransactionDetailsView {
         static let heroHorizontalPadding: CGFloat = 32
         static let heroBottomPadding: CGFloat = 31
         static let pendingStatusSpacing: CGFloat = 6
+        static let tagsTopPadding: CGFloat = 15
         static let pendingLoaderSize: CGFloat = 14
         static let pendingLoaderLineWidth: CGFloat = 2
         static let pendingLoaderTrackOpacity: Double = 0.32

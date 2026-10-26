@@ -5,7 +5,7 @@ import TronSwift
 
 public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, ConvertedBalanceStore.State> {
     public typealias State = [Wallet: ConvertedBalanceState]
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateConvertedBalance(wallet: Wallet)
     }
 

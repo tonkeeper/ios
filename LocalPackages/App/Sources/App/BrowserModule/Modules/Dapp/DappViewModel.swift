@@ -1,15 +1,18 @@
 import KeeperCore
 import TKCore
 import TKLogging
+import TKScreenKit
 import TKUIKit
 import UIKit
 
 protocol DappModuleOutput: AnyObject {
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)? { get set }
+    var didRequestClose: (() -> Void)? { get set }
 }
 
 protocol DappModuleInput: AnyObject {
     func setLandscapeMode(isEnabled: Bool)
+    func sendEVMEvent(_ event: EVMProviderEvent)
 }
 
 protocol DappViewModel: AnyObject {
@@ -18,13 +21,19 @@ protocol DappViewModel: AnyObject {
     var currentURLProvider: (() -> URL?)? { get set }
     var jsInjection: String? { get }
     var walletIdentifier: String? { get }
+    var applicationNameForUserAgent: String? { get }
+    var allowsBackForwardNavigationGestures: Bool { get }
     var didUpdateIsLandscapeEnable: (() -> Void)? { get set }
     var isLandscapeEnable: Bool { get }
     var didShareURLSystemShareSheet: ((URL) -> Void)? { get set }
 
     func viewDidLoad()
+    func didChangeSystemAppearance()
+    func didCommitLoad()
+    func didTapClose()
     func isNativeHeaderHidden(for url: URL) -> Bool
     func didLoadInitialRequest()
+    func didFailLoad(_ failure: TKBridgeWebViewController.LoadFailure)
     func didReceiveMessage(body: Any)
     func copyDappURL(url: URL)
     func shareDappURL(url: URL)
@@ -34,11 +43,16 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     // MARK: - DappModuleOutput
 
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)?
+    var didRequestClose: (() -> Void)?
 
     // MARK: - DappModuleInput
 
     func setLandscapeMode(isEnabled: Bool) {
         isLandscapeEnable = isEnabled
+    }
+
+    func sendEVMEvent(_ event: EVMProviderEvent) {
+        sendNativeEvent(json: event.json)
     }
 
     // MARK: - DappViewModel
@@ -57,6 +71,20 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     func viewDidLoad() {
         didOpenApp?(dapp.url, dapp.name)
         didUpdateIsLandscapeEnable?()
+        observeTheme()
+    }
+
+    func didChangeSystemAppearance() {
+        deliverThemeIfNeeded()
+    }
+
+    func didCommitLoad() {
+        deliveredTheme = injectedTheme
+        deliverThemeIfNeeded()
+    }
+
+    func didTapClose() {
+        didRequestClose?()
     }
 
     func isNativeHeaderHidden(for url: URL) -> Bool {
@@ -67,9 +95,31 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         wallet?.id
     }
 
+    var applicationNameForUserAgent: String? {
+        earnDappMatcher.matches(url: dapp.url) ? userAgent : nil
+    }
+
+    var allowsBackForwardNavigationGestures: Bool {
+        earnDappMatcher.matches(url: dapp.url)
+    }
+
+    private var evmProviderInjection: String {
+        guard let address = wallet?.walletConnectAddress(for: .eth) else {
+            return ""
+        }
+        return EVMProviderBridge.injection(
+            address: address,
+            chainIdHex: EVMProviderBridge.chainIdHex(WalletConnectChain.eth.eip155ChainId.map(Int.init) ?? 1)
+        )
+    }
+
     func didLoadInitialRequest() {
         analyticsSession.logLoaded()
         reconnectIfNeeded()
+    }
+
+    func didFailLoad(_ failure: TKBridgeWebViewController.LoadFailure) {
+        analyticsSession.logLoadFailed(errorCode: failure.errorCode, httpStatus: failure.httpStatus)
     }
 
     func reconnectIfNeeded() {
@@ -183,11 +233,20 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
 
     private let analyticsSession: DappOpenAnalyticsSession
     private let wallet: Wallet?
+    private let isSignMessageSupported: Bool
     private let explorerURLMatcher: BlockchainExplorerURLMatcher
     private let earnDappMatcher = EarnDappMatcher()
+    private let earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository
+    private let userAgent: String
 
+    private var deliveredTheme: String?
+    private var injectedTheme: String?
+
+    /// `window.native` and the coordinator's Earn session exist only for a dapp opened on an Earn host,
+    /// so a page that navigated onto one is refused like any other.
     private var isEarnDapp: Bool {
-        earnDappMatcher.matches(url: currentURLProvider?() ?? dapp.url)
+        earnDappMatcher.matches(url: dapp.url)
+            && earnDappMatcher.matches(url: currentURLProvider?() ?? dapp.url)
     }
 
     init(
@@ -195,13 +254,52 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         analyticsSession: DappOpenAnalyticsSession,
         messageHandler: DappMessageHandler,
         wallet: Wallet?,
-        explorerURLMatcher: BlockchainExplorerURLMatcher
+        isSignMessageSupported: Bool,
+        explorerURLMatcher: BlockchainExplorerURLMatcher,
+        earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository,
+        userAgent: String
     ) {
         self.dapp = dapp
         self.analyticsSession = analyticsSession
         self.messageHandler = messageHandler
         self.wallet = wallet
+        self.isSignMessageSupported = isSignMessageSupported
         self.explorerURLMatcher = explorerURLMatcher
+        self.earnFeaturedVaultsRepository = earnFeaturedVaultsRepository
+        self.userAgent = userAgent
+    }
+
+    private func observeTheme() {
+        deliveredTheme = DappNativeBridge.theme
+        TKThemeManager.shared.addEventObserver(self) { observer, _ in
+            observer.deliverThemeIfNeeded()
+        }
+    }
+
+    private func deliverThemeIfNeeded() {
+        let theme = DappNativeBridge.theme
+        guard theme != deliveredTheme else { return }
+        deliveredTheme = theme
+        sendNativeEvent(
+            json: DappNativeBridge.eventJson(
+                name: DappNativeBridge.Event.themeChanged.rawValue,
+                payload: DappNativeBridge.ThemePayload(theme: theme)
+            )
+        )
+    }
+
+    private func sendNativeEvent(json eventJson: String?) {
+        guard isEarnDapp, let eventJson else {
+            return
+        }
+        let js = """
+        (function() {
+            window.dispatchEvent(new MessageEvent('message', {
+                data: \(eventJson)
+            }));
+        })();
+        """
+        injectHandler?(js)
     }
 
     private func sendResponse(_ response: DappBridgeResponse) {
@@ -217,7 +315,11 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     }
 
     var jsInjection: String? {
-        let deviceInfo = TonConnect.DeviceInfo(maxMessages: (try? wallet?.contract.maxMessages) ?? 4, appVersion: InfoProvider.appVersion())
+        let deviceInfo = TonConnect.DeviceInfo(
+            maxMessages: (try? wallet?.contract.maxMessages) ?? 4,
+            appVersion: InfoProvider.appVersion(),
+            isSignMessageSupported: isSignMessageSupported
+        )
         let info = Info(
             isWalletBrowser: true,
             deviceInfo: deviceInfo,
@@ -226,9 +328,13 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
 
         let theme = TKThemeManager.shared.theme.stringDescription
 
-        let nativeInjection = earnDappMatcher.matches(url: dapp.url)
-            ? DappNativeBridge.injection(config: .current())
+        let nativeConfig = DappNativeBridge.Config.current(featuredVaults: earnFeaturedVaultsRepository.featuredVaults())
+        injectedTheme = nativeConfig.theme
+        let isEarnHost = earnDappMatcher.matches(url: dapp.url)
+        let nativeInjection = isEarnHost
+            ? DappNativeBridge.injection(config: nativeConfig)
             : ""
+        let evmInjection = isEarnHost ? evmProviderInjection : ""
 
         guard let infoData = try? JSONEncoder().encode(info),
               var infoString = String(data: infoData, encoding: .utf8) else { return nil }
@@ -326,6 +432,8 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
                                 }
 
                                 \(nativeInjection)
+
+                                \(evmInjection)
                             })();
         """
     }
@@ -397,11 +505,14 @@ enum DappBridgeMessageType: String, Codable {
     case invokeRnFunc
     case functionResponse
     case event
+    case nativeEvent
 }
 
 enum DappBridgeFunctionType: String, Codable {
     case send
+    case ethRequest = "eth.request"
     case uiNavigateBack = "ui.navigateBack"
+    case uiClose = "ui.close"
     case analyticsTrack = "analytics.track"
     case connect
     case restoreConnection
@@ -412,7 +523,7 @@ enum DappBridgeFunctionType: String, Codable {
 
     var isNativeBridge: Bool {
         switch self {
-        case .uiNavigateBack, .analyticsTrack:
+        case .uiNavigateBack, .uiClose, .analyticsTrack, .ethRequest:
             return true
         case .send, .connect, .restoreConnection, .disconnect, .tonapiFetch, .unlockOrientation, .lockOrientation:
             return false

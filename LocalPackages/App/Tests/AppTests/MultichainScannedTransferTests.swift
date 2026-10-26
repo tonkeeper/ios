@@ -6,6 +6,8 @@ import XCTest
 final class MultichainScannedTransferTests: XCTestCase {
     private let evmAddress = "0x000000000000000000000000000000000000dead"
     private let tonAddress = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+    private let solanaAddress = "HLT1cw2FTfgMJ2DNZHQpcr19n5bqrfqBGxEuFSEWgE4r"
+    private let usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
     func test_multichainSendTransfer_carriesCandidatesWithoutAmountAndComment() {
         let candidates = MultichainRecipientCandidates(address: evmAddress, chains: [.eth, .base])
@@ -212,6 +214,65 @@ final class MultichainScannedTransferTests: XCTestCase {
         XCTAssertNil(scanned)
     }
 
+    func test_solanaSendTransfer_pinsCoinAndKeepsDecimalAmount() {
+        let scanned = makeSolanaScan(asset: .native, amount: "0.001")
+
+        XCTAssertEqual(
+            scanned?.candidates,
+            MultichainRecipientCandidates(address: solanaAddress, chains: [.sol])
+        )
+        XCTAssertEqual(scanned?.assetId, "sol/mainnet/coin")
+        XCTAssertNil(scanned?.amount)
+        XCTAssertEqual(scanned?.decimalAmount, Deeplink.DecimalAmount("0.001"))
+        XCTAssertNil(scanned?.comment)
+    }
+
+    func test_solanaSendTransfer_splTokenPinsTokenAsset() {
+        let scanned = makeSolanaScan(asset: .splToken(mint: usdcMint), amount: nil)
+
+        XCTAssertEqual(scanned?.assetId, "sol/mainnet/spl/\(usdcMint)")
+        XCTAssertNil(scanned?.decimalAmount)
+    }
+
+    func test_solanaSendTransfer_undetectableRecipient_returnsNil() {
+        let scanned = MultichainScannedTransfer(
+            deeplink: .transfer(
+                .solanaSendTransfer(
+                    Deeplink.SolanaTransferData(recipient: evmAddress, asset: .native, amount: nil)
+                )
+            )
+        )
+
+        XCTAssertNil(scanned)
+    }
+
+    func test_atomicAmount_convertsDecimalAmountWithAssetDecimals() throws {
+        let scanned = try XCTUnwrap(makeSolanaScan(asset: .splToken(mint: usdcMint), amount: "1.5"))
+
+        XCTAssertEqual(scanned.atomicAmount(for: makeAsset(decimals: 6)), 1_500_000)
+        XCTAssertNil(scanned.atomicAmount(for: nil))
+    }
+
+    /// Rounding would pay something other than what the link asked for.
+    func test_atomicAmount_decimalAmountFinerThanAssetDecimals_isNil() throws {
+        let scanned = try XCTUnwrap(makeSolanaScan(asset: .splToken(mint: usdcMint), amount: "0.0000001"))
+
+        XCTAssertNil(scanned.atomicAmount(for: makeAsset(decimals: 6)))
+    }
+
+    func test_atomicAmount_keepsAtomicAmountRegardlessOfDecimals() throws {
+        let scanned = try XCTUnwrap(
+            MultichainScannedTransfer(
+                deeplink: .transfer(
+                    .sendTransfer(makeTransferData(recipient: tonAddress, amount: 42, comment: nil))
+                )
+            )
+        )
+
+        XCTAssertEqual(scanned.atomicAmount(for: makeAsset(decimals: 6)), 42)
+        XCTAssertEqual(scanned.atomicAmount(for: nil), 42)
+    }
+
     func test_signRawTransfer_returnsNil() {
         let scanned = MultichainScannedTransfer(
             deeplink: .transfer(
@@ -251,6 +312,38 @@ private extension MultichainScannedTransferTests {
             assetId: assetId,
             expirationTimestamp: nil,
             successReturn: nil
+        )
+    }
+
+    func makeSolanaScan(
+        asset: Deeplink.SolanaTransferData.Asset,
+        amount: String?
+    ) -> MultichainScannedTransfer? {
+        MultichainScannedTransfer(
+            deeplink: .transfer(
+                .solanaSendTransfer(
+                    Deeplink.SolanaTransferData(
+                        recipient: solanaAddress,
+                        asset: asset,
+                        amount: amount.flatMap(Deeplink.DecimalAmount.init)
+                    )
+                )
+            )
+        )
+    }
+
+    func makeAsset(decimals: Int) -> MultichainAsset {
+        MultichainAsset(
+            asset: MultichainAssetDetails(
+                assetId: "sol/mainnet/spl/\(usdcMint)",
+                name: "USD Coin",
+                symbol: "USDC",
+                decimals: decimals,
+                image: ""
+            ),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
+            balance: .zero,
+            marketCap: [:]
         )
     }
 }

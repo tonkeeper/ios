@@ -7,14 +7,10 @@ public final class OSLogBackend: LogBackend {
         let category: String
     }
 
-    public let identifier: String
-
     private var loggers: [LoggerKey: Logger] = [:]
     private let lock = NSLock()
 
-    public init(identifier: String = "oslog") {
-        self.identifier = identifier
-    }
+    public init() {}
 
     public func log(_ record: LogRecord) {
         let logger = logger(for: record)
@@ -33,7 +29,7 @@ public final class OSLogBackend: LogBackend {
     }
 
     /// The call site travels with warnings and errors only — those are the lines someone goes looking for.
-    private static func message(for record: LogRecord) -> String {
+    static func message(for record: LogRecord) -> String {
         var message = record.message
         if !record.extraInfo.isEmpty {
             let info = record.extraInfo

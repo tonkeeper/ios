@@ -1,6 +1,6 @@
 import UIKit
 
-public enum SomeOf<First, Second> {
+@frozen public enum SomeOf<First, Second> {
     case firstOption(First)
     case secondOption(Second)
 

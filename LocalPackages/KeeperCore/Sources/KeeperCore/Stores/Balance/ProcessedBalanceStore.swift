@@ -3,7 +3,7 @@ import Foundation
 import TonSwift
 import TronSwift
 
-public enum ProcessedBalanceState: Equatable {
+@frozen public enum ProcessedBalanceState: Equatable {
     case current(ProcessedBalance)
     case previous(ProcessedBalance)
 
@@ -20,7 +20,7 @@ public enum ProcessedBalanceState: Equatable {
 public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, ProcessedBalanceStore.State> {
     public typealias State = [Wallet: ProcessedBalanceState]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateProccessedBalance(wallet: Wallet)
     }
 

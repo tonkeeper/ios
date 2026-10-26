@@ -2,7 +2,6 @@ import SwapAPI
 
 protocol MultichainSwapAPI {
     func listCrossSwapAssets(query: MultichainSwapAssetsQuery) async throws(MultichainSwapAPIError) -> [MultichainSwapAsset]
-    func getCrossSwapAsset(assetId: String) async throws(MultichainSwapAPIError) -> MultichainSwapAsset
     func getCrossSwapConfig(
         walletId: String,
         fromAssetId: String?,
@@ -50,25 +49,6 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
             return try decodeResponse(ok.body.json).assets.map { MultichainSwapAsset(api: $0) }
         case let .badRequest(response):
             throw try badRequestError(response)
-        case let .internalServerError(response):
-            throw try internalServerError(response)
-        case let .undocumented(statusCode, _):
-            throw MultichainSwapAPIError.unknown(statusCode: statusCode)
-        }
-    }
-
-    func getCrossSwapAsset(assetId: String) async throws(MultichainSwapAPIError) -> MultichainSwapAsset {
-        let query = SwapAPI.Operations.getCrossSwapAsset.Input.Query(asset_id: assetId)
-        let output = try await apiCall(
-            await client.getCrossSwapAsset(.init(query: query))
-        )
-        switch output {
-        case let .ok(ok):
-            return try MultichainSwapAsset(api: decodeResponse(ok.body.json))
-        case let .badRequest(response):
-            throw try badRequestError(response)
-        case let .notFound(response):
-            throw try notFoundError(response)
         case let .internalServerError(response):
             throw try internalServerError(response)
         case let .undocumented(statusCode, _):

@@ -24,7 +24,7 @@ public struct EthenaStakingMethod: Codable {
     public let withdrawalUrl: String
     public let eligibleBonusUrl: String
 
-    public enum CodingKeys: String, CodingKey {
+    @frozen public enum CodingKeys: String, CodingKey {
         case name, type, links, image
         case jettonMaster = "jetton_master"
         case apy
@@ -45,7 +45,7 @@ public struct AboutInfo: Codable {
     public let tsusdeDescription: String
     public let tsusdeStakeDescription: String
 
-    public enum CodingKeys: String, CodingKey {
+    @frozen public enum CodingKeys: String, CodingKey {
         case description
         case faqUrl = "faq_url"
         case aboutUrl = "about_url"

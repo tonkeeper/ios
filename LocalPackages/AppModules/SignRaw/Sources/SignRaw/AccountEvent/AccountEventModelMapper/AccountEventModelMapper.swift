@@ -11,24 +11,17 @@ public struct AccountEventModelMapper {
         self.accountEventModelActionContentProvider = accountEventModelActionContentProvider
     }
 
+    public func mapSignRawEventContentConfiguration(_ event: AccountEventModel) -> AccountEventCellContentView.Model {
+        AccountEventCellContentView.Model(actions: mapSignRawActions(event))
+    }
+
     public func mapSignRawEventContentConfiguration(
         _ event: AccountEventModel,
         fee: String,
         feeConverted: String?,
         feeDescription: String?
     ) -> AccountEventCellContentView.Model {
-        var actions = event.actions.enumerated().map { _, action in
-            AccountEventCellContentView.Model.Action(
-                configuration: mapAction(
-                    action,
-                    isInProgress: event.accountEvent.isInProgress,
-                    isSecureMode: false,
-                    nftAction: { _ in },
-                    encryptedCommentAction: { _ in }
-                ),
-                action: {}
-            )
-        }
+        var actions = mapSignRawActions(event)
 
         actions.append(
             AccountEventCellContentView.Model.Action(
@@ -41,6 +34,21 @@ public struct AccountEventModelMapper {
             )
         )
         return AccountEventCellContentView.Model(actions: actions)
+    }
+
+    private func mapSignRawActions(_ event: AccountEventModel) -> [AccountEventCellContentView.Model.Action] {
+        event.actions.enumerated().map { _, action in
+            AccountEventCellContentView.Model.Action(
+                configuration: mapAction(
+                    action,
+                    isInProgress: event.accountEvent.isInProgress,
+                    isSecureMode: false,
+                    nftAction: { _ in },
+                    encryptedCommentAction: { _ in }
+                ),
+                action: {}
+            )
+        }
     }
 
     func mapAction(

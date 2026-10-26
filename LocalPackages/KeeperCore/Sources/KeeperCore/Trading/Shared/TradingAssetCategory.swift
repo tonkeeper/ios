@@ -1,6 +1,6 @@
 import TKTradingAPI
 
-public enum TradingAssetCategory: String, CaseIterable, Identifiable, Sendable {
+@frozen public enum TradingAssetCategory: String, CaseIterable, Identifiable, Sendable {
     case all
     case tokens
     case stocks
@@ -22,7 +22,7 @@ extension TradingAssetCategory {
             self = .stocks
         case .etfs:
             self = .etfs
-        case .commodities, .perpetuals:
+        case .commodities, .perpetuals, .unknown:
             return nil
         }
     }

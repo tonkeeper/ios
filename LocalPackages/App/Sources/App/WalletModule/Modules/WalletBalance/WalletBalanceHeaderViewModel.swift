@@ -17,7 +17,6 @@ final class WalletBalanceHeaderViewModel {
     var onSwap: ((Wallet) -> Void)?
     var onStake: ((Wallet) -> Void)?
     var onBattery: ((Wallet) -> Void)?
-    var onBackup: ((Wallet) -> Void)?
 
     private(set) var wallet: Wallet
 
@@ -126,8 +125,8 @@ final class WalletBalanceHeaderViewModel {
         }
     }
 
-    /// The backup warning, the battery and the buttons all ride on the wallet value, so the header
-    /// takes every update to its own wallet rather than keeping the value it was created with.
+    /// The battery and the buttons ride on the wallet value, so the header takes every update to
+    /// its own wallet rather than keeping the value it was created with.
     private func adopt(wallet: Wallet) {
         guard self.wallet == wallet else { return }
         self.wallet = wallet
@@ -172,42 +171,11 @@ final class WalletBalanceHeaderViewModel {
         state: WalletTotalBalanceModel.State,
         totalBalance: TotalBalance?
     ) -> BalanceHeaderBalanceView.Model {
-        let backupWarningState = BalanceBackupWarningCheck().check(
-            wallet: wallet,
-            tonAmount: totalBalance?.balance.tonItems.first?.amount ?? 0
-        )
-        let balanceColor: TKColor
-        let backupButton: BalanceViewContent.BackupButton?
-        let backupAction: (() -> Void)?
-        switch backupWarningState {
-        case .error:
-            balanceColor = .accentRed
-            backupButton = BalanceViewContent.BackupButton(color: .accentRed)
-            backupAction = { [weak self] in
-                guard let self else { return }
-                onBackup?(wallet)
-            }
-        case .warning:
-            balanceColor = .accentOrange
-            backupButton = BalanceViewContent.BackupButton(color: .accentOrange)
-            backupAction = { [weak self] in
-                guard let self else { return }
-                onBackup?(wallet)
-            }
-        case .none:
-            balanceColor = .textPrimary
-            backupButton = nil
-            backupAction = nil
-        }
-
         let balance: BalanceViewContent.Balance = {
             if state.isSecure {
-                return .secure(color: balanceColor)
+                return .secure()
             }
-            return headerMapper.mapTotalBalanceAmount(
-                totalBalance: totalBalance,
-                color: balanceColor
-            )
+            return headerMapper.mapTotalBalanceAmount(totalBalance: totalBalance)
         }()
 
         let batteryConfiguration = makeBatteryConfiguration(
@@ -227,7 +195,6 @@ final class WalletBalanceHeaderViewModel {
                     balance: balance.settingFreshness(freshnessModel.freshness),
                     address: makeStatusConfiguration(state: state, totalBalance: totalBalance),
                     battery: batteryConfiguration,
-                    backupButton: backupButton,
                     amountScope: wallet.id
                 )
             ),
@@ -237,8 +204,7 @@ final class WalletBalanceHeaderViewModel {
             addressAction: { [weak self] in
                 self?.copyAddress(state.address)
             },
-            batteryAction: batteryAction,
-            backupAction: backupAction
+            batteryAction: batteryAction
         )
     }
 

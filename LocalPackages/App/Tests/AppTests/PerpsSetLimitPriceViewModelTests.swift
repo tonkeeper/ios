@@ -1,6 +1,8 @@
 @testable import App
 import ChainKit
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import XCTest
 
 @MainActor
@@ -18,7 +20,7 @@ final class PerpsSetLimitPriceViewModelTests: XCTestCase {
             initialLimitPrice: initialLimitPrice
         )
         // Idle prices store: no live price, so MID falls back to the seeded reference price.
-        return PerpsSetLimitPriceViewModel(context: context, marketsStore: .makeForTests())
+        return PerpsSetLimitPriceViewModel(context: context, marketsStore: PerpsMarketsStore.makeForTests(), format: PerpsFormatting.live)
     }
 
     func test_priceMode_reportsTypedPrice_andEmitsOnSet() {
@@ -103,17 +105,17 @@ final class PerpsSetLimitPriceViewModelTests: XCTestCase {
             referencePrice: 66000,
             initialLimitPrice: nil
         )
-        let viewModel = PerpsSetLimitPriceViewModel(context: context, marketsStore: store)
+        let viewModel = PerpsSetLimitPriceViewModel(context: context, marketsStore: store, format: PerpsFormatting.live)
 
         viewModel.onAppear()
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67000")])
 
         let deadline = Date().addingTimeInterval(2)
-        while viewModel.referencePriceText != PerpsFormatting.usd(67000), Date() < deadline {
+        while viewModel.referencePriceText != PerpsFormatting.live.usd(67000), Date() < deadline {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
-        XCTAssertEqual(viewModel.referencePriceText, PerpsFormatting.usd(67000))
+        XCTAssertEqual(viewModel.referencePriceText, PerpsFormatting.live.usd(67000))
         viewModel.onDisappear()
     }
 }

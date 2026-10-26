@@ -18,6 +18,7 @@ struct PickMultichainAddressItem: Identifiable {
     let title: String
     let shortAddress: String
     let versionTag: String?
+    let isNew: Bool
     let icon: UIImage
 
     var id: MultichainWalletAddress {
@@ -41,13 +42,17 @@ final class PickMultichainAddressViewModelImplementation:
     var didCopyAddress: ((MultichainWalletAddress) -> Void)?
     var didRequestClose: (() -> Void)?
 
-    init(addresses: [MultichainWalletAddress]) {
+    init(
+        addresses: [MultichainWalletAddress],
+        newChainBadgeService: NewChainBadgeService
+    ) {
         let chainCounts = Dictionary(grouping: addresses, by: \.chain)
             .mapValues { $0.count }
         items = addresses.map { address in
             let hasDuplicateChain = chainCounts[address.chain, default: 0] > 1
             return address.pickMultichainAddressItem(
-                versionTag: hasDuplicateChain ? address.type?.rawValue : nil
+                versionTag: hasDuplicateChain ? address.type?.rawValue : nil,
+                isNew: newChainBadgeService.shouldShowBadge(for: address.chain)
             )
         }
     }
@@ -71,12 +76,13 @@ private struct PickMultichainAddressConfiguration {
 }
 
 private extension MultichainWalletAddress {
-    func pickMultichainAddressItem(versionTag: String?) -> PickMultichainAddressItem {
+    func pickMultichainAddressItem(versionTag: String?, isNew: Bool) -> PickMultichainAddressItem {
         PickMultichainAddressItem(
             address: self,
             title: chain.pickMultichainAddressConfiguration.title,
             shortAddress: address.shortReceiveAddress,
             versionTag: versionTag,
+            isNew: isNew,
             icon: chain.pickMultichainAddressConfiguration.icon
         )
     }

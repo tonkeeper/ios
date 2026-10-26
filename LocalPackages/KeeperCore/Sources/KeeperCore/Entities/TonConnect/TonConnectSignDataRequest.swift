@@ -1,4 +1,4 @@
-public enum TonConnectSignDataPayload: Codable, Equatable {
+@frozen public enum TonConnectSignDataPayload: Codable, Equatable {
     case text(text: String)
     case binary(bytes: String)
     case cell(schema: String, cell: String)
@@ -21,7 +21,7 @@ public enum TonConnectSignDataPayload: Codable, Equatable {
 }
 
 public extension TonConnectSignDataPayload {
-    enum CodingKeys: CodingKey {
+    @frozen enum CodingKeys: CodingKey {
         case type
         case text
         case bytes

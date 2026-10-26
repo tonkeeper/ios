@@ -24,7 +24,6 @@ public protocol MnemonicsRepository {
     ) async throws
     func checkIfPasswordValid(_ password: String) async -> Bool
     func changePassword(oldPassword: String, newPassword: String) async throws
-    func deleteAll() async throws
 
     func savePassword(_ password: String) throws
     func getPassword() throws -> String

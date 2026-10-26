@@ -1,34 +1,36 @@
 import Foundation
 import TKKandelabrAPI
-import TKLogging
 
-final class HermesCandleClient: HermesCandleStreaming, @unchecked Sendable {
-    private let socketFactory: HermesSocketFactory
+final class HermesCandleClient: HermesCandleStreaming, Sendable {
+    private let hub: HermesSocketHub
     private let sleep: @Sendable (TimeInterval) async -> Void
 
     init(
-        hostProvider: APIHostProvider,
-        urlSession: URLSession,
+        hub: HermesSocketHub,
         sleep: @escaping @Sendable (TimeInterval) async -> Void = { nanoseconds in
             try? await Task.sleep(nanoseconds: UInt64(nanoseconds * 1_000_000_000))
         }
     ) {
-        socketFactory = HermesSocketFactory(hostProvider: hostProvider, urlSession: urlSession)
+        self.hub = hub
         self.sleep = sleep
     }
 
     func watch(
         feedId: String,
+        volumeFeedId: String,
         onUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
+        onVolumeUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
         onSubscribed: @escaping @Sendable () async -> Void,
         onReconnecting: @escaping @Sendable () async -> Void,
         onRejected: @escaping @Sendable () async -> Void
     ) -> HermesCandleWatch {
         let session = Session(
-            socketFactory: socketFactory,
+            hub: hub,
             feedId: feedId,
+            volumeFeedId: volumeFeedId,
             sleep: sleep,
             onUpdate: onUpdate,
+            onVolumeUpdate: onVolumeUpdate,
             onSubscribed: onSubscribed,
             onReconnecting: onReconnecting,
             onRejected: onRejected
@@ -39,188 +41,189 @@ final class HermesCandleClient: HermesCandleStreaming, @unchecked Sendable {
 }
 
 private actor Session {
-    private let socketFactory: HermesSocketFactory
+    private let id = UUID()
+    private let hub: HermesSocketHub
     private let feedId: String
+    private let volumeFeedId: String
     private let sleep: @Sendable (TimeInterval) async -> Void
     private let onUpdate: @Sendable (Components.Schemas.GetCandlesResponse) async -> Void
+    private let onVolumeUpdate: @Sendable (Components.Schemas.GetCandlesResponse) async -> Void
     private let onSubscribed: @Sendable () async -> Void
     private let onReconnecting: @Sendable () async -> Void
     private let onRejected: @Sendable () async -> Void
 
-    private var task: Task<Void, Never>?
-    private var webSocket: URLSessionWebSocketTask?
-    private var nextRequestId: Int64 = 0
+    private var pendingFeeds: Set<String> = []
+    private var requests: [Int64: String] = [:]
+    private var subscribed = false
+    private var bufferedUpdates: [Components.Schemas.GetCandlesResponse] = []
+    private var attempt = 0
+    private var retryDelay = Session.minRetryDelay
+    private var retryTask: Task<Void, Never>?
     private var cancelled = false
 
     init(
-        socketFactory: HermesSocketFactory,
+        hub: HermesSocketHub,
         feedId: String,
+        volumeFeedId: String,
         sleep: @escaping @Sendable (TimeInterval) async -> Void,
         onUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
+        onVolumeUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
         onSubscribed: @escaping @Sendable () async -> Void,
         onReconnecting: @escaping @Sendable () async -> Void,
         onRejected: @escaping @Sendable () async -> Void
     ) {
-        self.socketFactory = socketFactory
+        self.hub = hub
         self.feedId = feedId
+        self.volumeFeedId = volumeFeedId
         self.sleep = sleep
         self.onUpdate = onUpdate
+        self.onVolumeUpdate = onVolumeUpdate
         self.onSubscribed = onSubscribed
         self.onReconnecting = onReconnecting
         self.onRejected = onRejected
     }
 
     func start() {
-        guard task == nil, !cancelled else { return }
-        task = Task { await run() }
+        guard !cancelled else { return }
+        let listener = HermesSocketListener(
+            onConnected: { await self.connected() },
+            onFrame: { await self.receive($0) },
+            onDisconnected: { await self.disconnected() }
+        )
+        if hub.attach(id, listener) {
+            connected()
+        }
     }
 
     func cancel() {
+        guard !cancelled else { return }
         cancelled = true
-        let current = webSocket
-        webSocket = nil
-        task?.cancel()
-        task = nil
-        send(channel: HermesChannel.unsubscribe, name: HermesMessageName.unsubscribe, payload: ["feedId": feedId], on: current)
-        current?.cancel(with: .normalClosure, reason: nil)
+        retryTask?.cancel()
+        for feed in [feedId, volumeFeedId] {
+            hub.unsubscribe(feed, by: id) {
+                try HermesRequest.encode(
+                    channel: HermesChannel.unsubscribe,
+                    name: HermesMessageName.unsubscribe,
+                    reqid: $0,
+                    payload: ["feedId": feed]
+                )
+            }
+        }
+        hub.detach(id)
     }
 
-    private func run() async {
-        var backoff = Self.minBackoff
-        while !Task.isCancelled {
-            if cancelled { return }
-            let subscribed: Bool
-            do {
-                subscribed = try await connectOnce()
-            } catch is CancellationError {
-                return
-            } catch {
-                Log.w("🪵 Perps: hermes session failed — \(error)")
-                subscribed = false
-            }
-            if cancelled { return }
-            await onReconnecting()
-            if subscribed {
-                backoff = Self.minBackoff
-            }
-            await sleep(backoff)
-            backoff = min(backoff * 2, Self.maxBackoff)
-        }
+    private func connected() {
+        guard !cancelled else { return }
+        pendingFeeds = [feedId, volumeFeedId]
+        requests = [:]
+        subscribed = false
+        bufferedUpdates = []
+        retryDelay = Self.minRetryDelay
+        subscribePending()
     }
 
-    private func connectOnce() async throws -> Bool {
-        let socket = try await socketFactory.makeTask()
-        webSocket = socket
-        nextRequestId = 0
-        socket.resume()
-        defer {
-            if webSocket === socket {
-                webSocket = nil
+    private func disconnected() async {
+        guard !cancelled else { return }
+        settle()
+        pendingFeeds = []
+        requests = [:]
+        await onReconnecting()
+    }
+
+    private func subscribePending() {
+        for feed in pendingFeeds {
+            let requestId = hub.subscribe(feed, by: id) {
+                try HermesRequest.encode(
+                    channel: HermesChannel.subscribe,
+                    name: HermesMessageName.subscribe,
+                    reqid: $0,
+                    payload: ["feedId": feed]
+                )
             }
-            socket.cancel(with: .goingAway, reason: nil)
-        }
-
-        if cancelled || Task.isCancelled { return false }
-
-        let subscribeRequestId = send(
-            channel: HermesChannel.subscribe,
-            name: HermesMessageName.subscribe,
-            payload: ["feedId": feedId],
-            on: socket
-        )
-
-        let pingTask = Task {
-            while !Task.isCancelled {
-                await sleep(Self.pingInterval)
-                guard !Task.isCancelled else { return }
-                ping(on: socket)
+            if let requestId {
+                requests[requestId] = feed
             }
         }
-        defer { pingTask.cancel() }
+        resubscribe(after: Self.subscribeTimeout + nextRetryDelay())
+    }
 
-        let subscribeTimeoutTask = Task { [sleep] in
-            await sleep(Self.subscribeTimeout)
+    private func nextRetryDelay() -> TimeInterval {
+        defer { retryDelay = min(retryDelay * 2, Self.maxRetryDelay) }
+        return retryDelay
+    }
+
+    private func resubscribe(after delay: TimeInterval) {
+        attempt += 1
+        let scheduled = attempt
+        retryTask?.cancel()
+        retryTask = Task { [weak self, sleep] in
+            await sleep(delay)
             guard !Task.isCancelled else { return }
-            socket.cancel(with: .goingAway, reason: nil)
+            await self?.resubscribe(attempt: scheduled)
         }
-        defer { subscribeTimeoutTask.cancel() }
+    }
 
-        var subscribed = false
-        var bufferedUpdates: [Components.Schemas.GetCandlesResponse] = []
-        while !Task.isCancelled, !cancelled {
-            let message: URLSessionWebSocketTask.Message
-            do {
-                message = try await socket.receive()
-            } catch {
-                if cancelled || Task.isCancelled { return subscribed }
-                throw error
+    private func resubscribe(attempt scheduled: Int) {
+        guard !cancelled, scheduled == attempt, !pendingFeeds.isEmpty else { return }
+        subscribePending()
+    }
+
+    private func settle() {
+        attempt += 1
+        retryTask?.cancel()
+        retryDelay = Self.minRetryDelay
+    }
+
+    private func receive(_ data: Data) async {
+        guard !cancelled else { return }
+        switch HermesCandleCodec.event(from: data) {
+        case let .candles(pushFeedId, response):
+            if pushFeedId == volumeFeedId {
+                await onVolumeUpdate(response)
+            } else if pushFeedId != feedId {
+                return
+            } else if subscribed {
+                await onUpdate(response)
+            } else {
+                bufferedUpdates.append(response)
             }
-            guard let data = message.data else { continue }
-            switch HermesCandleCodec.event(from: data) {
-            case let .candles(response):
-                if subscribed {
-                    await onUpdate(response)
-                } else {
-                    bufferedUpdates.append(response)
-                }
-            case let .subscribed(requestId):
-                guard !subscribed, requestId == nil || requestId == subscribeRequestId else { continue }
-                subscribed = true
-                subscribeTimeoutTask.cancel()
-                await onSubscribed()
-                for response in bufferedUpdates {
-                    await onUpdate(response)
-                }
-                bufferedUpdates.removeAll(keepingCapacity: false)
-            case .retryableFailure:
-                return subscribed
-            case .rejected:
+        case let .subscribed(requestId):
+            guard let feed = takeRequest(requestId) else { return }
+            hub.markHealthy()
+            pendingFeeds.remove(feed)
+            if pendingFeeds.isEmpty {
+                settle()
+            }
+            guard feed == feedId, !subscribed else { return }
+            subscribed = true
+            let buffered = bufferedUpdates
+            bufferedUpdates = []
+            await onSubscribed()
+            for response in buffered {
+                await onUpdate(response)
+            }
+        case let .retryableFailure(requestId):
+            guard takeRequest(requestId) != nil else { return }
+            resubscribe(after: nextRetryDelay())
+        case let .rejected(requestId):
+            guard let feed = takeRequest(requestId) else { return }
+            pendingFeeds.remove(feed)
+            if feed == feedId {
                 await onRejected()
                 cancel()
-                return subscribed
-            case .ignored:
-                continue
+            } else if pendingFeeds.isEmpty {
+                settle()
             }
+        case .ignored:
+            return
         }
-        return subscribed
     }
 
-    private func ping(on socket: URLSessionWebSocketTask) {
-        guard !cancelled, webSocket === socket else { return }
-        send(channel: HermesChannel.ping, name: HermesMessageName.ping, payload: nil, on: socket)
+    private func takeRequest(_ requestId: Int64?) -> String? {
+        requestId.flatMap { requests.removeValue(forKey: $0) }
     }
 
-    @discardableResult
-    private func send(
-        channel: String,
-        name: String,
-        payload: [String: String]?,
-        on socket: URLSessionWebSocketTask?
-    ) -> Int64? {
-        guard let socket else { return nil }
-        nextRequestId += 1
-        let reqid = nextRequestId
-        do {
-            let data = try HermesCandleCodec.request(channel: channel, name: name, reqid: reqid, payload: payload)
-            guard let text = String(data: data, encoding: .utf8) else { return nil }
-            socket.send(.string(text)) { [weak self] error in
-                guard let error else { return }
-                Task { await self?.sendFailed(error, socket: socket) }
-            }
-        } catch {
-            Log.w("🪵 Perps: hermes encode failed — \(error)")
-        }
-        return reqid
-    }
-
-    private func sendFailed(_ error: Error, socket: URLSessionWebSocketTask) {
-        guard webSocket === socket else { return }
-        Log.w("🪵 Perps: hermes send failed — \(error)")
-        socket.cancel(with: .goingAway, reason: nil)
-    }
-
-    private static let pingInterval: TimeInterval = 120
     private static let subscribeTimeout: TimeInterval = 30
-    private static let minBackoff: TimeInterval = 1
-    private static let maxBackoff: TimeInterval = 30
+    private static let minRetryDelay: TimeInterval = 1
+    private static let maxRetryDelay: TimeInterval = 30
 }

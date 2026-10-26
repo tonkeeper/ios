@@ -1,11 +1,11 @@
 import Foundation
 
 public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case noWallets
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didAddWallets(wallets: [Wallet])
         case didChangeActiveWallet(from: Wallet, to: Wallet)
         case didMoveWallet(fromIndex: Int, toIndex: Int)
@@ -17,7 +17,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         case didUpdateWalletMultichain(wallet: Wallet)
     }
 
-    public enum State {
+    @frozen public enum State {
         public struct Wallets {
             public let wallets: [Wallet]
             public let activeWallet: Wallet
@@ -127,15 +127,6 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     public func deleteWallet(_ wallet: Wallet) async -> State {
         return await withCheckedContinuation { continuation in
             deleteWallet(wallet) { state in
-                continuation.resume(returning: state)
-            }
-        }
-    }
-
-    @discardableResult
-    public func deleteAllWallets() async -> State {
-        return await withCheckedContinuation { continuation in
-            deleteAllWallets { state in
                 continuation.resume(returning: state)
             }
         }
@@ -304,18 +295,6 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         }
     }
 
-    public func deleteAllWallets(completion: @escaping (State) -> Void) {
-        keeperInfoStore.updateKeeperInfo { _ in
-            nil
-        } completion: { [weak self] _ in
-            guard let self else { return }
-            updateWalletsState(keeperInfo: nil, changesActiveWallet: true) { [weak self] state in
-                self?.sendEvent(.didDeleteAll)
-                completion(state)
-            }
-        }
-    }
-
     public func moveWallet(fromIndex: Int, toIndex: Int, completion: @escaping (State) -> Void) {
         keeperInfoStore.updateKeeperInfo { keeperInfo in
             guard let keeperInfo else { return nil }
@@ -385,7 +364,8 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
             updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
-                self?.sendEvent(.didUpdateWalletBatterySettings(wallet: wallet))
+                let updatedWallet = state.wallets.first(where: { $0.id == wallet.id }) ?? wallet
+                self?.sendEvent(.didUpdateWalletBatterySettings(wallet: updatedWallet))
                 completion?(state)
             }
         }

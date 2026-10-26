@@ -41,7 +41,6 @@ struct TokenPickerV2Assembly {
         ignoresSafeArea: Bool = true,
         presentation: TokenPickerV2Presentation = .modal,
         headerStyle: TokenPickerV2HeaderStyle = .modal,
-        waitsForSelectionCompletion: Bool = false,
         onBack: (() -> Void)? = nil
     ) -> MVVMModule<TokenPickerV2HostingViewController, TokenPickerV2ModuleOutput, Void> {
         let viewModel = TokenPickerV2ViewModelImplementation(
@@ -51,7 +50,6 @@ struct TokenPickerV2Assembly {
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             presentation: presentation,
             headerStyle: headerStyle,
-            waitsForSelectionCompletion: waitsForSelectionCompletion,
             onBack: onBack
         )
         let viewController = TokenPickerV2HostingViewController(

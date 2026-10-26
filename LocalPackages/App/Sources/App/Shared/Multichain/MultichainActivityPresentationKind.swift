@@ -15,6 +15,8 @@ enum MultichainActivityPresentationKind: Equatable {
     case incomingFallback
     case outgoingFallback
     case perpsOpened(MultichainPerpsSide?)
+    case perpsIncreased(MultichainPerpsSide?)
+    case perpsReduced(MultichainPerpsSide?)
     case perpsClosed(MultichainPerpsSide?)
     case perpsLiquidated(MultichainPerpsSide?)
     case perpsTakeProfit
@@ -48,7 +50,9 @@ enum MultichainActivityPresentationKind: Equatable {
             self = .dnsRenew
         case .perpsPositionOpened:
             self = .perpsOpened(activity.perps?.side)
-        case .perpsPositionClosed:
+        case .perpsPositionIncreased:
+            self = .perpsIncreased(activity.perps?.side)
+        case .perpsPositionReduced, .perpsPositionClosed:
             switch activity.perps?.closeReason {
             case .liquidation:
                 self = .perpsLiquidated(activity.perps?.side)
@@ -57,7 +61,9 @@ enum MultichainActivityPresentationKind: Equatable {
             case .stopLoss:
                 self = .perpsStopLoss
             case .manual, nil:
-                self = .perpsClosed(activity.perps?.side)
+                self = activity.activityType == .perpsPositionClosed
+                    ? .perpsClosed(activity.perps?.side)
+                    : .perpsReduced(activity.perps?.side)
             }
         case .perpsBalanceDeposit:
             self = .perpsDeposit
@@ -95,6 +101,24 @@ enum MultichainActivityPresentationKind: Equatable {
                 return TKLocales.MultichainHistory.Perps.openedShort
             case nil:
                 return TKLocales.MultichainHistory.Perps.opened
+            }
+        case let .perpsIncreased(side):
+            switch side {
+            case .long:
+                return TKLocales.MultichainHistory.Perps.increasedLong
+            case .short:
+                return TKLocales.MultichainHistory.Perps.increasedShort
+            case nil:
+                return TKLocales.MultichainHistory.Perps.increased
+            }
+        case let .perpsReduced(side):
+            switch side {
+            case .long:
+                return TKLocales.MultichainHistory.Perps.reducedLong
+            case .short:
+                return TKLocales.MultichainHistory.Perps.reducedShort
+            case nil:
+                return TKLocales.MultichainHistory.Perps.reduced
             }
         case let .perpsClosed(side):
             switch side {
@@ -141,8 +165,8 @@ enum MultichainActivityPresentationKind: Equatable {
             return TKLocales.ActionTypes.burning
         case .dnsRenew:
             return TKLocales.ActionTypes.domainRenewing
-        case .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit,
-             .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
+        case .perpsOpened, .perpsIncreased, .perpsReduced, .perpsClosed, .perpsLiquidated,
+             .perpsTakeProfit, .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
             return title
         }
     }
@@ -161,14 +185,16 @@ enum MultichainActivityPresentationKind: Equatable {
             return .TKUIKit.Icons.Size28.swapHorizontalAlternative
         case .dnsRenew:
             return .TKUIKit.Icons.Size28.renew
-        case .perpsOpened, .perpsClosed:
+        case .perpsOpened, .perpsIncreased:
+            return .TKUIKit.Icons.Size28.openLock
+        case .perpsReduced, .perpsClosed:
             return .TKUIKit.Icons.Size28.lock
+        case .perpsTakeProfit:
+            return .TKUIKit.Icons.Size28.arrowup
+        case .perpsStopLoss:
+            return .TKUIKit.Icons.Size28.arrowdown
         case .perpsLiquidated:
             return .TKUIKit.Icons.Size28.fire
-        case .perpsTakeProfit:
-            return .TKUIKit.Icons.Size28.arrowDownOutline
-        case .perpsStopLoss:
-            return .TKUIKit.Icons.Size28.arrowUpOutline
         case .perpsDeposit:
             return .TKUIKit.Icons.Size28.trayArrowDown
         case .perpsWithdrawal:
@@ -197,12 +223,25 @@ enum MultichainActivityPresentationKind: Equatable {
         }
     }
 
+    /// A perps balance move is signed from the perps account's side, whichever wallet leg the
+    /// feed reports its amount on: a deposit credits the account, a withdrawal debits it.
+    var isPerpsAccountCredit: Bool? {
+        switch self {
+        case .perpsDeposit:
+            true
+        case .perpsWithdrawal:
+            false
+        default:
+            nil
+        }
+    }
+
     private var preferredAmountSide: AmountSide {
         switch self {
         case .send, .outgoingFallback, .stake, .burn, .dnsRenew, .perpsWithdrawal:
             return .outgoing
-        case .receive, .incomingFallback, .unstake, .mint, .perpsDeposit,
-             .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit, .perpsStopLoss:
+        case .receive, .incomingFallback, .unstake, .mint, .perpsDeposit, .perpsOpened,
+             .perpsIncreased, .perpsReduced, .perpsClosed, .perpsLiquidated, .perpsTakeProfit, .perpsStopLoss:
             return .incoming
         case .swap:
             return .both
@@ -232,8 +271,8 @@ enum MultichainActivityPresentationKind: Equatable {
             return TKLocales.EventDetails.unstakeOn(date)
         case .dnsRenew:
             return TKLocales.EventDetails.renewedOn(date)
-        case .perpsOpened, .perpsClosed, .perpsLiquidated, .perpsTakeProfit,
-             .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
+        case .perpsOpened, .perpsIncreased, .perpsReduced, .perpsClosed, .perpsLiquidated,
+             .perpsTakeProfit, .perpsStopLoss, .perpsDeposit, .perpsWithdrawal:
             return date
         }
     }

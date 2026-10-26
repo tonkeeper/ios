@@ -159,8 +159,7 @@ private extension VisibilityChangesControllerTests {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             isHidden: isHidden,
             balance: BigUInt(1)

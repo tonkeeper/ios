@@ -1,5 +1,7 @@
 import UIKit
 
+public protocol TKEdgeSwipeBackOnly: AnyObject {}
+
 extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
     override open func viewDidLoad() {
         super.viewDidLoad()
@@ -75,13 +77,18 @@ extension UINavigationController {
         let hasPresentedViewController =
             presentedViewController != nil
                 || topViewController?.presentedViewController != nil
+        let startX = panGestureRecognizer.location(in: view).x - panGestureRecognizer.translation(in: view).x
+        let isStartAllowed = !(topViewController is TKEdgeSwipeBackOnly) || startX <= Self.edgeSwipeBackWidth
 
         return isRightSwipe
             && isSystemSwipeToBackEnabled
             && isThereStackedViewControllers
             && !isNavigationTransitioning
             && !hasPresentedViewController
+            && isStartAllowed
     }
+
+    private static let edgeSwipeBackWidth: CGFloat = 40
 }
 
 public enum PanAxis {

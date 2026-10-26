@@ -37,15 +37,6 @@ enum HermesMarkPricesCodec {
         )
     }
 
-    static func pingRequest(reqid: Int64) throws -> Data {
-        try JSONEncoder().encode(
-            HermesOutboundEnvelope<SubscribePayload>(
-                channel: HermesChannel.ping,
-                message: HermesOutboundMessage(name: HermesMessageName.ping, reqid: reqid, payload: nil)
-            )
-        )
-    }
-
     static func event(from data: Data) -> HermesMarkPricesEvent {
         frame(from: data).event
     }
@@ -55,7 +46,7 @@ enum HermesMarkPricesCodec {
         do {
             envelope = try JSONDecoder().decode(HermesInboundEnvelope<InboundPayload>.self, from: data)
         } catch {
-            Log.w("🪵 Perps: hermes prices frame skipped — \(error)")
+            Log.perps.w("hermes prices frame skipped — \(error)")
             return HermesMarkPricesFrame(event: .ignored, requestId: nil)
         }
 
@@ -75,28 +66,25 @@ enum HermesMarkPricesCodec {
             return HermesMarkPricesFrame(event: .subscribed, requestId: envelope.message?.reqid)
         }
 
-        if envelope.message?.name == HermesMessageName.errorResponse
-            || envelope.message?.name == HermesMessageName.errorMessage
+        if envelope.channel == HermesMarkPricesChannel.subscribe,
+           envelope.message?.name == HermesMessageName.errorResponse
+           || envelope.message?.name == HermesMessageName.errorMessage
         {
             let code = envelope.message?.payload?.code
-            let description = envelope.message?.payload?.description
-            Log.w("🪵 Perps: hermes \(envelope.channel ?? "?") error — \(code ?? "") \(description ?? "")")
-            if envelope.channel == HermesMarkPricesChannel.subscribe, code == "already.subscribed" {
+            if code == "already.subscribed" {
                 return HermesMarkPricesFrame(event: .subscribed, requestId: envelope.message?.reqid)
             }
-            if envelope.channel == HermesMarkPricesChannel.subscribe, code == "unauthorized" {
+            if code == "unauthorized" {
                 // The channel is gated for this client; retrying within the session cannot
                 // succeed — degrade to REST prices instead of hammering the socket.
                 return HermesMarkPricesFrame(event: .rejected, requestId: envelope.message?.reqid)
             }
-            if envelope.channel == HermesMarkPricesChannel.subscribe, let code, declinedErrors.contains(code) {
+            if let code, declinedErrors.contains(code) {
                 // A refused subscribe leaves the previously accepted set delivering,
                 // so only this request is lost, not the stream.
                 return HermesMarkPricesFrame(event: .declined, requestId: envelope.message?.reqid)
             }
-            if envelope.channel == HermesMarkPricesChannel.subscribe {
-                return HermesMarkPricesFrame(event: .retryableFailure, requestId: envelope.message?.reqid)
-            }
+            return HermesMarkPricesFrame(event: .retryableFailure, requestId: envelope.message?.reqid)
         }
 
         return HermesMarkPricesFrame(event: .ignored, requestId: envelope.message?.reqid)
@@ -107,11 +95,13 @@ enum HermesMarkPricesCodec {
 
 enum HermesMarkPricesChannel {
     static let subscribe = "subscribeMarkPrices"
+    static let unsubscribe = "unsubscribeMarkPrices"
     static let prices = "markPrices"
 }
 
 enum HermesMarkPricesMessageName {
     static let subscribe = "subscribeMarkPricesRequest"
+    static let unsubscribe = "unsubscribeMarkPricesRequest"
     static let subscribeResponse = "subscribeMarkPricesResponse"
     static let pricesPush = "markPricesMessage"
 }
@@ -124,7 +114,6 @@ private struct SubscribePayload: Encodable {
 private struct InboundPayload: Decodable {
     let markPrices: [InboundTickerPrice]?
     let code: String?
-    let description: String?
 }
 
 private struct InboundTickerPrice: Decodable {

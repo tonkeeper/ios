@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public struct TonviewerURLBuilder {
-    public enum URLContent {
+    @frozen public enum URLContent {
         case nftHistory(nft: NFT)
         case nftDetails(nft: NFT)
         case eventDetails(eventID: String)

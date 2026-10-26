@@ -1,11 +1,11 @@
-public enum LoadShelvesFailure: Error {
+@frozen public enum LoadShelvesFailure: Error {
     case networkError
     case apiError(
         message: String?
     )
 }
 
-public enum TradingShelvesMode: Hashable, Sendable {
+@frozen public enum TradingShelvesMode: Hashable, Sendable {
     case legacy
     case multichain
 }

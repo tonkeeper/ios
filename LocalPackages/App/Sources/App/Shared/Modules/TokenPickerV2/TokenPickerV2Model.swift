@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import PerpsModels
 
 struct TokenPickerLoadResult: Equatable {
     enum Item: Equatable {
@@ -48,6 +49,11 @@ protocol TokenPickerV2Model: AnyObject {
 
     var perpsSearchSort: PerpsMarketsSort { get }
     func setPerpsSearchSort(_ sort: PerpsMarketsSort)
+
+    /// Empty hides the asset type selector.
+    var assetTypes: [TokenPickerV2AssetType] { get }
+    var assetType: TokenPickerV2AssetType { get }
+    func setAssetType(_ assetType: TokenPickerV2AssetType)
 }
 
 extension TokenPickerV2Model {
@@ -60,6 +66,26 @@ extension TokenPickerV2Model {
     }
 
     func setPerpsSearchSort(_ sort: PerpsMarketsSort) {}
+
+    var assetTypes: [TokenPickerV2AssetType] {
+        []
+    }
+
+    var assetType: TokenPickerV2AssetType {
+        .category(.all)
+    }
+
+    func setAssetType(_ assetType: TokenPickerV2AssetType) {}
+}
+
+enum TokenPickerV2AssetType: Hashable {
+    case category(TradingAssetCategory)
+    case perpetuals
+
+    var category: TradingAssetCategory {
+        if case let .category(category) = self { return category }
+        return .all
+    }
 }
 
 struct TokenPickerV2ModelState {
@@ -70,17 +96,7 @@ struct TokenPickerV2ModelState {
 
 extension MultichainWalletState {
     var tokenPickerV2Filters: [TokenPickerV2ChainFilter] {
-        var filters: [TokenPickerV2ChainFilter] = [.all]
-        var seenChains = Set<MultichainChain>()
-
-        for address in addresses {
-            guard seenChains.insert(address.chain).inserted else {
-                continue
-            }
-            filters.append(.chain(address.chain))
-        }
-
-        return filters
+        [.all] + MultichainChain.orderedByDisplayOrder(addresses.map(\.chain)).map(TokenPickerV2ChainFilter.chain)
     }
 
     func tokenPickerV2Accounts(

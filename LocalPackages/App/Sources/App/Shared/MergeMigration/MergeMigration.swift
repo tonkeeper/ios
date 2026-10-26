@@ -44,11 +44,13 @@ struct MergeMigration {
     private let keeperInfoStore: KeeperInfoStore
     private let securityStore: SecurityStore
     private let tonProofTokenService: TonProofTokenService
+    private let analyticsProvider: AnalyticsProvider
     private let logger = LogDomain.mnemonicStorage
 
     init(
         asyncStorage: RNAsyncStorage,
         appInfoProvider: TKCore.AppInfoProvider,
+        analyticsProvider: AnalyticsProvider,
         mnemonicsAccess: MnemonicAccess,
         keeperInfoRepository: KeeperInfoRepository,
         keeperInfoStore: KeeperInfoStore,
@@ -57,6 +59,7 @@ struct MergeMigration {
     ) {
         self.asyncStorage = asyncStorage
         self.appInfoProvider = appInfoProvider
+        self.analyticsProvider = analyticsProvider
         self.mnemonicsAccess = mnemonicsAccess
         self.keeperInfoRepository = keeperInfoRepository
         self.keeperInfoStore = keeperInfoStore
@@ -131,6 +134,7 @@ struct MergeMigration {
                 return .needsMigration(from: .native)
             case let .blocked(error):
                 logger.e("🪵 native migration check (v2) blocked: \(error)")
+                logV2MigrationEvent(.blocked(error))
                 return .blocked(.readStorageError(error))
             }
         case let .disabled(legacyRepository):
@@ -281,6 +285,7 @@ struct MergeMigration {
             mnemonics = try await legacyRepository.native.getMnemonics(password: passcode)
         } catch {
             logger.e("🪵 native->v2 mnemonic migration failed to read legacy storage: \(error)")
+            logV2MigrationEvent(.failure(step: "read_legacy", error: error))
             throw .readStorageError(error)
         }
 
@@ -289,6 +294,7 @@ struct MergeMigration {
             logger.i("🪵 native->v2 mnemonic migration cleaned previous v2 mnemonic storage artifacts")
         } catch {
             logger.e("🪵 native->v2 mnemonic migration failed to clean previous v2 mnemonic storage artifacts: \(error)")
+            logV2MigrationEvent(.failure(step: "cleanup", error: error))
             throw .importError(error)
         }
 
@@ -306,6 +312,7 @@ struct MergeMigration {
         logger.i("🪵 native->v2 mnemonic migration started: totalLegacy=\(mnemonics.count)")
         guard !mnemonics.isEmpty else {
             logger.i("🪵 native->v2 mnemonic migration completed: migrated=0")
+            logV2MigrationEvent(.success(total: 0, ton: 0, bip39: 0, bip39soft: 0, unknown: 0))
             return
         }
 
@@ -344,10 +351,20 @@ struct MergeMigration {
             )
         } catch {
             logger.e("🪵 native->v2 mnemonic migration failed to write v2 storage: \(error)")
+            logV2MigrationEvent(.failure(step: "write", error: error))
             throw .importError(error)
         }
         logger.i(
             "🪵 native->v2 mnemonic migration completed: migrated=\(mnemonics.count), ton=\(migratedTon), bip39=\(migratedBip39), bip39soft=\(migratedBip39Soft), unknown=\(migratedUnknown)"
+        )
+        logV2MigrationEvent(
+            .success(
+                total: mnemonics.count,
+                ton: migratedTon,
+                bip39: migratedBip39,
+                bip39soft: migratedBip39Soft,
+                unknown: migratedUnknown
+            )
         )
     }
 
@@ -404,6 +421,7 @@ struct MergeMigration {
             needsMigrateToV2 = true
         case let .blocked(error):
             logger.e("🪵 passcode-required migration blocked by v2 committed state read error: \(error)")
+            logV2MigrationEvent(.blocked(error))
             completion(.failure(.readStorageError(error)))
             return
         }
@@ -591,6 +609,84 @@ struct MergeMigration {
             return nil
         }
         return Date(timeIntervalSince1970: lastBackupAt / 1000)
+    }
+}
+
+// MARK: - Analytics
+
+private extension MergeMigration {
+    enum V2MigrationEvent {
+        case success(total: Int, ton: Int, bip39: Int, bip39soft: Int, unknown: Int)
+        case failure(step: String, error: Swift.Error)
+        case blocked(Swift.Error)
+    }
+
+    /// One `custom_error` per native->v2 migration attempt, so the success rate
+    /// of the storage rollout is visible in analytics and not only its failures
+    /// in Crashlytics. The metadata stays short: Aptabase truncates string values
+    /// to 180 characters.
+    func logV2MigrationEvent(_ event: V2MigrationEvent) {
+        var metadata: [String: Any]
+        let severity: CustomError.Severity
+        switch event {
+        case let .success(total, ton, bip39, bip39soft, unknown):
+            severity = .warning
+            metadata = [
+                "status": "success",
+                "total": total,
+                "ton": ton,
+                "bip39": bip39,
+                "bip39soft": bip39soft,
+                "unknown": unknown,
+            ]
+        case let .failure(step, error):
+            severity = .error
+            metadata = [
+                "status": "failure",
+                "step": step,
+                "error": analyticsErrorName(error),
+            ]
+        case let .blocked(error):
+            severity = .error
+            metadata = [
+                "status": "blocked",
+                "error": analyticsErrorName(error),
+            ]
+        }
+        let otherMetadata: String?
+        do {
+            otherMetadata = try String(
+                data: JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]),
+                encoding: .utf8
+            )
+        } catch {
+            logger.w("🪵 failed to serialize v2 migration analytics metadata: \(error)")
+            otherMetadata = nil
+        }
+        analyticsProvider.log(
+            CustomError(
+                severity: severity,
+                errorMessage: "mnemonics_storage_v2_migration",
+                errorCode: metadata["status"] as? String,
+                otherMetadata: otherMetadata
+            )
+        )
+    }
+
+    /// Type and case only, never a payload: payloads carry wallet identifiers and
+    /// decoder messages. The keychain status is the one payload worth keeping,
+    /// since it tells a locked keychain apart from a corrupted one.
+    func analyticsErrorName(_ error: Swift.Error) -> String {
+        let typeName = String(describing: type(of: error))
+        if case let .securityFailure(code) = error as? MnemonicsRepositoryV2Failure {
+            return "\(typeName).securityFailure(\(code))"
+        }
+        let mirror = Mirror(reflecting: error)
+        guard mirror.displayStyle == .enum else {
+            return typeName
+        }
+        let caseName = mirror.children.first?.label ?? String(describing: error)
+        return "\(typeName).\(caseName)"
     }
 }
 

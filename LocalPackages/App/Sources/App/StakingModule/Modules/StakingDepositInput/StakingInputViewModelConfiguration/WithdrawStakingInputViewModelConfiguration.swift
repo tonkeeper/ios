@@ -20,6 +20,8 @@ final class WithdrawStakingInputViewModelConfiguration: StakingInputViewModelCon
     }
 
     var minimumInput: BigUInt?
+    let maxReserve: BigUInt = 0
+    let maxHint: String? = nil
 
     private var inputAmount: BigUInt = 0
 

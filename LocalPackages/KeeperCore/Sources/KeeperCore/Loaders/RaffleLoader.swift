@@ -7,7 +7,6 @@ public actor RaffleLoader {
         _ walletId: String,
         _ lang: String?,
         _ ids: [String]?,
-        _ debugNow: Date?,
         _ isNewUser: Bool
     ) async throws -> [MultichainRaffle]
 
@@ -15,7 +14,6 @@ public actor RaffleLoader {
         let walletId: String
         let lang: String?
         let ids: [String]?
-        let debugNow: Date?
         let isNewUser: Bool
     }
 
@@ -35,12 +33,11 @@ public actor RaffleLoader {
         raffleStore: RaffleStore,
         appSettings: TKAppSettings
     ) {
-        self.loadRaffles = { walletId, lang, ids, debugNow, isNewUser in
+        self.loadRaffles = { walletId, lang, ids, isNewUser in
             try await multichainService.getWalletRaffles(
                 walletId: walletId,
                 lang: lang,
                 ids: ids,
-                debugNow: debugNow,
                 isNewUser: isNewUser
             )
         }
@@ -83,7 +80,6 @@ public actor RaffleLoader {
             walletId: walletId,
             lang: lang,
             ids: ids,
-            debugNow: appSettings.raffleDebugNow,
             isNewUser: appSettings.raffleIsNewUser ?? false
         )
 
@@ -113,7 +109,6 @@ public actor RaffleLoader {
                     request.walletId,
                     request.lang,
                     request.ids,
-                    request.debugNow,
                     request.isNewUser
                 )
             } catch {

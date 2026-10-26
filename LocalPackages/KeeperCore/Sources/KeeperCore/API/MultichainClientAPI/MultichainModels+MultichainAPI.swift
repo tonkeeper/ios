@@ -22,6 +22,10 @@ extension MultichainChain {
         case .tron: .tron
         case .arb: .arb
         case .bsc: .bsc
+        case .sol: .sol
+        case .polygon: .polygon
+        case .avax: .avax
+        case .robinhood: .robinhood
         }
     }
 
@@ -34,6 +38,10 @@ extension MultichainChain {
         case .tron: .tron
         case .arb: .arb
         case .bsc: .bsc
+        case .sol: .sol
+        case .polygon: .polygon
+        case .avax: .avax
+        case .robinhood: .robinhood
         }
     }
 
@@ -73,6 +81,14 @@ extension MultichainChain {
             self = .tron
         case .ton:
             self = .ton
+        case .solana:
+            self = .sol
+        case .polygon:
+            self = .polygon
+        case .avalanche:
+            self = .avax
+        case .robinhood:
+            self = .robinhood
         default:
             return nil
         }
@@ -100,11 +116,11 @@ extension MultichainPendingTransaction {
 extension MultichainPendingTransaction.ActivityType {
     func toAPISchemaActivityType() -> MultichainAPI.Components.Schemas.ActivityType {
         switch self {
-        case .send: MultichainActivityType.send.rawValue
-        case .swap: MultichainActivityType.swap.rawValue
-        case .stake: MultichainActivityType.stake.rawValue
-        case .unstake: MultichainActivityType.unstake.rawValue
-        case .contractCall: MultichainActivityType.contractCall.rawValue
+        case .send: .send
+        case .swap: .swap
+        case .stake: .stake
+        case .unstake: .unstake
+        case .contractCall: .contract_call
         }
     }
 
@@ -165,6 +181,8 @@ extension MultichainAssetCapability {
             .swap
         case .p2p:
             .p2p
+        case .perpDeposit:
+            .perp_deposit
         }
     }
 }
@@ -176,7 +194,7 @@ extension MultichainAssetVerification {
             self = .trusted
         case .whitelist:
             self = .whitelist
-        case .none:
+        case .none, .unknown:
             self = .none
         case .blacklist:
             self = .blacklist
@@ -195,7 +213,7 @@ extension MultichainAssetDetails {
             image: api.image,
             verification: MultichainAssetVerification(api: api.verification),
             capabilities: Set(
-                (api.capabilities?.capabilities ?? []).compactMap(MultichainAssetCapability.init(rawValue:))
+                (api.capabilities?.capabilities ?? []).compactMap { MultichainAssetCapability(rawValue: $0) }
             )
         )
     }
@@ -206,8 +224,7 @@ extension MultichainAssetPrice {
         self.init(
             prices: api.prices?.additionalProperties ?? [:],
             diff24h: api.diff_24h?.additionalProperties ?? [:],
-            diff7d: api.diff_7d?.additionalProperties ?? [:],
-            diff30d: api.diff_30d?.additionalProperties ?? [:]
+            diff7d: api.diff_7d?.additionalProperties ?? [:]
         )
     }
 }
@@ -306,7 +323,7 @@ extension MultichainChainSyncStatus {
             status: Status(api: api.status),
             balancesAt: api.balances_at,
             activityAt: api.activity_at,
-            reason: api.reason.map { Reason(api: $0) },
+            reason: api.reason.flatMap { Reason(api: $0) },
             retryAfterMilliseconds: api.retry_after_ms,
             backfill: Backfill(api: api.backfill)
         )
@@ -320,7 +337,7 @@ extension MultichainChainSyncStatus.Status {
             self = .ready
         case .in_progress:
             self = .inProgress
-        case .failed:
+        case .failed, .unknown:
             self = .failed
         }
     }
@@ -329,7 +346,7 @@ extension MultichainChainSyncStatus.Status {
 extension MultichainChainSyncStatus.Backfill {
     init(api: MultichainAPI.Components.Schemas.ChainSyncStatus.backfillPayload) {
         switch api {
-        case .complete:
+        case .complete, .unknown:
             self = .complete
         case .in_progress:
             self = .inProgress
@@ -340,7 +357,7 @@ extension MultichainChainSyncStatus.Backfill {
 }
 
 extension MultichainChainSyncStatus.Reason {
-    init(api: MultichainAPI.Components.Schemas.ChainSyncStatus.reasonPayload) {
+    init?(api: MultichainAPI.Components.Schemas.ChainSyncStatus.reasonPayload) {
         switch api {
         case .provider_timeout:
             self = .providerTimeout
@@ -352,6 +369,8 @@ extension MultichainChainSyncStatus.Reason {
             self = .circuitOpen
         case .capability_not_supported:
             self = .capabilityNotSupported
+        case .unknown:
+            return nil
         }
     }
 }
@@ -361,20 +380,23 @@ extension MultichainActivity {
         let fromChain = MultichainChain(rawValue: api.from_chain)
         let toChain = MultichainChain(rawValue: api.to_chain)
         let isPerps = api.activity_type.hasPrefix(MultichainActivityType.perpsRawValuePrefix)
-        guard isPerps || (fromChain != nil && toChain != nil) else {
+        guard isPerps || (fromChain != nil && toChain != nil),
+              let status = MultichainActivityStatus(rawValue: api.status.rawValue),
+              let direction = MultichainActivityDirection(api: api.direction)
+        else {
             return nil
         }
         let activityType = MultichainActivityType(rawValue: api.activity_type) ?? .unknown
         let feeType = MultichainActivityFeeType(api: api.fee?._type ?? api.fee_type)
         self.init(
             activityType: activityType,
-            status: MultichainActivityStatus(rawValue: api.status.rawValue)!,
+            status: status,
             blockTime: api.block_time,
             blockNumber: api.block_number,
             fromChain: fromChain,
             toChain: toChain,
             walletAddress: api.wallet_address,
-            direction: MultichainActivityDirection(api: api.direction),
+            direction: direction,
             fromAddress: api.from_address,
             toAddress: api.to_address,
             outToken: api.out_token.map { MultichainAssetDetails(api: $0) },
@@ -424,7 +446,7 @@ extension MultichainActivityFeeType {
             self = .native
         case .battery:
             self = .battery
-        case nil:
+        case nil, .unknown:
             return nil
         }
     }
@@ -459,7 +481,15 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
             closeReason: payload["reason"].flatMap { $0 as? String }
                 .flatMap(MultichainPerpsCloseReason.init(rawValue:)),
             accountIndex: Self.int64Value(payload["account_index"] ?? nil),
-            settledAt: payload["settled_at"].flatMap { $0 as? String }.flatMap(Self.date(fromISO8601:))
+            settledAt: payload["settled_at"].flatMap { $0 as? String }.flatMap(Self.date(fromISO8601:)),
+            leverage: Self.doubleValue(payload["leverage"] ?? nil),
+            entryPrice: Self.doubleValue(payload["entry_price"] ?? nil),
+            closePrice: Self.doubleValue(payload["close_price"] ?? nil),
+            size: Self.doubleValue(payload["size"] ?? nil),
+            sizeUsd: Self.doubleValue(payload["size_usd"] ?? nil),
+            marginUsd: Self.doubleValue(payload["margin_usd"] ?? nil),
+            resultPercent: Self.doubleValue(payload["result_pct"] ?? nil),
+            fundingUsd: Self.doubleValue(payload["funding_usd"] ?? nil)
         )
     }
 
@@ -481,6 +511,20 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
         iso8601FractionalFormatter.date(from: value) ?? iso8601Formatter.date(from: value)
     }
 
+    /// The perps figures arrive as decimal strings; a plain JSON number is accepted too.
+    static func doubleValue(_ value: (any Sendable)?) -> Double? {
+        switch value {
+        case let string as String:
+            Double(string)
+        case let double as Double:
+            double
+        case let int as Int:
+            Double(int)
+        default:
+            nil
+        }
+    }
+
     static func int64Value(_ value: (any Sendable)?) -> Int64? {
         switch value {
         case let int as Int:
@@ -496,7 +540,7 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
 }
 
 extension MultichainActivityDirection {
-    init(api: MultichainAPI.Components.Schemas.ActivityDirection) {
+    init?(api: MultichainAPI.Components.Schemas.ActivityDirection) {
         switch api {
         case ._in:
             self = .incoming
@@ -504,6 +548,8 @@ extension MultichainActivityDirection {
             self = .outgoing
         case ._self:
             self = .selfTransfer
+        case .unknown:
+            return nil
         }
     }
 }

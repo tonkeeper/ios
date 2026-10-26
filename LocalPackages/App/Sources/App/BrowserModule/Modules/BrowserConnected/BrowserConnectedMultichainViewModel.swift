@@ -87,8 +87,6 @@ final class BrowserConnectedMultichainViewModelImplementation: ObservableObject,
     private let connectedAppsStore: ConnectedAppsStore
     private let tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore
     private let walletConnectSessionsStoreProvider: () async -> WalletConnectSessionsStore?
-    private let notificationsService: NotificationsService
-    private let pushTokenProvider: PushNotificationTokenProvider
 
     // MARK: - Init
 
@@ -96,16 +94,12 @@ final class BrowserConnectedMultichainViewModelImplementation: ObservableObject,
         walletsStore: WalletsStore,
         connectedAppsStore: ConnectedAppsStore,
         tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore,
-        walletConnectSessionsStoreProvider: @escaping () async -> WalletConnectSessionsStore?,
-        notificationsService: NotificationsService,
-        pushTokenProvider: PushNotificationTokenProvider
+        walletConnectSessionsStoreProvider: @escaping () async -> WalletConnectSessionsStore?
     ) {
         self.walletsStore = walletsStore
         self.connectedAppsStore = connectedAppsStore
         self.tonConnectConnectionMetadataStore = tonConnectConnectionMetadataStore
         self.walletConnectSessionsStoreProvider = walletConnectSessionsStoreProvider
-        self.notificationsService = notificationsService
-        self.pushTokenProvider = pushTokenProvider
     }
 
     deinit {
@@ -195,8 +189,6 @@ private extension BrowserConnectedMultichainViewModelImplementation {
         walletConnectSessionsStore?.disconnect(
             topics: apps.compactMap(\.walletConnectConnection).flatMap(\.topics)
         )
-
-        turnOffDappNotifications(for: tonConnectApps)
     }
 
     func tonConnectDisconnectTargets(matching app: ConnectedApp) -> [ConnectedApp] {
@@ -217,24 +209,6 @@ private extension BrowserConnectedMultichainViewModelImplementation {
         walletConnectConnectedApps()
             .filter { ConnectedApp.walletConnect($0).isSameDapp(as: app) }
             .map(ConnectedApp.walletConnect)
-    }
-
-    func turnOffDappNotifications(for apps: [TonConnectApp]) {
-        guard !apps.isEmpty else { return }
-
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            guard let token = await self.pushTokenProvider.getToken(),
-                  let wallet = try? self.walletsStore.activeWallet else { return }
-            for app in apps {
-                _ = try? await self.notificationsService.turnOffDappNotifications(
-                    wallet: wallet,
-                    manifest: app.manifest,
-                    sessionId: app.clientId,
-                    token: token
-                )
-            }
-        }
     }
 
     func isBrowserConnectedSourceState(_ sourceState: DappConnectionSourceState) -> Bool {

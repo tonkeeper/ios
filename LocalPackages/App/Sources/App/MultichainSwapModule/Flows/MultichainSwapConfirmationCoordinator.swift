@@ -10,40 +10,47 @@ final class MultichainSwapConfirmationCoordinator: RouterCoordinator<NavigationC
     var didClose: (() -> Void)?
     var didExecuteSuccessfully: (() -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
-    var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)?
-    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)?
     var didTapEdit: ((Bool?) -> Void)?
     var didTapBack: (() -> Void)?
+    /// The confirmation closed itself because its route could not be prepared.
+    var didFailPreparation: (() -> Void)?
 
-    private let wallet: Wallet
+    private let swapWallet: MultichainSwapWallet
     private let confirmationInput: MultichainSwapConfirmationInput
     private let initiatedBy: InitiatedBy
     private let utm: UtmParameters
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let openBattery: (_ onRecharged: @escaping () -> Void) -> Void
+    private let openFeeDeposit: (_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void
     private let nativeFeeShortagePopupPresenter: MultichainNativeFeeShortagePopupPresenter
     private var confirmationViewModel: MultichainSwapConfirmationViewModel?
+    private weak var confirmationViewController: UIViewController?
     private var priceImpactCoordinator: PriceImpactCoordinator?
     private lazy var feePickerCoordinator = NetworkFeePickerCoordinator(router: router)
 
     init(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         nativeSwapContext: NativeSwapContext,
         initiatedBy: InitiatedBy,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter,
         confirmationInput: MultichainSwapConfirmationInput,
-        rateText _: String
+        rateText _: String,
+        openBattery: @escaping (_ onRecharged: @escaping () -> Void) -> Void,
+        openFeeDeposit: @escaping (_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void
     ) {
-        self.wallet = wallet
+        self.swapWallet = swapWallet
         self.confirmationInput = confirmationInput
         self.initiatedBy = initiatedBy
         self.utm = nativeSwapContext.utm
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.openBattery = openBattery
+        self.openFeeDeposit = openFeeDeposit
         nativeFeeShortagePopupPresenter = MultichainNativeFeeShortagePopupPresenter(
-            wallet: wallet,
+            wallet: swapWallet.wallet,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
         super.init(router: router)
@@ -63,7 +70,7 @@ final class MultichainSwapConfirmationCoordinator: RouterCoordinator<NavigationC
 private extension MultichainSwapConfirmationCoordinator {
     func openConfirmation() {
         let viewModel = MultichainSwapConfirmationViewModel(
-            wallet: wallet,
+            swapWallet: swapWallet,
             confirmationInput: confirmationInput,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             executionService: keeperCoreMainAssembly.multichainSwapExecutionService,
@@ -93,17 +100,19 @@ private extension MultichainSwapConfirmationCoordinator {
                         .withMultichainSwapErrorDuration()
                 )
             },
-            onQuoteProviderError: { message in
+            onPreparationFailed: { [weak self] message in
                 ToastPresenter.showToast(
-                    configuration: .multichainSwapProviderError(message)
+                    configuration: .warning(text: message.isEmpty ? TKLocales.Toast.failed : message)
+                        .withMultichainSwapErrorDuration()
                 )
+                self?.closeForFreshQuote()
             },
             onInsufficientNativeFee: { [weak self] shortage in
                 self?.handleNativeFeeShortage(shortage)
             },
             onFeeCalculationStarted: { [weak self] reason in
                 switch reason {
-                case .initial, .slippageChanged, .feeDeposit:
+                case .initial, .slippageChanged, .feeDeposit, .retry:
                     self?.nativeFeeShortagePopupPresenter.startNewFeeCalculation()
                 case .timer, .executionFailed:
                     break
@@ -113,7 +122,7 @@ private extension MultichainSwapConfirmationCoordinator {
                 self?.feePickerCoordinator.start(presentation: presentation)
             },
             onRefillBattery: { [weak self] onRecharged in
-                self?.openBatteryRefill(onRecharged: onRecharged)
+                self?.openBattery(onRecharged)
             },
             onBatteryFeeShortage: { [weak self] shortage in
                 self?.handleBatteryFeeShortage(shortage)
@@ -127,8 +136,30 @@ private extension MultichainSwapConfirmationCoordinator {
             self?.openSlippageMenu(sourceView: sourceView)
         }
         let viewController = MultichainSwapConfirmationViewController(viewModel: viewModel)
+        confirmationViewController = viewController
 
         router.push(viewController: viewController)
+    }
+
+    /// The failure arrives from a refresh rather than a tap, so the confirmation is not assumed to be
+    /// on top: whatever was pushed over it leaves with it, and so do the sheets it put up itself. A
+    /// top-up flow it opened stays: that is the user's own errand with its own teardown, and the swap
+    /// screen underneath asks for a new quote as soon as it is back on top of the stack.
+    func closeForFreshQuote() {
+        let navigationController = router.rootViewController
+        guard let confirmationViewController,
+              let index = navigationController.viewControllers.firstIndex(of: confirmationViewController),
+              index > 0
+        else {
+            return
+        }
+        didFailPreparation?()
+        feePickerCoordinator.dismiss()
+        nativeFeeShortagePopupPresenter.dismiss()
+        navigationController.popToViewController(
+            navigationController.viewControllers[index - 1],
+            animated: true
+        )
     }
 
     func confirmSwap() {
@@ -161,7 +192,8 @@ private extension MultichainSwapConfirmationCoordinator {
                 parentCoordinator: self,
                 parentRouter: router,
                 mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-                securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+                securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+                reason: .confirmSwap
             )
         })
     }
@@ -250,7 +282,7 @@ private extension MultichainSwapConfirmationCoordinator {
             shortage: shortage,
             from: router.rootViewController.topPresentedViewController(),
             onRecharge: { [weak self] in
-                self?.openBatteryRefill { [weak self] in
+                self?.openBattery { [weak self] in
                     self?.confirmationViewModel?.refreshFeeCalculationAfterDeposit()
                 }
             },
@@ -260,92 +292,10 @@ private extension MultichainSwapConfirmationCoordinator {
         )
     }
 
-    /// A host with a battery flow of its own wires `didRequestOpenBattery`; the raffle hands the
-    /// swap off without one, and a fee row that cannot be paid still has to reach a recharge. So the
-    /// flow opens it on its own router instead of dropping the tap, the same way an unwired deposit
-    /// falls back to the receive screen.
-    func openBatteryRefill(onRecharged: @escaping () -> Void) {
-        if let didRequestOpenBattery {
-            didRequestOpenBattery(onRecharged)
-            return
-        }
-
-        let navigationController = TKNavigationController()
-        navigationController.setNavigationBarHidden(true, animated: false)
-
-        let coordinator = BatteryRefillCoordinator(
-            router: NavigationControllerRouter(rootViewController: navigationController),
-            wallet: wallet,
-            jettonMasterAddress: nil,
-            initiatedBy: initiatedBy,
-            utm: utm,
-            coreAssembly: coreAssembly,
-            keeperCoreMainAssembly: keeperCoreMainAssembly
-        )
-        coordinator.didRechargeSuccess = { [weak self, weak navigationController, weak coordinator] in
-            navigationController?.dismiss(animated: true) {
-                self?.removeChild(coordinator)
-                onRecharged()
-            }
-        }
-        coordinator.didFinish = { [weak self, weak navigationController] coordinator in
-            navigationController?.dismiss(animated: true)
-            self?.removeChild(coordinator)
-        }
-
-        addChild(coordinator)
-        coordinator.start(deeplink: nil)
-        router.presentOverTopPresented(
-            navigationController,
-            completion: {
-                coordinator.didAppear()
-            },
-            onDismiss: { [weak self, weak coordinator] in
-                self?.removeChild(coordinator)
-            }
-        )
-    }
-
     func depositFeeAsset(_ asset: MultichainAssetDetails) {
-        guard let didRequestFeeDeposit else {
-            openReceive(for: asset)
-            return
-        }
-        didRequestFeeDeposit(asset.assetId) { [weak self] in
+        openFeeDeposit(asset.assetId) { [weak self] in
             self?.confirmationViewModel?.refreshFeeCalculationAfterDeposit()
         }
-    }
-
-    func openReceive(for asset: MultichainAssetDetails) {
-        guard case let .multichain(multichainState) = wallet.multichain,
-              let chain = asset.chain,
-              let address = multichainState.walletAddress(
-                  for: chain,
-                  preferredType: wallet.preferredMultichainAddressType(for: chain)
-              )
-        else {
-            return Log.multichainSwap.w(
-                "deposit skipped - no receive address for fee asset",
-                extraInfo: ["assetId": asset.assetId]
-            )
-        }
-        let coordinator = ReceiveModule(
-            dependencies: .init(
-                coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
-            )
-        ).createReceiveCoordinator(
-            router: router,
-            wallet: wallet,
-            address: ReceiveAddressPreview(address: address)
-        )
-        coordinator.didClose = { [weak self, weak coordinator] in
-            guard let self else { return }
-            removeChild(coordinator)
-            confirmationViewModel?.refreshFeeCalculationAfterDeposit()
-        }
-        addChild(coordinator)
-        coordinator.start()
     }
 
     func logTransactionSent(
@@ -354,7 +304,7 @@ private extension MultichainSwapConfirmationCoordinator {
     ) {
         let userInput = input.userInput
         guard let event = TransactionSent(
-            wallet: wallet,
+            wallet: swapWallet.wallet,
             swapFromAsset: userInput.sendAsset.asset.assetId,
             fromAssetDecimals: userInput.sendAsset.asset.decimals,
             toAsset: userInput.receiveAsset.asset.assetId,

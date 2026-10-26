@@ -5,7 +5,9 @@ import TKLogging
 protocol HermesCandleStreaming: AnyObject, Sendable {
     func watch(
         feedId: String,
+        volumeFeedId: String,
         onUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
+        onVolumeUpdate: @escaping @Sendable (Components.Schemas.GetCandlesResponse) async -> Void,
         onSubscribed: @escaping @Sendable () async -> Void,
         onReconnecting: @escaping @Sendable () async -> Void,
         onRejected: @escaping @Sendable () async -> Void
@@ -25,40 +27,26 @@ struct HermesCandleWatch: Sendable {
 }
 
 enum HermesCandleEvent: Equatable {
-    case candles(Components.Schemas.GetCandlesResponse)
+    case candles(feedId: String?, Components.Schemas.GetCandlesResponse)
     case subscribed(requestId: Int64?)
-    case retryableFailure
-    case rejected
+    case retryableFailure(requestId: Int64?)
+    case rejected(requestId: Int64?)
     case ignored
 }
 
 enum HermesCandleCodec {
-    static func request(
-        channel: String,
-        name: String,
-        reqid: Int64,
-        payload: [String: String]? = nil
-    ) throws -> Data {
-        try JSONEncoder().encode(
-            HermesOutboundEnvelope(
-                channel: channel,
-                message: HermesOutboundMessage(name: name, reqid: reqid, payload: payload)
-            )
-        )
-    }
-
     static func event(from data: Data) -> HermesCandleEvent {
         let envelope: HermesInboundEnvelope<InboundPayload>
         do {
             envelope = try JSONDecoder().decode(HermesInboundEnvelope<InboundPayload>.self, from: data)
         } catch {
-            Log.w("🪵 Perps: hermes frame skipped — \(error)")
+            Log.perps.w("hermes frame skipped — \(error)")
             return .ignored
         }
 
         if envelope.channel == HermesChannel.candles, envelope.message?.name == HermesMessageName.candlesPush {
             guard let data = envelope.message?.payload?.data else { return .ignored }
-            return .candles(data)
+            return .candles(feedId: envelope.message?.payload?.feedId, data)
         }
 
         if envelope.channel == HermesChannel.subscribe,
@@ -67,21 +55,18 @@ enum HermesCandleCodec {
             return .subscribed(requestId: envelope.message?.reqid)
         }
 
-        if envelope.message?.name == HermesMessageName.errorResponse
-            || envelope.message?.name == HermesMessageName.errorMessage
+        if envelope.channel == HermesChannel.subscribe,
+           envelope.message?.name == HermesMessageName.errorResponse
+           || envelope.message?.name == HermesMessageName.errorMessage
         {
             let code = envelope.message?.payload?.code
-            let description = envelope.message?.payload?.description
-            Log.w("🪵 Perps: hermes \(envelope.channel ?? "?") error — \(code ?? "") \(description ?? "")")
-            if envelope.channel == HermesChannel.subscribe, code == "already.subscribed" {
+            if code == "already.subscribed" {
                 return .subscribed(requestId: envelope.message?.reqid)
             }
-            if envelope.channel == HermesChannel.subscribe, let code, permanentFeedErrors.contains(code) {
-                return .rejected
+            if let code, permanentFeedErrors.contains(code) {
+                return .rejected(requestId: envelope.message?.reqid)
             }
-            if envelope.channel == HermesChannel.subscribe {
-                return .retryableFailure
-            }
+            return .retryableFailure(requestId: envelope.message?.reqid)
         }
 
         return .ignored
@@ -91,7 +76,7 @@ enum HermesCandleCodec {
 }
 
 private struct InboundPayload: Decodable {
+    let feedId: String?
     let data: Components.Schemas.GetCandlesResponse?
     let code: String?
-    let description: String?
 }

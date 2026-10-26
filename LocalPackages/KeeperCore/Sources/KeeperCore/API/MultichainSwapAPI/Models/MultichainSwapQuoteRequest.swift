@@ -12,6 +12,9 @@ public struct MultichainSwapQuoteRequest: Sendable, Hashable {
     public var protocols: [String]?
     public var returnDepositAddress: Bool?
     public var includePayload: Bool?
+    /// True when `sourceAmount` is the wallet's whole spendable balance. SwapsXYZ then builds
+    /// a transfer that still fits once its own fee is included.
+    public var isMax: Bool?
 
     public init(
         sourceAsset: String,
@@ -24,7 +27,8 @@ public struct MultichainSwapQuoteRequest: Sendable, Hashable {
         aggregators: [String]? = nil,
         protocols: [String]? = nil,
         returnDepositAddress: Bool? = nil,
-        includePayload: Bool? = nil
+        includePayload: Bool? = nil,
+        isMax: Bool? = nil
     ) {
         self.sourceAsset = sourceAsset
         self.sourceAmount = sourceAmount
@@ -37,6 +41,7 @@ public struct MultichainSwapQuoteRequest: Sendable, Hashable {
         self.protocols = protocols
         self.returnDepositAddress = returnDepositAddress
         self.includePayload = includePayload
+        self.isMax = isMax
     }
 }
 
@@ -52,6 +57,7 @@ extension MultichainSwapQuoteRequest {
                 sender_address: senderAddress,
                 recipient_address: recipientAddress,
                 return_deposit_address: returnDepositAddress,
+                is_max: isMax,
                 slippage_bps: slippageBps,
                 exact_type: exactTypeAPI,
                 aggregators: aggregatorsAPI,

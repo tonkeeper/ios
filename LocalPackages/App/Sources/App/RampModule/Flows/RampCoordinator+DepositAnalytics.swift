@@ -20,11 +20,6 @@ extension RampCoordinator {
         )
     }
 
-    func fireDepositViewP2pAlert() {
-        guard flow == .deposit, let event = flowContext.makeDepositViewP2pAlert() else { return }
-        coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)
-    }
-
     func fireDepositContinueToP2pMarket() {
         guard flow == .deposit, let event = flowContext.makeDepositContinueToP2pMarket() else { return }
         coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)
@@ -91,11 +86,6 @@ extension RampCoordinator {
         flowContext.amount = amount
         flowContext.providerName = providerName
         guard let event = flowContext.makeDepositClickRampInsertAmountContinue() else { return }
-        coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)
-    }
-
-    func fireDepositViewRampAlert() {
-        guard flow == .deposit, let event = flowContext.makeDepositViewRampAlert() else { return }
         coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)
     }
 

@@ -14,8 +14,9 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/aptabase/aptabase-swift.git", .upToNextMajor(from: "0.3.9")),
         .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
+        .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "12.8.0")),
         .package(url: "https://github.com/airbnb/lottie-spm.git", exact: "4.6.0"),
-        .package(url: "https://github.com/tonkeeper/ton-swift", exact: "1.0.36"),
+        .package(url: "https://github.com/tonkeeper/ton-swift", exact: "1.0.37"),
         // Imported directly by `App`; previously satisfied transitively via static linking.
         .package(url: "https://github.com/attaswift/BigInt", exact: "5.3.0"),
         .package(url: "https://github.com/bitmark-inc/tweetnacl-swiftwrap", .upToNextMajor(from: "1.0.0")),
@@ -30,13 +31,14 @@ let package = Package(
         .package(url: "https://github.com/objecthub/swift-numberkit.git", .upToNextMajor(from: "2.6.0")),
         .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.1")),
         // Only `AppTests` uses this — the Perps fixtures build ChainKit values directly.
-        .package(url: "https://github.com/tonkeeper/chainkit-swift", exact: "0.1.28"),
+        .package(url: "https://github.com/tonkeeper/chainkit-publishing", exact: "26.10.8"),
         .package(path: "../Ledger"),
         .package(path: "../TronSwift"),
         .package(path: "../TKKeychain"),
         .package(path: "../AppModules/WalletExtensions"),
         .package(path: "../LightweightCharts"),
         .package(path: "../KeeperCore"),
+        .package(path: "../PerpsModels"),
         .package(path: "../TKCore"),
         .package(path: "../TKCoordinator"),
         .package(path: "../TKUIKit"),
@@ -46,6 +48,8 @@ let package = Package(
         .package(path: "../TKAppInfo"),
         .package(path: "../TKLogging"),
         .package(path: "../AppModules/AppUI"),
+        .package(path: "../AppModules/Perps"),
+        .package(path: "../AppModules/MoonPay"),
         .package(path: "../AppModules/Stories"),
         .package(path: "../AppModules/SignRaw"),
     ],
@@ -62,10 +66,13 @@ let package = Package(
                 .product(name: "TKCoordinator", package: "TKCoordinator"),
                 .product(name: "TKCore", package: "TKCore"),
                 .product(name: "KeeperCore", package: "KeeperCore"),
+                .product(name: "PerpsModels", package: "PerpsModels"),
                 .product(name: "TKLocalize", package: "TKLocalize"),
                 .product(name: "TKStories", package: "Stories"),
                 .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
                 .product(name: "AppUI", package: "AppUI"),
+                .product(name: "Perps", package: "Perps"),
+                .product(name: "MoonPay", package: "MoonPay"),
                 .product(name: "Stories", package: "Stories"),
                 .product(name: "SignRaw", package: "SignRaw"),
                 .product(name: "TKAppInfo", package: "TKAppInfo"),
@@ -86,6 +93,7 @@ let package = Package(
                 .product(name: "KeeperCoreComponents", package: "KeeperCore"),
                 .product(name: "KeeperCoreSensitive", package: "KeeperCore"),
                 .product(name: "NumberKit", package: "swift-numberkit"),
+                .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
             ],
             resources: [.process("Resources")],
 
@@ -97,15 +105,21 @@ let package = Package(
             name: "AppTests",
             dependencies: [
                 "App",
+                .product(name: "TKCoordinator", package: "TKCoordinator"),
                 .product(name: "TKUIKit", package: "TKUIKit"),
                 .product(name: "TKCore", package: "TKCore"),
                 .product(name: "KeeperCore", package: "KeeperCore"),
+                .product(name: "PerpsModels", package: "PerpsModels"),
+                .product(name: "KeeperCoreComponents", package: "KeeperCore"),
                 .product(name: "AppUI", package: "AppUI"),
+                .product(name: "MoonPay", package: "MoonPay"),
+                .product(name: "Perps", package: "Perps"),
                 .product(name: "TonSwift", package: "ton-swift"),
+                .product(name: "TonTransport", package: "Ledger"),
                 // Test-only: the Perps fixtures build ChainKit values directly. A test bundle
                 // is not shipped, so linking ChainKit here does not put a second copy in the
                 // app process — but `App` no longer provides it, so it must be declared.
-                .product(name: "ChainKit", package: "chainkit-swift"),
+                .product(name: "ChainKit", package: "chainkit-publishing"),
             ],
 
             swiftSettings: [

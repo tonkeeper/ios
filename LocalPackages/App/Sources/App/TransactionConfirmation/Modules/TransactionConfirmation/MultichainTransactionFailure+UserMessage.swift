@@ -24,6 +24,12 @@ extension MultichainTransactionFailure {
             return kind.transactionConfirmationUserMessage(
                 fallback: TKLocales.Multichain.Transaction.Error.failedToSend
             )
+        case .relayerQuoteUnavailable:
+            return TKLocales.Multichain.Transaction.Error.failedToCalculateFee
+        case .relayerQuoteExpired, .relayerRejected:
+            return TKLocales.Multichain.Transaction.Error.failedToSend
+        case .relayerOutcomeUnknown:
+            return TKLocales.MultichainSwap.Screen.Confirm.Error.networkError
         case .internal:
             return TKLocales.Multichain.Transaction.Error.failedToPrepare
         }

@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 final class PerpsMarketDetailsStoreTests: XCTestCase {

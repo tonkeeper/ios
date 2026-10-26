@@ -14,12 +14,7 @@ struct WalletConnectEthSignTypedDataV4Parser: WalletConnectMethodPayloadParser {
             throw .invalidParams(method: method, reason: "eth_signTypedData_v4 requires address and typed data")
         }
 
-        if let domainChainId = try parseTypedDataDomainChainId(params[1]),
-           let expectedChainId = chain.eip155ChainId,
-           domainChainId != BigUInt(expectedChainId)
-        {
-            throw .chainMismatch(expected: chain, actual: domainChainId.description)
-        }
+        try validateDomainChain(of: params[1], against: chain)
 
         return .signMessage(
             WalletConnectSignMessage(
@@ -28,6 +23,18 @@ struct WalletConnectEthSignTypedDataV4Parser: WalletConnectMethodPayloadParser {
                 kind: .typedDataV4
             )
         )
+    }
+
+    func validateDomainChain(
+        of typedData: String,
+        against chain: WalletConnectChain
+    ) throws(WalletConnectRequestParsingError) {
+        if let domainChainId = try parseTypedDataDomainChainId(typedData),
+           let expectedChainId = chain.eip155ChainId,
+           domainChainId != BigUInt(expectedChainId)
+        {
+            throw .chainMismatch(expected: chain, actual: domainChainId.description)
+        }
     }
 }
 

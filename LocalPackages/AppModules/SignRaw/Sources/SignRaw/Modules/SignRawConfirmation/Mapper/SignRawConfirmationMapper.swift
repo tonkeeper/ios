@@ -2,6 +2,7 @@ import BigInt
 import KeeperCore
 import TKLocalize
 import TKUIKit
+import TonSwift
 import UIKit
 
 struct SignRawConfirmationModel {
@@ -21,6 +22,7 @@ struct SignRawConfirmationMapper {
     private let tonRatesStore: TonRatesStore
     private let currencyStore: CurrencyStore
     private let totalBalanceStore: TotalBalanceStore
+    private let balanceStore: BalanceStore
     private let nftManagmentStore: WalletNFTsManagementStore
     private let accountEventMapper: AccountEventMapper
     private let accountEventModelMapper: AccountEventModelMapper
@@ -31,6 +33,7 @@ struct SignRawConfirmationMapper {
         tonRatesStore: TonRatesStore,
         currencyStore: CurrencyStore,
         totalBalanceStore: TotalBalanceStore,
+        balanceStore: BalanceStore,
         nftManagmentStore: WalletNFTsManagementStore,
         accountEventMapper: AccountEventMapper,
         accountEventModelMapper: AccountEventModelMapper,
@@ -40,6 +43,7 @@ struct SignRawConfirmationMapper {
         self.tonRatesStore = tonRatesStore
         self.currencyStore = currencyStore
         self.totalBalanceStore = totalBalanceStore
+        self.balanceStore = balanceStore
         self.nftManagmentStore = nftManagmentStore
         self.accountEventMapper = accountEventMapper
         self.accountEventModelMapper = accountEventModelMapper
@@ -53,27 +57,39 @@ struct SignRawConfirmationMapper {
         )
     }
 
+    func mapSignMessageEmulationResult(
+        emulation: SignRawEmulation,
+        wallet: Wallet,
+        gaslessRelayAddress: Address?
+    ) -> SignRawConfirmationModel {
+        let actions = emulation.event.actions.flatMap { action in
+            let actionModels = mapEvent(emulation.event.replacingActions(with: [action]), wallet: wallet).actions
+            guard action.isJettonTransfer(to: gaslessRelayAddress) else {
+                return actionModels
+            }
+            return actionModels.map { $0.settingCustomName(TKLocales.EventDetails.fee) }
+        }
+        let eventModel = AccountEventModel(
+            eventId: emulation.event.eventId,
+            actions: actions,
+            accountEvent: emulation.event,
+            date: Date()
+        )
+        return SignRawConfirmationModel(
+            contentModel: accountEventModelMapper.mapSignRawEventContentConfiguration(eventModel),
+            risk: mapRisk(
+                emulation: emulation,
+                totalEquivalent: signMessageTotalEquivalent(emulation: emulation, wallet: wallet),
+                wallet: wallet
+            )
+        )
+    }
+
     func mapSuccessEmulationResult(signRawEmulation: SignRawEmulation, wallet: Wallet) -> AccountEventCellContentView.Model {
         let currency = currencyStore.getState()
         let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })
 
-        let descriptionProvider = SignRawConfirmationAccountEventRightTopDescriptionProvider(
-            rates: tonRate,
-            currency: currency,
-            formatter: amountFormatter
-        )
-
-        let eventModel = accountEventMapper.mapEvent(
-            signRawEmulation.event,
-            nftManagmentStore: nftManagmentStore,
-            eventDate: Date(),
-            accountEventRightTopDescriptionProvider: descriptionProvider,
-            network: wallet.network,
-            nftProvider: { address in
-                try? self.nftService.getNFT(address: address, network: wallet.network)
-            },
-            decryptedCommentProvider: { _ in nil }
-        )
+        let eventModel = mapEvent(signRawEmulation.event, wallet: wallet)
 
         let feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
             + amountFormatter.format(
@@ -105,11 +121,50 @@ struct SignRawConfirmationMapper {
         )
     }
 
+    private func mapEvent(_ event: AccountEvent, wallet: Wallet) -> AccountEventModel {
+        let currency = currencyStore.getState()
+        let descriptionProvider = SignRawConfirmationAccountEventRightTopDescriptionProvider(
+            rates: tonRatesStore.state.tonRates.first(where: { $0.currency == currency }),
+            currency: currency,
+            formatter: amountFormatter
+        )
+
+        return accountEventMapper.mapEvent(
+            event,
+            nftManagmentStore: nftManagmentStore,
+            eventDate: Date(),
+            accountEventRightTopDescriptionProvider: descriptionProvider,
+            network: wallet.network,
+            nftProvider: { address in
+                try? self.nftService.getNFT(address: address, network: wallet.network)
+            },
+            decryptedCommentProvider: { _ in nil }
+        )
+    }
+
     func mapRisk(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel.Risk? {
+        mapRisk(emulation: emulation, totalEquivalent: emulation.risk.totalEquivalent, wallet: wallet)
+    }
+
+    private func signMessageTotalEquivalent(emulation: SignRawEmulation, wallet: Wallet) -> Double? {
+        let currency = currencyStore.getState()
+        guard let tonBalance = balanceStore.state[wallet]?.walletBalance.balance.tonBalance.amount,
+              let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })
+        else {
+            return emulation.risk.totalEquivalent
+        }
+        return emulation.risk.totalEquivalent(limitingTonTo: BigUInt(max(tonBalance, 0)), tonRate: tonRate)
+    }
+
+    private func mapRisk(
+        emulation: SignRawEmulation,
+        totalEquivalent: Double?,
+        wallet: Wallet
+    ) -> SignRawConfirmationModel.Risk? {
         guard
             let totalBalanceState = totalBalanceStore.state[wallet],
             let totalBalance = totalBalanceState.totalBalance,
-            let total = emulation.risk.totalEquivalent.flatMap(Decimal.init(floatLiteral:))
+            let total = totalEquivalent.flatMap(Decimal.init(floatLiteral:))
         else {
             return nil
         }
@@ -142,6 +197,51 @@ struct SignRawConfirmationMapper {
             title: title,
             caption: caption,
             isRisk: isRisk
+        )
+    }
+}
+
+private extension AccountEvent {
+    func replacingActions(with actions: [AccountEventAction]) -> AccountEvent {
+        AccountEvent(
+            eventId: eventId,
+            date: date,
+            account: account,
+            isScam: isScam,
+            isInProgress: isInProgress,
+            extra: extra,
+            excess: excess,
+            progress: progress,
+            actions: actions
+        )
+    }
+}
+
+private extension AccountEventAction {
+    func isJettonTransfer(to address: Address?) -> Bool {
+        guard let address, case let .jettonTransfer(jettonTransfer) = type else {
+            return false
+        }
+        return jettonTransfer.recipient?.address == address
+    }
+}
+
+private extension AccountEventModel.Action {
+    func settingCustomName(_ customName: String) -> AccountEventModel.Action {
+        AccountEventModel.Action(
+            eventType: eventType,
+            customName: customName,
+            stakingImplementation: stakingImplementation,
+            amount: amount,
+            subamount: subamount,
+            leftTopDescription: leftTopDescription,
+            leftBottomDescription: leftBottomDescription,
+            rightTopDescription: rightTopDescription,
+            status: status,
+            comment: comment,
+            encryptedComment: encryptedComment,
+            description: description,
+            nft: nft
         )
     }
 }

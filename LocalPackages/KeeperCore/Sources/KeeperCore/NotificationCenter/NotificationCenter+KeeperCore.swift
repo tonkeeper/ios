@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 
 public extension NotificationCenter {
     func postTransactionSendNotification(
@@ -28,9 +29,24 @@ public extension Notification {
 
 public extension Notification.Name {
     static var transactionSendNotification = Notification.Name("TransactionSendNotification")
+    static let multichainTransactionBroadcast = Notification.Name("MultichainTransactionBroadcast")
+    /// Object: `PerpsTradingSettlement`.
+    static let perpsTradingOperationSettled = Notification.Name("PerpsTradingOperationSettled")
+}
+
+public struct PerpsTradingSettlement: Sendable {
+    public let action: PerpsPendingTradingAction
+    public let succeeded: Bool
+
+    public init(action: PerpsPendingTradingAction, succeeded: Bool) {
+        self.action = action
+        self.succeeded = succeeded
+    }
 }
 
 public extension Notification {
-    /// Set when the sent asset has no feed in this wallet, leaving a history screen nothing to show.
+    /// Set when the main coordinator must not open history on the notification: the sent asset
+    /// has no feed in this wallet, leaving a history screen nothing to show, or the sending flow
+    /// opens history itself.
     static let transactionSendWithoutHistoryKey = "transactionSendWithoutHistory"
 }

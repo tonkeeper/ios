@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A19100000000000000000001 /* TransactionLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19100000000000000000003 /* TransactionLiveActivityAttributes.swift */; };
+		A19100000000000000000002 /* TransactionLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19100000000000000000004 /* TransactionLiveActivityWidget.swift */; };
+		A19100000000000000000006 /* TransactionLiveActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19100000000000000000007 /* TransactionLiveActivityViews.swift */; };
+		A19100000000000000000008 /* TransactionLiveActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19100000000000000000009 /* TransactionLiveActivityPresentation.swift */; };
+		A1910000000000000000000B /* TransactionLiveActivityCounterparties.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1910000000000000000000A /* TransactionLiveActivityCounterparties.swift */; };
 		385134366B28ECAA8F94E8E0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243CF004625834C4CD9CF75E /* NotificationService.swift */; };
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
 		7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */; };
@@ -46,6 +51,9 @@
 		7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */; };
 		7DB46DF72AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
+		A4C1E8B52F6A4D1100B7C305 /* LinkrunnerKitStatic in Frameworks */ = {isa = PBXBuildFile; productRef = A4C1E8B32F6A4D1100B7C303 /* LinkrunnerKitStatic */; };
+		A4C1E8B62F6A4D1100B7C306 /* BranchSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A4C1E8B42F6A4D1100B7C304 /* BranchSDK */; };
+		A4C1E8B82F6A4D1100B7C308 /* CampaignAttributionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C1E8B72F6A4D1100B7C307 /* CampaignAttributionService.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
 		7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */; };
@@ -57,16 +65,14 @@
 		7DDBBFF42ACCA10E00F811A5 /* KeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DF339922CB400F2003D689D /* TKStories in Frameworks */ = {isa = PBXBuildFile; productRef = 7DF339912CB400F2003D689D /* TKStories */; };
-		844BD3A72FDDAC1F003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */; };
-		844BD3A82FDDAC1F003DD2D0 /* TKUIKitResources in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		844BD3AA2FDDAC29003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */; };
-		844BD3AD2FDDAC31003DD2D0 /* TKUIKitResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */; };
+		844BD3A72FDDAC1F003DD2D0 /* KeeperResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* KeeperResources */; };
+		844BD3A82FDDAC1F003DD2D0 /* KeeperResources in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A62FDDAC1F003DD2D0 /* KeeperResources */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		844BD3AA2FDDAC29003DD2D0 /* KeeperResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3A92FDDAC29003DD2D0 /* KeeperResources */; };
+		844BD3AD2FDDAC31003DD2D0 /* KeeperResources in Frameworks */ = {isa = PBXBuildFile; productRef = 844BD3AC2FDDAC31003DD2D0 /* KeeperResources */; };
 		847B62E02F82499D006F7706 /* KeeperCore in Frameworks */ = {isa = PBXBuildFile; productRef = 847B62DF2F82499D006F7706 /* KeeperCore */; };
 		84AED6072FDD904C00AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED6062FDD904C00AC3EC6 /* TKUIKit */; };
 		84AED60A2FDD906000AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED6092FDD906000AC3EC6 /* TKUIKit */; };
-		84AED60D2FDD907000AC3EC6 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED60C2FDD907000AC3EC6 /* TKUIKit */; };
 		84AED7002FDD910000AC3EC6 /* KeeperCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 847B62DF2F82499D006F7706 /* KeeperCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		84AED7022FDD920000AC3EC6 /* TKFeatureFlagsFirebase in Frameworks */ = {isa = PBXBuildFile; productRef = 84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */; };
 		84C1EEBF2F3E013400B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEBE2F3E013400B6D05F /* TKLogging */; };
 		84C1EEC12F3E016700B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEC02F3E016700B6D05F /* TKLogging */; };
 		84C1EEC32F3E016D00B6D05F /* TKLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 84C1EEC22F3E016D00B6D05F /* TKLogging */; };
@@ -124,7 +130,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				844BD3A82FDDAC1F003DD2D0 /* TKUIKitResources in Embed Frameworks */,
+				844BD3A82FDDAC1F003DD2D0 /* KeeperResources in Embed Frameworks */,
 				84AED7002FDD910000AC3EC6 /* KeeperCore in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -153,14 +159,21 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A19100000000000000000003 /* TransactionLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityAttributes.swift; sourceTree = "<group>"; };
+		A19100000000000000000004 /* TransactionLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionLiveActivityWidget.swift; sourceTree = "<group>"; };
+		A19100000000000000000007 /* TransactionLiveActivityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionLiveActivityViews.swift; sourceTree = "<group>"; };
+		A19100000000000000000009 /* TransactionLiveActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityPresentation.swift; sourceTree = "<group>"; };
+		A1910000000000000000000A /* TransactionLiveActivityCounterparties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityCounterparties.swift; sourceTree = "<group>"; };
 		11521ACBA6548957391122FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		243CF004625834C4CD9CF75E /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		4D88769F055004E7722B333A /* PerpsModels */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PerpsModels; sourceTree = "<group>"; };
 		504D92722C32A46E00B12DA6 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		504D92732C32A48100B12DA6 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		504D92742C32A48600B12DA6 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		504D92752C32A48F00B12DA6 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		504D92762C32A4B300B12DA6 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
 		504D92772C32A74D00B12DA6 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92782C32A74D00B12DA6 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		507683F32D4B014B008349F0 /* KeeperUK.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperUK.xcconfig; sourceTree = "<group>"; };
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
@@ -200,6 +213,7 @@
 		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76912CA3F99D002AA2F3 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7DA6C14E2CFA2D1900E6B688 /* SignRaw */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = SignRaw; sourceTree = "<group>"; };
 		7DAF89E22CDAC08600D58260 /* TKKeychain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKKeychain; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
@@ -210,6 +224,7 @@
 		7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenMediumRateChartWidgetView.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Keeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A4C1E8B72F6A4D1100B7C307 /* CampaignAttributionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampaignAttributionService.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7DB8FB712A1BCC92005B4B11 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -220,12 +235,13 @@
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
 		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		843112B32FDDABDB005BCFEE /* TKUIKitResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitResources; sourceTree = "<group>"; };
 		84623DF42F3E010C00DFABEE /* TKLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLogging; sourceTree = "<group>"; };
 		A1B2C3D42E00000100000001 /* KeeperDevDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperDevDebug.xcconfig; sourceTree = "<group>"; };
 		A1B2C3D42E0000010000000A /* KeeperDevRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = KeeperDevRelease.xcconfig; sourceTree = "<group>"; };
 		A1B2C3D62E0000020000000B /* FlagsOverride.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FlagsOverride.json; sourceTree = "<group>"; };
 		A1B2C3D82F10000100000001 /* AppUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AppUI; sourceTree = "<group>"; };
+		A1B2C3DA2F10000100000001 /* Perps */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Perps; sourceTree = "<group>"; };
+		87FEBA253AA449C995D9E8C4 /* MoonPay */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = MoonPay; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C32C7C492BCD111100785B6A /* KeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KeeperIntents.entitlements; sourceTree = "<group>"; };
@@ -250,7 +266,7 @@
 				84C1EEC12F3E016700B6D05F /* TKLogging in Frameworks */,
 				84AED60A2FDD906000AC3EC6 /* TKUIKit in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
-				844BD3AA2FDDAC29003DD2D0 /* TKUIKitResources in Frameworks */,
+				844BD3AA2FDDAC29003DD2D0 /* KeeperResources in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
 				50C356522BE39C0500539266 /* TKLocalize in Frameworks */,
 			);
@@ -262,14 +278,15 @@
 			files = (
 				84AED6072FDD904C00AC3EC6 /* TKUIKit in Frameworks */,
 				7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */,
-				844BD3A72FDDAC1F003DD2D0 /* TKUIKitResources in Frameworks */,
-				84AED7022FDD920000AC3EC6 /* TKFeatureFlagsFirebase in Frameworks */,
+				844BD3A72FDDAC1F003DD2D0 /* KeeperResources in Frameworks */,
 				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
 				7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */,
 				847B62E02F82499D006F7706 /* KeeperCore in Frameworks */,
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
+				A4C1E8B52F6A4D1100B7C305 /* LinkrunnerKitStatic in Frameworks */,
+				A4C1E8B62F6A4D1100B7C306 /* BranchSDK in Frameworks */,
 				C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 				84C1EEBF2F3E013400B6D05F /* TKLogging in Frameworks */,
@@ -281,8 +298,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				844BD3AD2FDDAC31003DD2D0 /* TKUIKitResources in Frameworks */,
-				84AED60D2FDD907000AC3EC6 /* TKUIKit in Frameworks */,
+				844BD3AD2FDDAC31003DD2D0 /* KeeperResources in Frameworks */,
 				7D1BB5BC2CFD0CA90021B4EA /* WalletExtensions in Frameworks */,
 				84C1EEC32F3E016D00B6D05F /* TKLogging in Frameworks */,
 				84E5E8472F824E5E00A1269B /* KeeperCore in Frameworks */,
@@ -302,6 +318,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A19100000000000000000005 /* TransactionLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				A19100000000000000000004 /* TransactionLiveActivityWidget.swift */,
+				A19100000000000000000007 /* TransactionLiveActivityViews.swift */,
+			);
+			path = TransactionLiveActivity;
+			sourceTree = "<group>";
+		};
 		0E64817736ECA539FD52ED0A /* KeeperNotificationService */ = {
 			isa = PBXGroup;
 			children = (
@@ -325,6 +350,10 @@
 			isa = PBXGroup;
 			children = (
 				7D3F25F02AC19442002DF1B7 /* Extensions */,
+				A19100000000000000000005 /* TransactionLiveActivity */,
+				A19100000000000000000003 /* TransactionLiveActivityAttributes.swift */,
+				A19100000000000000000009 /* TransactionLiveActivityPresentation.swift */,
+				A1910000000000000000000A /* TransactionLiveActivityCounterparties.swift */,
 				7D3F25EF2AC19434002DF1B7 /* RateWidget */,
 				7D8A50A02AC8619700AA396C /* BalanceWidget */,
 				7D3F25DE2AC19417002DF1B7 /* KeeperWidgetBundle.swift */,
@@ -383,6 +412,8 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D82F10000100000001 /* AppUI */,
+				A1B2C3DA2F10000100000001 /* Perps */,
+				87FEBA253AA449C995D9E8C4 /* MoonPay */,
 				7D1BB5BA2CFCFF0E0021B4EA /* WalletExtensions */,
 				7DA6C14E2CFA2D1900E6B688 /* SignRaw */,
 				7D6C62D02CF4BF6D00A40892 /* Stories */,
@@ -466,6 +497,7 @@
 			isa = PBXGroup;
 			children = (
 				7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */,
+				A4C1E8B72F6A4D1100B7C307 /* CampaignAttributionService.swift */,
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
@@ -508,9 +540,9 @@
 				C313EC0B2B50138D009DF825 /* TKCoordinator */,
 				C3777E962BE11C9C00DC3C92 /* TKScreenKit */,
 				C392CE022BE11B0300E0C473 /* TKUIKit */,
-				843112B32FDDABDB005BCFEE /* TKUIKitResources */,
 				C313EC0D2B50138D009DF825 /* TKCore */,
 				C38917222D93BC8400D519C3 /* TronSwift */,
+				4D88769F055004E7722B333A /* PerpsModels */,
 			);
 			path = LocalPackages;
 			sourceTree = "<group>";
@@ -558,7 +590,7 @@
 				84C1EEC02F3E016700B6D05F /* TKLogging */,
 				84E5E8442F824E5300A1269B /* KeeperCore */,
 				84AED6092FDD906000AC3EC6 /* TKUIKit */,
-				844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */,
+				844BD3A92FDDAC29003DD2D0 /* KeeperResources */,
 			);
 			productName = KeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* KeeperWidgetExtension.appex */;
@@ -575,6 +607,7 @@
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
 				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
 				7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */,
+				A7E1C0DE2F90000100000003 /* Link KeeperResources to the widget's copy */,
 				C30297552B4EE30300DD6FFC /* Firebase plist */,
 				C30297502B4EDDDD00DD6FFC /* Crashlytics+dSYM */,
 			);
@@ -599,8 +632,9 @@
 				84C1EEBE2F3E013400B6D05F /* TKLogging */,
 				847B62DF2F82499D006F7706 /* KeeperCore */,
 				84AED6062FDD904C00AC3EC6 /* TKUIKit */,
-				844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */,
-				84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */,
+				844BD3A62FDDAC1F003DD2D0 /* KeeperResources */,
+				A4C1E8B32F6A4D1100B7C303 /* LinkrunnerKitStatic */,
+				A4C1E8B42F6A4D1100B7C304 /* BranchSDK */,
 			);
 			productName = Keeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Keeper.app */;
@@ -614,6 +648,7 @@
 				7DDBBFE82ACCA10E00F811A5 /* Frameworks */,
 				7DDBBFE92ACCA10E00F811A5 /* Resources */,
 				7DDBC02F2ACCD21F00F811A5 /* Embed Frameworks */,
+				A7E1C0DE2F90000100000002 /* Drop shared TKUIKit resources */,
 			);
 			buildRules = (
 			);
@@ -625,8 +660,7 @@
 				7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */,
 				84C1EEC22F3E016D00B6D05F /* TKLogging */,
 				84E5E8462F824E5E00A1269B /* KeeperCore */,
-				84AED60C2FDD907000AC3EC6 /* TKUIKit */,
-				844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */,
+				844BD3AC2FDDAC31003DD2D0 /* KeeperResources */,
 			);
 			productName = KeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* KeeperIntents.appex */;
@@ -667,6 +701,7 @@
 				uk,
 				"zh-Hans",
 				de,
+				es,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
 			packageReferences = (
@@ -674,6 +709,8 @@
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				4DC8CE76AA195F5C4F1FCABE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A4C1E8B12F6A4D1100B7C301 /* XCRemoteSwiftPackageReference "linkrunner-ios" */,
+				A4C1E8B22F6A4D1100B7C302 /* XCRemoteSwiftPackageReference "ios-branch-sdk-spm" */,
 				2251CC574A8D4141B8A9E897 /* XCLocalSwiftPackageReference "LocalPackages/TKLocalize" */,
 				E5EEF10E43AC4AD9BE3112A8 /* XCLocalSwiftPackageReference "LocalPackages/TKKeychain" */,
 				FAA0EBD762D744EBBECDBAC0 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/WalletExtensions" */,
@@ -811,6 +848,47 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\n\"${SRCROOT}/scripts/firebase/copy_google_service_info.sh\"\n";
 		};
+		A7E1C0DE2F90000100000002 /* Drop shared TKUIKit resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/KeeperResources_KeeperResources.bundle",
+			);
+			name = "Drop shared TKUIKit resources";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Keeper.app holds a copy of this bundle, next to the shared KeeperResources framework;\n# SwiftPM still copies it into every product that links TKUIKit. KeeperResourcesBundle finds\n# the app's copy from this extension, so this one is dropped. The widget keeps its own: WidgetKit\n# draws its fonts (UIAppFonts) and images out of process, from the widget's bundle.\nrm -rf \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/KeeperResources_KeeperResources.bundle\"\n";
+		};
+		A7E1C0DE2F90000100000003 /* Link KeeperResources to the widget's copy */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/KeeperResources_KeeperResources.bundle",
+				"$(TARGET_BUILD_DIR)/$(PLUGINS_FOLDER_PATH)/KeeperWidgetExtension.appex",
+			);
+			name = "Link KeeperResources to the widget's copy";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\ncase \"${CONFIGURATION}\" in\n    *Release) ;;\n    *) exit 0 ;;\nesac\n\n# WidgetKit reads fonts (UIAppFonts) and images out of process, so the widget keeps\n# the real bundle. The app and intents share it through a relative symlink.\n# Without the widget's bundle, keep the app's copy.\nname=KeeperResources_KeeperResources.bundle\ntarget=\"PlugIns/KeeperWidgetExtension.appex/$name\"\ncd \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\" || exit 1\n[ -d \"$target\" ] || exit 0\nrm -rf \"$name\"\nln -s \"$target\" \"$name\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -845,6 +923,11 @@
 				7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */,
 				7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */,
 				7D3F25DF2AC19417002DF1B7 /* KeeperWidgetBundle.swift in Sources */,
+				A19100000000000000000001 /* TransactionLiveActivityAttributes.swift in Sources */,
+				A19100000000000000000002 /* TransactionLiveActivityWidget.swift in Sources */,
+				A19100000000000000000006 /* TransactionLiveActivityViews.swift in Sources */,
+				A19100000000000000000008 /* TransactionLiveActivityPresentation.swift in Sources */,
+				A1910000000000000000000B /* TransactionLiveActivityCounterparties.swift in Sources */,
 				7D8A50AD2AC8675700AA396C /* BalanceWidget.swift in Sources */,
 				7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */,
 				7DB0579B2AC24C0C00306C00 /* RateWidget.swift in Sources */,
@@ -860,6 +943,7 @@
 			files = (
 				7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				A4C1E8B82F6A4D1100B7C308 /* CampaignAttributionService.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -906,6 +990,7 @@
 				7D9B768B2CA3F99C002AA2F3 /* tr */,
 				7D9B768D2CA3F99C002AA2F3 /* uk */,
 				7D9B768F2CA3F99D002AA2F3 /* uz */,
+				7D9B76912CA3F99D002AA2F3 /* es */,
 			);
 			name = RateWidget.intentdefinition;
 			sourceTree = "<group>";
@@ -921,6 +1006,7 @@
 				504D92752C32A48F00B12DA6 /* uk */,
 				504D92762C32A4B300B12DA6 /* zh-Hans */,
 				504D92772C32A74D00B12DA6 /* de */,
+				504D92782C32A74D00B12DA6 /* es */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
@@ -1074,7 +1160,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -1245,7 +1331,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -1455,7 +1541,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -1626,7 +1712,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -1836,7 +1922,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -2007,7 +2093,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = CT523DK2KC;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KeeperIntents/Info.plist;
@@ -2283,6 +2369,22 @@
 				minimumVersion = 12.8.0;
 			};
 		};
+		A4C1E8B12F6A4D1100B7C301 /* XCRemoteSwiftPackageReference "linkrunner-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/linkrunner-labs/linkrunner-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.1.0;
+			};
+		};
+		A4C1E8B22F6A4D1100B7C302 /* XCRemoteSwiftPackageReference "ios-branch-sdk-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/BranchMetrics/ios-branch-sdk-spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.14.2;
+			};
+		};
 		7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
@@ -2350,6 +2452,16 @@
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
 		};
+		A4C1E8B32F6A4D1100B7C303 /* LinkrunnerKitStatic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4C1E8B12F6A4D1100B7C301 /* XCRemoteSwiftPackageReference "linkrunner-ios" */;
+			productName = LinkrunnerKitStatic;
+		};
+		A4C1E8B42F6A4D1100B7C304 /* BranchSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4C1E8B22F6A4D1100B7C302 /* XCRemoteSwiftPackageReference "ios-branch-sdk-spm" */;
+			productName = BranchSDK;
+		};
 		7DCE73652CE269EC00FD4C72 /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D9FEC71A07944EFF81FC9FA1 /* XCLocalSwiftPackageReference "LocalPackages/TKCore" */;
@@ -2370,17 +2482,17 @@
 			package = D1EB183B90014E6A9D2F1483 /* XCLocalSwiftPackageReference "LocalPackages/AppModules/Stories" */;
 			productName = TKStories;
 		};
-		844BD3A62FDDAC1F003DD2D0 /* TKUIKitResources */ = {
+		844BD3A62FDDAC1F003DD2D0 /* KeeperResources */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKitResources;
+			productName = KeeperResources;
 		};
-		844BD3A92FDDAC29003DD2D0 /* TKUIKitResources */ = {
+		844BD3A92FDDAC29003DD2D0 /* KeeperResources */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKitResources;
+			productName = KeeperResources;
 		};
-		844BD3AC2FDDAC31003DD2D0 /* TKUIKitResources */ = {
+		844BD3AC2FDDAC31003DD2D0 /* KeeperResources */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKitResources;
+			productName = KeeperResources;
 		};
 		847B62DF2F82499D006F7706 /* KeeperCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -2393,14 +2505,6 @@
 		84AED6092FDD906000AC3EC6 /* TKUIKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKUIKit;
-		};
-		84AED60C2FDD907000AC3EC6 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKit;
-		};
-		84AED7012FDD920000AC3EC6 /* TKFeatureFlagsFirebase */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKFeatureFlagsFirebase;
 		};
 		84C1EEBE2F3E013400B6D05F /* TKLogging */ = {
 			isa = XCSwiftPackageProductDependency;

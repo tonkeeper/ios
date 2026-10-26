@@ -11,6 +11,8 @@ extension BatteryRechargeMethod {
             guard let jettonMaster = method.jetton_master,
                   let jettonMasterAddress = try? Address.parse(jettonMaster) else { return nil }
             token = .jetton(Jetton(jettonMasterAddress: jettonMasterAddress))
+        case .unknown:
+            return nil
         }
 
         imageURL = {

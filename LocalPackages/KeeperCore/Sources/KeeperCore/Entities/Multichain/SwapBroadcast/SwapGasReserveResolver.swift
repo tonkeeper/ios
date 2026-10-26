@@ -10,19 +10,25 @@ struct SwapGasReserveResolver {
     let client: CryptoKitClient
 
     func reserve(
-        for mainTransaction: TransactionSwap,
+        for mainTransactions: [TransactionSwap],
         feeAsset: AssetCoin,
         fee: Fee,
         policy: GasReservePolicy,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> GasReserveResult {
+        guard let account = mainTransactions.first?.account else {
+            throw .internal(reason: "swap has no message to reserve gas for")
+        }
+        let amount = mainTransactions.reduce(BignumBigInteger.Companion.shared.ZERO) { total, transaction in
+            total.add(other: transaction.amount)
+        }
         let reserveResult: NodeRes<GasReserveResult>
         do {
             reserveResult = try await client.tx.calculateGasReserve(
-                account: mainTransaction.account,
-                energy: energyAccount(for: mainTransaction, feeAsset: feeAsset),
-                amount: mainTransaction.amount,
-                isMax: mainTransaction.isMax,
+                account: account,
+                energy: energyAccount(for: account, feeAsset: feeAsset),
+                amount: amount,
+                isMax: mainTransactions.contains(where: \.isMax),
                 fee: fee,
                 policy: policy
             )
@@ -63,12 +69,12 @@ struct SwapGasReserveResolver {
         return reserve
     }
 
-    private func energyAccount(for transaction: TransactionSwap, feeAsset: AssetCoin) -> ChainKit.Account {
+    private func energyAccount(for account: ChainKit.Account, feeAsset: AssetCoin) -> ChainKit.Account {
         ChainKit.Account(
-            address: transaction.account.address,
+            address: account.address,
             asset: feeAsset,
             derivation: DerivationDefaultPath.shared,
-            publicKey: transaction.account.publicKey
+            publicKey: account.publicKey
         )
     }
 }

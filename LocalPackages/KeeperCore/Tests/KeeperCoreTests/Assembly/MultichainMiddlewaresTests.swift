@@ -668,6 +668,7 @@ private final class WalletAuthTokenFake: WalletAuthTokenProviding, @unchecked Se
     }
 
     func warm(walletId _: String, mnemonic _: String) async {}
+    func persistAppKey(_: Data, walletId _: String) async {}
     func forget(walletId _: String) async {}
     func wipe() async {}
 }

@@ -3,7 +3,7 @@ import TonAPI
 import TonSwift
 
 extension Account {
-    init(account: TonAPI.Account) throws {
+    init(account: TonAPI.Components.Schemas.Account) throws {
         self.address = try Address.parse(account.address)
         self.balance = account.balance
         self.status = account.status.rawValue

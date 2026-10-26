@@ -3,7 +3,7 @@ import Foundation
 import TKLogging
 import TronSwift
 
-public enum TronTransferSignError: Error {
+@frozen public enum TronTransferSignError: Error {
     case incorrectWalletKind
     case cancelled
     case failedToSign(
@@ -12,7 +12,7 @@ public enum TronTransferSignError: Error {
 }
 
 public final class TronUSDTTransactionConfirmationController: TransactionConfirmationController {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case tronAddressIsNotAvailable
     }
 
@@ -55,7 +55,7 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
             return
         }
         updateState {
-            $0.preferredExtraType = extraType
+            $0.prefer(extraType)
         }
     }
 

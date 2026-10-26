@@ -11,12 +11,12 @@ public struct WalletMigrationFeeSelection: Equatable {
     }
 }
 
-public enum WalletMigrationTronFeeShortage: Equatable {
+@frozen public enum WalletMigrationTronFeeShortage: Equatable {
     case trx
     case battery
 }
 
-public enum WalletMigrationFeeSelectionResolver {
+@frozen public enum WalletMigrationFeeSelectionResolver {
     public static func preferred(
         ton: WalletMigrationPrepareResult?,
         tron: WalletMigrationTronPrepareResult?,

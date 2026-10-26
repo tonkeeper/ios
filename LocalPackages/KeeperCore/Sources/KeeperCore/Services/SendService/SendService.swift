@@ -9,10 +9,11 @@ public protocol SendService {
         wallet: Wallet,
         params: [EmulateMessageToWalletRequestParamsInner]?,
         currency: Currency?
-    ) async throws -> TonAPI.MessageConsequences
+    ) async throws -> TonAPI.Components.Schemas.MessageConsequences
     func sendTransaction(boc: String, wallet: Wallet, headers: [String: String]) async throws
     func sendTransactions(batch: [String], wallet: Wallet) async throws
     func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
+    func getGaslessRelayAddress(wallet: Wallet) async throws -> Address
     func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload
     func getIndexingLatency(wallet: Wallet) async throws -> Int
 }
@@ -27,7 +28,7 @@ public extension SendService {
         wallet: Wallet,
         params: [EmulateMessageToWalletRequestParamsInner]? = nil,
         currency: Currency? = nil
-    ) async throws -> TonAPI.MessageConsequences {
+    ) async throws -> TonAPI.Components.Schemas.MessageConsequences {
         try await self.loadTransactionInfo(boc: boc, wallet: wallet, params: params, currency: currency)
     }
 
@@ -52,7 +53,7 @@ final class SendServiceImplementation: SendService {
         wallet: Wallet,
         params: [EmulateMessageToWalletRequestParamsInner]?,
         currency: Currency?
-    ) async throws -> TonAPI.MessageConsequences {
+    ) async throws -> TonAPI.Components.Schemas.MessageConsequences {
         try await apiProvider
             .api(wallet.network)
             .emulateMessageWallet(boc: boc, params: params, currency: currency?.code)
@@ -82,6 +83,10 @@ final class SendServiceImplementation: SendService {
         } catch {
             return UInt64(Date().timeIntervalSince1970) + TTL
         }
+    }
+
+    func getGaslessRelayAddress(wallet: Wallet) async throws -> Address {
+        try await apiProvider.api(wallet.network).getGaslessRelayAddress()
     }
 
     func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload {

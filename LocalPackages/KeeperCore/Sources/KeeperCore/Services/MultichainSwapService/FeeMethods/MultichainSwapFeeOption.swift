@@ -4,7 +4,7 @@
 public struct MultichainSwapFeeOption: Sendable, Hashable {
     /// What the fee is denominated in, and whether the wallet can cover it. Payability lives here
     /// rather than beside it, so the one method that can never pay cannot be built as if it could.
-    public enum Cost: Sendable, Hashable {
+    @frozen public enum Cost: Sendable, Hashable {
         /// The whole per-asset breakdown, because a route with an approval is charged more than once
         /// on the same chain.
         case native([MultichainTransactionEmulationResult], isInsufficient: Bool)
@@ -15,6 +15,8 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
         case batteryUnpriced
         /// The same relayer, billed in the wallet's GRAM instead of in charges.
         case gram(amountNano: BigUInt, isInsufficient: Bool)
+        /// The same relayer, billed in a token of the source chain the wallet holds.
+        case token(MultichainAssetDetails, amount: BigUInt, isInsufficient: Bool)
     }
 
     public let cost: Cost
@@ -23,7 +25,8 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
         switch cost {
         case let .native(_, isInsufficient),
              let .batteryCharges(_, _, isInsufficient),
-             let .gram(_, isInsufficient):
+             let .gram(_, isInsufficient),
+             let .token(_, _, isInsufficient):
             return isInsufficient
         case .batteryUnpriced:
             return true
@@ -38,6 +41,8 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
             return .battery
         case .gram:
             return .gram
+        case let .token(asset, _, _):
+            return .token(assetId: asset.assetId)
         }
     }
 
@@ -51,6 +56,8 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
             return nil
         case .gram:
             return .gram
+        case let .token(asset, _, _):
+            return asset
         }
     }
 
@@ -64,6 +71,8 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
             return .batteryCharges(count)
         case let .gram(amountNano, _):
             return .gram(amountNano: amountNano)
+        case let .token(asset, amount, _):
+            return .token(assetId: asset.assetId, amount: amount)
         }
     }
 
@@ -73,8 +82,9 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
         case let .batteryCharges(count, _, _): "\(count)charges"
         case .batteryUnpriced: "unpriced"
         case let .gram(amountNano, _): "\(amountNano)nano"
+        case let .token(asset, amount, _): "\(amount)\(asset.symbol)"
         }
-        return "\(method)(\(detail)\(isInsufficient ? ",insufficient" : ""))"
+        return "\(method.id)(\(detail)\(isInsufficient ? ",insufficient" : ""))"
     }
 
     public init(cost: Cost) {

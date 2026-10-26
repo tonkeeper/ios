@@ -6,7 +6,8 @@ enum TonConnectResponseBuilder {
     static func buildReconnectConnectEventSuccessResponse(
         wallet: Wallet,
         keeperVersion: String,
-        manifest: TonConnectManifest
+        manifest: TonConnectManifest,
+        isSignMessageSupported: Bool
     ) throws -> TonConnect.ConnectEventSuccess {
         let address = try wallet.address
 
@@ -22,7 +23,11 @@ enum TonConnectResponseBuilder {
         return try TonConnect.ConnectEventSuccess(
             payload: .init(
                 items: replyItems,
-                device: .init(maxMessages: wallet.contract.maxMessages, appVersion: keeperVersion)
+                device: .init(
+                    maxMessages: wallet.contract.maxMessages,
+                    appVersion: keeperVersion,
+                    isSignMessageSupported: isSignMessageSupported
+                )
             )
         )
     }
@@ -34,6 +39,7 @@ enum TonConnectResponseBuilder {
         wallet: Wallet,
         keeperVersion: String,
         manifest: TonConnectManifest,
+        isSignMessageSupported: Bool,
         signTonProof: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply
     ) async throws -> TonConnect.ConnectEventSuccess {
         let address = try wallet.address
@@ -62,7 +68,14 @@ enum TonConnectResponseBuilder {
         }
 
         return try TonConnect.ConnectEventSuccess(
-            payload: .init(items: replyItems, device: .init(maxMessages: wallet.contract.maxMessages, appVersion: keeperVersion))
+            payload: .init(
+                items: replyItems,
+                device: .init(
+                    maxMessages: wallet.contract.maxMessages,
+                    appVersion: keeperVersion,
+                    isSignMessageSupported: isSignMessageSupported
+                )
+            )
         )
     }
 
@@ -92,6 +105,19 @@ enum TonConnectResponseBuilder {
         )
     }
 
+    static func buildSignMessageResponseSuccess(
+        sessionCrypto: TonConnectSessionCrypto,
+        internalBoc: String,
+        id: String,
+        clientId: String
+    ) throws -> String {
+        try encrypt(
+            .success(.init(result: TonConnect.SignMessageResult(internalBoc: internalBoc), id: id)),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
+        )
+    }
+
     static func buildDisconnectResponseSuccess(
         sessionCrypto: TonConnectSessionCrypto,
         id: String,
@@ -107,11 +133,12 @@ enum TonConnectResponseBuilder {
     static func buildSendTransactionResponseError(
         sessionCrypto: TonConnectSessionCrypto,
         errorCode: TonConnect.SendResponseError.ErrorCode,
+        message: String = "",
         id: String,
         clientId: String
     ) throws -> String {
         try encrypt(
-            .error(.init(id: id, error: .init(code: errorCode, message: ""))),
+            .error(.init(id: id, error: .init(code: errorCode, message: message))),
             sessionCrypto: sessionCrypto,
             clientId: clientId
         )

@@ -1,7 +1,7 @@
 import Foundation
 
 public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConnectApp]> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateApps
     }
 

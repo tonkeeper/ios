@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 final class PerpsMarketDetailsServiceTests: XCTestCase {
@@ -77,7 +78,8 @@ private func makeMetadata(
         fundingRatePercent: fundingRatePercent,
         priceDecimals: 2,
         sizeDecimals: 4,
-        minBaseSize: 0.001
+        minBaseSize: 0.001,
+        minNotionalUsd: 10
     )
 }
 

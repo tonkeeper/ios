@@ -6,17 +6,20 @@ public struct AssetActionButtonsRow: View {
         public let id: String
         public let icon: UIImage
         public let title: String
+        public let isEnabled: Bool
         public let action: () -> Void
 
         public init(
             id: String,
             icon: UIImage,
             title: String,
+            isEnabled: Bool = true,
             action: @escaping () -> Void
         ) {
             self.id = id
             self.icon = icon
             self.title = title
+            self.isEnabled = isEnabled
             self.action = action
         }
     }
@@ -57,6 +60,8 @@ public struct AssetActionButtonsRow: View {
             .clipShape(RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous))
         }
         .buttonStyle(TKTapAnimationButtonStyle())
+        .disabled(!item.isEnabled)
+        .opacity(item.isEnabled ? 1 : Layout.disabledOpacity)
         .accessibilityIdentifier(item.id)
     }
 }
@@ -70,4 +75,5 @@ private enum Layout {
     static let contentHorizontalPadding: CGFloat = 4
     static let cornerRadius: CGFloat = 16
     static let titleMinimumScaleFactor: CGFloat = 0.7
+    static let disabledOpacity: CGFloat = 0.48
 }

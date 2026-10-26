@@ -1,0 +1,33 @@
+appId: com.jbig.tonkeeper
+---
+# Fill the "Enter recovery phrase" screen. Paste first: CI primes UIPasteboard with the
+# phrase (simctl pbcopy) and taps the "Allow Paste" sheet when iOS shows one. When nothing
+# was pasted — the Paste button is hidden as soon as any field has text — type PHRASE word
+# by word (~2.5 s a word). The iOS 27 simulator cannot show the "Allow Paste" sheet and
+# refuses the read instead ("Operation not authorized"), and Maestro's clearState resets
+# the per-app paste permission, so an import that starts from clearState always lands here.
+- tapOn: Paste
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: Allow Paste
+    optional: true
+- runFlow:
+    when:
+      visible: Paste
+    commands:
+      # An unset env var reaches JavaScript as the string "undefined", not as undefined.
+      - evalScript: "${output.words = (PHRASE == 'undefined' ? '' : (PHRASE || '')).trim().split(' ').filter(Boolean); output.i = 0}"
+      - runFlow:
+          when:
+            true: ${output.words.length == 24}
+          commands:
+            - tapOn: "24 words"
+      - repeat:
+          while:
+            true: ${output.i < output.words.length}
+          commands:
+            - tapOn:
+                id: mnemonic.input.${output.i}
+            - inputText: ${output.words[output.i]}
+            - evalScript: ${output.i = output.i + 1}

@@ -12,37 +12,16 @@ enum BalanceSwiftUIMapper {
         headerMapper: WalletBalanceHeaderMapper,
         configuration: Configuration
     ) -> BalanceViewConfig {
-        let tonAmount = state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
-        let backupWarningState = BalanceBackupWarningCheck().check(
-            wallet: wallet,
-            tonAmount: tonAmount
-        )
-
-        let balanceColor: TKColor
-        let backupButton: BalanceViewContent.BackupButton?
-        switch backupWarningState {
-        case .error:
-            balanceColor = .accentRed
-            backupButton = BalanceViewContent.BackupButton(color: .accentRed)
-        case .warning:
-            balanceColor = .accentOrange
-            backupButton = BalanceViewContent.BackupButton(color: .accentOrange)
-        case .none:
-            balanceColor = .textPrimary
-            backupButton = nil
-        }
-
         let balanceContent: BalanceViewContent.Balance = {
             if state.isSecure {
-                return .secure(color: balanceColor)
+                return .secure()
             }
             guard let portfolioTotal else {
-                return BalanceViewContent.Balance(text: "-", color: balanceColor)
+                return BalanceViewContent.Balance(text: "-")
             }
             return headerMapper.mapFiatBalanceAmount(
                 amount: portfolioTotal.amount,
-                currency: portfolioTotal.currency,
-                color: balanceColor
+                currency: portfolioTotal.currency
             )
         }()
 
@@ -56,7 +35,6 @@ enum BalanceSwiftUIMapper {
             balance: balanceContent.settingFreshness(freshness),
             address: addressConfig(wallet: wallet),
             battery: batteryConfig,
-            backupButton: backupButton,
             amountScope: wallet.id
         )
 

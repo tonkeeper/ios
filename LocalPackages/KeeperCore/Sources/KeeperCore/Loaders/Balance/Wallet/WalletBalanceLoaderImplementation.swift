@@ -18,7 +18,8 @@ actor WalletBalanceLoaderImplementation {
         let task: Task<BalanceRefreshResult, Never>
     }
 
-    private let wallet: Wallet
+    private let walletId: String
+    private let walletsStore: WalletsStore
     private let balanceStore: BalanceStore
     private let stakingPoolsStore: StakingPoolsStore
     private let walletNFTSStore: WalletNFTStore
@@ -30,7 +31,8 @@ actor WalletBalanceLoaderImplementation {
     private var lastRunId: UInt64 = 0
 
     init(
-        wallet: Wallet,
+        walletId: String,
+        walletsStore: WalletsStore,
         balanceStore: BalanceStore,
         stakingPoolsStore: StakingPoolsStore,
         walletNFTSStore: WalletNFTStore,
@@ -38,7 +40,8 @@ actor WalletBalanceLoaderImplementation {
         stackingService: StakingService,
         accountNFTService: AccountNFTService
     ) {
-        self.wallet = wallet
+        self.walletId = walletId
+        self.walletsStore = walletsStore
         self.balanceStore = balanceStore
         self.stakingPoolsStore = stakingPoolsStore
         self.walletNFTSStore = walletNFTSStore
@@ -105,11 +108,15 @@ extension WalletBalanceLoaderImplementation {
         currency: Currency,
         includingTransferFees: Bool
     ) async -> BalanceRefreshResult {
+        // The loader is cached per wallet id and outlives the wallet's enrichment, so anything that
+        // authenticates a request (multichain wallet id, Tron address) has to come from the store.
+        guard let wallet = walletsStore.getWallet(id: walletId) else { return .dropped }
         async let balance = loadBalance(
+            wallet: wallet,
             currency: currency,
             includingTransferFees: includingTransferFees
         )
-        async let stakingPools: Void = loadStakingPools()
+        async let stakingPools: Void = loadStakingPools(wallet: wallet)
         async let nfts: Void = loadNFTs()
 
         let result = await balance
@@ -118,6 +125,7 @@ extension WalletBalanceLoaderImplementation {
     }
 
     private nonisolated func loadBalance(
+        wallet: Wallet,
         currency: Currency,
         includingTransferFees: Bool
     ) async -> BalanceRefreshResult {
@@ -142,7 +150,7 @@ extension WalletBalanceLoaderImplementation {
         }
     }
 
-    private nonisolated func loadStakingPools() async {
+    private nonisolated func loadStakingPools(wallet: Wallet) async {
         guard let stackingPools = try? await stackingService.loadStakingPools(wallet: wallet),
               !Task.isCancelled
         else {

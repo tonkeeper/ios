@@ -1,6 +1,5 @@
 import Foundation
 import OpenAPIRuntime
-import TonAPI
 
 /// Synchronous façade over `BackgroundUpdateRuntime`. `start()`/`stop()` only order a command, so
 /// no teardown ever runs on the caller's thread — which is what the background transition needs.
@@ -422,11 +421,6 @@ public extension Swift.Error {
         case let deviceAuthError as DeviceAuthError:
             guard case .cancelled = deviceAuthError else { return false }
             return true
-        case let tonApiErrorResponse as TonAPI.ErrorResponse:
-            switch tonApiErrorResponse {
-            case let .error(_, _, _, error):
-                return error.isCancelledError
-            }
         default:
             return false
         }

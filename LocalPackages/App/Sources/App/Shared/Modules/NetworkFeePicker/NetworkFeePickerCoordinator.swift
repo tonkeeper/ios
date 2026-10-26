@@ -45,6 +45,11 @@ final class NetworkFeePickerCoordinator: RouterCoordinator<NavigationControllerR
         )
     }
 
+    /// Takes the picker down with the screen that opened it, without reporting a selection.
+    func dismiss() {
+        bottomSheetViewController?.dismiss()
+    }
+
     private func makeModule(
         presentation: NetworkFeePickerPresentation
     ) -> MVVMModule<NetworkFeePickerViewController, NetworkFeePickerModuleOutput, NetworkFeePickerModuleInput> {

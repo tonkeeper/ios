@@ -35,11 +35,12 @@ struct RaffleImageView: View {
             TemplateIcon(image: symbol.image, tint: tint, size: size)
         case let .url(url):
             if let url {
-                KFImage(source: RaffleKingfisherSource.source(url))
-                    .resizable()
-                    .placeholder { ShimmerSwiftUIView(config: .init(color: .backgroundContentTint)) }
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: size, height: size)
+                TKRemoteImage(source: RaffleKingfisherSource.source(url), contentMode: .fit) {
+                    ShimmerSwiftUIView(config: .init(color: .backgroundContentTint))
+                } failure: {
+                    ShimmerSwiftUIView(config: .init(color: .backgroundContentTint))
+                }
+                .frame(width: size, height: size)
             } else {
                 ShimmerSwiftUIView(config: .init(color: .backgroundContentTint))
                     .frame(width: size, height: size)

@@ -2,6 +2,8 @@
 import ChainKit
 import Combine
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import TonSwift
 import XCTest
 
@@ -29,7 +31,7 @@ final class PerpsViewModelTests: XCTestCase {
         }
         let first = viewModel.loadedItems.first
         XCTAssertEqual(first?.leverageText, "40X")
-        XCTAssertEqual(first?.priceText, PerpsFormatting.usd(30))
+        XCTAssertEqual(first?.priceText, PerpsFormatting.live.usd(30))
         XCTAssertEqual(service.requestedSorts, [.volume])
         viewModel.onDisappear()
     }
@@ -60,7 +62,7 @@ final class PerpsViewModelTests: XCTestCase {
         let service = PerpsHomeServiceSpy()
         service.pages = [.test([.test(id: 1)])]
         let stores = makeStores(service: service)
-        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account)
+        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, format: PerpsFormatting.live)
         await expectPublished(first.$marketsState, description: "first home loaded", matching: {
             $0.loadedMarketIDs == [1]
         }) {
@@ -74,7 +76,7 @@ final class PerpsViewModelTests: XCTestCase {
         }
         first.onDisappear()
 
-        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account)
+        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, format: PerpsFormatting.live)
         XCTAssertEqual(second.sort, .openInterest)
         second.onAppear()
         await service.waitForRequestCount(3)
@@ -100,6 +102,29 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.onAppear()
         }
         XCTAssertEqual(viewModel.accountState.portfolio?.accountIndex, 7)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_theBalanceCardCarriesTheAvailableBalance_notTheCollateralOrEquity() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = PerpsAccountSnapshot(
+            availableBalance: "125.50",
+            collateral: "340.20",
+            equity: "612.75",
+            positions: [makePosition()]
+        )
+        let viewModel = makeViewModel(service: service)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "account active",
+            matching: \.isActive
+        ) {
+            viewModel.onAppear()
+        }
+        XCTAssertEqual(viewModel.accountState.portfolio?.balanceText, PerpsFormatting.live.usd("125.50"))
         viewModel.onDisappear()
     }
 
@@ -149,13 +174,13 @@ final class PerpsViewModelTests: XCTestCase {
         XCTAssertEqual(btc?.symbol, "BTC")
         XCTAssertEqual(btc?.isLong, true)
         XCTAssertEqual(btc?.leverageText, "27X")
-        XCTAssertEqual(btc?.valueText, PerpsFormatting.usd(21))
-        XCTAssertEqual(btc?.pnlText, PerpsFormatting.signedUsd(0.5))
+        XCTAssertEqual(btc?.valueText, PerpsFormatting.live.usd(21))
+        XCTAssertEqual(btc?.pnlText, PerpsFormatting.live.signedUsd(0.5))
         XCTAssertEqual(btc?.isPnlPositive, true)
         XCTAssertEqual(portfolio?.positions.last?.isLong, false)
 
-        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.usd(133.43))
-        XCTAssertEqual(portfolio?.positionsTotal?.pnlText, PerpsFormatting.signedUsd(6.68))
+        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.live.usd(133.43))
+        XCTAssertEqual(portfolio?.positionsTotal?.pnlText, PerpsFormatting.live.signedUsd(6.68))
         XCTAssertEqual(portfolio?.positionsTotal?.isPnlPositive, true)
         viewModel.onDisappear()
     }
@@ -201,7 +226,7 @@ final class PerpsViewModelTests: XCTestCase {
         }
         XCTAssertEqual(
             viewModel.accountState.portfolio?.positionsTotal?.pnlText,
-            PerpsFormatting.signedUsd(6.68)
+            PerpsFormatting.live.signedUsd(6.68)
         )
         viewModel.onDisappear()
     }
@@ -227,7 +252,7 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.onAppear()
         }
         let total = viewModel.accountState.portfolio?.positionsTotal
-        XCTAssertEqual(total?.pnlText, PerpsFormatting.signedUsd(52))
+        XCTAssertEqual(total?.pnlText, PerpsFormatting.live.signedUsd(52))
         XCTAssertNil(total?.pnlPercentText)
         viewModel.onDisappear()
     }
@@ -272,9 +297,9 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.onAppear()
         }
         let portfolio = viewModel.accountState.portfolio
-        XCTAssertEqual(portfolio?.positions.first?.valueText, PerpsFormatting.usd(125))
-        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.usd(125))
-        XCTAssertEqual(portfolio?.positionsTotal?.pnlPercentText, PerpsFormatting.signedPercent(25))
+        XCTAssertEqual(portfolio?.positions.first?.valueText, PerpsFormatting.live.usd(125))
+        XCTAssertEqual(portfolio?.positionsTotal?.amountText, PerpsFormatting.live.usd(125))
+        XCTAssertEqual(portfolio?.positionsTotal?.pnlPercentText, PerpsFormatting.live.signedPercent(25))
         viewModel.onDisappear()
     }
 
@@ -389,14 +414,14 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.$marketsState,
             description: "price patched in place",
             matching: { state in
-                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.usd(150)
+                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.usd(150)
             }
         ) {
             await client.emit([("BBB/USD", "150")])
         }
         XCTAssertEqual(viewModel.loadedMarketIDs, [1, 2])
         let pumped = viewModel.loadedItems.first(where: { $0.id == 2 })
-        XCTAssertEqual(pumped?.changeText, PerpsFormatting.signedPercent(51.5))
+        XCTAssertEqual(pumped?.changeText, PerpsFormatting.live.signedPercent(51.5))
         viewModel.onDisappear()
     }
 }
@@ -448,7 +473,8 @@ private extension PerpsViewModelTests {
         let stores = makeStores(service: service, client: client)
         return PerpsViewModel(
             marketsStore: stores.markets,
-            accountStore: stores.account
+            accountStore: stores.account,
+            format: PerpsFormatting.live
         )
     }
 
@@ -568,13 +594,11 @@ private final class PerpsHomeServiceSpy: PerpsMarketsReading, PerpsAccountReadin
         PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet _: Wallet, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
-        []
-    }
-
     func watchPositions(
         wallet _: Wallet,
-        onUpdate _: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
+        pollInterval _: TimeInterval,
+        focus _: @escaping @Sendable () -> PerpsWatchFocus,
+        onUpdate _: @escaping @Sendable (PerpsAccountTick) -> Void,
         onInterrupted _: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         lock.withLock { positionWatchStartCount += 1 }

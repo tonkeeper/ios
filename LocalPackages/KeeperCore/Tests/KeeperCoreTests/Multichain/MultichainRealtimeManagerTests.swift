@@ -389,6 +389,7 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -408,6 +409,7 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         throw error
@@ -433,7 +435,6 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle] {
         throw error
@@ -444,14 +445,6 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainClientAPIError) {
-        throw error
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainClientAPIError) {
         throw error
     }
 

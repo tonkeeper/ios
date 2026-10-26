@@ -94,7 +94,7 @@ public struct PopularApp: Codable, Identifiable, Equatable {
         }
     }
 
-    public enum ButtonType: Equatable {
+    @frozen public enum ButtonType: Equatable {
         case deeplink(URL)
         case unknown
     }

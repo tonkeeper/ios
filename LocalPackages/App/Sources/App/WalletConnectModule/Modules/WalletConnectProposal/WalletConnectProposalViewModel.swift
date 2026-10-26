@@ -78,6 +78,9 @@ private extension WalletConnectProposalPermissionItem {
         .ethSignTransaction,
         .tronSignTransaction,
         .tonSendMessage,
+        .solanaSignTransaction,
+        .solanaSignAndSendTransaction,
+        .solanaSignAllTransactions,
     ]
 
     static let messageSignMethods: Set<WalletConnectMethod> = [
@@ -85,6 +88,7 @@ private extension WalletConnectProposalPermissionItem {
         .ethSignTypedDataV4,
         .tronSignMessage,
         .tonSignData,
+        .solanaSignMessage,
     ]
 }
 

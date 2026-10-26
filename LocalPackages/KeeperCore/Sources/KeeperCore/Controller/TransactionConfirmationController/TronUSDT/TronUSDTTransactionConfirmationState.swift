@@ -33,4 +33,15 @@ public struct TronUSDTTransactionConfirmationState {
 
         return availableTypes.first ?? .battery
     }
+
+    /// A GRAM-paid send reads its amount from `extraState`, so it follows the choice at once.
+    mutating func prefer(_ extraType: TransactionConfirmationModel.ExtraType) {
+        preferredExtraType = extraType
+        guard case .extra = extraState,
+              let option = extraOptions.first(where: { $0.type == extraType })
+        else {
+            return
+        }
+        extraState = .extra(TransactionConfirmationModel.Extra(value: option.value, kind: .fee))
+    }
 }

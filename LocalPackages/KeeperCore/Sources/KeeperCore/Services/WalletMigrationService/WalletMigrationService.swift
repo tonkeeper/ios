@@ -107,7 +107,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
         )
         let selfTotalFees = selfTransactions.reduce(into: UInt64.zero) { $0 += $1.totalFees }
         let insufficientTonDetails = selfResponse.details
-        let requiredTonNano = insufficientTonDetails.map { UInt64(max($0._required, 0)) }
+        let requiredTonNano = insufficientTonDetails.map { UInt64(max($0.required, 0)) }
         let feeResolver = WalletMigrationTonFeeOptionsResolver(configuration: configuration)
         let availableFeeMethods = await feeResolver.resolve(
             selfTotalFees: selfTotalFees,
@@ -195,7 +195,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
                 } else {
                     boc = message.boc
                 }
-                return WalletMigrationOutMessage(boc: boc, mode: message.mode)
+                return WalletMigrationOutMessage(boc: boc, mode: Int(message.mode))
             }
             return WalletMigrationPreparedTransaction(
                 seqno: transaction.seqno,
@@ -365,7 +365,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
 
     private func makeValues(
         wallets: [Wallet],
-        response: MigrationWallets,
+        response: TonAPI.Components.Schemas.MigrationWallets,
         tronBalances: [String: TronBalance],
         rates: MigrationRates,
         currency: Currency
@@ -381,7 +381,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
                 account: apiValue?.account ?? account,
                 balance: apiValue?.balance ?? 0,
                 jettonsCount: apiValue?.jettons.count ?? 0,
-                nftCount: apiValue?.nftCount ?? 0,
+                nftCount: apiValue.map { Int($0.nftCount) } ?? 0,
                 usdtAmount: usdtAmount,
                 trxAmount: trxAmount,
                 fiatBalance: fiatBalance(
@@ -432,7 +432,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
 
     private func fiatBalance(
         tonBalance: Int64,
-        jettons: [TonAPI.JettonBalance],
+        jettons: [TonAPI.Components.Schemas.JettonBalance],
         usdtAmount: BigUInt,
         trxAmount: BigUInt,
         currency: Currency,
@@ -450,7 +450,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
         }
 
         for jetton in jettons {
-            guard let price = jetton.price?.prices?[currency.code],
+            guard let price = jetton.price?.prices?.additionalProperties[currency.code],
                   let quantity = BigUInt(jetton.balance),
                   quantity > 0
             else {

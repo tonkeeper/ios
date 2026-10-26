@@ -87,7 +87,7 @@ private extension BatteryRefillScreen {
                         .textStyle(.label1)
                         .foregroundStyle(.textPrimary)
                 } secondaryRow: {
-                    Text(TKLocales.Battery.Refill.Settings.caption)
+                    Text(viewModel.settingsCaption)
                         .textStyle(.body2)
                         .foregroundStyle(.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

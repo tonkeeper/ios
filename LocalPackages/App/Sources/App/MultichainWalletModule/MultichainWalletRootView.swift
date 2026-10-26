@@ -1,3 +1,4 @@
+import AppUI
 import LocalAuthentication
 import SwiftUI
 import TKLocalize
@@ -75,11 +76,43 @@ private struct MultichainWalletContentView: View {
                     .transition(.opacity)
                 }
 
+                if let perpsSectionViewModel = viewModel.perpsSectionViewModel, !showsSkeleton {
+                    MultichainWalletPerpsSection(
+                        placement: .aboveAssets,
+                        viewModel: perpsSectionViewModel
+                    )
+                }
+
                 WalletBalanceMultichainAssetsListView(
                     viewModel: viewModel.assetsListViewModel,
                     showsSkeleton: showsSkeleton
                 )
                 .padding(.horizontal, 16)
+
+                if !showsSkeleton {
+                    MultichainWalletEarnPortfolioSection(viewModel: viewModel.earnPortfolioViewModel)
+                        .id(viewModel.wallet.id)
+                }
+
+                if let perpsSectionViewModel = viewModel.perpsSectionViewModel, !showsSkeleton {
+                    MultichainWalletPerpsSection(
+                        placement: .belowAssets,
+                        viewModel: perpsSectionViewModel
+                    )
+                }
+
+                if !showsSkeleton {
+                    MultichainWalletEarnFeaturedSection(
+                        walletId: viewModel.wallet.id,
+                        portfolioViewModel: viewModel.earnPortfolioViewModel,
+                        cards: rootViewModel.earnCards,
+                        onOpenCatalog: rootViewModel.tapEarnCatalog,
+                        onSelectCard: rootViewModel.tapEarnCard,
+                        onAppear: rootViewModel.earnFeaturedDidAppear(walletId:),
+                        onDisappear: rootViewModel.earnFeaturedDidDisappear(walletId:)
+                    )
+                    .id(viewModel.wallet.id)
+                }
 
                 if !showsSkeleton {
                     MultichainWalletCollectiblesSection(viewModel: viewModel.collectiblesViewModel)
@@ -157,8 +190,7 @@ private struct MultichainWalletBalanceSection: View {
             balanceAction: viewModel.balancePressed,
             addressAction: viewModel.addressPressed,
             addressLongPressAction: viewModel.addressLongPressed,
-            batteryAction: viewModel.batteryPressed,
-            backupAction: viewModel.backupPressed
+            batteryAction: viewModel.batteryPressed
         )
         .frame(height: height(for: config), alignment: .top)
         .clipped()
@@ -206,6 +238,53 @@ private struct MultichainWalletHomeBannersSkeleton: View {
         static let cornerRadius: CGFloat = 16
         static let horizontalPadding: CGFloat = 16
         static let bottomPadding: CGFloat = 16
+    }
+}
+
+private struct MultichainWalletEarnPortfolioSection: View {
+    @ObservedObject var viewModel: WalletBalanceEarnPortfolioViewModel
+
+    var body: some View {
+        switch viewModel.state {
+        case .noEVMAccount, .loading, .empty:
+            EmptyView()
+        case let .positions(state):
+            EarnPortfolioSectionView(
+                state: state,
+                onOpenCatalog: viewModel.openCatalog,
+                onSelectRow: { viewModel.selectRow(id: $0.id) },
+                onRetry: viewModel.reload
+            )
+            .padding(.top, 16)
+            .onAppear(perform: viewModel.positionsDidAppear)
+            .onDisappear(perform: viewModel.positionsDidDisappear)
+        case .unavailable:
+            EarnPortfolioUnavailableSectionView(onRetry: viewModel.reload)
+                .padding(.top, 16)
+        }
+    }
+}
+
+private struct MultichainWalletEarnFeaturedSection: View {
+    let walletId: String
+    @ObservedObject var portfolioViewModel: WalletBalanceEarnPortfolioViewModel
+    let cards: [EarnCardViewData]
+    let onOpenCatalog: () -> Void
+    let onSelectCard: (EarnCardViewData) -> Void
+    let onAppear: (String) -> Void
+    let onDisappear: (String) -> Void
+
+    var body: some View {
+        if case .empty = portfolioViewModel.state, !cards.isEmpty {
+            EarnCardsSectionView(
+                cards: cards,
+                onOpenCatalog: onOpenCatalog,
+                onSelectCard: onSelectCard
+            )
+            .padding(.top, 16)
+            .onAppear { onAppear(walletId) }
+            .onDisappear { onDisappear(walletId) }
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct EncryptedComment: Codable {
-    public enum EncryptedCommentType: String, Codable {
+    @frozen public enum EncryptedCommentType: String, Codable {
         case simple
     }
 

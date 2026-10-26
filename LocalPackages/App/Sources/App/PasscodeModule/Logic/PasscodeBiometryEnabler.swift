@@ -4,30 +4,30 @@ import TKLogging
 
 struct PasscodeBiometryEnabler {
     private let mnemonicAccess: MnemonicAccess
-    private let securityStore: SecurityStore
     private let biometryProvider: BiometryProvider
 
     init(
         mnemonicAccess: MnemonicAccess,
-        securityStore: SecurityStore,
         biometryProvider: BiometryProvider = BiometryProvider()
     ) {
         self.mnemonicAccess = mnemonicAccess
-        self.securityStore = securityStore
         self.biometryProvider = biometryProvider
     }
 
-    func offerBiometry(passcode: String) async {
-        guard biometryProvider.isAvailable else { return }
+    /// Shows the system biometry prompt and returns whether it unlocked the stored passcode.
+    /// The caller turns the biometry setting on once the first wallet is added: the settings
+    /// live in the wallets' `KeeperInfo`, so an earlier write is dropped.
+    func offerBiometry(passcode: String) async -> Bool {
+        guard biometryProvider.isAvailable else { return false }
 
         do {
-            try mnemonicAccess.setPasscode(passcode)
-            _ = try mnemonicAccess.getPasscode()
-            await securityStore.setIsBiometryEnable(true)
+            try await mnemonicAccess.setBiometryProtectedPasscode(passcode)
+            return true
         } catch {
             Log.w("Biometry offer declined or failed", extraInfo: [
                 "error": error.localizedDescription,
             ])
+            return false
         }
     }
 }

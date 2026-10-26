@@ -13,6 +13,10 @@ public extension Log {
 }
 
 private struct LogConfigurator {
+    private static let sessionLogDirectory = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
+        .appendingPathComponent("Logs", isDirectory: true)
+        .appendingPathComponent("Sessions", isDirectory: true)
+
     private let application: UIApplication
 
     init(application: UIApplication) {
@@ -25,13 +29,19 @@ private struct LogConfigurator {
             .flatMap(LogSeverity.init(rawValue:))
         let resolvedSeverity = overridenSeverity ?? defaultSeverity
 
-        Log.configuration = if application.isAppStoreEnvironment {
+        var configuration = if application.isAppStoreEnvironment {
             appStoreConfiguration(severity: resolvedSeverity)
         } else if application.isDebug {
             debugConfiguration(severity: resolvedSeverity)
         } else {
             defaultConfiguration(severity: resolvedSeverity)
         }
+        let sessionLog = Log.configuration.sessionLog
+            ?? Self.sessionLogDirectory.map { SessionLogBackend(directory: $0) }
+        if let sessionLog {
+            configuration.backends.append(sessionLog)
+        }
+        Log.configuration = configuration
     }
 }
 

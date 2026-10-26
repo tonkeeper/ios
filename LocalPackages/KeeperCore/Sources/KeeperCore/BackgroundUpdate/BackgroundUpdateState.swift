@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BackgroundUpdateConnectionState: Equatable, Sendable {
+@frozen public enum BackgroundUpdateConnectionState: Equatable, Sendable {
     case connecting
     case connected
     case disconnected

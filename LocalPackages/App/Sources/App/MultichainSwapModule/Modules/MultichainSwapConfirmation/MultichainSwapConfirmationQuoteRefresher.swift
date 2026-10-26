@@ -26,13 +26,13 @@ struct MultichainSwapConfirmationQuoteRefresher {
     func refresh(
         input: MultichainSwapConfirmationInput,
         selectedSlippageBps: Int,
-        wallet: Wallet
+        swapWallet: MultichainSwapWallet
     ) async throws -> MultichainSwapConfirmationQuoteState {
         let userInput = input.userInput
         guard let sourceChain = userInput.sendAsset.asset.chain,
               let destinationChain = userInput.receiveAsset.asset.chain,
-              let senderAddress = walletAddress(for: sourceChain, wallet: wallet),
-              let recipientAddress = walletAddress(for: destinationChain, wallet: wallet)
+              let senderAddress = swapWallet.address(for: sourceChain),
+              let recipientAddress = swapWallet.address(for: destinationChain)
         else {
             throw MultichainSwapConfirmationQuoteRefreshError.missingWalletAddress
         }
@@ -48,9 +48,10 @@ struct MultichainSwapConfirmationQuoteRefresher {
                 exactType: MultichainSwapQuoteRequest.exactInputType,
                 aggregators: requestedAggregators,
                 returnDepositAddress: MultichainSwapQuoteRequest.returnDepositAddress(sourceChain: sourceChain),
-                includePayload: true
+                includePayload: true,
+                isMax: userInput.isMax ? true : nil
             ),
-            walletId: wallet.multichainWalletId
+            walletId: swapWallet.walletId
         )
         guard let route = quote.preferredRoute(at: Date()) else {
             throw MultichainSwapConfirmationQuoteRefreshError.noNonExpiredRoute(quote)
@@ -60,17 +61,5 @@ struct MultichainSwapConfirmationQuoteRefresher {
             quote: quote,
             route: route
         )
-    }
-}
-
-private extension MultichainSwapConfirmationQuoteRefresher {
-    func walletAddress(
-        for chain: MultichainChain,
-        wallet: Wallet
-    ) -> String? {
-        guard case let .multichain(state) = wallet.multichain else {
-            return nil
-        }
-        return state.address(for: chain, preferredType: wallet.preferredMultichainAddressType(for: chain))
     }
 }

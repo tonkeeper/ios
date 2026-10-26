@@ -56,15 +56,12 @@ struct MultichainSwapConfirmationDisplayMaker {
                 ? selectedFeeOption?.extraType.feeRowMethodTitle ?? ""
                 : "",
             canPickFeeMethod: canPickFeeMethod,
-            networkFeeSubtitle: insufficientNativeSymbol(
+            networkFeeSubtitle: networkFeeSubtitleLine(
                 feeOptions: feeOptions,
                 selectedFeeOption: selectedFeeOption,
-                nativeFeeShortage: nativeFeeShortage
-            ).map {
-                TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.insufficientNativeToken($0)
-            } ?? route.estimatedTime?.totalSeconds.map {
-                networkFeeEstimatedTimeLine(totalSeconds: $0)
-            } ?? ""
+                nativeFeeShortage: nativeFeeShortage,
+                estimatedTimeSeconds: route.estimatedTime.flatMap(\.totalSeconds)
+            )
         )
     }
 
@@ -132,6 +129,27 @@ private extension MultichainSwapConfirmationDisplayMaker {
             return nil
         }
         return nativeFeeShortage?.asset.symbol
+    }
+
+    func networkFeeSubtitleLine(
+        feeOptions: [MultichainSwapFeeOption],
+        selectedFeeOption: MultichainSwapFeeOption?,
+        nativeFeeShortage: MultichainNativeFeeShortage?,
+        estimatedTimeSeconds: Int?
+    ) -> String {
+        if let symbol = insufficientNativeSymbol(
+            feeOptions: feeOptions,
+            selectedFeeOption: selectedFeeOption,
+            nativeFeeShortage: nativeFeeShortage
+        ) {
+            return TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.insufficientNativeToken(symbol)
+        }
+        return [
+            selectedFeeOption?.refundedChargesText,
+            estimatedTimeSeconds.map { networkFeeEstimatedTimeLine(totalSeconds: $0) },
+        ]
+        .compactMap { $0 }
+        .joined(separator: " · ")
     }
 
     func networkFeeValueLine(

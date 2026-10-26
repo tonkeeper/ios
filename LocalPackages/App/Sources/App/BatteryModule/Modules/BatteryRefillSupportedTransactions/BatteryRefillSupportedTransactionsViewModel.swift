@@ -34,13 +34,16 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
     }
 
     private let wallet: Wallet
+    private let networks: BatteryNetworks
     private let batteryChargeMapper: BatteryChargesMapper
 
     init(
         wallet: Wallet,
+        networks: BatteryNetworks,
         batteryChargeMapper: BatteryChargesMapper
     ) {
         self.wallet = wallet
+        self.networks = networks
         self.batteryChargeMapper = batteryChargeMapper
     }
 
@@ -49,7 +52,7 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
 
         snapshot.appendSections([.listItems])
         let items = wallet.supportedBatteryTransactions.map { transaction in
-            let caption = batteryChargeMapper.getChargesCountString(transaction: transaction, wallet: wallet)
+            let caption = batteryChargeMapper.getChargesCountString(transaction: transaction, wallet: wallet, networks: networks)
             let cellConfiguration = TKListItemCell.Configuration(
                 listItemContentViewConfiguration: TKListItemContentView.Configuration(
                     textContentViewConfiguration: TKListItemTextContentView.Configuration(

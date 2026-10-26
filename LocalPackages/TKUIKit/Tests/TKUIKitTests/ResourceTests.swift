@@ -1,6 +1,7 @@
+import CoreText
+import KeeperResources
 import SwiftUI
 @testable import TKUIKit
-import TKUIKitResources
 import UIKit
 import XCTest
 
@@ -26,10 +27,31 @@ final class ResourceTests: XCTestCase {
         XCTAssertEqual(manifestFiles, resourceFiles)
     }
 
-    func testGeneratedFontCasesUseFullFileBasename() {
-        XCTAssertEqual(TKUIKitFontFile.ttfirsneueNm.fileName, "TTFirsNeue-Nm.ttf")
-        XCTAssertEqual(TKUIKitFontFile.ttfirsneueMd.fileName, "TTFirsNeue-Md.ttf")
-        XCTAssertEqual(TKUIKitFontFile.ttfirsneueDmbd.fileName, "TTFirsNeue-DmBd.ttf")
+    func testSharedImageManifestMatchesModuleBundle() throws {
+        let manifestFiles = Set(TKUIKitSharedImageFile.allCases.map(\.rawValue))
+        let resourceFiles = try resourceFileNames(
+            in: XCTUnwrap(TKUIKitSharedImageFile.resourceDirectoryURL),
+            matchingExtension: "png"
+        )
+
+        XCTAssertEqual(manifestFiles, resourceFiles)
+    }
+
+    /// Single-scale imagesets compiled to scale 1; the loose files must keep that size.
+    func testSharedImagesLoadAtScaleOne() {
+        for file in TKUIKitSharedImageFile.allCases {
+            XCTAssertNotEqual(file.image.size, .zero, file.rawValue)
+            XCTAssertEqual(file.image.scale, 1, file.rawValue)
+        }
+    }
+
+    func testSharedFontFilenamesKeepTheirPostScriptNames() {
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueNm.fileName, "tt_firs_neue_normal.ttf")
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueMd.fileName, "tt_firs_neue_medium.ttf")
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueDmbd.fileName, "tt_firs_neue_demi_bold.ttf")
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueNm.fontName, "TTFirsNeue-Nm")
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueMd.fontName, "TTFirsNeue-Md")
+        XCTAssertEqual(TKUIKitFontFile.ttfirsneueDmbd.fontName, "TTFirsNeue-DmBd")
     }
 
     func testUIFontFacadeResolvesTheThreeTypefaceWeights() {
@@ -50,6 +72,18 @@ final class ResourceTests: XCTestCase {
                 "\(file.fileName) does not resolve by its PostScript name"
             )
         }
+    }
+
+    func testFontRegistrationFailureLogsTheCoreTextError() {
+        let coreTextError = NSError(
+            domain: kCTFontManagerErrorDomain as String,
+            code: CTFontManagerError.invalidFontData.rawValue
+        )
+
+        let description = FontError.registrationFailed(coreTextError).logDescription
+
+        XCTAssertTrue(description.contains("domain=\(kCTFontManagerErrorDomain as String)"), description)
+        XCTAssertTrue(description.contains("code=\(CTFontManagerError.invalidFontData.rawValue)"), description)
     }
 
     func testAllFontManifestFilesRegister() throws {
@@ -124,7 +158,7 @@ final class ResourceTests: XCTestCase {
             XCTAssertNotNil(
                 UIColor(
                     named: asset.rawValue,
-                    in: TKUIKitResourcesBundle.bundle,
+                    in: KeeperResourcesBundle.bundle,
                     compatibleWith: nil
                 ),
                 "Missing generated color resource: \(asset.rawValue)"
@@ -359,7 +393,7 @@ final class ResourceTests: XCTestCase {
             let image = try XCTUnwrap(
                 UIImage(
                     named: asset.resourceName,
-                    in: TKUIKitResourcesBundle.bundle,
+                    in: KeeperResourcesBundle.bundle,
                     compatibleWith: nil
                 ),
                 "Missing generated image resource: \(asset.resourceName)"
@@ -402,7 +436,6 @@ final class ResourceTests: XCTestCase {
             UIImage.TKUIKit.Icons.Size20.cryptoTon,
             UIImage.TKUIKit.Icons.Size44.currencyUsdt,
             UIImage.TKUIKit.Artwork.Stories.gasless,
-            UIImage.TKUIKit.Icons.Size72.serviceWallet,
             UIImage.TKUIKit.Icons.Size72.tonkeeperLogo,
             UIImage.TKUIKit.Textures.textSpoiler,
         ]
@@ -422,7 +455,6 @@ final class ResourceTests: XCTestCase {
         _ = SwiftUI.Image.TKUIKit.Icons.Size44.currencyUsdt
         _ = SwiftUI.Image.TKUIKit.Artwork.Stories.gasless
         _ = SwiftUI.Image.TKUIKit.Artwork.Banners.multichain
-        _ = SwiftUI.Image.TKUIKit.Icons.Size72.serviceWallet
         _ = SwiftUI.Image.TKUIKit.Icons.Size16.batteryFlash
         _ = SwiftUI.Image.TKUIKit.Icons.Size16.walletAvatarWallet
         _ = SwiftUI.Image.TKUIKit.Icons.Size72.tonkeeperLogo
@@ -503,10 +535,11 @@ private extension ResourceTests {
     }
 
     var resourcesRoot: URL {
-        // Resources live in the sibling `TKUIKitResources` package.
-        packageRoot
-            .deletingLastPathComponent()
-            .appendingPathComponent("TKUIKitResources/Sources/TKUIKitResources/Resources")
+        let platformRoot = packageRoot.deletingLastPathComponent().deletingLastPathComponent()
+        let packageRoot = FileManager.default.fileExists(atPath: platformRoot.appendingPathComponent("resources/Package.swift").path)
+            ? platformRoot.appendingPathComponent("resources")
+            : platformRoot.deletingLastPathComponent().appendingPathComponent("shared/resources")
+        return packageRoot.appendingPathComponent("Sources/KeeperResources/Resources")
     }
 
     var colorsRoot: URL {

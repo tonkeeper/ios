@@ -35,6 +35,39 @@ final class TokenPickerV2QueryViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.presentation.items.compactMap(\.assetRow).map(\.showsVerificationCheckmark), [true])
     }
+
+    @MainActor
+    func test_loadNextPageIfNeeded_paginatesFromListTailWhileSectionsAreSplit() async {
+        let model = TokenPickerV2ModelFake(
+            pages: [
+                [makeAsset(id: "ton/mainnet/jetton/0:first", verification: .trusted)],
+                [makeAsset(id: "ton/mainnet/jetton/0:second", verification: .trusted)],
+            ]
+        )
+        let viewModel = TokenPickerV2QueryViewModel(
+            query: "ton",
+            category: .all,
+            displayMode: .includingMarketData,
+            tokenPickerModel: model,
+            amountFormatter: FormattersAssembly().amountFormatter,
+            currencyStore: makeCurrencyStore()
+        )
+
+        await viewModel.refresh()
+        XCTAssertTrue(viewModel.splitsPerpetualsIntoSections)
+        guard let lastItem = viewModel.presentation.items.last else {
+            return XCTFail("Expected the first page to load")
+        }
+
+        viewModel.loadNextPageIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(
+            viewModel.presentation.items.compactMap(\.asset).map(\.asset.assetId),
+            ["ton/mainnet/jetton/0:first", "ton/mainnet/jetton/0:second"]
+        )
+        XCTAssertEqual(model.cursors, [nil, "1"])
+    }
 }
 
 private extension TokenPickerV2QueryViewModelTests {
@@ -77,8 +110,7 @@ private extension TokenPickerV2QueryViewModelTests {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: BigUInt(1)
         )
@@ -86,10 +118,15 @@ private extension TokenPickerV2QueryViewModelTests {
 }
 
 private final class TokenPickerV2ModelFake: TokenPickerV2Model {
-    private let assets: [MultichainAsset]
+    private let pages: [[MultichainAsset]]
+    private(set) var cursors = [String?]()
 
     init(assets: [MultichainAsset]) {
-        self.assets = assets
+        pages = [assets]
+    }
+
+    init(pages: [[MultichainAsset]]) {
+        self.pages = pages
     }
 
     var showsCatalogSortControl: Bool {
@@ -108,9 +145,14 @@ private final class TokenPickerV2ModelFake: TokenPickerV2Model {
         query _: String?,
         filter _: TokenPickerV2ChainFilter,
         limit _: Int,
-        cursor _: String?
+        cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
-        TokenPickerLoadResult(assets: assets, nextCursor: nil)
+        cursors.append(cursor)
+        let index = cursor.flatMap(Int.init) ?? 0
+        return TokenPickerLoadResult(
+            assets: pages[index],
+            nextCursor: index + 1 < pages.count ? String(index + 1) : nil
+        )
     }
 
     func setCatalogSearchSort(_ sort: MultichainAssetSearchSort) {

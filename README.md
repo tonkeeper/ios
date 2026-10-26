@@ -1,4 +1,4 @@
-# Tonkeeper iOS
+# Keeper iOS
 
 This directory is the iOS app; every command below runs from `ios/` (`cd ios`, or `make -C ios <target>` from the repository root).
 
@@ -27,8 +27,8 @@ echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
 
 ## Branches and commits
 
-- Branch names must follow `author/TASK/description` (e.g., `rzm/IOS-562/fix-header`) where `TASK` is uppercase letters + digits.
-- The `scripts/hooks/commit-msg` hook prefixes commit summaries with `[TASK]`, so do not add the task id manually. It also formats staged Swift files with the pinned swiftformat and rejects the commit if anything changed.
+- Branch names follow `author/TASK/description` (e.g., `rzm/IOS-562/fix-header`) where `TASK` is uppercase letters + digits.
+- The `commit-msg` hook (`shared/githooks/`, reached through the root `.githooks` symlink) prefixes commit summaries with `[TASK]`, so do not add the task id manually; a branch of another shape (or a detached HEAD) commits unprefixed. It also formats staged Swift files with the pinned swiftformat and rejects the commit if anything changed — except when concluding a merge.
 
 ## Environment
 
@@ -36,3 +36,4 @@ If you use Codex skills, ensure required environment values and dependencies are
 Create a `.env` file at the repository root (one level above `ios/`) with:
 - a non-empty `LINEAR_API_KEY` for the Linear skill. (see https://linear.app/developers)
 - install `gh` (`brew install gh`) and call `gh auth login` for `tondocs` and `pr` skill
+- `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_PATH` (path to the `AuthKey_<id>.p8`, App Manager role) for `make appstore_toolings` (attach the build, push `scripts/appstore/whats_new.txt`, submit to review). `ASC_PRIVATE_KEY_BASE64` works instead of the path (for CI).

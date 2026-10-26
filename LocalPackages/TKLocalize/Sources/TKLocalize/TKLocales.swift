@@ -210,13 +210,6 @@ public enum TKLocales {
     public enum Backup {
         /// Recovery Phrase
         public static let title = TKLocales.tr("Localizable", "backup.title", fallback: "Recovery Phrase")
-        public enum Balance {
-            /// Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.
-            public static func warning(_ p1: Any) -> String {
-                return TKLocales.tr("Localizable", "backup.balance.warning", String(describing: p1), fallback: "Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.")
-            }
-        }
-
         public enum Check {
             /// Write down these words with their numbers and store them in a safe place.
             public static let caption = TKLocales.tr("Localizable", "backup.check.caption", fallback: "Write down these words with their numbers and store them in a safe place.")
@@ -378,6 +371,8 @@ public enum TKLocales {
         public enum Refill {
             /// Swap and send TON tokens and pay less in TRC-20 fees
             public static let emptyCaption = TKLocales.tr("Localizable", "battery.refill.empty_caption", fallback: "Swap and send TON tokens and pay less in TRC-20 fees")
+            /// Pay network fees with charges on TON, TRON and EVM networks
+            public static let evmCaption = TKLocales.tr("Localizable", "battery.refill.evm_caption", fallback: "Pay network fees with charges on TON, TRON and EVM networks")
             /// Your battery ran out due to refunded purchases. Top up your charges to keep going.
             public static let negativeBalanceCaption = TKLocales.tr("Localizable", "battery.refill.negative_balance_caption", fallback: "Your battery ran out due to refunded purchases. Top up your charges to keep going.")
             /// Promo Code
@@ -469,6 +464,11 @@ public enum TKLocales {
         public enum Settings {
             /// Selected transactions will be paid by Keeper Battery.
             public static let caption = TKLocales.tr("Localizable", "battery.settings.caption", fallback: "Selected transactions will be paid by Keeper Battery.")
+            /// Works on %@
+            public static func networks(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "battery.settings.networks", String(describing: p1), fallback: "Works on %@")
+            }
+
             /// Battery Settings
             public static let title = TKLocales.tr("Localizable", "battery.settings.title", fallback: "Battery Settings")
             public enum Items {
@@ -482,6 +482,8 @@ public enum TKLocales {
                 public enum Swaps {
                     /// per swap
                     public static let caption = TKLocales.tr("Localizable", "battery.settings.items.swaps.caption", fallback: "per swap")
+                    /// per swap in TON, depends on the network
+                    public static let evmCaption = TKLocales.tr("Localizable", "battery.settings.items.swaps.evm_caption", fallback: "per swap in TON, depends on the network")
                     /// Swaps via Keeper
                     public static let title = TKLocales.tr("Localizable", "battery.settings.items.swaps.title", fallback: "Swaps via Keeper")
                 }
@@ -489,6 +491,8 @@ public enum TKLocales {
                 public enum Token {
                     /// per transfer
                     public static let caption = TKLocales.tr("Localizable", "battery.settings.items.token.caption", fallback: "per transfer")
+                    /// From 1 charge per transfer, depends on the network
+                    public static let evmCaption = TKLocales.tr("Localizable", "battery.settings.items.token.evm_caption", fallback: "From 1 charge per transfer, depends on the network")
                     /// Token transfers
                     public static let title = TKLocales.tr("Localizable", "battery.settings.items.token.title", fallback: "Token transfers")
                 }
@@ -580,11 +584,6 @@ public enum TKLocales {
             /// Explore
             public static let explore = TKLocales.tr("Localizable", "browser.tab.explore", fallback: "Explore")
         }
-    }
-
-    public enum BuyListPopup {
-        /// You are opening an external app not operated by Keeper.
-        public static let youAreOpeningExternalApp = TKLocales.tr("Localizable", "buy_list_popup.you_are_opening_external_app", fallback: "You are opening an external app not operated by Keeper.")
     }
 
     public enum BuySellList {
@@ -796,76 +795,6 @@ public enum TKLocales {
     public enum Currency {
         /// Primary currency
         public static let title = TKLocales.tr("Localizable", "currency.title", fallback: "Primary currency")
-        public enum Items {
-            /// United Arab Emirates Dirham
-            public static let aed = TKLocales.tr("Localizable", "currency.items.aed", fallback: "United Arab Emirates Dirham")
-            /// Argentine peso
-            public static let ars = TKLocales.tr("Localizable", "currency.items.ARS", fallback: "Argentine peso")
-            /// Australian dollar
-            public static let aud = TKLocales.tr("Localizable", "currency.items.AUD", fallback: "Australian dollar")
-            /// Bangladeshi taka
-            public static let bdt = TKLocales.tr("Localizable", "currency.items.bdt", fallback: "Bangladeshi taka")
-            /// Brazilian Real
-            public static let brl = TKLocales.tr("Localizable", "currency.items.brl", fallback: "Brazilian Real")
-            /// Bitcoin
-            public static let btc = TKLocales.tr("Localizable", "currency.items.BTC", fallback: "Bitcoin")
-            /// Belarusian ruble
-            public static let byn = TKLocales.tr("Localizable", "currency.items.byn", fallback: "Belarusian ruble")
-            /// Canadian Dollar
-            public static let cad = TKLocales.tr("Localizable", "currency.items.cad", fallback: "Canadian Dollar")
-            /// Swiss Franc
-            public static let chf = TKLocales.tr("Localizable", "currency.items.chf", fallback: "Swiss Franc")
-            /// China Yuan
-            public static let cny = TKLocales.tr("Localizable", "currency.items.cny", fallback: "China Yuan")
-            /// Colombian peso
-            public static let cop = TKLocales.tr("Localizable", "currency.items.COP", fallback: "Colombian peso")
-            /// Ethiopian birr
-            public static let etb = TKLocales.tr("Localizable", "currency.items.ETB", fallback: "Ethiopian birr")
-            /// Euro
-            public static let eur = TKLocales.tr("Localizable", "currency.items.eur", fallback: "Euro")
-            /// Great Britain Pound
-            public static let gbp = TKLocales.tr("Localizable", "currency.items.gbp", fallback: "Great Britain Pound")
-            /// Georgian lari
-            public static let gel = TKLocales.tr("Localizable", "currency.items.gel", fallback: "Georgian lari")
-            /// Indonesian Rupiah
-            public static let idr = TKLocales.tr("Localizable", "currency.items.idr", fallback: "Indonesian Rupiah")
-            /// Israeli Sheqel
-            public static let ils = TKLocales.tr("Localizable", "currency.items.ils", fallback: "Israeli Sheqel")
-            /// Indian Rupee
-            public static let inr = TKLocales.tr("Localizable", "currency.items.inr", fallback: "Indian Rupee")
-            /// Japanese Yen
-            public static let jpy = TKLocales.tr("Localizable", "currency.items.jpy", fallback: "Japanese Yen")
-            /// Kenyan shilling
-            public static let kes = TKLocales.tr("Localizable", "currency.items.KES", fallback: "Kenyan shilling")
-            /// South Korean Won
-            public static let krw = TKLocales.tr("Localizable", "currency.items.krw", fallback: "South Korean Won")
-            /// Kazakhstani Tenge
-            public static let kzt = TKLocales.tr("Localizable", "currency.items.kzt", fallback: "Kazakhstani Tenge")
-            /// Nigerian Naira
-            public static let ngn = TKLocales.tr("Localizable", "currency.items.ngn", fallback: "Nigerian Naira")
-            /// Russian Ruble
-            public static let rub = TKLocales.tr("Localizable", "currency.items.rub", fallback: "Russian Ruble")
-            /// Thai baht
-            public static let thb = TKLocales.tr("Localizable", "currency.items.thb", fallback: "Thai baht")
-            /// Gram
-            public static let ton = TKLocales.tr("Localizable", "currency.items.TON", fallback: "Gram")
-            /// Turkish Lira
-            public static let `try` = TKLocales.tr("Localizable", "currency.items.try", fallback: "Turkish Lira")
-            /// Ukrainian hryvnian
-            public static let uah = TKLocales.tr("Localizable", "currency.items.uah", fallback: "Ukrainian hryvnian")
-            /// Ugandan shilling
-            public static let ugx = TKLocales.tr("Localizable", "currency.items.UGX", fallback: "Ugandan shilling")
-            /// United States Dollar
-            public static let usd = TKLocales.tr("Localizable", "currency.items.usd", fallback: "United States Dollar")
-            /// Uzbekistani sum
-            public static let uzs = TKLocales.tr("Localizable", "currency.items.uzs", fallback: "Uzbekistani sum")
-            /// Venezuelan bolívar
-            public static let ves = TKLocales.tr("Localizable", "currency.items.VES", fallback: "Venezuelan bolívar")
-            /// Vietnamese dong
-            public static let vhd = TKLocales.tr("Localizable", "currency.items.vhd", fallback: "Vietnamese dong")
-            /// South African rand
-            public static let zar = TKLocales.tr("Localizable", "currency.items.ZAR", fallback: "South African rand")
-        }
     }
 
     public enum CustomizeWallet {
@@ -939,6 +868,26 @@ public enum TKLocales {
         public static let tickDescription = TKLocales.tr("Localizable", "delete_wallet_warning.tick_description", fallback: "I have a backup copy of the recovery phrase for ")
         /// Delete Wallet Data
         public static let title = TKLocales.tr("Localizable", "delete_wallet_warning.title", fallback: "Delete Wallet Data")
+    }
+
+    public enum DevMenu {
+        /// Developer settings. Careless use may lead to losing your wallet.
+        public static let warning = TKLocales.tr("Localizable", "dev_menu.warning", fallback: "Developer settings. Careless use may lead to losing your wallet.")
+    }
+
+    public enum Earn {
+        /// Earn
+        public static let sectionTitle = TKLocales.tr("Localizable", "earn.section_title", fallback: "Earn")
+        public enum Portfolio {
+            /// Couldn't update positions
+            public static let notUpdated = TKLocales.tr("Localizable", "earn.portfolio.not_updated", fallback: "Couldn't update positions")
+            /// Tap to retry
+            public static let tapToRetry = TKLocales.tr("Localizable", "earn.portfolio.tap_to_retry", fallback: "Tap to retry")
+            /// Earn
+            public static let title = TKLocales.tr("Localizable", "earn.portfolio.title", fallback: "Earn")
+            /// Earn positions are unavailable
+            public static let unavailable = TKLocales.tr("Localizable", "earn.portfolio.unavailable", fallback: "Earn positions are unavailable")
+        }
     }
 
     public enum Errors {
@@ -1255,11 +1204,19 @@ public enum TKLocales {
     }
 
     public enum InsufficientFunds {
+        /// Required for action: %@.
+        /// Your wallet balance: %@.
+        public static func actionRequired(_ p1: Any, _ p2: Any) -> String {
+            return TKLocales.tr("Localizable", "insufficientFunds.action_required", String(describing: p1), String(describing: p2), fallback: "Required for action: %@.\nYour wallet balance: %@.")
+        }
+
         /// Buy %@
         public static func buyTokenTitle(_ p1: Any) -> String {
             return TKLocales.tr("Localizable", "insufficientFunds.buy_token_title", String(describing: p1), fallback: "Buy %@")
         }
 
+        /// Deposit Wallet
+        public static let depositWallet = TKLocales.tr("Localizable", "insufficientFunds.deposit_wallet", fallback: "Deposit Wallet")
         /// Required for blockchain fees: %@ GRAM.
         /// Your balance: %@ GRAM.
         public static func feeRequired(_ p1: Any, _ p2: Any) -> String {
@@ -1280,6 +1237,11 @@ public enum TKLocales {
 
         /// Unknown token
         public static let unknownToken = TKLocales.tr("Localizable", "insufficientFunds.unknown_token", fallback: "Unknown token")
+        /// %@ will be reserved and returned after unstaking.
+        public static func unstakeReserved(_ p1: Any) -> String {
+            return TKLocales.tr("Localizable", "insufficientFunds.unstake_reserved", String(describing: p1), fallback: "%@ will be reserved and returned after unstaking.")
+        }
+
         public enum Wallet {
             /// Insufficient Funds in wallet %@
             public static func title(_ p1: Any) -> String {
@@ -1378,6 +1340,58 @@ public enum TKLocales {
         public static let showAll = TKLocales.tr("Localizable", "list.show_all", fallback: "Show all")
     }
 
+    public enum LiveActivity {
+        /// Closing long
+        public static let closingLong = TKLocales.tr("Localizable", "live_activity.closing_long", fallback: "Closing long")
+        /// Closing short
+        public static let closingShort = TKLocales.tr("Localizable", "live_activity.closing_short", fallback: "Closing short")
+        /// Deposited
+        public static let deposited = TKLocales.tr("Localizable", "live_activity.deposited", fallback: "Deposited")
+        /// Depositing
+        public static let depositing = TKLocales.tr("Localizable", "live_activity.depositing", fallback: "Depositing")
+        /// Dropped
+        public static let dropped = TKLocales.tr("Localizable", "live_activity.dropped", fallback: "Dropped")
+        /// Opening long
+        public static let openingLong = TKLocales.tr("Localizable", "live_activity.opening_long", fallback: "Opening long")
+        /// Opening short
+        public static let openingShort = TKLocales.tr("Localizable", "live_activity.opening_short", fallback: "Opening short")
+        /// Status may have changed
+        public static let statusMayHaveChanged = TKLocales.tr("Localizable", "live_activity.status_may_have_changed", fallback: "Status may have changed")
+        /// Swapped
+        public static let swapped = TKLocales.tr("Localizable", "live_activity.swapped", fallback: "Swapped")
+        /// Withdrawing
+        public static let withdrawing = TKLocales.tr("Localizable", "live_activity.withdrawing", fallback: "Withdrawing")
+        /// Withdrawn
+        public static let withdrawn = TKLocales.tr("Localizable", "live_activity.withdrawn", fallback: "Withdrawn")
+        public enum Stage {
+            /// Converting to %@
+            public static func convertingTo(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "live_activity.stage.converting_to", String(describing: p1), fallback: "Converting to %@")
+            }
+
+            /// Crediting to Perps
+            public static let creditingToPerps = TKLocales.tr("Localizable", "live_activity.stage.crediting_to_perps", fallback: "Crediting to Perps")
+            /// Moving to %@
+            public static func movingTo(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "live_activity.stage.moving_to", String(describing: p1), fallback: "Moving to %@")
+            }
+
+            /// Processing withdrawal
+            public static let processingWithdrawal = TKLocales.tr("Localizable", "live_activity.stage.processing_withdrawal", fallback: "Processing withdrawal")
+            /// Receiving %@
+            public static func receiving(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "live_activity.stage.receiving", String(describing: p1), fallback: "Receiving %@")
+            }
+
+            /// Sending from wallet
+            public static let sendingFromWallet = TKLocales.tr("Localizable", "live_activity.stage.sending_from_wallet", fallback: "Sending from wallet")
+            /// Sending request
+            public static let sendingRequest = TKLocales.tr("Localizable", "live_activity.stage.sending_request", fallback: "Sending request")
+            /// Sending to wallet
+            public static let sendingToWallet = TKLocales.tr("Localizable", "live_activity.stage.sending_to_wallet", fallback: "Sending to wallet")
+        }
+    }
+
     public enum Multichain {
         public enum AssetPicker {
             /// Choose asset
@@ -1423,6 +1437,14 @@ public enum TKLocales {
             public static let closedLong = TKLocales.tr("Localizable", "multichain_history.perps.closed_long", fallback: "Long closed")
             /// Short closed
             public static let closedShort = TKLocales.tr("Localizable", "multichain_history.perps.closed_short", fallback: "Short closed")
+            /// From Perps
+            public static let fromPerps = TKLocales.tr("Localizable", "multichain_history.perps.from_perps", fallback: "From Perps")
+            /// Position increased
+            public static let increased = TKLocales.tr("Localizable", "multichain_history.perps.increased", fallback: "Position increased")
+            /// Long increased
+            public static let increasedLong = TKLocales.tr("Localizable", "multichain_history.perps.increased_long", fallback: "Long increased")
+            /// Short increased
+            public static let increasedShort = TKLocales.tr("Localizable", "multichain_history.perps.increased_short", fallback: "Short increased")
             /// Liquidated
             public static let liquidated = TKLocales.tr("Localizable", "multichain_history.perps.liquidated", fallback: "Liquidated")
             /// Long Liquidated
@@ -1435,6 +1457,12 @@ public enum TKLocales {
             public static let openedLong = TKLocales.tr("Localizable", "multichain_history.perps.opened_long", fallback: "Long opened")
             /// Short opened
             public static let openedShort = TKLocales.tr("Localizable", "multichain_history.perps.opened_short", fallback: "Short opened")
+            /// Position reduced
+            public static let reduced = TKLocales.tr("Localizable", "multichain_history.perps.reduced", fallback: "Position reduced")
+            /// Long reduced
+            public static let reducedLong = TKLocales.tr("Localizable", "multichain_history.perps.reduced_long", fallback: "Long reduced")
+            /// Short reduced
+            public static let reducedShort = TKLocales.tr("Localizable", "multichain_history.perps.reduced_short", fallback: "Short reduced")
             /// SL executed
             public static let stopLossExecuted = TKLocales.tr("Localizable", "multichain_history.perps.stop_loss_executed", fallback: "SL executed")
             /// %@ Perps
@@ -1444,6 +1472,8 @@ public enum TKLocales {
 
             /// TP executed
             public static let takeProfitExecuted = TKLocales.tr("Localizable", "multichain_history.perps.take_profit_executed", fallback: "TP executed")
+            /// To Perps
+            public static let toPerps = TKLocales.tr("Localizable", "multichain_history.perps.to_perps", fallback: "To Perps")
         }
 
         public enum Placeholder {
@@ -1860,6 +1890,46 @@ public enum TKLocales {
         }
     }
 
+    public enum NewNetworks {
+        /// %1$@ and %2$@
+        public static func listLast(_ p1: Any, _ p2: Any) -> String {
+            return TKLocales.tr("Localizable", "new_networks.list_last", String(describing: p1), String(describing: p2), fallback: "%1$@ and %2$@")
+        }
+
+        /// Open wallet
+        public static let openWallet = TKLocales.tr("Localizable", "new_networks.open_wallet", fallback: "Open wallet")
+        /// Try again
+        public static let tryAgain = TKLocales.tr("Localizable", "new_networks.try_again", fallback: "Try again")
+        public enum Added {
+            /// %@ are now in your wallet.
+            public static func subtitleMany(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "new_networks.added.subtitle_many", String(describing: p1), fallback: "%@ are now in your wallet.")
+            }
+
+            /// %@ is now in your wallet.
+            public static func subtitleOne(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "new_networks.added.subtitle_one", String(describing: p1), fallback: "%@ is now in your wallet.")
+            }
+
+            /// New networks added
+            public static let title = TKLocales.tr("Localizable", "new_networks.added.title", fallback: "New networks added")
+        }
+
+        public enum Error {
+            /// The server didn’t respond. Your funds and existing networks aren’t affected.
+            public static let subtitle = TKLocales.tr("Localizable", "new_networks.error.subtitle", fallback: "The server didn’t respond. Your funds and existing networks aren’t affected.")
+            /// Couldn’t add new networks
+            public static let title = TKLocales.tr("Localizable", "new_networks.error.title", fallback: "Couldn’t add new networks")
+        }
+
+        public enum Loading {
+            /// It takes a few seconds. Your recovery phrase stays the same.
+            public static let subtitle = TKLocales.tr("Localizable", "new_networks.loading.subtitle", fallback: "It takes a few seconds. Your recovery phrase stays the same.")
+            /// Adding new networks
+            public static let title = TKLocales.tr("Localizable", "new_networks.loading.title", fallback: "Adding new networks")
+        }
+    }
+
     public enum NftDetails {
         /// About collection
         public static let aboutCollection = TKLocales.tr("Localizable", "nft_details.about_collection", fallback: "About collection")
@@ -1971,13 +2041,6 @@ public enum TKLocales {
         }
     }
 
-    public enum P2pExpressPopup {
-        /// To purchase crypto with fiat, complete the payment via Wallet in Telegram using P2P, then transfer the funds to your Keeper wallet.
-        public static let caption = TKLocales.tr("Localizable", "p2p_express_popup.caption", fallback: "To purchase crypto with fiat, complete the payment via Wallet in Telegram using P2P, then transfer the funds to your Keeper wallet.")
-        /// Buy via Wallet P2P
-        public static let title = TKLocales.tr("Localizable", "p2p_express_popup.title", fallback: "Buy via Wallet P2P")
-    }
-
     public enum Passcode {
         /// 1 attempt left
         public static let attemptLeft = TKLocales.tr("Localizable", "passcode.attempt_left", fallback: "1 attempt left")
@@ -1999,13 +2062,6 @@ public enum TKLocales {
         public static let create = TKLocales.tr("Localizable", "passcode.create", fallback: "Create passcode")
         /// Enter passcode
         public static let enter = TKLocales.tr("Localizable", "passcode.enter", fallback: "Enter passcode")
-        /// Log Out
-        public static let logout = TKLocales.tr("Localizable", "passcode.logout", fallback: "Log Out")
-        /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
-        public static let logoutConfirmationDescription = TKLocales.tr("Localizable", "passcode.logout_confirmation_description", fallback: "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.")
-        /// 🚧 🚨🚨🚨 🚧
-        /// Sign Out of All Wallets?
-        public static let logoutConfirmationTitle = TKLocales.tr("Localizable", "passcode.logout_confirmation_title", fallback: "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?")
         /// Re-enter passcode
         public static let reenter = TKLocales.tr("Localizable", "passcode.reenter", fallback: "Re-enter passcode")
         /// Too many attempts
@@ -2013,6 +2069,37 @@ public enum TKLocales {
         /// Try again in %@
         public static func tryAgainIn(_ p1: Any) -> String {
             return TKLocales.tr("Localizable", "passcode.try_again_in", String(describing: p1), fallback: "Try again in %@")
+        }
+
+        public enum Reason {
+            /// Add wallet
+            public static let addWallet = TKLocales.tr("Localizable", "passcode.reason.add_wallet", fallback: "Add wallet")
+            /// Back up wallet
+            public static let backup = TKLocales.tr("Localizable", "passcode.reason.backup", fallback: "Back up wallet")
+            /// Confirm action
+            public static let collectibleAction = TKLocales.tr("Localizable", "passcode.reason.collectible_action", fallback: "Confirm action")
+            /// Confirm swap
+            public static let confirmSwap = TKLocales.tr("Localizable", "passcode.reason.confirm_swap", fallback: "Confirm swap")
+            /// Confirm transfer
+            public static let confirmTransfer = TKLocales.tr("Localizable", "passcode.reason.confirm_transfer", fallback: "Confirm transfer")
+            /// Connect to dapp
+            public static let connectDapp = TKLocales.tr("Localizable", "passcode.reason.connect_dapp", fallback: "Connect to dapp")
+            /// Confirm dapp request
+            public static let dappRequest = TKLocales.tr("Localizable", "passcode.reason.dapp_request", fallback: "Confirm dapp request")
+            /// Decrypt comment
+            public static let decryptComment = TKLocales.tr("Localizable", "passcode.reason.decrypt_comment", fallback: "Decrypt comment")
+            /// Delete wallet
+            public static let deleteWallet = TKLocales.tr("Localizable", "passcode.reason.delete_wallet", fallback: "Delete wallet")
+            /// Enable biometry
+            public static let enableBiometry = TKLocales.tr("Localizable", "passcode.reason.enable_biometry", fallback: "Enable biometry")
+            /// Migrate wallet
+            public static let migrateWallet = TKLocales.tr("Localizable", "passcode.reason.migrate_wallet", fallback: "Migrate wallet")
+            /// Confirm trading action
+            public static let perps = TKLocales.tr("Localizable", "passcode.reason.perps", fallback: "Confirm trading action")
+            /// Show recovery phrase
+            public static let showRecoveryPhrase = TKLocales.tr("Localizable", "passcode.reason.show_recovery_phrase", fallback: "Show recovery phrase")
+            /// Sign data
+            public static let signData = TKLocales.tr("Localizable", "passcode.reason.sign_data", fallback: "Sign data")
         }
     }
 
@@ -2050,10 +2137,15 @@ public enum TKLocales {
         public static let deposit = TKLocales.tr("Localizable", "perps.deposit", fallback: "Deposit")
         /// Explore Perps
         public static let explore = TKLocales.tr("Localizable", "perps.explore", fallback: "Explore Perps")
-        /// History
-        public static let history = TKLocales.tr("Localizable", "perps.history", fallback: "History")
+        /// Perps History
+        public static let history = TKLocales.tr("Localizable", "perps.history", fallback: "Perps History")
         /// Learn Basics
         public static let learnBasics = TKLocales.tr("Localizable", "perps.learn_basics", fallback: "Learn Basics")
+        /// Limit %@
+        public static func limitOrderSubtitle(_ p1: Any) -> String {
+            return TKLocales.tr("Localizable", "perps.limit_order_subtitle", String(describing: p1), fallback: "Limit %@")
+        }
+
         /// Open Interest
         public static let openInterest = TKLocales.tr("Localizable", "perps.open_interest", fallback: "Open Interest")
         /// Open positions
@@ -2068,6 +2160,11 @@ public enum TKLocales {
         public static let totalAmount = TKLocales.tr("Localizable", "perps.total_amount", fallback: "Total amount")
         /// Volume
         public static let volume = TKLocales.tr("Localizable", "perps.volume", fallback: "Volume")
+        /// %@ vol
+        public static func volumePattern(_ p1: Any) -> String {
+            return TKLocales.tr("Localizable", "perps.volume_pattern", String(describing: p1), fallback: "%@ vol")
+        }
+
         /// vol
         public static let volumeShort = TKLocales.tr("Localizable", "perps.volume_short", fallback: "vol")
         /// Withdraw
@@ -2082,6 +2179,16 @@ public enum TKLocales {
 
             /// Add margin to make your position safer and lower the risk of liquidation
             public static let addDescription = TKLocales.tr("Localizable", "perps.adjust_margin.add_description", fallback: "Add margin to make your position safer and lower the risk of liquidation")
+            /// You can remove at most %@
+            public static func maxReduce(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.adjust_margin.max_reduce", String(describing: p1), fallback: "You can remove at most %@")
+            }
+
+            /// Minimum margin %@
+            public static func minAmount(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.adjust_margin.min_amount", String(describing: p1), fallback: "Minimum margin %@")
+            }
+
             /// Reduce margin
             public static let reduce = TKLocales.tr("Localizable", "perps.adjust_margin.reduce", fallback: "Reduce margin")
             /// Reduce margin for %@
@@ -2100,29 +2207,14 @@ public enum TKLocales {
         public enum Asset {
             /// About
             public static let about = TKLocales.tr("Localizable", "perps.asset.about", fallback: "About")
-            /// %@ closed
-            public static func activityClosed(_ p1: Any) -> String {
-                return TKLocales.tr("Localizable", "perps.asset.activity_closed", String(describing: p1), fallback: "%@ closed")
-            }
-
-            /// Funding
-            public static let activityFunding = TKLocales.tr("Localizable", "perps.asset.activity_funding", fallback: "Funding")
-            /// %@ liquidated
-            public static func activityLiquidated(_ p1: Any) -> String {
-                return TKLocales.tr("Localizable", "perps.asset.activity_liquidated", String(describing: p1), fallback: "%@ liquidated")
-            }
-
-            /// %@ opened
-            public static func activityOpened(_ p1: Any) -> String {
-                return TKLocales.tr("Localizable", "perps.asset.activity_opened", String(describing: p1), fallback: "%@ opened")
-            }
-
             /// Adjust Margin
             public static let adjustMargin = TKLocales.tr("Localizable", "perps.asset.adjust_margin", fallback: "Adjust Margin")
-            /// Buy
-            public static let buy = TKLocales.tr("Localizable", "perps.asset.buy", fallback: "Buy")
             /// Cash Out
             public static let cashOut = TKLocales.tr("Localizable", "perps.asset.cash_out", fallback: "Cash Out")
+            /// Close long
+            public static let closeLong = TKLocales.tr("Localizable", "perps.asset.close_long", fallback: "Close long")
+            /// Close short
+            public static let closeShort = TKLocales.tr("Localizable", "perps.asset.close_short", fallback: "Close short")
             /// Current
             public static let current = TKLocales.tr("Localizable", "perps.asset.current", fallback: "Current")
             /// Date
@@ -2141,6 +2233,15 @@ public enum TKLocales {
             public static let info = TKLocales.tr("Localizable", "perps.asset.info", fallback: "Info")
             /// Less
             public static let less = TKLocales.tr("Localizable", "perps.asset.less", fallback: "Less")
+            /// Limit orders
+            public static let limitOrders = TKLocales.tr("Localizable", "perps.asset.limit_orders", fallback: "Limit orders")
+            /// Limit price
+            public static let limitPrice = TKLocales.tr("Localizable", "perps.asset.limit_price", fallback: "Limit price")
+            /// Limit price · Expires %@
+            public static func limitPriceExpires(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.asset.limit_price_expires", String(describing: p1), fallback: "Limit price · Expires %@")
+            }
+
             /// %@ from current price
             public static func liquidationDistance(_ p1: Any) -> String {
                 return TKLocales.tr("Localizable", "perps.asset.liquidation_distance", String(describing: p1), fallback: "%@ from current price")
@@ -2156,14 +2257,14 @@ public enum TKLocales {
             public static let notFoundTitle = TKLocales.tr("Localizable", "perps.asset.not_found_title", fallback: "Market not found")
             /// Orders
             public static let orders = TKLocales.tr("Localizable", "perps.asset.orders", fallback: "Orders")
+            /// Pending
+            public static let pending = TKLocales.tr("Localizable", "perps.asset.pending", fallback: "Pending")
             /// Perpetual
             public static let perpetual = TKLocales.tr("Localizable", "perps.asset.perpetual", fallback: "Perpetual")
             /// Retry
             public static let retry = TKLocales.tr("Localizable", "perps.asset.retry", fallback: "Retry")
             /// See all
             public static let seeAll = TKLocales.tr("Localizable", "perps.asset.see_all", fallback: "See all")
-            /// Sell
-            public static let sell = TKLocales.tr("Localizable", "perps.asset.sell", fallback: "Sell")
             /// Set Auto Close
             public static let setAutoClose = TKLocales.tr("Localizable", "perps.asset.set_auto_close", fallback: "Set Auto Close")
             /// Set Stop Loss
@@ -2184,6 +2285,45 @@ public enum TKLocales {
             public static let volume24h = TKLocales.tr("Localizable", "perps.asset.volume_24h", fallback: "24h Volume")
             /// Your position
             public static let yourPosition = TKLocales.tr("Localizable", "perps.asset.your_position", fallback: "Your position")
+            public enum EntryPrice {
+                /// The price your position opened at. If it opened in several parts, this is the average of them.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.entry_price.hint", fallback: "The price your position opened at. If it opened in several parts, this is the average of them.")
+            }
+
+            public enum Funding {
+                /// Not our fee — longs and shorts pay each other periodically. Depending on your side, you earn or pay this, and it’s added to your result on close.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.funding.hint", fallback: "Not our fee — longs and shorts pay each other periodically. Depending on your side, you earn or pay this, and it’s added to your result on close.")
+            }
+
+            public enum FundingRate {
+                /// An hourly rate for payments between longs and shorts that helps keep the perpetual price in line with the market. It’s not our fee: positive means longs pay shorts; negative means shorts pay longs.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.funding_rate.hint", fallback: "An hourly rate for payments between longs and shorts that helps keep the perpetual price in line with the market. It’s not our fee: positive means longs pay shorts; negative means shorts pay longs.")
+            }
+
+            public enum LiquidationPrice {
+                /// The price at which your position is force-closed and you lose your deposit. Higher leverage brings this price closer to the current price.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.liquidation_price.hint", fallback: "The price at which your position is force-closed and you lose your deposit. Higher leverage brings this price closer to the current price.")
+            }
+
+            public enum MarkPrice {
+                /// The reference price used to calculate your PnL and liquidation — not the last traded price, but a smoothed price sourced across the market to prevent unfair liquidations from short-term spikes.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.mark_price.hint", fallback: "The reference price used to calculate your PnL and liquidation — not the last traded price, but a smoothed price sourced across the market to prevent unfair liquidations from short-term spikes.")
+            }
+
+            public enum OpenInterest {
+                /// The total value of positions currently open in this market. It rises as new positions open and falls as existing positions close.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.open_interest.hint", fallback: "The total value of positions currently open in this market. It rises as new positions open and falls as existing positions close.")
+            }
+
+            public enum Size {
+                /// What you’re actually trading with — the money you put in × leverage. PnL and fees are calculated on this full amount, not just your deposit.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.size.hint", fallback: "What you’re actually trading with — the money you put in × leverage. PnL and fees are calculated on this full amount, not just your deposit.")
+            }
+
+            public enum Volume24h {
+                /// The total value of trades completed in this market over the last 24 hours. It shows how actively this market is being traded.
+                public static let hint = TKLocales.tr("Localizable", "perps.asset.volume_24h.hint", fallback: "The total value of trades completed in this market over the last 24 hours. It shows how actively this market is being traded.")
+            }
         }
 
         public enum Chart {
@@ -2191,14 +2331,32 @@ public enum TKLocales {
             public static let close = TKLocales.tr("Localizable", "perps.chart.close", fallback: "Close")
             /// No chart data
             public static let empty = TKLocales.tr("Localizable", "perps.chart.empty", fallback: "No chart data")
+            /// Entry
+            public static let entryMarker = TKLocales.tr("Localizable", "perps.chart.entry_marker", fallback: "Entry")
             /// Couldn’t load chart
             public static let failed = TKLocales.tr("Localizable", "perps.chart.failed", fallback: "Couldn’t load chart")
             /// High
             public static let high = TKLocales.tr("Localizable", "perps.chart.high", fallback: "High")
+            /// Liq
+            public static let liquidationMarker = TKLocales.tr("Localizable", "perps.chart.liquidation_marker", fallback: "Liq")
             /// Low
             public static let low = TKLocales.tr("Localizable", "perps.chart.low", fallback: "Low")
             /// Open
             public static let open = TKLocales.tr("Localizable", "perps.chart.open", fallback: "Open")
+            /// 12H
+            public static let timeframe12h = TKLocales.tr("Localizable", "perps.chart.timeframe_12h", fallback: "12H")
+            /// 15M
+            public static let timeframe15m = TKLocales.tr("Localizable", "perps.chart.timeframe_15m", fallback: "15M")
+            /// 1D
+            public static let timeframe1d = TKLocales.tr("Localizable", "perps.chart.timeframe_1d", fallback: "1D")
+            /// 1H
+            public static let timeframe1h = TKLocales.tr("Localizable", "perps.chart.timeframe_1h", fallback: "1H")
+            /// 1M
+            public static let timeframe1m = TKLocales.tr("Localizable", "perps.chart.timeframe_1m", fallback: "1M")
+            /// 4H
+            public static let timeframe4h = TKLocales.tr("Localizable", "perps.chart.timeframe_4h", fallback: "4H")
+            /// 5M
+            public static let timeframe5m = TKLocales.tr("Localizable", "perps.chart.timeframe_5m", fallback: "5M")
             /// Vol
             public static let volume = TKLocales.tr("Localizable", "perps.chart.volume", fallback: "Vol")
         }
@@ -2228,8 +2386,14 @@ public enum TKLocales {
             public static let leverage = TKLocales.tr("Localizable", "perps.confirm.leverage", fallback: "Leverage")
             /// Liquidation
             public static let liquidation = TKLocales.tr("Localizable", "perps.confirm.liquidation", fallback: "Liquidation")
+            /// Min. received
+            public static let minReceived = TKLocales.tr("Localizable", "perps.confirm.min_received", fallback: "Min. received")
             /// Open
             public static let open = TKLocales.tr("Localizable", "perps.confirm.open", fallback: "Open")
+            /// Price moved more than 5% while confirming. Nothing was charged.
+            public static let orderNotPlacedCaption = TKLocales.tr("Localizable", "perps.confirm.order_not_placed_caption", fallback: "Price moved more than 5% while confirming. Nothing was charged.")
+            /// Order not placed
+            public static let orderNotPlacedTitle = TKLocales.tr("Localizable", "perps.confirm.order_not_placed_title", fallback: "Order not placed")
             /// P&L
             public static let pnl = TKLocales.tr("Localizable", "perps.confirm.pnl", fallback: "P&L")
             /// Position
@@ -2240,14 +2404,20 @@ public enum TKLocales {
             public static let stopLossNeedsUpdateCaption = TKLocales.tr("Localizable", "perps.confirm.stop_loss_needs_update_caption", fallback: "Market price has moved past your Stop Loss level. Please set a new SL before confirming this action.")
             /// Stop Loss needs an update
             public static let stopLossNeedsUpdateTitle = TKLocales.tr("Localizable", "perps.confirm.stop_loss_needs_update_title", fallback: "Stop Loss needs an update")
+            /// SL needs an update
+            public static let stopLossNeedsUpdateToast = TKLocales.tr("Localizable", "perps.confirm.stop_loss_needs_update_toast", fallback: "SL needs an update")
             /// Swipe right
             public static let swipe = TKLocales.tr("Localizable", "perps.confirm.swipe", fallback: "Swipe right")
             /// Market price has moved past your Take Profit level. Please set a new TP before confirming this action.
             public static let takeProfitNeedsUpdateCaption = TKLocales.tr("Localizable", "perps.confirm.take_profit_needs_update_caption", fallback: "Market price has moved past your Take Profit level. Please set a new TP before confirming this action.")
             /// Take Profit needs an update
             public static let takeProfitNeedsUpdateTitle = TKLocales.tr("Localizable", "perps.confirm.take_profit_needs_update_title", fallback: "Take Profit needs an update")
+            /// TP needs an update
+            public static let takeProfitNeedsUpdateToast = TKLocales.tr("Localizable", "perps.confirm.take_profit_needs_update_toast", fallback: "TP needs an update")
             /// Confirm Action
             public static let title = TKLocales.tr("Localizable", "perps.confirm.title", fallback: "Confirm Action")
+            /// Try again
+            public static let tryAgain = TKLocales.tr("Localizable", "perps.confirm.try_again", fallback: "Try again")
             /// Unavailable
             public static let unavailable = TKLocales.tr("Localizable", "perps.confirm.unavailable", fallback: "Unavailable")
             /// Update Auto Close
@@ -2262,6 +2432,40 @@ public enum TKLocales {
             public static let youPay = TKLocales.tr("Localizable", "perps.confirm.you_pay", fallback: "You pay")
             /// You receive
             public static let youReceive = TKLocales.tr("Localizable", "perps.confirm.you_receive", fallback: "You receive")
+        }
+
+        public enum DepositForm {
+            /// Another deposit is creating your Perps account. Try again once it arrives.
+            public static let accountCreationPending = TKLocales.tr("Localizable", "perps.deposit_form.account_creation_pending", fallback: "Another deposit is creating your Perps account. Try again once it arrives.")
+            /// Approval fee
+            public static let approvalFee = TKLocales.tr("Localizable", "perps.deposit_form.approval_fee", fallback: "Approval fee")
+            /// This deposit first sends a USDC approval. Confirm the deposit once it is on chain.
+            public static let approvalRequired = TKLocales.tr("Localizable", "perps.deposit_form.approval_required", fallback: "This deposit first sends a USDC approval. Confirm the deposit once it is on chain.")
+            /// Your address on %@ will be upgraded to a smart account (EIP-7702) and stays one after the deposit.
+            public static func delegationNotice(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.deposit_form.delegation_notice", String(describing: p1), fallback: "Your address on %@ will be upgraded to a smart account (EIP-7702) and stays one after the deposit.")
+            }
+
+            /// The deposit could not be sent.
+            public static let failed = TKLocales.tr("Localizable", "perps.deposit_form.failed", fallback: "The deposit could not be sent.")
+            /// Insufficient %1$@ to pay the network fee. Required: %2$@ %1$@.
+            public static func insufficientNetworkFee(_ p1: Any, _ p2: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.deposit_form.insufficient_network_fee", String(describing: p1), String(describing: p2), fallback: "Insufficient %1$@ to pay the network fee. Required: %2$@ %1$@.")
+            }
+
+            /// Minimum deposit is %@
+            public static func minimum(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.deposit_form.minimum", String(describing: p1), fallback: "Minimum deposit is %@")
+            }
+
+            /// The quote expired. Check the amount again.
+            public static let quoteExpired = TKLocales.tr("Localizable", "perps.deposit_form.quote_expired", fallback: "The quote expired. Check the amount again.")
+            /// An earlier deposit is unfinished. Confirm to resume it.
+            public static let resumingPayment = TKLocales.tr("Localizable", "perps.deposit_form.resuming_payment", fallback: "An earlier deposit is unfinished. Confirm to resume it.")
+            /// Deposit Perps balance
+            public static let title = TKLocales.tr("Localizable", "perps.deposit_form.title", fallback: "Deposit Perps balance")
+            /// Deposits are not available for this wallet
+            public static let unavailable = TKLocales.tr("Localizable", "perps.deposit_form.unavailable", fallback: "Deposits are not available for this wallet")
         }
 
         public enum EditPosition {
@@ -2300,18 +2504,30 @@ public enum TKLocales {
             public static let activationRequired = TKLocales.tr("Localizable", "perps.error.activation_required", fallback: "Activation is required before trading.")
             /// Your session expired. Please try again.
             public static let authExpired = TKLocales.tr("Localizable", "perps.error.auth_expired", fallback: "Your session expired. Please try again.")
+            /// Auto Close levels can’t be placed at the current price.
+            public static let autoCloseInvalid = TKLocales.tr("Localizable", "perps.error.auto_close_invalid", fallback: "Auto Close levels can’t be placed at the current price.")
             /// Removing both orders at once isn’t available yet. Clear them one by one.
             public static let compositeBlocked = TKLocales.tr("Localizable", "perps.error.composite_blocked", fallback: "Removing both orders at once isn’t available yet. Clear them one by one.")
+            /// You already have a position in this market.
+            public static let conflictingPosition = TKLocales.tr("Localizable", "perps.error.conflicting_position", fallback: "You already have a position in this market.")
             /// Your credentials are no longer valid. Please re-activate.
             public static let credentialsRevoked = TKLocales.tr("Localizable", "perps.error.credentials_revoked", fallback: "Your credentials are no longer valid. Please re-activate.")
+            /// The amount exceeds the position margin.
+            public static let exceedsPosition = TKLocales.tr("Localizable", "perps.error.exceeds_position", fallback: "The amount exceeds the position margin.")
             /// Something went wrong. Please try again.
             public static let generic = TKLocales.tr("Localizable", "perps.error.generic", fallback: "Something went wrong. Please try again.")
             /// Insufficient balance for this order.
             public static let insufficientBalance = TKLocales.tr("Localizable", "perps.error.insufficient_balance", fallback: "Insufficient balance for this order.")
             /// Not enough market liquidity to fill this size.
             public static let insufficientLiquidity = TKLocales.tr("Localizable", "perps.error.insufficient_liquidity", fallback: "Not enough market liquidity to fill this size.")
+            /// This amount can’t be placed at the current size.
+            public static let invalidAmount = TKLocales.tr("Localizable", "perps.error.invalid_amount", fallback: "This amount can’t be placed at the current size.")
             /// No internet connection. Check your network and try again.
             public static let offline = TKLocales.tr("Localizable", "perps.error.offline", fallback: "No internet connection. Check your network and try again.")
+            /// Your previous order on this market is still being processed.
+            public static let operationInProgress = TKLocales.tr("Localizable", "perps.error.operation_in_progress", fallback: "Your previous order on this market is still being processed.")
+            /// This order is no longer on the book.
+            public static let orderNotFound = TKLocales.tr("Localizable", "perps.error.order_not_found", fallback: "This order is no longer on the book.")
             /// The position is already closed.
             public static let positionNotFound = TKLocales.tr("Localizable", "perps.error.position_not_found", fallback: "The position is already closed.")
             /// Too many requests. Please wait a moment and retry.
@@ -2328,6 +2544,119 @@ public enum TKLocales {
             public static let submitUnknown = TKLocales.tr("Localizable", "perps.error.submit_unknown", fallback: "We couldn’t confirm the order. Check your positions before retrying.")
             /// The request timed out. Please try again.
             public static let timeout = TKLocales.tr("Localizable", "perps.error.timeout", fallback: "The request timed out. Please try again.")
+            /// Trading isn’t available for this market right now.
+            public static let tradingUnavailable = TKLocales.tr("Localizable", "perps.error.trading_unavailable", fallback: "Trading isn’t available for this market right now.")
+            /// Wrong device time. Fix the date and time in Settings and try again.
+            public static let wrongDeviceTime = TKLocales.tr("Localizable", "perps.error.wrong_device_time", fallback: "Wrong device time. Fix the date and time in Settings and try again.")
+        }
+
+        public enum Funding {
+            /// Arrival time
+            public static let arrivalTime = TKLocales.tr("Localizable", "perps.funding.arrival_time", fallback: "Arrival time")
+            /// Will be converted to USD
+            public static let convertedToUsd = TKLocales.tr("Localizable", "perps.funding.converted_to_usd", fallback: "Will be converted to USD")
+            /// The network fee is about %d%% of this amount. Increase the amount to reduce the fee percentage.
+            public static func highFee(_ p1: Int) -> String {
+                return TKLocales.tr("Localizable", "perps.funding.high_fee", p1, fallback: "The network fee is about %d%% of this amount. Increase the amount to reduce the fee percentage.")
+            }
+
+            /// Insufficient balance
+            public static let insufficientBalance = TKLocales.tr("Localizable", "perps.funding.insufficient_balance", fallback: "Insufficient balance")
+            /// You withdraw
+            public static let youWithdraw = TKLocales.tr("Localizable", "perps.funding.you_withdraw", fallback: "You withdraw")
+        }
+
+        public enum HistoryDetails {
+            /// Close price
+            public static let closePrice = TKLocales.tr("Localizable", "perps.history_details.close_price", fallback: "Close price")
+            /// Position closed on %@
+            public static func closed(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.closed", String(describing: p1), fallback: "Position closed on %@")
+            }
+
+            /// Long closed on %@
+            public static func closedLong(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.closed_long", String(describing: p1), fallback: "Long closed on %@")
+            }
+
+            /// Short closed on %@
+            public static func closedShort(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.closed_short", String(describing: p1), fallback: "Short closed on %@")
+            }
+
+            /// Position increased on %@
+            public static func increased(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.increased", String(describing: p1), fallback: "Position increased on %@")
+            }
+
+            /// Long increased on %@
+            public static func increasedLong(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.increased_long", String(describing: p1), fallback: "Long increased on %@")
+            }
+
+            /// Short increased on %@
+            public static func increasedShort(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.increased_short", String(describing: p1), fallback: "Short increased on %@")
+            }
+
+            /// Position liquidated on %@
+            public static func liquidated(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.liquidated", String(describing: p1), fallback: "Position liquidated on %@")
+            }
+
+            /// Long liquidated on %@
+            public static func liquidatedLong(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.liquidated_long", String(describing: p1), fallback: "Long liquidated on %@")
+            }
+
+            /// Short liquidated on %@
+            public static func liquidatedShort(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.liquidated_short", String(describing: p1), fallback: "Short liquidated on %@")
+            }
+
+            /// Loss
+            public static let loss = TKLocales.tr("Localizable", "perps.history_details.loss", fallback: "Loss")
+            /// Position opened on %@
+            public static func opened(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.opened", String(describing: p1), fallback: "Position opened on %@")
+            }
+
+            /// Long opened on %@
+            public static func openedLong(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.opened_long", String(describing: p1), fallback: "Long opened on %@")
+            }
+
+            /// Short opened on %@
+            public static func openedShort(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.opened_short", String(describing: p1), fallback: "Short opened on %@")
+            }
+
+            /// Profit
+            public static let profit = TKLocales.tr("Localizable", "perps.history_details.profit", fallback: "Profit")
+            /// Position reduced on %@
+            public static func reduced(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.reduced", String(describing: p1), fallback: "Position reduced on %@")
+            }
+
+            /// Long reduced on %@
+            public static func reducedLong(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.reduced_long", String(describing: p1), fallback: "Long reduced on %@")
+            }
+
+            /// Short reduced on %@
+            public static func reducedShort(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.reduced_short", String(describing: p1), fallback: "Short reduced on %@")
+            }
+
+            /// Stop Loss executed on %@
+            public static func stopLoss(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.stop_loss", String(describing: p1), fallback: "Stop Loss executed on %@")
+            }
+
+            /// Take Profit executed on %@
+            public static func takeProfit(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.history_details.take_profit", String(describing: p1), fallback: "Take Profit executed on %@")
+            }
         }
 
         public enum OpenPosition {
@@ -2343,6 +2672,18 @@ public enum TKLocales {
             public static let balance = TKLocales.tr("Localizable", "perps.open_position.balance", fallback: "Available:")
             /// Deposit
             public static let deposit = TKLocales.tr("Localizable", "perps.open_position.deposit", fallback: "Deposit")
+            /// Expected loss %@
+            public static func expectedLoss(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.open_position.expected_loss", String(describing: p1), fallback: "Expected loss %@")
+            }
+
+            /// Expected profit %@
+            public static func expectedProfit(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.open_position.expected_profit", String(describing: p1), fallback: "Expected profit %@")
+            }
+
+            /// Insufficient funds
+            public static let insufficientFunds = TKLocales.tr("Localizable", "perps.open_position.insufficient_funds", fallback: "Insufficient funds")
             /// Leverage
             public static let leverage = TKLocales.tr("Localizable", "perps.open_position.leverage", fallback: "Leverage")
             /// Setting a higher leverage increases the risk of liquidation.
@@ -2351,6 +2692,8 @@ public enum TKLocales {
             public static let liquidationPrice = TKLocales.tr("Localizable", "perps.open_position.liquidation_price", fallback: "Liquidation price")
             /// − Loss %
             public static let lossPercent = TKLocales.tr("Localizable", "perps.open_position.loss_percent", fallback: "− Loss %")
+            /// Margin:
+            public static let margin = TKLocales.tr("Localizable", "perps.open_position.margin", fallback: "Margin:")
             /// Market
             public static let market = TKLocales.tr("Localizable", "perps.open_position.market", fallback: "Market")
             /// MAX
@@ -2361,6 +2704,11 @@ public enum TKLocales {
             public static let min = TKLocales.tr("Localizable", "perps.open_position.min", fallback: "Min")
             /// MIN
             public static let minShort = TKLocales.tr("Localizable", "perps.open_position.min_short", fallback: "MIN")
+            /// Minimum margin %@
+            public static func minimumMargin(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.open_position.minimum_margin", String(describing: p1), fallback: "Minimum margin %@")
+            }
+
             /// Current price
             public static let price = TKLocales.tr("Localizable", "perps.open_position.price", fallback: "Current price")
             /// $ Price
@@ -2379,6 +2727,8 @@ public enum TKLocales {
             public static let sl = TKLocales.tr("Localizable", "perps.open_position.sl", fallback: "SL")
             /// Stop Loss
             public static let stopLoss = TKLocales.tr("Localizable", "perps.open_position.stop_loss", fallback: "Stop Loss")
+            /// Set a level to see your loss
+            public static let stopLossHint = TKLocales.tr("Localizable", "perps.open_position.stop_loss_hint", fallback: "Set a level to see your loss")
             /// The Stop Loss value must be above the current price.
             public static let stopLossMustBeAboveCurrentPrice = TKLocales.tr("Localizable", "perps.open_position.stop_loss_must_be_above_current_price", fallback: "The Stop Loss value must be above the current price.")
             /// The Stop Loss value must be above the liquidation price (%@).
@@ -2397,6 +2747,8 @@ public enum TKLocales {
             public static let stopLossWhen = TKLocales.tr("Localizable", "perps.open_position.stop_loss_when", fallback: "Stop loss when")
             /// Take Profit
             public static let takeProfit = TKLocales.tr("Localizable", "perps.open_position.take_profit", fallback: "Take Profit")
+            /// Set a target to see your profit
+            public static let takeProfitHint = TKLocales.tr("Localizable", "perps.open_position.take_profit_hint", fallback: "Set a target to see your profit")
             /// The Take Profit value must be above the current price.
             public static let takeProfitMustBeAboveCurrentPrice = TKLocales.tr("Localizable", "perps.open_position.take_profit_must_be_above_current_price", fallback: "The Take Profit value must be above the current price.")
             /// The Take Profit value must be below the current price.
@@ -2405,6 +2757,13 @@ public enum TKLocales {
             public static let takeProfitWhen = TKLocales.tr("Localizable", "perps.open_position.take_profit_when", fallback: "Take profit when")
             /// TP
             public static let tp = TKLocales.tr("Localizable", "perps.open_position.tp", fallback: "TP")
+        }
+
+        public enum Order {
+            /// Cancel order
+            public static let cancel = TKLocales.tr("Localizable", "perps.order.cancel", fallback: "Cancel order")
+            /// Price
+            public static let price = TKLocales.tr("Localizable", "perps.order.price", fallback: "Price")
         }
 
         public enum OrderType {
@@ -2420,9 +2779,17 @@ public enum TKLocales {
             public static let title = TKLocales.tr("Localizable", "perps.order_type.title", fallback: "Order type")
         }
 
-        public enum Placeholder {
-            /// This feature is coming soon.
-            public static let subtitle = TKLocales.tr("Localizable", "perps.placeholder.subtitle", fallback: "This feature is coming soon.")
+        public enum RiskDisclosure {
+            /// Keeper Terms of Use
+            public static let keeperTerms = TKLocales.tr("Localizable", "perps.risk_disclosure.keeper_terms", fallback: "Keeper Terms of Use")
+            /// Lighter’s terms
+            public static let lighterTerms = TKLocales.tr("Localizable", "perps.risk_disclosure.lighter_terms", fallback: "Lighter’s terms")
+            /// You can lose your entire investment quickly due to leverage and market swings. Positions may be liquidated automatically. Prices depend on funding rates and liquidity. Perpetuals and market data are provided by Lighter, a third-party protocol. Keeper provides a non-custodial interface and does not execute trades or give investment advice.
+            public static let text = TKLocales.tr("Localizable", "perps.risk_disclosure.text", fallback: "You can lose your entire investment quickly due to leverage and market swings. Positions may be liquidated automatically. Prices depend on funding rates and liquidity. Perpetuals and market data are provided by Lighter, a third-party protocol. Keeper provides a non-custodial interface and does not execute trades or give investment advice.")
+            /// Risk Disclosure
+            public static let title = TKLocales.tr("Localizable", "perps.risk_disclosure.title", fallback: "Risk Disclosure")
+            /// View risk disclosure
+            public static let view = TKLocales.tr("Localizable", "perps.risk_disclosure.view", fallback: "View risk disclosure")
         }
 
         public enum Search {
@@ -2441,6 +2808,10 @@ public enum TKLocales {
             public static let errorTitle = TKLocales.tr("Localizable", "perps.search.error_title", fallback: "Something went wrong")
             /// Search by ticker or name
             public static let placeholder = TKLocales.tr("Localizable", "perps.search.placeholder", fallback: "Search by ticker or name")
+            public enum Filters {
+                /// Commodities
+                public static let commodities = TKLocales.tr("Localizable", "perps.search.filters.commodities", fallback: "Commodities")
+            }
         }
 
         public enum SetLimitPrice {
@@ -2465,6 +2836,12 @@ public enum TKLocales {
             public static let closed = TKLocales.tr("Localizable", "perps.toast.closed", fallback: "Closed")
             /// Closing
             public static let closing = TKLocales.tr("Localizable", "perps.toast.closing", fallback: "Closing")
+            /// Transaction confirmed
+            public static let depositConfirmed = TKLocales.tr("Localizable", "perps.toast.deposit_confirmed", fallback: "Transaction confirmed")
+            /// Deposit in progress. Your balance will update shortly
+            public static let depositInProgress = TKLocales.tr("Localizable", "perps.toast.deposit_in_progress", fallback: "Deposit in progress. Your balance will update shortly")
+            /// Sending transaction
+            public static let depositSending = TKLocales.tr("Localizable", "perps.toast.deposit_sending", fallback: "Sending transaction")
             /// Increased
             public static let increased = TKLocales.tr("Localizable", "perps.toast.increased", fallback: "Increased")
             /// Increasing
@@ -2495,8 +2872,16 @@ public enum TKLocales {
             public static let opened = TKLocales.tr("Localizable", "perps.toast.opened", fallback: "Opened")
             /// Opening
             public static let opening = TKLocales.tr("Localizable", "perps.toast.opening", fallback: "Opening")
+            /// Order cancelled
+            public static let orderCancelled = TKLocales.tr("Localizable", "perps.toast.order_cancelled", fallback: "Order cancelled")
+            /// Cancelling order
+            public static let orderCancelling = TKLocales.tr("Localizable", "perps.toast.order_cancelling", fallback: "Cancelling order")
             /// Order placed
             public static let orderPlaced = TKLocales.tr("Localizable", "perps.toast.order_placed", fallback: "Order placed")
+            /// Order updated
+            public static let orderUpdated = TKLocales.tr("Localizable", "perps.toast.order_updated", fallback: "Order updated")
+            /// Updating order
+            public static let orderUpdating = TKLocales.tr("Localizable", "perps.toast.order_updating", fallback: "Updating order")
             /// Placing
             public static let placing = TKLocales.tr("Localizable", "perps.toast.placing", fallback: "Placing")
             /// Reduced
@@ -2507,6 +2892,18 @@ public enum TKLocales {
             public static let shareFailed = TKLocales.tr("Localizable", "perps.toast.share_failed", fallback: "Couldn’t create image")
             /// Order status unknown
             public static let statusUnknown = TKLocales.tr("Localizable", "perps.toast.status_unknown", fallback: "Order status unknown")
+        }
+
+        public enum WithdrawForm {
+            /// The withdrawal could not be sent.
+            public static let failed = TKLocales.tr("Localizable", "perps.withdraw_form.failed", fallback: "The withdrawal could not be sent.")
+            /// Minimum withdrawal is %@ USDC
+            public static func minimum(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "perps.withdraw_form.minimum", String(describing: p1), fallback: "Minimum withdrawal is %@ USDC")
+            }
+
+            /// Withdraw Perps balance
+            public static let title = TKLocales.tr("Localizable", "perps.withdraw_form.title", fallback: "Withdraw Perps balance")
         }
     }
 
@@ -2616,6 +3013,125 @@ public enum TKLocales {
             public static let loadErrorBannerButton = TKLocales.tr("Localizable", "ramp.list.load_error_banner_button", fallback: "Retry")
             /// Couldn't load more top-up options
             public static let loadErrorBannerTitle = TKLocales.tr("Localizable", "ramp.list.load_error_banner_title", fallback: "Couldn't load more top-up options")
+        }
+
+        public enum Moonpay {
+            /// Pay in
+            public static let payIn = TKLocales.tr("Localizable", "ramp.moonpay.pay_in", fallback: "Pay in")
+            /// 1 %@ ≈ %@
+            public static func rate(_ p1: Any, _ p2: Any) -> String {
+                return TKLocales.tr("Localizable", "ramp.moonpay.rate", String(describing: p1), String(describing: p2), fallback: "1 %@ ≈ %@")
+            }
+
+            /// Buy crypto
+            public static let title = TKLocales.tr("Localizable", "ramp.moonpay.title", fallback: "Buy crypto")
+            public enum Card {
+                /// Expired %@
+                public static func expired(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.card.expired", String(describing: p1), fallback: "Expired %@")
+                }
+
+                /// Exp. %@
+                public static func expires(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.card.expires", String(describing: p1), fallback: "Exp. %@")
+                }
+
+                /// Card
+                public static let title = TKLocales.tr("Localizable", "ramp.moonpay.card.title", fallback: "Card")
+                /// %@ card
+                public static func titleKind(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.card.title_kind", String(describing: p1), fallback: "%@ card")
+                }
+
+                /// Unavailable
+                public static let unavailable = TKLocales.tr("Localizable", "ramp.moonpay.card.unavailable", fallback: "Unavailable")
+            }
+
+            public enum Limit {
+                /// Maximum amount %@
+                public static func maxAmount(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.limit.max_amount", String(describing: p1), fallback: "Maximum amount %@")
+                }
+
+                /// Minimum amount %@
+                public static func minAmount(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.limit.min_amount", String(describing: p1), fallback: "Minimum amount %@")
+                }
+            }
+
+            public enum PaymentMethod {
+                /// Apple Pay
+                public static let applePay = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.apple_pay", fallback: "Apple Pay")
+                /// Cash
+                public static let cash = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.cash", fallback: "Cash")
+                /// Debit Card
+                public static let debitCard = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.debit_card", fallback: "Debit Card")
+                /// Instant
+                public static let instant = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.instant", fallback: "Instant")
+                /// PayPal
+                public static let paypal = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.paypal", fallback: "PayPal")
+                /// Saved
+                public static let saved = TKLocales.tr("Localizable", "ramp.moonpay.payment_method.saved", fallback: "Saved")
+            }
+
+            public enum Status {
+                /// %@ authorised
+                public static func authorised(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.status.authorised", String(describing: p1), fallback: "%@ authorised")
+                }
+
+                /// Change amount
+                public static let changeAmount = TKLocales.tr("Localizable", "ramp.moonpay.status.change_amount", fallback: "Change amount")
+                /// Payment completed
+                public static let completed = TKLocales.tr("Localizable", "ramp.moonpay.status.completed", fallback: "Payment completed")
+                /// %@ in your wallet
+                public static func completedSubtitle(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "ramp.moonpay.status.completed_subtitle", String(describing: p1), fallback: "%@ in your wallet")
+                }
+
+                /// You can buy again tomorrow
+                public static let dailyLimitSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.daily_limit_subtitle", fallback: "You can buy again tomorrow")
+                /// Daily limit reached
+                public static let dailyLimitTitle = TKLocales.tr("Localizable", "ramp.moonpay.status.daily_limit_title", fallback: "Daily limit reached")
+                /// Your bank declined it. No charge
+                public static let declinedSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.declined_subtitle", fallback: "Your bank declined it. No charge")
+                /// Payment declined
+                public static let declinedTitle = TKLocales.tr("Localizable", "ramp.moonpay.status.declined_title", fallback: "Payment declined")
+                /// Something went wrong
+                public static let failedSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.failed_subtitle", fallback: "Something went wrong")
+                /// Payment failed
+                public static let failedTitle = TKLocales.tr("Localizable", "ramp.moonpay.status.failed_title", fallback: "Payment failed")
+                /// Fees
+                public static let fees = TKLocales.tr("Localizable", "ramp.moonpay.status.fees", fallback: "Fees")
+                /// Bank check timed out. No charge
+                public static let notConfirmedSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.not_confirmed_subtitle", fallback: "Bank check timed out. No charge")
+                /// Payment not confirmed
+                public static let notConfirmedTitle = TKLocales.tr("Localizable", "ramp.moonpay.status.not_confirmed_title", fallback: "Payment not confirmed")
+                /// Order ID
+                public static let orderId = TKLocales.tr("Localizable", "ramp.moonpay.status.order_id", fallback: "Order ID")
+                /// Payment pending
+                public static let pending = TKLocales.tr("Localizable", "ramp.moonpay.status.pending", fallback: "Payment pending")
+                /// Clearing with the network
+                public static let pendingSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.pending_subtitle", fallback: "Clearing with the network")
+                /// Payment started
+                public static let started = TKLocales.tr("Localizable", "ramp.moonpay.status.started", fallback: "Payment started")
+                /// Still processing. It can take a few more minutes
+                public static let stillProcessingSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.still_processing_subtitle", fallback: "Still processing. It can take a few more minutes")
+                /// Payment status
+                public static let title = TKLocales.tr("Localizable", "ramp.moonpay.status.title", fallback: "Payment status")
+                /// Try again
+                public static let tryAgain = TKLocales.tr("Localizable", "ramp.moonpay.status.try_again", fallback: "Try again")
+                /// Try another card
+                public static let tryAnotherCard = TKLocales.tr("Localizable", "ramp.moonpay.status.try_another_card", fallback: "Try another card")
+                /// Try again in a few minutes
+                public static let unavailableSubtitle = TKLocales.tr("Localizable", "ramp.moonpay.status.unavailable_subtitle", fallback: "Try again in a few minutes")
+                /// MoonPay is unavailable
+                public static let unavailableTitle = TKLocales.tr("Localizable", "ramp.moonpay.status.unavailable_title", fallback: "MoonPay is unavailable")
+                /// You paid
+                public static let youPaid = TKLocales.tr("Localizable", "ramp.moonpay.status.you_paid", fallback: "You paid")
+                /// You receive
+                public static let youReceive = TKLocales.tr("Localizable", "ramp.moonpay.status.you_receive", fallback: "You receive")
+            }
         }
 
         public enum PaymentMethod {
@@ -2765,6 +3281,13 @@ public enum TKLocales {
                     public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.arbitrum.title", fallback: "Arbitrum")
                 }
 
+                public enum Avalanche {
+                    /// Avalanche C-Chain
+                    public static let displayTitle = TKLocales.tr("Localizable", "receive.multichain.networks.avalanche.display_title", fallback: "Avalanche C-Chain")
+                    /// Avalanche
+                    public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.avalanche.title", fallback: "Avalanche")
+                }
+
                 public enum Base {
                     /// Base
                     public static let displayTitle = TKLocales.tr("Localizable", "receive.multichain.networks.base.display_title", fallback: "Base")
@@ -2786,6 +3309,20 @@ public enum TKLocales {
                     public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.ethereum.title", fallback: "Ethereum")
                 }
 
+                public enum Polygon {
+                    /// Polygon
+                    public static let displayTitle = TKLocales.tr("Localizable", "receive.multichain.networks.polygon.display_title", fallback: "Polygon")
+                    /// Polygon
+                    public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.polygon.title", fallback: "Polygon")
+                }
+
+                public enum Robinhood {
+                    /// Robinhood Chain
+                    public static let displayTitle = TKLocales.tr("Localizable", "receive.multichain.networks.robinhood.display_title", fallback: "Robinhood Chain")
+                    /// Robinhood
+                    public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.robinhood.title", fallback: "Robinhood")
+                }
+
                 public enum Smartchain {
                     /// BNB Smart Chain
                     public static let disclaimerTitle = TKLocales.tr("Localizable", "receive.multichain.networks.smartchain.disclaimer_title", fallback: "BNB Smart Chain")
@@ -2796,6 +3333,8 @@ public enum TKLocales {
                 }
 
                 public enum Solana {
+                    /// Solana
+                    public static let displayTitle = TKLocales.tr("Localizable", "receive.multichain.networks.solana.display_title", fallback: "Solana")
                     /// Solana
                     public static let title = TKLocales.tr("Localizable", "receive.multichain.networks.solana.title", fallback: "Solana")
                 }
@@ -3310,6 +3849,30 @@ public enum TKLocales {
         }
     }
 
+    public enum SignMessage {
+        /// Keeper won't send this transaction. %@ will send it now or later and pay the network fee.
+        public static func notSentWarning(_ p1: Any) -> String {
+            return TKLocales.tr("Localizable", "sign_message.not_sent_warning", String(describing: p1), fallback: "Keeper won't send this transaction. %@ will send it now or later and pay the network fee.")
+        }
+
+        /// Sign
+        public static let sign = TKLocales.tr("Localizable", "sign_message.sign", fallback: "Sign")
+        /// Signed
+        public static let signed = TKLocales.tr("Localizable", "sign_message.signed", fallback: "Signed")
+        public enum Error {
+            /// The request is for a different wallet
+            public static let addressMismatch = TKLocales.tr("Localizable", "sign_message.error.address_mismatch", fallback: "The request is for a different wallet")
+            /// The request has expired
+            public static let expired = TKLocales.tr("Localizable", "sign_message.error.expired", fallback: "The request has expired")
+            /// Invalid request
+            public static let invalidRequest = TKLocales.tr("Localizable", "sign_message.error.invalid_request", fallback: "Invalid request")
+            /// The request is for a different network
+            public static let networkMismatch = TKLocales.tr("Localizable", "sign_message.error.network_mismatch", fallback: "The request is for a different network")
+            /// This wallet can't sign this request
+            public static let notSupported = TKLocales.tr("Localizable", "sign_message.error.not_supported", fallback: "This wallet can't sign this request")
+        }
+    }
+
     public enum SignOutFull {
         /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
         public static let description = TKLocales.tr("Localizable", "sign_out_full.description", fallback: "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.")
@@ -3363,16 +3926,24 @@ public enum TKLocales {
     public enum StakingBalanceDetails {
         /// after the end of the cycle
         public static let afterEndOfCycle = TKLocales.tr("Localizable", "staking_balance_details.after_end_of_cycle", fallback: "after the end of the cycle")
+        /// Current rewards
+        public static let currentRewards = TKLocales.tr("Localizable", "staking_balance_details.current_rewards", fallback: "Current rewards")
         /// Staking is based on smart contracts by third parties. Keeper is not responsible for staking experience.
         public static let description = TKLocales.tr("Localizable", "staking_balance_details.description", fallback: "Staking is based on smart contracts by third parties. Keeper is not responsible for staking experience.")
-        /// When you stake GRAM in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of GRAM.
-        public static let jettonButtonDescription = TKLocales.tr("Localizable", "staking_balance_details.jetton_button_description", fallback: "When you stake GRAM in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of GRAM.")
+        /// Details
+        public static let details = TKLocales.tr("Localizable", "staking_balance_details.details", fallback: "Details")
+        /// Your staked GRAM is represented by tsTON. As the pool earns rewards, each tsTON represents more GRAM.
+        public static let jettonButtonDescription = TKLocales.tr("Localizable", "staking_balance_details.jetton_button_description", fallback: "Your staked GRAM is represented by tsTON. As the pool earns rewards, each tsTON represents more GRAM.")
         /// Minimal Deposit
         public static let minimalDeposit = TKLocales.tr("Localizable", "staking_balance_details.minimal_deposit", fallback: "Minimal Deposit")
+        /// Monthly
+        public static let monthly = TKLocales.tr("Localizable", "staking_balance_details.monthly", fallback: "Monthly")
         /// Pending Stake
         public static let pendingStake = TKLocales.tr("Localizable", "staking_balance_details.pending_stake", fallback: "Pending Stake")
         /// Pending Unstake
         public static let pendingUnstake = TKLocales.tr("Localizable", "staking_balance_details.pending_unstake", fallback: "Pending Unstake")
+        /// The reward is an estimate and may change depending on the APY.
+        public static let rewardsHint = TKLocales.tr("Localizable", "staking_balance_details.rewards_hint", fallback: "The reward is an estimate and may change depending on the APY.")
         /// Stake
         public static let stake = TKLocales.tr("Localizable", "staking_balance_details.stake", fallback: "Stake")
         /// Tap to collect
@@ -3381,6 +3952,8 @@ public enum TKLocales {
         public static let unstake = TKLocales.tr("Localizable", "staking_balance_details.unstake", fallback: "Unstake")
         /// Unstake ready
         public static let unstakeReady = TKLocales.tr("Localizable", "staking_balance_details.unstake_ready", fallback: "Unstake ready")
+        /// Yearly
+        public static let yearly = TKLocales.tr("Localizable", "staking_balance_details.yearly", fallback: "Yearly")
     }
 
     public enum StakingDepositInput {
@@ -3421,6 +3994,11 @@ public enum TKLocales {
 
         /// Insufficient balance
         public static let insufficientBalance = TKLocales.tr("Localizable", "staking_input.insufficient_balance", fallback: "Insufficient balance")
+        /// Max is your balance minus a %@ reserve, which will be returned after staking.
+        public static func maxHint(_ p1: Any) -> String {
+            return TKLocales.tr("Localizable", "staking_input.max_hint", String(describing: p1), fallback: "Max is your balance minus a %@ reserve, which will be returned after staking.")
+        }
+
         /// Minimum %@
         public static func minimumBalance(_ p1: Any) -> String {
             return TKLocales.tr("Localizable", "staking_input.minimum_balance", String(describing: p1), fallback: "Minimum %@")
@@ -3644,6 +4222,11 @@ public enum TKLocales {
         public static let marketCapSuffix = TKLocales.tr("Localizable", "tokens_picker.market_cap_suffix", fallback: "mcap")
         /// Crypto
         public static let title = TKLocales.tr("Localizable", "tokens_picker.title", fallback: "Crypto")
+        public enum AssetType {
+            /// All assets
+            public static let all = TKLocales.tr("Localizable", "tokens_picker.asset_type.all", fallback: "All assets")
+        }
+
         public enum Placeholder {
             /// We couldn't load content.
             public static let errorSubtitle = TKLocales.tr("Localizable", "tokens_picker.placeholder.error_subtitle", fallback: "We couldn't load content.")
@@ -3722,9 +4305,9 @@ public enum TKLocales {
                 return TKLocales.tr("Localizable", "trade.asset_details.apy_value", String(describing: p1), fallback: "%@ APY")
             }
 
-            /// Earn %@ APY
+            /// Earn up to %@ APY
             public static func earnApy(_ p1: Any) -> String {
-                return TKLocales.tr("Localizable", "trade.asset_details.earn_apy", String(describing: p1), fallback: "Earn %@ APY")
+                return TKLocales.tr("Localizable", "trade.asset_details.earn_apy", String(describing: p1), fallback: "Earn up to %@ APY")
             }
 
             public enum Actions {
@@ -3778,6 +4361,20 @@ public enum TKLocales {
                 public static let totalSupply = TKLocales.tr("Localizable", "trade.asset_details.overview.total_supply", fallback: "Total Supply")
                 /// All tokens that exist, including locked and unreleased.
                 public static let totalSupplyHint = TKLocales.tr("Localizable", "trade.asset_details.overview.total_supply_hint", fallback: "All tokens that exist, including locked and unreleased.")
+            }
+
+            public enum PerpPosition {
+                /// Trade with leverage up to %@
+                public static func leverageCaption(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "trade.asset_details.perp_position.leverage_caption", String(describing: p1), fallback: "Trade with leverage up to %@")
+                }
+
+                /// Perp position
+                public static let title = TKLocales.tr("Localizable", "trade.asset_details.perp_position.title", fallback: "Perp position")
+                /// Trade %@ perps
+                public static func tradeTitle(_ p1: Any) -> String {
+                    return TKLocales.tr("Localizable", "trade.asset_details.perp_position.trade_title", String(describing: p1), fallback: "Trade %@ perps")
+                }
             }
 
             public enum Placeholder {
@@ -3940,12 +4537,21 @@ public enum TKLocales {
             return TKLocales.tr("Localizable", "transaction_confirmation.tap_to_pay", String(describing: p1), fallback: "Tap to pay in %@")
         }
 
+        /// Temporary reserve
+        public static let temporaryReserve = TKLocales.tr("Localizable", "transaction_confirmation.temporary_reserve", fallback: "Temporary reserve")
         /// Unstake
         public static let unstake = TKLocales.tr("Localizable", "transaction_confirmation.unstake", fallback: "Unstake")
         /// Unstake amount
         public static let unstakeAmount = TKLocales.tr("Localizable", "transaction_confirmation.unstake_amount", fallback: "Unstake amount")
         /// Wallet
         public static let wallet = TKLocales.tr("Localizable", "transaction_confirmation.wallet", fallback: "Wallet")
+        public enum BatteryFeeShortage {
+            /// %1$@ charges %2$@ for this transfer. Recharge Battery to pay the fee — no %3$@ needed.
+            public static func caption(_ p1: Any, _ p2: Any, _ p3: Any) -> String {
+                return TKLocales.tr("Localizable", "transaction_confirmation.battery_fee_shortage.caption", String(describing: p1), String(describing: p2), String(describing: p3), fallback: "%1$@ charges %2$@ for this transfer. Recharge Battery to pay the fee — no %3$@ needed.")
+            }
+        }
+
         public enum Buttons {
             /// Confirm and Collect
             public static let confirmAndCollect = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_collect", fallback: "Confirm and Collect")
@@ -3955,6 +4561,18 @@ public enum TKLocales {
             public static let confirmAndStake = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_stake", fallback: "Confirm and Stake")
             /// Confirm and Unstake
             public static let confirmAndUnstake = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_unstake", fallback: "Confirm and Unstake")
+        }
+
+        public enum TemporaryReserve {
+            /// %@ will be reserved and returned after staking.
+            public static func hint(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "transaction_confirmation.temporary_reserve.hint", String(describing: p1), fallback: "%@ will be reserved and returned after staking.")
+            }
+
+            /// %@ will be reserved and returned after unstaking.
+            public static func unstakeHint(_ p1: Any) -> String {
+                return TKLocales.tr("Localizable", "transaction_confirmation.temporary_reserve.unstake_hint", String(describing: p1), fallback: "%@ will be reserved and returned after unstaking.")
+            }
         }
     }
 
@@ -4141,6 +4759,8 @@ public enum TKLocales {
     public enum WalletButtons {
         /// Buy GRAM
         public static let buy = TKLocales.tr("Localizable", "wallet_buttons.buy", fallback: "Buy GRAM")
+        /// Buy
+        public static let buyCrypto = TKLocales.tr("Localizable", "wallet_buttons.buy_crypto", fallback: "Buy")
         /// Add Funds
         public static let deposit = TKLocales.tr("Localizable", "wallet_buttons.deposit", fallback: "Add Funds")
         /// Receive
@@ -4265,6 +4885,11 @@ public enum TKLocales {
                     return TKLocales.tr("Localizable", "wallet_connect.request.rows.transaction_id", String(describing: p1), fallback: "TxID: %@")
                 }
 
+                /// Transactions: %d
+                public static func transactions(_ p1: Int) -> String {
+                    return TKLocales.tr("Localizable", "wallet_connect.request.rows.transactions", p1, fallback: "Transactions: %d")
+                }
+
                 /// Wallet
                 public static let wallet = TKLocales.tr("Localizable", "wallet_connect.request.rows.wallet", fallback: "Wallet")
             }
@@ -4272,6 +4897,8 @@ public enum TKLocales {
             public enum Signature {
                 /// Personal signature
                 public static let personal = TKLocales.tr("Localizable", "wallet_connect.request.signature.personal", fallback: "Personal signature")
+                /// Solana message
+                public static let solanaMessage = TKLocales.tr("Localizable", "wallet_connect.request.signature.solana_message", fallback: "Solana message")
                 /// TRON message
                 public static let tronMessage = TKLocales.tr("Localizable", "wallet_connect.request.signature.tron_message", fallback: "TRON message")
                 /// Typed data
@@ -4279,6 +4906,10 @@ public enum TKLocales {
             }
 
             public enum Values {
+                /// Solana transaction
+                public static let solanaTransaction = TKLocales.tr("Localizable", "wallet_connect.request.values.solana_transaction", fallback: "Solana transaction")
+                /// Solana transactions
+                public static let solanaTransactions = TKLocales.tr("Localizable", "wallet_connect.request.values.solana_transactions", fallback: "Solana transactions")
                 /// TRON transaction
                 public static let tronTransaction = TKLocales.tr("Localizable", "wallet_connect.request.values.tron_transaction", fallback: "TRON transaction")
             }

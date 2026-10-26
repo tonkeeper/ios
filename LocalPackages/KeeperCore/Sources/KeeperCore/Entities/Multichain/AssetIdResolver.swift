@@ -3,7 +3,7 @@ import TonSwift
 import TronSwift
 import UIKit
 
-public enum AssetIdResolver {
+@frozen public enum AssetIdResolver {
     public static func chartIdentifier(for assetId: String) -> String? {
         guard let components = AssetIdComponents(assetId: assetId) else {
             return nil
@@ -31,7 +31,7 @@ public enum AssetIdResolver {
     }
 }
 
-public enum AssetId {
+@frozen public enum AssetId {
     public static func coin(chain: MultichainChain, network: Network) -> String {
         "\(chain.rawValue)/\(network.assetIdNetworkIdentifier)/coin"
     }
@@ -67,7 +67,7 @@ private extension Network {
     }
 }
 
-public enum AssetIdComponents {
+@frozen public enum AssetIdComponents {
     case coin(chain: String, network: String, coin: String)
     case asset(chain: String, network: String, type: String, address: String)
 
@@ -108,5 +108,46 @@ public enum AssetIdComponents {
         case let .asset(chain, _, _, _):
             chain
         }
+    }
+
+    /// Whether two ids name one asset, whichever spelling each arrived under: the chain under any
+    /// of its aliases, the address in any case. A token is its contract on its chain, whatever
+    /// label the type segment carries; ids this parser cannot read compare as text.
+    public static func isSameAsset(_ lhsId: String, _ rhsId: String) -> Bool {
+        guard let lhs = AssetIdComponents(assetId: lhsId),
+              let rhs = AssetIdComponents(assetId: rhsId)
+        else {
+            return lhsId.caseInsensitiveCompare(rhsId) == .orderedSame
+        }
+        guard lhs.isSameChain(as: rhs) else {
+            return false
+        }
+        switch (lhs, rhs) {
+        case (.coin, .coin):
+            return true
+        case let (.asset(_, _, _, lhsAddress), .asset(_, _, _, rhsAddress)):
+            return lhsAddress.caseInsensitiveCompare(rhsAddress) == .orderedSame
+        case (.coin, .asset), (.asset, .coin):
+            return false
+        }
+    }
+
+    private var network: String {
+        switch self {
+        case let .coin(_, network, _):
+            network
+        case let .asset(_, network, _, _):
+            network
+        }
+    }
+
+    private func isSameChain(as other: AssetIdComponents) -> Bool {
+        guard network.caseInsensitiveCompare(other.network) == .orderedSame else {
+            return false
+        }
+        if let chain = MultichainChain(assetIdChain: chain), let otherChain = MultichainChain(assetIdChain: other.chain) {
+            return chain == otherChain
+        }
+        return chain.caseInsensitiveCompare(other.chain) == .orderedSame
     }
 }

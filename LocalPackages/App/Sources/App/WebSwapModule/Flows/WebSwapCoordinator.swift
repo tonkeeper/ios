@@ -89,6 +89,7 @@ private extension WebSwapCoordinator {
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
+            mode: .sendTransaction,
             transferProvider: { .stonfiSwap(signRequest) },
             resultHandler: ResultHandler(completion: completion),
             sendFrom: .tonconnectRemote,
@@ -122,7 +123,8 @@ private extension WebSwapCoordinator {
             wallet: wallet,
             transferData: transferData,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            coreAssembly: coreAssembly,
+            reason: .confirmSwap
         )
 
         self.walletTransferSignCoordinator = signCoordinator

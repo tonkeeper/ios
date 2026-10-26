@@ -175,12 +175,24 @@ public class TonTransport {
             let builder = try Builder().store(uint: 0x0F8A_7EA5, bits: 32)
             var bytes = [UInt8]()
 
+            var flags: UInt8 = 0
+            if jettonPayload.queryId != nil {
+                flags |= 0x01
+            }
+            if jettonPayload.knownJetton != nil {
+                flags |= 0x02
+            }
+            bytes += putUint8(flags)
+
             if let queryId = jettonPayload.queryId {
-                try bytes += putUint8(1) + putUint64(queryId)
+                try bytes += putUint64(queryId)
                 try builder.store(uint: queryId, bits: 64)
             } else {
-                bytes += putUint8(0)
                 try builder.store(uint: 0, bits: 64)
+            }
+
+            if let knownJetton = jettonPayload.knownJetton {
+                bytes += putUint16(Int(knownJetton.jettonId)) + putUint8(workchainByte(knownJetton.workchain))
             }
 
             bytes += try putVarUInt(jettonPayload.coins.rawValue) + putAddress(jettonPayload.receiverAddress) + putAddress(jettonPayload.excessesAddress)
@@ -622,8 +634,11 @@ private extension TonTransport {
     }
 
     static func putAddress(_ address: Address) -> [UInt8] {
-        let workchainIdByte = address.workchain == -1 ? UInt8(0xFF) : UInt8(address.workchain)
-        return putUint8(workchainIdByte) + address.hash.toByteArray()
+        return putUint8(workchainByte(address.workchain)) + address.hash.toByteArray()
+    }
+
+    static func workchainByte(_ workchain: Int8) -> UInt8 {
+        workchain == -1 ? UInt8(0xFF) : UInt8(workchain)
     }
 
     static func putCellRef(_ ref: Cell) -> [UInt8] {

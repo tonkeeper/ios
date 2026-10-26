@@ -4,7 +4,7 @@ import TonSwift
 
 public struct StackingPoolInfo: Codable, Equatable, Hashable {
     public struct Implementation: Codable, Hashable {
-        public enum Kind: String, CaseIterable, Codable {
+        @frozen public enum Kind: String, CaseIterable, Codable {
             case liquidTF
             case whales
             case tf
@@ -67,6 +67,20 @@ public extension StackingPoolInfo.Implementation {
         case .whales:
             return BigUInt(integerLiteral: 200_000_000)
         }
+    }
+
+    /// TON held back while a withdrawal runs and returned afterwards.
+    var temporaryReserve: BigUInt {
+        1_000_000_000
+    }
+
+    /// Minimum TON balance to start a withdrawal: the temporary reserve plus a margin for the network fee.
+    var withdrawalRequiredBalance: BigUInt {
+        temporaryReserve + Self.networkFeeMargin
+    }
+
+    static var networkFeeMargin: BigUInt {
+        100_000_000
     }
 
     var extraFee: BigUInt {

@@ -11,7 +11,7 @@ public struct SignRawAccountEventActionContentProvider: AccountEventModelActionC
     public func title(actionType: AccountEventModel.Action.ActionType, customName: String?) -> String {
         switch actionType {
         case .sent:
-            return TKLocales.ActionTypes.Future.send
+            return customName ?? TKLocales.ActionTypes.Future.send
         case .receieved:
             return TKLocales.ActionTypes.Future.receive
         case .mint:

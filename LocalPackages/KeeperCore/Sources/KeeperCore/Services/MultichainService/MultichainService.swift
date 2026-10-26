@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 import TonSwift
 
-public enum MultichainServiceError: Error {
+@frozen public enum MultichainServiceError: Error {
     case cancelled
     case connectionError
     case apiError(
@@ -10,7 +10,7 @@ public enum MultichainServiceError: Error {
     )
 }
 
-private enum WalletAssetsPagination {
+enum WalletAssetsPagination {
     static let pageLimit = 50
     static let maxPages = 40
     static let repeatedCursorMessage = "Wallet assets pagination returned a repeated cursor"
@@ -65,6 +65,7 @@ public protocol MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?,
         limit: Int?,
         cursor: String?
@@ -77,6 +78,7 @@ public protocol MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainServiceError)
@@ -88,6 +90,7 @@ public protocol MultichainService {
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage
     func getWalletChallenge() async throws(MultichainServiceError) -> MultichainWalletChallenge
@@ -97,16 +100,10 @@ public protocol MultichainService {
         walletId: String,
         lang: String?,
         ids: [String]?,
-        debugNow: Date?,
         isNewUser: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle]
     func completeRaffleMigration(walletId: String) async throws(MultichainServiceError)
     func markRaffleImport(walletId: String, importedWalletId: String) async throws(MultichainServiceError)
-    func forcePickRaffleWinners(
-        raffleId: String,
-        walletId: String?,
-        prizeId: String?
-    ) async throws(MultichainServiceError)
 }
 
 final class MultichainServiceImplementation: MultichainService {
@@ -169,6 +166,7 @@ final class MultichainServiceImplementation: MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?,
         limit: Int?,
         cursor: String?
@@ -188,6 +186,7 @@ final class MultichainServiceImplementation: MultichainService {
                 search: search,
                 availableOnly: availableOnly,
                 showHidden: showHidden,
+                showAll: showAll,
                 hideDust: hideDust,
                 limit: limit,
                 cursor: cursor
@@ -200,10 +199,11 @@ final class MultichainServiceImplementation: MultichainService {
         let result = makeWalletAssetsPage(
             records: page.records,
             state: state,
-            currencies: currencies,
             showHidden: showHidden,
             hideDust: hideDust,
-            nextCursor: page.nextCursor
+            nextCursor: page.nextCursor,
+            fiatPrice: page.fiatPrice,
+            perpsFiatPrice: page.perpsFiatPrice
         )
         visibilityChangesController.endServerFetch(walletId: walletId, token: fetchToken)
         return result
@@ -217,6 +217,7 @@ final class MultichainServiceImplementation: MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         let walletId = state.walletId
@@ -236,6 +237,7 @@ final class MultichainServiceImplementation: MultichainService {
                         search: search,
                         availableOnly: availableOnly,
                         showHidden: showHidden,
+                        showAll: showAll,
                         hideDust: hideDust,
                         limit: WalletAssetsPagination.pageLimit,
                         cursor: cursor
@@ -251,10 +253,11 @@ final class MultichainServiceImplementation: MultichainService {
         let result = makeWalletAssetsPage(
             records: pages.flatMap(\.records),
             state: state,
-            currencies: currencies,
             showHidden: showHidden,
             hideDust: hideDust,
-            nextCursor: nil
+            nextCursor: nil,
+            fiatPrice: pages.first?.fiatPrice ?? [:],
+            perpsFiatPrice: pages.first?.perpsFiatPrice
         )
         visibilityChangesController.endServerFetch(walletId: walletId, token: fetchToken)
         return result
@@ -272,6 +275,7 @@ final class MultichainServiceImplementation: MultichainService {
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         await withTimeLimit(pendingTransactionsFlushTimeLimit) { [pendingTransactionsService] in
@@ -285,6 +289,7 @@ final class MultichainServiceImplementation: MultichainService {
             assetId: assetId,
             activityTypeFilter: activityTypeFilter,
             showPerps: showPerps,
+            market: market,
             hideDust: hideDust
         ))
         return MultichainWalletActivitiesPage(
@@ -309,7 +314,6 @@ final class MultichainServiceImplementation: MultichainService {
         walletId: String,
         lang: String?,
         ids: [String]?,
-        debugNow: Date?,
         isNewUser: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         try await serviceCall(
@@ -317,7 +321,6 @@ final class MultichainServiceImplementation: MultichainService {
                 walletId: walletId,
                 lang: lang,
                 ids: ids,
-                debugNow: debugNow,
                 isNewUser: isNewUser
             )
         )
@@ -334,30 +337,17 @@ final class MultichainServiceImplementation: MultichainService {
             await multichainClientAPI.markRaffleImport(walletId: walletId, importedWalletId: importedWalletId)
         )
     }
-
-    func forcePickRaffleWinners(
-        raffleId: String,
-        walletId: String?,
-        prizeId: String?
-    ) async throws(MultichainServiceError) {
-        try await serviceCall(
-            await multichainClientAPI.forcePickRaffleWinners(
-                raffleId: raffleId,
-                walletId: walletId,
-                prizeId: prizeId
-            )
-        )
-    }
 }
 
 private extension MultichainServiceImplementation {
     func makeWalletAssetsPage(
         records: [MultichainWalletAssetRecord],
         state: MultichainWalletState,
-        currencies: [String],
         showHidden: Bool?,
         hideDust: Bool?,
-        nextCursor: String?
+        nextCursor: String?,
+        fiatPrice: [String: String],
+        perpsFiatPrice: [String: String]?
     ) -> MultichainWalletAssetsPage {
         let records = Self.filteringForeignAccounts(
             in: records,
@@ -379,7 +369,8 @@ private extension MultichainServiceImplementation {
         return MultichainWalletAssetsPage(
             assets: assets,
             nextCursor: nextCursor,
-            fiatPrice: Self.fiatPrice(from: assets, currencies: currencies)
+            fiatPrice: fiatPrice,
+            perpsFiatPrice: perpsFiatPrice
         )
     }
 
@@ -457,27 +448,6 @@ private extension MultichainServiceImplementation {
         ) * Decimal(price) < dustFiatThreshold
     }
 
-    static func fiatPrice(
-        from assets: [MultichainAsset],
-        currencies: [String]
-    ) -> [String: String] {
-        var result = [String: String]()
-        for currency in currencies {
-            let code = currency.lowercased()
-            let total = assets.reduce(Decimal.zero) { result, asset in
-                guard let price = price(for: code, in: asset.price.prices) else {
-                    return result
-                }
-                return result + decimalAmount(
-                    amount: asset.balance,
-                    fractionDigits: asset.asset.decimals
-                ) * Decimal(price)
-            }
-            result[code] = total.description
-        }
-        return result
-    }
-
     static func price(
         for currencyCode: String,
         in prices: [String: Double]
@@ -519,6 +489,7 @@ public extension MultichainService {
             assetId: assetId,
             activityTypeFilter: activityTypeFilter,
             showPerps: nil,
+            market: nil,
             hideDust: hideDust
         )
     }
@@ -538,6 +509,7 @@ public extension MultichainService {
             search: nil,
             availableOnly: nil,
             showHidden: showHidden,
+            showAll: nil,
             hideDust: nil,
             limit: WalletAssetsPagination.pageLimit,
             cursor: nil
@@ -552,6 +524,7 @@ public extension MultichainService {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         let pages: [MultichainWalletAssetsPage] = try await loadAllWalletAssetPages(
@@ -565,6 +538,7 @@ public extension MultichainService {
                     search: search,
                     availableOnly: availableOnly,
                     showHidden: showHidden,
+                    showAll: showAll,
                     hideDust: hideDust,
                     limit: WalletAssetsPagination.pageLimit,
                     cursor: cursor
@@ -573,19 +547,10 @@ public extension MultichainService {
             nextCursor: \.nextCursor
         )
 
-        let assets = pages.flatMap(\.assets)
-        var fiatTotals = [String: Decimal]()
-        for page in pages {
-            for (code, value) in page.fiatPrice {
-                guard let amount = Decimal(string: value) else { continue }
-                fiatTotals[code, default: .zero] += amount
-            }
-        }
-
         return MultichainWalletAssetsPage(
-            assets: assets,
+            assets: pages.flatMap(\.assets),
             nextCursor: nil,
-            fiatPrice: fiatTotals.mapValues(\.description)
+            fiatPrice: pages.first?.fiatPrice ?? [:]
         )
     }
 }

@@ -4,7 +4,7 @@ import TonSwift
 import TronSwift
 import TronSwiftAPI
 
-public enum WalletMigrationExecutionError: Error {
+@frozen public enum WalletMigrationExecutionError: Error {
     case emptyTransactions
     case unsupportedWalletKind
     case signingFailed

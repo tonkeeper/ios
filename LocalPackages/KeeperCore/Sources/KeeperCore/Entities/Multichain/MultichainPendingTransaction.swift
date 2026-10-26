@@ -28,7 +28,7 @@ public struct MultichainPendingTransaction: Sendable, Hashable {
         }
     }
 
-    public enum ActivityType: Sendable, Hashable {
+    @frozen public enum ActivityType: Sendable, Hashable {
         case send
         case swap(SwapDetails)
         case stake

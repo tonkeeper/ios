@@ -4,7 +4,7 @@ import TonAPI
 import TonSwift
 
 extension JettonInfo {
-    init(jettonPreview: TonAPI.JettonPreview, extensions: [String]? = nil) throws {
+    init(jettonPreview: TonAPI.Components.Schemas.JettonPreview, extensions: [String]? = nil) throws {
         let tokenAddress = try Address.parse(jettonPreview.address)
         address = tokenAddress
         fractionDigits = jettonPreview.decimals
@@ -20,9 +20,9 @@ extension JettonInfo {
             verification = .whitelist
         case .blacklist:
             verification = .blacklist
-        case ._none:
+        case .none:
             verification = .none
-        case .unknownDefaultOpenApi:
+        case .unknown:
             verification = .none
         case .graylist:
             verification = .graylist

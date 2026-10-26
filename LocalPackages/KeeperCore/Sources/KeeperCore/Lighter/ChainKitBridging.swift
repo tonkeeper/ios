@@ -1,5 +1,19 @@
-import ChainKit
+@preconcurrency import ChainKit
 import Foundation
+import PerpsModels
+import TKLogging
+
+struct PerpsTradeFailure: Error, LoggableError {
+    let exception: PerpsTradeException
+
+    var logDescription: String {
+        LogDescription(type: Self.self)
+            .with("kind", exception.kind.name)
+            .with("reason", exception.message)
+            .with("field", exception.field)
+            .text
+    }
+}
 
 /// Awaits a Kotlin suspend function bridged as a completion handler, treating a
 /// nil value as a failure (use for non-null Kotlin return types).
@@ -35,14 +49,7 @@ func bridgeKotlinOptional<T>(
 
 func perpsValue<T: AnyObject>(_ result: PerpsRes<T>) throws -> T {
     if let error = result.error {
-        throw NSError(
-            domain: "ChainKitPerpsTrade",
-            code: 1,
-            userInfo: [
-                "KotlinException": error,
-                NSLocalizedDescriptionKey: error.message ?? "invalid transaction",
-            ]
-        )
+        throw PerpsTradeFailure(exception: error)
     }
     guard let value = result.getOrNull() else {
         throw PerpsTradingError.protocolFailure("perps planner returned neither a value nor an error")
@@ -52,6 +59,7 @@ func perpsValue<T: AnyObject>(_ result: PerpsRes<T>) throws -> T {
 
 func perpsTradeException(from error: Error) -> PerpsTradeException? {
     if let typed = error as? PerpsTradeException { return typed }
+    if let failure = error as? PerpsTradeFailure { return failure.exception }
     return (error as NSError).userInfo["KotlinException"] as? PerpsTradeException
 }
 

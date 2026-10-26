@@ -1,3 +1,5 @@
+import PerpsModels
+
 struct PerpsMarketMetadata: Equatable, Sendable {
     let marketId: Int64
     let symbol: String
@@ -13,13 +15,14 @@ struct PerpsMarketMetadata: Equatable, Sendable {
     let priceDecimals: Int
     let sizeDecimals: Int
     let minBaseSize: Double
+    let minNotionalUsd: Double
 
     var displayPrice: Double {
         markPrice ?? lastTradePrice ?? 0
     }
 }
 
-protocol PerpsMarketsReading: AnyObject {
+protocol PerpsMarketsReading: AnyObject, Sendable {
     func markets(query: String?, sort: PerpsMarketsSort, cursor: String?) async throws -> PerpsMarketsPage
     func marketDetails(marketId: Int64) async throws -> PerpsMarketDetails
     func reloadMarketDetails(marketId: Int64) async throws -> PerpsMarketDetails

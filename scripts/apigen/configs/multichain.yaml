@@ -1,0 +1,7 @@
+generate:
+  - types
+  - client
+typeOverrides:
+  schemas:
+    # The backend adds capabilities (perp_deposit) before the spec lists them; keep the raw value.
+    AssetCapability: Swift.String

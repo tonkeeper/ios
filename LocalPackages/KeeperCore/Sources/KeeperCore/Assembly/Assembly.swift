@@ -44,8 +44,7 @@ public final class Assembly {
         configurationAssembly: configurationAssembly
     )
     public lazy var transactionsManagementAssembly = TransactionsManagementAssembly(
-        coreAssembly: coreAssembly,
-        scamAPIAssembly: scamAPIAssembly
+        coreAssembly: coreAssembly
     )
     private lazy var bootConfigurationAPIAssembly = BootConfigurationAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
@@ -100,7 +99,6 @@ public final class Assembly {
         coreAssembly: coreAssembly,
         tkAppSettings: dependencies.tkAppSettings
     )
-    private lazy var scamAPIAssembly = ScamAPIAssembly(configurationAssembly: configurationAssembly)
     private lazy var nativeSwapAPIAssembly = NativeSwapAPIAssembly(configurationAssembly: configurationAssembly)
     private lazy var onRampAPIAssembly = OnRampAPIAssembly(
         configurationAssembly: configurationAssembly,
@@ -114,7 +112,8 @@ public final class Assembly {
     )
     private lazy var multichainRampAPIAssembly = MultichainRampAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
-        apiAssembly: apiAssembly
+        apiAssembly: apiAssembly,
+        deviceAuth: { [weak self] in self?.deviceAuthService }
     )
     private lazy var tradingAPIAssembly = TradingAPIAssembly(configurationAssembly: configurationAssembly)
     private lazy var multichainAPIAssembly: MultichainAPIAssembly = MultichainAPIAssembly(
@@ -170,7 +169,6 @@ public final class Assembly {
         storesAssembly: storesAssembly,
         apiAssembly: apiAssembly,
         tonkeeperAPIAssembly: tonkeeperApiAssembly,
-        scamAPIAssembly: scamAPIAssembly,
         coreAssembly: coreAssembly,
         secureAssembly: secureAssembly,
         batteryAssembly: batteryAssembly,

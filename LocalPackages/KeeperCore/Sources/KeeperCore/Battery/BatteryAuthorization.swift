@@ -1,8 +1,9 @@
 import Foundation
 
-/// Credentials the battery accepts for one wallet. Both halves travel together when the wallet has
-/// them: a BIP39 wallet has no ton-proof, a legacy one has no wallet id, and a wallet imported by
-/// BIP39 into the TON-only flow has both — the backend takes whichever it currently authenticates.
+/// Credentials the battery accepts for one wallet. Exactly one identity travels per request: a
+/// wallet with a backend wallet id authenticates by that id and the device session, every other
+/// wallet by its ton-proof. The backend keeps a separate account per identity, so sending both
+/// would let reads and sends land on different accounts.
 struct BatteryAuthorization: Equatable {
     let tonProof: String?
     let walletId: String?
@@ -28,6 +29,30 @@ struct BatteryAuthorization: Equatable {
     var isEmpty: Bool {
         tonProof == nil && deviceAccessToken == nil
     }
+
+    /// The headers the battery reads the credentials from. A missing credential sends no header,
+    /// since an empty value would fail it.
+    var httpHeaderFields: [(name: String, value: String)] {
+        var fields = [(name: String, value: String)]()
+        if let tonProof {
+            fields.append((Self.tonConnectAuthHeader, tonProof))
+        }
+        if let walletId {
+            fields.append((Self.walletIdHeader, walletId))
+        }
+        if let deviceAccessToken {
+            fields.append((Self.authorizationHeader, "Bearer \(deviceAccessToken)"))
+        }
+        if let walletAuthToken {
+            fields.append((Self.walletAuthorizationHeader, walletAuthToken))
+        }
+        return fields
+    }
+
+    static let tonConnectAuthHeader = "X-TonConnect-Auth"
+    static let walletIdHeader = "X-Wallet-ID"
+    static let authorizationHeader = "Authorization"
+    static let walletAuthorizationHeader = "X-Wallet-Authorization"
 }
 
 enum BatteryAuthorizationError: Error, Equatable {
@@ -50,18 +75,21 @@ final class BatteryAuthorizationService {
     }
 
     func authorization(for wallet: Wallet) async throws -> BatteryAuthorization {
-        let walletId = walletId(for: wallet)
-        let deviceAccessToken = await deviceAccessToken(for: wallet)
-        let authorization = await BatteryAuthorization(
-            tonProof: tonProof(for: wallet),
-            walletId: walletId,
-            deviceAccessToken: deviceAccessToken,
-            walletAuthToken: walletAuthToken(walletId: walletId, deviceAccessToken: deviceAccessToken)
-        )
-        guard !authorization.isEmpty else {
+        if let walletId = walletId(for: wallet) {
+            guard let deviceAccessToken = await deviceAccessToken(for: wallet) else {
+                throw BatteryAuthorizationError.unavailable
+            }
+            return await BatteryAuthorization(
+                tonProof: nil,
+                walletId: walletId,
+                deviceAccessToken: deviceAccessToken,
+                walletAuthToken: walletAuthToken(walletId: walletId, deviceAccessToken: deviceAccessToken)
+            )
+        }
+        guard let tonProof = tonProof(for: wallet) else {
             throw BatteryAuthorizationError.unavailable
         }
-        return authorization
+        return BatteryAuthorization(tonProof: tonProof, walletId: nil, deviceAccessToken: nil)
     }
 
     func withAuthorization<T>(

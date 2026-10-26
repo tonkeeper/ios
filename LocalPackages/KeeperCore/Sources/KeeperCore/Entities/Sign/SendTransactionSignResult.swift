@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SendTransactionSignResult {
+@frozen public enum SendTransactionSignResult {
     case response(String)
     case error(TonConnect.SendResponseError.ErrorCode)
 }

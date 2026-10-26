@@ -134,14 +134,18 @@ private extension TonConnectConnectViewModelImplementation {
                     )
                     if isSuccess, self.isNotificationsOn {
                         if let token = await self.pushTokenProvider.getToken() {
-                            let result = (try? await notificationsService.turnOnDappNotifications(
+                            let previousIsOn = walletNotificationStore.getState()[selectedWallet]?.dapps[manifest.host] ?? false
+                            await walletNotificationStore.setNotificationsIsOn(true, wallet: selectedWallet, dappHost: manifest.host)
+                            let result = (try? await notificationsService.setDappNotifications(
+                                isOn: true,
+                                previousIsOn: previousIsOn,
                                 wallet: selectedWallet,
                                 manifest: manifest,
-                                sessionId: nil,
                                 token: token
                             )) ?? false
-                            if result {
-                                await walletNotificationStore.setNotificationsIsOn(true, wallet: selectedWallet, dappHost: manifest.host)
+                            if !result {
+                                await walletNotificationStore.setNotificationsIsOn(previousIsOn, wallet: selectedWallet, dappHost: manifest.host)
+                                _ = await notificationsService.syncDappNotifications(wallet: selectedWallet, host: manifest.host, token: token)
                             }
                         }
                     }

@@ -1,7 +1,7 @@
 import Foundation
 
 public struct WalletConnectTONSignData: Sendable, Equatable {
-    public enum Payload: Sendable, Equatable {
+    @frozen public enum Payload: Sendable, Equatable {
         case text(String)
         case binary(String)
         case cell(schema: String, cell: String)

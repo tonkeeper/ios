@@ -113,7 +113,8 @@ public final class RootAssembly {
             apiAssembly: apiAssembly,
             coreAssembly: coreAssembly,
             formattersAssembly: formattersAssembly,
-            secureAssembly: secureAssembly
+            secureAssembly: secureAssembly,
+            isSignMessageEnabled: configurationAssembly.configuration.featureEnabled(.tonConnectSignMessageEnabled)
         )
         return MainAssembly(
             appInfoProvider: appInfoProvider,

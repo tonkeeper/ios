@@ -166,6 +166,7 @@ private final class SpyStoryPresenter: RaffleStoryPresenting {
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
+        isClosable: Bool,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?

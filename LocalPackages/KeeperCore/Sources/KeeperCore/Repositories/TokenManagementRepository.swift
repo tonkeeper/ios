@@ -12,7 +12,7 @@ struct TokenManagementRepositoryImplementation: TokenManagementRepository {
 
     func getState(wallet: Wallet) -> TokenManagementState {
         do {
-            return try fileSystemVault.loadItem(key: wallet.friendlyAddress)
+            return try fileSystemVault.loadItem(key: wallet.friendlyAddress).pinningNativeCoinByDefault()
         } catch {
             return TokenManagementState(
                 pinnedItems: Constants.defaultPinnedItems,
@@ -27,6 +27,6 @@ struct TokenManagementRepositoryImplementation: TokenManagementRepository {
     }
 
     private enum Constants {
-        static var defaultPinnedItems = [JettonMasterAddress.tonUSDT.toRaw()]
+        static let defaultPinnedItems = [TonInfo.symbol, JettonMasterAddress.tonUSDT.toRaw()]
     }
 }

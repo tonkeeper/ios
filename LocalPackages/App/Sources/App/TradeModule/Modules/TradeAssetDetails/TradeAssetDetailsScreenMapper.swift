@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 import KeeperCore
+import Perps
 import TKLocalize
 import TKUIKit
 import TronSwift
@@ -71,6 +72,8 @@ struct TradeAssetDetailsScreenMapper {
         history: TradeAssetDetailsHistorySectionViewData?,
         multichainHistory: TradeAssetDetailsMultichainHistorySectionViewData?,
         tronFees: TronUsdtFeesSnapshot?,
+        earnOffer: EarnAssetOffer? = nil,
+        perpPosition: TradeAssetDetailsPerpPositionViewModel.State = .unknown,
         isSecureMode: Bool
     ) -> (header: TradeAssetDetailsHeaderViewData, screen: TradeAssetDetailsScreenViewData?) {
         guard let details else {
@@ -81,7 +84,7 @@ struct TradeAssetDetailsScreenMapper {
         let formattedVolumeChangeText = details.tradingActivity
             .flatMap(\.volumeChangeText)
             .flatMap(displayFormatter.formatTradingChange)
-        let earnText = valueFormatter.earnApyButtonFormatter(assetInfo.earnAPY)
+        let earnText = valueFormatter.earnApyButtonFormatter(earnOffer?.apy ?? assetInfo.earnAPY)
 
         let header = TradeAssetDetailsHeaderViewData(
             title: Self.headerTitle(assetId: assetInfo.assetId, title: assetInfo.title, symbol: assetInfo.symbol),
@@ -145,6 +148,7 @@ struct TradeAssetDetailsScreenMapper {
                     TradeAssetDetailsAssetTypeSectionKind(assetInfo: assetInfo)
                 },
             tronFees: tronFees.map(tronFeesSection(_:)),
+            perpPosition: perpPositionSection(details: details, state: perpPosition),
             history: isSecureMode ? history?.maskingAmounts() : history,
             multichainHistory: isSecureMode ? multichainHistory?.maskingAmounts() : multichainHistory,
             links: details.links.map {
@@ -169,6 +173,29 @@ struct TradeAssetDetailsScreenMapper {
 }
 
 private extension TradeAssetDetailsScreenMapper {
+    func perpPositionSection(
+        details: TradingAssetDetails,
+        state: TradeAssetDetailsPerpPositionViewModel.State
+    ) -> TradeAssetDetailsPerpPositionViewData? {
+        guard let market = details.perpMarket else { return nil }
+        switch state {
+        case .unknown:
+            return nil
+        case .loading:
+            return .loading
+        case .noPosition:
+            return .banner(
+                marketId: market.marketId,
+                title: TKLocales.Trade.AssetDetails.PerpPosition.tradeTitle(details.assetInfo.symbol),
+                caption: market.maxLeverage.map {
+                    TKLocales.Trade.AssetDetails.PerpPosition.leverageCaption(PerpsFormatting.live.leverage(Double($0)))
+                }
+            )
+        case let .position(row):
+            return .position(row)
+        }
+    }
+
     func tronFeesSection(_ snapshot: TronUsdtFeesSnapshot) -> TradeAssetDetailsTronFeesViewData {
         if snapshot.hasEnoughForAtLeastOneTransfer {
             return .transfersAvailable(

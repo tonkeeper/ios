@@ -102,7 +102,7 @@ public struct MultichainRaffleStoryPage: Equatable, Sendable {
 }
 
 /// Per-wallet relationship to the raffle.
-public enum MultichainRaffleStatus: String, Equatable, Sendable {
+@frozen public enum MultichainRaffleStatus: String, Equatable, Sendable {
     case notJoined
     case joined
     case endedPending
@@ -243,7 +243,7 @@ public struct MultichainRaffleMilestone: Equatable, Sendable, Identifiable {
 
 /// Bottom button, picked by the backend per user state.
 public struct MultichainRaffleCTA: Equatable, Sendable {
-    public enum Action: String, Equatable, Sendable {
+    @frozen public enum Action: String, Equatable, Sendable {
         case deeplink
         case link
     }

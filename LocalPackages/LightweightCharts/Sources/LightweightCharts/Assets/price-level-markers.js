@@ -12,29 +12,29 @@
     const defaultOptions = {
         markers: [],
         priceDecimals: 2,
-        priceGroupingSeparator: " ",
+        priceGroupingSeparator: " ",
         lineWidth: 1,
         lineOpacity: 0.32,
         fontSize: 12,
-        fontFamily: "TT Firs Neue, Montserrat, -apple-system, BlinkMacSystemFont, sans-serif",
-        fontWeight: "500",
+        fontFamily: "SFMono-Semibold, SF Mono, SFMono-Regular, ui-monospace, monospace",
+        fontWeight: "600",
         tagRadius: 4,
-        tagPaddingX: 5,
-        tagPaddingTop: 2.5,
-        tagPaddingBottom: 3.5,
-        tagMinHeight: 18,
+        tagPaddingX: 4,
+        tagPaddingTop: 1,
+        tagPaddingBottom: 2,
+        tagMinHeight: 16,
         tagMinWidth: 0,
         axisFontSize: 12,
-        axisLineHeight: 13,
+        axisWordSpacing: -5,
         axisFontFamily: "SFMono-Medium, SF Mono, SFMono-Regular, ui-monospace, monospace",
         axisFontWeight: "500",
         axisTagFontFamily: "SFMono-Semibold, SF Mono, SFMono-Regular, ui-monospace, monospace",
         axisTagFontWeight: "600",
         axisTagRadius: 4,
-        axisTagPaddingX: 5,
-        axisTagPaddingTop: 2.5,
-        axisTagPaddingBottom: 3.5,
-        axisTagMinHeight: 18,
+        axisTagPaddingX: 4,
+        axisTagPaddingTop: 1,
+        axisTagPaddingBottom: 2,
+        axisTagMinHeight: 16,
         axisTagMinWidth: 0,
         axisTagTextRightInset: 16,
         currentPriceUpLabelColor: "#39CC83",
@@ -44,21 +44,14 @@
         axisLabelsVisible: true,
         axisLabelColor: "#8994A3",
         axisLabelTextRightInset: 16,
-        axisLabelMinStep: 58,
-        axisLabelOverlapPadding: 4,
-        // "ladder" draws nice-stepped price ticks in the axis gutter (candle mode);
-        // "bounds" overlays only the top/bottom price over the full-width chart (line mode).
-        axisLabelMode: "ladder",
-        crosshairHorizontalVisible: true,
-        crosshairLabelVisible: true,
         // When set, the crosshair dot snaps onto the series value at the hovered
-        // time (line mode) instead of tracking the finger's y (candle mode).
+        // time instead of tracking the finger's y.
         crosshairDotOnSeries: false,
         leadingX: 16,
         trailingX: 0,
         dotHaloSize: 24,
         dotSize: 8,
-        dotHaloColor: "rgba(255, 255, 255, 0.16)",
+        dotHaloColor: "rgba(255, 255, 255, 0.08)",
         dotColor: "rgba(255, 255, 255, 1)",
         crosshairVisible: true,
         crosshairColor: "#FFFFFF",
@@ -80,13 +73,18 @@
         gridFadeColor: null,
         markerLineStartX: 0,
         markerLineWidth: null,
-        markerLineDash: [3, 3],
+        markerLineDash: [],
         crosshairVerticalY: 0,
         crosshairVerticalHeight: null,
         crosshairHorizontalStartX: 0,
         crosshairHorizontalWidth: null,
         crosshairLabelColor: "#FFFFFF",
         crosshairLabelBackgroundColor: "#363B43",
+        pinnedTagGap: 2,
+        pinnedTagsBottomY: 1,
+        pinnedArrowSize: 8,
+        pinnedArrowGap: 4,
+        pinnedArrowLineWidth: 1.5,
     };
 
     function roundRect(ctx, x, y, width, height, radius) {
@@ -164,13 +162,95 @@
         return `${sign}${grouped}${parts[1] ? `.${parts[1]}` : ""}`;
     }
 
+    function tagHeight(options) {
+        const measuredTagHeight = Math.ceil(options.fontSize + options.tagPaddingTop + options.tagPaddingBottom);
+        return Math.max(measuredTagHeight, options.tagMinHeight || 0);
+    }
+
     function tagMetrics(ctx, cache, font, text, options) {
         const textWidth = cachedTextWidth(ctx, cache, font, text);
         const measuredTagWidth = Math.ceil(textWidth + options.tagPaddingX * 2);
         const tagWidth = Math.max(measuredTagWidth, options.tagMinWidth || 0);
-        const measuredTagHeight = Math.ceil(options.fontSize + options.tagPaddingTop + options.tagPaddingBottom);
-        const tagHeight = Math.max(measuredTagHeight, options.tagMinHeight || 0);
-        return { tagWidth, tagHeight };
+        return { tagWidth, tagHeight: tagHeight(options) };
+    }
+
+    function pinTagsToEdges(items, paneHeight, options) {
+        const height = tagHeight(options);
+        const step = height + options.pinnedTagGap;
+        const plotBottom = options.pinnedTagsBottomY * paneHeight;
+        const minY = options.pinnedTagGap + height / 2;
+        const maxY = plotBottom - options.pinnedTagGap - height / 2;
+        const tags = items.filter(item => item.align !== "right" && item.title);
+        const above = tags.filter(item => item.y < 0).sort((a, b) => a.y - b.y);
+        const below = tags.filter(item => item.y > plotBottom).sort((a, b) => b.y - a.y);
+        above.forEach((item, index) => {
+            item.edge = "top";
+            item.tagY = minY + index * step;
+        });
+        below.forEach((item, index) => {
+            item.edge = "bottom";
+            item.tagY = maxY - index * step;
+        });
+
+        const inRange = tags.filter(item => item.edge == null).sort((a, b) => a.y - b.y);
+        for (const item of inRange) {
+            item.tagY = Math.min(Math.max(item.y, minY), maxY);
+        }
+        let floor = minY + above.length * step;
+        for (const item of inRange) {
+            if (item.tagY >= floor) {
+                break;
+            }
+            item.tagY = floor;
+            floor += step;
+        }
+        let ceiling = maxY - below.length * step;
+        for (const item of [...inRange].reverse()) {
+            if (item.tagY <= ceiling) {
+                break;
+            }
+            item.tagY = ceiling;
+            ceiling -= step;
+        }
+    }
+
+    function drawEdgeArrow(context, x, centerY, edge, color, options) {
+        const size = options.pinnedArrowSize;
+        const head = size / 2;
+        const direction = edge === "top" ? -1 : 1;
+        const tipY = centerY + direction * size / 2;
+        const tailY = centerY - direction * size / 2;
+
+        context.save();
+        context.strokeStyle = color;
+        context.lineWidth = options.pinnedArrowLineWidth;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        context.setLineDash([]);
+        context.beginPath();
+        context.moveTo(x, tailY);
+        context.lineTo(x, tipY);
+        context.moveTo(x - head, tipY - direction * head);
+        context.lineTo(x, tipY);
+        context.lineTo(x + head, tipY - direction * head);
+        context.stroke();
+        context.restore();
+    }
+
+    function drawPinnedTag(context, x, centerY, item, backgroundColor, options, textWidthCache, font) {
+        const textWidth = cachedTextWidth(context, textWidthCache, font, item.title);
+        const arrowWidth = options.pinnedArrowGap + options.pinnedArrowSize;
+        const width = Math.max(Math.ceil(textWidth + options.tagPaddingX * 2 + arrowWidth), options.tagMinWidth || 0);
+        const height = tagHeight(options);
+        const top = Math.round(centerY - height / 2);
+        const textX = x + options.tagPaddingX;
+
+        context.fillStyle = backgroundColor;
+        fillRoundRect(context, x, top, width, height, options.tagRadius);
+        context.fillStyle = item.color;
+        context.textAlign = "left";
+        context.fillText(item.title, textX, top + height / 2);
+        drawEdgeArrow(context, textX + textWidth + arrowWidth - options.pinnedArrowSize / 2, top + height / 2, item.edge, item.color, options);
     }
 
     function drawTag(context, x, centerY, title, color, backgroundColor, options, textWidthCache, font, textAlign) {
@@ -213,86 +293,17 @@
         return Math.max(0, mediaWidth - inset);
     }
 
-    function niceAxisStep(rawStep) {
-        if (!Number.isFinite(rawStep) || rawStep <= 0) {
-            return 1;
-        }
-        const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-        const normalized = rawStep / magnitude;
-        if (normalized <= 1) {
-            return magnitude;
-        }
-        if (normalized <= 2) {
-            return 2 * magnitude;
-        }
-        if (normalized <= 2.5) {
-            return 2.5 * magnitude;
-        }
-        if (normalized <= 5) {
-            return 5 * magnitude;
-        }
-        return 10 * magnitude;
-    }
-
-    function labelOverlaps(y, height, occupiedRanges, padding) {
-        const top = y - height / 2 - padding;
-        const bottom = y + height / 2 + padding;
-        return occupiedRanges.some(range => top <= range.bottom && bottom >= range.top);
-    }
-
-    function axisValueLabels(series, mediaHeight, options, style, occupiedRanges) {
+    function axisValueLabels(series, mediaHeight, options) {
         if (!series || !options.axisLabelsVisible) {
             return [];
         }
 
-        const topPrice = series.coordinateToPrice(0);
-        const bottomPrice = series.coordinateToPrice(mediaHeight);
-        if (!Number.isFinite(topPrice) || !Number.isFinite(bottomPrice)) {
-            return [];
-        }
-
-        const minPrice = Math.min(topPrice, bottomPrice);
-        const maxPrice = Math.max(topPrice, bottomPrice);
-        const desiredTickCount = Math.max(2, Math.floor(mediaHeight / Math.max(1, options.axisLabelMinStep || 58)));
-        const step = niceAxisStep((maxPrice - minPrice) / desiredTickCount);
-        const firstTick = Math.ceil(minPrice / step) * step;
-        const lineHeight = options.axisLineHeight || style.axisFontSize || style.fontSize;
-        const padding = options.axisLabelOverlapPadding || 0;
-        const labels = [];
-
-        for (let value = firstTick; value <= maxPrice + step * 0.5; value += step) {
-            const y = series.priceToCoordinate(value);
-            if (y == null || y < 0 || y > mediaHeight || labelOverlaps(y, lineHeight, occupiedRanges, padding)) {
-                continue;
-            }
-            labels.push({ y, title: formatPrice(value, options) });
-            occupiedRanges.push({
-                top: y - lineHeight / 2,
-                bottom: y + lineHeight / 2,
-            });
-        }
-
-        return labels;
-    }
-
-    function drawBoundsLabels(context, mediaSize, options, series) {
-        const topPrice = series.coordinateToPrice(0);
-        const bottomPrice = series.coordinateToPrice(mediaSize.height);
-        if (!Number.isFinite(topPrice) || !Number.isFinite(bottomPrice)) {
-            return;
-        }
-        const inset = options.axisLabelTextRightInset ?? 16;
-        const x = Math.max(0, mediaSize.width - inset);
-        const edge = (options.axisLineHeight || options.axisFontSize) / 2 + 2;
-
-        context.save();
-        context.font = `${options.axisFontWeight} ${options.axisFontSize}px ${options.axisFontFamily}`;
-        context.fillStyle = options.axisLabelColor;
-        context.textAlign = "right";
-        context.textBaseline = "middle";
-        context.fillText(formatPrice(topPrice, options), x, alignPixel(edge));
-        context.fillText(formatPrice(bottomPrice, options), x, alignPixel(mediaSize.height - edge));
-        context.restore();
+        return options.gridHorizontalY
+            .map(fraction => {
+                const y = fraction * mediaHeight;
+                return { y, title: formatPrice(series.coordinateToPrice(y), options) };
+            })
+            .filter(label => label.title);
     }
 
     function markerTitle(marker, options) {
@@ -409,7 +420,7 @@
 
         draw(target) {
             target.useMediaCoordinateSpace(({ context, mediaSize }) => {
-                const { options, items, dot, textWidthCache, series } = this._data;
+                const { options, items, dot, textWidthCache } = this._data;
                 const font = `${options.fontWeight} ${options.fontSize}px ${options.fontFamily}`;
                 const markerLine = lineExtent(options.markerLineStartX, options.markerLineWidth, mediaSize.width);
                 const crosshairVertical = lineExtent(options.crosshairVerticalY, options.crosshairVerticalHeight, mediaSize.height);
@@ -421,7 +432,7 @@
 
                 for (const item of items) {
                     const y = alignPixel(item.y);
-                    if (item.lineVisible !== false) {
+                    if (item.lineVisible !== false && item.edge == null) {
                         context.save();
                         context.globalAlpha = options.lineOpacity;
                         context.strokeStyle = item.lineColor || item.color;
@@ -443,7 +454,12 @@
                         continue;
                     }
 
-                    drawTag(context, options.leadingX, y, item.title, item.color, item.backgroundColor || colorWithAlpha(item.color, 0.16), options, textWidthCache, font);
+                    const backgroundColor = item.backgroundColor || colorWithAlpha(item.color, 0.16);
+                    if (item.edge == null) {
+                        drawTag(context, options.leadingX, alignPixel(item.tagY ?? item.y), item.title, item.color, backgroundColor, options, textWidthCache, font);
+                    } else {
+                        drawPinnedTag(context, options.leadingX, alignPixel(item.tagY), item, backgroundColor, options, textWidthCache, font);
+                    }
                 }
 
                 if (dot && options.crosshairVisible) {
@@ -456,12 +472,10 @@
                     context.moveTo(alignPixel(dot.x), crosshairVertical.start);
                     context.lineTo(alignPixel(dot.x), crosshairVertical.end);
                     context.stroke();
-                    if (options.crosshairHorizontalVisible !== false) {
-                        context.beginPath();
-                        context.moveTo(crosshairHorizontal.start, alignPixel(dot.y));
-                        context.lineTo(crosshairHorizontal.end, alignPixel(dot.y));
-                        context.stroke();
-                    }
+                    context.beginPath();
+                    context.moveTo(crosshairHorizontal.start, alignPixel(dot.y));
+                    context.lineTo(crosshairHorizontal.end, alignPixel(dot.y));
+                    context.stroke();
                     context.restore();
                 }
 
@@ -475,12 +489,6 @@
                     context.beginPath();
                     context.arc(dot.x, dot.y, options.dotSize / 2, 0, Math.PI * 2);
                     context.fill();
-                }
-
-                // Line mode has no axis gutter, so the top/bottom price labels are
-                // overlaid right-aligned over the full-width chart instead.
-                if (series && options.axisLabelsVisible !== false && options.axisLabelMode === "bounds") {
-                    drawBoundsLabels(context, mediaSize, options, series);
                 }
 
                 context.restore();
@@ -501,18 +509,23 @@
                 const tagFont = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
 
                 context.save();
+                context.wordSpacing = `${options.axisWordSpacing}px`;
                 context.font = tagFont;
                 context.textBaseline = "middle";
 
+                const tagYs = axisItems.filter(item => item.title).map(item => item.y);
+                if (dot && dot.title) {
+                    tagYs.push(dot.y);
+                }
+                const labelClearance = (style.tagMinHeight + options.axisFontSize) / 2;
                 context.font = labelFont;
                 context.fillStyle = options.axisLabelColor;
                 context.textAlign = "right";
-                // "bounds" mode draws its two labels over the chart instead (see
-                // drawBoundsLabels in OverlayRenderer); the gutter ladder is candle-only.
-                if (options.axisLabelMode !== "bounds") {
-                    for (const label of axisValueLabels(series, mediaSize.height, options, style, [])) {
-                        context.fillText(label.title, axisTextX(mediaSize.width, style), alignPixel(label.y));
+                for (const label of axisValueLabels(series, mediaSize.height, options)) {
+                    if (tagYs.some(y => Math.abs(y - label.y) < labelClearance)) {
+                        continue;
                     }
+                    context.fillText(label.title, axisTextX(mediaSize.width, style), alignPixel(label.y));
                 }
 
                 context.font = tagFont;
@@ -526,7 +539,7 @@
                     drawTag(context, x, alignPixel(item.y), item.title, colors.color, colors.backgroundColor, style, textWidthCache, tagFont, "right");
                 }
 
-                if (dot && dot.title && options.crosshairLabelVisible !== false) {
+                if (dot && dot.title) {
                     const { tagWidth } = tagMetrics(context, textWidthCache, tagFont, dot.title, style);
                     const x = axisTagX(mediaSize.width, tagWidth, style);
                     drawTag(
@@ -645,6 +658,7 @@
                     return y == null ? null : { ...marker, y, title: markerTitle(marker, this._options) };
                 })
                 .filter(Boolean);
+            pinTagsToEdges(this._items, this._chart.paneSize().height, this._options);
             this._axisItems = this._items.filter((item) => item.align === "right");
         }
 

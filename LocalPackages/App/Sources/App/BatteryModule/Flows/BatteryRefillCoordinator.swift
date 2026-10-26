@@ -78,13 +78,13 @@ private extension BatteryRefillCoordinator {
             coreAssembly: coreAssembly
         )
 
-        module.output.didTapSupportedTransactions = { [weak self] in
+        module.output.didTapSupportedTransactions = { [weak self] networks in
             guard let self else { return }
-            openSupportedTransactions(wallet: wallet)
+            openSupportedTransactions(wallet: wallet, networks: networks)
         }
 
-        module.output.didTapTransactionsSettings = { [weak self] in
-            self?.openTransactionsSettings()
+        module.output.didTapTransactionsSettings = { [weak self] networks in
+            self?.openTransactionsSettings(networks: networks)
         }
 
         module.output.didFinish = { [weak self] in
@@ -114,9 +114,10 @@ private extension BatteryRefillCoordinator {
         })
     }
 
-    func openSupportedTransactions(wallet: Wallet) {
+    func openSupportedTransactions(wallet: Wallet, networks: BatteryNetworks) {
         let module = BatteryRefillSupportedTransactionsAssembly.module(
             wallet: wallet,
+            networks: networks,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly
         )
@@ -124,8 +125,9 @@ private extension BatteryRefillCoordinator {
         router.push(viewController: module.view)
     }
 
-    func openTransactionsSettings() {
+    func openTransactionsSettings(networks: BatteryNetworks) {
         let module = BatteryRefillTransactionsSettingsAssembly.module(
+            networks: networks,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly
         )
@@ -186,6 +188,7 @@ private extension BatteryRefillCoordinator {
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
+            mode: .sendTransaction,
             transferProvider: { try await batteryRechargeSignRawBuilder.getSignRawRequest() },
             resultHandler: BatteryRechargeResultHandler(
                 didConfirmRecharge: { [weak self] in

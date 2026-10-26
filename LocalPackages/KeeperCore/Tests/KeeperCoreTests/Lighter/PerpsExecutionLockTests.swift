@@ -19,9 +19,9 @@ final class PerpsExecutionLockTests: XCTestCase {
         }
     }
 
-    private let keyA = PerpsExecutionLock.Scope(accountIndex: 1, apiKeyIndex: 0)
-    private let keyB = PerpsExecutionLock.Scope(accountIndex: 1, apiKeyIndex: 1)
-    private let otherAccount = PerpsExecutionLock.Scope(accountIndex: 2, apiKeyIndex: 0)
+    private let keyA = PerpsExecutionLock.Scope(environment: "mainnet", accountIndex: 1, apiKeyIndex: 0)
+    private let keyB = PerpsExecutionLock.Scope(environment: "mainnet", accountIndex: 1, apiKeyIndex: 1)
+    private let otherAccount = PerpsExecutionLock.Scope(environment: "mainnet", accountIndex: 2, apiKeyIndex: 0)
 
     func test_sameKeyRunsOneAtATime() async {
         let lock = PerpsExecutionLock()

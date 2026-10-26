@@ -3,7 +3,7 @@ import Foundation
 public struct Story: Decodable, Equatable {
     public struct Page: Decodable, Equatable {
         public struct Button: Decodable, Equatable {
-            public enum ButtonType: String, Decodable {
+            @frozen public enum ButtonType: String, Decodable {
                 case deeplink
                 case link
             }
@@ -33,10 +33,16 @@ public struct Story: Decodable, Equatable {
             }
         }
 
+        public struct Link: Decodable, Equatable {
+            public let text: String
+            public let url: String
+        }
+
         public let title: String
         public let description: String
         public let image: URL?
         public let button: Button?
+        public let links: [Link]?
     }
 
     public struct MainScreen: Decodable, Equatable {

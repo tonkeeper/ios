@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WalletConnectMethod: String, CaseIterable, Codable, Sendable, Equatable {
+@frozen public enum WalletConnectMethod: String, CaseIterable, Codable, Sendable, Equatable {
     case personalSign = "personal_sign"
     case ethSignTypedDataV4 = "eth_signTypedData_v4"
     case ethSignTransaction = "eth_signTransaction"
@@ -11,6 +11,12 @@ public enum WalletConnectMethod: String, CaseIterable, Codable, Sendable, Equata
     case tronSignTransaction = "tron_signTransaction"
     case tonSendMessage = "ton_sendMessage"
     case tonSignData = "ton_signData"
+    case solanaGetAccounts = "solana_getAccounts"
+    case solanaRequestAccounts = "solana_requestAccounts"
+    case solanaSignMessage = "solana_signMessage"
+    case solanaSignTransaction = "solana_signTransaction"
+    case solanaSignAndSendTransaction = "solana_signAndSendTransaction"
+    case solanaSignAllTransactions = "solana_signAllTransactions"
 }
 
 extension WalletConnectMethod {
@@ -33,6 +39,15 @@ extension WalletConnectMethod {
         .tonSignData,
     ]
 
+    static let solanaMethods: Set<WalletConnectMethod> = [
+        .solanaGetAccounts,
+        .solanaRequestAccounts,
+        .solanaSignMessage,
+        .solanaSignTransaction,
+        .solanaSignAndSendTransaction,
+        .solanaSignAllTransactions,
+    ]
+
     static func supportedMethods(namespace: String) -> Set<WalletConnectMethod> {
         switch namespace.components(separatedBy: ":").first {
         case "eip155":
@@ -41,6 +56,8 @@ extension WalletConnectMethod {
             return tronMethods
         case "ton":
             return tonMethods
+        case "solana":
+            return solanaMethods
         default:
             return []
         }

@@ -14,6 +14,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
     var didRequestReplanishWallet: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
     private let wallet: Wallet
+    private let mode: SignRawConfirmationMode
     private let transferProvider: () async throws -> Transfer
     private let resultHandler: SignRawControllerResultHandler?
     private let sendFrom: SendOpen.From
@@ -30,6 +31,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
     init(
         router: WindowRouter,
         wallet: Wallet,
+        mode: SignRawConfirmationMode,
         transferProvider: @escaping () async throws -> Transfer,
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
@@ -42,6 +44,7 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
         coreAssembly: TKCore.CoreAssembly
     ) {
         self.wallet = wallet
+        self.mode = mode
         self.transferProvider = transferProvider
         self.resultHandler = resultHandler
         self.sendFrom = sendFrom
@@ -101,10 +104,10 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
             )
         }
 
-        let module = SignRawConfirmationAssembly.module(
-            wallet: wallet,
-            transferProvider: transferProvider,
-            resultHandler: SignRawAnalyticsResultHandler(
+        let analyticsResultHandler: SignRawControllerResultHandler
+        switch mode {
+        case .sendTransaction:
+            analyticsResultHandler = SignRawAnalyticsResultHandler(
                 base: resultHandler,
                 analyticsProvider: coreAssembly.analyticsProvider,
                 payloadProvider: { [weak self] in self?.lastSendAnalyticsPayload },
@@ -119,7 +122,19 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
                 ),
                 redSession: redSession,
                 wallet: wallet
-            ),
+            )
+        case .signMessage:
+            analyticsResultHandler = SignMessageAnalyticsResultHandler(
+                base: resultHandler,
+                redSession: redSession
+            )
+        }
+
+        let module = SignRawConfirmationAssembly.module(
+            wallet: wallet,
+            mode: mode,
+            transferProvider: transferProvider,
+            resultHandler: analyticsResultHandler,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             featureFlags: coreAssembly.featureFlags
         )
@@ -169,6 +184,9 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
                         ]
                     ) { _, newValue in newValue }
                 )
+            }
+            guard case .sendTransaction = mode else {
+                return
             }
             switch payload {
             case let .send(sendPayload, emulation, transferType):
@@ -362,6 +380,36 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
 
     private var resolvedAppId: String? {
         sendFrom.requiresAppId ? appId : nil
+    }
+}
+
+private struct SignMessageAnalyticsResultHandler: SignRawControllerResultHandler {
+    let base: SignRawControllerResultHandler?
+    let redSession: RedAnalyticsSessionHolder?
+
+    func didConfirm(boc: String) {
+        redSession?.finish(
+            outcome: .success,
+            stage: "sign"
+        )
+        base?.didConfirm(boc: boc)
+    }
+
+    func didFail(error: SomeOf<TransferError, TransactionConfirmationError>) {
+        redSession?.finish(
+            outcome: .fail,
+            error: error,
+            stage: "sign"
+        )
+        base?.didFail(error: error)
+    }
+
+    func didCancel() {
+        redSession?.finish(
+            outcome: .cancel,
+            stage: "confirm"
+        )
+        base?.didCancel()
     }
 }
 

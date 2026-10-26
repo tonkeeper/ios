@@ -3,6 +3,7 @@ import SnapKit
 import TKCoordinator
 import TKCore
 import TKFeatureFlags
+import TKLogging
 import TKUIKit
 import UIKit
 import UserNotifications
@@ -117,6 +118,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
                 deadline.cancel()
             }
             await deadline.value
+            Log.i("feature flags:\n\(configuration.featureFlagsDescription)")
 
             let event = LaunchApp(
                 theme: theme,

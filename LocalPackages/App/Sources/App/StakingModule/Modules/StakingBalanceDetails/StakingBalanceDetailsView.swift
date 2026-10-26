@@ -12,13 +12,16 @@ final class StakingBalanceDetailsView: TKView {
     let navigationBar = TKUINavigationBar()
     let titleView = TKUINavigationBarTitleView()
     let informationView = TokenDetailsInformationView()
-    let buttonsView = TokenDetailsHeaderButtonsView()
+    let actionBarView = StakingBalanceDetailsActionBarView()
     let jettonButtonContainer = TKPaddingContainerView()
     let jettonButton = TKListItemButton()
     let jettonButtonDescriptionContainer = TKPaddingContainerView()
     let jettonButtonDescriptionLabel = UILabel()
     let stakeStateButton = TKListItemButton()
     let stakeStateButtonContainer = TKPaddingContainerView()
+    let rewardsView = StakingBalanceDetailsRewardsView()
+    let rewardsViewContainer = TKPaddingContainerView()
+    let detailsTitleView = TKListTitleView()
     let listView = StakingDetailsListView()
     let linksView = StakingDetailsLinksView()
     let descriptionLabel = UILabel()
@@ -56,9 +59,17 @@ final class StakingBalanceDetailsView: TKView {
         descriptionLabelContainer.setViews([descriptionLabel])
         descriptionLabelContainer.padding = UIEdgeInsets(top: 12, left: 17, bottom: 16, right: 17)
 
+        rewardsViewContainer.setViews([rewardsView])
+        rewardsViewContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16)
+        rewardsViewContainer.isHidden = true
+
+        let detailsTitleContainer = TKPaddingContainerView()
+        detailsTitleContainer.setViews([detailsTitleView])
+        detailsTitleContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+
         let listViewContainer = TKPaddingContainerView()
         listViewContainer.setViews([listView])
-        listViewContainer.padding = UIEdgeInsets(top: 8, left: 16, bottom: 0, right: 16)
+        listViewContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
 
         let linksViewContainer = TKPaddingContainerView()
         linksViewContainer.setViews([linksView])
@@ -66,18 +77,29 @@ final class StakingBalanceDetailsView: TKView {
 
         addSubview(scrollView)
         addSubview(navigationBar)
+        addSubview(actionBarView)
         scrollView.addSubview(contentStackView)
         contentStackView.addArrangedSubview(informationView)
-        contentStackView.addArrangedSubview(buttonsView)
         contentStackView.addArrangedSubview(stakeStateButtonContainer)
         contentStackView.addArrangedSubview(jettonButtonContainer)
         contentStackView.addArrangedSubview(jettonButtonDescriptionContainer)
+        contentStackView.addArrangedSubview(rewardsViewContainer)
+        contentStackView.addArrangedSubview(detailsTitleContainer)
         contentStackView.addArrangedSubview(listViewContainer)
         contentStackView.addArrangedSubview(descriptionLabelContainer)
         contentStackView.addArrangedSubview(linksViewContainer)
         contentStackView.addArrangedSubview(bottomSpacerView)
 
+        detailsTitleView.snp.makeConstraints { make in
+            make.height.equalTo(56)
+        }
+
         setupConstraints()
+        updateScrollViewInsets()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
         updateScrollViewInsets()
     }
 
@@ -96,6 +118,10 @@ final class StakingBalanceDetailsView: TKView {
             make.left.bottom.right.equalTo(self)
         }
 
+        actionBarView.snp.makeConstraints { make in
+            make.left.bottom.right.equalTo(self)
+        }
+
         contentStackView.snp.makeConstraints { make in
             make.edges.equalTo(scrollView.contentLayoutGuide)
             make.width.equalTo(scrollView.frameLayoutGuide)
@@ -104,7 +130,8 @@ final class StakingBalanceDetailsView: TKView {
     }
 
     private func updateScrollViewInsets() {
-        scrollView.contentInset.bottom = safeAreaInsets.bottom
-        scrollView.verticalScrollIndicatorInsets.bottom = safeAreaInsets.bottom
+        let bottomInset = actionBarView.bounds.height
+        scrollView.contentInset.bottom = bottomInset
+        scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
     }
 }

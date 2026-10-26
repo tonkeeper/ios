@@ -1,6 +1,6 @@
 import TKLogging
 
-public enum MultichainTransactionFailure: Error {
+@frozen public enum MultichainTransactionFailure: Error {
     case canceled
     case unsupportedAsset(id: String)
     case insufficientSelectedFee
@@ -8,6 +8,14 @@ public enum MultichainTransactionFailure: Error {
     case failedToEstimateNonce(kind: MultichainSwapExecutionErrorKind, reason: String)
     case failedToSign(kind: MultichainSwapExecutionErrorKind, reason: String)
     case failedToSendSigned(kind: MultichainSwapExecutionErrorKind, reason: String)
+    /// The relayer could not price the chosen fee method when the transfer was about to go out.
+    case relayerQuoteUnavailable(reason: String)
+    /// The relayer no longer holds the emulated operation the signatures answer.
+    case relayerQuoteExpired
+    /// The relayer refused to broadcast the signed operation.
+    case relayerRejected(reason: String)
+    /// The relayer may have broadcast the signed operation: it did not answer, or says it already has.
+    case relayerOutcomeUnknown(reason: String)
     case `internal`(reason: String)
 }
 
@@ -28,6 +36,14 @@ extension MultichainTransactionFailure: LoggableError {
             return "type=MultichainTransactionFailure, case=failedToSign, kind=\(kind.description)"
         case let .failedToSendSigned(kind, _):
             return "type=MultichainTransactionFailure, case=failedToSendSigned, kind=\(kind.description)"
+        case let .relayerQuoteUnavailable(reason):
+            return "type=MultichainTransactionFailure, case=relayerQuoteUnavailable, reason=\(reason)"
+        case .relayerQuoteExpired:
+            return "type=MultichainTransactionFailure, case=relayerQuoteExpired"
+        case let .relayerRejected(reason):
+            return "type=MultichainTransactionFailure, case=relayerRejected, reason=\(reason)"
+        case let .relayerOutcomeUnknown(reason):
+            return "type=MultichainTransactionFailure, case=relayerOutcomeUnknown, reason=\(reason)"
         case .internal:
             return "type=MultichainTransactionFailure, case=internal"
         }

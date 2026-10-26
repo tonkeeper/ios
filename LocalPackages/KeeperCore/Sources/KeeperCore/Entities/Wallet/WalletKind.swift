@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public enum WalletKind: Codable, Equatable, Hashable {
+@frozen public enum WalletKind: Codable, Equatable, Hashable {
     case Regular(TonSwift.PublicKey, WalletContractVersion)
     case Lockup(TonSwift.PublicKey, LockupConfig)
     case Watchonly(ResolvableAddress)

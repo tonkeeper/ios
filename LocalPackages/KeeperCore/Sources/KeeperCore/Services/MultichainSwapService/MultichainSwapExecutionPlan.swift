@@ -1,3 +1,5 @@
+@preconcurrency import BigInt
+
 public struct MultichainSwapExecutionPlan: Sendable {
     public var routeId: String
     /// The aggregator that issued the route: `providerRouteId` is only meaningful against it, and
@@ -12,6 +14,8 @@ public struct MultichainSwapExecutionPlan: Sendable {
     var payloadFees: MultichainSwapPayloadFees
     /// The main payload in the shape a battery method sends it, so a chosen method needs no re-derivation.
     var batteryPayload: MultichainSwapBatteryPayload?
+    /// What the route takes out of the source asset, in its base units, for a fee paid in that asset.
+    var spentSourceAmount: BigUInt?
 
     public var provider: MultichainSwapProvider {
         aggregator.provider
@@ -26,7 +30,8 @@ public struct MultichainSwapExecutionPlan: Sendable {
         requiresApproval: Bool = false,
         feeOptions: [MultichainSwapFeeOption] = [],
         payloadFees: MultichainSwapPayloadFees,
-        batteryPayload: MultichainSwapBatteryPayload? = nil
+        batteryPayload: MultichainSwapBatteryPayload? = nil,
+        spentSourceAmount: BigUInt? = nil
     ) {
         self.routeId = routeId
         self.aggregator = aggregator
@@ -37,5 +42,6 @@ public struct MultichainSwapExecutionPlan: Sendable {
         self.feeOptions = feeOptions
         self.payloadFees = payloadFees
         self.batteryPayload = batteryPayload
+        self.spentSourceAmount = spentSourceAmount
     }
 }

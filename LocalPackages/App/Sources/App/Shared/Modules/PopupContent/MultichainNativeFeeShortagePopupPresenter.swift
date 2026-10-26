@@ -9,6 +9,7 @@ final class MultichainNativeFeeShortagePopupPresenter {
     private let wallet: Wallet
     private let amountFormatter: AmountFormatter
     private let presentationGuard = MultichainNativeFeeShortagePopupPresentationGuard()
+    private weak var presentedSheet: TKBottomSheetViewController?
 
     init(
         wallet: Wallet,
@@ -50,7 +51,7 @@ final class MultichainNativeFeeShortagePopupPresenter {
             rechargeButtonTitle: TKLocales.MultichainSwap.Screen.Confirm.BatteryFeeShortage.rechargeBattery,
             depositButtonTitle: TKLocales.Multichain.InsufficientNativeFee.deposit(nativeAsset.symbol)
         )
-        PopupContentPresenter.presentBatteryFeeShortage(
+        presentedSheet = PopupContentPresenter.presentBatteryFeeShortage(
             content: content,
             from: viewController,
             onRecharge: onRecharge,
@@ -90,13 +91,18 @@ final class MultichainNativeFeeShortagePopupPresenter {
             walletName: walletTitle.name,
             walletNamePlaceholder: walletTitle.namePlaceholder
         )
-        PopupContentPresenter.presentInsufficientFee(
+        presentedSheet = PopupContentPresenter.presentInsufficientFee(
             content: content,
             from: viewController,
             onPrimary: {
                 onDeposit(nativeAsset)
             }
         )
+    }
+
+    /// Takes the popup down with the screen whose fee it was about, without acting on it.
+    func dismiss() {
+        presentedSheet?.dismiss()
     }
 }
 

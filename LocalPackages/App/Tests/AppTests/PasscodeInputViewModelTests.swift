@@ -20,6 +20,26 @@ final class PasscodeInputViewModelTests: XCTestCase {
         XCTAssertFalse(validateCalled, "Input must be ignored while presented locked")
     }
 
+    func test_viewDidLoad_publishesReason() {
+        let viewModel = PasscodeInputViewModelImplementation(title: "Enter", reason: "Confirm transfer")
+        var received: [String?] = []
+        viewModel.didUpdateReason = { received.append($0) }
+
+        viewModel.viewDidLoad()
+
+        XCTAssertEqual(received, ["Confirm transfer"])
+    }
+
+    func test_viewDidLoad_withoutReason_publishesNil() {
+        let viewModel = PasscodeInputViewModelImplementation(title: "Enter")
+        var received: [String?] = []
+        viewModel.didUpdateReason = { received.append($0) }
+
+        viewModel.viewDidLoad()
+
+        XCTAssertEqual(received, [nil])
+    }
+
     func test_notLocked_acceptsInput() {
         let viewModel = PasscodeInputViewModelImplementation(title: "Enter", initialLockoutUntil: nil)
         let validated = expectation(description: "validateInput called")

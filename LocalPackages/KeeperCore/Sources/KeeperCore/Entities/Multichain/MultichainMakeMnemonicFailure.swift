@@ -1,6 +1,6 @@
 import TKLogging
 
-public enum MultichainMakeMnemonicFailure: LoggableError {
+@frozen public enum MultichainMakeMnemonicFailure: LoggableError {
     case unknown(message: String)
 
     public var logDescription: String {

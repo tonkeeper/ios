@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 public enum TKKeychainVaultError: Swift.Error {
     case unexpectedData
@@ -15,6 +16,7 @@ public protocol TKKeychainVault {
     func get<T: Codable>(query: TKKeychainQuery) throws -> T
 
     func set(_ value: Data, query: TKKeychainQuery) throws
+    func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws
     func set(_ value: String, query: TKKeychainQuery) throws
     func set<T: Codable>(_ value: T, query: TKKeychainQuery) throws
 
@@ -79,6 +81,12 @@ public struct TKKeychainVaultImplementation: TKKeychainVault {
         } catch {
             throw error
         }
+    }
+
+    public func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws {
+        do {
+            try keychain.add(data: value, query: query)
+        } catch TKKeychainError.other(errSecDuplicateItem) {}
     }
 
     public func set(_ value: String, query: TKKeychainQuery) throws {

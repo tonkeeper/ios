@@ -137,6 +137,6 @@ private extension WalletConnectProposalAssembly {
         for chain in namespaces.flatMap(\.chains) where !result.contains(chain) {
             result.append(chain)
         }
-        return result
+        return result.sorted { $0.multichainChain.displayOrderIndex < $1.multichainChain.displayOrderIndex }
     }
 }

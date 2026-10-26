@@ -14,6 +14,27 @@ final class PendingTransactionsServiceTests: XCTestCase {
         XCTAssertEqual(received.map(\.txHash), ["hash"])
     }
 
+    func test_reportPublishesBroadcastOnlyOnceAcrossRetries() async {
+        let transaction = makeTransaction(txHash: "broadcast")
+        let writer = PendingTransactionWriterStub(outcomes: [.failure, .success])
+        let service = makeService(writer: writer)
+        let published = expectation(description: "Broadcast transaction")
+        let token = NotificationCenter.default.addObserver(
+            forName: .multichainTransactionBroadcast,
+            object: nil,
+            queue: .main
+        ) { notification in
+            // The center is process-wide: tests running alongside post their own broadcasts.
+            guard (notification.object as? MultichainPendingTransaction)?.txHash == transaction.txHash else { return }
+            published.fulfill()
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        await service.report(transaction)
+        await fulfillment(of: [published], timeout: 1)
+        await service.flushRetained()
+    }
+
     func test_report_retainsFailedTransactionAndResendsItOnFlush() async {
         let writer = PendingTransactionWriterStub(outcomes: [.failure, .success])
         let service = makeService(writer: writer)

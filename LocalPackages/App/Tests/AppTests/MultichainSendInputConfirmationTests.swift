@@ -141,8 +141,7 @@ private extension MultichainSendInputConfirmationTests {
                     price: MultichainAssetPrice(
                         prices: [:],
                         diff24h: [:],
-                        diff7d: [:],
-                        diff30d: [:]
+                        diff7d: [:]
                     ),
                     balance: balance,
                     marketCap: [:]

@@ -98,6 +98,7 @@ private extension SignDataSignCoordinator {
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .signData,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },

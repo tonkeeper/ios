@@ -48,9 +48,11 @@ final class DefaultDappMessageHandler: DappMessageHandler {
     var sendTransaction: ((Dapp, TonConnect.SendTransactionRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
     var fetch: ((String, [String: Any]?, @escaping (TonConnectAppsStore.FetchResult) -> Void) -> Void)?
     var signData: ((Dapp, TonConnect.SignDataRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
+    var signMessage: ((Dapp, TonConnect.SignMessageRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
     var toggleLandscape: ((Bool) -> Void)?
     var navigateBack: (() -> Void)?
     var track: ((String, [String: Any]) -> Void)?
+    var ethRequest: ((EVMProviderRequest, @escaping (DappMessageHandlerResult) -> Void) -> Void)?
 
     func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
         switch message.type {
@@ -105,6 +107,8 @@ final class DefaultDappMessageHandler: DappMessageHandler {
                 sendTransaction?(dapp, sendTransactionRequest, sendCompletion)
             case let .signData(signDataRequest):
                 signData?(dapp, signDataRequest, sendCompletion)
+            case let .signMessage(signMessageRequest):
+                signMessage?(dapp, signMessageRequest, sendCompletion)
             case let .disconnect(disconnectRequest):
                 disconnect?(dapp)
                 let response = TonConnect.SendResponse.success(.init(id: disconnectRequest.id))
@@ -123,9 +127,20 @@ final class DefaultDappMessageHandler: DappMessageHandler {
         case .disconnect:
             disconnect?(dapp)
             completion(.success(Self.voidResponse))
-        case .uiNavigateBack:
+        case .uiNavigateBack, .uiClose:
             navigateBack?()
             completion(.success(Self.voidResponse))
+        case .ethRequest:
+            guard let request = EVMProviderRequest(args: message.args) else {
+                completion(
+                    .rejected(
+                        code: EVMProviderBridge.ErrorCode.internalError.rawValue,
+                        message: EVMProviderBridge.ErrorMessage.malformedRequest
+                    )
+                )
+                return
+            }
+            ethRequest?(request, completion)
         case .analyticsTrack:
             let params = message.args.first as? [String: Any]
             guard let event = params?["event"] as? String, event.contains(where: { !$0.isWhitespace }) else {

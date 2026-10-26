@@ -8,6 +8,12 @@
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>KeeperResources_KeeperResources.bundle/tt_firs_neue_demi_bold.ttf</string>
+		<string>KeeperResources_KeeperResources.bundle/tt_firs_neue_medium.ttf</string>
+		<string>KeeperResources_KeeperResources.bundle/tt_firs_neue_normal.ttf</string>
+	</array>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

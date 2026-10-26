@@ -48,7 +48,13 @@ private extension PairKeystoneCoordinator {
         )
 
         module.output.didScanQRCode = { [weak self] publicKey, xfp, path, name in
-            self?.openImportCoordinator(publicKey: publicKey, xfp: xfp, path: path, name: name)
+            guard let self else { return }
+            coreAssembly.analyticsProvider.log(WalletImportKeystoneScanned(
+                walletMode: .single,
+                walletSource: .keystone,
+                from: analyticsContext.from
+            ))
+            openImportCoordinator(publicKey: publicKey, xfp: xfp, path: path, name: name)
         }
 
         if router.rootViewController.viewControllers.isEmpty {

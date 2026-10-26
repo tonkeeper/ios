@@ -10,6 +10,16 @@ public final class StoriesViewController: UIViewController {
         presentationController as? StoriesPresentationController
     }
 
+    override public var preferredStatusBarStyle: UIStatusBarStyle {
+        .lightContent
+    }
+
+    override public var isModalInPresentation: Bool {
+        didSet {
+            closeButton.isHidden = isModalInPresentation
+        }
+    }
+
     private let bar = ProgressBarView()
     private let closeButton: TKButton = {
         var configuration = TKButton.Configuration.headerAccentButtonConfiguration()
@@ -22,10 +32,13 @@ public final class StoriesViewController: UIViewController {
         configuration.contentPadding = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         configuration.padding = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         configuration.cornerRadius = 16
-        return TKButton(configuration: configuration)
+        let button = TKButton(configuration: configuration)
+        button.accessibilityIdentifier = "stories_close"
+        return button
     }()
 
     private let pageContainerView = UIView()
+    private weak var activePageViewController: StoriesPageViewController?
 
     private var activePage: Int {
         get {
@@ -62,6 +75,7 @@ public final class StoriesViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         self.modalPresentationStyle = .custom
         self.transitioningDelegate = trasitionManager
+        self.modalPresentationCapturesStatusBarAppearance = true
 
         NotificationCenter.default.addObserver(
             self,
@@ -118,6 +132,7 @@ public final class StoriesViewController: UIViewController {
 
     @objc
     func didBecomeActive() {
+        guard presentedViewController == nil else { return }
         bar.resume()
         timer?.resume()
     }
@@ -141,7 +156,7 @@ public final class StoriesViewController: UIViewController {
         }
 
         bar.snp.makeConstraints { make in
-            make.top.equalTo(view)
+            make.top.equalTo(view.safeAreaLayoutGuide)
             make.left.right.equalTo(view)
         }
         closeButton.snp.makeConstraints { make in
@@ -185,6 +200,7 @@ public final class StoriesViewController: UIViewController {
         addChild(pageViewController)
         pageContainerView.addSubview(pageViewController.view)
         pageViewController.didMove(toParent: self)
+        activePageViewController = pageViewController
 
         pageViewController.view.snp.makeConstraints { make in
             make.edges.equalTo(pageContainerView)
@@ -210,6 +226,11 @@ public final class StoriesViewController: UIViewController {
 
     @objc
     private func handleTap(_ gesture: UITapGestureRecognizer) {
+        if let link = activePageViewController?.link(at: gesture) {
+            link.action()
+            return
+        }
+
         let tapLocation = gesture.location(in: self.view)
         let screenWidth = self.view.bounds.width
 
@@ -278,6 +299,7 @@ final class ResumableTimer {
     }
 
     func pause() {
+        guard !isPaused() else { return }
         elapsedTime = Date.timeIntervalSinceReferenceDate - (startTime ?? 0.0)
         timer?.invalidate()
     }

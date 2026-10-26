@@ -1,7 +1,7 @@
 import Foundation
 
 public final class SwapAssetsStore: Store<SwapAssetsStore.Event, [SwapAsset]> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateAssets([SwapAsset])
     }
 

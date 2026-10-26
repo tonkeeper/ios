@@ -1,9 +1,44 @@
 @testable import App
 @testable import KeeperCore
+import PerpsModels
+import TKCore
 import XCTest
 
 final class SendTokenV2PickerModelTests: XCTestCase {
-    func test_perpsCatalog_routesAllChainAndPerpetualsTabs() async throws {
+    @MainActor
+    func test_catalogInitialAssetTypeIsSelectedAndKeepsChainTabsWithoutPerps() async {
+        let catalog = CatalogSearchingSpy()
+        let currencyStore = CurrencyStore(keeperInfoStore: KeeperInfoStore(keeperInfoRepository: KeeperInfoRepositoryStub()))
+        let model = SendTokenV2PickerModel(
+            multichainState: MultichainWalletState(walletId: "wallet", addresses: [.init(chain: .ton, address: "EQC")]),
+            displayMode: .includingMarketData,
+            searchBehavior: .catalog,
+            multichainService: PickerMultichainServiceStub(),
+            currencyStore: currencyStore,
+            catalogSearching: catalog,
+            initialCategory: .stocks
+        )
+        XCTAssertEqual(model.initialState.filters, [.all, .chain(.ton)])
+        XCTAssertEqual(model.assetTypes, [.category(.all), .category(.tokens), .category(.stocks), .category(.etfs)])
+        let viewModel = TokenPickerV2ViewModelImplementation(headerTitle: "Stocks", tokenPickerModel: model, amountFormatter: FormattersAssembly().amountFormatter, currencyStore: currencyStore)
+        viewModel.viewDidLoad()
+        await viewModel.loadFiltersTask?.value
+        XCTAssertEqual(viewModel.selectedChainFilter, .all)
+        XCTAssertEqual(viewModel.assetType, .category(.stocks))
+        await viewModel.currentQueryViewModel?.refresh()
+        XCTAssertEqual(catalog.requests.last?.category, .stocks)
+        XCTAssertEqual(catalog.requests.last?.showPerps, false)
+
+        viewModel.selectAssetType(.category(.all))
+        await viewModel.currentQueryViewModel?.refresh()
+        XCTAssertEqual(catalog.requests.last?.category, .all)
+        XCTAssertEqual(catalog.requests.last?.showPerps, false)
+
+        viewModel.selectAssetType(.perpetuals)
+        XCTAssertEqual(viewModel.assetType, .category(.all))
+    }
+
+    func test_perpsCatalog_routesChainTabsAndAssetTypes() async throws {
         let catalog = CatalogSearchingSpy()
         catalog.page = TradingCatalogPage(
             rows: [
@@ -31,7 +66,8 @@ final class SendTokenV2PickerModelTests: XCTestCase {
             perpsSearching: perps
         )
 
-        XCTAssertEqual(model.initialState.filters, [.all, .chain(.ton), .perpetuals])
+        XCTAssertEqual(model.initialState.filters, [.all, .chain(.ton)])
+        XCTAssertEqual(model.assetTypes, [.category(.all), .category(.tokens), .category(.stocks), .category(.etfs), .perpetuals])
 
         let mixed = try await model.loadAssets(query: "eth", filter: .all, limit: 30, cursor: nil)
         XCTAssertEqual(catalog.requests.last?.showPerps, true)
@@ -42,10 +78,24 @@ final class SendTokenV2PickerModelTests: XCTestCase {
         XCTAssertEqual(catalog.requests.last?.showPerps, false)
         XCTAssertEqual(catalog.requests.last?.chain, "ton")
 
-        let markets = try await model.loadAssets(query: "btc", filter: .perpetuals, limit: 30, cursor: nil)
+        model.setAssetType(.perpetuals)
+        let markets = try await model.loadAssets(query: "btc", filter: .all, limit: 30, cursor: nil)
         XCTAssertEqual(catalog.requests.count, 2)
         XCTAssertEqual(perps.requests, [.init(query: "btc", sort: .volume, cursor: nil)])
         XCTAssertEqual(markets.items, [.perp(makeMarket(id: 2))])
+
+        let perpsOnChain = try await model.loadAssets(query: "btc", filter: .chain(.ton), limit: 30, cursor: nil)
+        XCTAssertEqual(perpsOnChain.items, [.perp(makeMarket(id: 2))])
+        XCTAssertEqual(perps.requests.count, 2)
+        XCTAssertEqual(catalog.requests.count, 2)
+
+        for category in [TradingAssetCategory.tokens, .stocks, .etfs] {
+            model.setAssetType(.category(category))
+            _ = try await model.loadAssets(query: "eth", filter: .all, limit: 30, cursor: "next")
+            XCTAssertEqual(catalog.requests.last?.category, category)
+            XCTAssertEqual(catalog.requests.last?.showPerps, false)
+            XCTAssertNil(catalog.requests.last?.chain)
+        }
     }
 }
 
@@ -82,6 +132,7 @@ private final class CatalogSearchingSpy: TradingCatalogSearching, @unchecked Sen
     struct Request: Equatable {
         let chain: String?
         let showPerps: Bool
+        let category: TradingAssetCategory
     }
 
     var page = TradingCatalogPage(rows: [], nextCursor: nil)
@@ -93,9 +144,10 @@ private final class CatalogSearchingSpy: TradingCatalogSearching, @unchecked Sen
         showPerps: Bool,
         sort _: MultichainAssetSearchSort,
         cursor _: String?,
-        pageSize _: Int
+        pageSize _: Int,
+        category: TradingAssetCategory
     ) async throws -> TradingCatalogPage {
-        requests.append(Request(chain: chain, showPerps: showPerps))
+        requests.append(Request(chain: chain, showPerps: showPerps, category: category))
         return page
     }
 }
@@ -110,7 +162,7 @@ private final class PerpsSearchingSpy: PerpsMarketsSearching, @unchecked Sendabl
     var page = PerpsMarketsPage(items: [], nextCursor: nil)
     private(set) var requests = [Request]()
 
-    func markets(query: String?, sort: PerpsMarketsSort, cursor: String?) async throws -> PerpsMarketsPage {
+    func markets(query: String?, sort: PerpsMarketsSort, cursor: String?, filter _: PerpsMarketFilter) async throws -> PerpsMarketsPage {
         requests.append(.init(query: query, sort: sort, cursor: cursor))
         return page
     }
@@ -137,6 +189,7 @@ private final class PickerMultichainServiceStub: MultichainService, @unchecked S
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -172,6 +225,7 @@ private final class PickerMultichainServiceStub: MultichainService, @unchecked S
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .apiError(message: "Unimplemented")
@@ -189,7 +243,6 @@ private final class PickerMultichainServiceStub: MultichainService, @unchecked S
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .apiError(message: "Unimplemented")
@@ -200,14 +253,6 @@ private final class PickerMultichainServiceStub: MultichainService, @unchecked S
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .apiError(message: "Unimplemented")
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
     }
 }

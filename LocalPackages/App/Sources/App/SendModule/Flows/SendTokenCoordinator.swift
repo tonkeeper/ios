@@ -150,6 +150,10 @@ private extension LegacySendTokenCoordinator {
                     guard let self, case let .transfer(.sendTransfer(data)) = deeplink else {
                         return
                     }
+                    if case .withdraw = sendInput {
+                        module.input.setRecipient(string: data.recipient)
+                        return
+                    }
                     do {
                         let recipient = try await self.recipientResolver.resolverRecipient(
                             string: data.recipient,
@@ -241,11 +245,7 @@ private extension LegacySendTokenCoordinator {
                 scannerAssembly: scannerAssembly
             )
         ).createScannerModule(
-            configurator: DefaultScannerControllerConfigurator(
-                extensions: [],
-                deeplinkParser: scannerAssembly.deeplinkParser,
-                isMultichainEnabled: false
-            ),
+            configurator: scannerConfigurator(deeplinkParser: scannerAssembly.deeplinkParser),
             uiConfiguration: ScannerUIConfiguration(
                 title: TKLocales.Scanner.title,
                 subtitle: nil,
@@ -272,6 +272,22 @@ private extension LegacySendTokenCoordinator {
         }
 
         router.present(navigationController)
+    }
+
+    func scannerConfigurator(deeplinkParser: DeeplinkParser) -> ScannerControllerConfigurator {
+        switch sendInput {
+        case .direct:
+            DefaultScannerControllerConfigurator(
+                extensions: [],
+                deeplinkParser: deeplinkParser,
+                isMultichainEnabled: false
+            )
+        case let .withdraw(_, exchangeTo):
+            RampRecipientScannerControllerConfigurator(
+                assetId: exchangeTo.assetId,
+                networkName: exchangeTo.networkName
+            )
+        }
     }
 
     func openURL(_ url: URL, title: String?) {
@@ -617,8 +633,8 @@ private extension LegacySendTokenCoordinator {
             self.logSendFailed(model: model, error: error, context: analyticsContext)
         }
 
-        module.output.didProduceInsufficientFundsError = { [weak self] error in
-            guard let self else {
+        module.output.didProduceInsufficientFundsError = { [weak self, weak confirmation = module.view] error in
+            guard let self, feePopupHost(for: confirmation) != nil else {
                 return
             }
 
@@ -694,6 +710,17 @@ private extension LegacySendTokenCoordinator {
             self?.handleFeeRefillRequest(extraType: extraType) {
                 output?.refresh()
             }
+        }
+
+        module.output.didDetectInsufficientTronFee = { [weak self, weak output = module.output, weak confirmation = module.view] shortage in
+            guard let self, let host = feePopupHost(for: confirmation) else { return }
+            presentTronFeeShortage(
+                shortage,
+                wallet: wallet,
+                amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                from: host,
+                onRefresh: { output?.refresh() }
+            )
         }
 
         router.push(viewController: module.view)

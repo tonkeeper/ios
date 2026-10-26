@@ -98,6 +98,11 @@ private extension ImportWalletCoordinator {
                 )
                 return
             }
+            analyticsProvider.log(WalletImportMnemonicAccepted(
+                walletMode: analyticsContext.walletMode(for: resolveDerivationType(phrase: phrase)),
+                walletSource: .mnemonic,
+                from: analyticsContext.from
+            ))
             if isWalletKindSelectionEnabled {
                 loadWalletKindPreviewsIfNeeded(phrase: phrase, completion: completion)
             } else {
@@ -467,13 +472,14 @@ private extension ImportWalletCoordinator {
             analyticsContext.logOnboarding(OnboardingPasscodeMismatch(), using: analyticsProvider)
         }
 
-        coordinator.didCreatePasscode = { [weak self] passcode in
+        coordinator.didCreatePasscode = { [weak self] passcode, isBiometryAccepted in
             guard let self else { return }
             analyticsContext.logOnboarding(OnboardingPasscodeCreated(), using: analyticsProvider)
             openNotifications(
                 request: request,
                 revisions: revisions,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 animated: true
             )
         }
@@ -493,6 +499,7 @@ private extension ImportWalletCoordinator {
             mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess,
             securityStore: storesAssembly.securityStore,
             analyticsProvider: analyticsProvider,
+            reason: .addWallet,
             onCancel: {
                 onStayOnScreen?()
             },
@@ -501,6 +508,7 @@ private extension ImportWalletCoordinator {
                     request: request,
                     revisions: revisions,
                     passcode: passcode,
+                    isBiometryAccepted: false,
                     animated: true
                 )
             }
@@ -511,6 +519,7 @@ private extension ImportWalletCoordinator {
         request: WalletImportRequest,
         revisions: [WalletContractVersion],
         passcode: String,
+        isBiometryAccepted: Bool,
         animated: Bool
     ) {
         OnboardingNotificationsStep.push(
@@ -521,6 +530,7 @@ private extension ImportWalletCoordinator {
                 request: request,
                 revisions: revisions,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 animated: true
             )
         }
@@ -530,6 +540,7 @@ private extension ImportWalletCoordinator {
         request: WalletImportRequest,
         revisions: [WalletContractVersion],
         passcode: String,
+        isBiometryAccepted: Bool,
         animated: Bool
     ) {
         let module = customizeWalletModule()
@@ -542,7 +553,8 @@ private extension ImportWalletCoordinator {
                         request: request,
                         revisions: revisions,
                         model: model,
-                        passcode: passcode
+                        passcode: passcode,
+                        isBiometryAccepted: isBiometryAccepted
                     )
                     await MainActor.run {
                         self.didImportWallets?()
@@ -568,7 +580,8 @@ private extension ImportWalletCoordinator {
         request: WalletImportRequest,
         revisions: [WalletContractVersion],
         model: CustomizeWalletModel,
-        passcode: String
+        passcode: String,
+        isBiometryAccepted: Bool
     ) async throws {
         let addController = walletsUpdateAssembly.walletAddController(
             multichainAssembly: multichainAssembly
@@ -586,6 +599,9 @@ private extension ImportWalletCoordinator {
             network: network,
             walletKindPreference: request.walletKindPreference
         )
+        if isBiometryAccepted {
+            await storesAssembly.securityStore.setIsBiometryEnable(true)
+        }
         analyticsProvider.logWalletImportSuccess(
             mnemonic: request.mnemonic,
             from: analyticsContext.from
@@ -595,8 +611,7 @@ private extension ImportWalletCoordinator {
     func makePasscodeBiometryEnabler() -> PasscodeBiometryEnabler? {
         guard analyticsContext.from == .onboarding else { return nil }
         return PasscodeBiometryEnabler(
-            mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess,
-            securityStore: storesAssembly.securityStore
+            mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess
         )
     }
 }

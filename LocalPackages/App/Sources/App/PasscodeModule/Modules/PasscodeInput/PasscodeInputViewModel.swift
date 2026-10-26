@@ -37,6 +37,7 @@ protocol PasscodeInputModuleInput: AnyObject {
 
 protocol PasscodeInputViewModel: AnyObject {
     var didUpdateTitle: ((String?) -> Void)? { get set }
+    var didUpdateReason: ((String?) -> Void)? { get set }
     var didUpdateState: ((PasscodeInputView.State, (() -> Void)?) -> Void)? { get set }
 
     func viewDidLoad()
@@ -76,11 +77,13 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
     // MARK: - PasscodeInputViewModel
 
     var didUpdateTitle: ((String?) -> Void)?
+    var didUpdateReason: ((String?) -> Void)?
     var didUpdateState: ((PasscodeInputView.State, (() -> Void)?) -> Void)?
 
     func viewDidLoad() {
         input = ""
         didUpdateTitle?(title)
+        didUpdateReason?(reason)
     }
 
     func viewWillAppear() {
@@ -114,9 +117,11 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
     // MARK: - Dependencies
 
     private let title: String
+    private let reason: String?
 
-    init(title: String, initialLockoutUntil: Date? = nil) {
+    init(title: String, reason: String? = nil, initialLockoutUntil: Date? = nil) {
         self.title = title
+        self.reason = reason
         self.lockoutUntil = initialLockoutUntil
         // Start disabled when presented already locked, so a racing biometry auto-fill (or any input)
         // can't slip through before `viewWillAppear` arms the lockout. See TK-1472.

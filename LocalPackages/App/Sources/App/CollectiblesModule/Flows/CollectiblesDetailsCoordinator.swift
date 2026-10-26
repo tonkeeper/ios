@@ -136,6 +136,7 @@ private extension CollectiblesDetailsCoordinator {
                 mnemonicAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
                 securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
                 analyticsProvider: self.coreAssembly.analyticsProvider,
+                reason: .collectibleAction,
                 onCancel: {},
                 onInput: { [weak self] passcode in
                     guard let self else { return }
@@ -302,7 +303,6 @@ private extension CollectiblesDetailsCoordinator {
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
 
-        let nftService = keeperCoreMainAssembly.servicesAssembly.nftService()
         let nftManagmentStore = keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
         let state: NFTsManagementState.NFTState?
         if let collection = nft.collection {
@@ -318,20 +318,15 @@ private extension CollectiblesDetailsCoordinator {
             .highlighted: .Accent.orange.withAlphaComponent(0.64),
         ]
         reportSpamButton.action = {
-            [weak bottomSheetViewController, nft, weak nftManagmentStore, nftService, weak self] in
+            [weak bottomSheetViewController, nft, weak nftManagmentStore, weak self] in
             bottomSheetViewController?.dismiss {
                 Task {
-                    let network = self?.wallet.network ?? .mainnet
-
                     let toastTitle: String
                     if nft.collection != nil {
                         toastTitle = TKLocales.Collectibles.collectionMarkedAsSpam
                     } else {
                         toastTitle = TKLocales.Collectibles.nftMarkedAsSpam
                     }
-
-                    ToastPresenter.showToast(configuration: .loading)
-                    try? await nftService.changeSuspiciousState(nft, network: network, isScam: true)
 
                     if let collection = nft.collection {
                         await nftManagmentStore?.spamItem(.collection(collection.address))
@@ -340,8 +335,6 @@ private extension CollectiblesDetailsCoordinator {
                     }
 
                     await MainActor.run {
-                        ToastPresenter.hideAll()
-
                         let configuration = ToastPresenter.Configuration(title: toastTitle)
                         ToastPresenter.showToast(configuration: configuration)
                         self?.close()
@@ -352,12 +345,9 @@ private extension CollectiblesDetailsCoordinator {
 
         var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
         notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.notSpam))
-        notSpamButton.action = { [weak bottomSheetViewController, nft, weak nftManagmentStore, nftService, weak self] in
+        notSpamButton.action = { [weak bottomSheetViewController, nft, weak nftManagmentStore] in
             Task {
                 bottomSheetViewController?.dismiss()
-
-                let network = self?.wallet.network ?? .mainnet
-                try? await nftService.changeSuspiciousState(nft, network: network, isScam: false)
 
                 if let collection = nft.collection {
                     await nftManagmentStore?.approveItem(.collection(collection.address))

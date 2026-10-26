@@ -1,7 +1,7 @@
 import Foundation
 import TronSwift
 
-public enum Token: Equatable, Hashable {
+@frozen public enum Token: Equatable, Hashable {
     case ton(TonToken)
     case tron(TronToken)
 

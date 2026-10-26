@@ -14,6 +14,8 @@ public protocol MultichainRampService {
     func offrampQuote(request: OffRampQuoteRequest) async throws -> OffRampQuotesResult
     func createOfframpOrder(request: OffRampCreateOrderRequest) async throws -> OffRampOrder
     func getOfframpOrder(orderId: String) async throws -> OffRampOrder
+
+    func createMoonPaySession(sandbox: Bool) async throws -> String
 }
 
 final class MultichainRampServiceImplementation: MultichainRampService {
@@ -69,5 +71,9 @@ final class MultichainRampServiceImplementation: MultichainRampService {
 
     func getOfframpAsset(assetId: String) async throws -> OffRampAssetDetail {
         try await multichainRampAPI.getOfframpAsset(assetId: assetId)
+    }
+
+    func createMoonPaySession(sandbox: Bool) async throws -> String {
+        try await multichainRampAPI.createMoonPaySession(sandbox: sandbox)
     }
 }

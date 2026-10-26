@@ -1,17 +1,17 @@
 import Foundation
 import TKKandelabrAPI
 
-protocol KandelabrAPI {
+protocol KandelabrAPI: Sendable {
     func candles(
-        ticker: String,
+        tickers: [String],
         resolution: String,
         limit: Int32?,
-        startTs: Int64?,
         endTs: Int64?
-    ) async throws(KandelabrAPIError) -> Components.Schemas.GetCandlesResponse
+    ) async throws(KandelabrAPIError) -> [Components.Schemas.GetCandlesResponse]
 }
 
-struct KandelabrAPIImplementation {
+/// `APIHostProvider` is not `Sendable`: its providers read the unannotated `Configuration`.
+struct KandelabrAPIImplementation: @unchecked Sendable {
     private let hostProvider: APIHostProvider
     private let urlSession: URLSession
 
@@ -26,12 +26,11 @@ struct KandelabrAPIImplementation {
 
 extension KandelabrAPIImplementation: KandelabrAPI {
     func candles(
-        ticker: String,
+        tickers: [String],
         resolution: String,
         limit: Int32?,
-        startTs: Int64?,
         endTs: Int64?
-    ) async throws(KandelabrAPIError) -> Components.Schemas.GetCandlesResponse {
+    ) async throws(KandelabrAPIError) -> [Components.Schemas.GetCandlesResponse] {
         guard let resolutionPayload = Components.Schemas.GetCandlesRequest.resolutionPayload(rawValue: resolution) else {
             throw .badRequest
         }
@@ -42,17 +41,13 @@ extension KandelabrAPIImplementation: KandelabrAPI {
             throw .badURL
         }
 
-        let response: Operations.getCandles.Output
+        let response: Operations.getCandlesBatch.Output
         do {
-            response = try await client.getCandles(
+            response = try await client.getCandlesBatch(
                 body: .json(
-                    .init(
-                        ticker: ticker,
-                        resolution: resolutionPayload,
-                        start_ts: startTs,
-                        end_ts: endTs,
-                        limit: limit
-                    )
+                    .init(requests: tickers.map {
+                        .init(ticker: $0, resolution: resolutionPayload, end_ts: endTs, limit: limit)
+                    })
                 )
             )
         } catch {
@@ -62,16 +57,12 @@ extension KandelabrAPIImplementation: KandelabrAPI {
         switch response {
         case let .ok(ok):
             do {
-                return try ok.body.json
+                return try ok.body.json.responses
             } catch {
                 throw .badResponse(error)
             }
         case .badRequest:
             throw .badRequest
-        case .notFound:
-            throw .notFound
-        case .internalServerError:
-            throw .badStatus(500)
         case let .undocumented(statusCode, _):
             throw .badStatus(statusCode)
         }

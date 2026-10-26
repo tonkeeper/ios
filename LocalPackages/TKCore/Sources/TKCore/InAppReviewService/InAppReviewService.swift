@@ -1,6 +1,7 @@
 import StoreKit
 import TKAppInfo
 import TKFeatureFlags
+import TKServices
 import UIKit
 
 public protocol InAppReviewService {

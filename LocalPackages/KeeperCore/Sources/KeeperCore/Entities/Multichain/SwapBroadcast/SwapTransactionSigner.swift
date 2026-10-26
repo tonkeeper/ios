@@ -1,18 +1,65 @@
 import ChainKit
 
 /// Signs and encodes a swap transaction with the per-chain ChainKit delegate.
-/// Bitcoin signs with the whole wallet (the delegate needs the UTXO set); every
+/// Bitcoin signs with the whole HD wallet (the delegate needs the UTXO set); every
 /// other chain signs with the chain's private key.
 struct SwapTransactionSigner {
+    private let tonBatchSigner = TonSwapBatchSigner()
+
     func signAndEncode<I, O>(
+        mediator: ChainMediatorWrapper<I, O>,
+        transactions: [any ChainKit.Transaction],
+        fee: Fee,
+        nonce: BignumBigInteger,
+        sourceChain: MultichainChain,
+        wallet: SwapSigningWallet,
+        payloadId: String
+    ) async throws(MultichainSwapExecutionFailure) -> KotlinByteArray {
+        guard transactions.count > 1 else {
+            guard let transaction = transactions.first else {
+                throw .signingFailed(
+                    payloadId: payloadId,
+                    kind: .missingField,
+                    reason: "swap payload has no transaction to sign"
+                )
+            }
+            return try await signAndEncode(
+                mediator: mediator,
+                transaction: transaction,
+                fee: fee,
+                nonce: nonce,
+                sourceChain: sourceChain,
+                wallet: wallet,
+                payloadId: payloadId
+            )
+        }
+        guard sourceChain == .ton else {
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .unsupportedTransaction,
+                reason: "\(sourceChain.rawValue) cannot sign several swap messages as one transaction"
+            )
+        }
+        return try await tonBatchSigner.signAndEncode(
+            mediator: mediator,
+            batch: transactions,
+            fee: fee,
+            nonce: nonce,
+            privateKey: wallet.privateKey(chain: sourceChain),
+            payloadId: payloadId
+        )
+    }
+
+    private func signAndEncode<I, O>(
         mediator: ChainMediatorWrapper<I, O>,
         transaction: any ChainKit.Transaction,
         fee: Fee,
         nonce: BignumBigInteger,
         sourceChain: MultichainChain,
-        wallet: CryptoWallet,
+        wallet: SwapSigningWallet,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> KotlinByteArray {
+        let signer = try resolvedSigner(wallet: wallet, sourceChain: sourceChain, payloadId: payloadId)
         let signingOutputs = try await withCheckedContinuation { (continuation: CheckedContinuation<Result<SigSet<KotlinByteArray>, MultichainSwapExecutionFailure>, Never>) in
             let handler: @Sendable (SignRes<SigSet<KotlinByteArray>>?, Error?) -> Void = { result, error in
                 if let error {
@@ -42,8 +89,8 @@ struct SwapTransactionSigner {
                 continuation.resume(returning: .success(value))
             }
 
-            switch sourceChain {
-            case .btc:
+            switch signer {
+            case let .wallet(wallet):
                 mediator.sign.transaction.signAndEncode(
                     transaction: transaction,
                     fee: fee,
@@ -51,14 +98,12 @@ struct SwapTransactionSigner {
                     wallet: wallet,
                     completionHandler: handler
                 )
-            case .ton, .eth, .base, .tron, .arb, .bsc:
+            case let .privateKey(privateKey):
                 mediator.sign.transaction.signAndEncode(
                     transaction: transaction,
                     fee: fee,
                     nonce: nonce,
-                    privateKey: wallet.getPrivateKey(
-                        chain: sourceChain.asChainKitChain
-                    ),
+                    privateKey: privateKey,
                     completionHandler: handler
                 )
             }
@@ -72,5 +117,31 @@ struct SwapTransactionSigner {
             )
         }
         return output
+    }
+}
+
+private extension SwapTransactionSigner {
+    enum Signer {
+        case wallet(CryptoWallet)
+        case privateKey(ChainKit.PrivateKey)
+    }
+
+    func resolvedSigner(
+        wallet: SwapSigningWallet,
+        sourceChain: MultichainChain,
+        payloadId: String
+    ) throws(MultichainSwapExecutionFailure) -> Signer {
+        switch (sourceChain, wallet) {
+        case let (.btc, .hd(wallet)):
+            return .wallet(wallet)
+        case (.btc, .legacy):
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .unknown,
+                reason: "a legacy wallet cannot sign a bitcoin payload"
+            )
+        case (.ton, _), (.eth, _), (.base, _), (.tron, _), (.arb, _), (.bsc, _), (.sol, _), (.polygon, _), (.avax, _), (.robinhood, _):
+            return try .privateKey(wallet.privateKey(chain: sourceChain))
+        }
     }
 }

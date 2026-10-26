@@ -1,4 +1,5 @@
 import KeeperCore
+import Perps
 import TKCoordinator
 import TKCore
 import UIKit
@@ -11,6 +12,11 @@ final class MultichainHistoryCoordinator: RouterCoordinator<NavigationController
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
     private let presentationStyle: HistoryPresentationStyle
+    private let pendingEventId: String?
+    private lazy var perpsHistoryDetails = PerpsHistoryDetailsPresenter(
+        marketsStore: keeperCoreMainAssembly.perpsAssembly.marketsStore,
+        format: .live
+    )
 
     init(
         router: NavigationControllerRouter,
@@ -19,6 +25,7 @@ final class MultichainHistoryCoordinator: RouterCoordinator<NavigationController
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         presentationStyle: HistoryPresentationStyle,
+        pendingEventId: String? = nil,
         didTapAddFunds: @escaping () -> Void,
         onOpenTransaction: @escaping (URL, String?) -> Void
     ) {
@@ -27,6 +34,7 @@ final class MultichainHistoryCoordinator: RouterCoordinator<NavigationController
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
         self.presentationStyle = presentationStyle
+        self.pendingEventId = pendingEventId
         self.didTapAddFunds = didTapAddFunds
         self.onOpenTransaction = onOpenTransaction
         super.init(router: router)
@@ -54,13 +62,18 @@ private extension MultichainHistoryCoordinator {
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
                 network: wallet.network
             ),
-            onAddFunds: didTapAddFunds
+            onAddFunds: didTapAddFunds,
+            pendingEventId: pendingEventId
         )
         viewModel.persistHistoryFilters(to: appSettingsStore)
         let viewController = MultichainHistoryViewController(
             viewModel: viewModel,
             onClose: presentationStyle.closeAction,
-            onOpenTransaction: onOpenTransaction
+            onOpenTransaction: onOpenTransaction,
+            onSelectPerpsEvent: { [weak self] event in
+                guard let self else { return }
+                perpsHistoryDetails.present(event, from: router.rootViewController.topPresentedViewController())
+            }
         )
         router.push(viewController: viewController, animated: true)
     }

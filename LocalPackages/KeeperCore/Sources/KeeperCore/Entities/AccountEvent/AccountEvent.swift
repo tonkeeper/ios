@@ -3,7 +3,7 @@ import Foundation
 public struct AccountEvent: Codable, Sendable {
     public typealias EventID = String
 
-    public enum Extra: Codable, Sendable {
+    @frozen public enum Extra: Codable, Sendable {
         case Fee(UInt64)
         case Refund(UInt64)
     }

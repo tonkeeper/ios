@@ -44,6 +44,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
+            mode: .sendTransaction,
             transferProvider: { [nft] in
                 .renewDNS(nft: nft)
             },

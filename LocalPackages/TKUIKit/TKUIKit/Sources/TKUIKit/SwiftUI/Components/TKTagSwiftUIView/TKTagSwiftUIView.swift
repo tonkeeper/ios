@@ -16,17 +16,20 @@ public struct TKTagSwiftUIViewConfig: Hashable {
     public var style: Style
     public var textPadding: UIEdgeInsets
     public var backgroundPadding: UIEdgeInsets
+    public var fillsWidth: Bool
 
     public init(
         text: String,
         style: Style,
         textPadding: UIEdgeInsets? = nil,
-        backgroundPadding: UIEdgeInsets? = nil
+        backgroundPadding: UIEdgeInsets? = nil,
+        fillsWidth: Bool = false
     ) {
         self.text = text.uppercased()
         self.style = style
         self.textPadding = textPadding ?? Self.textPadding
         self.backgroundPadding = backgroundPadding ?? Self.backgroundPadding
+        self.fillsWidth = fillsWidth
     }
 
     public static func accentTag(
@@ -67,6 +70,7 @@ public struct TKTagSwiftUIView: View {
             .foregroundStyle(textColor)
             .lineLimit(1)
             .truncationMode(.tail)
+            .frame(maxWidth: config.fillsWidth ? .infinity : nil)
             .padding(config.textPadding.edgeInsets)
             .background(
                 RoundedRectangle(
@@ -83,7 +87,7 @@ public struct TKTagSwiftUIView: View {
                 )
             )
             .padding(config.backgroundPadding.edgeInsets)
-            .fixedSize()
+            .fixedSize(horizontal: !config.fillsWidth, vertical: true)
     }
 
     private var textColor: Color {

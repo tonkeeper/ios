@@ -16,6 +16,7 @@ let package = Package(
         .package(path: "../../TKLocalize"),
         .package(path: "../../TKAppInfo"),
         .package(path: "../../TKLogging"),
+        .package(url: "https://github.com/airbnb/lottie-spm.git", exact: "4.6.0"),
     ],
     targets: [
         .target(
@@ -25,6 +26,7 @@ let package = Package(
                 .product(name: "TKLocalize", package: "TKLocalize"),
                 .product(name: "TKAppInfo", package: "TKAppInfo"),
                 .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "Lottie", package: "lottie-spm"),
             ],
             resources: [.process("Resources")],
             swiftSettings: [

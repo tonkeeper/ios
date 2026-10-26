@@ -444,7 +444,6 @@ private struct StubNFTService: NFTService {
     }
 
     func saveNFT(nft _: NFT, network _: Network) throws {}
-    func changeSuspiciousState(_: NFT, network _: Network, isScam _: Bool) async throws {}
 
     private struct StubError: Error {}
 }

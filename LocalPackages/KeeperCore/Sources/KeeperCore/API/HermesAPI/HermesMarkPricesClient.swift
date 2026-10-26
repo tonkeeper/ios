@@ -1,5 +1,4 @@
 import Foundation
-import TKLogging
 
 protocol HermesMarkPricesStreaming: AnyObject, Sendable {
     func watch(
@@ -35,25 +34,24 @@ struct HermesMarkPricesWatch: Sendable {
     }
 }
 
-final class HermesMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendable {
+final class HermesMarkPricesClient: HermesMarkPricesStreaming, Sendable {
     private enum Command: Sendable {
         case setTickers([String])
         case cancel
     }
 
-    private let socketFactory: HermesSocketFactory
+    private let hub: HermesSocketHub
     private let cooldown: String
     private let sleep: @Sendable (TimeInterval) async -> Void
 
     init(
-        hostProvider: APIHostProvider,
-        urlSession: URLSession,
+        hub: HermesSocketHub,
         cooldown: String = "PT2S",
         sleep: @escaping @Sendable (TimeInterval) async -> Void = { nanoseconds in
             try? await Task.sleep(nanoseconds: UInt64(nanoseconds * 1_000_000_000))
         }
     ) {
-        socketFactory = HermesSocketFactory(hostProvider: hostProvider, urlSession: urlSession)
+        self.hub = hub
         self.cooldown = cooldown
         self.sleep = sleep
     }
@@ -65,7 +63,7 @@ final class HermesMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendab
     ) -> HermesMarkPricesWatch {
         let (commands, continuation) = AsyncStream.makeStream(of: Command.self)
         let session = Session(
-            socketFactory: socketFactory,
+            hub: hub,
             cooldown: cooldown,
             sleep: sleep,
             onUpdate: onUpdate,
@@ -96,7 +94,8 @@ private actor Session {
         let tickers: [String]
     }
 
-    private let socketFactory: HermesSocketFactory
+    private let id = UUID()
+    private let hub: HermesSocketHub
     private let cooldown: String
     private let sleep: @Sendable (TimeInterval) async -> Void
     private let onUpdate: @Sendable (HermesMarkPricesSnapshot) async -> Void
@@ -105,16 +104,17 @@ private actor Session {
     private let onTerminated: @Sendable () -> Void
 
     private var desiredTickers: [String] = []
-    private var runTask: Task<Void, Never>?
-    private var webSocket: URLSessionWebSocketTask?
+    private var attached = false
+    private var connected = false
     private var pendingSubscription: Subscription?
     private var acceptedTickers: [String]?
     private var subscribeTimeoutTask: Task<Void, Never>?
-    private var nextRequestId: Int64 = 0
+    private var retryDelay = Session.minRetryDelay
+    private var retryTask: Task<Void, Never>?
     private var cancelled = false
 
     init(
-        socketFactory: HermesSocketFactory,
+        hub: HermesSocketHub,
         cooldown: String,
         sleep: @escaping @Sendable (TimeInterval) async -> Void,
         onUpdate: @escaping @Sendable (HermesMarkPricesSnapshot) async -> Void,
@@ -122,7 +122,7 @@ private actor Session {
         onRejected: @escaping @Sendable () async -> Void,
         onTerminated: @escaping @Sendable () -> Void
     ) {
-        self.socketFactory = socketFactory
+        self.hub = hub
         self.cooldown = cooldown
         self.sleep = sleep
         self.onUpdate = onUpdate
@@ -136,10 +136,18 @@ private actor Session {
         desiredTickers = tickers
         if tickers.isEmpty {
             stopConnection()
-        } else if runTask == nil {
-            runTask = Task { await run() }
-        } else if let webSocket, pendingSubscription == nil {
-            sendSubscribe(on: webSocket)
+        } else if !attached {
+            attached = true
+            let listener = HermesSocketListener(
+                onConnected: { await self.didConnect() },
+                onFrame: { await self.receive($0) },
+                onDisconnected: { await self.didDisconnect() }
+            )
+            if hub.attach(id, listener) {
+                didConnect()
+            }
+        } else if connected, pendingSubscription == nil {
+            sendSubscribe()
         }
     }
 
@@ -151,141 +159,90 @@ private actor Session {
     }
 
     private func stopConnection() {
-        let socket = webSocket
-        webSocket = nil
+        hub.unsubscribe(Self.pricesKey, by: id) {
+            try HermesRequest.encode(
+                channel: HermesMarkPricesChannel.unsubscribe,
+                name: HermesMarkPricesMessageName.unsubscribe,
+                reqid: $0
+            )
+        }
+        if attached {
+            hub.detach(id)
+        }
+        attached = false
+        resetConnection()
+    }
+
+    private func resetConnection() {
+        connected = false
         pendingSubscription = nil
         acceptedTickers = nil
-        subscribeTimeoutTask?.cancel()
-        subscribeTimeoutTask = nil
-        runTask?.cancel()
-        runTask = nil
-        socket?.cancel(with: .goingAway, reason: nil)
+        cancelSubscribeTimeout()
+        retryTask?.cancel()
+        retryTask = nil
+        retryDelay = Self.minRetryDelay
     }
 
-    private func run() async {
-        var backoff = Self.minBackoff
-        while !Task.isCancelled {
-            if cancelled || desiredTickers.isEmpty { return }
-            let subscribed: Bool
-            do {
-                subscribed = try await connectOnce()
-            } catch is CancellationError {
-                return
-            } catch {
-                Log.w("🪵 Perps: hermes prices session failed — \(error)")
-                subscribed = false
+    private func didConnect() {
+        guard !cancelled, attached else { return }
+        resetConnection()
+        connected = true
+        sendSubscribe()
+    }
+
+    private func didDisconnect() async {
+        guard !cancelled, attached else { return }
+        resetConnection()
+        await onReconnecting()
+    }
+
+    private func receive(_ data: Data) async {
+        guard connected else { return }
+        let frame = HermesMarkPricesCodec.frame(from: data)
+        switch frame.event {
+        case let .prices(prices):
+            guard let acceptedTickers else { return }
+            await onUpdate(HermesMarkPricesSnapshot(tickers: acceptedTickers, prices: prices))
+        case .subscribed:
+            guard let pending = matchingPending(requestId: frame.requestId) else { return }
+            hub.markHealthy()
+            acceptedTickers = pending.tickers
+            pendingSubscription = nil
+            cancelSubscribeTimeout()
+            retryDelay = Self.minRetryDelay
+            if acceptedTickers != desiredTickers {
+                sendSubscribe()
             }
-            if cancelled || desiredTickers.isEmpty { return }
-            await onReconnecting()
-            if subscribed {
-                backoff = Self.minBackoff
+        case .declined:
+            guard let declined = matchingPending(requestId: frame.requestId) else { return }
+            pendingSubscription = nil
+            cancelSubscribeTimeout()
+            if declined.tickers != desiredTickers {
+                sendSubscribe()
             }
-            await sleep(backoff)
-            backoff = min(backoff * 2, Self.maxBackoff)
+        case .retryableFailure:
+            guard matchingPending(requestId: frame.requestId) != nil else { return }
+            pendingSubscription = nil
+            cancelSubscribeTimeout()
+            retryLater()
+        case .rejected:
+            guard matchingPending(requestId: frame.requestId) != nil else { return }
+            cancel()
+            await onRejected()
+        case .ignored:
+            return
         }
     }
 
-    private func connectOnce() async throws -> Bool {
-        if cancelled || Task.isCancelled || desiredTickers.isEmpty { return false }
-
-        let socket = try await socketFactory.makeTask()
-        webSocket = socket
-        pendingSubscription = nil
-        acceptedTickers = nil
-        socket.resume()
-        defer {
-            if webSocket === socket {
-                webSocket = nil
-            }
-            socket.cancel(with: .goingAway, reason: nil)
-        }
-
-        sendSubscribe(on: socket)
-
-        let pingTask = Task {
-            while !Task.isCancelled {
-                await sleep(Self.pingInterval)
-                guard !Task.isCancelled else { return }
-                ping(on: socket)
-            }
-        }
-        defer { pingTask.cancel() }
-
-        defer {
-            subscribeTimeoutTask?.cancel()
-            subscribeTimeoutTask = nil
-        }
-
-        var subscribed = false
-        while !Task.isCancelled, !cancelled {
-            let message: URLSessionWebSocketTask.Message
-            do {
-                message = try await socket.receive()
-            } catch {
-                if cancelled || Task.isCancelled { return subscribed }
-                throw error
-            }
-            guard let data = message.data else { continue }
-            let frame = HermesMarkPricesCodec.frame(from: data)
-            switch frame.event {
-            case let .prices(prices):
-                guard let acceptedTickers else { continue }
-                await onUpdate(HermesMarkPricesSnapshot(tickers: acceptedTickers, prices: prices))
-            case .subscribed:
-                guard let pending = matchingPending(requestId: frame.requestId) else { continue }
-                acceptedTickers = pending.tickers
-                pendingSubscription = nil
-                cancelSubscribeTimeout()
-                subscribed = true
-                if acceptedTickers != desiredTickers {
-                    sendSubscribe(on: socket)
-                }
-            case .declined:
-                guard let declined = matchingPending(requestId: frame.requestId) else { continue }
-                pendingSubscription = nil
-                cancelSubscribeTimeout()
-                if declined.tickers != desiredTickers {
-                    sendSubscribe(on: socket)
-                }
-            case .retryableFailure:
-                guard matchingPending(requestId: frame.requestId) != nil else { continue }
-                return subscribed
-            case .rejected:
-                guard matchingPending(requestId: frame.requestId) != nil else { continue }
-                cancel()
-                await onRejected()
-                return subscribed
-            case .ignored:
-                continue
-            }
-        }
-        return subscribed
-    }
-
-    private func sendSubscribe(on socket: URLSessionWebSocketTask) {
+    private func sendSubscribe() {
         let tickers = desiredTickers
         guard !tickers.isEmpty, pendingSubscription == nil else { return }
-        nextRequestId += 1
-        let reqid = nextRequestId
-        do {
-            let data = try HermesMarkPricesCodec.subscribeRequest(
-                tickers: tickers,
-                cooldown: cooldown,
-                reqid: reqid
-            )
-            guard let text = String(data: data, encoding: .utf8) else { return }
-            pendingSubscription = Subscription(
-                requestId: reqid,
-                tickers: tickers
-            )
-            startSubscribeTimeout(requestId: reqid, socket: socket)
-            socket.send(.string(text)) { [weak self] error in
-                guard let error else { return }
-                Task { await self?.subscribeSendFailed(error, requestId: reqid, socket: socket) }
-            }
-        } catch {
-            Log.w("🪵 Perps: hermes prices encode failed — \(error)")
+        let encode: (Int64) throws -> Data = { [cooldown] in
+            try HermesMarkPricesCodec.subscribeRequest(tickers: tickers, cooldown: cooldown, reqid: $0)
         }
+        guard let reqid = hub.subscribe(Self.pricesKey, by: id, encode) else { return }
+        pendingSubscription = Subscription(requestId: reqid, tickers: tickers)
+        startSubscribeTimeout(requestId: reqid)
     }
 
     private func matchingPending(requestId: Int64?) -> Subscription? {
@@ -296,12 +253,12 @@ private actor Session {
         return pendingSubscription
     }
 
-    private func startSubscribeTimeout(requestId: Int64, socket: URLSessionWebSocketTask) {
+    private func startSubscribeTimeout(requestId: Int64) {
         subscribeTimeoutTask?.cancel()
         subscribeTimeoutTask = Task { [weak self, sleep] in
             await sleep(Self.subscribeTimeout)
             guard !Task.isCancelled else { return }
-            await self?.subscribeTimedOut(requestId: requestId, socket: socket)
+            await self?.subscribeTimedOut(requestId: requestId)
         }
     }
 
@@ -310,40 +267,30 @@ private actor Session {
         subscribeTimeoutTask = nil
     }
 
-    private func subscribeTimedOut(requestId: Int64, socket: URLSessionWebSocketTask) {
-        guard webSocket === socket, pendingSubscription?.requestId == requestId else { return }
-        socket.cancel(with: .goingAway, reason: nil)
+    private func subscribeTimedOut(requestId: Int64) {
+        guard pendingSubscription?.requestId == requestId else { return }
+        pendingSubscription = nil
+        retryLater()
     }
 
-    private func subscribeSendFailed(_ error: Error, requestId: Int64, socket: URLSessionWebSocketTask) {
-        guard webSocket === socket, pendingSubscription?.requestId == requestId else { return }
-        Log.w("🪵 Perps: hermes prices send failed — \(error)")
-        socket.cancel(with: .goingAway, reason: nil)
-    }
-
-    private func ping(on socket: URLSessionWebSocketTask) {
-        guard !cancelled, webSocket === socket else { return }
-        nextRequestId += 1
-        do {
-            let data = try HermesMarkPricesCodec.pingRequest(reqid: nextRequestId)
-            guard let text = String(data: data, encoding: .utf8) else { return }
-            socket.send(.string(text)) { [weak self] error in
-                guard let error else { return }
-                Task { await self?.socketSendFailed(error, socket: socket, operation: "ping") }
-            }
-        } catch {
-            Log.w("🪵 Perps: hermes prices encode failed — \(error)")
+    private func retryLater() {
+        let delay = retryDelay
+        retryDelay = min(retryDelay * 2, Self.maxRetryDelay)
+        retryTask?.cancel()
+        retryTask = Task { [weak self, sleep] in
+            await sleep(delay)
+            guard !Task.isCancelled else { return }
+            await self?.retrySubscribe()
         }
     }
 
-    private func socketSendFailed(_ error: Error, socket: URLSessionWebSocketTask, operation: String) {
-        guard webSocket === socket else { return }
-        Log.w("🪵 Perps: hermes prices \(operation) failed — \(error)")
-        socket.cancel(with: .goingAway, reason: nil)
+    private func retrySubscribe() {
+        guard connected, acceptedTickers != desiredTickers else { return }
+        sendSubscribe()
     }
 
-    private static let pingInterval: TimeInterval = 120
+    private static let pricesKey = HermesMarkPricesChannel.subscribe
     private static let subscribeTimeout: TimeInterval = 30
-    private static let minBackoff: TimeInterval = 1
-    private static let maxBackoff: TimeInterval = 30
+    private static let minRetryDelay: TimeInterval = 1
+    private static let maxRetryDelay: TimeInterval = 30
 }

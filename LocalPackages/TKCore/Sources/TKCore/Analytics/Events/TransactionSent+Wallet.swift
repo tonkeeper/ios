@@ -2,6 +2,7 @@ import BigInt
 import Foundation
 import KeeperCore
 import TKLogging
+import TKServices
 import TonSwift
 import TronSwift
 
@@ -158,6 +159,34 @@ public extension TransactionSent {
         )
     }
 
+    init?(
+        wallet: Wallet,
+        evmTransaction transaction: WalletConnectEVMTransaction,
+        chain: AssetChain,
+        origin: TransactionOrigin
+    ) {
+        let value: BigUInt
+        do {
+            value = try transaction.valueAmount()
+        } catch {
+            Log.w("evm transaction_sent without a readable value", extraInfo: ["error": "\(error)"])
+            return nil
+        }
+        let isCoinTransfer = transaction.data.isEmpty || transaction.data.lowercased() == "0x"
+        self.init(
+            wallet: wallet,
+            category: isCoinTransfer ? .transfer : .call,
+            categoryDetail: isCoinTransfer ? .coin : .unknown,
+            asset: "\(chain.rawValue)/mainnet/coin",
+            amount: Self.normalizedAmount(value, decimals: Self.evmCoinDecimals),
+            feeAsset: .coin,
+            origin: origin,
+            isMax: nil
+        )
+    }
+
+    private static let evmCoinDecimals = 18
+
     private init?(
         wallet: Wallet,
         category: Category,
@@ -190,7 +219,8 @@ public extension TransactionSent {
             isMax: isMax,
             toAsset: toAsset,
             stakingProvider: stakingProvider,
-            isLiquid: isLiquid
+            isLiquid: isLiquid,
+            ledgerModel: LedgerModel(wallet: wallet)
         )
     }
 
@@ -227,6 +257,8 @@ public extension FeeAsset {
             self = .batteryCharges
         case .gram:
             self = .batteryTonInstantFee
+        case .token:
+            self = .gasless
         }
     }
 
@@ -238,8 +270,9 @@ public extension FeeAsset {
             self = .batteryCharges
         case let .gasless(token, _):
             self = token.symbol?.uppercased() == TRX.symbol.uppercased() ? .coin : .gasless
-        case .multichain:
-            self = .coin
+        case let .multichain(token, _):
+            // Only a relayer takes its fee in a token of the chain; the coin is the wallet's own gas.
+            self = token.isNative ? .coin : .gasless
         }
     }
 }
@@ -247,6 +280,13 @@ public extension FeeAsset {
 public extension WalletMode {
     init(wallet: Wallet) {
         self = wallet.isMultichain ? .multi : .single
+    }
+}
+
+public extension LedgerModel {
+    init?(wallet: Wallet) {
+        guard case let .Ledger(_, _, device) = wallet.identity.kind else { return nil }
+        self.init(deviceProductName: device.deviceModel)
     }
 }
 

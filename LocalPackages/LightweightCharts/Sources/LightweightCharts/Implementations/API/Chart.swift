@@ -41,6 +41,7 @@ public class Chart: JavaScriptObject {
     private var doubleClickEventContinuations: [UUID: MouseEventContinuation] = [:]
     private var crosshairMoveEventContinuations: [UUID: MouseEventContinuation] = [:]
     private var legacyWatermarkOptions: DeprecatedWatermarkOptions?
+    private var timeScaleObject: TimeScale?
 
     init(context: Context, closureStore: ClosuresStore?) {
         self.context = context
@@ -334,6 +335,10 @@ public class Chart: JavaScriptObject {
         deactivateSubscription(.dblClick)
         deactivateSubscription(.crosshairMove)
     }
+
+    public func formatDayMarksAsTime() {
+        context?.submitScript("formatDayMarksAsTime(\(jsName));")
+    }
 }
 
 // MARK: - ChartApi
@@ -565,9 +570,13 @@ extension Chart: ChartApi {
     }
 
     public func timeScale() -> TimeScaleApi {
+        if let timeScaleObject {
+            return timeScaleObject
+        }
         let timeScale = TimeScale(context: context, closureStore: closureStore)
         let script = "var \(timeScale.jsName) = \(jsName).timeScale();"
         context?.submitScript(script)
+        timeScaleObject = timeScale
         return timeScale
     }
 

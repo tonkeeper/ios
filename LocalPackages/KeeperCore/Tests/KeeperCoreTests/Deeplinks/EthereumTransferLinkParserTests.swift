@@ -101,7 +101,7 @@ final class EthereumTransferLinkParserTests: XCTestCase {
     }
 
     func testUnsupportedChainIdIsRejected() {
-        XCTAssertNil(parser.parse(string: "ethereum:\(recipient)@137?value=1"))
+        XCTAssertNil(parser.parse(string: "ethereum:\(recipient)@10?value=1"))
     }
 
     func testUnsupportedFunctionIsRejected() {
@@ -136,6 +136,21 @@ final class EthereumTransferLinkParserTests: XCTestCase {
 
     func testNonEthereumSchemeIsRejected() {
         XCTAssertNil(parser.parse(string: "ton://transfer/EQD2NmD_lH5f5u1Kj3KfGyTvhZSX0Eg6qp2a5IQUKXxOG21n"))
+    }
+
+    func testRecipientIgnoresChainIdAndAmount() {
+        XCTAssertEqual(parser.recipient(string: "ethereum:\(recipient)@10?value=abc"), recipient)
+    }
+
+    func testRecipientOfErc20TransferIsTheAddressParameter() {
+        XCTAssertEqual(
+            parser.recipient(string: "ethereum:\(usdt)@137/transfer?address=\(recipient)&uint256=1"),
+            recipient
+        )
+    }
+
+    func testRecipientOfUnsupportedFunctionIsRejected() {
+        XCTAssertNil(parser.recipient(string: "ethereum:\(usdt)@1/approve?address=\(recipient)&uint256=1"))
     }
 }
 

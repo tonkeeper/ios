@@ -1,12 +1,13 @@
-# Opens the Network fee method picker from a confirmation screen.
+# Opens the Network fee method picker from a confirmation screen: the Fee row is a button
+# (`confirm_row_fee`) that shows the current method and opens the picker.
 appId: com.jbig.tonkeeper
 ---
 - extendedWaitUntil:
     visible:
-      id: ".*switch.*"
+      id: confirm_row_fee
     timeout: 180000
 - tapOn:
-    id: ".*switch.*"
+    id: confirm_row_fee
 - waitForAnimationToEnd:
     timeout: 3000
 - extendedWaitUntil:

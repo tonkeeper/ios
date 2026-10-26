@@ -1,5 +1,6 @@
 import KeeperCore
 import SignRaw
+import TKAppInfo
 import TKCoordinator
 import TKCore
 import TKLocalize
@@ -12,12 +13,15 @@ import UIKit
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
 
-    private let dapp: Dapp
+    let dapp: Dapp
     private let analyticsSession: DappOpenAnalyticsSession
     private let isSilentConnect: Bool
-    private let coreAssembly: TKCore.CoreAssembly
-    private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    let coreAssembly: TKCore.CoreAssembly
+    let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let explorerURLMatcher: BlockchainExplorerURLMatcher
+    private let presentation: DappPresentation
+    private weak var dappViewController: DappViewController?
+    private let earnSession: EarnDappSession?
 
     var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
@@ -26,17 +30,26 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         dapp: Dapp,
         analyticsSession: DappOpenAnalyticsSession,
         isSilentConnect: Bool,
+        presentation: DappPresentation = .modal,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) {
         self.dapp = dapp
         self.analyticsSession = analyticsSession
         self.isSilentConnect = isSilentConnect
+        self.presentation = presentation
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.explorerURLMatcher = BlockchainExplorerURLMatcher(
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration
         )
+        self.earnSession = EarnDappMatcher().matches(url: dapp.url)
+            ? EarnDappSession(
+                analyticsProvider: coreAssembly.analyticsProvider,
+                openSession: analyticsSession,
+                dappUrl: dapp.url.host
+            )
+            : nil
 
         super.init(router: router)
     }
@@ -48,6 +61,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     private func openDappModule(_ dapp: Dapp) {
         let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
+        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
         let messageHandler = DefaultDappMessageHandler()
         let module = DappAssembly.module(
             dapp: dapp,
@@ -58,8 +72,17 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
             messageHandler: messageHandler,
             wallet: wallet,
-            explorerURLMatcher: explorerURLMatcher
+            isSignMessageSupported: keeperCoreMainAssembly.tonConnectAssembly.isSignMessageEnabled
+                && wallet?.isTonConnectSignMessageAvailable == true,
+            explorerURLMatcher: explorerURLMatcher,
+            earnFeaturedVaultsRepository: keeperCoreMainAssembly.repositoriesAssembly.earnFeaturedVaultsRepository(
+                isEarnEnabled: configuration.featureEnabled(.earnEnabled),
+                isAppStoreEnvironment: UIApplication.shared.isAppStoreEnvironment,
+                configuration: configuration
+            ),
+            userAgent: coreAssembly.appInfoProvider.userAgent
         )
+        dappViewController = module.view
 
         var manifestUrl: URL?
         messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
@@ -142,6 +165,23 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             )
         }
 
+        messageHandler.signMessage = {
+            [weak self] _, request, completion in
+            guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+                completion(.error(.unknownError))
+                return
+            }
+            let appId = manifestUrl?.host ?? dapp.url.host
+            self.handleSignMessage(
+                wallet: wallet,
+                dapp: dapp,
+                appRequest: request,
+                appId: appId,
+                fromViewController: moduleView,
+                completion: completion
+            )
+        }
+
         messageHandler.signData = {
             [weak self] _, request, completion in
             guard let self,
@@ -163,24 +203,109 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             )
         }
 
+        if let earnSession {
+            let provider = EarnEVMProvider(
+                dapp: WalletConnectDapp(
+                    name: dapp.name,
+                    url: dapp.url.absoluteString,
+                    description: dapp.description ?? "",
+                    iconURL: dapp.icon?.absoluteString
+                ),
+                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+                sign: { [weak self, signingService = keeperCoreMainAssembly.walletConnectAssembly.walletConnectSigningService] wallet, request throws(WalletConnectSigningError) in
+                    try await signingService.sign(
+                        passcodeProvider: { [weak self] in
+                            guard let self else { return nil }
+                            return await PasscodeInputCoordinator.getPasscode(
+                                parentCoordinator: self,
+                                parentRouter: self.router,
+                                mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
+                                securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
+                                analyticsProvider: self.coreAssembly.analyticsProvider,
+                                reason: .dappRequest
+                            )
+                        },
+                        wallet: wallet,
+                        request: request
+                    )
+                }
+            )
+            provider.onEvent = { [weak moduleInput = module.input] event in
+                moduleInput?.sendEVMEvent(event)
+            }
+            provider.onSigning = { event in
+                earnSession.logSigning(event)
+            }
+            provider.onTransactionSent = { wallet, chain, transaction in
+                earnSession.logTransactionSent(wallet: wallet, chain: chain, transaction: transaction)
+            }
+            messageHandler.ethRequest = { [weak self] request, completion in
+                provider.handle(request, pageURL: self?.dappViewController?.currentURL, completion: completion)
+            }
+        }
+
         messageHandler.toggleLandscape = { [weak moduleInput = module.input] landscapeEnabled in
             moduleInput?.setLandscapeMode(isEnabled: landscapeEnabled)
         }
 
-        messageHandler.navigateBack = { [moduleView] in
-            moduleView?.dismiss(animated: true)
+        messageHandler.navigateBack = { [weak self] in
+            self?.closeDappModule(exitMethod: .page)
         }
 
-        messageHandler.track = { [weak self] event, params in
-            self?.coreAssembly.analyticsProvider.log(event: .Dapp.track(event: event, params: params))
+        messageHandler.track = { [earnSession] event, params in
+            earnSession?.trackPageEvent(name: event, params: params)
         }
 
         module.output.didShareDappURL = { [weak self] in
             self?.openSharingSheet(app: $0, url: $1)
         }
+        module.output.didRequestClose = { [weak self] in
+            self?.closeDappModule(exitMethod: .closeButton)
+        }
 
-        module.view.modalPresentationStyle = .fullScreen
-        router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
+        switch presentation {
+        case .modal:
+            module.view.modalPresentationStyle = .fullScreen
+            router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
+        case let .push(navigationController):
+            module.view.didPop = { [weak self] byGesture in
+                guard let self else { return }
+                earnSession?.close(via: byGesture ? .systemBack : .other)
+                didFinish?(self)
+            }
+            navigationController.pushViewController(module.view, animated: true)
+        }
+    }
+
+    private func closeDappModule(exitMethod: EarnExitMethod = .other, completion: (() -> Void)? = nil) {
+        earnSession?.close(via: exitMethod)
+        switch presentation {
+        case .modal:
+            dappViewController?.dismiss(animated: true, completion: completion)
+        case .push:
+            guard let dappViewController,
+                  let navigationController = dappViewController.navigationController,
+                  let index = navigationController.viewControllers.firstIndex(of: dappViewController),
+                  index > 0
+            else {
+                completion?()
+                return
+            }
+            let pop = {
+                navigationController.popToViewController(navigationController.viewControllers[index - 1], animated: true)
+                guard let completion else { return }
+                guard let transitionCoordinator = navigationController.transitionCoordinator else {
+                    completion()
+                    return
+                }
+                transitionCoordinator.animate(alongsideTransition: nil) { _ in completion() }
+            }
+            if let presented = navigationController.presentedViewController {
+                presented.dismiss(animated: true, completion: pop)
+            } else {
+                pop()
+            }
+        }
     }
 
     private func performConnect(
@@ -360,6 +485,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
+            mode: .sendTransaction,
             transferProvider: {
                 .signRaw(request, forceRelayer: false)
             },
@@ -393,11 +519,119 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                 )
             },
             didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
-                self?.router.dismiss(animated: true) {
-                    self?.didRequestOpenBuySell?(wallet, isInternalPurchasing)
+                guard let self else { return }
+                let openBuySell = didRequestOpenBuySell
+                closeDappModule {
+                    openBuySell?(wallet, isInternalPurchasing)
                 }
             }
         )
+    }
+
+    private func handleSignMessage(
+        wallet: Wallet,
+        dapp: Dapp,
+        appRequest: TonConnect.SignMessageRequest,
+        appId: String?,
+        fromViewController: UIViewController,
+        completion: @escaping (TonConnectAppsStore.SendResult) -> Void
+    ) {
+        let sendService = keeperCoreMainAssembly.servicesAssembly.sendService()
+        let isSignMessageEnabled = keeperCoreMainAssembly.tonConnectAssembly.isSignMessageEnabled
+        Task { @MainActor [weak self, weak fromViewController] in
+            do throws(TonConnectSignMessageValidationError) {
+                try await TonConnectSignMessageValidation.validate(
+                    appRequest.params,
+                    wallet: wallet,
+                    isSignMessageEnabled: isSignMessageEnabled,
+                    sendService: sendService
+                )
+            } catch {
+                ToastPresenter.showToast(configuration: .init(title: error.toastTitle))
+                completion(.error(error.errorCode))
+                return
+            }
+            guard let self, let fromViewController else {
+                completion(.error(.unknownError))
+                return
+            }
+            openSignMessage(
+                wallet: wallet,
+                dapp: dapp,
+                appRequest: appRequest,
+                appId: appId,
+                fromViewController: fromViewController,
+                completion: completion
+            )
+        }
+    }
+
+    private func openSignMessage(
+        wallet: Wallet,
+        dapp: Dapp,
+        appRequest: TonConnect.SignMessageRequest,
+        appId: String?,
+        fromViewController: UIViewController,
+        completion: @escaping (TonConnectAppsStore.SendResult) -> Void
+    ) {
+        guard let windowScene = fromViewController.windowScene else {
+            completion(.error(.unknownError))
+            return
+        }
+
+        SignRawPresenter.presentSignRaw(
+            windowScene: windowScene,
+            windowLevel: .signRaw,
+            wallet: wallet,
+            mode: .signMessage(appName: signMessageAppName(wallet: wallet, dapp: dapp)),
+            transferProvider: {
+                .signRaw(appRequest.params, forceRelayer: false)
+            },
+            resultHandler: DappSignMessageResultHandler(
+                appRequest: appRequest,
+                connectionResponseHandler: completion
+            ),
+            sendFrom: .tonconnectLocal,
+            appId: appId,
+            initiatedBy: .tonconnectLocal,
+            dappUrl: dapp.url.host,
+            redAnalyticsConfiguration: .init(
+                flow: .tonConnect,
+                operation: .confirmTransaction,
+                attemptSource: .tonconnectLocal,
+                staticMetadata: [
+                    .dappHost: appId ?? dapp.url.host,
+                ]
+            ),
+            coreAssembly: coreAssembly,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in
+                guard let self else {
+                    throw .cancelled
+                }
+                return try await didRequireSign(
+                    transferData: transferData,
+                    wallet: wallet,
+                    coordinator: coordinator,
+                    router: router
+                )
+            }
+        )
+    }
+
+    private func signMessageAppName(wallet: Wallet, dapp: Dapp) -> String {
+        let connectedApp: TonConnectApp?
+        do {
+            connectedApp = try keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+                .connectedApps(forWallet: wallet).apps
+                .first { $0.manifest.url.host == dapp.url.host && $0.connectionType == .bridge }
+        } catch {
+            Log.w("failed to load connected apps for sign message due to error: \(error)")
+            connectedApp = nil
+        }
+        return [connectedApp?.manifest.name, dapp.name, dapp.url.host]
+            .compactMap { $0 }
+            .first { !$0.isEmpty } ?? dapp.url.absoluteString
     }
 
     @MainActor
@@ -412,7 +646,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             wallet: wallet,
             transferData: transferData,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            coreAssembly: coreAssembly,
+            reason: .dappRequest
         )
 
         return try await signCoordinator
@@ -458,6 +693,51 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
         bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
+    }
+}
+
+private struct DappSignMessageResultHandler: SignRawControllerResultHandler {
+    private let appRequest: TonConnect.SignMessageRequest
+    private let connectionResponseHandler: (TonConnectAppsStore.SendResult) -> Void
+
+    init(
+        appRequest: TonConnect.SignMessageRequest,
+        connectionResponseHandler: @escaping (TonConnectAppsStore.SendResult) -> Void
+    ) {
+        self.appRequest = appRequest
+        self.connectionResponseHandler = connectionResponseHandler
+    }
+
+    func didConfirm(boc: String) {
+        let signMessageResponse = TonConnect.SendResponse.success(
+            .init(
+                result: TonConnect.SignMessageResult(internalBoc: boc),
+                id: appRequest.id
+            )
+        )
+        let response: Data
+        do {
+            response = try JSONEncoder().encode(signMessageResponse)
+        } catch {
+            Log.e(
+                "\(String(reflecting: Self.self)): failed to encode sign-message success response",
+                extraInfo: [
+                    "error": error.localizedDescription,
+                    "requestId": appRequest.id,
+                ]
+            )
+            connectionResponseHandler(.error(.unknownError))
+            return
+        }
+        connectionResponseHandler(.response(response))
+    }
+
+    func didFail(error: SomeOf<TransferError, TransactionConfirmationError>) {
+        connectionResponseHandler(.error(.unknownError))
+    }
+
+    func didCancel() {
+        connectionResponseHandler(.error(.userDeclinedAction))
     }
 }
 

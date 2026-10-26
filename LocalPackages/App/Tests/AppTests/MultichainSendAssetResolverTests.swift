@@ -13,8 +13,7 @@ final class MultichainSendAssetResolverTests: XCTestCase {
             price: MultichainAssetPrice(
                 prices: ["usd": 1234],
                 diff24h: ["usd": "1.2"],
-                diff7d: ["usd": "2.3"],
-                diff30d: ["usd": "3.4"]
+                diff7d: ["usd": "2.3"]
             ),
             marketCap: ["usd": "1000000"]
         )
@@ -123,7 +122,6 @@ final class MultichainSendAssetResolverTests: XCTestCase {
         XCTAssertTrue(result?.price.prices.isEmpty == true)
         XCTAssertTrue(result?.price.diff24h.isEmpty == true)
         XCTAssertTrue(result?.price.diff7d.isEmpty == true)
-        XCTAssertTrue(result?.price.diff30d.isEmpty == true)
         XCTAssertTrue(result?.marketCap.isEmpty == true)
         XCTAssertEqual(loadAssetDetailsIds, [])
     }
@@ -199,8 +197,7 @@ private extension MultichainSendAssetResolverTests {
         price: MultichainAssetPrice = MultichainAssetPrice(
             prices: [:],
             diff24h: [:],
-            diff7d: [:],
-            diff30d: [:]
+            diff7d: [:]
         ),
         marketCap: [String: String] = [:]
     ) -> MultichainAsset {
@@ -283,6 +280,7 @@ private actor SendAssetResolverMultichainServiceSpy: MultichainService {
         search _: String?,
         availableOnly _: Bool?,
         showHidden: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -337,6 +335,7 @@ private actor SendAssetResolverMultichainServiceSpy: MultichainService {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .apiError(message: "Unimplemented")
@@ -358,7 +357,6 @@ private actor SendAssetResolverMultichainServiceSpy: MultichainService {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .apiError(message: "Unimplemented")
@@ -369,14 +367,6 @@ private actor SendAssetResolverMultichainServiceSpy: MultichainService {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .apiError(message: "Unimplemented")
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
     }
 }

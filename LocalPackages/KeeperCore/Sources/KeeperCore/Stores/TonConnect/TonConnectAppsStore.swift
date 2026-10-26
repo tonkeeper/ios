@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public enum TonConnectAppsStoreEvent {
+@frozen public enum TonConnectAppsStoreEvent {
     case didUpdateApps
     case didDisconnect(app: TonConnectApp, wallet: Wallet)
 }
@@ -11,17 +11,17 @@ public protocol TonConnectAppsStoreObserver: AnyObject {
 }
 
 public final class TonConnectAppsStore {
-    public enum FetchResult {
+    @frozen public enum FetchResult {
         case response(Data)
         case error(TonConnect.FetchEventError.ErrorCode)
     }
 
-    public enum ConnectResult {
+    @frozen public enum ConnectResult {
         case response(Data)
         case error(TonConnect.ConnectEventError.Error)
     }
 
-    public enum SendResult {
+    @frozen public enum SendResult {
         case response(Data)
         case error(TonConnect.SendResponseError.ErrorCode)
     }

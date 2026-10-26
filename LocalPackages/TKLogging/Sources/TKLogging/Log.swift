@@ -90,6 +90,10 @@ public extension LogDomain {
     static var migration: LogDomain {
         LogDomain(category: "Migration")
     }
+
+    static var perps: LogDomain {
+        LogDomain(category: "Perps", prefix: "🪵 Perps")
+    }
 }
 
 public extension Log {
@@ -103,5 +107,9 @@ public extension Log {
 
     static var migration: LogDomain {
         .migration
+    }
+
+    static var perps: LogDomain {
+        .perps
     }
 }

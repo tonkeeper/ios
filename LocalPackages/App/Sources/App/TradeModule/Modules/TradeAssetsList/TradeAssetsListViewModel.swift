@@ -14,6 +14,7 @@ final class TradeAssetsListViewModel: ObservableObject {
     @Published private(set) var searchText = ""
     @Published private(set) var selectedCategory: TradingAssetCategory
     @Published private(set) var currentQueryViewModel: TradeAssetsListQueryViewModel
+    @Published private(set) var isSearchFocusRequested = false
 
     let categories = TradingAssetCategory.allCases
 
@@ -86,6 +87,10 @@ final class TradeAssetsListViewModel: ObservableObject {
         guard !hasLoaded else { return }
         hasLoaded = true
         activateCurrentQuery()
+    }
+
+    func requestSearchFocus() {
+        isSearchFocusRequested = true
     }
 
     func refresh() async {

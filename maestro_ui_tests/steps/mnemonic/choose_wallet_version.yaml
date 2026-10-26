@@ -1,0 +1,31 @@
+appId: com.jbig.tonkeeper
+---
+# "Choose Wallets" preselects every version that holds a balance, and balances on the shared
+# seeds move between runs, so the initial state cannot be assumed. A selected row is the cell
+# with `selected=true`; tapping the cell toggles it. Deselect every other version that is on,
+# then make sure VERSION is on (a selected one is toggled off and on again).
+- evalScript: "${output.cwvOthers = ['w5', 'v4R2', 'v3R2', 'v3R1'].filter(function (v) { return v !== VERSION }); output.cwvIndex = 0}"
+- repeat:
+    while:
+      true: ${output.cwvIndex < output.cwvOthers.length}
+    commands:
+      - tapOn:
+          selected: true
+          optional: true
+          containsDescendants:
+            - text: ${output.cwvOthers[output.cwvIndex] + " · .*"}
+      - evalScript: "${output.cwvIndex = output.cwvIndex + 1}"
+- tapOn:
+    selected: true
+    optional: true
+    containsDescendants:
+      - text: ${VERSION + " · .*"}
+- tapOn:
+    text: ${VERSION + " · .*"}
+- assertVisible:
+    selected: true
+    containsDescendants:
+      - text: ${VERSION + " · .*"}
+- tapOn: Continue
+- waitForAnimationToEnd:
+    timeout: 5000

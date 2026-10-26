@@ -15,8 +15,8 @@ public protocol BatteryService {
         includeRechargeOnly: Bool
     ) async throws -> [BatteryRechargeMethod]
     func getRechargeMethods(wallet: Wallet, includeRechargeOnly: Bool) -> [BatteryRechargeMethod]
-    func loadBatteryConfig(wallet: Wallet) async throws -> Components.Schemas.Config
-    func loadTransactionInfo(wallet: Wallet, boc: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool, excess: UInt?)
+    func loadBatteryConfig(wallet: Wallet) async throws -> TKBatteryAPI.Components.Schemas.Config
+    func loadTransactionInfo(wallet: Wallet, boc: String) async throws -> (info: TonAPI.Components.Schemas.MessageConsequences, isBatteryAvailable: Bool, excess: UInt?)
     func loadGasslessCommission(
         wallet: Wallet,
         jettonMasterAddress: String,
@@ -28,7 +28,7 @@ public protocol BatteryService {
         proof: String?,
         headers: [String: String]
     ) async throws
-    func makePurchase(wallet: Wallet, transactionId: String, promocode: String?) async throws -> Components.Schemas.iOSBatteryPurchaseStatus
+    func makePurchase(wallet: Wallet, transactionId: String, promocode: String?) async throws -> TKBatteryAPI.Components.Schemas.iOSBatteryPurchaseStatus
     func loadPurchases(wallet: Wallet) async throws -> [BatteryPurchase]
     func loadTronTransactions(
         wallet: Wallet,
@@ -40,7 +40,7 @@ public protocol BatteryService {
         tronAddress: String,
         energy: Int,
         bandwidth: Int
-    ) async throws -> Components.Schemas.EstimatedTronTx
+    ) async throws -> TKBatteryAPI.Components.Schemas.EstimatedTronTx
     func sendTronTransaction(
         wallet: Wallet,
         tronAddress: String,
@@ -52,6 +52,23 @@ public protocol BatteryService {
     ) async throws -> String
     func hasPendingTransactions(wallet: Wallet) async throws -> Bool
     func verifyPromocode(wallet: Wallet, promocode: String) async throws
+}
+
+/// The battery's gasless 2.0 relayer, authenticated the way `BatteryService` is.
+protocol BatteryGaslessService {
+    func gaslessConfig() async throws -> TKBatteryAPI.Components.Schemas.GaslessV2Config
+    func estimateGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2EstimateRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2EstimateResponse
+    func emulateGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2EmulateRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2EmulateResponse
+    func sendGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2SendRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2SendResponse
 }
 
 public extension BatteryService {
@@ -69,7 +86,7 @@ public extension BatteryService {
     }
 }
 
-final class BatteryServiceImplementation: BatteryService {
+final class BatteryServiceImplementation: BatteryService, BatteryGaslessService {
     private let batteryAPIProvider: BatteryAPIProvider
     private let rechargeMethodsRepository: BatteryRechargeMethodsRepository
     private let authorizationService: BatteryAuthorizationService
@@ -141,7 +158,7 @@ final class BatteryServiceImplementation: BatteryService {
         )
     }
 
-    func loadBatteryConfig(wallet: Wallet) async throws -> Components.Schemas.Config {
+    func loadBatteryConfig(wallet: Wallet) async throws -> TKBatteryAPI.Components.Schemas.Config {
         try await api(for: wallet.network)
             .getBatteryConfig()
     }
@@ -149,13 +166,13 @@ final class BatteryServiceImplementation: BatteryService {
     func loadTransactionInfo(
         wallet: Wallet,
         boc: String
-    ) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool, excess: UInt?) {
+    ) async throws -> (info: TonAPI.Components.Schemas.MessageConsequences, isBatteryAvailable: Bool, excess: UInt?) {
         let api = try api(for: wallet.network)
         let response = try await authorizationService.withAuthorization(for: wallet) { authorization in
             try await api.emulate(authorization: authorization, boc: boc)
         }
 
-        let result = try JSONDecoder().decode(MessageConsequences.self, from: response.responseData)
+        let result = try JSONDecoder().decode(TonAPI.Components.Schemas.MessageConsequences.self, from: response.responseData)
         return (result, response.isBatteryAvailable, response.excess)
     }
 
@@ -191,7 +208,7 @@ final class BatteryServiceImplementation: BatteryService {
         }
     }
 
-    func makePurchase(wallet: Wallet, transactionId: String, promocode: String?) async throws -> Components.Schemas.iOSBatteryPurchaseStatus {
+    func makePurchase(wallet: Wallet, transactionId: String, promocode: String?) async throws -> TKBatteryAPI.Components.Schemas.iOSBatteryPurchaseStatus {
         let api = try api(for: wallet.network)
         return try await authorizationService.withAuthorization(for: wallet) { authorization in
             try await api.makePurchase(
@@ -229,7 +246,7 @@ final class BatteryServiceImplementation: BatteryService {
         tronAddress: String,
         energy: Int,
         bandwidth: Int
-    ) async throws -> Components.Schemas.EstimatedTronTx {
+    ) async throws -> TKBatteryAPI.Components.Schemas.EstimatedTronTx {
         let api = try api(for: wallet.network)
         return try await authorizationService.withOptionalAuthorization(for: wallet) { authorization in
             try await api.getTronEstimate(
@@ -276,9 +293,43 @@ final class BatteryServiceImplementation: BatteryService {
         try await api(for: wallet.network)
             .verifyPromocode(promocode: promocode)
     }
+
+    func gaslessConfig() async throws -> TKBatteryAPI.Components.Schemas.GaslessV2Config {
+        try await api(for: .mainnet).gaslessConfig()
+    }
+
+    func estimateGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2EstimateRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2EstimateResponse {
+        let api = try api(for: wallet.network)
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
+            try await api.gaslessEstimate(authorization: authorization, request: request)
+        }
+    }
+
+    func emulateGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2EmulateRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2EmulateResponse {
+        let api = try api(for: wallet.network)
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
+            try await api.gaslessEmulate(authorization: authorization, request: request)
+        }
+    }
+
+    func sendGasless(
+        wallet: Wallet,
+        request: TKBatteryAPI.Components.Schemas.GaslessV2SendRequest
+    ) async throws -> TKBatteryAPI.Components.Schemas.GaslessV2SendResponse {
+        let api = try api(for: wallet.network)
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
+            try await api.gaslessSend(authorization: authorization, request: request)
+        }
+    }
 }
 
-extension Components.Schemas.Config {
+extension TKBatteryAPI.Components.Schemas.Config {
     static let fallbackTransferCost = BigUInt(50_000_000)
 
     var excessAddress: Address {

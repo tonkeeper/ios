@@ -12,7 +12,7 @@ final class MultichainHistoryCategoryViewModel {
     private let dateFormatter: DateFormatter
     private let nftResolver: MultichainActivityNFTResolver
     private let currentDateProvider: () -> Date
-    private let onAddFunds: () -> Void
+    private let onAddFunds: (() -> Void)?
 
     private var cachedQueryViewModel: MultichainHistoryQueryViewModel?
 
@@ -26,7 +26,7 @@ final class MultichainHistoryCategoryViewModel {
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
         currentDateProvider: @escaping () -> Date,
-        onAddFunds: @escaping () -> Void
+        onAddFunds: (() -> Void)?
     ) {
         self.multichainState = multichainState
         self.category = category

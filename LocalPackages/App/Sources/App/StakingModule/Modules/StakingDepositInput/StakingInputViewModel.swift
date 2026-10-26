@@ -104,6 +104,8 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
         viewModelConfiguration.didUpdateBalance = { [weak self] in
             guard let self else { return }
             amountInputModuleInput.sourceBalance = viewModelConfiguration.balance
+            amountInputModuleInput.maxReserve = viewModelConfiguration.maxReserve
+            amountInputModuleInput.maxHint = viewModelConfiguration.maxHint
         }
         viewModelConfiguration.didUpdateMinimumInput = { [weak self] in
             guard let self else { return }
@@ -117,6 +119,8 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
         amountInputModuleInput.rate = NSDecimalNumber(decimal: tonRate)
         amountInputModuleInput.sourceBalance = viewModelConfiguration.balance
         amountInputModuleInput.minimumSourceAmount = viewModelConfiguration.minimumInput
+        amountInputModuleInput.maxReserve = viewModelConfiguration.maxReserve
+        amountInputModuleInput.maxHint = viewModelConfiguration.maxHint
         amountInputModuleInput.isMaxButtonVisible = true
 
         amountInputModuleOutput.didUpdateIsEnableState = { [weak self] in

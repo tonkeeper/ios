@@ -24,12 +24,6 @@ extension MultichainRampCoordinator {
             analyticsProvider: coreAssembly.analyticsProvider
         )
 
-        module.output.didLoadInitialMerchant = { merchant in
-            guard let merchant else { return }
-            // Deposit analytics for multichain assets are not mapped yet.
-            _ = merchant
-        }
-
         module.output.didTapBack = { [weak self] in
             self?.navigationController.popViewController(animated: true)
         }
@@ -48,7 +42,7 @@ extension MultichainRampCoordinator {
             )
         }
 
-        module.output.didTapContinue = { [weak self] _, merchantInfo, widgetURL in
+        module.output.didTapContinue = { [weak self] context, merchantInfo, widgetURL in
             guard let self else { return }
             guard let widgetURL else {
                 Log.multichainRamp.w(
@@ -63,18 +57,13 @@ extension MultichainRampCoordinator {
                 return
             }
 
-            let shouldSkipWarning = coreAssembly.appSettings.isBuySellItemMarkedDoNotShowWarning(merchantInfo.id)
-
-            if shouldSkipWarning {
-                didTapOpenMerchant?(widgetURL)
-                return
-            }
-
-            openOnRampMerchantWarning(
-                merchantInfo: merchantInfo,
-                widgetURL: widgetURL,
-                fromViewController: module.view
+            logDepositContinueToRampProvider(
+                assetId: asset.asset.assetId,
+                paymentMethod: paymentMethod.type,
+                currencyCode: currency.code,
+                context: context
             )
+            didTapOpenMerchant?(widgetURL)
         }
 
         navigationController.pushViewController(module.view, animated: true)
@@ -101,27 +90,5 @@ extension MultichainRampCoordinator {
         }
 
         bottomSheetViewController.present(fromViewController: fromViewController)
-    }
-
-    func openOnRampMerchantWarning(
-        merchantInfo: OnRampMerchantInfo,
-        widgetURL: URL,
-        fromViewController: UIViewController
-    ) {
-        let popupModule = RampMerchantPopUpAssembly.module(
-            merchantInfo: merchantInfo,
-            actionURL: widgetURL,
-            appSettings: coreAssembly.appSettings,
-            urlOpener: coreAssembly.urlOpener()
-        )
-
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: popupModule.view)
-        bottomSheetViewController.present(fromViewController: fromViewController)
-
-        popupModule.output.didTapOpen = { [weak bottomSheetViewController, weak self] url in
-            bottomSheetViewController?.dismiss {
-                self?.didTapOpenMerchant?(url)
-            }
-        }
     }
 }

@@ -828,4 +828,8 @@ extension LightweightCharts: ChartApi {
         }
         return chart.createImageWatermarkPlugin(paneIndex: paneIndex, imageUrl: imageUrl, options: options)
     }
+
+    public func formatDayMarksAsTime() {
+        (chart as? Chart)?.formatDayMarksAsTime()
+    }
 }

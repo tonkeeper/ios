@@ -110,9 +110,9 @@ private extension MultichainTransactionDetailsModelBuilder {
             kind: kind,
             token: token,
             chain: chain,
-            rawAmount: activity.outAmount,
+            rawAmount: activity.perpsDebitedOutAmount,
             amountUsd: activity.outAmountUsd,
-            sign: .negative
+            sign: kind.isPerpsAccountCredit == true ? .positive : .negative
         )
 
         return MultichainTransactionDetailsModel(
@@ -154,7 +154,7 @@ private extension MultichainTransactionDetailsModelBuilder {
             chain: chain,
             rawAmount: activity.inAmount,
             amountUsd: activity.inAmountUsd,
-            sign: .positive
+            sign: kind.isPerpsAccountCredit == false ? .negative : .positive
         )
 
         return MultichainTransactionDetailsModel(
@@ -200,6 +200,7 @@ private extension MultichainTransactionDetailsModelBuilder {
             amountLines: [
                 amountLine(
                     amount: amountTitle(
+                        activity: activity,
                         rawAmount: activity.outAmount,
                         token: outToken,
                         sign: .negative
@@ -208,6 +209,7 @@ private extension MultichainTransactionDetailsModelBuilder {
                 ),
                 amountLine(
                     amount: amountTitle(
+                        activity: activity,
                         rawAmount: activity.inAmount,
                         token: inToken,
                         sign: .positive
@@ -286,20 +288,23 @@ private extension MultichainTransactionDetailsModelBuilder {
             )
         }
 
+        // A dollar amount already is its own fiat value.
+        let isDollar = token.map(activity.isPerpsDollar) ?? false
         return Hero(
             image: .single(asset(token: token, chain: chain)),
             nft: nil,
             amountLines: [
                 amountLine(
                     amount: amountTitle(
+                        activity: activity,
                         rawAmount: rawAmount,
                         token: token,
                         sign: sign
                     ),
-                    chain: amountLineChainTitle(token: token, chain: chain)
+                    chain: isDollar ? nil : amountLineChainTitle(token: token, chain: chain)
                 ),
             ],
-            fiat: fiatTitle(amountUsd)
+            fiat: isDollar ? nil : fiatTitle(amountUsd)
         )
     }
 
@@ -392,12 +397,13 @@ private extension MultichainTransactionDetailsModelBuilder {
         return .fee(
             title: TKLocales.FeeMethodPicker.title,
             amount: amountTitle(
+                activity: activity,
                 rawAmount: feeAmount,
                 token: feeToken,
                 sign: .none,
                 style: .compact
             ),
-            fiatAmount: fiatTitle(activity.feeAmountUsd)
+            fiatAmount: activity.isPerpsDollar(feeToken) ? nil : fiatTitle(activity.feeAmountUsd)
         )
     }
 
@@ -506,6 +512,7 @@ private extension MultichainTransactionDetailsModelBuilder {
     }
 
     func amountTitle(
+        activity: MultichainActivity,
         rawAmount: String?,
         token: MultichainAssetDetails?,
         sign: AmountSign,
@@ -515,8 +522,23 @@ private extension MultichainTransactionDetailsModelBuilder {
             return "-"
         }
 
-        let symbol = displaySymbol(for: token)
+        let symbol = displaySymbol(for: token, activity: activity)
         if let amount = unsignedAmount(from: rawAmount) {
+            if activity.isPerpsDollar(token) {
+                return sign == .none
+                    ? amountFormatter.format(
+                        amount: amount,
+                        fractionDigits: token.decimals,
+                        accessory: .fiat(Currency.USD),
+                        style: style
+                    )
+                    : amountFormatter.signedDollars(
+                        amount: amount,
+                        fractionDigits: token.decimals,
+                        isNegative: sign == .negative,
+                        style: style
+                    )
+            }
             switch sign {
             case .positive:
                 return signedAmountFormatter.format(
@@ -556,11 +578,11 @@ private extension MultichainTransactionDetailsModelBuilder {
         return "\(prefix)\(rawAmount) \(symbol)"
     }
 
-    func displaySymbol(for token: MultichainAssetDetails) -> String {
+    func displaySymbol(for token: MultichainAssetDetails, activity: MultichainActivity) -> String {
         guard token.chain == .ton,
               case .coin = AssetIdComponents(assetId: token.assetId)
         else {
-            return token.symbol
+            return activity.displaySymbol(for: token)
         }
         return TonInfo.symbol
     }

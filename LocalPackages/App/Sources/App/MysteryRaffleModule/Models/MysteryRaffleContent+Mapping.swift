@@ -38,7 +38,7 @@ extension MultichainRaffle {
 /// which the backend varies per phase (`fire` / `checkmark` / `mystery_raffle`); the hero
 /// glyph is only the placeholder behind `hero.image` and stays fixed per outcome.
 extension MysteryRaffleContent {
-    init(raffle: MultichainRaffle, now: Date = RaffleClock.now) {
+    init(raffle: MultichainRaffle, now: Date = Date()) {
         let isResult = raffle.status == .won || raffle.status == .lost
         let isEnded = isResult || raffle.status == .endedPending
         let isMigrationPhase = raffle.isMigrationPhase
@@ -234,15 +234,13 @@ extension MysteryRaffleContent {
     }
 
     /// Week-2-and-later set, shown while the raffle itself runs. Also drives the dev-menu stubs.
-    /// Nil counts fall back the same way as `migrationFAQ`'s — the migration reward is the
-    /// campaign's 10 in either phase, which is what the migration offer itself advertises.
     static func activeFAQ(endsAt: Date, migrationTickets: Int? = nil, milestoneTickets: Int? = nil) -> [RaffleFAQItem] {
         let faq = TKLocales.MysteryRaffle.Faq.self
         return [
             RaffleFAQItem(
                 id: "earn",
                 question: faq.Earn.question,
-                answer: faq.Earn.answer(migrationTickets ?? 10, milestoneTickets ?? 1000)
+                answer: faq.Earn.answer(migrationTickets ?? 5, milestoneTickets ?? 1000)
             ),
             RaffleFAQItem(id: "prizes", question: faq.Prizes.question, answer: faq.Prizes.answer),
             RaffleFAQItem(

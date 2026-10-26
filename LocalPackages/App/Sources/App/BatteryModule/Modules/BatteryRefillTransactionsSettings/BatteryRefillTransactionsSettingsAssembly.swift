@@ -5,6 +5,7 @@ import UIKit
 struct BatteryRefillTransactionsSettingsAssembly {
     private init() {}
     static func module(
+        networks: BatteryNetworks,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
     ) -> MVVMModule<BatteryRefillTransactionsSettingsViewController, BatteryRefillTransactionsSettingsModuleOutput, BatteryRefillTransactionsSettingsModuleInput> {
@@ -12,6 +13,7 @@ struct BatteryRefillTransactionsSettingsAssembly {
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
             keeperInfoStore: keeperCoreMainAssembly.storesAssembly.keeperInfoStore,
+            networks: networks,
             batteryChargesMapper: BatteryChargesMapper(batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation)
         )
 

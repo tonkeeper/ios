@@ -2,7 +2,7 @@ import SwapAPI
 
 /// How an aggregator's calldata relates to the amount the wallet sends, as the backend reports it
 /// per payload.
-public enum MultichainSwapCalldataPayloadType: String, Sendable, Hashable {
+@frozen public enum MultichainSwapCalldataPayloadType: String, Sendable, Hashable {
     /// The sell amount is baked into the calldata: the wallet must send exactly the quoted amount.
     /// Trimming it — say, to leave room for the fee on a max send — desyncs `value` from the
     /// calldata and the router reverts.

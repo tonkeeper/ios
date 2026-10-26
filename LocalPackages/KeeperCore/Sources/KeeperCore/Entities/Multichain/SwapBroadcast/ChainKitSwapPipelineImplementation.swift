@@ -34,7 +34,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
     }
 
     func prepareSwapPayloads(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -49,19 +49,22 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
             )
         )
         let route = try normalizedPayloads(
-            wallet: wallet,
+            swapWallet: swapWallet,
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             payloads: payloads,
             provider: provider,
-            sourcePublicKey: storedPublicKey(for: sourceAsset, wallet: wallet),
-            destinationPublicKey: storedPublicKey(for: destinationAsset, wallet: wallet)
+            sourcePublicKey: storedPublicKey(for: sourceAsset, swapWallet: swapWallet),
+            destinationPublicKey: storedPublicKey(for: destinationAsset, swapWallet: swapWallet)
         )
         let main = route.main
+        // A route behind an approval has no relayable form: the relayer carries one call, and a
+        // swap without its approve ahead of it reverts.
+        let batteryPayload = route.approval == nil ? main.normalized.batteryPayload : nil
         let mainFee: any Fee
         do {
             mainFee = try await stages.resolveFee(
-                transaction: main.normalized.transaction,
+                transactions: main.normalized.transactions,
                 payloadFee: main.normalized.fee,
                 networkType: main.normalized.networkType,
                 payloadId: main.payload.payloadId
@@ -70,6 +73,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
             mainFee = try await fallbackFee(
                 after: error,
                 main: main,
+                isRelayable: batteryPayload != nil,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset
             )
@@ -83,7 +87,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
 
         if let approvalPayload = route.approval {
             guard let approval = stages.buildApproval(
-                mainTransaction: main.normalized.transaction,
+                mainTransactions: main.normalized.transactions,
                 approvalData: approvalPayload.normalized.approvalData,
                 approvalFee: approvalPayload.normalized.fee,
                 mainFee: mainFee,
@@ -97,7 +101,6 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
             requiresApproval = true
         }
 
-        let batteryPayload = main.normalized.batteryPayload
         let nativeFeeShortage = try await reservedNativeFeeShortage(
             main: main,
             reserveFees: reserveFees,
@@ -110,7 +113,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 await emulationResult(
                     fee: fee,
                     normalized: payload.normalized,
-                    wallet: wallet
+                    wallet: swapWallet.wallet
                 )
             )
         }
@@ -138,7 +141,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
 
     func executeSwapPayloads(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -155,22 +158,22 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 additional: ["approvalMode": approvalMode.rawValue]
             )
         )
-        guard case .Regular = wallet.identity.kind else {
+        guard case .Regular = swapWallet.wallet.identity.kind else {
             throw .internal(reason: "wallet type is not supported for multichain swaps")
         }
 
         let preflight = try normalizedPayloads(
-            wallet: wallet,
+            swapWallet: swapWallet,
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             payloads: payloads,
             provider: provider,
-            sourcePublicKey: storedPublicKey(for: sourceAsset, wallet: wallet),
-            destinationPublicKey: storedPublicKey(for: destinationAsset, wallet: wallet)
+            sourcePublicKey: storedPublicKey(for: sourceAsset, swapWallet: swapWallet),
+            destinationPublicKey: storedPublicKey(for: destinationAsset, swapWallet: swapWallet)
         )
         let preflightMain = preflight.main
         let mainFee = try await stages.resolveFee(
-            transaction: preflightMain.normalized.transaction,
+            transactions: preflightMain.normalized.transactions,
             payloadFee: payloadFees.fee(for: preflightMain.payload.payloadId) ?? preflightMain.normalized.fee,
             networkType: preflightMain.normalized.networkType,
             payloadId: preflightMain.payload.payloadId
@@ -180,7 +183,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
         let approvalFee: (any Fee)?
         if let preflightApproval {
             guard let approval = try stages.buildApproval(
-                mainTransaction: preflightMain.normalized.transaction,
+                mainTransactions: preflightMain.normalized.transactions,
                 approvalData: preflightApproval.normalized.approvalData,
                 approvalFee: payloadFees.fee(for: preflightApproval.payload.payloadId) ?? preflightApproval.normalized.fee,
                 mainFee: mainFee,
@@ -193,18 +196,18 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
             approvalFee = nil
         }
 
-        let chainKitWallet = try await stages.unlockSigningWallet(
+        let signingWallet = try await stages.unlockSigningWallet(
             passcodeProvider: passcodeProvider,
-            wallet: wallet
+            swapWallet: swapWallet
         )
-        let sourcePublicKey = chainKitWallet.getPublicKey(
-            chain: preflightMain.normalized.sourceChain.asChainKitChain
+        let sourcePublicKey = try signingWallet.publicKey(
+            chain: preflightMain.normalized.sourceChain
         )
-        let destinationPublicKey = destinationAsset.asset.chain.map {
-            chainKitWallet.getPublicKey(chain: $0.asChainKitChain)
+        let destinationPublicKey = try destinationAsset.asset.chain.map { chain throws(MultichainSwapExecutionFailure) in
+            try signingWallet.publicKey(chain: chain)
         }
         let preparedRoute = try normalizedPayloads(
-            wallet: wallet,
+            swapWallet: swapWallet,
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             payloads: payloads,
@@ -214,20 +217,24 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
         )
         let main = preparedRoute.main
         let nonce = try await stages.nonce(
-            account: main.normalized.transaction.account,
+            account: main.normalized.account,
             networkType: main.normalized.networkType,
             payloadId: main.payload.payloadId
         )
-        let combinedFee = feeResolver.combinedFee([mainFee] + [approvalFee].compactMap { $0 })
+        let combinedFee = feeResolver.reservedFee(
+            [mainFee] + [approvalFee].compactMap { $0 },
+            attachedEnergy: main.normalized.attachedEnergy,
+            asset: main.normalized.feeAsset
+        )
         let gasReserve = try await stages.reserve(
-            transaction: main.normalized.transaction,
+            transactions: main.normalized.transactions,
             feeAsset: main.normalized.feeAsset,
             fee: combinedFee,
             policy: main.normalized.gasReservePolicy,
             payloadId: main.payload.payloadId
         )
-        let mainTransaction = SwapTransactionAdjuster.adjustedTransaction(
-            main.normalized.transaction,
+        let mainTransactions = SwapTransactionAdjuster.adjustedTransactions(
+            main.normalized.transactions,
             gasReserve: gasReserve,
             calldataType: main.normalized.calldataType
         )
@@ -236,7 +243,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
         var mainNonce = nonce
         if let approvalPayload = preparedRoute.approval {
             guard let approval = stages.buildApproval(
-                mainTransaction: mainTransaction,
+                mainTransactions: mainTransactions,
                 approvalData: approvalPayload.normalized.approvalData,
                 approvalFee: approvalFee,
                 mainFee: mainFee,
@@ -245,11 +252,11 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 throw invalidApprovalFailure(approvalPayload)
             }
             let approvalHash = try await signAndSendSwap(
-                transaction: approval.transaction,
+                transactions: [approval.transaction],
                 fee: approval.fee,
                 nonce: nonce,
                 normalized: main.normalized,
-                wallet: chainKitWallet,
+                wallet: signingWallet,
                 payload: approvalPayload.payload,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset
@@ -266,11 +273,11 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
         }
 
         let mainHash = try await signAndSendSwap(
-            transaction: mainTransaction,
+            transactions: mainTransactions,
             fee: mainFee,
             nonce: mainNonce,
             normalized: main.normalized,
-            wallet: chainKitWallet,
+            wallet: signingWallet,
             payload: main.payload,
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset
@@ -292,20 +299,15 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
 }
 
 private extension ChainKitSwapPipelineImplementation {
-    func storedPublicKey(for asset: MultichainAsset, wallet: Wallet) -> PubKey? {
-        guard case let .multichain(state) = wallet.multichain,
-              let chain = asset.asset.chain
-        else {
+    func storedPublicKey(for asset: MultichainAsset, swapWallet: MultichainSwapWallet) -> PubKey? {
+        guard let chain = asset.asset.chain else {
             return nil
         }
-        return state.walletAddress(
-            for: chain,
-            preferredType: wallet.preferredMultichainAddressType(for: chain)
-        )?.publicKey?.chainKitPubKey
+        return swapWallet.walletAddress(for: chain)?.publicKey?.chainKitPubKey
     }
 
     func normalizedPayloads(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -317,7 +319,7 @@ private extension ChainKitSwapPipelineImplementation {
             let adapter = MultichainSwapPayloadAdapter()
             func normalize(_ payload: MultichainSwapPreparedPayload) throws -> PreparedSwapPayload {
                 let normalized = try adapter.normalize(
-                    wallet: wallet,
+                    swapWallet: swapWallet,
                     sourceAsset: sourceAsset,
                     destinationAsset: destinationAsset,
                     payload: payload,
@@ -343,13 +345,14 @@ private extension ChainKitSwapPipelineImplementation {
     func fallbackFee(
         after failure: MultichainSwapExecutionFailure,
         main: PreparedSwapPayload,
+        isRelayable: Bool,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset
     ) async throws(MultichainSwapExecutionFailure) -> any Fee {
         let defaultFee: any Fee
         do {
             defaultFee = try await stages.defaultFee(
-                transaction: main.normalized.transaction,
+                transactions: main.normalized.transactions,
                 networkType: main.normalized.networkType,
                 payloadId: main.payload.payloadId
             )
@@ -359,9 +362,13 @@ private extension ChainKitSwapPipelineImplementation {
         let reserveFailure: MultichainSwapExecutionFailure?
         do {
             _ = try await stages.reserve(
-                transaction: main.normalized.transaction,
+                transactions: main.normalized.transactions,
                 feeAsset: main.normalized.feeAsset,
-                fee: defaultFee,
+                fee: feeResolver.reservedFee(
+                    [defaultFee],
+                    attachedEnergy: main.normalized.attachedEnergy,
+                    asset: main.normalized.feeAsset
+                ),
                 policy: main.normalized.gasReservePolicy,
                 payloadId: main.payload.payloadId
             )
@@ -381,11 +388,11 @@ private extension ChainKitSwapPipelineImplementation {
                 destinationAsset: destinationAsset,
                 additional: [
                     "feeAsset": main.normalized.feeAsset.id,
-                    "hasBatteryPayload": main.normalized.batteryPayload == nil ? "false" : "true",
+                    "isRelayable": isRelayable ? "true" : "false",
                 ]
             )
         )
-        guard main.normalized.batteryPayload != nil else {
+        guard isRelayable else {
             throw shortage
         }
         return defaultFee
@@ -401,9 +408,13 @@ private extension ChainKitSwapPipelineImplementation {
     ) async throws(MultichainSwapExecutionFailure) -> MultichainNativeFeeShortage? {
         do {
             _ = try await stages.reserve(
-                transaction: main.normalized.transaction,
+                transactions: main.normalized.transactions,
                 feeAsset: main.normalized.feeAsset,
-                fee: feeResolver.combinedFee(reserveFees),
+                fee: feeResolver.reservedFee(
+                    reserveFees,
+                    attachedEnergy: main.normalized.attachedEnergy,
+                    asset: main.normalized.feeAsset
+                ),
                 policy: main.normalized.gasReservePolicy,
                 payloadId: main.payload.payloadId
             )
@@ -448,11 +459,11 @@ private extension ChainKitSwapPipelineImplementation {
     }
 
     func signAndSendSwap(
-        transaction: any ChainKit.Transaction,
+        transactions: [any ChainKit.Transaction],
         fee: any Fee,
         nonce: BignumBigInteger,
         normalized: MultichainSwapPayloadAdapter.Normalized,
-        wallet: CryptoWallet,
+        wallet: SwapSigningWallet,
         payload: MultichainSwapPreparedPayload,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset
@@ -463,11 +474,14 @@ private extension ChainKitSwapPipelineImplementation {
                 payload: payload,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
-                additional: ["sourceChain": normalized.sourceChain.rawValue]
+                additional: [
+                    "sourceChain": normalized.sourceChain.rawValue,
+                    "messageCount": "\(transactions.count)",
+                ]
             )
         )
         return try await stages.signAndBroadcast(
-            transaction: transaction,
+            transactions: transactions,
             fee: fee,
             nonce: nonce,
             sourceChain: normalized.sourceChain,

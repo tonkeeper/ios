@@ -41,21 +41,26 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
         }
         let emulation = prepared.emulation
         let requiredCharges = batteryCalculation.calculateCharges(tonAmount: emulation.amount)
+        let excessCharges = emulation.excess.flatMap {
+            batteryCalculation.calculateCharges(tonAmount: $0)
+        }
         let availableCharges = await batteryChargesReader.availableCharges(wallet: context.wallet)
         Log.multichainSwap.i(
             "battery ton swap priced",
             extraInfo: [
                 "payloadId": context.payloadId,
                 "requiredCharges": requiredCharges.map { "\($0)" } ?? "unpriced",
+                "excessCharges": excessCharges.map { "\($0)" } ?? "none",
+                "attachedAmount": prepared.attachedAmount.description,
+                "estimatedAmount": emulation.amount.description,
+                "excessAmount": emulation.excess?.description ?? "none",
                 "availableCharges": availableCharges.logValue,
             ]
         )
         return [
             MultichainSwapBatteryFeeRules.option(
                 charges: requiredCharges,
-                excessCharges: emulation.excess.flatMap {
-                    batteryCalculation.calculateCharges(tonAmount: $0)
-                },
+                excessCharges: excessCharges,
                 availableCharges: availableCharges
             ),
         ]
@@ -65,7 +70,7 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
         context: MultichainSwapFeeContext,
         confirmed: MultichainSwapRelayedFee,
         passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String {
+    ) async throws(MultichainSwapExecutionFailure) -> String? {
         let payloadId = context.payloadId
         guard case let .batteryCharges(confirmedCharges) = confirmed else {
             throw .internal(reason: "a ton swap can only be relayed against battery charges")
@@ -126,6 +131,7 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
 private extension MultichainSwapTonBatteryFeeEngine {
     struct PreparedTransfer {
         let transfer: Transfer
+        let attachedAmount: BigUInt
         let emulation: BatteryEmulation
     }
 
@@ -143,7 +149,7 @@ private extension MultichainSwapTonBatteryFeeEngine {
             isBatteryEnabled: isBatteryEnabled,
             isBatterySendEnabled: isBatterySendEnabled
         ), case .tonJetton = MultichainSwapBatteryFeeRules.relayedAsset(
-            wallet: context.wallet,
+            swapWallet: context.swapWallet,
             sourceAsset: context.sourceAsset,
             requiresApproval: context.requiresApproval,
             isTRXOnlyRegion: configuration.isTRXOnlyRegion(network: context.wallet.network)
@@ -162,10 +168,10 @@ private extension MultichainSwapTonBatteryFeeEngine {
         }
 
         switch context.payload {
-        case let .ton(message):
+        case let .ton(messages):
             guard let transfer = makeTransfer(
                 wallet: context.wallet,
-                message: message,
+                messages: messages,
                 payloadId: context.payloadId
             ) else {
                 return nil
@@ -177,21 +183,27 @@ private extension MultichainSwapTonBatteryFeeEngine {
                 )
                 return nil
             }
-            guard isPayloadPreserved(
-                wallet: context.wallet,
-                message: message,
-                payloadId: context.payloadId
-            ), let emulation = await emulate(wallet: context.wallet, transfer: transfer)
+            guard messages.allSatisfy({ message in
+                isPayloadPreserved(
+                    wallet: context.wallet,
+                    message: message,
+                    payloadId: context.payloadId
+                )
+            }), let emulation = await emulate(wallet: context.wallet, transfer: transfer)
             else {
                 return nil
             }
-            return PreparedTransfer(transfer: transfer, emulation: emulation)
+            return PreparedTransfer(
+                transfer: transfer,
+                attachedAmount: messages.reduce(0) { $0 + $1.amount },
+                emulation: emulation
+            )
         case let .tonJettonDeposit(deposit):
             return await preparedJettonDeposit(
                 context: context,
                 deposit: deposit
             )
-        case .tron:
+        case .tron, .evm:
             return nil
         }
     }
@@ -228,47 +240,40 @@ private extension MultichainSwapTonBatteryFeeEngine {
             wallet: context.wallet,
             jettonMasterAddress: jettonItem.jettonInfo.address
         )
-        guard let initialTransfer = TonJettonSwapTransferFactory.makeTransfer(
+        guard let minimumTransfer = TonJettonSwapTransferFactory.makeTransfer(
             sourceAsset: context.sourceAsset,
             deposit: deposit,
             jettons: jettons,
             transferAmount: minimumTransferAmount
-        ), let initialEmulation = await emulate(wallet: context.wallet, transfer: initialTransfer)
+        ), let minimumEmulation = await emulate(wallet: context.wallet, transfer: minimumTransfer)
         else {
             return nil
         }
-        let fundedTransferAmount = TonJettonSwapTransferFactory.requiredTransferAmount(
+        let attachedAmount = TonJettonSwapTransferFactory.requiredTransferAmount(
             minimum: minimumTransferAmount,
-            emulationAmount: initialEmulation.sourceAmount
+            emulationAmount: minimumEmulation.sourceAmount
         )
-        guard fundedTransferAmount != minimumTransferAmount else {
-            return PreparedTransfer(transfer: initialTransfer, emulation: initialEmulation)
+        guard attachedAmount != minimumTransferAmount else {
+            return PreparedTransfer(
+                transfer: minimumTransfer,
+                attachedAmount: minimumTransferAmount,
+                emulation: minimumEmulation
+            )
         }
         guard let fundedTransfer = TonJettonSwapTransferFactory.makeTransfer(
             sourceAsset: context.sourceAsset,
             deposit: deposit,
             jettons: jettons,
-            transferAmount: fundedTransferAmount
+            transferAmount: attachedAmount
         ), let fundedEmulation = await emulate(wallet: context.wallet, transfer: fundedTransfer)
         else {
             return nil
         }
-        let validatedTransferAmount = TonJettonSwapTransferFactory.requiredTransferAmount(
-            minimum: minimumTransferAmount,
-            emulationAmount: fundedEmulation.sourceAmount
+        return PreparedTransfer(
+            transfer: fundedTransfer,
+            attachedAmount: attachedAmount,
+            emulation: fundedEmulation
         )
-        guard validatedTransferAmount <= fundedTransferAmount else {
-            Log.multichainSwap.w(
-                "battery jetton swap option skipped: attached amount did not stabilize",
-                extraInfo: [
-                    "payloadId": context.payloadId,
-                    "attachedAmount": fundedTransferAmount.description,
-                    "requiredAmount": validatedTransferAmount.description,
-                ]
-            )
-            return nil
-        }
-        return PreparedTransfer(transfer: fundedTransfer, emulation: fundedEmulation)
     }
 
     /// A relayed send re-serializes the message body of a custom-payload jetton, which keeps only a
@@ -309,42 +314,55 @@ private extension MultichainSwapTonBatteryFeeEngine {
 
     func makeTransfer(
         wallet: Wallet,
-        message: TonSwapMessage,
+        messages: [TonSwapMessage],
         payloadId: String
     ) -> Transfer? {
-        guard let amount = UInt64(message.amount.description) else {
-            Log.multichainSwap.w(
-                "battery swap option skipped: message amount exceeds a ton transfer",
-                extraInfo: [
-                    "payloadId": payloadId,
-                    "amount": message.amount.description,
-                ]
-            )
-            return nil
-        }
         let sender: Address
-        let recipient: AnyAddress
         do {
             sender = try wallet.address
-            recipient = try AnyAddress(rawAddress: message.to)
         } catch {
             Log.multichainSwap.w(
-                "battery swap option skipped: unusable ton message addresses",
+                "battery swap option skipped: unusable ton wallet address",
                 error: error,
                 extraInfo: ["payloadId": payloadId]
             )
             return nil
         }
+        var requestMessages = [SignRawRequestMessage]()
+        for message in messages {
+            guard let amount = UInt64(message.amount.description) else {
+                Log.multichainSwap.w(
+                    "battery swap option skipped: message amount exceeds a ton transfer",
+                    extraInfo: [
+                        "payloadId": payloadId,
+                        "amount": message.amount.description,
+                    ]
+                )
+                return nil
+            }
+            let recipient: AnyAddress
+            do {
+                recipient = try AnyAddress(rawAddress: message.to)
+            } catch {
+                Log.multichainSwap.w(
+                    "battery swap option skipped: unusable ton message addresses",
+                    error: error,
+                    extraInfo: ["payloadId": payloadId]
+                )
+                return nil
+            }
+            requestMessages.append(
+                SignRawRequestMessage(
+                    address: recipient,
+                    amount: amount,
+                    stateInit: message.stateInit,
+                    payload: message.payload
+                )
+            )
+        }
         return .multichainSwap(
             SignRawRequest(
-                messages: [
-                    SignRawRequestMessage(
-                        address: recipient,
-                        amount: amount,
-                        stateInit: message.stateInit,
-                        payload: message.payload
-                    ),
-                ],
+                messages: requestMessages,
                 validUntil: nil,
                 from: sender,
                 messagesVariants: nil

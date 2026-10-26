@@ -27,16 +27,16 @@ final class TradingShelvesServiceEndpointSelectionTests: XCTestCase {
         XCTAssertEqual(calls, [.getShelvesV2])
     }
 
-    func test_shelves_keepsSnapshotsIsolatedByMode() async {
+    func test_shelves_keepsSnapshotsIsolatedByMode() async throws {
         let cache = InMemoryKeyedCache<TradingShelvesMode, TradingShelvesSnapshot>()
         let legacySnapshot = TradingShelvesSnapshot(
             generatedAt: .now,
             currency: .USD,
             shelves: []
         )
-        let multichainSnapshot = TradingShelvesSnapshot(
+        let multichainSnapshot = try TradingShelvesSnapshot(
             generatedAt: .distantPast,
-            currency: .EUR,
+            currency: XCTUnwrap(Currency(code: "EUR")),
             shelves: []
         )
         await cache.set(legacySnapshot, for: .legacy)

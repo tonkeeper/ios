@@ -31,6 +31,20 @@ public struct Transaction {
         self.payload = payload
     }
 
+    public func settingKnownJetton(_ knownJetton: KnownJetton?) -> Transaction {
+        guard case let .jettonTransfer(jettonTransfer) = payload else { return self }
+        return Transaction(
+            destination: destination,
+            sendMode: sendMode,
+            seqno: seqno,
+            timeout: timeout,
+            bounceable: bounceable,
+            coins: coins,
+            stateInit: stateInit,
+            payload: .jettonTransfer(jettonTransfer.settingKnownJetton(knownJetton))
+        )
+    }
+
     public static func from(transfer: WalletTransfer) throws -> [Transaction] {
         let slice = try transfer.signingMessage.endCell().toSlice()
         try slice.skip(32)

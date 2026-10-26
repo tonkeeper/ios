@@ -168,7 +168,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         )
     }
 
-    private func updateFee(transactionInfo: MessageConsequences) {
+    private func updateFee(transactionInfo: TonAPI.Components.Schemas.MessageConsequences) {
         let isRefund = transactionInfo.event.extra > 0
         let extra = BigUInt(abs(transactionInfo.event.extra))
         let withExtraFee = isRefund ? stakingPool.implementation.extraFee : extra + stakingPool.implementation.extraFee

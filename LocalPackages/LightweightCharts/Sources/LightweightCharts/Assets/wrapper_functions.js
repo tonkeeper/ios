@@ -115,3 +115,57 @@ function subscriberCrosshairMoveAndClickFunction(name) {
         messageHandler.postMessage(JSON.stringify(parameters));
     }
 }
+
+function formatDayMarksAsTime(chart) {
+    var timeScale = chart.timeScale();
+    var timeLabelFormatters = {};
+    var lastHourMarksFit = null;
+
+    function timeLabel(timeSeconds, locale) {
+        var key = locale || '';
+        if (!timeLabelFormatters[key]) {
+            timeLabelFormatters[key] = new Intl.DateTimeFormat(locale || undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+                timeZone: 'UTC'
+            });
+        }
+        return timeLabelFormatters[key].format(new Date(timeSeconds * 1000));
+    }
+
+    function hourMarksFit() {
+        var range = timeScale.getVisibleRange();
+        if (!range || typeof range.from !== 'number' || typeof range.to !== 'number') {
+            return false;
+        }
+        var bars = timeScale.timeToIndex(range.to, false) - timeScale.timeToIndex(range.from, false);
+        if (!(bars > 0) || !(range.to > range.from)) {
+            return false;
+        }
+        var barSeconds = (range.to - range.from) / bars;
+        var options = timeScale.options();
+        var maxLabelWidth = (chart.options().layout.fontSize + 4) * 5 / 8 * (options.tickMarkMaxCharacterLength || 8);
+        var maxIndexesPerMark = Math.ceil(maxLabelWidth / options.barSpacing);
+        return 86400 / barSeconds / 2 >= maxIndexesPerMark;
+    }
+
+    function refreshLabels() {
+        var fit = hourMarksFit();
+        if (fit !== lastHourMarksFit) {
+            lastHourMarksFit = fit;
+            timeScale.applyOptions({});
+        }
+    }
+
+    timeScale.applyOptions({
+        tickMarkFormatter: function (time, tickMarkType, locale) {
+            if (tickMarkType > 2 || typeof time !== 'number' || !hourMarksFit()) {
+                return null;
+            }
+            return timeLabel(time, locale);
+        }
+    });
+    timeScale.subscribeVisibleLogicalRangeChange(refreshLabels);
+    timeScale.subscribeSizeChange(refreshLabels);
+}

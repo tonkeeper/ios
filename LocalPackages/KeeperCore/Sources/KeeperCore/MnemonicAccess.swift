@@ -4,7 +4,7 @@ import KeeperCoreSensitive
 import TKKeychain
 import TKLogging
 
-public enum MnemonicAccess {
+@frozen public enum MnemonicAccess {
     public struct LegacyRepository {
         public let rn: RNMnemonicsVault
         public let native: MnemonicsVault
@@ -35,6 +35,7 @@ public enum MnemonicAccess {
 enum MnemonicAccessError: Swift.Error {
     case passcodeRequired
     case legacyMnemonicInvalid
+    case legacyMigrationPending
 }
 
 public extension MnemonicAccess {
@@ -95,6 +96,7 @@ public extension MnemonicAccess {
             let passcode = try requirePasscode(passcode)
             try mutateV2Storage(
                 rawStorage: mnemonicsRepositoryV2.raw,
+                legacyRepository: legacyRepository,
                 passcode: passcode
             ) { mnemonics in
                 mnemonics[wallet.id] = mnemonic
@@ -120,6 +122,7 @@ public extension MnemonicAccess {
             let passcode = try requirePasscode(passcode)
             try mutateV2Storage(
                 rawStorage: mnemonicsRepositoryV2.raw,
+                legacyRepository: legacyMnemonicsRepository,
                 passcode: passcode
             ) { mnemonics in
                 for wallet in wallets {
@@ -167,33 +170,6 @@ public extension MnemonicAccess {
             }
         case let .disabled(mnemonicsRepository):
             try await deleteMnemonicLegacy(mnemonicsRepository.native, nil)
-        }
-    }
-
-    func deleteAll(passcode: String?) async throws {
-        let deleteMnemonicLegacy: (MnemonicsRepository) async throws -> Void = { repository in
-            try await repository.deleteAll()
-        }
-        switch self {
-        case let .v2(mnemonicsRepositoryV2, passcodeStorage, legacyMnemonicsRepository):
-            do {
-                try mnemonicsRepositoryV2.raw.deleteAllKnownStorageArtifacts()
-            } catch {
-                Log.e("🪵 failed to delete all v2 mnemonic artifacts due to: \(error)")
-                throw error
-            }
-            do {
-                try passcodeStorage.deleteAllKnownStorageArtifacts()
-            } catch {
-                Log.e("🪵 failed to delete v2 passcode due to: \(error)")
-            }
-            do {
-                try await deleteMnemonicLegacy(legacyMnemonicsRepository.native)
-            } catch {
-                Log.e("🪵 failed to delete (all) mnemonic (legacy) due to: \(error)")
-            }
-        case let .disabled(mnemonicsRepository):
-            try await deleteMnemonicLegacy(mnemonicsRepository.native)
         }
     }
 
@@ -399,6 +375,7 @@ private extension MnemonicAccess {
 
     func mutateV2Storage(
         rawStorage: MnemonicsRawDataRepository,
+        legacyRepository: LegacyRepository,
         passcode: String,
         mutation: (inout [CoreMnemonicIdentifier: CoreMnemonic]) throws -> Void
     ) throws {
@@ -407,6 +384,15 @@ private extension MnemonicAccess {
             let repository = try rawStorage.unlocked(passcode: passcode)
             mnemonics = try repository.getAll()
         } else {
+            // No committed v2 storage next to a non-empty legacy vault means the
+            // native->v2 migration has not run or has failed. Committing v2 here
+            // would make the migration check consider it done, and the legacy
+            // dual-write that follows would overwrite the vault under a passcode
+            // that cannot decrypt it. Refuse; a relaunch retries the migration.
+            guard !legacyRepository.native.hasMnemonics() else {
+                Log.e("🪵 refused to create v2 mnemonics storage: legacy vault is not migrated yet")
+                throw MnemonicAccessError.legacyMigrationPending
+            }
             mnemonics = [:]
         }
         var updatedMnemonics = mnemonics

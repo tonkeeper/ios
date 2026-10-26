@@ -8,7 +8,7 @@ public final class WalletNotificationStore: Store<WalletNotificationStore.Event,
     }
 
     public typealias State = [Wallet: NotificationsState]
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateNotificationsIsOn(wallet: Wallet)
         case didUpdateDappNotificationsIsOn(
             wallet: Wallet,

@@ -50,22 +50,6 @@ public final class WalletDeleteController {
         await forgetWalletAuth(deleted: [wallet], remaining: state)
         await disableBiometryIfNeeded(walletsState: state)
     }
-
-    public func deleteAll(passcode: String? = nil) async {
-        let wallets = walletStore.wallets
-        let state = await walletStore.deleteAllWallets()
-        wallets.forEach(lighterCredentialsCleanup)
-        multichainBindingCleanup(wallets)
-        await walletAuthTokenProvider.wipe()
-        do {
-            try await mnemonicAccess.deleteAll(passcode: passcode)
-        } catch {
-            #if DEBUG
-                Log.e("🪵 mnemonic data is not deleted due to error: \(error)")
-            #endif
-        }
-        await disableBiometryIfNeeded(walletsState: state)
-    }
 }
 
 private extension WalletDeleteController {

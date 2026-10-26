@@ -2,7 +2,7 @@ import Foundation
 
 /// Ordered by who is waiting. Quiet is a budget handed to an owner, and each owner names the lowest
 /// priority it still lets through, so the gate is a comparison rather than a case-by-case rule.
-public enum BalanceRefreshPriority: Int, Comparable, Sendable {
+@frozen public enum BalanceRefreshPriority: Int, Comparable, Sendable {
     /// Streaming, the periodic tick, the wallets-list prefill. Nobody is watching an indicator.
     case background
     /// Settles a balance a screen is rendering as pending.
@@ -24,7 +24,7 @@ public enum BalanceRefreshPriority: Int, Comparable, Sendable {
     }
 }
 
-public enum BalanceRefreshResult: Equatable {
+@frozen public enum BalanceRefreshResult: Equatable {
     case delivered(WalletBalanceState)
     /// A reload ran and produced no new balance.
     case failed

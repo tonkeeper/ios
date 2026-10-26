@@ -61,6 +61,7 @@ extension DeeplinkOpen.LinkType {
         case .addWallet: self = .addWallet
         case .main: self = .main
         case .raffle: self = .raffle
+        case .perps, .history: self = .unknown
         }
     }
 }

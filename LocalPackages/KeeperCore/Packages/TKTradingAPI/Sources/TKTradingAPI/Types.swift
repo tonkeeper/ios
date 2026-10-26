@@ -75,6 +75,22 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/charts`.
     /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)`.
     func getAssetChartsV2(_ input: Operations.getAssetChartsV2.Input) async throws -> Operations.getAssetChartsV2.Output
+    /// Экспорт метаданных ассетов для других сервисов
+    ///
+    /// Редко меняющиеся данные ассетов (идентификация, decimals, картинка, тип, верификация, score, ссылки, reference_id, описания на всех языках) плюс медленные флаги is_swappable, is_perp_depositable и max_leverage. Возвращает только ассеты, чьи метаданные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Требует Bearer-токен внутреннего API. Рынки Lighter, которые Lighter ещё не листит, не отдаются; после листинга рынок приходит как изменённый. server_time удобно передавать как after_date следующего опроса (переведя в Unix-секунды, с небольшим запасом назад и дедупликацией по id — записи с одинаковой секундой могут прийти в разных страницах).
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/metadata`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)`.
+    func getInternalAssetsMetadata(_ input: Operations.getInternalAssetsMetadata.Input) async throws -> Operations.getInternalAssetsMetadata.Output
+    /// Экспорт рыночных данных ассетов для других сервисов
+    ///
+    /// Быстро меняющиеся данные за 24ч (объёмы, buy/sell, market cap и его изменение, total/circulating supply, open interest) без цены — цену сервисы берут из rate manager. Возвращает только ассеты, чьи рыночные данные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Рынки Lighter, которые Lighter ещё не листит, не отдаются. Требует Bearer-токен внутреннего API.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/market`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)`.
+    func getInternalAssetsMarket(_ input: Operations.getInternalAssetsMarket.Input) async throws -> Operations.getInternalAssetsMarket.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -215,6 +231,38 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Экспорт метаданных ассетов для других сервисов
+    ///
+    /// Редко меняющиеся данные ассетов (идентификация, decimals, картинка, тип, верификация, score, ссылки, reference_id, описания на всех языках) плюс медленные флаги is_swappable, is_perp_depositable и max_leverage. Возвращает только ассеты, чьи метаданные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Требует Bearer-токен внутреннего API. Рынки Lighter, которые Lighter ещё не листит, не отдаются; после листинга рынок приходит как изменённый. server_time удобно передавать как after_date следующего опроса (переведя в Unix-секунды, с небольшим запасом назад и дедупликацией по id — записи с одинаковой секундой могут прийти в разных страницах).
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/metadata`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)`.
+    public func getInternalAssetsMetadata(
+        query: Operations.getInternalAssetsMetadata.Input.Query = .init(),
+        headers: Operations.getInternalAssetsMetadata.Input.Headers = .init()
+    ) async throws -> Operations.getInternalAssetsMetadata.Output {
+        try await getInternalAssetsMetadata(Operations.getInternalAssetsMetadata.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Экспорт рыночных данных ассетов для других сервисов
+    ///
+    /// Быстро меняющиеся данные за 24ч (объёмы, buy/sell, market cap и его изменение, total/circulating supply, open interest) без цены — цену сервисы берут из rate manager. Возвращает только ассеты, чьи рыночные данные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Рынки Lighter, которые Lighter ещё не листит, не отдаются. Требует Bearer-токен внутреннего API.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/market`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)`.
+    public func getInternalAssetsMarket(
+        query: Operations.getInternalAssetsMarket.Input.Query = .init(),
+        headers: Operations.getInternalAssetsMarket.Input.Headers = .init()
+    ) async throws -> Operations.getInternalAssetsMarket.Output {
+        try await getInternalAssetsMarket(Operations.getInternalAssetsMarket.Input(
+            query: query,
+            headers: headers
+        ))
+    }
 }
 
 /// Server URLs defined in the OpenAPI document.
@@ -253,6 +301,10 @@ public enum Components {
             case commodities = "commodities"
             case stocks = "stocks"
             case etfs = "etfs"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// Тип разметки полки.
         ///
@@ -260,6 +312,10 @@ public enum Components {
         @frozen public enum ShelfType: String, Codable, Hashable, Sendable {
             case grid = "grid"
             case list = "list"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// Табы на экране Assets. Актуальные значения: all, tokens, perpetuals. all — все активы (perp-рынки только при show_perps=true); tokens — все активы кроме perp-рынков; perpetuals — только perp-рынки (lighter/...). stocks/etfs/commodities оставлены для обратной совместимости и работают как раньше; новые клиенты вместо них используют tab=all|tokens вместе с filter.
         ///
@@ -272,8 +328,13 @@ public enum Components {
             case etfs = "etfs"
             case commodities = "commodities"
             case perpetuals = "perpetuals"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
-        /// По чему сортировать каталог. По умолчанию market_cap. open_interest_usd доступен только при tab=perpetuals, иначе 400.
+        /// По чему сортировать каталог. По умолчанию market_cap. open_interest_usd доступен только при tab=perpetuals, иначе 400. При tab=all и filter=all выдача сначала группируется по классу актива — токены, акции, ETF, товары, затем perp-рынки — и уже внутри каждого блока сортируется по sort/order (и по совпадению с q при поиске).
+        ///
         ///
         /// - Remark: Generated from `#/components/schemas/AssetsSort`.
         @frozen public enum AssetsSort: String, Codable, Hashable, Sendable {
@@ -282,6 +343,10 @@ public enum Components {
             case price_24h = "price_24h"
             case volume = "volume"
             case open_interest_usd = "open_interest_usd"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// В каком порядке сортировать каталог.
         ///
@@ -289,6 +354,10 @@ public enum Components {
         @frozen public enum AssetsOrder: String, Codable, Hashable, Sendable {
             case desc = "desc"
             case asc = "asc"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// Фильтр по типу актива внутри таба. all — без фильтра (по умолчанию); tokens — только крипто-токены (type=crypto); stocks — токенизированные акции; etfs — токенизированные ETF; commodities — активы с type=commodities (perp-рынки на золото, нефть и т.п.) плюс pin-лист секции commodities (спотовые токены на золото, серебро, нефть). Тип perp-рынков берётся из tokenlist Lighter, так что фильтры работают и на tab=perpetuals.
         ///
@@ -300,6 +369,10 @@ public enum Components {
             case stocks = "stocks"
             case etfs = "etfs"
             case commodities = "commodities"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// Типы ссылок у ассетов.
         ///
@@ -315,6 +388,10 @@ public enum Components {
             case github = "github"
             case getgems = "getgems"
             case other = "other"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// - Remark: Generated from `#/components/schemas/ShelvesConfigResponse`.
         public struct ShelvesConfigResponse: Codable, Hashable, Sendable {
@@ -666,6 +743,10 @@ public enum Components {
                 case whitelist = "whitelist"
                 case none = "none"
                 case blacklist = "blacklist"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
             }
             /// Усовершенствованная версия is_scam
             ///
@@ -678,6 +759,11 @@ public enum Components {
             public var reference_id: Swift.String?
             /// - Remark: Generated from `#/components/schemas/AssetRef/perps`.
             public var perps: Components.Schemas.PerpMarket?
+            /// Perp-рынки на базовый актив этого spot-ассета — точка входа в Perps со страницы обычного актива. Поле есть только если хотя бы один рынок найден; отсутствие поля означает, что perp-рынка нет. У самих perp-рынков (asset_type=perpetuals) поле не приходит никогда. Связь строится на сервере, а не по тикеру на клиенте: рынок привязан, если его reference_id — этот же ассет (или та же нативная монета в другой сети: ETH в eth/base/arb/robinhood), другой контракт той же монеты по CoinMarketCap (мосты), а для stocks/etfs — токен того же типа под тикером рынка или его tokenized-вариантом (TSLA, TSLAx, TSLAon). Рынков может быть несколько; первым идёт рынок, для которого этот ассет — прямой reference_id, дальше — по объёму за 24ч. Открывать рынок по id (он же assetId для /details).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetRef/perp_markets`.
+            public var perp_markets: [Components.Schemas.PerpMarketLink]?
             /// Creates a new `AssetRef`.
             ///
             /// - Parameters:
@@ -692,6 +778,7 @@ public enum Components {
             ///   - verification: Усовершенствованная версия is_scam
             ///   - reference_id: Айди связанного spot-ассета, у которого заимствованы метаданные (например для perp-рынка lighter/... это ассет с тем же тикером). Отсутствует, если связи нет.
             ///   - perps:
+            ///   - perp_markets: Perp-рынки на базовый актив этого spot-ассета — точка входа в Perps со страницы обычного актива. Поле есть только если хотя бы один рынок найден; отсутствие поля означает, что perp-рынка нет. У самих perp-рынков (asset_type=perpetuals) поле не приходит никогда. Связь строится на сервере, а не по тикеру на клиенте: рынок привязан, если его reference_id — этот же ассет (или та же нативная монета в другой сети: ETH в eth/base/arb/robinhood), другой контракт той же монеты по CoinMarketCap (мосты), а для stocks/etfs — токен того же типа под тикером рынка или его tokenized-вариантом (TSLA, TSLAx, TSLAon). Рынков может быть несколько; первым идёт рынок, для которого этот ассет — прямой reference_id, дальше — по объёму за 24ч. Открывать рынок по id (он же assetId для /details).
             public init(
                 asset_type: Components.Schemas.AssetType,
                 id: Swift.String,
@@ -703,7 +790,8 @@ public enum Components {
                 is_scam: Swift.Bool,
                 verification: Components.Schemas.AssetRef.verificationPayload,
                 reference_id: Swift.String? = nil,
-                perps: Components.Schemas.PerpMarket? = nil
+                perps: Components.Schemas.PerpMarket? = nil,
+                perp_markets: [Components.Schemas.PerpMarketLink]? = nil
             ) {
                 self.asset_type = asset_type
                 self.id = id
@@ -716,6 +804,7 @@ public enum Components {
                 self.verification = verification
                 self.reference_id = reference_id
                 self.perps = perps
+                self.perp_markets = perp_markets
             }
             public enum CodingKeys: String, CodingKey {
                 case asset_type
@@ -729,6 +818,7 @@ public enum Components {
                 case verification
                 case reference_id
                 case perps
+                case perp_markets
             }
         }
         /// - Remark: Generated from `#/components/schemas/AssetRefSummary`.
@@ -772,6 +862,10 @@ public enum Components {
                 case whitelist = "whitelist"
                 case none = "none"
                 case blacklist = "blacklist"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
             }
             /// Усовершенствованная версия is_scam
             ///
@@ -839,6 +933,10 @@ public enum Components {
             case etfs = "etfs"
             case commodities = "commodities"
             case perpetuals = "perpetuals"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// Ссылка на ресурсы ассета.
         ///
@@ -1037,6 +1135,72 @@ public enum Components {
                 case data_freshness_sec
                 case info_source
                 case warnings
+            }
+        }
+        /// Ссылка spot-ассета на perp-рынок его базового актива.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PerpMarketLink`.
+        public struct PerpMarketLink: Codable, Hashable, Sendable {
+            /// Айди perp-рынка (lighter/<network>/market/<market_index>) — assetId для /details и каталога.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/id`.
+            public var id: Swift.String
+            /// Номер рынка на бирже (как market_index в PerpMarket / tk-perps).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/market_index`.
+            public var market_index: Swift.Int
+            /// Тикер рынка на бирже (BTC, TSLA, 1000PEPE).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/symbol`.
+            public var symbol: Swift.String
+            /// Класс рынка из tokenlist биржи.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/category`.
+            @frozen public enum categoryPayload: String, Codable, Hashable, Sendable {
+                case crypto = "crypto"
+                case stocks = "stocks"
+                case etfs = "etfs"
+                case commodities = "commodities"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// Класс рынка из tokenlist биржи.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/category`.
+            public var category: Components.Schemas.PerpMarketLink.categoryPayload
+            /// Максимальное плечо; отсутствует, если неизвестно.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarketLink/max_leverage`.
+            public var max_leverage: Swift.Int?
+            /// Creates a new `PerpMarketLink`.
+            ///
+            /// - Parameters:
+            ///   - id: Айди perp-рынка (lighter/<network>/market/<market_index>) — assetId для /details и каталога.
+            ///   - market_index: Номер рынка на бирже (как market_index в PerpMarket / tk-perps).
+            ///   - symbol: Тикер рынка на бирже (BTC, TSLA, 1000PEPE).
+            ///   - category: Класс рынка из tokenlist биржи.
+            ///   - max_leverage: Максимальное плечо; отсутствует, если неизвестно.
+            public init(
+                id: Swift.String,
+                market_index: Swift.Int,
+                symbol: Swift.String,
+                category: Components.Schemas.PerpMarketLink.categoryPayload,
+                max_leverage: Swift.Int? = nil
+            ) {
+                self.id = id
+                self.market_index = market_index
+                self.symbol = symbol
+                self.category = category
+                self.max_leverage = max_leverage
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case market_index
+                case symbol
+                case category
+                case max_leverage
             }
         }
         /// Perpetual market data for p/<protocol>/... assets (Lighter), present only for them. Mirrors the tk-perps /screens/markets Market object field for field, served from a 2-second snapshot of the exchange. Monetary/price/size fields are human-unit decimal strings in USD (not converted to the requested currency); the *_decimals fields tell the client how to scale them back into integer units when building/signing a tx.
@@ -1259,6 +1423,843 @@ public enum Components {
                 case price_change_24h
                 case high_24h
                 case low_24h
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/EarnVaultExport`.
+        public struct EarnVaultExport: Codable, Hashable, Sendable {
+            /// Универсальный айди share/receipt-токена волта (eth/mainnet/erc20/0x...) — идентификатор волта для клиентов.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/asset_id`.
+            public var asset_id: Swift.String
+            /// Имя сети в vaults.fyi (mainnet, base, arbitrum, bsc, polygon, avalanche, robinhood).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/network`.
+            public var network: Swift.String
+            /// vaultId в vaults.fyi; вместе с network адресует волт во встроенном UI и в API vaults.fyi.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/vault_id`.
+            public var vault_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/chain_id`.
+            public var chain_id: Swift.Int64
+            /// Адрес контракта волта (может отличаться от адреса share-токена).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/address`.
+            public var address: Swift.String
+            /// Название волта.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/name`.
+            public var name: Swift.String
+            /// Символ share-токена.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/symbol`.
+            public var symbol: Swift.String
+            /// Decimals share-токена.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/decimals`.
+            public var decimals: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/underlying`.
+            public var underlying: Components.Schemas.EarnVaultAsset
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/protocol`.
+            public var _protocol: Components.Schemas.EarnVaultProtocol
+            /// Куратор волта (Morpho/Euler); отсутствует, если нет.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/curator`.
+            public var curator: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/tags`.
+            public var tags: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/apy`.
+            public var apy: Components.Schemas.EarnVaultAPYs
+            /// TVL в USD, десятичная строка; отсутствует, если неизвестно.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/tvl_usd`.
+            public var tvl_usd: Swift.String?
+            /// Reputation score vaults.fyi, шкала 0–100; отсутствует, если vaults.fyi его не считает.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/score`.
+            public var score: Swift.Double?
+            /// Депозит/вывод доступны во встроенном интерфейсе vaults.fyi.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/is_transactional`.
+            public var is_transactional: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/is_app_featured`.
+            public var is_app_featured: Swift.Bool
+            /// У волта есть предупреждения или действующие флаги уровня warning/critical.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/has_warnings`.
+            public var has_warnings: Swift.Bool
+            /// Страница волта в app.vaults.fyi.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/lend_url`.
+            public var lend_url: Swift.String
+            /// Время данных по версии vaults.fyi (lastUpdateTimestamp).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultExport/data_updated_at`.
+            public var data_updated_at: Foundation.Date?
+            /// Creates a new `EarnVaultExport`.
+            ///
+            /// - Parameters:
+            ///   - asset_id: Универсальный айди share/receipt-токена волта (eth/mainnet/erc20/0x...) — идентификатор волта для клиентов.
+            ///   - network: Имя сети в vaults.fyi (mainnet, base, arbitrum, bsc, polygon, avalanche, robinhood).
+            ///   - vault_id: vaultId в vaults.fyi; вместе с network адресует волт во встроенном UI и в API vaults.fyi.
+            ///   - chain_id:
+            ///   - address: Адрес контракта волта (может отличаться от адреса share-токена).
+            ///   - name: Название волта.
+            ///   - symbol: Символ share-токена.
+            ///   - decimals: Decimals share-токена.
+            ///   - underlying:
+            ///   - _protocol:
+            ///   - curator: Куратор волта (Morpho/Euler); отсутствует, если нет.
+            ///   - tags:
+            ///   - apy:
+            ///   - tvl_usd: TVL в USD, десятичная строка; отсутствует, если неизвестно.
+            ///   - score: Reputation score vaults.fyi, шкала 0–100; отсутствует, если vaults.fyi его не считает.
+            ///   - is_transactional: Депозит/вывод доступны во встроенном интерфейсе vaults.fyi.
+            ///   - is_app_featured:
+            ///   - has_warnings: У волта есть предупреждения или действующие флаги уровня warning/critical.
+            ///   - lend_url: Страница волта в app.vaults.fyi.
+            ///   - data_updated_at: Время данных по версии vaults.fyi (lastUpdateTimestamp).
+            public init(
+                asset_id: Swift.String,
+                network: Swift.String,
+                vault_id: Swift.String,
+                chain_id: Swift.Int64,
+                address: Swift.String,
+                name: Swift.String,
+                symbol: Swift.String,
+                decimals: Swift.Int,
+                underlying: Components.Schemas.EarnVaultAsset,
+                _protocol: Components.Schemas.EarnVaultProtocol,
+                curator: Swift.String? = nil,
+                tags: [Swift.String],
+                apy: Components.Schemas.EarnVaultAPYs,
+                tvl_usd: Swift.String? = nil,
+                score: Swift.Double? = nil,
+                is_transactional: Swift.Bool,
+                is_app_featured: Swift.Bool,
+                has_warnings: Swift.Bool,
+                lend_url: Swift.String,
+                data_updated_at: Foundation.Date? = nil
+            ) {
+                self.asset_id = asset_id
+                self.network = network
+                self.vault_id = vault_id
+                self.chain_id = chain_id
+                self.address = address
+                self.name = name
+                self.symbol = symbol
+                self.decimals = decimals
+                self.underlying = underlying
+                self._protocol = _protocol
+                self.curator = curator
+                self.tags = tags
+                self.apy = apy
+                self.tvl_usd = tvl_usd
+                self.score = score
+                self.is_transactional = is_transactional
+                self.is_app_featured = is_app_featured
+                self.has_warnings = has_warnings
+                self.lend_url = lend_url
+                self.data_updated_at = data_updated_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case asset_id
+                case network
+                case vault_id
+                case chain_id
+                case address
+                case name
+                case symbol
+                case decimals
+                case underlying
+                case _protocol = "protocol"
+                case curator
+                case tags
+                case apy
+                case tvl_usd
+                case score
+                case is_transactional
+                case is_app_featured
+                case has_warnings
+                case lend_url
+                case data_updated_at
+            }
+        }
+        /// Базовый актив волта. name/symbol/decimals/image берутся из нашего каталога, если актив в нём есть, иначе — из vaults.fyi.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EarnVaultAsset`.
+        public struct EarnVaultAsset: Codable, Hashable, Sendable {
+            /// Универсальный айди (eth/mainnet/coin для нативной монеты).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/asset_id`.
+            public var asset_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/symbol`.
+            public var symbol: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/decimals`.
+            public var decimals: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/image`.
+            public var image: Swift.String
+            /// Цена по данным vaults.fyi, десятичная строка; отсутствует, если неизвестна.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAsset/price_usd`.
+            public var price_usd: Swift.String?
+            /// Creates a new `EarnVaultAsset`.
+            ///
+            /// - Parameters:
+            ///   - asset_id: Универсальный айди (eth/mainnet/coin для нативной монеты).
+            ///   - name:
+            ///   - symbol:
+            ///   - decimals:
+            ///   - image:
+            ///   - price_usd: Цена по данным vaults.fyi, десятичная строка; отсутствует, если неизвестна.
+            public init(
+                asset_id: Swift.String,
+                name: Swift.String,
+                symbol: Swift.String,
+                decimals: Swift.Int,
+                image: Swift.String,
+                price_usd: Swift.String? = nil
+            ) {
+                self.asset_id = asset_id
+                self.name = name
+                self.symbol = symbol
+                self.decimals = decimals
+                self.image = image
+                self.price_usd = price_usd
+            }
+            public enum CodingKeys: String, CodingKey {
+                case asset_id
+                case name
+                case symbol
+                case decimals
+                case image
+                case price_usd
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/EarnVaultProtocol`.
+        public struct EarnVaultProtocol: Codable, Hashable, Sendable {
+            /// protocolId в vaults.fyi (например morpho, aave-v3, ether.fi-eth).
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultProtocol/id`.
+            public var id: Swift.String
+            /// Отображаемое имя протокола.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnVaultProtocol/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultProtocol/logo`.
+            public var logo: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EarnVaultProtocol/url`.
+            public var url: Swift.String?
+            /// Creates a new `EarnVaultProtocol`.
+            ///
+            /// - Parameters:
+            ///   - id: protocolId в vaults.fyi (например morpho, aave-v3, ether.fi-eth).
+            ///   - name: Отображаемое имя протокола.
+            ///   - logo:
+            ///   - url:
+            public init(
+                id: Swift.String,
+                name: Swift.String,
+                logo: Swift.String,
+                url: Swift.String? = nil
+            ) {
+                self.id = id
+                self.name = name
+                self.logo = logo
+                self.url = url
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case name
+                case logo
+                case url
+            }
+        }
+        /// APY по окнам 1/7/30 дней, десятичные доли (0.0534 = 5,34%).
+        ///
+        /// - Remark: Generated from `#/components/schemas/EarnVaultAPYs`.
+        public struct EarnVaultAPYs: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAPYs/1day`.
+            public var _1day: Components.Schemas.EarnAPY
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAPYs/7day`.
+            public var _7day: Components.Schemas.EarnAPY
+            /// - Remark: Generated from `#/components/schemas/EarnVaultAPYs/30day`.
+            public var _30day: Components.Schemas.EarnAPY
+            /// Creates a new `EarnVaultAPYs`.
+            ///
+            /// - Parameters:
+            ///   - _1day:
+            ///   - _7day:
+            ///   - _30day:
+            public init(
+                _1day: Components.Schemas.EarnAPY,
+                _7day: Components.Schemas.EarnAPY,
+                _30day: Components.Schemas.EarnAPY
+            ) {
+                self._1day = _1day
+                self._7day = _7day
+                self._30day = _30day
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _1day = "1day"
+                case _7day = "7day"
+                case _30day = "30day"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/EarnAPY`.
+        public struct EarnAPY: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EarnAPY/base`.
+            public var base: Swift.Double
+            /// APY от наград протокола.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnAPY/reward`.
+            public var reward: Swift.Double
+            /// base + reward — значение для витрины и сортировки.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EarnAPY/total`.
+            public var total: Swift.Double
+            /// Creates a new `EarnAPY`.
+            ///
+            /// - Parameters:
+            ///   - base:
+            ///   - reward: APY от наград протокола.
+            ///   - total: base + reward — значение для витрины и сортировки.
+            public init(
+                base: Swift.Double,
+                reward: Swift.Double,
+                total: Swift.Double
+            ) {
+                self.base = base
+                self.reward = reward
+                self.total = total
+            }
+            public enum CodingKeys: String, CodingKey {
+                case base
+                case reward
+                case total
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetsMetadataExportResponse`.
+        public struct AssetsMetadataExportResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetsMetadataExportResponse/items`.
+            public var items: [Components.Schemas.AssetMetadataExport]
+            /// Курсор следующей страницы; null, если страница последняя.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetsMetadataExportResponse/next_cursor`.
+            public var next_cursor: Swift.String?
+            /// Время сервера на момент ответа — кандидат в after_date следующего опроса.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetsMetadataExportResponse/server_time`.
+            public var server_time: Foundation.Date
+            /// Creates a new `AssetsMetadataExportResponse`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - next_cursor: Курсор следующей страницы; null, если страница последняя.
+            ///   - server_time: Время сервера на момент ответа — кандидат в after_date следующего опроса.
+            public init(
+                items: [Components.Schemas.AssetMetadataExport],
+                next_cursor: Swift.String? = nil,
+                server_time: Foundation.Date
+            ) {
+                self.items = items
+                self.next_cursor = next_cursor
+                self.server_time = server_time
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case next_cursor
+                case server_time
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetMetadataExport`.
+        public struct AssetMetadataExport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/symbol`.
+            public var symbol: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/decimals`.
+            public var decimals: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/image_url`.
+            public var image_url: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/asset_type`.
+            public var asset_type: Components.Schemas.AssetType
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/verification`.
+            @frozen public enum verificationPayload: String, Codable, Hashable, Sendable {
+                case trusted = "trusted"
+                case whitelist = "whitelist"
+                case none = "none"
+                case blacklist = "blacklist"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/verification`.
+            public var verification: Components.Schemas.AssetMetadataExport.verificationPayload
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/trust_score`.
+            public var trust_score: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/links`.
+            public var links: [Components.Schemas.Link]
+            /// Айди связанного spot-ассета (для perp-рынков); отсутствует, если связи нет.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/reference_id`.
+            public var reference_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/is_swappable`.
+            public var is_swappable: Swift.Bool
+            /// Агрегаторы swap-бэкенда (например omniston), через которые ассет можно обменять. Пустой список, если is_swappable=false.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/swap_providers`.
+            public var swap_providers: [Swift.String]
+            /// Ассет можно использовать для депозита в перпы через relay.link.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/is_perp_depositable`.
+            public var is_perp_depositable: Swift.Bool
+            /// LP-токен (доля пула DEX, Curve или Pendle). Такие токены не обмениваются через swap, is_swappable у них всегда false.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/is_lp`.
+            public var is_lp: Swift.Bool
+            /// Только для perp-рынков.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/max_leverage`.
+            public var max_leverage: Swift.Int?
+            /// Описание по языкам, например {"en": "...", "ru": "..."}.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/descriptions`.
+            public struct descriptionsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `descriptionsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Описание по языкам, например {"en": "...", "ru": "..."}.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/descriptions`.
+            public var descriptions: Components.Schemas.AssetMetadataExport.descriptionsPayload
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/defi`.
+            public var defi: Components.Schemas.DefiMetadata?
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/earn`.
+            public var earn: Components.Schemas.EarnVaultExport?
+            /// Когда в последний раз менялось любое из этих полей.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMetadataExport/updated_at`.
+            public var updated_at: Foundation.Date
+            /// Creates a new `AssetMetadataExport`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - symbol:
+            ///   - name:
+            ///   - decimals:
+            ///   - image_url:
+            ///   - asset_type:
+            ///   - verification:
+            ///   - trust_score:
+            ///   - links:
+            ///   - reference_id: Айди связанного spot-ассета (для perp-рынков); отсутствует, если связи нет.
+            ///   - is_swappable:
+            ///   - swap_providers: Агрегаторы swap-бэкенда (например omniston), через которые ассет можно обменять. Пустой список, если is_swappable=false.
+            ///   - is_perp_depositable: Ассет можно использовать для депозита в перпы через relay.link.
+            ///   - is_lp: LP-токен (доля пула DEX, Curve или Pendle). Такие токены не обмениваются через swap, is_swappable у них всегда false.
+            ///   - max_leverage: Только для perp-рынков.
+            ///   - descriptions: Описание по языкам, например {"en": "...", "ru": "..."}.
+            ///   - defi:
+            ///   - earn:
+            ///   - updated_at: Когда в последний раз менялось любое из этих полей.
+            public init(
+                id: Swift.String,
+                symbol: Swift.String,
+                name: Swift.String,
+                decimals: Swift.Int,
+                image_url: Swift.String,
+                asset_type: Components.Schemas.AssetType,
+                verification: Components.Schemas.AssetMetadataExport.verificationPayload,
+                trust_score: Swift.Int,
+                links: [Components.Schemas.Link],
+                reference_id: Swift.String? = nil,
+                is_swappable: Swift.Bool,
+                swap_providers: [Swift.String],
+                is_perp_depositable: Swift.Bool,
+                is_lp: Swift.Bool,
+                max_leverage: Swift.Int? = nil,
+                descriptions: Components.Schemas.AssetMetadataExport.descriptionsPayload,
+                defi: Components.Schemas.DefiMetadata? = nil,
+                earn: Components.Schemas.EarnVaultExport? = nil,
+                updated_at: Foundation.Date
+            ) {
+                self.id = id
+                self.symbol = symbol
+                self.name = name
+                self.decimals = decimals
+                self.image_url = image_url
+                self.asset_type = asset_type
+                self.verification = verification
+                self.trust_score = trust_score
+                self.links = links
+                self.reference_id = reference_id
+                self.is_swappable = is_swappable
+                self.swap_providers = swap_providers
+                self.is_perp_depositable = is_perp_depositable
+                self.is_lp = is_lp
+                self.max_leverage = max_leverage
+                self.descriptions = descriptions
+                self.defi = defi
+                self.earn = earn
+                self.updated_at = updated_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case symbol
+                case name
+                case decimals
+                case image_url
+                case asset_type
+                case verification
+                case trust_score
+                case links
+                case reference_id
+                case is_swappable
+                case swap_providers
+                case is_perp_depositable
+                case is_lp
+                case max_leverage
+                case descriptions
+                case defi
+                case earn
+                case updated_at
+            }
+        }
+        /// DeFi-метаданные для токенов, выпущенных протоколами (aToken, vault shares, Pendle PT/LP, LP DEX). Присутствует только у таких токенов. Иконка токена — image_url родительского ассета (underlying + бейдж протокола).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DefiMetadata`.
+        public struct DefiMetadata: Codable, Hashable, Sendable {
+            /// Слаг протокола (aave-v3, morpho, pendle, lido, ...).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/protocol`.
+            public var _protocol: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/kind`.
+            @frozen public enum kindPayload: String, Codable, Hashable, Sendable {
+                case atoken = "atoken"
+                case stata = "stata"
+                case comet = "comet"
+                case vtoken = "vtoken"
+                case jtoken = "jtoken"
+                case erc4626 = "erc4626"
+                case gm = "gm"
+                case glv = "glv"
+                case pt = "pt"
+                case yt = "yt"
+                case lp = "lp"
+                case rate = "rate"
+                case plain = "plain"
+                case curve_lp = "curve_lp"
+                case pair_lp = "pair_lp"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/kind`.
+            public var kind: Components.Schemas.DefiMetadata.kindPayload
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                case active = "active"
+                case unlisted = "unlisted"
+                case frozen = "frozen"
+                case deprecated = "deprecated"
+                case expired = "expired"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/status`.
+            public var status: Components.Schemas.DefiMetadata.statusPayload
+            /// Айди ассета, который токен оборачивает (USDC для aEthUSDC).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/underlying_asset_id`.
+            public var underlying_asset_id: Swift.String?
+            /// Айди ассета, в котором считается номинал (stETH для PT-wstETH).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/accounting_asset_id`.
+            public var accounting_asset_id: Swift.String?
+            /// Айди рынка/LP (Pendle PT → его market), если отличается.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/market_asset_id`.
+            public var market_asset_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/componentsPayload`.
+            public struct componentsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DefiMetadata/componentsPayload/asset_id`.
+                public var asset_id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/DefiMetadata/componentsPayload/weight`.
+                public var weight: Swift.Double?
+                /// Creates a new `componentsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - asset_id:
+                ///   - weight:
+                public init(
+                    asset_id: Swift.String,
+                    weight: Swift.Double? = nil
+                ) {
+                    self.asset_id = asset_id
+                    self.weight = weight
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case asset_id
+                    case weight
+                }
+            }
+            /// Состав LP-токена.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/components`.
+            public typealias componentsPayload = [Components.Schemas.DefiMetadata.componentsPayloadPayload]
+            /// Состав LP-токена.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/components`.
+            public var components: Components.Schemas.DefiMetadata.componentsPayload?
+            /// Срок погашения (Pendle).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/expires_at`.
+            public var expires_at: Foundation.Date?
+            /// Токен в кураторском списке самого протокола.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/listed`.
+            public var listed: Swift.Bool
+            /// Баланс меняется без трансферов (aToken, stETH).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/rebasing`.
+            public var rebasing: Swift.Bool
+            /// TVL по данным протокола, decimal string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/tvl_usd`.
+            public var tvl_usd: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/display_name`.
+            public var display_name: Swift.String?
+            /// Бейдж протокола для наложения на иконку underlying.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/protocol_icon_url`.
+            public var protocol_icon_url: Swift.String?
+            /// Контракт (pool/comptroller/factory), подтвердивший происхождение токена.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/registry`.
+            public var registry: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/source`.
+            @frozen public enum sourcePayload: String, Codable, Hashable, Sendable {
+                case api = "api"
+                case registry = "registry"
+                case config = "config"
+                case hardcode = "hardcode"
+                case mirroring = "mirroring"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DefiMetadata/source`.
+            public var source: Components.Schemas.DefiMetadata.sourcePayload
+            /// Creates a new `DefiMetadata`.
+            ///
+            /// - Parameters:
+            ///   - _protocol: Слаг протокола (aave-v3, morpho, pendle, lido, ...).
+            ///   - kind:
+            ///   - status:
+            ///   - underlying_asset_id: Айди ассета, который токен оборачивает (USDC для aEthUSDC).
+            ///   - accounting_asset_id: Айди ассета, в котором считается номинал (stETH для PT-wstETH).
+            ///   - market_asset_id: Айди рынка/LP (Pendle PT → его market), если отличается.
+            ///   - components: Состав LP-токена.
+            ///   - expires_at: Срок погашения (Pendle).
+            ///   - listed: Токен в кураторском списке самого протокола.
+            ///   - rebasing: Баланс меняется без трансферов (aToken, stETH).
+            ///   - tvl_usd: TVL по данным протокола, decimal string.
+            ///   - display_name:
+            ///   - protocol_icon_url: Бейдж протокола для наложения на иконку underlying.
+            ///   - registry: Контракт (pool/comptroller/factory), подтвердивший происхождение токена.
+            ///   - source:
+            public init(
+                _protocol: Swift.String,
+                kind: Components.Schemas.DefiMetadata.kindPayload,
+                status: Components.Schemas.DefiMetadata.statusPayload,
+                underlying_asset_id: Swift.String? = nil,
+                accounting_asset_id: Swift.String? = nil,
+                market_asset_id: Swift.String? = nil,
+                components: Components.Schemas.DefiMetadata.componentsPayload? = nil,
+                expires_at: Foundation.Date? = nil,
+                listed: Swift.Bool,
+                rebasing: Swift.Bool,
+                tvl_usd: Swift.String? = nil,
+                display_name: Swift.String? = nil,
+                protocol_icon_url: Swift.String? = nil,
+                registry: Swift.String? = nil,
+                source: Components.Schemas.DefiMetadata.sourcePayload
+            ) {
+                self._protocol = _protocol
+                self.kind = kind
+                self.status = status
+                self.underlying_asset_id = underlying_asset_id
+                self.accounting_asset_id = accounting_asset_id
+                self.market_asset_id = market_asset_id
+                self.components = components
+                self.expires_at = expires_at
+                self.listed = listed
+                self.rebasing = rebasing
+                self.tvl_usd = tvl_usd
+                self.display_name = display_name
+                self.protocol_icon_url = protocol_icon_url
+                self.registry = registry
+                self.source = source
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _protocol = "protocol"
+                case kind
+                case status
+                case underlying_asset_id
+                case accounting_asset_id
+                case market_asset_id
+                case components
+                case expires_at
+                case listed
+                case rebasing
+                case tvl_usd
+                case display_name
+                case protocol_icon_url
+                case registry
+                case source
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetsMarketExportResponse`.
+        public struct AssetsMarketExportResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetsMarketExportResponse/items`.
+            public var items: [Components.Schemas.AssetMarketExport]
+            /// - Remark: Generated from `#/components/schemas/AssetsMarketExportResponse/next_cursor`.
+            public var next_cursor: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetsMarketExportResponse/server_time`.
+            public var server_time: Foundation.Date
+            /// Creates a new `AssetsMarketExportResponse`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - next_cursor:
+            ///   - server_time:
+            public init(
+                items: [Components.Schemas.AssetMarketExport],
+                next_cursor: Swift.String? = nil,
+                server_time: Foundation.Date
+            ) {
+                self.items = items
+                self.next_cursor = next_cursor
+                self.server_time = server_time
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case next_cursor
+                case server_time
+            }
+        }
+        /// Десятичные строки: денежные суммы в USD, supply — в минимальных единицах; поле отсутствует, если значение неизвестно.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetMarketExport`.
+        public struct AssetMarketExport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/volume_24h`.
+            public var volume_24h: Swift.String?
+            /// Проценты.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/volume_change_24h`.
+            public var volume_change_24h: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/buy_24h`.
+            public var buy_24h: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/sell_24h`.
+            public var sell_24h: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/market_cap`.
+            public var market_cap: Swift.String?
+            /// Проценты.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/market_cap_change_24h`.
+            public var market_cap_change_24h: Swift.String?
+            /// В минимальных единицах (умножено на 10^decimals); отсутствует, если неизвестно.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/total_supply`.
+            public var total_supply: Swift.String?
+            /// В минимальных единицах (умножено на 10^decimals); отсутствует, если неизвестно.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/circulating_supply`.
+            public var circulating_supply: Swift.String?
+            /// Только для perp-рынков, как отдаёт биржа.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/open_interest_usd`.
+            public var open_interest_usd: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetMarketExport/updated_at`.
+            public var updated_at: Foundation.Date
+            /// Creates a new `AssetMarketExport`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - volume_24h:
+            ///   - volume_change_24h: Проценты.
+            ///   - buy_24h:
+            ///   - sell_24h:
+            ///   - market_cap:
+            ///   - market_cap_change_24h: Проценты.
+            ///   - total_supply: В минимальных единицах (умножено на 10^decimals); отсутствует, если неизвестно.
+            ///   - circulating_supply: В минимальных единицах (умножено на 10^decimals); отсутствует, если неизвестно.
+            ///   - open_interest_usd: Только для perp-рынков, как отдаёт биржа.
+            ///   - updated_at:
+            public init(
+                id: Swift.String,
+                volume_24h: Swift.String? = nil,
+                volume_change_24h: Swift.String? = nil,
+                buy_24h: Swift.String? = nil,
+                sell_24h: Swift.String? = nil,
+                market_cap: Swift.String? = nil,
+                market_cap_change_24h: Swift.String? = nil,
+                total_supply: Swift.String? = nil,
+                circulating_supply: Swift.String? = nil,
+                open_interest_usd: Swift.String? = nil,
+                updated_at: Foundation.Date
+            ) {
+                self.id = id
+                self.volume_24h = volume_24h
+                self.volume_change_24h = volume_change_24h
+                self.buy_24h = buy_24h
+                self.sell_24h = sell_24h
+                self.market_cap = market_cap
+                self.market_cap_change_24h = market_cap_change_24h
+                self.total_supply = total_supply
+                self.circulating_supply = circulating_supply
+                self.open_interest_usd = open_interest_usd
+                self.updated_at = updated_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case volume_24h
+                case volume_change_24h
+                case buy_24h
+                case sell_24h
+                case market_cap
+                case market_cap_change_24h
+                case total_supply
+                case circulating_supply
+                case open_interest_usd
+                case updated_at
             }
         }
         /// - Remark: Generated from `#/components/schemas/AssetInfoSource`.
@@ -1503,6 +2504,10 @@ public enum Components {
             case offramp = "offramp"
             case swap = "swap"
             case p2p = "p2p"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// - Remark: Generated from `#/components/schemas/AssetCapabilityMerchants`.
         public struct AssetCapabilityMerchants: Codable, Hashable, Sendable {
@@ -1527,6 +2532,10 @@ public enum Components {
             case avanchange = "avanchange"
             case changelly = "changelly"
             case wallet = "wallet"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
         }
         /// - Remark: Generated from `#/components/schemas/AssetCapabilityAggregators`.
         public struct AssetCapabilityAggregators: Codable, Hashable, Sendable {
@@ -1630,6 +2639,10 @@ public enum Components {
                 case PARTIAL_DATA = "PARTIAL_DATA"
                 case DEPENDENCY_FAILURE = "DEPENDENCY_FAILURE"
                 case FILTER_NOT_SUPPORTED = "FILTER_NOT_SUPPORTED"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
             }
             /// Код предупреждения.
             ///
@@ -1718,6 +2731,23 @@ public enum Components {
     }
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
     public enum Parameters {
+        /// Вернуть только записи, изменённые строго после этого момента (Unix-время в секундах, UTC). По умолчанию — все.
+        ///
+        /// - Remark: Generated from `#/components/parameters/ExportAfterDate`.
+        public typealias ExportAfterDate = Swift.Int64
+        /// next_cursor из предыдущего ответа; непрозрачная строка.
+        ///
+        /// - Remark: Generated from `#/components/parameters/ExportCursor`.
+        public typealias ExportCursor = Swift.String
+        /// Только волты Keeper Earn (vaults.fyi): записи с блоком earn. Share-токены волтов хранятся как обычные ассеты каталога с DeFi-строкой; волты, которых каталог ещё не знал, тир earn_vaults добавляет сам. Тир обновляет earn раз в 6 часов (по умолчанию), и каждое обновление сдвигает updated_at записи, так что инкрементальный опрос по after_date видит изменения APY/TVL. Пороги витрины (TVL, score, APY, лимит) потребитель применяет сам.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/parameters/ExportEarnOnly`.
+        public typealias ExportEarnOnly = Swift.Bool
+        /// Размер страницы.
+        ///
+        /// - Remark: Generated from `#/components/parameters/ExportLimit`.
+        public typealias ExportLimit = Swift.Int
         /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
         ///
         ///
@@ -2684,16 +3714,17 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/tab`.
                 public var tab: Components.Schemas.AssetsTab?
-                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Результаты упорядочены по sort/order (по умолчанию market_cap desc), совпадения с запросом разрешают только ничьи. Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/q`.
                 public var q: Swift.String?
-                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
+                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. Рынки, которые Lighter ещё не листит, каталог не отдаёт (кроме запроса по ids). На tab=perpetuals флаг ничего не меняет. Игнорируется при выбранной сети (chain).
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/show_perps`.
                 public var show_perps: Swift.Bool?
-                /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн. При выбранной сети perp-рынки (lighter/...) не показываются никогда: ни по show_perps, ни на tab=perpetuals (он вернёт пустой список).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/chain`.
                 public var chain: Swift.String?
@@ -2734,9 +3765,9 @@ public enum Operations {
                 ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
                 ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
                 ///   - tab: Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
-                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
-                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
-                ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Результаты упорядочены по sort/order (по умолчанию market_cap desc), совпадения с запросом разрешают только ничьи. Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. Рынки, которые Lighter ещё не листит, каталог не отдаёт (кроме запроса по ids). На tab=perpetuals флаг ничего не меняет. Игнорируется при выбранной сети (chain).
+                ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн. При выбранной сети perp-рынки (lighter/...) не показываются никогда: ни по show_perps, ни на tab=perpetuals (он вернёт пустой список).
                 ///   - sort: Сортировка. По умолчанию volume_24h.
                 ///   - order: Порядок сортировки. По умолчанию desc.
                 ///   - filter: Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
@@ -3068,16 +4099,17 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/tab`.
                 public var tab: Components.Schemas.AssetsTab?
-                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Результаты упорядочены по sort/order (по умолчанию market_cap desc), совпадения с запросом разрешают только ничьи. Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
                 ///
                 /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/q`.
                 public var q: Swift.String?
-                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
+                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. Рынки, которые Lighter ещё не листит, каталог не отдаёт (кроме запроса по ids). На tab=perpetuals флаг ничего не меняет. Игнорируется при выбранной сети (chain).
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/show_perps`.
                 public var show_perps: Swift.Bool?
-                /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн. При выбранной сети perp-рынки (lighter/...) не показываются никогда: ни по show_perps, ни на tab=perpetuals (он вернёт пустой список).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/chain`.
                 public var chain: Swift.String?
@@ -3122,9 +4154,9 @@ public enum Operations {
                 ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
                 ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
                 ///   - tab: Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
-                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
-                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
-                ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Результаты упорядочены по sort/order (по умолчанию market_cap desc), совпадения с запросом разрешают только ничьи. Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. Рынки, которые Lighter ещё не листит, каталог не отдаёт (кроме запроса по ids). На tab=perpetuals флаг ничего не меняет. Игнорируется при выбранной сети (chain).
+                ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн. При выбранной сети perp-рынки (lighter/...) не показываются никогда: ни по show_perps, ни на tab=perpetuals (он вернёт пустой список).
                 ///   - sort: Сортировка. По умолчанию volume_24h.
                 ///   - order: Порядок сортировки. По умолчанию desc.
                 ///   - filter: Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
@@ -4699,6 +5731,450 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Экспорт метаданных ассетов для других сервисов
+    ///
+    /// Редко меняющиеся данные ассетов (идентификация, decimals, картинка, тип, верификация, score, ссылки, reference_id, описания на всех языках) плюс медленные флаги is_swappable, is_perp_depositable и max_leverage. Возвращает только ассеты, чьи метаданные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Требует Bearer-токен внутреннего API. Рынки Lighter, которые Lighter ещё не листит, не отдаются; после листинга рынок приходит как изменённый. server_time удобно передавать как after_date следующего опроса (переведя в Unix-секунды, с небольшим запасом назад и дедупликацией по id — записи с одинаковой секундой могут прийти в разных страницах).
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/metadata`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)`.
+    public enum getInternalAssetsMetadata {
+        public static let id: Swift.String = "getInternalAssetsMetadata"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Вернуть только записи, изменённые строго после этого момента (Unix-время в секундах, UTC). По умолчанию — все.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/query/after_date`.
+                public var after_date: Components.Parameters.ExportAfterDate?
+                /// next_cursor из предыдущего ответа; непрозрачная строка.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/query/cursor`.
+                public var cursor: Components.Parameters.ExportCursor?
+                /// Размер страницы.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/query/limit`.
+                public var limit: Components.Parameters.ExportLimit?
+                /// Только волты Keeper Earn (vaults.fyi): записи с блоком earn. Share-токены волтов хранятся как обычные ассеты каталога с DeFi-строкой; волты, которых каталог ещё не знал, тир earn_vaults добавляет сам. Тир обновляет earn раз в 6 часов (по умолчанию), и каждое обновление сдвигает updated_at записи, так что инкрементальный опрос по after_date видит изменения APY/TVL. Пороги витрины (TVL, score, APY, лимит) потребитель применяет сам.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/query/earn_only`.
+                public var earn_only: Components.Parameters.ExportEarnOnly?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - after_date: Вернуть только записи, изменённые строго после этого момента (Unix-время в секундах, UTC). По умолчанию — все.
+                ///   - cursor: next_cursor из предыдущего ответа; непрозрачная строка.
+                ///   - limit: Размер страницы.
+                ///   - earn_only: Только волты Keeper Earn (vaults.fyi): записи с блоком earn. Share-токены волтов хранятся как обычные ассеты каталога с DeFi-строкой; волты, которых каталог ещё не знал, тир earn_vaults добавляет сам. Тир обновляет earn раз в 6 часов (по умолчанию), и каждое обновление сдвигает updated_at записи, так что инкрементальный опрос по after_date видит изменения APY/TVL. Пороги витрины (TVL, score, APY, лимит) потребитель применяет сам.
+                public init(
+                    after_date: Components.Parameters.ExportAfterDate? = nil,
+                    cursor: Components.Parameters.ExportCursor? = nil,
+                    limit: Components.Parameters.ExportLimit? = nil,
+                    earn_only: Components.Parameters.ExportEarnOnly? = nil
+                ) {
+                    self.after_date = after_date
+                    self.cursor = cursor
+                    self.limit = limit
+                    self.earn_only = earn_only
+                }
+            }
+            public var query: Operations.getInternalAssetsMetadata.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getInternalAssetsMetadata.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getInternalAssetsMetadata.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getInternalAssetsMetadata.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getInternalAssetsMetadata.Input.Query = .init(),
+                headers: Operations.getInternalAssetsMetadata.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/internal/assets/metadata/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.AssetsMetadataExportResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.AssetsMetadataExportResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getInternalAssetsMetadata.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getInternalAssetsMetadata.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getInternalAssetsMetadata.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getInternalAssetsMetadata.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/metadata/get(getInternalAssetsMetadata)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Экспорт рыночных данных ассетов для других сервисов
+    ///
+    /// Быстро меняющиеся данные за 24ч (объёмы, buy/sell, market cap и его изменение, total/circulating supply, open interest) без цены — цену сервисы берут из rate manager. Возвращает только ассеты, чьи рыночные данные изменились после after_date, в порядке (updated_at, id); листать через next_cursor. Рынки Lighter, которые Lighter ещё не листит, не отдаются. Требует Bearer-токен внутреннего API.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v1/internal/assets/market`.
+    /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)`.
+    public enum getInternalAssetsMarket {
+        public static let id: Swift.String = "getInternalAssetsMarket"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Вернуть только записи, изменённые строго после этого момента (Unix-время в секундах, UTC). По умолчанию — все.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/query/after_date`.
+                public var after_date: Components.Parameters.ExportAfterDate?
+                /// next_cursor из предыдущего ответа; непрозрачная строка.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/query/cursor`.
+                public var cursor: Components.Parameters.ExportCursor?
+                /// Размер страницы.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/query/limit`.
+                public var limit: Components.Parameters.ExportLimit?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - after_date: Вернуть только записи, изменённые строго после этого момента (Unix-время в секундах, UTC). По умолчанию — все.
+                ///   - cursor: next_cursor из предыдущего ответа; непрозрачная строка.
+                ///   - limit: Размер страницы.
+                public init(
+                    after_date: Components.Parameters.ExportAfterDate? = nil,
+                    cursor: Components.Parameters.ExportCursor? = nil,
+                    limit: Components.Parameters.ExportLimit? = nil
+                ) {
+                    self.after_date = after_date
+                    self.cursor = cursor
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.getInternalAssetsMarket.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getInternalAssetsMarket.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getInternalAssetsMarket.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getInternalAssetsMarket.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getInternalAssetsMarket.Input.Query = .init(),
+                headers: Operations.getInternalAssetsMarket.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/internal/assets/market/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.AssetsMarketExportResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.AssetsMarketExportResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getInternalAssetsMarket.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getInternalAssetsMarket.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getInternalAssetsMarket.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getInternalAssetsMarket.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/internal/assets/market/get(getInternalAssetsMarket)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)

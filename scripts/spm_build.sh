@@ -69,10 +69,15 @@ build_one() {
 		pkg_dir="LocalPackages/$pkg"
 	elif [ -f "LocalPackages/AppModules/$pkg/Package.swift" ]; then
 		pkg_dir="LocalPackages/AppModules/$pkg"
+	elif [ "$pkg" = KeeperResources ] && [ -f ../shared/resources/Package.swift ]; then
+		pkg_dir="../shared/resources"
+	elif [ "$pkg" = KeeperResources ] && [ -f resources/Package.swift ]; then
+		pkg_dir="resources"
 	else
-		echo "error: package '$pkg' not found under LocalPackages/" >&2
+		echo "error: package '$pkg' not found under LocalPackages/ (or KeeperResources in shared/resources/)" >&2
 		return 1
 	fi
+	pkg_dir=$(cd "$pkg_dir" && pwd)
 
 	# In a fresh worktree, clone the main tree's already-resolved dependency store
 	# into this package's scratch dir instead of re-cloning and re-extracting it.
@@ -81,7 +86,7 @@ build_one() {
 	# Provide the pinned lockfile inside the package dir for the duration of the
 	# build, then remove it. Copy (not symlink) so a rewrite can never corrupt
 	# the shared app lockfile. LocalPackages/**/Package.resolved is gitignored.
-	lock_copy="$REPO_ROOT/$pkg_dir/Package.resolved"
+	lock_copy="$pkg_dir/Package.resolved"
 	cp "$APP_LOCKFILE" "$lock_copy"
 	trap 'rm -f "$lock_copy"' EXIT INT TERM
 

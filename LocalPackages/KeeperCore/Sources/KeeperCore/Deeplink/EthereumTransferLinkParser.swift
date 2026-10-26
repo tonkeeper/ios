@@ -23,6 +23,63 @@ struct EthereumTransferLinkParser {
     init() {}
 
     func parse(string: String) -> Deeplink.EvmTransferData? {
+        guard let request = request(from: string),
+              let chain = chain(from: request.rawChainId)
+        else {
+            return nil
+        }
+
+        switch request.function?.lowercased() {
+        case nil, "":
+            guard let amount = amount(request.parameters[Parameter.value]) else { return nil }
+            return Deeplink.EvmTransferData(
+                recipient: request.target,
+                asset: .native,
+                chain: chain,
+                amount: amount
+            )
+        case Function.transfer:
+            guard let recipient = hexAddress(request.parameters[Parameter.address]),
+                  let amount = amount(request.parameters[Parameter.uint256])
+            else {
+                return nil
+            }
+            return Deeplink.EvmTransferData(
+                recipient: recipient,
+                asset: .erc20(contract: request.target),
+                chain: chain,
+                amount: amount
+            )
+        default:
+            return nil
+        }
+    }
+
+    func recipient(string: String) -> String? {
+        guard let request = request(from: string) else {
+            return nil
+        }
+
+        switch request.function?.lowercased() {
+        case nil, "":
+            return request.target
+        case Function.transfer:
+            return hexAddress(request.parameters[Parameter.address])
+        default:
+            return nil
+        }
+    }
+}
+
+private extension EthereumTransferLinkParser {
+    struct Request {
+        let target: String
+        let rawChainId: String?
+        let function: String?
+        let parameters: [String: String]
+    }
+
+    func request(from string: String) -> Request? {
         guard let payload = payload(from: string.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             return nil
         }
@@ -31,42 +88,18 @@ struct EthereumTransferLinkParser {
         let (targetAndChain, function) = split(head, separator: "/")
         let (rawTarget, rawChainId) = split(targetAndChain, separator: "@")
 
-        guard let target = hexAddress(rawTarget),
-              let chain = chain(from: rawChainId)
-        else {
+        guard let target = hexAddress(rawTarget) else {
             return nil
         }
 
-        let parameters = parameters(from: query)
-
-        switch function?.lowercased() {
-        case nil, "":
-            guard let amount = amount(parameters[Parameter.value]) else { return nil }
-            return Deeplink.EvmTransferData(
-                recipient: target,
-                asset: .native,
-                chain: chain,
-                amount: amount
-            )
-        case Function.transfer:
-            guard let recipient = hexAddress(parameters[Parameter.address]),
-                  let amount = amount(parameters[Parameter.uint256])
-            else {
-                return nil
-            }
-            return Deeplink.EvmTransferData(
-                recipient: recipient,
-                asset: .erc20(contract: target),
-                chain: chain,
-                amount: amount
-            )
-        default:
-            return nil
-        }
+        return Request(
+            target: target,
+            rawChainId: rawChainId,
+            function: function,
+            parameters: parameters(from: query)
+        )
     }
-}
 
-private extension EthereumTransferLinkParser {
     func payload(from string: String) -> String? {
         let lowercased = string.lowercased()
         guard let scheme = Scheme.all.first(where: { lowercased.hasPrefix($0) }) else {
@@ -90,11 +123,7 @@ private extension EthereumTransferLinkParser {
     }
 
     func hexAddress(_ string: String?) -> String? {
-        guard let string,
-              string.count == 42,
-              string.lowercased().hasPrefix("0x"),
-              string.dropFirst(2).allSatisfy(\.isHexDigit)
-        else {
+        guard let string, string.isEVMAddress else {
             return nil
         }
         return string

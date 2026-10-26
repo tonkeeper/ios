@@ -8,7 +8,7 @@ typealias DepositAddFundsOption = AddFundsOption
 extension RampSource {
     var depositOpen: DepositOpen.From {
         switch self {
-        case .walletScreen, .historyScreen, .browser, .collectibles: .walletScreen
+        case .walletScreen, .historyScreen, .browser, .collectibles, .perps, .walletconnect, .tonconnect, .staking, .migration, .other: .walletScreen
         case .jettonScreen: .jettonScreen
         case .deepLink: .deepLink
         case .qrCode: .qrCode
@@ -17,16 +17,17 @@ extension RampSource {
 
     var depositClickReceiveTokens: DepositClickReceiveTokens.From {
         switch self {
-        case .walletScreen, .historyScreen, .browser, .collectibles: .walletScreen
+        case .walletScreen, .historyScreen, .browser, .collectibles, .perps, .walletconnect, .tonconnect, .staking, .migration, .other: .walletScreen
         case .jettonScreen: .jettonScreen
         case .deepLink: .deepLink
         case .qrCode: .qrCode
         }
     }
 
-    func makeDepositViewReceiveTokens(token: Token) -> DepositViewReceiveTokens {
+    func makeDepositViewReceiveTokens(token: Token, walletMode: WalletMode) -> DepositViewReceiveTokens {
         DepositViewReceiveTokens(
             from: self,
+            walletMode: walletMode,
             addFundsOption: .receiveTokens,
             network: token.depositAnalyticsReceiveNetwork
         )
@@ -36,6 +37,7 @@ extension RampSource {
 struct DepositFlowContext {
     let source: DepositAnalyticsSource
     let utm: UtmParameters
+    let walletMode: WalletMode
     var addFundsOption: DepositAddFundsOption?
     var buyAsset: String?
     var sellAsset: String?
@@ -48,21 +50,16 @@ struct DepositFlowContext {
 
 extension DepositFlowContext {
     func makeDepositStarted(availableOptions: Set<String>) -> DepositStarted {
-        DepositStarted(from: source, availableOptions: availableOptions)
+        DepositStarted(from: source, walletMode: walletMode, availableOptions: availableOptions)
     }
 
     func makeDepositOptionClick(option: DepositAddFundsOption) -> DepositOptionClick {
-        DepositOptionClick(from: source, addFundsOption: option)
-    }
-
-    func makeDepositViewP2pAlert() -> DepositViewP2pAlert? {
-        guard let addFundsOption else { return nil }
-        return DepositViewP2pAlert(from: source, addFundsOption: addFundsOption)
+        DepositOptionClick(from: source, walletMode: walletMode, addFundsOption: option)
     }
 
     func makeDepositContinueToP2pMarket() -> DepositContinueToP2pMarket? {
         guard let addFundsOption else { return nil }
-        return DepositContinueToP2pMarket(from: source, addFundsOption: addFundsOption)
+        return DepositContinueToP2pMarket(from: source, walletMode: walletMode, addFundsOption: addFundsOption)
     }
 
     func makeDepositViewBuyTonWithCrypto(availableOptions: Set<String>) -> DepositViewBuyTonWithCrypto? {
@@ -78,6 +75,7 @@ extension DepositFlowContext {
         guard let addFundsOption, let sellAsset, let buyAsset else { return nil }
         return DepositViewSendAsset(
             from: source,
+            walletMode: walletMode,
             addFundsOption: addFundsOption,
             sellAsset: sellAsset,
             buyAsset: buyAsset
@@ -88,6 +86,7 @@ extension DepositFlowContext {
         guard let addFundsOption, let sellAsset, let buyAsset else { return nil }
         return DepositViewQrCode(
             from: source,
+            walletMode: walletMode,
             addFundsOption: addFundsOption,
             sellAsset: sellAsset,
             buyAsset: buyAsset
@@ -159,19 +158,6 @@ extension DepositFlowContext {
         )
     }
 
-    func makeDepositViewRampAlert() -> DepositViewRampAlert? {
-        guard let addFundsOption, let buyAsset, let sellAsset, let paymentMethod, let providerName, let amount else { return nil }
-        return DepositViewRampAlert(
-            from: source,
-            addFundsOption: addFundsOption,
-            buyAsset: buyAsset,
-            sellAsset: sellAsset,
-            paymentMethod: paymentMethod,
-            providerName: providerName,
-            amount: amount
-        )
-    }
-
     func makeDepositContinueToRampProvider() -> DepositContinueToRampProvider? {
         guard
             let addFundsOption,
@@ -186,6 +172,7 @@ extension DepositFlowContext {
         }
         return DepositContinueToRampProvider(
             from: source,
+            walletMode: walletMode,
             addFundsOption: addFundsOption,
             buyAsset: buyAsset,
             sellAsset: sellAsset,

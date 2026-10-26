@@ -29,12 +29,19 @@ extension MultichainSwapAmountCalculator {
         }
     }
 
-    /// Crypto amount the send card currently stands for. Prefers the exact crypto text kept
-    /// across a mode switch over converting the rounded fiat string back.
+    /// Crypto amount the send card currently stands for. Max sells the spendable balance, and
+    /// that balance is the amount even when the field shows a rounded rendering of it. A mode
+    /// switch keeps the crypto text captured for the field, ahead of converting a rounded fiat string.
     func sourceAmount(
         inputs: MultichainSwapInputs,
         usdFiatRate: Decimal?
     ) -> BigUInt? {
+        if inputs.isMaxSend {
+            let maxAmount = MultichainSwapMaxAmount.maxSwapInputAmount(for: inputs.sendAsset)
+            if maxAmount > 0 {
+                return maxAmount
+            }
+        }
         if let cryptoText = inputs.sendAmountCryptoText {
             return cryptoAmount(text: cryptoText, decimals: inputs.sendAsset.asset.decimals)
         }

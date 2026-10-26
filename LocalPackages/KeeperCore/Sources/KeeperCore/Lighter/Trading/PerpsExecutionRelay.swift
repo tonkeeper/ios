@@ -1,11 +1,16 @@
 import ChainKit
 import Foundation
+import PerpsModels
+import TKLogging
 
 final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
     private let api: PerpsAPI
     private let nonceCoordinator: PerpsNonceCoordinator
     private let persistSignedStep: ((PerpsSignedStep) async throws -> Void)?
     private let persistState: ((PerpsSignedStep, PerpsPendingStepState) async throws -> Void)?
+    /// The execution reports a refusal by kind only, so the one that asks for a new
+    /// integrator approval is kept here for the caller.
+    private(set) var integratorNotApproved = false
 
     init(
         api: PerpsAPI,
@@ -41,14 +46,15 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
             do {
                 let nonce = try await nonceCoordinator.next(
                     scope: .init(
+                        environment: scope.environment,
                         accountIndex: scope.accountIndex,
-                        apiKeyIndex: scope.apiKeyIndex,
+                        apiKeyIndex: LighterAuth.shared.API_KEY_INDEX,
                         chainId: scope.chainId
                     )
                 ) { [api] in
                     try await api.nextNonce(
                         walletId: scope.walletId,
-                        apiKeyIndex: Int(scope.apiKeyIndex)
+                        apiKeyIndex: Int(LighterAuth.shared.API_KEY_INDEX)
                     ).nonce
                 }
                 completionHandler(PerpsExecutionNonce(value: nonce), nil)
@@ -66,14 +72,15 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
             do {
                 try await nonceCoordinator.resync(
                     scope: .init(
+                        environment: scope.environment,
                         accountIndex: scope.accountIndex,
-                        apiKeyIndex: scope.apiKeyIndex,
+                        apiKeyIndex: LighterAuth.shared.API_KEY_INDEX,
                         chainId: scope.chainId
                     )
                 ) { [api] in
                     try await api.nextNonce(
                         walletId: scope.walletId,
-                        apiKeyIndex: Int(scope.apiKeyIndex)
+                        apiKeyIndex: Int(LighterAuth.shared.API_KEY_INDEX)
                     ).nonce
                 }
                 completionHandler(nil)
@@ -160,12 +167,29 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
             } catch let error as PerpsAPIError where error.isResignRequired {
                 completionHandler(.resignrequired, nil)
             } catch {
+                if (error as? PerpsAPIError)?.isIntegratorNotApproved == true {
+                    integratorNotApproved = true
+                }
                 let mapped = PerpsTradingErrorMapper.map(error)
                 if Self.isAmbiguous(mapped), let persistState {
                     try? await persistState(step, .unknown)
                 }
                 completionHandler(nil, executionNSError(error))
             }
+        }
+    }
+
+    static func isAmbiguous(_ error: PerpsTradingError) -> Bool {
+        switch error {
+        case .offline, .timeout, .serverUnavailable, .protocolFailure, .unknown:
+            return true
+        case .rateLimited, .serverRejected, .authExpired, .credentialsRevoked,
+             .activationRequired, .activationCanceled, .regionUnavailable, .tradingUnavailable, .validation,
+             .invalidAutoClose, .invalidAmount, .conflictingPosition, .exceedsPosition, .nothingToChange,
+             .insufficientBalance, .insufficientLiquidity, .slippageExceeded, .positionNotFound, .orderNotFound,
+             .immediateLiquidationRisk, .operationInProgress, .stalePreparedTransaction, .deviceClockSkew,
+             .submitUnknown:
+            return false
         }
     }
 
@@ -179,6 +203,7 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
             walletId: walletId,
             transactions: [.init(tx_type: txType, tx_info: txInfo)]
         )
+        Log.perps.i("recovery send wallet=\(walletId) txType=\(txType) expected=\(expectedTxHash) → \(response.transactions.map { "\($0.tx_type):\($0.tx_hash)" })")
         let responseHash = Self.normalizedHash(response.transactions.first?.tx_hash ?? "")
         let expectedHash = Self.normalizedHash(expectedTxHash)
         guard response.transactions.count == 1,
@@ -192,12 +217,20 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
     }
 }
 
+extension PerpsExecutionRelay {
+    static func normalizedHash(_ hash: String) -> String {
+        let value = hash.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return value.hasPrefix("0x") ? String(value.dropFirst(2)) : value
+    }
+}
+
 private extension PerpsExecutionRelay {
     func submit(step: PerpsSignedStep) async throws {
         let response = try await api.sendTransactions(
             walletId: step.scope.walletId,
             transactions: [.init(tx_type: step.txType, tx_info: step.txInfo)]
         )
+        Log.perps.i("send step=\(step.stepId) wallet=\(step.scope.walletId) nonce=\(step.nonce) txType=\(step.txType) expected=\(step.txHash) → \(response.transactions.map { "\($0.tx_type):\($0.tx_hash)" })")
         let responseHash = Self.normalizedHash(response.transactions.first?.tx_hash ?? "")
         let expectedHash = Self.normalizedHash(step.txHash)
         guard response.transactions.count == 1,
@@ -208,11 +241,6 @@ private extension PerpsExecutionRelay {
         else {
             throw PerpsTradingError.protocolFailure("send response does not match the submitted transaction")
         }
-    }
-
-    static func normalizedHash(_ hash: String) -> String {
-        let value = hash.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return value.hasPrefix("0x") ? String(value.dropFirst(2)) : value
     }
 
     func executionNSError(_ error: Error) -> NSError {
@@ -243,30 +271,21 @@ private extension PerpsExecutionRelay {
         case .activationRequired: return .activationrequired
         case .activationCanceled: return .activationcanceled
         case .regionUnavailable: return .regionunavailable
-        case .validation: return .validation
+        // The execution kinds carry no "market not tradable", and borrowing the region one
+        // would write the same false claim into the journal.
+        case .tradingUnavailable: return .validation
+        case .validation, .invalidAutoClose, .invalidAmount, .conflictingPosition, .exceedsPosition: return .validation
         case .nothingToChange: return .nothingtochange
         case .insufficientBalance: return .insufficientbalance
-        case .insufficientLiquidity: return .insufficientliquidity
-        case .positionNotFound: return .positionnotfound
+        case .insufficientLiquidity, .slippageExceeded: return .insufficientliquidity
+        case .positionNotFound, .orderNotFound: return .positionnotfound
         case .immediateLiquidationRisk: return .immediateliquidationrisk
         case .protocolFailure: return .protocolfailure
         case .operationInProgress: return .operationinprogress
         case .stalePreparedTransaction: return .stalepreparedtransaction
+        case .deviceClockSkew: return .validation
         case .submitUnknown: return .submitunknown
         case .unknown: return .unknown
-        }
-    }
-
-    static func isAmbiguous(_ error: PerpsTradingError) -> Bool {
-        switch error {
-        case .offline, .timeout, .serverUnavailable, .protocolFailure, .unknown:
-            return true
-        case .rateLimited, .serverRejected, .authExpired, .credentialsRevoked,
-             .activationRequired, .activationCanceled, .regionUnavailable, .validation,
-             .nothingToChange, .insufficientBalance, .insufficientLiquidity, .positionNotFound,
-             .immediateLiquidationRisk, .operationInProgress, .stalePreparedTransaction,
-             .submitUnknown:
-            return false
         }
     }
 }

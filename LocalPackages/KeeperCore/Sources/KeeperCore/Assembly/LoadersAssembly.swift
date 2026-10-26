@@ -182,6 +182,7 @@ public final class LoadersAssembly {
                                 search: nil,
                                 availableOnly: nil,
                                 showHidden: false,
+                                showAll: nil,
                                 hideDust: hidesDustBalances ? true : nil
                             )
                             guard !Task.isCancelled else { return }
@@ -191,7 +192,9 @@ public final class LoadersAssembly {
                                     assets: page.assets.filter { !$0.isHidden },
                                     accountsIdentifier: state.accountsIdentifier,
                                     currencyCode: currency.code.lowercased(),
-                                    hidesDustBalances: hidesDustBalances
+                                    hidesDustBalances: hidesDustBalances,
+                                    perpsFiatPrice: page.perpsFiatPrice
+                                        ?? storesAssembly.multichainPortfolioStore.getState()[wallet]?.perpsFiatPrice
                                 ),
                                 wallet: wallet,
                                 requestToken: requestToken
@@ -219,7 +222,8 @@ public final class LoadersAssembly {
                 return store
             }
             let store = WalletBalanceLoaderImplementation(
-                wallet: wallet,
+                walletId: wallet.id,
+                walletsStore: storesAssembly.walletsStore,
                 balanceStore: storesAssembly.balanceStore,
                 stakingPoolsStore: storesAssembly.stackingPoolsStore,
                 walletNFTSStore: storesAssembly.walletNFTsStore(wallet: wallet, nftService: servicesAssembly.accountNftService()),
@@ -254,7 +258,11 @@ public final class LoadersAssembly {
             return loader
         }
 
-        let loader = EthenaStakingLoader(wallet: wallet, api: tonkeeperAPIAssembly.api)
+        let loader = EthenaStakingLoader(
+            walletId: wallet.id,
+            walletsStore: storesAssembly.walletsStore,
+            api: tonkeeperAPIAssembly.api
+        )
         _ethenaStakingLoaders[wallet] = Weak(value: loader)
         return loader
     }

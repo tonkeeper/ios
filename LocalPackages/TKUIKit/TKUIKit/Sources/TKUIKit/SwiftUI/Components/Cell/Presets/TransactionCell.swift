@@ -10,7 +10,7 @@ public struct TransactionCellContent: Sendable, Equatable {
     public var icon: Icon
     public var title: String
     public var subtitle: Subtitle
-    public var amount: Amount
+    public var amount: Amount?
     public var accessory: Accessory
     public var details: Details?
     public var nftPreview: NftPreview?
@@ -21,7 +21,7 @@ public struct TransactionCellContent: Sendable, Equatable {
         icon: Icon,
         title: String,
         subtitle: Subtitle,
-        amount: Amount,
+        amount: Amount?,
         accessory: Accessory,
         details: Details? = nil,
         nftPreview: NftPreview? = nil,
@@ -467,17 +467,19 @@ extension TransactionCell {
             .content(
                 .init(
                     title: content.title,
-                    value: CellCenterPrimaryRow.ValueConfig(
-                        title: amountTitle(content.amount),
-                        appliesColor: false
-                    )
+                    value: content.amount.map {
+                        CellCenterPrimaryRow.ValueConfig(
+                            title: amountTitle($0),
+                            appliesColor: false
+                        )
+                    }
                 )
             )
         }
     }
 
     private func amountTitle(_ amount: TransactionCellContent.Amount) -> AttributedString {
-        let styleColor = amountColor
+        let styleColor = amountColor(amount.style)
         return amount.spans.reduce(into: AttributedString()) { result, span in
             var part = AttributedString(span.text)
             part.foregroundColor = (span.color ?? styleColor).resolve(palette)
@@ -485,25 +487,20 @@ extension TransactionCell {
         }
     }
 
-    private var amountColor: TKColor {
-        switch config {
-        case .shimmer:
+    private func amountColor(_ style: TransactionCellContent.AmountStyle) -> TKColor {
+        switch style {
+        case .primary:
             .textPrimary
-        case let .content(content):
-            switch content.amount.style {
-            case .primary:
-                .textPrimary
-            case .positive:
-                .accentGreen
-            case .negative:
-                .accentRed
-            case .secondary:
-                .textSecondary
-            case .tertiary:
-                .textTertiary
-            case .warning:
-                .accentOrange
-            }
+        case .positive:
+            .accentGreen
+        case .negative:
+            .accentRed
+        case .secondary:
+            .textSecondary
+        case .tertiary:
+            .textTertiary
+        case .warning:
+            .accentOrange
         }
     }
 }

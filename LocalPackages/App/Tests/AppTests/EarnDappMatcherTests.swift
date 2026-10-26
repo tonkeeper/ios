@@ -1,4 +1,5 @@
 @testable import App
+@testable import KeeperCore
 import XCTest
 
 final class EarnDappMatcherTests: XCTestCase {
@@ -42,8 +43,12 @@ final class EarnDappMatcherTests: XCTestCase {
     func test_earnHostsCoverProductionAndDemoStand() {
         XCTAssertEqual(
             EarnDappMatcher.earnHostSuffixes,
-            ["vaults.fyi", "vaults-tonkeeper-earn-latest-demo.fly.dev"]
+            ["vaults.fyi", "vaults-tonkeeper-earn-demo.fly.dev"]
         )
+    }
+
+    func test_defaultEarnPageIsOnAnEarnHost() {
+        XCTAssertTrue(EarnDappMatcher().matches(url: EarnHardcodedData.url))
     }
 }
 

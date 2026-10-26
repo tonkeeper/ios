@@ -1,16 +1,11 @@
 import Foundation
+import PerpsModels
 import TKLogging
 
 public final class PerpsMarketDetailsStore: Store<PerpsMarketDetailsStore.Event, PerpsMarketDetailsStore.State>, @unchecked Sendable {
-    public enum State: Equatable {
-        case idle
-        case loading
-        case loaded(PerpsAssetMarketSnapshot)
-        case failed
-        case notFound
-    }
+    public typealias State = PerpsMarketDetailsState
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdate(State)
     }
 
@@ -54,7 +49,7 @@ private extension PerpsMarketDetailsStore {
                 } catch PerpsMarketDetailsLoadError.notFound {
                     outcome = .notFound
                 } catch {
-                    Log.w("🪵 Perps: market details load failed — \(error)")
+                    Log.perps.w("market details load failed — \(error)")
                     outcome = .failed
                 }
                 guard !Task.isCancelled else { return }

@@ -729,6 +729,75 @@ struct MnemonicsRepositoryV2Tests {
     }
 
     @Test
+    func v2SaveMnemonicCreatesStorageWhenLegacyVaultIsEmpty() async throws {
+        let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
+        let rawStorage = makeRawStorage(
+            seed: seed,
+            keychain: InMemorySecureStorageKeychain()
+        )
+        let mnemonicAccess = makeV2MnemonicAccess(
+            rawStorage: rawStorage,
+            seed: seed,
+            legacyRepository: makeLegacyRepository(
+                seed: seed,
+                keychainVault: InMemoryPasswordKeychainVault()
+            )
+        )
+        let wallet = makeWallet(id: "wallet")
+        let mnemonic = CoreMnemonic(
+            mnemonicWords: TonSwift.Mnemonic.mnemonicNew(),
+            type: .ton
+        )
+        #expect(try rawStorage.hasCommittedStorage() == false)
+
+        try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: "1234")
+
+        #expect(try rawStorage.hasCommittedStorage())
+        #expect(try rawStorage.unlocked(passcode: "1234").getAll() == [wallet.id: mnemonic])
+    }
+
+    @Test
+    func v2SaveMnemonicRefusesToCreateStorageWhileLegacyVaultAwaitsMigration() async throws {
+        let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
+        let rawStorage = makeRawStorage(
+            seed: seed,
+            keychain: InMemorySecureStorageKeychain()
+        )
+        let legacyRepository = makeLegacyRepository(
+            seed: seed,
+            keychainVault: InMemoryPasswordKeychainVault()
+        )
+        let mnemonicAccess = makeV2MnemonicAccess(
+            rawStorage: rawStorage,
+            seed: seed,
+            legacyRepository: legacyRepository
+        )
+        let legacyWallet = makeWallet(id: "legacy-wallet")
+        let legacyMnemonic = CoreMnemonic(
+            mnemonicWords: TonSwift.Mnemonic.mnemonicNew(),
+            type: .ton
+        )
+        try await legacyRepository.native.saveMnemonic(
+            KeeperCoreComponents.Mnemonic(mnemonicWords: legacyMnemonic.mnemonicWords),
+            wallet: legacyWallet,
+            password: "1234"
+        )
+        let newWallet = makeWallet(id: "new-wallet")
+        let newMnemonic = CoreMnemonic(
+            mnemonicWords: TonSwift.Mnemonic.mnemonicNew(),
+            type: .ton
+        )
+
+        await #expect(throws: MnemonicAccessError.legacyMigrationPending) {
+            try await mnemonicAccess.saveMnemonic(newMnemonic, wallet: newWallet, passcode: "5678")
+        }
+
+        #expect(try rawStorage.hasCommittedStorage() == false)
+        let preserved = try await legacyRepository.native.getMnemonic(wallet: legacyWallet, password: "1234")
+        #expect(preserved.mnemonicWords == legacyMnemonic.mnemonicWords)
+    }
+
+    @Test
     func v2BatchGetMnemonicsUnlocksStorageOnce() async throws {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
         let rawStorage = makeRawStorage(
@@ -1359,7 +1428,8 @@ private extension MnemonicsRepositoryV2Tests {
 
     func makeV2MnemonicAccess(
         rawStorage: MnemonicsRawDataRepository,
-        seed: String
+        seed: String,
+        legacyRepository: MnemonicAccess.LegacyRepository? = nil
     ) -> MnemonicAccess {
         return MnemonicAccess.v2(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
@@ -1369,7 +1439,7 @@ private extension MnemonicsRepositoryV2Tests {
                 }
             ),
             passcodeStorage: PasscodeStorage(seedProvider: { seed }),
-            legacyRepository: makeUnusedLegacyRepository(seed: seed)
+            legacyRepository: legacyRepository ?? makeUnusedLegacyRepository(seed: seed)
         )
     }
 
@@ -1437,6 +1507,8 @@ private final class UnusedKeychainVault: TKKeychainVault {
 
     func set(_ value: Data, query: TKKeychainQuery) throws {}
 
+    func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws {}
+
     func set(_ value: String, query: TKKeychainQuery) throws {}
 
     func set<T: Codable>(_ value: T, query: TKKeychainQuery) throws {}
@@ -1492,6 +1564,11 @@ private final class InMemoryPasswordKeychainVault: TKKeychainVault {
             throw TKKeychainError.other(errSecIO)
         }
         items[key(for: query)] = value
+    }
+
+    func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws {
+        guard items[key(for: query)] == nil else { return }
+        try set(value, query: query)
     }
 
     func set(_ value: String, query: TKKeychainQuery) throws {

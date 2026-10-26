@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKServices
 
 public final class ChartFormatter {
     private let amountFormatter: AmountFormatter

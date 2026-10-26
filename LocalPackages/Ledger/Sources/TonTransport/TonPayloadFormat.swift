@@ -24,8 +24,18 @@ public enum TonPayloadFormat {
         let customPayload: Cell?
         let forwardAmount: Coins
         let forwardPayload: Cell?
+        let knownJetton: KnownJetton?
 
-        public init(queryId: BigUInt?, coins: Coins, receiverAddress: Address, excessesAddress: Address, customPayload: Cell?, forwardAmount: Coins, forwardPayload: Cell?) {
+        public init(
+            queryId: BigUInt?,
+            coins: Coins,
+            receiverAddress: Address,
+            excessesAddress: Address,
+            customPayload: Cell?,
+            forwardAmount: Coins,
+            forwardPayload: Cell?,
+            knownJetton: KnownJetton? = nil
+        ) {
             self.queryId = queryId
             self.coins = coins
             self.receiverAddress = receiverAddress
@@ -33,6 +43,20 @@ public enum TonPayloadFormat {
             self.customPayload = customPayload
             self.forwardAmount = forwardAmount
             self.forwardPayload = forwardPayload
+            self.knownJetton = knownJetton
+        }
+
+        public func settingKnownJetton(_ knownJetton: KnownJetton?) -> JettonTransfer {
+            JettonTransfer(
+                queryId: queryId,
+                coins: coins,
+                receiverAddress: receiverAddress,
+                excessesAddress: excessesAddress,
+                customPayload: customPayload,
+                forwardAmount: forwardAmount,
+                forwardPayload: forwardPayload,
+                knownJetton: knownJetton
+            )
         }
     }
 

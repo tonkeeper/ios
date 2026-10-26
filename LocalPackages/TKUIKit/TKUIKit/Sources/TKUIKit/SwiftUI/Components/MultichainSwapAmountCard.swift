@@ -50,7 +50,7 @@ public struct MultichainSwapAmountCardContent {
     public var onTapCard: () -> Void
     public var onTapMax: () -> Void
     public var onTapRateText: (() -> Void)?
-    public var onTapToken: () -> Void
+    public var onTapToken: (() -> Void)?
 
     public init(
         amount: Binding<String>,
@@ -73,7 +73,7 @@ public struct MultichainSwapAmountCardContent {
         onTapCard: @escaping () -> Void,
         onTapMax: @escaping () -> Void,
         onTapRateText: (() -> Void)? = nil,
-        onTapToken: @escaping () -> Void
+        onTapToken: (() -> Void)?
     ) {
         self.amount = amount
         self.amountPrefix = amountPrefix
@@ -121,7 +121,7 @@ public struct MultichainSwapAmountCard: View {
         maxTitle: String? = nil,
         onTapCard: @escaping () -> Void,
         onTapMax: @escaping () -> Void,
-        onTapToken: @escaping () -> Void
+        onTapToken: (() -> Void)?
     ) {
         self.config = .content(
             MultichainSwapAmountCardContent(

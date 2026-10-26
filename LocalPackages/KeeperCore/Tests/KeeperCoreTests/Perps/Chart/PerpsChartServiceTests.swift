@@ -1,4 +1,5 @@
 @testable import KeeperCore
+import PerpsModels
 import TKKandelabrAPI
 import XCTest
 
@@ -27,6 +28,7 @@ final class PerpsChartServiceTests: XCTestCase {
         XCTAssertEqual(kandelabr.resolution, "1m")
         XCTAssertEqual(kandelabr.limit, 500)
         await waitUntil { hermes.feedId == "BTC/USD/1m" }
+        XCTAssertEqual(hermes.volumeFeedId, "BTC/USD/PERP_TRADE/1m")
         watch.cancel()
         await waitUntil { hermes.cancelCount == 1 }
     }
@@ -55,6 +57,52 @@ final class PerpsChartServiceTests: XCTestCase {
         await waitUntil { received.value()?.candles.first?.close == 120 }
         XCTAssertFalse(failed.value())
         XCTAssertEqual(hermes.cancelCount, 0)
+        watch.cancel()
+    }
+
+    func test_watchChart_livePushKeepsHistoryVolume() async {
+        let kandelabr = KandelabrFake(snapshot: makeBatch(close: "100"))
+        let hermes = HermesFake()
+        let service = makeService(kandelabr: kandelabr, hermes: hermes)
+
+        let received = Locked<PerpsChartSnapshot?>(nil)
+        let watch = service.watchChart(
+            marketId: 7,
+            timeframe: .h1,
+            onUpdate: { received.set($0) },
+            onReconnecting: {}
+        )
+        await waitUntil { received.value()?.candles.first?.volume == 100 }
+
+        await hermes.emit(makeBatch(candles: [makeWireCandle(close: "120", volume: "3")]))
+
+        await waitUntil { received.value()?.candles.first?.close == 120 }
+        XCTAssertEqual(received.value()?.candles.first?.volume, 120)
+        watch.cancel()
+    }
+
+    func test_watchChart_appliesLiveTradeVolumeByTimestampWithoutTouchingPrices() async {
+        let kandelabr = KandelabrFake(snapshot: makeBatch(candles: [makeWireCandle(close: "100", volume: "2")]))
+        let hermes = HermesFake()
+        let service = makeService(kandelabr: kandelabr, hermes: hermes)
+
+        let received = Locked<PerpsChartSnapshot?>(nil)
+        let watch = service.watchChart(
+            marketId: 7,
+            timeframe: .h1,
+            onUpdate: { received.set($0) },
+            onReconnecting: {}
+        )
+        await waitUntil { received.value()?.candles.first?.volume == 200 }
+
+        await hermes.emitVolume(makeBatch(candles: [makeWireCandle(close: "90", volume: "5")]))
+        XCTAssertEqual(received.value()?.candles.map(\.volume), [500])
+        await hermes.emitVolume(makeBatch(startTs: 1_700_003_600_000, candles: [makeWireCandle(close: "90", volume: "4")]))
+        await hermes.emit(makeBatch(startTs: 1_700_003_600_000, candles: [makeWireCandle(close: "110")]))
+
+        await waitUntil { received.value()?.candles.count == 2 }
+        XCTAssertEqual(received.value()?.candles.map(\.close), [100, 110])
+        XCTAssertEqual(received.value()?.candles.map(\.volume), [500, 440])
         watch.cancel()
     }
 
@@ -429,9 +477,10 @@ private func makeBatch(
 
 private func makeWireCandle(
     close: String,
+    volume: String = "1",
     empty: Bool? = nil
 ) -> TKKandelabrAPI.Components.Schemas.Candle {
-    .init(o: close, h: close, l: close, c: close, v: "1", empty: empty)
+    .init(o: close, h: close, l: close, c: close, v: volume, empty: empty)
 }
 
 private final class Locked<T>: @unchecked Sendable {
@@ -514,15 +563,14 @@ private final class KandelabrFake: KandelabrAPI, @unchecked Sendable {
     }
 
     func candles(
-        ticker: String,
+        tickers: [String],
         resolution: String,
         limit: Int32?,
-        startTs _: Int64?,
         endTs: Int64?
-    ) async throws(KandelabrAPIError) -> TKKandelabrAPI.Components.Schemas.GetCandlesResponse {
-        remember(ticker: ticker, resolution: resolution, limit: limit, endTs: endTs)
+    ) async throws(KandelabrAPIError) -> [TKKandelabrAPI.Components.Schemas.GetCandlesResponse] {
+        remember(ticker: tickers.first, resolution: resolution, limit: limit, endTs: endTs)
         if endTs != nil, let older {
-            return older
+            return [older]
         }
         let (snapshot, gate, error) = lock.withLock {
             let index = _snapshotCalls
@@ -536,10 +584,10 @@ private final class KandelabrFake: KandelabrAPI, @unchecked Sendable {
         await gate?.wait()
         lock.withLock { _completedSnapshotCalls += 1 }
         if let error { throw error }
-        return snapshot
+        return [snapshot]
     }
 
-    private func remember(ticker: String, resolution: String, limit: Int32?, endTs: Int64?) {
+    private func remember(ticker: String?, resolution: String, limit: Int32?, endTs: Int64?) {
         lock.lock()
         _ticker = ticker
         _resolution = resolution
@@ -552,7 +600,9 @@ private final class KandelabrFake: KandelabrAPI, @unchecked Sendable {
 private final class HermesFake: HermesCandleStreaming, @unchecked Sendable {
     private let lock = NSLock()
     private var _feedId: String?
+    private var _volumeFeedId: String?
     private var _onUpdate: (@Sendable (TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async -> Void)?
+    private var _onVolumeUpdate: (@Sendable (TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async -> Void)?
     private var _onSubscribed: (@Sendable () async -> Void)?
     private var _onReconnecting: (@Sendable () async -> Void)?
     private var _onRejected: (@Sendable () async -> Void)?
@@ -560,6 +610,10 @@ private final class HermesFake: HermesCandleStreaming, @unchecked Sendable {
 
     var feedId: String? {
         lock.withLock { _feedId }
+    }
+
+    var volumeFeedId: String? {
+        lock.withLock { _volumeFeedId }
     }
 
     var isWatching: Bool {
@@ -572,6 +626,11 @@ private final class HermesFake: HermesCandleStreaming, @unchecked Sendable {
 
     func emit(_ batch: TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async {
         let cb = lock.withLock { _onUpdate }
+        await cb?(batch)
+    }
+
+    func emitVolume(_ batch: TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async {
+        let cb = lock.withLock { _onVolumeUpdate }
         await cb?(batch)
     }
 
@@ -592,14 +651,18 @@ private final class HermesFake: HermesCandleStreaming, @unchecked Sendable {
 
     func watch(
         feedId: String,
+        volumeFeedId: String,
         onUpdate: @escaping @Sendable (TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async -> Void,
+        onVolumeUpdate: @escaping @Sendable (TKKandelabrAPI.Components.Schemas.GetCandlesResponse) async -> Void,
         onSubscribed: @escaping @Sendable () async -> Void,
         onReconnecting: @escaping @Sendable () async -> Void,
         onRejected: @escaping @Sendable () async -> Void
     ) -> HermesCandleWatch {
         lock.lock()
         _feedId = feedId
+        _volumeFeedId = volumeFeedId
         _onUpdate = onUpdate
+        _onVolumeUpdate = onVolumeUpdate
         _onSubscribed = onSubscribed
         _onReconnecting = onReconnecting
         _onRejected = onRejected
@@ -650,7 +713,8 @@ private extension PerpsMarketMetadata {
             fundingRatePercent: nil,
             priceDecimals: priceDecimals,
             sizeDecimals: 2,
-            minBaseSize: 0.001
+            minBaseSize: 0.001,
+            minNotionalUsd: 10
         )
     }
 }

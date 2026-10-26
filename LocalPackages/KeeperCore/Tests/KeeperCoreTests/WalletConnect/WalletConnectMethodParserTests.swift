@@ -726,6 +726,154 @@ final class WalletConnectMethodParserTests: XCTestCase {
         }
     }
 
+    func testSolanaSignMessageParsing() throws {
+        let parsed = try parser.parse(
+            method: "solana_signMessage",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"pubkey":"9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM","message":"2NEpo7TZRRrLZSi2U"}"#
+        )
+
+        XCTAssertEqual(parsed.method, .solanaSignMessage)
+        XCTAssertEqual(parsed.chain, .sol)
+        XCTAssertEqual(
+            parsed.payload,
+            .signMessage(WalletConnectSignMessage(
+                address: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                message: "2NEpo7TZRRrLZSi2U",
+                kind: .solana
+            ))
+        )
+    }
+
+    func testSolanaSignMessageRejectsNonBase58Message() throws {
+        XCTAssertThrowsError(try parser.parse(
+            method: "solana_signMessage",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"message":"0OIl"}"#
+        )) { error in
+            XCTAssertEqual(
+                error as? WalletConnectRequestParsingError,
+                .invalidParams(method: .solanaSignMessage, reason: "solana message is not base58")
+            )
+        }
+    }
+
+    func testSolanaSignTransactionParsing() throws {
+        let parsed = try parser.parse(
+            method: "solana_signTransaction",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"transaction":"AQID","pubkey":"9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"}"#
+        )
+
+        XCTAssertEqual(parsed.method, .solanaSignTransaction)
+        XCTAssertEqual(
+            parsed.payload,
+            .solanaTransaction(
+                WalletConnectSolanaTransaction(
+                    pubkey: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                    transaction: "AQID"
+                ),
+                send: false
+            )
+        )
+    }
+
+    func testSolanaSignAndSendTransactionParsingIgnoresSendOptions() throws {
+        let parsed = try parser.parse(
+            method: "solana_signAndSendTransaction",
+            chain: "solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ",
+            paramsJSON: #"{"transaction":"AQID","sendOptions":{"skipPreflight":true,"maxRetries":3}}"#
+        )
+
+        XCTAssertEqual(parsed.method, .solanaSignAndSendTransaction)
+        XCTAssertEqual(parsed.chain, .sol)
+        XCTAssertEqual(
+            parsed.payload,
+            .solanaTransaction(
+                WalletConnectSolanaTransaction(pubkey: nil, transaction: "AQID"),
+                send: true
+            )
+        )
+    }
+
+    func testSolanaSignTransactionRejectsNonBase64Transaction() throws {
+        XCTAssertThrowsError(try parser.parse(
+            method: "solana_signTransaction",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"transaction":"not base64!"}"#
+        )) { error in
+            XCTAssertEqual(
+                error as? WalletConnectRequestParsingError,
+                .invalidParams(method: .solanaSignTransaction, reason: "solana transaction is not base64")
+            )
+        }
+    }
+
+    func testSolanaSignAllTransactionsParsing() throws {
+        let parsed = try parser.parse(
+            method: "solana_signAllTransactions",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"transactions":["AQID","BAUG"]}"#
+        )
+
+        XCTAssertEqual(parsed.method, .solanaSignAllTransactions)
+        XCTAssertEqual(
+            parsed.payload,
+            .solanaTransactionBatch(WalletConnectSolanaTransactionBatch(pubkey: nil, transactions: ["AQID", "BAUG"]))
+        )
+    }
+
+    func testSolanaSignAllTransactionsRejectsEmptyBatch() throws {
+        XCTAssertThrowsError(try parser.parse(
+            method: "solana_signAllTransactions",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"{"transactions":[]}"#
+        )) { error in
+            XCTAssertEqual(
+                error as? WalletConnectRequestParsingError,
+                .invalidParams(method: .solanaSignAllTransactions, reason: "solana transactions are empty")
+            )
+        }
+    }
+
+    func testSolanaAccountsParsing() throws {
+        for method in ["solana_getAccounts", "solana_requestAccounts"] {
+            let parsed = try parser.parse(
+                method: method,
+                chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+                paramsJSON: "{}"
+            )
+
+            XCTAssertEqual(parsed.payload, .solanaAccounts, method)
+        }
+    }
+
+    func testSolanaMethodRejectsEIP155Chain() throws {
+        XCTAssertThrowsError(try parser.parse(
+            method: "solana_signMessage",
+            chain: "eip155:1",
+            paramsJSON: #"{"message":"2NEpo7TZRRrLZSi2U"}"#
+        )) { error in
+            XCTAssertEqual(
+                error as? WalletConnectRequestParsingError,
+                .unsupportedMethod(WalletConnectMethod.solanaSignMessage.rawValue)
+            )
+        }
+    }
+
+    func testEVMMethodRejectsSolanaChain() throws {
+        XCTAssertThrowsError(try parser.parse(
+            method: "personal_sign",
+            chain: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            paramsJSON: #"["0x68656c6c6f","9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"]"#
+        )) { error in
+            XCTAssertEqual(
+                error as? WalletConnectRequestParsingError,
+                .unsupportedMethod(WalletConnectMethod.personalSign.rawValue)
+            )
+        }
+    }
+
     private func parseEVMTransaction(paramsJSON: String) throws -> WalletConnectEVMTransaction {
         let parsed = try parser.parse(
             method: "eth_sendTransaction",

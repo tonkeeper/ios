@@ -1,6 +1,5 @@
 public protocol MultichainSwapService {
     func listCrossSwapAssets(query: MultichainSwapAssetsQuery) async throws -> [MultichainSwapAsset]
-    func getCrossSwapAsset(assetId: String) async throws -> MultichainSwapAsset
     func getCrossSwapConfig(
         walletId: String,
         fromAssetId: String?,
@@ -26,10 +25,6 @@ final class MultichainSwapServiceImplementation: MultichainSwapService {
 
     func listCrossSwapAssets(query: MultichainSwapAssetsQuery) async throws -> [MultichainSwapAsset] {
         try await multichainSwapAPI.listCrossSwapAssets(query: query)
-    }
-
-    func getCrossSwapAsset(assetId: String) async throws -> MultichainSwapAsset {
-        try await multichainSwapAPI.getCrossSwapAsset(assetId: assetId)
     }
 
     func getCrossSwapConfig(

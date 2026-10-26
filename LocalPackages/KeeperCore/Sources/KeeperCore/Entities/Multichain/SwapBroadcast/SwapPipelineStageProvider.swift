@@ -4,20 +4,20 @@ import ChainKit
 /// as a state machine without network, signing, or KMP runtime side effects.
 protocol SwapPipelineStageProvider {
     func resolveFee(
-        transaction: any ChainKit.Transaction,
+        transactions: [TransactionSwap],
         payloadFee: (any Fee)?,
         networkType: ChainKit.Network.Type_,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> any Fee
 
     func defaultFee(
-        transaction: any ChainKit.Transaction,
+        transactions: [TransactionSwap],
         networkType: ChainKit.Network.Type_,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> any Fee
 
     func reserve(
-        transaction: TransactionSwap,
+        transactions: [TransactionSwap],
         feeAsset: AssetCoin,
         fee: any Fee,
         policy: GasReservePolicy,
@@ -25,7 +25,7 @@ protocol SwapPipelineStageProvider {
     ) async throws(MultichainSwapExecutionFailure) -> GasReserveResult
 
     func buildApproval(
-        mainTransaction: TransactionSwap,
+        mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: (any Fee)?,
         mainFee: any Fee,
@@ -40,16 +40,16 @@ protocol SwapPipelineStageProvider {
 
     func unlockSigningWallet(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet
-    ) async throws(MultichainSwapExecutionFailure) -> CryptoWallet
+        swapWallet: MultichainSwapWallet
+    ) async throws(MultichainSwapExecutionFailure) -> SwapSigningWallet
 
     func signAndBroadcast(
-        transaction: any ChainKit.Transaction,
+        transactions: [any ChainKit.Transaction],
         fee: any Fee,
         nonce: BignumBigInteger,
         sourceChain: MultichainChain,
         networkType: ChainKit.Network.Type_,
-        wallet: CryptoWallet,
+        wallet: SwapSigningWallet,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> String
 }
@@ -72,7 +72,7 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
     }
 
     func resolveFee(
-        transaction: any ChainKit.Transaction,
+        transactions: [TransactionSwap],
         payloadFee: (any Fee)?,
         networkType: ChainKit.Network.Type_,
         payloadId _: String
@@ -83,7 +83,7 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
         do {
             return try await feeResolver.resolveFee(
                 mediator: client.blockchain.getMediator(network: networkType),
-                transaction: transaction
+                batch: transactions
             )
         } catch {
             throw SwapExecutionFailureMapper.failure(from: error)
@@ -91,14 +91,14 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
     }
 
     func defaultFee(
-        transaction: any ChainKit.Transaction,
+        transactions: [TransactionSwap],
         networkType: ChainKit.Network.Type_,
         payloadId _: String
     ) async throws(MultichainSwapExecutionFailure) -> any Fee {
         do {
             return try await feeResolver.resolveDefaultFee(
                 mediator: client.blockchain.getMediator(network: networkType),
-                transaction: transaction
+                batch: transactions
             )
         } catch {
             throw SwapExecutionFailureMapper.failure(from: error)
@@ -106,14 +106,14 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
     }
 
     func reserve(
-        transaction: TransactionSwap,
+        transactions: [TransactionSwap],
         feeAsset: AssetCoin,
         fee: any Fee,
         policy: GasReservePolicy,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> GasReserveResult {
         try await gasReserveResolver.reserve(
-            for: transaction,
+            for: transactions,
             feeAsset: feeAsset,
             fee: fee,
             policy: policy,
@@ -122,14 +122,14 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
     }
 
     func buildApproval(
-        mainTransaction: TransactionSwap,
+        mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: (any Fee)?,
         mainFee: any Fee,
         approvalMode: MultichainSwapApprovalMode
     ) -> SwapApprovalTransaction? {
         approvalResolver.resolveApprovalTransaction(
-            mainTransaction: mainTransaction,
+            mainTransactions: mainTransactions,
             approvalData: approvalData,
             approvalFee: approvalFee,
             mainFee: mainFee,
@@ -151,27 +151,34 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
 
     func unlockSigningWallet(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet
-    ) async throws(MultichainSwapExecutionFailure) -> CryptoWallet {
+        swapWallet: MultichainSwapWallet
+    ) async throws(MultichainSwapExecutionFailure) -> SwapSigningWallet {
         try await walletUnlocker.unlockSigningWallet(
             passcodeProvider: passcodeProvider,
-            wallet: wallet
+            swapWallet: swapWallet
         )
     }
 
     func signAndBroadcast(
-        transaction: any ChainKit.Transaction,
+        transactions: [any ChainKit.Transaction],
         fee: any Fee,
         nonce: BignumBigInteger,
         sourceChain: MultichainChain,
         networkType: ChainKit.Network.Type_,
-        wallet: CryptoWallet,
+        wallet: SwapSigningWallet,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> String {
+        guard let account = transactions.first?.account else {
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .missingField,
+                reason: "swap payload has no transaction to sign"
+            )
+        }
         let mediator = client.blockchain.getMediator(network: networkType)
         let signingOutput = try await transactionSigner.signAndEncode(
             mediator: mediator,
-            transaction: transaction,
+            transactions: transactions,
             fee: fee,
             nonce: nonce,
             sourceChain: sourceChain,
@@ -180,7 +187,7 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
         )
         return try await transactionBroadcaster.broadcast(
             mediator: mediator,
-            account: transaction.account,
+            account: account,
             signingOutput: signingOutput,
             payloadId: payloadId
         )

@@ -23,40 +23,33 @@ struct WalletBalanceHeaderMapper {
         return dateFormatter.string(from: date)
     }
 
-    func mapTotalBalanceAmount(
-        totalBalance: TotalBalance?,
-        color: TKColor
-    ) -> BalanceViewContent.Balance {
+    func mapTotalBalanceAmount(totalBalance: TotalBalance?) -> BalanceViewContent.Balance {
         guard let totalBalance else {
-            return BalanceViewContent.Balance(text: "-", color: color)
+            return BalanceViewContent.Balance(text: "-")
         }
 
         return mapFiatBalanceAmount(
             amount: totalBalance.amount,
-            currency: totalBalance.currency,
-            color: color
+            currency: totalBalance.currency
         )
     }
 
     func mapFiatBalanceAmount(
         amount: Decimal,
-        currency: Currency,
-        color: TKColor
+        currency: Currency
     ) -> BalanceViewContent.Balance {
         BalanceViewContent.Balance(
             amount: mapBalanceHeaderAmountFormat(
                 amountFormatter.formatBalanceHeaderAmount(
                     decimal: amount,
                     accessory: .fiat(currency)
-                ),
-                color: color
+                )
             )
         )
     }
 
     func mapBalanceHeaderAmountFormat(
-        _ format: BalanceHeaderAmountFormat,
-        color: TKColor
+        _ format: BalanceHeaderAmountFormat
     ) -> BalanceViewContent.Balance.Amount {
         BalanceViewContent.Balance.Amount(
             leadingText: format.leadingAccessory,
@@ -69,8 +62,7 @@ struct WalletBalanceHeaderMapper {
             },
             textSize: mapTextSize(format.textSize),
             tooltipText: format.tooltipText,
-            accessibilityText: format.fullText,
-            color: color
+            accessibilityText: format.fullText
         )
     }
 

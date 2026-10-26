@@ -515,7 +515,8 @@ private extension TonConnectConnectCoordinator {
             parentRouter: ViewControllerRouter(rootViewController: fromViewController),
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .connectDapp
         ) else { throw ConnectError.noPasscode }
 
         let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(wallet: wallet, passcode: passcode)

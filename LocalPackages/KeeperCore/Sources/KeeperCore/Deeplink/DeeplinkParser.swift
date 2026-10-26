@@ -2,8 +2,8 @@ import BigInt
 import Foundation
 import TonSwift
 
-public enum DeeplinkParserError: Swift.Error, LocalizedError, Equatable {
-    public enum UnsupportedDeeplinkCode: Int {
+@frozen public enum DeeplinkParserError: Swift.Error, LocalizedError, Equatable {
+    @frozen public enum UnsupportedDeeplinkCode: Int {
         case nilValue
         case notUrl
         case invalidPrefix
@@ -45,6 +45,7 @@ public enum DeeplinkParserError: Swift.Error, LocalizedError, Equatable {
 public struct DeeplinkParser: Sendable {
     private let tonkeeperParser: TonkeeperDeeplinkParser
     private let ethereumTransferLinkParser = EthereumTransferLinkParser()
+    private let solanaTransferLinkParser = SolanaTransferLinkParser()
     private let walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator
 
     init(
@@ -92,14 +93,19 @@ public struct DeeplinkParser: Sendable {
             return .transfer(.evmSendTransfer(evmTransfer))
         }
 
+        if let solanaTransfer = solanaTransferLinkParser.parse(string: string) {
+            return .transfer(.solanaSendTransfer(solanaTransfer))
+        }
+
         let deeplinkPrefixes = [
             "ton://",
             "tonkeeper://",
+            "keeper://",
             "tonkeeper-mob://",
             "https://app.tonkeeper.com/",
             "https://app.tonkeeper.org/",
+            "https://app.keeperwallet.com/",
             "https://tonhub.com/",
-            "tonkeeper-mob://",
             "tonkeeper-tc-mob://",
         ]
 
@@ -209,10 +215,12 @@ public struct DeeplinkParser: Sendable {
         ) {
         case ("ton", "wc", _),
              ("tonkeeper", "wc", _),
+             ("keeper", "wc", _),
              ("tonkeeper-mob", "wc", _):
             return .deeplink
         case ("https", "app.tonkeeper.com", "/wc"),
              ("https", "app.tonkeeper.org", "/wc"),
+             ("https", "app.keeperwallet.com", "/wc"),
              ("https", "tonhub.com", "/wc"):
             return .deeplink
         default:

@@ -52,11 +52,6 @@ public final class Configuration {
         }
     }
 
-    public func scamApiURL(network: Network) async -> URL? {
-        _ = await loadConfigurations()
-        return configuration(for: network).scamApiURL
-    }
-
     public var mercuryoSecret: String? {
         get async {
             await loadConfigurations().mainnet.mercuryoSecret
@@ -93,6 +88,14 @@ public final class Configuration {
 
     public var multichainHelpUrl: URL? {
         configurations.mainnet.multichainHelpUrl
+    }
+
+    public var earnUrl: URL {
+        configurations.mainnet.earnUrl ?? EarnHardcodedData.url
+    }
+
+    public var earnFeaturedVaults: [EarnFeaturedVault] {
+        configurations.mainnet.earnFeaturedVaults
     }
 
     public var tronApiUrl: URL {
@@ -158,12 +161,12 @@ public final class Configuration {
 
     public func isBatteryEnable(network: Network) async -> Bool {
         _ = await loadConfigurations()
-        return !configuration(for: network).disableBattery
+        return !overridableFlag(\.disableBattery, key: .disableBattery, network: network)
     }
 
     public func isBatterySendEnable(network: Network) async -> Bool {
         _ = await loadConfigurations()
-        return !configuration(for: network).disableBatterySend
+        return !overridableFlag(\.disableBatterySend, key: .disableBatterySend, network: network)
     }
 
     public func reportAmount(network: Network) -> NSDecimalNumber {
@@ -179,7 +182,22 @@ public final class Configuration {
     }
 
     public func isDisableBatteryCryptoRechargeModule(network: Network) -> Bool {
-        configuration(for: network).disableBatteryCryptoRechargeModule
+        overridableFlag(\.disableBatteryCryptoRechargeModule, key: .disableBatteryCryptoRechargeModule, network: network)
+    }
+
+    /// The bundled FlagsOverride.json (dev/CI builds only) wins over keys/all for a
+    /// top-level Bool of the configuration, the same way it does for the nested `flags`;
+    /// the override is applied when the value is read, so the parsed configuration
+    /// stays what the backend sent.
+    private func overridableFlag(
+        _ keyPath: KeyPath<BootConfiguration, Bool>,
+        key: BootConfiguration.CodingKeys,
+        network: Network
+    ) -> Bool {
+        if let override = StaticFlagOverrides.shared?.bootConfigurationFlags?[key.rawValue] {
+            return override
+        }
+        return configuration(for: network)[keyPath: keyPath]
     }
 
     private var configurations: BootConfigurations {
@@ -238,6 +256,23 @@ public final class Configuration {
         FeatureFlag.allCases.reduce(into: [FeatureFlag: Bool]()) { result, feature in
             result[feature] = featureEnabled(feature)
         }
+    }
+
+    public var featureFlagsDescription: String {
+        let values = featureFlags.allValues
+        let features = FeatureFlag.allCases.sorted { $0.localKey < $1.localKey }
+        let nameWidth = features.map(\.localKey.count).max() ?? 0
+        let valueWidth = "false".count
+        return features
+            .map { feature in
+                let name = feature.localKey.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
+                let enabled = "\(featureEnabled(feature))"
+                guard let source = values[feature]?.source else {
+                    return "  \(name)  \(enabled)"
+                }
+                return "  \(name)  \(enabled.padding(toLength: valueWidth, withPad: " ", startingAt: 0))  \(source)"
+            }
+            .joined(separator: "\n")
     }
 
     public func featureEnabled(_ feature: FeatureFlag) -> Bool {

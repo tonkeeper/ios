@@ -172,7 +172,7 @@ private extension ManageTokensViewModelImplementation {
                 let item = ManageTokensListItem(
                     identifier: ton.id,
                     canReorder: false,
-                    accessories: createUnpinnedItemAccessories(identifier: ton.id, isHidden: unpinnedItem.isHidden)
+                    accessories: createUnpinnedItemAccessories(identifier: ton.id, isHidden: false, canHide: false)
                 )
                 itemCellConfigurations[item] = cellConfiguration
                 snapshot.appendItems([item], toSection: .allAssets)
@@ -250,7 +250,23 @@ private extension ManageTokensViewModelImplementation {
         ]
     }
 
-    private func createUnpinnedItemAccessories(identifier: String, isHidden: Bool) -> [TKListItemAccessory] {
+    private func createUnpinnedItemAccessories(
+        identifier: String,
+        isHidden: Bool,
+        canHide: Bool = true
+    ) -> [TKListItemAccessory] {
+        let pinAccessory = TKListItemAccessory.icon(
+            TKListItemIconAccessoryView.Configuration(
+                icon: .TKUIKit.Icons.Size28.pin,
+                tintColor: .Icon.tertiary,
+                action: { [weak self] in
+                    self?.model.pinItem(identifier: identifier)
+                }
+            )
+        )
+        guard canHide else {
+            return [pinAccessory]
+        }
         if isHidden {
             return [.icon(
                 TKListItemIconAccessoryView.Configuration(
@@ -263,15 +279,7 @@ private extension ManageTokensViewModelImplementation {
             )]
         } else {
             return [
-                .icon(
-                    TKListItemIconAccessoryView.Configuration(
-                        icon: .TKUIKit.Icons.Size28.pin,
-                        tintColor: .Icon.tertiary,
-                        action: { [weak self] in
-                            self?.model.pinItem(identifier: identifier)
-                        }
-                    )
-                ),
+                pinAccessory,
                 .icon(
                     TKListItemIconAccessoryView.Configuration(
                         icon: .TKUIKit.Icons.Size28.eyeOutline,

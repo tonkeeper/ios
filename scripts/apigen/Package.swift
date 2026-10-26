@@ -12,6 +12,6 @@ let package = Package(
         .macOS(.v12),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-openapi-generator", exact: "0.3.5"),
+        .package(url: "https://github.com/apple/swift-openapi-generator", exact: "1.14.0"),
     ]
 )

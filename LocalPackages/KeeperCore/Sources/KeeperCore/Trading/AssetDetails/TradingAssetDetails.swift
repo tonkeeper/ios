@@ -13,6 +13,17 @@ public struct TradingAssetDetails: Equatable, Sendable {
     public var links: [TradingAssetLink]
     public var primaryActionTitle: String
     public var infoSource: TradingAssetInfoSource
+    public var perpMarket: TradingAssetPerpMarket?
+}
+
+public struct TradingAssetPerpMarket: Equatable, Sendable {
+    public var marketId: Int64
+    public var maxLeverage: Int?
+
+    public init(marketId: Int64, maxLeverage: Int?) {
+        self.marketId = marketId
+        self.maxLeverage = maxLeverage
+    }
 }
 
 extension TradingAssetDetails {
@@ -90,7 +101,11 @@ extension TradingAssetDetails {
                 (response.sections.links.items ?? [])
                 .map(TradingAssetLink.init(response:)) : [],
             primaryActionTitle: TKLocales.BuySellList.buy,
-            infoSource: TradingAssetInfoSource(api: response.info_source)
+            infoSource: TradingAssetInfoSource(api: response.info_source),
+            perpMarket: response.asset.perp_markets?
+                .lazy
+                .compactMap(TradingAssetPerpMarket.init(link:))
+                .first
         )
     }
 }
@@ -101,6 +116,15 @@ extension TradingAssetInfoSource {
             displayedName: api.displayed_name,
             url: URL(string: api.url)
         )
+    }
+}
+
+private extension TradingAssetPerpMarket {
+    init?(link: Components.Schemas.PerpMarketLink) {
+        guard let marketId = PerpsMarketAssetID.marketId(assetId: link.id) else {
+            return nil
+        }
+        self.init(marketId: marketId, maxLeverage: link.max_leverage)
     }
 }
 
@@ -115,6 +139,8 @@ private extension TradingAssetCapability {
             self = .swap
         case .p2p:
             self = .p2p
+        case .unknown:
+            return nil
         }
     }
 }

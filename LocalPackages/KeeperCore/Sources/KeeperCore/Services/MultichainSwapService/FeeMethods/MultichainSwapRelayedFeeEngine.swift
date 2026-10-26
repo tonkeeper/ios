@@ -2,17 +2,25 @@
 
 /// Chain-specific data arrives in `payload`, so everything around the engines stays chain-agnostic.
 struct MultichainSwapFeeContext {
-    let wallet: Wallet
+    let swapWallet: MultichainSwapWallet
     let sourceAsset: MultichainAsset
     let payloadId: String
     let requiresApproval: Bool
     let payload: MultichainSwapBatteryPayload
+    /// How much of `sourceAsset` the route takes out of the wallet, in its base units, so a fee
+    /// in that asset is weighed next to it; nil when the route did not say.
+    let spentSourceAmount: BigUInt?
+
+    var wallet: Wallet {
+        swapWallet.wallet
+    }
 }
 
 /// What the relayer is owed for a swap, at the price the user confirmed.
 enum MultichainSwapRelayedFee: Sendable, Hashable {
     case batteryCharges(Int)
     case gram(amountNano: BigUInt)
+    case token(assetId: String, amount: BigUInt)
 }
 
 protocol MultichainSwapRelayedFeeEngine {
@@ -24,13 +32,14 @@ protocol MultichainSwapRelayedFeeEngine {
     /// when none of them may be offered at all.
     func options(context: MultichainSwapFeeContext) async -> [MultichainSwapFeeOption]
 
-    /// Signs and relays the swap, returning its transaction hash. `confirmed` is the price the user
-    /// agreed to, so the engine can refuse a fee the wallet can no longer cover.
+    /// Signs and relays the swap, returning its transaction hash — or nil when the relayer
+    /// broadcasts on its own and names no transaction. `confirmed` is the price the user agreed
+    /// to, so the engine can refuse a fee the wallet can no longer cover.
     func send(
         context: MultichainSwapFeeContext,
         confirmed: MultichainSwapRelayedFee,
         passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String
+    ) async throws(MultichainSwapExecutionFailure) -> String?
 }
 
 /// A relayed send with everything it needs, so no engine has to re-derive a price that may be

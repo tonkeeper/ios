@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public actor HistoryPaginationLoader {
-    public enum Event: Sendable {
+    @frozen public enum Event: Sendable {
         case initialLoading
         case initialLoadingFailed
         case initialLoaded([HistoryEvent], hasMore: Bool)
@@ -13,7 +13,7 @@ public actor HistoryPaginationLoader {
 
     public nonisolated let events: AsyncStream<Event>
 
-    public enum ReloadReason: Sendable {
+    @frozen public enum ReloadReason: Sendable {
         /// Initial load or a user-initiated refresh: starts right away.
         case immediate
         /// Throttled refresh with no follow-up: screen appearance, filter changes.

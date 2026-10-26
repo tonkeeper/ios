@@ -18,10 +18,10 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "42")
-        XCTAssertEqual(normalized.transaction.to.display, "0x1111111111111111111111111111111111111111")
-        XCTAssertEqual(normalized.transaction.data, "0xabcd")
-        XCTAssertFalse(normalized.transaction.isMax)
+        XCTAssertEqual(try normalized.transaction.amount.description, "42")
+        XCTAssertEqual(try normalized.transaction.to.display, "0x1111111111111111111111111111111111111111")
+        XCTAssertEqual(try normalized.transaction.data, "0xabcd")
+        XCTAssertFalse(try normalized.transaction.isMax)
         let fee = try XCTUnwrap(normalized.fee as? FeeGas)
         XCTAssertEqual(fee.limit.description, "100")
         XCTAssertEqual(fee.price.description, "2")
@@ -51,7 +51,7 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertNil(try normalized.transaction.data)
         XCTAssertEqual(normalized.approvalData, "0x095ea7b3")
         let fee = try XCTUnwrap(normalized.fee as? FeeGas)
         XCTAssertEqual(fee.limit.description, "100")
@@ -77,8 +77,8 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "5039792842855559")
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertEqual(try normalized.transaction.amount.description, "5039792842855559")
+        XCTAssertNil(try normalized.transaction.data)
         let fee = try XCTUnwrap(normalized.fee as? FeeGas)
         XCTAssertEqual(fee.limit.description, "100")
         XCTAssertEqual(fee.price.description, "2")
@@ -102,6 +102,131 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
                 return XCTFail("Expected invalidPayload, got \(error)")
             }
         }
+    }
+
+    /// An Ethereum route with calldata is relayable as the call it is: the router, the coin sent
+    /// along with it, the calldata.
+    func test_evmPayload_withRouteCalldata_isRelayableAsTheRoutesCall() throws {
+        let normalized = try normalize(
+            sourceChain: .eth,
+            payload: makePayload(
+                kind: "main",
+                payloadType: "evm_tx",
+                payload: #"{"to":"0x1111111111111111111111111111111111111111","value":"0x2a","data":"0xabcd"}"#
+            )
+        )
+
+        guard case let .evm(relay)? = normalized.batteryPayload else {
+            return XCTFail("expected a relayable evm payload, got \(String(describing: normalized.batteryPayload))")
+        }
+        XCTAssertEqual(relay.chain, .eth)
+        XCTAssertEqual(relay.call.kind, .swap)
+        XCTAssertEqual(relay.call.chainId, "eth/mainnet")
+        XCTAssertEqual(relay.call.sender, address(for: .eth))
+        XCTAssertEqual(relay.call.to, "0x1111111111111111111111111111111111111111")
+        XCTAssertEqual(relay.call.value, 42)
+        XCTAssertEqual(relay.call.data, "0xabcd")
+    }
+
+    /// A sold token leaves the wallet inside the calldata: the call carries no coin, and the relay
+    /// does not guess at the amount — what the route says it spends is weighed by the fee engine.
+    func test_evmTokenPayload_withRouteCalldata_isRelayedAsTheCallAlone() throws {
+        let usdt = MultichainAsset(
+            asset: MultichainAssetDetails(
+                assetId: "eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7",
+                name: "Tether",
+                symbol: "USDT",
+                decimals: 6,
+                image: ""
+            ),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
+            balance: 0
+        )
+
+        let normalized = try normalize(
+            sourceChain: .eth,
+            sourceAsset: usdt,
+            payload: makePayload(
+                kind: "main",
+                payloadType: "evm_tx",
+                payload: #"{"to":"0x7a250d5630b4cf539739df2c5dacb4c659f2488d","value":"0x0","data":"0x38ed1739"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: usdt.asset.assetId,
+                    spendAmount: "1000000",
+                    receiveAsset: "eth/mainnet/coin"
+                )
+            )
+        )
+
+        guard case let .evm(relay)? = normalized.batteryPayload else {
+            return XCTFail("expected a relayable evm payload, got \(String(describing: normalized.batteryPayload))")
+        }
+        XCTAssertEqual(relay.call.value, 0)
+        XCTAssertEqual(relay.call.data, "0x38ed1739")
+    }
+
+    /// A swaps.xyz deposit has no calldata: the relayer carries it as the transfer it is.
+    func test_evmPayload_swapXyz_depositIsRelayableAsATransfer() throws {
+        let normalized = try normalize(
+            sourceChain: .eth,
+            payload: makePayload(
+                kind: "main",
+                payloadType: "evm_tx",
+                payload: #"{"to":"0x1111111111111111111111111111111111111111","value":"5039792842855559","data":"0x"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "eth/mainnet/coin",
+                    spendAmount: "5039792842855559",
+                    receiveAsset: "ton/mainnet/coin",
+                    depositAddress: "0x1111111111111111111111111111111111111111"
+                )
+            ),
+            provider: .swapXyz
+        )
+
+        guard case let .evm(relay)? = normalized.batteryPayload else {
+            return XCTFail("expected a relayable evm payload, got \(String(describing: normalized.batteryPayload))")
+        }
+        XCTAssertEqual(relay.call.kind, .swap)
+        XCTAssertEqual(relay.call.to, "0x1111111111111111111111111111111111111111")
+        XCTAssertEqual(relay.call.value, BigUInt("5039792842855559"))
+        XCTAssertEqual(relay.call.data, "0x")
+    }
+
+    func test_evmApprovalPayload_isNotRelayable() throws {
+        let normalized = try normalize(
+            sourceChain: .eth,
+            payload: makePayload(
+                kind: "approval",
+                payloadType: "evm_approval_tx",
+                payload: #"{"to":"0x1111111111111111111111111111111111111111","value":"0x0","data":"0x095ea7b3","gas":"0x64","gasPrice":"0x2"}"#
+            )
+        )
+
+        XCTAssertNil(normalized.batteryPayload)
+    }
+
+    /// Whether the relayer serves a chain is the fee engine's question: every EVM route keeps its
+    /// relayable form.
+    func test_bscPayload_isRelayableLikeAnyEVMChain() throws {
+        let normalized = try normalize(
+            sourceChain: .bsc,
+            payload: makePayload(
+                sourceChain: .bsc,
+                kind: "main",
+                payloadType: "evm_tx",
+                payload: #"{"to":"0x1111111111111111111111111111111111111111","value":"0x2a","data":"0xabcd"}"#
+            )
+        )
+
+        guard case let .evm(relay)? = normalized.batteryPayload else {
+            return XCTFail("Expected an EVM relay, got \(String(describing: normalized.batteryPayload))")
+        }
+        XCTAssertEqual(relay.chain, .bsc)
+        XCTAssertEqual(relay.call.kind, .swap)
+        XCTAssertEqual(relay.call.chainId, "bsc/mainnet")
+        XCTAssertEqual(relay.call.to, "0x1111111111111111111111111111111111111111")
+        XCTAssertEqual(relay.call.value, 42)
+        XCTAssertEqual(relay.call.data, "0xabcd")
     }
 
     func test_approvalPayload_withMainType_isRejectedBeforeParsing() {
@@ -138,22 +263,45 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         }
     }
 
-    func test_swapXyzApprovalPayload_isRejectedBeforeParsing() {
-        XCTAssertThrowsError(
-            try normalize(
-                sourceChain: .eth,
-                payload: makePayload(
-                    kind: "approval",
-                    payloadType: "evm_approval_tx",
-                    payload: "{}"
+    func test_swapXyzApprovalPayload_extractsApprovalDataAndProviderFee() throws {
+        let usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        let approveCalldata = "0x095ea7b3"
+            + "0000000000000000000000001b6257cae4192e62b629efca21771be3d759183d"
+            + "00000000000000000000000000000000000000000000000000000000003d0900"
+        let normalized = try normalize(
+            sourceChain: .eth,
+            sourceAsset: MultichainAsset(
+                asset: MultichainAssetDetails(
+                    assetId: "eth/mainnet/erc20/\(usdc)",
+                    name: "USDC",
+                    symbol: "USDC",
+                    decimals: 6,
+                    image: ""
                 ),
-                provider: .swapXyz
-            )
-        ) { error in
-            guard case .invalidPayload = error as? MultichainSwapExecutionFailure else {
-                return XCTFail("Expected invalidPayload, got \(error)")
-            }
-        }
+                price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
+                balance: 0
+            ),
+            payload: makePayload(
+                kind: "approval",
+                payloadType: "evm_approval_tx",
+                payload: #"{"to":"\#(usdc)","value":"0","data":"\#(approveCalldata)","gas":"73254","gasPrice":"314078930"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "eth/mainnet/erc20/\(usdc)",
+                    spendAmount: "4000000",
+                    receiveAsset: "eth/mainnet/coin"
+                ),
+                calldataPayloadType: .exact
+            ),
+            provider: .swapXyz
+        )
+
+        XCTAssertEqual(normalized.approvalData, approveCalldata)
+        XCTAssertNil(try normalized.transaction.data)
+        XCTAssertEqual(try normalized.transaction.to.display.lowercased(), usdc)
+        XCTAssertTrue(normalized.isExactCalldata)
+        let fee = try XCTUnwrap(normalized.fee as? FeeGas)
+        XCTAssertEqual(fee.limit.description, "73254")
+        XCTAssertEqual(fee.price.description, "314078930")
     }
 
     func test_unknownPayloadKind_isRejectedBeforeParsing() {
@@ -191,13 +339,13 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "700000000")
-        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
-        XCTAssertEqual(normalized.transaction.data, "ton-payload")
-        XCTAssertNil(normalized.transaction.initData)
+        XCTAssertEqual(try normalized.transaction.amount.description, "700000000")
+        XCTAssertEqual(try normalized.transaction.to.display, tonAddress)
+        XCTAssertEqual(try normalized.transaction.data, "ton-payload")
+        XCTAssertNil(try normalized.transaction.initData)
         XCTAssertEqual(
             normalized.batteryPayload,
-            .ton(TonSwapMessage(to: tonAddress, amount: 700_000_000, payload: "ton-payload", stateInit: nil))
+            .ton([TonSwapMessage(to: tonAddress, amount: 700_000_000, payload: "ton-payload", stateInit: nil)])
         )
     }
 
@@ -222,9 +370,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "580000000")
-        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
-        XCTAssertEqual(normalized.transaction.data, "ton-payload")
+        XCTAssertEqual(try normalized.transaction.amount.description, "580000000")
+        XCTAssertEqual(try normalized.transaction.to.display, tonAddress)
+        XCTAssertEqual(try normalized.transaction.data, "ton-payload")
     }
 
     func test_tonPayload_carryingAnythingItCannotReproduce_isNotRelayable() throws {
@@ -253,25 +401,137 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         }
     }
 
-    func test_tonPayloadWithSeveralMessages_isNotRelayable() throws {
+    func test_tonPayloadWithSeveralMessages_keepsEveryMessageInOrder() throws {
         let tonAddress = address(for: .ton)
         let normalized = try normalize(
             sourceChain: .ton,
             payload: makePayload(
                 sourceChain: .ton,
                 payloadType: "ton_boc",
-                payload: #"[{"to":"\#(tonAddress)","value":"700000000","payload":"first"},{"to":"\#(tonAddress)","value":"1","payload":"second"}]"#,
+                payload: splitEnvelope(to: tonAddress),
                 humanSummary: makeHumanSummary(
                     spendAsset: "ton/mainnet/coin",
-                    spendAmount: "1000000000",
+                    spendAmount: "3000000000",
                     receiveAsset: "eth/mainnet/coin",
                     depositAddress: nil
-                )
+                ),
+                calldataPayloadType: .exact
             ),
             provider: .swapXyz
         )
 
-        XCTAssertNil(normalized.batteryPayload)
+        XCTAssertEqual(normalized.transactions.map(\.amount.description), ["185000000", "330000000", "260000000"])
+        XCTAssertEqual(normalized.transactions.map(\.to.display), [tonAddress, tonAddress, tonAddress])
+        XCTAssertEqual(normalized.transactions.map(\.data), ["first", "second", "third"])
+        XCTAssertNil(normalized.fee)
+        XCTAssertEqual(normalized.gasReservePolicy, .drainorerror)
+        XCTAssertEqual(
+            normalized.batteryPayload,
+            .ton([
+                TonSwapMessage(to: tonAddress, amount: 185_000_000, payload: "first", stateInit: nil),
+                TonSwapMessage(to: tonAddress, amount: 330_000_000, payload: "second", stateInit: nil),
+                TonSwapMessage(to: tonAddress, amount: 260_000_000, payload: "third", stateInit: nil),
+            ])
+        )
+    }
+
+    func test_splitTonRoute_isNeverResizedToFitTheFee() throws {
+        let normalized = try normalize(
+            sourceChain: .ton,
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "ton_boc",
+                payload: splitEnvelope(to: address(for: .ton)),
+                calldataPayloadType: .flex
+            ),
+            provider: .swapXyz
+        )
+        let reserve = GasReserveResult(
+            amount: BignumBigInteger.Companion.shared.fromInt(int: 7),
+            isAmountAdjusted: true,
+            error: nil
+        )
+
+        let adjusted = SwapTransactionAdjuster.adjustedTransactions(
+            normalized.transactions,
+            gasReserve: reserve,
+            calldataType: normalized.calldataType
+        )
+
+        XCTAssertEqual(normalized.gasReservePolicy, .drainorerror)
+        XCTAssertEqual(adjusted.map(\.amount.description), ["185000000", "330000000", "260000000"])
+        XCTAssertFalse(adjusted.contains(where: \.isMax))
+    }
+
+    /// The deposit address and the spend amount describe the whole route: a part that falls back
+    /// to them would send the whole amount, or send it somewhere the quote never named.
+    func test_splitTonRoute_partWithoutItsOwnAmountOrRecipient_isRejected() {
+        let tonAddress = address(for: .ton)
+        let envelopes = [
+            #"[{"address":"\#(tonAddress)","amount":"185000000","payload":"first"},{"address":"\#(tonAddress)","payload":"second"}]"#,
+            #"[{"address":"\#(tonAddress)","amount":"185000000","payload":"first"},{"amount":"330000000","payload":"second"}]"#,
+        ]
+        for envelope in envelopes {
+            XCTAssertThrowsError(
+                try normalize(
+                    sourceChain: .ton,
+                    payload: makePayload(
+                        sourceChain: .ton,
+                        payloadType: "ton_boc",
+                        payload: envelope,
+                        humanSummary: makeHumanSummary(
+                            spendAsset: "ton/mainnet/coin",
+                            spendAmount: "3000000000",
+                            receiveAsset: "eth/mainnet/coin",
+                            depositAddress: tonAddress
+                        )
+                    ),
+                    provider: .swapXyz
+                )
+            ) { error in
+                guard case .invalidPayload(payloadId: "payload-ton_boc", _) = error as? MultichainSwapExecutionFailure else {
+                    return XCTFail("Unexpected failure \(error)")
+                }
+            }
+        }
+    }
+
+    func test_tonJettonSwapMessages_attachTheTonTheyCarry() throws {
+        let tonAddress = address(for: .ton)
+        let jettonSwap = try normalize(
+            sourceChain: .ton,
+            sourceAsset: makeJettonAsset(),
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "ton_boc",
+                payload: splitEnvelope(to: tonAddress)
+            ),
+            provider: .swapXyz
+        )
+        XCTAssertEqual(jettonSwap.attachedEnergy.description, "775000000")
+
+        let tonSwap = try normalize(
+            sourceChain: .ton,
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "ton_boc",
+                payload: splitEnvelope(to: tonAddress)
+            ),
+            provider: .swapXyz
+        )
+        XCTAssertEqual(tonSwap.attachedEnergy.description, "0")
+
+        let jettonDeposit = try normalize(
+            sourceChain: .ton,
+            sourceAsset: makeJettonAsset(),
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "alt_vm_deposit",
+                payload: #"[{"to":"\#(tonAddress)","value":"100000000"}]"#
+            ),
+            provider: .swapXyz
+        )
+        XCTAssertEqual(jettonDeposit.attachedEnergy.description, "0")
     }
 
     func test_tonRelayObstacle_acceptsOnlyWhatTheRelayCarries() {
@@ -281,8 +541,20 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         XCTAssertNil(
             MultichainSwapPayloadAdapter.tonRelayObstacle(#"[{"to":"a","value":"1","data":"b"}]"#)
         )
+        XCTAssertNil(
+            MultichainSwapPayloadAdapter.tonRelayObstacle(
+                #"[{"address":"a","amount":"1","payload":"b"},{"to":"c","value":"2","data":"d"}]"#
+            )
+        )
+        XCTAssertEqual(
+            MultichainSwapPayloadAdapter.tonRelayObstacle(
+                #"[{"address":"a","amount":"1"},{"address":"c","amount":"2","stateInit":"x"}]"#
+            ),
+            "message carries stateInit"
+        )
         XCTAssertNotNil(MultichainSwapPayloadAdapter.tonRelayObstacle("not json"))
         XCTAssertNotNil(MultichainSwapPayloadAdapter.tonRelayObstacle(#"{"to":"a","value":"1"}"#))
+        XCTAssertNotNil(MultichainSwapPayloadAdapter.tonRelayObstacle("[]"))
     }
 
     func test_tronPayload_swapXyz_buildsPlainTransferWithoutData() throws {
@@ -303,13 +575,13 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "700")
-        XCTAssertEqual(normalized.transaction.to.display, tronAddress)
+        XCTAssertEqual(try normalized.transaction.amount.description, "700")
+        XCTAssertEqual(try normalized.transaction.to.display, tronAddress)
         XCTAssertEqual(
             normalized.batteryPayload,
             .tron(TronSwapTransfer(to: tronAddress, amount: 700))
         )
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertNil(try normalized.transaction.data)
     }
 
     func test_btcPayload_swapXyz_buildsPlainTransferWithoutData() throws {
@@ -330,9 +602,49 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "2500")
-        XCTAssertEqual(normalized.transaction.to.display, btcAddress)
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertEqual(try normalized.transaction.amount.description, "2500")
+        XCTAssertEqual(try normalized.transaction.to.display, btcAddress)
+        XCTAssertNil(try normalized.transaction.data)
+    }
+
+    func test_tonSource_sendsFromTheWalletContractVersion() throws {
+        let normalized = try normalize(
+            sourceChain: .ton,
+            payload: makePayload(
+                sourceChain: .ton,
+                payloadType: "alt_vm_deposit",
+                payload: #"[{"to":"\#(address(for: .ton))","toExtra":null,"value":"1000000000","chainId":999000337,"chainKey":"ton"}]"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "ton/mainnet/coin",
+                    spendAmount: "1000000000",
+                    receiveAsset: "eth/mainnet/coin",
+                    depositAddress: nil
+                )
+            ),
+            provider: .swapXyz
+        )
+
+        XCTAssertEqual(try normalized.transaction.account.address.type, .tonv4r2)
+    }
+
+    func test_btcSource_keepsAnUntypedSenderAddress() throws {
+        let normalized = try normalize(
+            sourceChain: .btc,
+            payload: makePayload(
+                sourceChain: .btc,
+                payloadType: "utxo_psbt",
+                payload: #"{"to":"","value":""}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "btc/mainnet/coin",
+                    spendAmount: "2500",
+                    receiveAsset: "ton/mainnet/coin",
+                    depositAddress: address(for: .btc)
+                )
+            ),
+            provider: .swapXyz
+        )
+
+        XCTAssertEqual(try normalized.transaction.account.address.type, .default_)
     }
 
     func test_tonAltVmDepositPayload_swapXyz_buildsPlainTransfer() throws {
@@ -353,10 +665,10 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "9223291577")
-        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
-        XCTAssertNil(normalized.transaction.data)
-        XCTAssertNil(normalized.transaction.initData)
+        XCTAssertEqual(try normalized.transaction.amount.description, "9223291577")
+        XCTAssertEqual(try normalized.transaction.to.display, tonAddress)
+        XCTAssertNil(try normalized.transaction.data)
+        XCTAssertNil(try normalized.transaction.initData)
         // A deposit is not the BOC the relayer knows how to take over.
         XCTAssertNil(normalized.batteryPayload)
     }
@@ -484,8 +796,8 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapKit
         )
 
-        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
-        XCTAssertEqual(normalized.transaction.amount.description, "50000000")
+        XCTAssertEqual(try normalized.transaction.to.display, tonAddress)
+        XCTAssertEqual(try normalized.transaction.amount.description, "50000000")
         XCTAssertEqual(
             normalized.batteryPayload,
             .tonJettonDeposit(TonJettonSwapDeposit(recipient: tonAddress, amount: 50_000_000))
@@ -538,9 +850,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapKit
         )
 
-        XCTAssertEqual(normalized.transaction.to.display, deposit)
-        XCTAssertEqual(normalized.transaction.amount.description, "50000000")
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertEqual(try normalized.transaction.to.display, deposit)
+        XCTAssertEqual(try normalized.transaction.amount.description, "50000000")
+        XCTAssertNil(try normalized.transaction.data)
     }
 
     /// The translation is scoped to the descriptor: a payload whose shape the schema fixes reaches
@@ -619,9 +931,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "9191671")
-        XCTAssertEqual(normalized.transaction.to.display, tronAddress)
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertEqual(try normalized.transaction.amount.description, "9191671")
+        XCTAssertEqual(try normalized.transaction.to.display, tronAddress)
+        XCTAssertNil(try normalized.transaction.data)
         // A deposit is the one TRON shape a relayer can rebuild, whatever the payload is labelled.
         XCTAssertEqual(
             normalized.batteryPayload,
@@ -648,7 +960,7 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             provider: .swapXyz
         )
 
-        XCTAssertNil(normalized.transaction.data)
+        XCTAssertNil(try normalized.transaction.data)
         XCTAssertEqual(
             normalized.batteryPayload,
             .tron(TronSwapTransfer(to: "TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr", amount: 13_125_976))
@@ -672,9 +984,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "1000000000")
-        XCTAssertEqual(normalized.transaction.to.display, tonAddress)
-        XCTAssertEqual(normalized.transaction.data, "ton-payload")
+        XCTAssertEqual(try normalized.transaction.amount.description, "1000000000")
+        XCTAssertEqual(try normalized.transaction.to.display, tonAddress)
+        XCTAssertEqual(try normalized.transaction.data, "ton-payload")
     }
 
     func test_btcPayload_parsesQuotedPsbtAndHumanSummary() throws {
@@ -694,9 +1006,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "2500")
-        XCTAssertEqual(normalized.transaction.to.display, btcAddress)
-        XCTAssertEqual(normalized.transaction.data, "psbt-value")
+        XCTAssertEqual(try normalized.transaction.amount.description, "2500")
+        XCTAssertEqual(try normalized.transaction.to.display, btcAddress)
+        XCTAssertEqual(try normalized.transaction.data, "psbt-value")
     }
 
     func test_btcPayload_hasNoLocalFee() throws {
@@ -721,8 +1033,8 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "21853")
-        XCTAssertEqual(normalized.transaction.data, psbt)
+        XCTAssertEqual(try normalized.transaction.amount.description, "21853")
+        XCTAssertEqual(try normalized.transaction.data, psbt)
         XCTAssertNil(normalized.fee)
     }
 
@@ -743,9 +1055,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "2500")
-        XCTAssertEqual(normalized.transaction.to.display, btcAddress)
-        XCTAssertEqual(normalized.transaction.data, "psbt-value")
+        XCTAssertEqual(try normalized.transaction.amount.description, "2500")
+        XCTAssertEqual(try normalized.transaction.to.display, btcAddress)
+        XCTAssertEqual(try normalized.transaction.data, "psbt-value")
     }
 
     func test_tronPayload_passesRawJsonAndHumanSummary() throws {
@@ -766,9 +1078,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(normalized.transaction.amount.description, "700")
-        XCTAssertEqual(normalized.transaction.to.display, tronAddress)
-        XCTAssertEqual(normalized.transaction.data, rawPayload)
+        XCTAssertEqual(try normalized.transaction.amount.description, "700")
+        XCTAssertEqual(try normalized.transaction.to.display, tronAddress)
+        XCTAssertEqual(try normalized.transaction.data, rawPayload)
     }
 
     func test_adjustedSwapTransaction_appliesShrunkAmountAndMarksMax() throws {
@@ -786,18 +1098,20 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             error: nil
         )
 
-        let adjusted = SwapTransactionAdjuster.adjustedTransaction(
-            normalized.transaction,
-            gasReserve: reserve,
-            calldataType: .flex
+        let adjusted = try XCTUnwrap(
+            SwapTransactionAdjuster.adjustedTransactions(
+                normalized.transactions,
+                gasReserve: reserve,
+                calldataType: .flex
+            ).first
         )
 
         XCTAssertEqual(adjusted.amount.description, "7")
         XCTAssertTrue(adjusted.isMax)
-        XCTAssertEqual(adjusted.to.display, normalized.transaction.to.display)
-        XCTAssertEqual(adjusted.data, normalized.transaction.data)
-        XCTAssertEqual(adjusted.account, normalized.transaction.account)
-        XCTAssertEqual(adjusted.destination, normalized.transaction.destination)
+        XCTAssertEqual(adjusted.to.display, try normalized.transaction.to.display)
+        XCTAssertEqual(adjusted.data, try normalized.transaction.data)
+        XCTAssertEqual(adjusted.account, try normalized.transaction.account)
+        XCTAssertEqual(adjusted.destination, try normalized.transaction.destination)
     }
 
     func test_adjustedSwapTransaction_keepsTransactionWhenNotAdjusted() throws {
@@ -815,10 +1129,12 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             error: nil
         )
 
-        let adjusted = SwapTransactionAdjuster.adjustedTransaction(
-            normalized.transaction,
-            gasReserve: reserve,
-            calldataType: .flex
+        let adjusted = try XCTUnwrap(
+            SwapTransactionAdjuster.adjustedTransactions(
+                normalized.transactions,
+                gasReserve: reserve,
+                calldataType: .flex
+            ).first
         )
 
         XCTAssertEqual(adjusted.amount.description, "42")
@@ -843,10 +1159,12 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             error: nil
         )
 
-        let adjusted = SwapTransactionAdjuster.adjustedTransaction(
-            normalized.transaction,
-            gasReserve: reserve,
-            calldataType: normalized.calldataType
+        let adjusted = try XCTUnwrap(
+            SwapTransactionAdjuster.adjustedTransactions(
+                normalized.transactions,
+                gasReserve: reserve,
+                calldataType: normalized.calldataType
+            ).first
         )
 
         XCTAssertEqual(adjusted.amount.description, "42")
@@ -876,6 +1194,29 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
         XCTAssertEqual(flex.gasReservePolicy, .shrinktofit)
     }
 
+    func test_calldataType_withoutBackendValue_signsASolanaTransactionAsBuilt() throws {
+        let transaction = "AQ=="
+        for provider in [MultichainSwapProvider.swapKit, .swapXyz] {
+            let normalized = try normalize(
+                sourceChain: .sol,
+                payload: makePayload(
+                    sourceChain: .sol,
+                    payloadType: "solana_tx",
+                    payload: provider == .swapXyz ? #"{"base64Tx":"\#(transaction)"}"# : transaction,
+                    humanSummary: makeHumanSummary(
+                        spendAsset: "sol/mainnet/coin",
+                        spendAmount: "1000",
+                        receiveAsset: "ton/mainnet/coin",
+                        depositAddress: address(for: .sol)
+                    )
+                ),
+                provider: provider
+            )
+            XCTAssertEqual(normalized.calldataType, .exact, "\(provider)")
+            XCTAssertEqual(try normalized.transaction.data, transaction, "\(provider)")
+        }
+    }
+
     /// Without `calldata_payload_type` only a payload this path builds itself may be assumed
     /// flexible. Assuming it for one that carries its own transaction is destructive: the EVM leg is
     /// refused outright, and the BTC and TRON ones lose their payload to a plain deposit transfer.
@@ -889,7 +1230,7 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
         XCTAssertEqual(evmCalldata.calldataType, .exact)
-        XCTAssertEqual(evmCalldata.transaction.data, "0xabcd")
+        XCTAssertEqual(try evmCalldata.transaction.data, "0xabcd")
 
         let btcPsbt = try normalize(
             sourceChain: .btc,
@@ -906,7 +1247,7 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             )
         )
         XCTAssertEqual(btcPsbt.calldataType, .exact)
-        XCTAssertEqual(btcPsbt.transaction.data, "psbt-value")
+        XCTAssertEqual(try btcPsbt.transaction.data, "psbt-value")
 
         let swapXyzDeposit = try normalize(
             sourceChain: .btc,
@@ -973,10 +1314,9 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
                 payload: #"{"to":"0x1111111111111111111111111111111111111111","value":"0x2a","data":"0x"}"#
             )
         )
-        let transfer = TransactionTransfer(
+        let transfer = try TransactionTransfer(
             account: normalized.transaction.account,
             amount: BignumBigInteger.Companion.shared.fromInt(int: 42),
-            energy: normalized.transaction.energy,
             isMax: false,
             to: normalized.transaction.to,
             memo: "memo",
@@ -1008,7 +1348,25 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
     }
 }
 
+private extension MultichainSwapPayloadAdapter.Normalized {
+    var transaction: TransactionSwap {
+        get throws {
+            XCTAssertEqual(transactions.count, 1)
+            return try XCTUnwrap(transactions.first)
+        }
+    }
+}
+
 private extension MultichainSwapPayloadAdapterTests {
+    func splitEnvelope(to address: String) -> String {
+        let messages = [
+            #"{"address":"\#(address)","amount":"185000000","payload":"first"}"#,
+            #"{"address":"\#(address)","amount":"330000000","payload":"second"}"#,
+            #"{"address":"\#(address)","amount":"260000000","payload":"third"}"#,
+        ]
+        return "[\(messages.joined(separator: ","))]"
+    }
+
     func normalize(
         sourceChain: MultichainChain,
         sourceAsset: MultichainAsset? = nil,
@@ -1016,7 +1374,7 @@ private extension MultichainSwapPayloadAdapterTests {
         provider: MultichainSwapProvider = .swapKit
     ) throws -> MultichainSwapPayloadAdapter.Normalized {
         try adapter.normalize(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: sourceAsset ?? makeAsset(chain: sourceChain),
             destinationAsset: makeAsset(chain: .ton),
             payload: payload,
@@ -1067,27 +1425,27 @@ private extension MultichainSwapPayloadAdapterTests {
         )
     }
 
-    func makeWallet() -> Wallet {
+    func makeSwapWallet() -> MultichainSwapWallet {
         let publicKey = PublicKey(data: Data(repeating: 1, count: 32))
-        return Wallet(
+        let state = MultichainWalletState(
+            walletId: "wallet",
+            addresses: MultichainChain.allCases.map {
+                MultichainWalletAddress(
+                    chain: $0,
+                    address: address(for: $0),
+                    type: walletAddressType(for: $0)
+                )
+            }
+        )
+        let wallet = Wallet(
             id: "wallet",
             identity: WalletIdentity(network: .mainnet, kind: .Regular(publicKey, .v4R2)),
             metaData: WalletMetaData(label: "wallet", tintColor: .SteelGray, icon: .icon(.wallet)),
             setupSettings: WalletSetupSettings(),
             batterySettings: BatterySettings(),
-            multichain: .multichain(
-                MultichainWalletState(
-                    walletId: "wallet",
-                    addresses: MultichainChain.allCases.map {
-                        MultichainWalletAddress(
-                            chain: $0,
-                            address: address(for: $0),
-                            type: walletAddressType(for: $0)
-                        )
-                    }
-                )
-            )
+            multichain: .multichain(state)
         )
+        return MultichainSwapWallet(wallet: wallet, registeredState: state)
     }
 
     func makeAsset(chain: MultichainChain) -> MultichainAsset {
@@ -1100,7 +1458,7 @@ private extension MultichainSwapPayloadAdapterTests {
                 decimals: chain == .btc ? 8 : 18,
                 image: ""
             ),
-            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 0
         )
     }
@@ -1114,7 +1472,7 @@ private extension MultichainSwapPayloadAdapterTests {
                 decimals: 6,
                 image: ""
             ),
-            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 0
         )
     }
@@ -1132,7 +1490,7 @@ private extension MultichainSwapPayloadAdapterTests {
             return .tonv4r2
         case .btc:
             return .btcsegwit
-        case .eth, .base, .tron, .arb, .bsc:
+        case .eth, .base, .tron, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
             return .default_
         }
     }
@@ -1143,7 +1501,7 @@ private extension MultichainSwapPayloadAdapterTests {
             return .tonV4R2
         case .btc:
             return .btcP2WPKH
-        case .eth, .base, .tron, .arb, .bsc:
+        case .eth, .base, .tron, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
             return nil
         }
     }
@@ -1172,6 +1530,14 @@ private extension MultichainChain {
             return "arb/mainnet"
         case .bsc:
             return "bsc/mainnet"
+        case .sol:
+            return "sol/mainnet"
+        case .polygon:
+            return "polygon/mainnet"
+        case .avax:
+            return "avax/mainnet"
+        case .robinhood:
+            return "robinhood/mainnet"
         }
     }
 }

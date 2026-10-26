@@ -57,10 +57,10 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
 
         viewModel.setupAmountInput()
 
-        amountInput.didEditText("0.00379")
+        amountInput.setText("0.00379")
         XCTAssertTrue(amountInput.isEnable)
 
-        amountInput.didEditText("0.0038")
+        amountInput.setText("0.0038")
         XCTAssertFalse(amountInput.isEnable)
     }
 
@@ -91,24 +91,19 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
         let asset = makeMultichainAsset(balance: balance)
         let (viewModel, amountInput) = makeModule(flow: .withdraw, assetContext: .multichain(asset), assetUnit: asset)
 
-        var lastBalanceConfiguration: AmountInputBalanceView.Configuration?
-        amountInput.didUpdateBalanceViewConfiguration = { lastBalanceConfiguration = $0 }
-        var lastInputText: String?
-        amountInput.didUpdateInputText = { lastInputText = $0 }
-
         viewModel.setupAmountInput()
 
         var lastSourceAmount: BigUInt?
         amountInput.didUpdateSourceAmount = { lastSourceAmount = $0 }
 
-        amountInput.didEditText("0.00379")
-        amountInput.didEditText("")
+        amountInput.setText("0.00379")
+        amountInput.setText("")
         XCTAssertEqual(lastSourceAmount, 0)
 
-        lastBalanceConfiguration?.maxButtonConfiguration?.action?()
+        amountInput.tapMax()
 
         XCTAssertEqual(lastSourceAmount, balance)
-        XCTAssertEqual(lastInputText, "0.00379")
+        XCTAssertEqual(amountInput.text, "0.00379")
     }
 
     func test_maxButton_whenAtMax_togglesOff() {
@@ -116,41 +111,33 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
         let asset = makeMultichainAsset(balance: balance)
         let (viewModel, amountInput) = makeModule(flow: .withdraw, assetContext: .multichain(asset), assetUnit: asset)
 
-        var lastBalanceConfiguration: AmountInputBalanceView.Configuration?
-        amountInput.didUpdateBalanceViewConfiguration = { lastBalanceConfiguration = $0 }
-        var lastInputText: String?
-        amountInput.didUpdateInputText = { lastInputText = $0 }
-
         viewModel.setupAmountInput()
 
         var lastSourceAmount: BigUInt?
         amountInput.didUpdateSourceAmount = { lastSourceAmount = $0 }
 
-        lastBalanceConfiguration?.maxButtonConfiguration?.action?()
+        amountInput.tapMax()
         XCTAssertEqual(lastSourceAmount, balance)
-        XCTAssertEqual(lastInputText, "0.00379")
+        XCTAssertEqual(amountInput.text, "0.00379")
 
-        lastBalanceConfiguration?.maxButtonConfiguration?.action?()
+        amountInput.tapMax()
         XCTAssertEqual(lastSourceAmount, 0)
-        XCTAssertEqual(lastInputText, "")
+        XCTAssertEqual(amountInput.text, "")
     }
 
     func test_maxButton_withZeroBalance_doesNotWipeInput() {
         let asset = makeMultichainAsset(balance: 0)
         let (viewModel, amountInput) = makeModule(flow: .withdraw, assetContext: .multichain(asset), assetUnit: asset)
 
-        var lastBalanceConfiguration: AmountInputBalanceView.Configuration?
-        amountInput.didUpdateBalanceViewConfiguration = { lastBalanceConfiguration = $0 }
-
         viewModel.setupAmountInput()
 
         var lastSourceAmount: BigUInt?
         amountInput.didUpdateSourceAmount = { lastSourceAmount = $0 }
 
-        amountInput.didEditText("0.00379")
+        amountInput.setText("0.00379")
         XCTAssertEqual(lastSourceAmount, BigUInt(379_000))
 
-        lastBalanceConfiguration?.maxButtonConfiguration?.action?()
+        amountInput.tapMax()
 
         XCTAssertEqual(lastSourceAmount, BigUInt(379_000))
     }
@@ -346,7 +333,7 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
         )
         viewModel.setupAmountInput()
 
-        amountInput.didEditText("10")
+        amountInput.setText("10")
 
         XCTAssertEqual(viewModel.selectedMerchant?.id, "B")
     }
@@ -411,16 +398,13 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
             suggestedQuotes: [makeQuote("A", min: 0.005, rate: 62000, converted: 310)]
         )
 
-        var lastValueConfiguration: AmountInputValueView.Configuration?
-        amountInput.didUpdateValueViewConfiguration = { lastValueConfiguration = $0 }
-
-        amountInput.didEditText("0.001") // below the 0.005 min
+        amountInput.setText("0.001") // below the 0.005 min
 
         XCTAssertNotNil(viewModel.minAmountText(for: "A"))
         XCTAssertFalse(viewModel.shouldHideConvertedAmount)
         XCTAssertFalse(amountInput.isConvertedAmountHidden)
         XCTAssertEqual(amountInput.rate, NSDecimalNumber(value: 100_000))
-        XCTAssertEqual(lastValueConfiguration?.convertedButtonConfiguration.text, "100")
+        XCTAssertEqual(amountInput.converted.text, "100")
     }
 
     func test_withdrawMultichain_withinProviderLimits_prefersQuoteRateOverMarketPrice() {
@@ -435,15 +419,12 @@ final class InsertAmountViewModelBalanceTests: XCTestCase {
             suggestedQuotes: []
         )
 
-        var lastValueConfiguration: AmountInputValueView.Configuration?
-        amountInput.didUpdateValueViewConfiguration = { lastValueConfiguration = $0 }
-
-        amountInput.didEditText("0.01") // above the 0.005 min
+        amountInput.setText("0.01") // above the 0.005 min
 
         XCTAssertNil(viewModel.minAmountText(for: "A"))
         XCTAssertFalse(amountInput.isConvertedAmountHidden)
         XCTAssertEqual(amountInput.rate, NSDecimalNumber(value: 62000))
-        XCTAssertEqual(lastValueConfiguration?.convertedButtonConfiguration.text, "620")
+        XCTAssertEqual(amountInput.converted.text, "620")
     }
 
     func test_withdrawLegacy_belowProviderMin_withoutMarketPrice_hidesConvertedAmount() {
@@ -472,12 +453,13 @@ private extension InsertAmountViewModelBalanceTests {
         assetContext: InsertAmountAssetContext,
         assetUnit: any AmountInputUnit,
         quoteService: any InsertAmountQuoteServicing = QuoteServiceStub()
-    ) -> (InsertAmountViewModel, AmountInputViewModelImplementation) {
+    ) -> (InsertAmountViewModel, AmountInputSwiftUIViewModel) {
         let currency = RemoteCurrency(
             code: "USD",
             name: "United States Dollar",
             image: "",
-            type: "fiat"
+            type: "fiat",
+            symbol: "$"
         )
         let amountFormatter = makeAmountFormatter()
 
@@ -485,7 +467,7 @@ private extension InsertAmountViewModelBalanceTests {
         case .deposit: (currency, assetUnit)
         case .withdraw: (assetUnit, currency)
         }
-        let amountInput = AmountInputViewModelImplementation(
+        let amountInput = AmountInputSwiftUIViewModel(
             amountFormatter: amountFormatter,
             sourceUnit: sourceUnit,
             destinationUnit: destinationUnit
@@ -520,7 +502,7 @@ private extension InsertAmountViewModelBalanceTests {
         makeDepositModuleWithInput().0
     }
 
-    func makeDepositModuleWithInput() -> (InsertAmountViewModel, AmountInputViewModelImplementation) {
+    func makeDepositModuleWithInput() -> (InsertAmountViewModel, AmountInputSwiftUIViewModel) {
         let asset = makeLegacyAsset()
         return makeModule(flow: .deposit, assetContext: .legacy(asset), assetUnit: asset)
     }
@@ -560,8 +542,7 @@ private extension InsertAmountViewModelBalanceTests {
             price: MultichainAssetPrice(
                 prices: prices,
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: balance
         )

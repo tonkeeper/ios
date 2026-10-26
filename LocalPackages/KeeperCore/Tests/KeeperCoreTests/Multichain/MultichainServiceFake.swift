@@ -4,6 +4,8 @@ import Foundation
 struct MultichainServiceFake: MultichainService {
     enum WalletAssets {
         case listing([MultichainAsset])
+        /// Served one per request, the cursor being the index of the page asked for.
+        case pages([[MultichainAsset]])
         case failure
     }
 
@@ -96,9 +98,10 @@ struct MultichainServiceFake: MultichainService {
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
-        cursor _: String?
+        cursor: String?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         requests.record(assetIds: assetIds)
         switch walletAssetsScript?.next() ?? walletAssets {
@@ -107,6 +110,16 @@ struct MultichainServiceFake: MultichainService {
                 assets.filter { ids.contains($0.asset.assetId) }
             } ?? assets
             return MultichainWalletAssetsPage(assets: filtered, nextCursor: nil, fiatPrice: [:])
+        case let .pages(pages):
+            let index = cursor.flatMap(Int.init) ?? 0
+            guard pages.indices.contains(index) else {
+                throw .connectionError
+            }
+            return MultichainWalletAssetsPage(
+                assets: pages[index],
+                nextCursor: index + 1 < pages.count ? String(index + 1) : nil,
+                fiatPrice: [:]
+            )
         case .failure:
             throw .connectionError
         }
@@ -127,6 +140,7 @@ struct MultichainServiceFake: MultichainService {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .connectionError
@@ -154,7 +168,6 @@ struct MultichainServiceFake: MultichainService {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .connectionError
@@ -165,14 +178,6 @@ struct MultichainServiceFake: MultichainService {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .connectionError
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .connectionError
     }
 }

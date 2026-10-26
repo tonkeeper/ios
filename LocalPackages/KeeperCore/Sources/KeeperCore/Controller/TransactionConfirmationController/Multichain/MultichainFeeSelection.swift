@@ -83,7 +83,7 @@ struct MultichainFeeSelection {
             case .tonJetton:
                 // Wallet must hold the emulated fee plus the forward amount attached to the jetton message.
                 requiredTonBalance = amount + balances.jettonForwardAmount
-            case .chainKit:
+            case .chainKit, .evm:
                 requiredTonBalance = amount
             }
             return balances.ton.map { $0 < requiredTonBalance } ?? false
@@ -97,7 +97,7 @@ struct MultichainFeeSelection {
                 // Gasless fee is deducted from the transferred jetton, so it must be
                 // smaller than the amount being sent (mirrors the engine's own guard).
                 return feeAmount >= transferAmount
-            case .chainKit:
+            case .chainKit, .evm:
                 return false
             }
 

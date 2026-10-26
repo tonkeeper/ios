@@ -45,24 +45,26 @@ final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRout
 
     var didInputPasscode: ((String) -> Void)?
     var didCancel: (() -> Void)?
-    var didLogout: (() -> Void)?
 
     private let validator: PasscodeInputValidator
     private let biometryProvider: PasscodeInputBiometryProvider
     private let securityStore: SecurityStore
     private let bruteForceController: PasscodeBruteForceProtection
     private let context: Context
+    private let reason: PasscodeReason?
     private var didShowBiometryChangedWarning = false
 
     init(
         router: NavigationControllerRouter,
         context: Context,
+        reason: PasscodeReason? = nil,
         validator: PasscodeInputValidator,
         biometryProvider: PasscodeInputBiometryProvider,
         securityStore: SecurityStore,
         bruteForceController: PasscodeBruteForceProtection
     ) {
         self.context = context
+        self.reason = reason
         self.validator = validator
         self.biometryProvider = biometryProvider
         self.securityStore = securityStore
@@ -84,6 +86,7 @@ private extension PasscodeInputCoordinator {
 
         let passcodeInputModule = PasscodeInputAssembly.module(
             title: TKLocales.Passcode.enter,
+            reason: reason?.text,
             lockoutUntil: bruteForceController.activeLockoutEndDate()
         )
 
@@ -187,9 +190,7 @@ private extension PasscodeInputCoordinator {
 
         switch context {
         case .entry:
-            passcodeModule.view.setupLogoutButton(title: TKLocales.Passcode.logout) { [weak self] in
-                self?.showLogoutConfirmationAlert { self?.didLogout?() }
-            }
+            break
         case .confirmation:
             passcodeModule.view.setupLeftCloseButton { [weak self] in
                 self?.didCancel?()
@@ -199,21 +200,6 @@ private extension PasscodeInputCoordinator {
         navigationController.pushViewController(passcodeInputModule.viewController, animated: false)
 
         router.push(viewController: passcodeModule.view)
-    }
-
-    func showLogoutConfirmationAlert(completion: @escaping (() -> Void)) {
-        let alertController = UIAlertController(
-            title: TKLocales.Passcode.logoutConfirmationTitle,
-            message: TKLocales.Passcode.logoutConfirmationDescription,
-            preferredStyle: .alert
-        )
-        let cancelAction = UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
-        let logoutAction = UIAlertAction(title: TKLocales.SignOutWarning.title, style: .destructive) { _ in
-            completion()
-        }
-        alertController.addAction(cancelAction)
-        alertController.addAction(logoutAction)
-        router.rootViewController.present(alertController, animated: true)
     }
 
     /// Re-creates the biometry-protected passcode item after a successful
@@ -372,6 +358,7 @@ extension PasscodeInputCoordinator {
         mnemonicAccess: MnemonicAccess,
         securityStore: SecurityStore,
         analyticsProvider: AnalyticsProvider? = nil,
+        reason: PasscodeReason? = nil,
         onCancel: @escaping () -> Void,
         onInput: @escaping (String) -> Void
     ) {
@@ -383,6 +370,7 @@ extension PasscodeInputCoordinator {
             ),
             securityStore: securityStore,
             analyticsProvider: analyticsProvider,
+            reason: reason,
             onCancel: onCancel,
             onInput: onInput
         )
@@ -394,6 +382,7 @@ extension PasscodeInputCoordinator {
         validator: PasscodeInputValidator,
         securityStore: SecurityStore,
         analyticsProvider: AnalyticsProvider? = nil,
+        reason: PasscodeReason? = nil,
         onCancel: @escaping () -> Void,
         onInput: @escaping (String) -> Void
     ) {
@@ -409,6 +398,7 @@ extension PasscodeInputCoordinator {
                 rootViewController: navigationController
             ),
             context: .confirmation,
+            reason: reason,
             validator: validator,
             biometryProvider: PasscodeBiometryProvider(
                 biometryProvider: BiometryProvider(),
@@ -452,7 +442,8 @@ extension PasscodeInputCoordinator {
         parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
         mnemonicAccess: MnemonicAccess,
         securityStore: SecurityStore,
-        analyticsProvider: AnalyticsProvider? = nil
+        analyticsProvider: AnalyticsProvider? = nil,
+        reason: PasscodeReason? = nil
     ) async -> String? {
         await getPasscode(
             parentCoordinator: parentCoordinator,
@@ -461,7 +452,8 @@ extension PasscodeInputCoordinator {
                 mnemonicAccess: mnemonicAccess
             ),
             securityStore: securityStore,
-            analyticsProvider: analyticsProvider
+            analyticsProvider: analyticsProvider,
+            reason: reason
         )
     }
 
@@ -470,7 +462,8 @@ extension PasscodeInputCoordinator {
         parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
         validator: PasscodeInputValidator,
         securityStore: SecurityStore,
-        analyticsProvider: AnalyticsProvider? = nil
+        analyticsProvider: AnalyticsProvider? = nil,
+        reason: PasscodeReason? = nil
     ) async -> String? {
         return await Task { @MainActor in
             return await withCheckedContinuation { continuation in
@@ -480,6 +473,7 @@ extension PasscodeInputCoordinator {
                     validator: validator,
                     securityStore: securityStore,
                     analyticsProvider: analyticsProvider,
+                    reason: reason,
                     onCancel: {
                         continuation.resume(returning: nil)
                     },

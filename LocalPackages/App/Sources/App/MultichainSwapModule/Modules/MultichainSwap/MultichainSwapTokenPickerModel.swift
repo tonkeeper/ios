@@ -11,7 +11,6 @@ final class MultichainSwapTokenPickerModel: TokenPickerV2Model {
     private let side: MultichainSwapTokenPickerSide
     private let multichainState: MultichainWalletState
     private let multichainService: MultichainService
-    private let multichainSwapService: MultichainSwapService
     private let currencyStore: CurrencyStore
 
     let initialState: TokenPickerV2ModelState
@@ -24,13 +23,11 @@ final class MultichainSwapTokenPickerModel: TokenPickerV2Model {
         multichainState: MultichainWalletState,
         selectedAsset: MultichainAsset?,
         multichainService: MultichainService,
-        multichainSwapService: MultichainSwapService,
         currencyStore: CurrencyStore
     ) {
         self.side = side
         self.multichainState = multichainState
         self.multichainService = multichainService
-        self.multichainSwapService = multichainSwapService
         self.currencyStore = currencyStore
         initialState = TokenPickerV2ModelState(
             filters: multichainState.tokenPickerV2Filters,
@@ -49,14 +46,6 @@ final class MultichainSwapTokenPickerModel: TokenPickerV2Model {
         limit: Int,
         cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
-        guard cursor == nil else {
-            Log.multichainSwap.i(
-                "token picker pagination skipped",
-                extraInfo: ["side": side.description]
-            )
-            return TokenPickerLoadResult(assets: [], nextCursor: nil)
-        }
-
         Log.multichainSwap.i(
             "token picker loading started",
             extraInfo: [
@@ -69,12 +58,13 @@ final class MultichainSwapTokenPickerModel: TokenPickerV2Model {
 
         switch side {
         case .source:
-            return try await loadSourceAssets(query: query, filter: filter, limit: limit)
+            return try await loadSourceAssets(query: query, filter: filter, limit: limit, cursor: cursor)
         case let .receive(sourceAssetId):
             return try await loadReceiveAssets(
                 query: query,
                 filter: filter,
                 limit: limit,
+                cursor: cursor,
                 sourceAssetId: sourceAssetId
             )
         }
@@ -85,10 +75,11 @@ private extension MultichainSwapTokenPickerModel {
     func loadSourceAssets(
         query: String?,
         filter: TokenPickerV2ChainFilter,
-        limit: Int
+        limit: Int,
+        cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
         let currency = currencyStore.state
-        let assets = try await multichainService.getWalletAssets(
+        let page = try await multichainService.getWalletAssets(
             state: multichainState,
             currencies: requestedCurrencyCodes(for: currency),
             assetIds: nil,
@@ -97,23 +88,24 @@ private extension MultichainSwapTokenPickerModel {
             search: normalizedQuery(query),
             availableOnly: true,
             showHidden: false,
-            hideDust: nil,
+            showAll: nil,
+            hideDust: false,
             limit: limit,
-            cursor: nil
-        ).assets
+            cursor: cursor
+        )
 
         Log.multichainSwap.i(
             "source token picker loaded",
             extraInfo: [
-                "walletAssetCount": "\(assets.count)",
+                "walletAssetCount": "\(page.assets.count)",
                 "filter": filter.description,
                 "hasQuery": normalizedQuery(query) == nil ? "false" : "true",
             ]
         )
 
         return TokenPickerLoadResult(
-            assets: Array(assets),
-            nextCursor: nil
+            assets: page.assets,
+            nextCursor: page.nextCursor
         )
     }
 
@@ -121,85 +113,39 @@ private extension MultichainSwapTokenPickerModel {
         query: String?,
         filter: TokenPickerV2ChainFilter,
         limit: Int,
+        cursor: String?,
         sourceAssetId: String
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
-        let catalogAssets: [MultichainSwapAsset]
-        do {
-            catalogAssets = try await multichainSwapService.listCrossSwapAssets(
-                query: MultichainSwapAssetsQuery(
-                    searchQuery: normalizedQuery(query),
-                    limit: limit,
-                    chain: filter.crossSwapChainId
-                )
-            )
-        } catch {
-            Log.multichainSwap.w(
-                "receive token picker catalog loading failed",
-                error: error,
-                extraInfo: [
-                    "sourceAsset": sourceAssetId,
-                    "filter": filter.description,
-                ]
-            )
-            throw .apiError(message: nil)
-        }
-
-        let walletAssets = await walletAssets(sourceAssetId: sourceAssetId)
-        let walletAssetsById = Dictionary(
-            walletAssets.map { ($0.asset.assetId, $0) },
-            uniquingKeysWith: { current, _ in current }
+        let page = try await multichainService.getWalletAssets(
+            state: multichainState,
+            currencies: requestedCurrencyCodes(for: currencyStore.state),
+            assetIds: nil,
+            capabilities: [.swap],
+            chain: filter.chain,
+            search: normalizedQuery(query),
+            availableOnly: false,
+            showHidden: true,
+            showAll: true,
+            hideDust: false,
+            limit: limit,
+            cursor: cursor
         )
-
-        let filtered = catalogAssets
-            .filter { $0.assetId != sourceAssetId }
-            .filter { matches(filter: filter, swapAsset: $0) }
-            .prefix(limit)
-            .map {
-                $0.multichainAsset(
-                    walletAsset: walletAssetsById[$0.assetId]
-                )
-            }
+        let assets = page.assets.filter { $0.asset.assetId != sourceAssetId }
 
         Log.multichainSwap.i(
             "receive token picker loaded",
             extraInfo: [
                 "sourceAsset": sourceAssetId,
-                "catalogAssetCount": "\(catalogAssets.count)",
-                "walletAssetCount": "\(walletAssets.count)",
-                "resultCount": "\(filtered.count)",
+                "assetCount": "\(assets.count)",
                 "filter": filter.description,
                 "hasQuery": normalizedQuery(query) == nil ? "false" : "true",
             ]
         )
 
         return TokenPickerLoadResult(
-            assets: Array(filtered),
-            nextCursor: nil
+            assets: assets,
+            nextCursor: page.nextCursor
         )
-    }
-
-    /// Balances only decorate the catalog, so a failure keeps the picker usable — but it silently
-    /// drops every "you hold this" badge, which is worth knowing about.
-    func walletAssets(sourceAssetId: String) async -> [MultichainAsset] {
-        do {
-            return try await multichainService.getAllWalletAssets(
-                state: multichainState,
-                currencies: requestedCurrencyCodes(for: currencyStore.state),
-                capabilities: nil,
-                chain: nil,
-                search: nil,
-                availableOnly: nil,
-                showHidden: false,
-                hideDust: nil
-            ).assets
-        } catch {
-            Log.multichainSwap.failure(
-                "receive token picker wallet balances unavailable",
-                error: error,
-                extraInfo: ["sourceAsset": sourceAssetId]
-            )
-            return []
-        }
     }
 
     func normalizedQuery(_ query: String?) -> String? {
@@ -208,24 +154,5 @@ private extension MultichainSwapTokenPickerModel {
         }
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    func matches(
-        filter: TokenPickerV2ChainFilter,
-        swapAsset: MultichainSwapAsset
-    ) -> Bool {
-        guard let chain = MultichainChain(assetIdChain: swapAsset.chainIdChain) else {
-            return filter == .all
-        }
-        return filter.includes(chain: chain)
-    }
-}
-
-private extension TokenPickerV2ChainFilter {
-    var crossSwapChainId: String? {
-        guard let chain else {
-            return nil
-        }
-        return "\(chain.rawValue)/mainnet"
     }
 }

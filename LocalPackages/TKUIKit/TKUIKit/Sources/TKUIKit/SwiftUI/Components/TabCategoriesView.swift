@@ -8,6 +8,7 @@ public struct TabCategoriesView<Selection: Hashable>: View {
     private let onSelectionChange: (Selection) -> Void
     private let contentInsets: EdgeInsets
     private let style: TabCategoryView.Style
+    private let scrollToSelection: Bool
 
     @State private var selectedItem: Selection
 
@@ -17,12 +18,14 @@ public struct TabCategoriesView<Selection: Hashable>: View {
         onSelectionChange: @escaping (Selection) -> Void,
         style: TabCategoryView.Style = .primary,
         shimmer: Bool = false,
+        scrollToSelection: Bool = false,
         insetsModifier: (inout EdgeInsets) -> Void = { _ in }
     ) {
         self.items = items
         self.initialSelection = initialSelection
         self.onSelectionChange = onSelectionChange
         self.shimmer = shimmer
+        self.scrollToSelection = scrollToSelection
         self.style = style
         self.contentInsets = {
             var insets = Layout.insets
@@ -33,33 +36,44 @@ public struct TabCategoriesView<Selection: Hashable>: View {
     }
 
     public var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Layout.itemSpacing) {
-                ForEach(items) { item in
-                    TabCategoryView(
-                        title: item.title,
-                        image: item.image,
-                        isSelected: item.id == selectedItem,
-                        style: item.style ?? style,
-                        accessibilityIdentifier: item.accessibilityIdentifier
-                    ) {
-                        if item.isSelectable {
-                            selectedItem = item.id
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Layout.itemSpacing) {
+                    ForEach(items) { item in
+                        TabCategoryView(
+                            title: item.title,
+                            image: item.image,
+                            isSelected: item.id == selectedItem,
+                            style: item.style ?? style,
+                            accessibilityIdentifier: item.accessibilityIdentifier
+                        ) {
+                            if item.isSelectable {
+                                selectedItem = item.id
+                            }
+                            onSelectionChange(item.id)
                         }
-                        onSelectionChange(item.id)
+                        .id(item.id)
+                        .accessibilityAddTraits(item.id == selectedItem ? .isSelected : [])
+                        .shimmer(shimmer, config: .init(cornerRadius: .capsule))
                     }
-                    .shimmer(shimmer, config: .init(cornerRadius: .capsule))
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                .onChange(of: initialSelection) { initialSelection in
+                    guard selectedItem != initialSelection else { return }
+                    selectedItem = initialSelection
+                }
+                .padding(contentInsets)
+                .onAppear {
+                    if scrollToSelection { proxy.scrollTo(selectedItem, anchor: .center) }
+                }
+                .onChange(of: selectedItem) { selection in
+                    guard scrollToSelection else { return }
+                    withAnimation { proxy.scrollTo(selection, anchor: .center) }
+                }
             }
-            .onChange(of: initialSelection) { initialSelection in
-                guard selectedItem != initialSelection else { return }
-                selectedItem = initialSelection
-            }
-            .padding(contentInsets)
+            .tkImmediateButtonPresses()
+            .frame(maxWidth: .infinity)
         }
-        .tkImmediateButtonPresses()
-        .frame(maxWidth: .infinity)
     }
 }
 

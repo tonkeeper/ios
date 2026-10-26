@@ -2,11 +2,29 @@
 import BigInt
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKCore
 import TonSwift
 import XCTest
 
 final class TradeViewModelTests: XCTestCase {
+    @MainActor
+    func test_services_openTheirCategoryAndPerps() {
+        var categories: [TradingAssetCategory] = []
+        var perpsOpened = 0
+        let viewModel = makeViewModel(
+            shelvesService: TradingShelvesServiceSpy(snapshot: makeEmptySnapshot()),
+            onOpenAssetList: { category, sort in
+                categories.append(category)
+                XCTAssertEqual(sort, .marketCap)
+            },
+            onOpenPerps: { perpsOpened += 1 }
+        )
+        viewModel.services.forEach(viewModel.openService)
+        XCTAssertEqual(categories, [.tokens, .stocks, .etfs])
+        XCTAssertEqual(perpsOpened, 1)
+    }
+
     @MainActor
     func test_viewDidAppear_usesMarketItemCategory() async {
         let service = TradingShelvesServiceSpy(
@@ -1368,17 +1386,17 @@ final class TradeViewModelTests: XCTestCase {
             shelvesService: shelves,
             onOpenPerps: {}
         )
-        XCTAssertEqual(enabled.services.map(\.kind), [.perps])
+        XCTAssertEqual(enabled.services.map(\.kind), [.tokens, .perps, .stocks, .etfs])
 
         let legacy = makeViewModel(
             shelvesService: shelves,
             walletsStore: makeWalletsStore(wallets: [makeWallet()]),
             onOpenPerps: {}
         )
-        XCTAssertTrue(legacy.services.isEmpty)
+        XCTAssertEqual(legacy.services.map(\.kind), [.tokens, .stocks, .etfs])
 
         let flagOff = makeViewModel(shelvesService: shelves)
-        XCTAssertTrue(flagOff.services.isEmpty)
+        XCTAssertEqual(flagOff.services.map(\.kind), [.tokens, .stocks, .etfs])
 
         let multichainWallet = makeWallet(
             id: "multichain",
@@ -1396,9 +1414,9 @@ final class TradeViewModelTests: XCTestCase {
             walletsStore: walletsStore,
             onOpenPerps: {}
         )
-        XCTAssertEqual(switching.services.map(\.kind), [.perps])
+        XCTAssertEqual(switching.services.map(\.kind), [.tokens, .perps, .stocks, .etfs])
         _ = await walletsStore.makeWalletActive(legacyWallet)
-        XCTAssertTrue(switching.services.isEmpty)
+        XCTAssertEqual(switching.services.map(\.kind), [.tokens, .stocks, .etfs])
     }
 }
 
@@ -1650,8 +1668,7 @@ private extension TradeViewModelTests {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: .zero
         )

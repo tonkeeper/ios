@@ -41,20 +41,18 @@ struct WalletConnectSessionNamespaceBuilder {
         optionalNamespaces: [String: ProposalNamespace]?,
         walletConnectAccounts: [WalletConnectAccount]
     ) throws(WalletConnectSessionApprovalError) -> [String: SessionNamespace] {
-        let blockchainsByChain = Dictionary(uniqueKeysWithValues: walletConnectAccounts.compactMap { account -> (WalletConnectChain, Blockchain)? in
-            guard let blockchain = Blockchain(account.chain.caip2) else { return nil }
-            return (account.chain, blockchain)
-        })
-        let accountsByBlockchain = Dictionary(grouping: walletConnectAccounts.compactMap { account -> (Blockchain, WalletConnectUtils.Account)? in
-            guard let blockchain = blockchainsByChain[account.chain],
-                  let wcAccount = WalletConnectUtils.Account(
-                      blockchain: blockchain,
-                      address: account.address
-                  )
-            else {
-                return nil
+        let accountsByBlockchain = Dictionary(grouping: walletConnectAccounts.flatMap { account -> [(Blockchain, WalletConnectUtils.Account)] in
+            account.chain.caip2Identifiers.compactMap { identifier -> (Blockchain, WalletConnectUtils.Account)? in
+                guard let blockchain = Blockchain(identifier),
+                      let wcAccount = WalletConnectUtils.Account(
+                          blockchain: blockchain,
+                          address: account.address
+                      )
+                else {
+                    return nil
+                }
+                return (blockchain, wcAccount)
             }
-            return (blockchain, wcAccount)
         }, by: \.0)
             .mapValues { $0.map(\.1) }
 
@@ -242,6 +240,11 @@ private extension WalletConnectSessionNamespaceBuilder {
                     "disconnect",
                     "message",
                 ]
+            case "solana":
+                return [
+                    "accountsChanged",
+                    "chainChanged",
+                ]
             default:
                 return []
             }
@@ -263,6 +266,8 @@ private extension WalletConnectSessionNamespaceBuilder {
         switch namespace {
         case WalletConnectChain.ton.namespace:
             return .ton
+        case WalletConnectChain.sol.namespace:
+            return .sol
         default:
             return nil
         }

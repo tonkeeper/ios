@@ -85,7 +85,7 @@ struct PickMultichainAddressRowView: View {
                         config: .content(
                             .init(
                                 title: item.title,
-                                tags: item.versionTag.map { [.tag(text: $0)] }
+                                tags: tags
                             )
                         )
                     ),
@@ -125,5 +125,16 @@ struct PickMultichainAddressRowView: View {
             }
         )
         .frame(maxWidth: .infinity)
+    }
+
+    private var tags: [TKTagSwiftUIViewConfig] {
+        var tags = [TKTagSwiftUIViewConfig]()
+        if let versionTag = item.versionTag {
+            tags.append(.tag(text: versionTag))
+        }
+        if item.isNew {
+            tags.append(.accentTag(text: TKLocales.Common.new, accent: .accentBlue))
+        }
+        return tags
     }
 }

@@ -1,4 +1,5 @@
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 final class FakeMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendable {
@@ -183,4 +184,36 @@ extension PerpsTradingFlags {
         removeMarginEnabled: true,
         autoCloseEnabled: true
     )
+}
+
+extension PerpsPositionSummary {
+    static func test(
+        marketId: Int64 = 1,
+        symbol: String = "BTC",
+        side: PerpsTradeSide = .long,
+        baseSize: Double = 0.008164,
+        notionalUsd: Double = 553.5,
+        marginUsd: Double = 20.5,
+        equityUsd: Double? = nil,
+        unrealizedPnlUsd: Double = 0.5,
+        leverage: Double? = 27
+    ) -> PerpsPositionSummary {
+        PerpsPositionSummary(
+            positionId: "lighter:\(marketId)",
+            marketId: marketId,
+            symbol: symbol,
+            side: side,
+            baseSize: baseSize,
+            notionalUsd: notionalUsd,
+            marginUsd: marginUsd,
+            equityUsd: equityUsd ?? marginUsd + unrealizedPnlUsd,
+            leverage: leverage,
+            roiPercent: nil,
+            entryPrice: 66541.7,
+            liquidationPrice: 64141.75,
+            unrealizedPnlUsd: unrealizedPnlUsd,
+            realizedPnlUsd: 0,
+            fundingPaidUsd: 0
+        )
+    }
 }

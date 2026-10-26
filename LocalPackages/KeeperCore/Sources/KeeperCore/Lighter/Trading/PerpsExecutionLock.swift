@@ -2,6 +2,7 @@ import Foundation
 
 actor PerpsExecutionLock {
     struct Scope: Hashable, Sendable {
+        let environment: String
         let accountIndex: Int64
         let apiKeyIndex: Int32
     }

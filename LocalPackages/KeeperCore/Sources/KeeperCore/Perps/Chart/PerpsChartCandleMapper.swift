@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKKandelabrAPI
 
 /// Maps Kandelabr/Hermes candle buckets into stable `PerpsChartCandle`s.
@@ -12,6 +13,7 @@ enum PerpsChartCandleMapper {
         let candles: [PerpsChartCandle]
         let wireTimestamps: Set<Int64>
         let candleTimestamps: Set<Int64>
+        let volumes: [Int64: Double]
     }
 
     static func wireCandles(
@@ -29,12 +31,16 @@ enum PerpsChartCandleMapper {
         var candles: [PerpsChartCandle] = []
         var wireTimestamps: Set<Int64> = []
         var candleTimestamps: Set<Int64> = []
+        var volumes: [Int64: Double] = [:]
         candles.reserveCapacity(batch.candles.count)
         wireTimestamps.reserveCapacity(batch.candles.count)
         candleTimestamps.reserveCapacity(batch.candles.count)
         for (index, candle) in batch.candles.enumerated() {
             guard let timestamp = wireTimestamp(startTs: batch.start_ts, index: index, step: step) else { continue }
             wireTimestamps.insert(timestamp)
+            if candle.empty != true, let volume = positive(candle.v) {
+                volumes[timestamp] = volume
+            }
             if let candle = map(candle, timestamp: timestamp) {
                 candles.append(candle)
                 candleTimestamps.insert(timestamp)
@@ -43,7 +49,8 @@ enum PerpsChartCandleMapper {
         return Batch(
             candles: candles,
             wireTimestamps: wireTimestamps,
-            candleTimestamps: candleTimestamps
+            candleTimestamps: candleTimestamps,
+            volumes: volumes
         )
     }
 
@@ -62,6 +69,31 @@ enum PerpsChartCandleMapper {
     ) -> Bool {
         batch.ticker.compare(ticker, options: .caseInsensitive) == .orderedSame
             && batch.resolution == timeframe.resolution
+    }
+
+    static func volumeTicker(_ ticker: String) -> String {
+        "\(ticker)/PERP_TRADE"
+    }
+
+    static func mergingVolumes(
+        from volumes: Components.Schemas.GetCandlesResponse,
+        into prices: Components.Schemas.GetCandlesResponse,
+        timeframe: PerpsChartTimeframe
+    ) -> Components.Schemas.GetCandlesResponse {
+        let step = timeframe.wireStepMilliseconds
+        var volumeByTimestamp: [Int64: String] = [:]
+        for (index, candle) in volumes.candles.enumerated() {
+            guard candle.empty != true,
+                  let timestamp = wireTimestamp(startTs: volumes.start_ts, index: index, step: step)
+            else { continue }
+            volumeByTimestamp[timestamp] = candle.v
+        }
+        var merged = prices
+        for index in merged.candles.indices {
+            merged.candles[index].v = wireTimestamp(startTs: prices.start_ts, index: index, step: step)
+                .flatMap { volumeByTimestamp[$0] }
+        }
+        return merged
     }
 
     static func aggregateHalfDay(
@@ -121,31 +153,21 @@ enum PerpsChartCandleMapper {
         timestamp: Int64
     ) -> PerpsChartCandle? {
         if candle.empty == true { return nil }
-        guard let open = price(candle.o),
-              let high = price(candle.h),
-              let low = price(candle.l),
-              let close = price(candle.c),
+        guard let open = positive(candle.o),
+              let high = positive(candle.h),
+              let low = positive(candle.l),
+              let close = positive(candle.c),
               high >= low
         else { return nil }
         let openedAt = Date(timeIntervalSince1970: Double(timestamp) / 1000)
         guard openedAt.timeIntervalSince1970 > 0 else { return nil }
-        guard let base = PerpsMarketMath.optionalDouble(candle.v), base.isFinite, base >= 0 else {
-            return PerpsChartCandle(
-                openedAt: openedAt,
-                open: open,
-                high: high,
-                low: low,
-                close: close,
-                volume: nil
-            )
-        }
         return PerpsChartCandle(
             openedAt: openedAt,
             open: open,
             high: high,
             low: low,
             close: close,
-            volume: base * close
+            volume: nil
         )
     }
 
@@ -156,7 +178,7 @@ enum PerpsChartCandleMapper {
         return timestampOverflow ? nil : timestamp
     }
 
-    private static func price(_ raw: String?) -> Double? {
+    private static func positive(_ raw: String?) -> Double? {
         guard let value = PerpsMarketMath.optionalDouble(raw), value.isFinite, value > 0 else { return nil }
         return value
     }

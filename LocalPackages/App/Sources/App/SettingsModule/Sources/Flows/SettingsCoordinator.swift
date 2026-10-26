@@ -289,9 +289,11 @@ private extension SettingsCoordinator {
     }
 
     func openCurrencyPicker() {
+        let remoteConfiguration = keeperCoreMainAssembly.configurationAssembly.configuration
         let configuration = SettingsListCurrencyPickerConfigurator(
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-            configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+            currenciesService: keeperCoreMainAssembly.servicesAssembly.currenciesService(),
+            isRestrictedRegion: { remoteConfiguration.value(\.region) == "GB" }
         )
         configuration.didSelect = { [weak self] in
             self?.router.pop()
@@ -308,9 +310,7 @@ private extension SettingsCoordinator {
         let configuration = SettingsListBackupConfigurator(
             wallet: wallet,
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
-            dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+            dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
         )
 
         configuration.didTapBackupManually = { [weak self] in
@@ -337,7 +337,7 @@ private extension SettingsCoordinator {
         )
 
         configuration.didRequirePasscode = { [weak self] in
-            await self?.getPasscode()
+            await self?.getPasscode(reason: .enableBiometry)
         }
 
         configuration.didTapChangePasscode = { [openChangePasscode] in
@@ -448,7 +448,7 @@ private extension SettingsCoordinator {
                     dismisser.dismiss {
                         guard let self else { return }
                         Task {
-                            guard let passcode = await self.getPasscode() else { return }
+                            guard let passcode = await self.getPasscode(reason: .deleteWallet) else { return }
                             await self.keeperCoreMainAssembly.storesAssembly.walletNotificationStore.setNotificationIsOn(false, wallet: wallet)
                             await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
                             await MainActor.run {
@@ -518,14 +518,15 @@ private extension SettingsCoordinator {
         router.push(viewController: module.viewController)
     }
 
-    func getPasscode() async -> String? {
+    func getPasscode(reason: PasscodeReason?) async -> String? {
         let mnemonicAccess = keeperCoreMainAssembly.mnemonicAccess
         return await PasscodeInputCoordinator.getPasscode(
             parentCoordinator: self,
             parentRouter: router,
             mnemonicAccess: mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            reason: reason
         )
     }
 
@@ -540,7 +541,8 @@ private extension SettingsCoordinator {
                     .rn
             ),
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .showRecoveryPhrase
         )
     }
 
@@ -562,11 +564,6 @@ private extension SettingsCoordinator {
                 connectedAppsStore: connectedAppsStore,
                 tonConnectConnectionMetadataStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConnectionMetadataStore,
                 walletConnectSessionsStore: walletConnectSessionsStore,
-                notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
-                    walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-                    tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
-                ),
-                pushTokenProvider: PushNotificationTokenProvider(),
                 dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
             )
             let viewController = SettingsConnectedAppsHostingViewController(viewModel: viewModel)
@@ -632,13 +629,37 @@ private extension SettingsCoordinator {
             homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
             appInfoProvider: coreAssembly.appInfoProvider,
             featureFlags: coreAssembly.featureFlags,
-            tkAppSettings: coreAssembly.tkAppSettings
+            tkAppSettings: coreAssembly.tkAppSettings,
+            appSettings: coreAssembly.appSettings
         )
         configuration.didSelectExportLogs = { [weak self] in
             self?.exportLogs()
         }
         configuration.didSelectImportTestnetWallet = { [weak self] in
             self?.didRequestImportTestnetWallet?()
+        }
+        configuration.didSelectRemoveNewNetworks = { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let passcode = await self.getPasscode(reason: nil) else { return }
+                let chains: Set<MultichainChain> = [.sol, .polygon, .avax, .robinhood]
+                ToastPresenter.showToast(configuration: .loading)
+                let result: String
+                do {
+                    let wallet = try keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
+                    try await keeperCoreMainAssembly.multichainAssembly.walletChainRemover.remove(
+                        chains,
+                        from: wallet,
+                        passcode: passcode
+                    )
+                    let titles = MultichainChain.displayOrder.filter(chains.contains).map(\.shortDisplayTitle)
+                    result = "Removed \(titles.joined(separator: ", ")). Restart the app to add them back."
+                } catch {
+                    result = "Failed: \(error)"
+                }
+                ToastPresenter.hideToast()
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: result))
+            }
         }
         configuration.didSelectRNSeedPhrasesRecovery = { [weak self] in
             Task { @MainActor [weak self] in
@@ -655,7 +676,7 @@ private extension SettingsCoordinator {
         configuration.didSelectSeedPhrasesRecovery = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self,
-                      let passcode = await self.getPasscode() else { return }
+                      let passcode = await self.getPasscode(reason: .showRecoveryPhrase) else { return }
                 let mnemonicsAccess = keeperCoreMainAssembly.secureAssembly.mnemonicAccess
                 let mnemonicsVault = mnemonicsAccess.legacyRepository.native
                 do {
@@ -686,9 +707,6 @@ private extension SettingsCoordinator {
         }
         configuration.didSelectToastTesting = { [weak self] in
             self?.openToastTesting()
-        }
-        configuration.didSelectMysteryRaffle = { [weak self] in
-            self?.openMysteryRaffleDebug()
         }
 
         let module = SettingsListAssembly.module(configurator: configuration)
@@ -793,66 +811,6 @@ private extension SettingsCoordinator {
             self?.router.pop(animated: true)
         }
         router.push(viewController: module.viewController)
-    }
-
-    func openMysteryRaffleDebug() {
-        let viewModel = MysteryRaffleDebugViewModel(
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            appSettings: coreAssembly.tkAppSettings
-        )
-        let view = MysteryRaffleDebugView(
-            viewModel: viewModel,
-            onSelectState: { [weak self] content in
-                guard let self else { return }
-                MysteryRaffleCoordinator.presentStub(
-                    content: content,
-                    rootViewController: router.rootViewController
-                )
-            },
-            onOpenLiveRaffle: { [weak self] raffle in
-                guard let self else { return }
-                // Presents the loaded raffle directly instead of `presentCurrent`: the dev
-                // surface must open whatever it just showed, regardless of the feature flag.
-                MysteryRaffleCoordinator.present(
-                    raffle: raffle,
-                    from: self,
-                    rootViewController: router.rootViewController,
-                    source: .walletMain,
-                    keeperCoreMainAssembly: keeperCoreMainAssembly,
-                    coreAssembly: coreAssembly,
-                    openMigration: { [weak self] onFinish in
-                        guard let self,
-                              let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-                              wallet.isMultichain
-                        else {
-                            onFinish()
-                            return
-                        }
-                        self.openMigration(wallet: wallet, onFinish: onFinish)
-                    }
-                )
-            },
-            onSelectStory: { [weak self] story in
-                guard let self else { return }
-                MysteryRaffleCoordinator.presentStory(
-                    story,
-                    rootViewController: router.rootViewController,
-                    keeperCoreMainAssembly: keeperCoreMainAssembly,
-                    coreAssembly: coreAssembly,
-                    openDeeplink: nil
-                )
-            },
-            onResetShownStories: { [weak self] in
-                guard let self else { return }
-                MysteryRaffleStoriesRouter
-                    .make(keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
-                    .resetShownStories()
-            }
-        )
-        let viewController = TKHostingController(content: view)
-        viewController.title = "Mystery Raffle"
-        viewController.setupBackButton()
-        router.push(viewController: viewController)
     }
 
     func openCellsCatalog() {
@@ -978,8 +936,7 @@ private extension SettingsCoordinator {
             do {
                 let fileURL = try await Task.detached(priority: .userInitiated) {
                     try LogExporter.exportToTemporaryFile(
-                        domain: nil,
-                        lastHours: 2,
+                        sessionLog: Log.configuration.sessionLog,
                         filenamePrefix: "keeper_logs"
                     )
                 }.value

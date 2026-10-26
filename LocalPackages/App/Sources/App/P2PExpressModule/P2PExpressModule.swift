@@ -10,7 +10,6 @@ struct P2PExpressParams {
     let fiatCurrency: String
     let amount: Int64?
     let requestNetwork: Network
-    let walletId: String?
 
     var createP2PSession: CreateP2PSession {
         CreateP2PSession(
@@ -41,10 +40,7 @@ struct P2PExpressModule {
         return P2PExpressCoordinator(
             params: params,
             router: router,
-            onRampService: dependencies.onRampService,
-            doNotShowAgainStore: P2PExpressUserDefaultsDoNotShowAgainStore(
-                userDefaults: .standard
-            )
+            onRampService: dependencies.onRampService
         )
     }
 }

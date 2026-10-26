@@ -71,7 +71,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
     private let multichainService: MultichainService
     private let dateFormatter: DateFormatter
     private let currentDateProvider: () -> Date
-    private let onAddFunds: () -> Void
+    let onAddFunds: (() -> Void)?
     private let rowDataReducer: MultichainHistoryRowDataReducer
     private let paginationViewModel: MultichainHistoryPaginationViewModel
     private let nftResolver: MultichainActivityNFTResolver
@@ -90,7 +90,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
         currentDateProvider: @escaping () -> Date = Date.init,
-        onAddFunds: @escaping () -> Void = {}
+        onAddFunds: (() -> Void)? = nil
     ) {
         let hideDust = hidesDustTransactions && !category.isSpamCategory ? true : nil
         self.multichainState = multichainState
@@ -106,6 +106,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         let itemMapper = MultichainHistoryActivityItemMapper(
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
+            labelsPerpsBalanceMoves: category.typeFilter != .perps,
             nftProvider: { nftResolver.nft(for: $0) }
         )
         self.rowDataReducer = MultichainHistoryRowDataReducer(
@@ -263,10 +264,6 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         } else {
             state = .loaded(rowData: fallbackData)
         }
-    }
-
-    func addFunds() {
-        onAddFunds()
     }
 
     func refresh() async {
@@ -631,5 +628,19 @@ private extension MultichainHistoryQueryViewModel {
                 from: date
             )
         )
+    }
+}
+
+extension MultichainHistoryQueryViewModel.State {
+    var activities: [MultichainActivity] {
+        switch self {
+        case .idle:
+            []
+        case let .refreshing(rowData, _),
+             let .loaded(rowData),
+             let .loadingMore(rowData, _),
+             let .failed(rowData, _):
+            rowData.items.map(\.activity)
+        }
     }
 }

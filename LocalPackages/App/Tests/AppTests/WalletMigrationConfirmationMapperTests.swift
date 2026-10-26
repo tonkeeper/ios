@@ -104,9 +104,9 @@ final class WalletMigrationConfirmationMapperTests: XCTestCase {
         )
 
         XCTAssertEqual(result.items.count, 2)
-        XCTAssertTrue(result.items.contains { $0.amount.spans.map(\.text).joined() == "1 DYOR" })
-        XCTAssertTrue(result.items.contains { $0.amount.spans.map(\.text).joined() == "0.112102521 GRAM" })
-        XCTAssertFalse(result.items.contains { $0.amount.spans.map(\.text).joined() == "0.1 GRAM" })
+        XCTAssertTrue(result.items.contains { $0.amount?.spans.map(\.text).joined() == "1 DYOR" })
+        XCTAssertTrue(result.items.contains { $0.amount?.spans.map(\.text).joined() == "0.112102521 GRAM" })
+        XCTAssertFalse(result.items.contains { $0.amount?.spans.map(\.text).joined() == "0.1 GRAM" })
     }
 
     func test_dustTrxIsHiddenWhenFeeCannotBeCovered() {

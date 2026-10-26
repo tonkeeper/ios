@@ -3,7 +3,7 @@ import TonAPI
 import TonSwift
 
 extension StackingPoolInfo {
-    init(accountStakingInfo: TonAPI.PoolInfo, implementations: [String: TonAPI.PoolImplementation]) throws {
+    init(accountStakingInfo: TonAPI.Components.Schemas.PoolInfo, implementations: [String: TonAPI.Components.Schemas.PoolImplementation]) throws {
         self.address = try Address.parse(accountStakingInfo.address)
         self.name = accountStakingInfo.name
         self.totalAmount = accountStakingInfo.totalAmount
@@ -39,19 +39,19 @@ extension StackingPoolInfo.Implementation {
     }
 
     init(
-        implemenetationType: TonAPI.PoolImplementationType,
-        implementation: TonAPI.PoolImplementation?
+        implemenetationType: TonAPI.Components.Schemas.PoolImplementationType,
+        implementation: TonAPI.Components.Schemas.PoolImplementation?
     ) throws {
         switch implemenetationType {
         case .whales:
             self.type = .whales
         case .tf:
             self.type = .tf
-        case .liquidtf:
+        case .liquidTF:
             self.type = .liquidTF
-        case .ffvault:
+        case .ffvault, .hipo:
             throw Error.unknownStakingPool
-        case .unknownDefaultOpenApi:
+        case .unknown:
             throw Error.unknownStakingPool
         }
 

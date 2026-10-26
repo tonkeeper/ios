@@ -160,7 +160,7 @@ private extension TradeAssetsListContentView {
             RoundedRectangle(cornerRadius: rowCornerRadius, style: .continuous)
         )
         .padding(.horizontal, Layout.horizontalPadding)
-        .ignoresSafeArea(edges: .bottom)
+        .ignoresSafeArea(.container, edges: .bottom)
         .simultaneousGesture(
             DragGesture(minimumDistance: Layout.scrollGestureDistance)
                 .onChanged { _ in

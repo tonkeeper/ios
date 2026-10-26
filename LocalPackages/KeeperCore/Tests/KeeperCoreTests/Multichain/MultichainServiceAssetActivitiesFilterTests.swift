@@ -77,6 +77,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -101,6 +102,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -124,6 +126,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -147,6 +150,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -170,6 +174,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -190,6 +195,7 @@ final class MultichainServiceAssetActivitiesFilterTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -309,6 +315,7 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         lastLimit = limit
@@ -352,6 +359,7 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -389,7 +397,6 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle] {
         throw .connectionError(underlying: nil)
@@ -400,14 +407,6 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainClientAPIError) {
-        throw .connectionError(underlying: nil)
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainClientAPIError) {
         throw .connectionError(underlying: nil)
     }
 

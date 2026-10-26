@@ -8,6 +8,7 @@ import UIKit
 
 final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didClose: (() -> Void)?
+    var didRequestOpenDeposit: (() -> Void)?
 
     private weak var confirmationCoordinator: StakingConfirmationCoordinator?
 
@@ -55,7 +56,8 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
         let configurator = DepositStakingInputViewModelConfiguration(
             wallet: wallet,
             stakingPool: stakingPoolInfo,
-            balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
+            balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
 
         let module = StakingInputAssembly.module(
@@ -107,6 +109,10 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
         coordinator.didClose = { [weak self, weak coordinator] in
             self?.didClose?()
             self?.removeChild(coordinator)
+        }
+
+        coordinator.didRequestOpenDeposit = { [weak self] in
+            self?.didRequestOpenDeposit?()
         }
 
         self.confirmationCoordinator = coordinator

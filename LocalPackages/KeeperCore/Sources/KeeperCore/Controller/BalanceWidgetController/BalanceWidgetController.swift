@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 
 public final class BalanceWidgetController {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case failedToLoad
         case noWallet
     }

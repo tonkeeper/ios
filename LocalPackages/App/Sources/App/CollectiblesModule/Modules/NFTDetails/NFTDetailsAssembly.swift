@@ -12,7 +12,6 @@ struct NFTDetailsAssembly {
         navigationButton: NFTDetailsNavigationButton = .swipeDown
     ) -> MVVMModule<NFTDetailsViewController, NFTDetailsModuleOutput, Void> {
         let walletNftManagementStore = keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
-        let nftService = keeperCoreMainAssembly.servicesAssembly.nftService()
 
         let viewModel = NFTDetailsViewModelImplementation(
             nft: nft,
@@ -24,8 +23,7 @@ struct NFTDetailsAssembly {
             manageNFTModel: NFTDetailsManageNFTModel(
                 wallet: wallet,
                 nft: nft,
-                nftManagementStore: walletNftManagementStore,
-                nftService: nftService
+                nftManagementStore: walletNftManagementStore
             )
         )
         let viewController = NFTDetailsViewController(viewModel: viewModel)

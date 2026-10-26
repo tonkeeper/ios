@@ -237,8 +237,7 @@ private extension ChartServiceTests {
         let api = API(
             hostProvider: APIHostProviderStub(),
             urlSession: session,
-            configuration: makeConfiguration(tonapiV2Endpoint: tonapiV2Endpoint),
-            requestCreationQueue: DispatchQueue(label: "ChartServiceTests.API")
+            configuration: makeConfiguration(tonapiV2Endpoint: tonapiV2Endpoint)
         )
 
         return ChartServiceImplementation(
@@ -298,7 +297,6 @@ private extension ChartServiceTests {
             disableBattery: configuration.disableBattery,
             disableBatterySend: configuration.disableBatterySend,
             disableBatteryCryptoRechargeModule: configuration.disableBatteryCryptoRechargeModule,
-            scamApiURL: configuration.scamApiURL,
             flags: configuration.flags,
             stories: configuration.stories,
             reportAmount: configuration.reportAmount,
@@ -313,7 +311,9 @@ private extension ChartServiceTests {
             multichainHelpUrl: configuration.multichainHelpUrl,
             multichain: configuration.multichain,
             trading: configuration.trading,
-            explorers: configuration.explorers
+            explorers: configuration.explorers,
+            earnUrl: configuration.earnUrl,
+            earnFeaturedVaults: configuration.earnFeaturedVaults
         )
         return Configuration(
             bootConfigurationService: BootConfigurationServiceStub(
@@ -486,7 +486,6 @@ private final class FeatureFlagsStub: TKFeatureFlags {
 private final class AppSettingsStub: TKAppSettings {
     var isConfirmButtonInsteadSlider = false
     var raffleIsNewUser: Bool?
-    var raffleDebugNow: Date?
 }
 
 private final class ChartURLProtocolStub: URLProtocol {

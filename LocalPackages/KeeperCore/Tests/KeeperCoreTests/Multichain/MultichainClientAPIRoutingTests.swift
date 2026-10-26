@@ -30,11 +30,6 @@ final class MultichainClientAPIRoutingTests: XCTestCase {
         _ = try? await context.api.broadcastTx(chain: .ton, signedTransaction: Data())
         _ = try? await context.api.getFees(chain: .ton)
         _ = try? await context.api.getWalletChallenge()
-        _ = try? await context.api.forcePickRaffleWinners(
-            raffleId: "raffle-id",
-            walletId: nil,
-            prizeId: nil
-        )
 
         XCTAssertEqual(context.publicRecorder.operationIDs, [])
         XCTAssertEqual(
@@ -44,7 +39,6 @@ final class MultichainClientAPIRoutingTests: XCTestCase {
                 MultichainAPI.Operations.broadcastTx.id,
                 MultichainAPI.Operations.getFees.id,
                 MultichainAPI.Operations.getWalletChallenge.id,
-                MultichainAPI.Operations.forcePickRaffleWinners.id,
             ]
         )
         XCTAssertEqual(context.walletRecorder.operationIDs, [])
@@ -57,7 +51,6 @@ final class MultichainClientAPIRoutingTests: XCTestCase {
             walletId: "wallet-id",
             lang: nil,
             ids: nil,
-            debugNow: nil,
             isNewUser: false
         )
         try? await context.api.completeRaffleMigration(walletId: "wallet-id")

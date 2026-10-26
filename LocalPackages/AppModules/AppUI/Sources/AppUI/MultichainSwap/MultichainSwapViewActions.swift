@@ -5,9 +5,9 @@ public struct MultichainSwapViewActions {
     public let updateSendAmount: (String) -> Void
     public let applyMaxSend: () -> Void
     public let toggleSendAmountInputMode: () -> Void
-    public let requestPickSendToken: () -> Void
+    public let requestPickSendToken: (() -> Void)?
     public let toggleReceiveAmountInputMode: () -> Void
-    public let requestPickReceiveToken: () -> Void
+    public let requestPickReceiveToken: (() -> Void)?
     public let swapTokens: () -> Void
     public let toggleRateDisplayDirection: () -> Void
     public let notifyQuoteRefreshCompleted: () -> Void
@@ -20,9 +20,9 @@ public struct MultichainSwapViewActions {
         updateSendAmount: @escaping (String) -> Void,
         applyMaxSend: @escaping () -> Void,
         toggleSendAmountInputMode: @escaping () -> Void,
-        requestPickSendToken: @escaping () -> Void,
+        requestPickSendToken: (() -> Void)?,
         toggleReceiveAmountInputMode: @escaping () -> Void,
-        requestPickReceiveToken: @escaping () -> Void,
+        requestPickReceiveToken: (() -> Void)?,
         swapTokens: @escaping () -> Void,
         toggleRateDisplayDirection: @escaping () -> Void,
         notifyQuoteRefreshCompleted: @escaping () -> Void,

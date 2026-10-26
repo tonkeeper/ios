@@ -7,6 +7,7 @@ import UIKit
 @MainActor
 final class PickMultichainAddressCoordinatorImplementation<V: UIViewController>: RouterCoordinator<ContainerViewControllerRouter<V>> {
     private let addresses: [MultichainWalletAddress]
+    private let newChainBadgeService: NewChainBadgeService
 
     private weak var presentedViewController: PickMultichainAddressViewController?
     private var streamContinuation: AsyncStream<PickMultichainAddressCoordinatorEvent>.Continuation?
@@ -14,9 +15,11 @@ final class PickMultichainAddressCoordinatorImplementation<V: UIViewController>:
 
     init(
         router: ContainerViewControllerRouter<V>,
-        addresses: [MultichainWalletAddress]
+        addresses: [MultichainWalletAddress],
+        newChainBadgeService: NewChainBadgeService
     ) {
         self.addresses = addresses
+        self.newChainBadgeService = newChainBadgeService
         super.init(router: router)
     }
 
@@ -57,7 +60,10 @@ private extension PickMultichainAddressCoordinatorImplementation {
         PickMultichainAddressModuleOutput,
         PickMultichainAddressModuleInput
     > {
-        let viewModel = PickMultichainAddressViewModelImplementation(addresses: addresses)
+        let viewModel = PickMultichainAddressViewModelImplementation(
+            addresses: addresses,
+            newChainBadgeService: newChainBadgeService
+        )
         viewModel.didSelectAddress = { [weak self] address in
             self?.streamContinuation?.yield(.select(address))
         }

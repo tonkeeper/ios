@@ -39,6 +39,55 @@ final class BootConfigurationDomainTests: XCTestCase {
         XCTAssertTrue(configuration.explorers.isEmpty)
     }
 
+    func testDecodesEarnSectionAndDropsMalformedFeaturedVaults() throws {
+        let configuration = try JSONDecoder().decode(
+            BootConfiguration.self,
+            from: Data(
+                """
+                {
+                  "earn_featured_vaults": [
+                    { "network": "mainnet", "vaultId": "0x1234567890abcdef1234567890abcdef12345678" },
+                    { "network": "base", "vaultId": "0x1234567890abcdef1234567890abcdef12345678-usdc" },
+                    { "network": "base", "vaultId": "0xnope" },
+                    { "network": "", "vaultId": "0x1234567890abcdef1234567890abcdef12345678" },
+                    { "vaultId": "0x1234567890abcdef1234567890abcdef12345678" }
+                  ]
+                }
+                """.utf8
+            )
+        )
+
+        XCTAssertEqual(configuration.earnFeaturedVaults.map(\.network), ["mainnet", "base"])
+        XCTAssertEqual(
+            configuration.earnFeaturedVaults.map(\.vaultId),
+            [
+                "0x1234567890abcdef1234567890abcdef12345678",
+                "0x1234567890abcdef1234567890abcdef12345678-usdc",
+            ]
+        )
+    }
+
+    func testUsesNoFeaturedVaultsWhenResponseDoesNotContainThem() throws {
+        let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
+
+        XCTAssertTrue(configuration.earnFeaturedVaults.isEmpty)
+    }
+
+    func testDecodesTheEarnHost() throws {
+        let configuration = try JSONDecoder().decode(
+            BootConfiguration.self,
+            from: Data(#"{"earn_url": "https://earn.example.com"}"#.utf8)
+        )
+
+        XCTAssertEqual(configuration.earnUrl?.absoluteString, "https://earn.example.com")
+    }
+
+    func testLeavesTheEarnHostUnsetWhenTheResponseOmitsIt() throws {
+        let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
+
+        XCTAssertNil(configuration.earnUrl)
+    }
+
     func testDecodesTheAnalyticsEndpoint() throws {
         let configuration = try JSONDecoder().decode(
             BootConfiguration.self,

@@ -5,21 +5,17 @@ public protocol NFTService {
     func loadNFTs(addresses: [Address], network: Network) async throws -> [Address: NFT]
     func getNFT(address: Address, network: Network) throws -> NFT
     func saveNFT(nft: NFT, network: Network) throws
-    func changeSuspiciousState(_ nft: NFT, network: Network, isScam: Bool) async throws
 }
 
 final class NFTServiceImplementation: NFTService {
     private let apiProvider: APIProvider
-    private let scamAPI: ScamAPI
     private let nftRepository: NFTRepository
 
     init(
         apiProvider: APIProvider,
-        scamAPI: ScamAPI,
         nftRepository: NFTRepository
     ) {
         self.apiProvider = apiProvider
-        self.scamAPI = scamAPI
         self.nftRepository = nftRepository
     }
 
@@ -48,10 +44,5 @@ final class NFTServiceImplementation: NFTService {
             nft,
             key: FriendlyAddress(address: nft.address, testOnly: network == .testnet, bounceable: true).toShort()
         )
-    }
-
-    func changeSuspiciousState(_ nft: NFT, network: Network, isScam: Bool) async throws {
-        guard network == .mainnet else { return }
-        try await scamAPI.changeSuspiciousState(nft, isScam: isScam, network: network)
     }
 }

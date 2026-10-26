@@ -15,7 +15,7 @@ final class MultichainActivityMappingTests: XCTestCase {
     }
 
     func test_activityTypesBeyondTransfersAndSwaps_keepTheirOwnDomainCase() throws {
-        let apiActivityTypes: [MultichainAPI.Components.Schemas.ActivityType] = [
+        let apiActivityTypes: [String] = [
             "stake", "unstake", "mint", "burn", "claim", "withdraw", "contract_call",
         ]
 
@@ -25,6 +25,11 @@ final class MultichainActivityMappingTests: XCTestCase {
             XCTAssertEqual(activity.activityType.rawValue, apiActivityType)
             XCTAssertNotEqual(activity.activityType, .unknown)
         }
+    }
+
+    func test_activityWithUnknownStatusOrDirection_isDropped() throws {
+        XCTAssertNil(try MultichainActivity(api: apiActivity(activityType: "send", status: .unknown, direction: .out)))
+        XCTAssertNil(try MultichainActivity(api: apiActivity(activityType: "send", direction: .unknown)))
     }
 
     func test_isSpamFlag_isMappedOrthogonallyToActivityType() throws {
@@ -254,7 +259,8 @@ final class MultichainActivityMappingTests: XCTestCase {
 
 private extension MultichainActivityMappingTests {
     func apiActivity(
-        activityType: MultichainAPI.Components.Schemas.ActivityType,
+        activityType: String,
+        status: MultichainAPI.Components.Schemas.ActivityStatus = .confirmed,
         direction: MultichainAPI.Components.Schemas.ActivityDirection,
         isSpam: Bool? = nil,
         feeType: MultichainAPI.Components.Schemas.ActivityFeeType? = nil,
@@ -264,7 +270,7 @@ private extension MultichainActivityMappingTests {
     ) throws -> MultichainAPI.Components.Schemas.Activity {
         try MultichainAPI.Components.Schemas.Activity(
             activity_type: activityType,
-            status: .confirmed,
+            status: status,
             block_time: Date(timeIntervalSince1970: 0),
             from_chain: "eth",
             to_chain: "eth",

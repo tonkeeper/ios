@@ -84,8 +84,7 @@ private extension SendV3ControllerMultichainCurrencyInputTests {
             price: MultichainAssetPrice(
                 prices: [Currency.USD.code: 1],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: balance
         )

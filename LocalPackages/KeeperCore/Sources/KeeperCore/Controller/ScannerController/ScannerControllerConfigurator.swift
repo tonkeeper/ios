@@ -7,7 +7,7 @@ public protocol ScannerControllerConfigurator {
     func handleQRCodeUR(_ qrCode: String) throws -> UR
 }
 
-public enum URError: Error {
+@frozen public enum URError: Error {
     case noResult
 }
 
@@ -38,6 +38,10 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
             return extensionsDeeplink
         }
 
+        if let transferDeeplink = transferDeeplinkIgnoringQuery(for: trimmedQRCode) {
+            return transferDeeplink
+        }
+
         return try deeplinkParser.parse(string: qrCode, source: .qr)
     }
 
@@ -54,6 +58,13 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
         isMultichainEnabled
             ? multichainTransferDeeplink(for: recipient)
             : legacyTransferDeeplink(for: recipient)
+    }
+
+    private func transferDeeplinkIgnoringQuery(for qrCode: String) -> Deeplink? {
+        guard qrCode.contains("?"), let recipient = qrCode.droppingAmountOnlyQuery() else {
+            return nil
+        }
+        return transferDeeplink(for: recipient)
     }
 
     private func legacyTransferDeeplink(for recipient: String) -> Deeplink? {
@@ -104,6 +115,19 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
 private extension String {
     func matches(_ regex: String) -> Bool {
         return self.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
+    }
+}
+
+extension String {
+    func droppingAmountOnlyQuery() -> String? {
+        guard let queryStart = firstIndex(of: "?") else {
+            return self
+        }
+        let parameters = self[index(after: queryStart)...].split(separator: "&")
+        guard parameters.allSatisfy({ $0.split(separator: "=", maxSplits: 1).first == "amount" }) else {
+            return nil
+        }
+        return String(self[..<queryStart])
     }
 }
 

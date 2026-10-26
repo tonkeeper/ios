@@ -31,6 +31,19 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /kandelabr/public-api/v1/candles`.
     /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/post(getCandles)`.
     func getCandles(_ input: Operations.getCandles.Input) async throws -> Operations.getCandles.Output
+    /// Get candles (batch)
+    ///
+    /// Get candles for multiple requests in one call. Request and response are arrays (same order).
+    ///
+    /// **Limits:**
+    /// - Number of requests in `requests` array must not exceed 20.
+    /// - Sum of estimated candles across all requests must not exceed 3000.
+    /// Exceeding either limit returns 400.
+    ///
+    ///
+    /// - Remark: HTTP `POST /kandelabr/public-api/v1/candles/batch`.
+    /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)`.
+    func getCandlesBatch(_ input: Operations.getCandlesBatch.Input) async throws -> Operations.getCandlesBatch.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -59,6 +72,27 @@ extension APIProtocol {
         body: Operations.getCandles.Input.Body
     ) async throws -> Operations.getCandles.Output {
         try await getCandles(Operations.getCandles.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Get candles (batch)
+    ///
+    /// Get candles for multiple requests in one call. Request and response are arrays (same order).
+    ///
+    /// **Limits:**
+    /// - Number of requests in `requests` array must not exceed 20.
+    /// - Sum of estimated candles across all requests must not exceed 3000.
+    /// Exceeding either limit returns 400.
+    ///
+    ///
+    /// - Remark: HTTP `POST /kandelabr/public-api/v1/candles/batch`.
+    /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)`.
+    public func getCandlesBatch(
+        headers: Operations.getCandlesBatch.Input.Headers = .init(),
+        body: Operations.getCandlesBatch.Input.Body
+    ) async throws -> Operations.getCandlesBatch.Output {
+        try await getCandlesBatch(Operations.getCandlesBatch.Input(
             headers: headers,
             body: body
         ))
@@ -153,6 +187,40 @@ public enum Components {
                 case start_ts
                 case end_ts
                 case limit
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GetCandlesBatchRequest`.
+        public struct GetCandlesBatchRequest: Codable, Hashable, Sendable {
+            /// Array of getCandles requests
+            ///
+            /// - Remark: Generated from `#/components/schemas/GetCandlesBatchRequest/requests`.
+            public var requests: [Components.Schemas.GetCandlesRequest]
+            /// Creates a new `GetCandlesBatchRequest`.
+            ///
+            /// - Parameters:
+            ///   - requests: Array of getCandles requests
+            public init(requests: [Components.Schemas.GetCandlesRequest]) {
+                self.requests = requests
+            }
+            public enum CodingKeys: String, CodingKey {
+                case requests
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GetCandlesBatchResponse`.
+        public struct GetCandlesBatchResponse: Codable, Hashable, Sendable {
+            /// Array of getCandles responses (same order as requests)
+            ///
+            /// - Remark: Generated from `#/components/schemas/GetCandlesBatchResponse/responses`.
+            public var responses: [Components.Schemas.GetCandlesResponse]
+            /// Creates a new `GetCandlesBatchResponse`.
+            ///
+            /// - Parameters:
+            ///   - responses: Array of getCandles responses (same order as requests)
+            public init(responses: [Components.Schemas.GetCandlesResponse]) {
+                self.responses = responses
+            }
+            public enum CodingKeys: String, CodingKey {
+                case responses
             }
         }
         /// - Remark: Generated from `#/components/schemas/GetCandlesResponse`.
@@ -549,6 +617,186 @@ public enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get candles (batch)
+    ///
+    /// Get candles for multiple requests in one call. Request and response are arrays (same order).
+    ///
+    /// **Limits:**
+    /// - Number of requests in `requests` array must not exceed 20.
+    /// - Sum of estimated candles across all requests must not exceed 3000.
+    /// Exceeding either limit returns 400.
+    ///
+    ///
+    /// - Remark: HTTP `POST /kandelabr/public-api/v1/candles/batch`.
+    /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)`.
+    public enum getCandlesBatch {
+        public static let id: Swift.String = "getCandlesBatch"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCandlesBatch.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCandlesBatch.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getCandlesBatch.Input.Headers
+            /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.GetCandlesBatchRequest)
+            }
+            public var body: Operations.getCandlesBatch.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.getCandlesBatch.Input.Headers = .init(),
+                body: Operations.getCandlesBatch.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.GetCandlesBatchResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GetCandlesBatchResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getCandlesBatch.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getCandlesBatch.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Candles retrieved successfully (one response per request item, same order)
+            ///
+            /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getCandlesBatch.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getCandlesBatch.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/kandelabr/public-api/v1/candles/batch/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getCandlesBatch.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getCandlesBatch.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//kandelabr/public-api/v1/candles/batch/post(getCandlesBatch)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.getCandlesBatch.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.getCandlesBatch.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
                             response: self
                         )
                     }

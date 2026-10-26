@@ -21,6 +21,7 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
@@ -48,6 +49,7 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
@@ -69,16 +71,17 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: true
         )
 
         XCTAssertEqual(setup.api.receivedHideDust, [true, true])
     }
 
-    func test_sumsFiatTotalsPerCurrencyAcrossPages() async throws {
+    func test_takesTheWalletFiatTotalFromTheFirstPage() async throws {
         let service = MultichainServiceStub(pages: [
-            Self.makePage(assetIds: ["ton/mainnet/coin"], nextCursor: "c1", fiatPrice: ["usd": "1.5", "rub": "10"]),
-            Self.makePage(assetIds: ["btc/mainnet/coin"], nextCursor: nil, fiatPrice: ["usd": "2.25", "rub": "not-a-number"]),
+            Self.makePage(assetIds: ["ton/mainnet/coin"], nextCursor: "c1", fiatPrice: ["usd": "31.69", "rub": "2500"]),
+            Self.makePage(assetIds: ["btc/mainnet/coin"], nextCursor: nil, fiatPrice: ["usd": "31.70", "rub": "2501"]),
         ])
 
         let result = try await service.getAllWalletAssets(
@@ -89,11 +92,41 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
-        XCTAssertEqual(result.fiatPrice["usd"], "3.75")
-        XCTAssertEqual(result.fiatPrice["rub"], "10")
+        XCTAssertEqual(result.fiatPrice, ["usd": "31.69", "rub": "2500"])
+    }
+
+    func test_implementationTakesTheWalletFiatTotalFromTheFirstPage() async throws {
+        let setup = makeImplementation(pages: [
+            MultichainWalletAssetRecordsPage(
+                records: [Self.makeRecord(assetId: "ton/mainnet/coin", balance: 2, accountType: .tonV5R1)],
+                nextCursor: "c1",
+                fiatPrice: ["usd": "14.4"]
+            ),
+            MultichainWalletAssetRecordsPage(
+                records: [Self.makeRecord(assetId: "btc/mainnet/coin", balance: 1, chain: .btc, accountType: .btcP2WPKH)],
+                nextCursor: nil,
+                fiatPrice: ["usd": "14.41"]
+            ),
+        ])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+
+        let result = try await setup.service.getAllWalletAssets(
+            state: state,
+            currencies: ["usd"],
+            capabilities: nil,
+            chain: nil,
+            search: nil,
+            availableOnly: nil,
+            showHidden: false,
+            showAll: nil,
+            hideDust: nil
+        )
+
+        XCTAssertEqual(result.fiatPrice, ["usd": "14.4"])
     }
 
     func test_throwsOnRepeatedCursor() async {
@@ -150,11 +183,11 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
         XCTAssertEqual(result.assets.map(\.balance), [2])
-        XCTAssertEqual(result.fiatPrice["usd"], "2")
         XCTAssertEqual(setup.api.receivedCursors, [nil, "c1"])
     }
 
@@ -184,11 +217,11 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
         XCTAssertEqual(result.assets.map(\.asset.assetId), ["ton/mainnet/coin"])
-        XCTAssertEqual(result.fiatPrice["usd"], "2")
     }
 
     func test_keepsAssetsOfEveryRegisteredAddressTypeOfAChain() async throws {
@@ -218,11 +251,11 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
         XCTAssertEqual(result.assets.count, 2)
-        XCTAssertEqual(result.fiatPrice["usd"], "2")
     }
 
     func test_appliesPendingShowOnlyOnceAfterAllPagesLoad() async throws {
@@ -250,12 +283,12 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         )
 
         XCTAssertEqual(result.assets.map(\.asset.assetId), [shownAsset.asset.assetId])
         XCTAssertEqual(result.assets.map(\.isHidden), [false])
-        XCTAssertEqual(result.fiatPrice["usd"], "3")
     }
 
     func test_pendingShowOfDustAssetDoesNotBypassHideDust() async throws {
@@ -283,11 +316,11 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: true
         )
 
         XCTAssertTrue(result.assets.isEmpty)
-        XCTAssertEqual(result.fiatPrice["usd"], "0")
     }
 
     func test_pendingShowOfValuableAssetStillAppearsWhenHideDustIsOn() async throws {
@@ -314,11 +347,11 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: true
         )
 
         XCTAssertEqual(result.assets.map(\.asset.assetId), [shownAsset.asset.assetId])
-        XCTAssertEqual(result.fiatPrice["usd"], "3")
     }
 
     func test_getWalletAssetFiltersTheRequestToTheTargetAssetId() async throws {
@@ -427,6 +460,7 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
                 search: nil,
                 availableOnly: nil,
                 showHidden: false,
+                showAll: nil,
                 hideDust: nil
             )
             XCTFail("Expected pagination error", file: file, line: line)
@@ -511,8 +545,7 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
             price: MultichainAssetPrice(
                 prices: ["usd": usdPrice],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             isHidden: isHidden,
             balance: balance
@@ -539,6 +572,7 @@ private final class MultichainServiceStub: MultichainService {
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit: Int?,
         cursor: String?
@@ -591,6 +625,7 @@ private final class MultichainServiceStub: MultichainService {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .connectionError
@@ -615,7 +650,6 @@ private final class MultichainServiceStub: MultichainService {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .connectionError
@@ -626,14 +660,6 @@ private final class MultichainServiceStub: MultichainService {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .connectionError
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .connectionError
     }
 }
@@ -658,6 +684,7 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust: Bool?,
         limit _: Int?,
         cursor: String?
@@ -711,6 +738,7 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         throw .connectionError(underlying: nil)
@@ -739,7 +767,6 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle] {
         throw .connectionError(underlying: nil)
@@ -750,14 +777,6 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainClientAPIError) {
-        throw .connectionError(underlying: nil)
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainClientAPIError) {
         throw .connectionError(underlying: nil)
     }
 

@@ -4,7 +4,7 @@ import TKLocalize
 /// normalized error code, while the provider's raw text goes to the log. A quote that yielded no
 /// route usually carries one error per aggregator — and per protocol within SwapKit — so the code
 /// the user is told about is the most actionable one rather than whichever arrived first.
-public enum MultichainSwapProviderErrorMessage {
+@frozen public enum MultichainSwapProviderErrorMessage {
     public static func userMessage(for errors: [MultichainSwapProviderError]) -> String? {
         guard !errors.isEmpty else {
             return nil

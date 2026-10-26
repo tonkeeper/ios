@@ -2,14 +2,9 @@ import Foundation
 
 public final class TransactionsManagementAssembly {
     private let coreAssembly: CoreAssembly
-    private let scamAPIAssembly: ScamAPIAssembly
 
-    init(
-        coreAssembly: CoreAssembly,
-        scamAPIAssembly: ScamAPIAssembly
-    ) {
+    init(coreAssembly: CoreAssembly) {
         self.coreAssembly = coreAssembly
-        self.scamAPIAssembly = scamAPIAssembly
     }
 
     private var _transactionsManagementStores = [Wallet: Weak<TransactionsManagement.Store>]()
@@ -21,8 +16,7 @@ public final class TransactionsManagementAssembly {
         }
         let store = TransactionsManagement.Store(
             wallet: wallet,
-            repository: transactionsManagementRepository(),
-            scamApi: scamAPIAssembly.api
+            repository: transactionsManagementRepository()
         )
         _transactionsManagementStores[wallet] = Weak(value: store)
         return store

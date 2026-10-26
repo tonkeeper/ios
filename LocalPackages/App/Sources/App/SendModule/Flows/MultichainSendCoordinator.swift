@@ -366,7 +366,7 @@ private extension MultichainSendCoordinator {
         input: MultichainSendV3ModuleInput
     ) {
         input.setRecipient(recipient)
-        if let amount = scanned.amount,
+        if let amount = scanned.atomicAmount(for: selectedAsset),
            scanned.assetId == nil || scanned.assetId == selectedAsset?.asset.assetId
         {
             input.setAmount(amount)
@@ -410,7 +410,8 @@ private extension MultichainSendCoordinator {
                     parentRouter: router,
                     mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
                     securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-                    analyticsProvider: analyticsProvider
+                    analyticsProvider: analyticsProvider,
+                    reason: .confirmTransfer
                 )
             }
         )
@@ -566,8 +567,9 @@ private extension MultichainSendCoordinator {
             ToastPresenter.showToast(configuration: .failed)
         }
 
-        module.output.didDetectInsufficientMultichainFee = { [weak self, weak output = module.output] shortage in
-            self?.handleNativeFeeShortage(shortage, onDepositClosed: {
+        module.output.didDetectInsufficientMultichainFee = { [weak self, weak output = module.output, weak confirmation = module.view] shortage in
+            guard let self, let host = feePopupHost(for: confirmation) else { return }
+            handleNativeFeeShortage(shortage, from: host, onDepositClosed: {
                 output?.refresh()
             })
         }
@@ -584,16 +586,28 @@ private extension MultichainSendCoordinator {
             }
         }
 
+        module.output.didDetectInsufficientTronFee = { [weak self, weak output = module.output, weak confirmation = module.view] shortage in
+            guard let self, let host = feePopupHost(for: confirmation) else { return }
+            presentTronFeeShortage(
+                shortage,
+                wallet: wallet,
+                amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                from: host,
+                onRefresh: { output?.refresh() }
+            )
+        }
+
         router.push(viewController: module.view)
     }
 
     func handleNativeFeeShortage(
         _ shortage: MultichainNativeFeeShortage,
+        from host: UIViewController,
         onDepositClosed: @escaping () -> Void
     ) {
         nativeFeeShortagePopupPresenter.presentIfNeeded(
             shortage: shortage,
-            from: router.rootViewController.topPresentedViewController(),
+            from: host,
             onDeposit: { [weak self] asset in
                 self?.depositFeeAsset(asset, onDepositClosed: onDepositClosed)
             }

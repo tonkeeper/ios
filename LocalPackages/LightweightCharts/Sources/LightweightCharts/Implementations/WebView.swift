@@ -60,7 +60,16 @@ extension WebView: JavaScriptEvaluator {
     func evaluateScript(_ script: String) async throws(JavaScriptBridgeError) -> Any? {
         try JavaScriptBridgeError.checkCancellation()
         do {
-            let result = try await evaluateJavaScript(script, contentWorld: .page)
+            let result: Any? = try await withCheckedThrowingContinuation { continuation in
+                evaluateJavaScript(script) { result, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        nonisolated(unsafe) let result = result
+                        continuation.resume(returning: result)
+                    }
+                }
+            }
             try JavaScriptBridgeError.checkCancellation()
             return result
         } catch {

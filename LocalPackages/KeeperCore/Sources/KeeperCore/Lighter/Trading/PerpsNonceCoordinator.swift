@@ -1,11 +1,17 @@
 import Foundation
+import PerpsModels
 
 actor PerpsNonceCoordinator {
     struct Scope: Hashable, Sendable {
+        let environment: String
         let accountIndex: Int64
         let apiKeyIndex: Int32
         let chainId: Int32
     }
+
+    /// One cursor per lane for the whole process: a wallet scope is rebuilt per screen,
+    /// and a second coordinator would hand out a nonce the first one has already used.
+    static let shared = PerpsNonceCoordinator()
 
     private var cursors = [Scope: Int64]()
 
@@ -51,6 +57,14 @@ actor PerpsNonceCoordinator {
             cursors.removeValue(forKey: scope)
             throw error
         }
+    }
+
+    func advance(scope: Scope, nextNonce: Int64) throws {
+        guard nextNonce >= 0 else {
+            throw PerpsTradingError.validation("nonce response is negative")
+        }
+        let anchor = nextNonce - 1
+        cursors[scope] = max(cursors[scope] ?? anchor, anchor)
     }
 }
 

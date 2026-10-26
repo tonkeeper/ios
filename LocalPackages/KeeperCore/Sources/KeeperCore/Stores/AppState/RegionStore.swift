@@ -1,7 +1,7 @@
 import Foundation
 
 public final class RegionStore: Store<RegionStore.Event, SelectedCountry> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateRegion(_ country: SelectedCountry)
     }
 

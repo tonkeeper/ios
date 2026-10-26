@@ -1,6 +1,7 @@
 import Aptabase
 import Foundation
 import KeeperCore
+import TKServices
 
 public enum EventKey: String, CaseIterable {
     case deleteWallet = "delete_wallet"
@@ -22,10 +23,6 @@ public enum EventKey: String, CaseIterable {
 public struct AnalyticsEventLegacy {
     public let name: String
     public let params: [String: Any]
-}
-
-public protocol AnalyticsService {
-    func logEvent(name: String, args: [String: Any])
 }
 
 public struct AnalyticsProvider {

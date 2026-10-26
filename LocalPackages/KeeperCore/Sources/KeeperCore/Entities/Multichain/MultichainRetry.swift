@@ -21,6 +21,13 @@ extension MultichainServiceError: MultichainTransientError {
     }
 }
 
+extension PerpsAPIError: MultichainTransientError {
+    var isTransient: Bool {
+        guard case let .badStatus(failure) = self else { return false }
+        return failure.retryable
+    }
+}
+
 /// Repeats the whole sequence rather than a single request: every multichain call worth retrying
 /// spends a single-use challenge, so only a fresh pass can succeed — and `HTTPBody` is single-shot,
 /// which is why this cannot live in a client middleware.

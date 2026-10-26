@@ -6,6 +6,34 @@ import ChainKit
 /// wins); also converts ChainKit fee values into `BigUInt` for display and aggregation.
 /// The default fee is the chain's own flat estimate, priced without emulating anything.
 struct SwapFeeResolver {
+    /// The largest message is priced once and charged for every message: pricing each one ran into
+    /// the node's rate limit.
+    func resolveFee<I, O>(
+        mediator: ChainMediatorWrapper<I, O>,
+        batch: [TransactionSwap]
+    ) async throws(MultichainTransactionEmulationFailure) -> Fee {
+        guard let message = Self.pricedMessage(of: batch) else {
+            throw .internal(reason: "swap has no message to price")
+        }
+        return try await Self.batchFee(
+            resolveFee(mediator: mediator, transaction: message),
+            messageCount: batch.count
+        )
+    }
+
+    func resolveDefaultFee<I, O>(
+        mediator: ChainMediatorWrapper<I, O>,
+        batch: [TransactionSwap]
+    ) async throws(MultichainTransactionEmulationFailure) -> Fee {
+        guard let message = Self.pricedMessage(of: batch) else {
+            throw .internal(reason: "swap has no message to price")
+        }
+        return try await Self.batchFee(
+            resolveDefaultFee(mediator: mediator, transaction: message),
+            messageCount: batch.count
+        )
+    }
+
     func resolveFee<I, O>(
         mediator: ChainMediatorWrapper<I, O>,
         transaction: any ChainKit.Transaction
@@ -59,10 +87,30 @@ struct SwapFeeResolver {
         return amount
     }
 
-    func combinedFee(_ fees: [any Fee]) -> FeeValue {
+    func combinedFee(_ fees: [any Fee], asset: any ChainKit.Asset) -> FeeValue {
         let amount = fees.reduce(BignumBigInteger.Companion.shared.ZERO) { partialResult, fee in
             partialResult.add(other: fee.amount)
         }
-        return FeeValue(amount: amount)
+        return FeeValue(asset: asset, amount: amount)
+    }
+
+    /// W5 silently drops a message the balance cannot cover and still charges the fee, so the coin
+    /// the messages carry is reserved together with the fees.
+    func reservedFee(_ fees: [any Fee], attachedEnergy: BignumBigInteger, asset: any ChainKit.Asset) -> FeeValue {
+        FeeValue(asset: asset, amount: combinedFee(fees, asset: asset).amount.add(other: attachedEnergy))
+    }
+
+    static func pricedMessage(of batch: [TransactionSwap]) -> TransactionSwap? {
+        batch.max { ($0.data ?? "").count < ($1.data ?? "").count }?.asEnergyMessage
+    }
+
+    static func batchFee(_ fee: Fee, messageCount: Int) -> Fee {
+        guard messageCount > 1 else {
+            return fee
+        }
+        return FeeValue(
+            asset: fee.asset,
+            amount: fee.amount.multiply(other: BignumBigInteger.Companion.shared.fromInt(int: Int32(messageCount)))
+        )
     }
 }

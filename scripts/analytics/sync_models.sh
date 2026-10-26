@@ -4,12 +4,12 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 
-ANALYTICS_SCHEMAS_REPO_URL=${ANALYTICS_SCHEMAS_REPO_URL:-git@github.com:tonkeeper/analytics-schemas.git}
-# Checkouts shared across the repository live in .context at the repository root.
-ANALYTICS_SCHEMAS_ROOT=${ANALYTICS_SCHEMAS_ROOT:-"$(git rev-parse --show-toplevel)/.context/analytics-schemas"}
+SHARED_TOOLS="$REPO_ROOT/tools"
+[ -f "$SHARED_TOOLS/analytics_schemas.sh" ] || SHARED_TOOLS="$REPO_ROOT/../shared/tools"
+ANALYTICS_SCHEMAS_ROOT=$("$SHARED_TOOLS/analytics_schemas.sh")
 SRC_DIR=${ANALYTICS_MODELS_SRC_DIR:-"$ANALYTICS_SCHEMAS_ROOT/generated/openapi-swift/TonkeeperAnalytics/Classes/OpenAPIs/Models"}
-GENERATED_DIR=${ANALYTICS_GENERATED_DIR:-"$REPO_ROOT/LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Generated"}
-DEPRECATED_DIR=${ANALYTICS_DEPRECATED_DIR:-"$REPO_ROOT/LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Deprecated"}
+GENERATED_DIR=${ANALYTICS_GENERATED_DIR:-"$REPO_ROOT/LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Generated"}
+DEPRECATED_DIR=${ANALYTICS_DEPRECATED_DIR:-"$REPO_ROOT/LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Deprecated"}
 WHITELIST_FILE=${ANALYTICS_WHITELIST_FILE:-"$SCRIPT_DIR/event_model_whitelist.txt"}
 
 tmp_whitelist=$(mktemp)
@@ -21,19 +21,6 @@ cleanup() {
 }
 
 trap cleanup EXIT
-
-if [ ! -d "$ANALYTICS_SCHEMAS_ROOT" ]; then
-  mkdir -p "$(dirname "$ANALYTICS_SCHEMAS_ROOT")"
-  git clone "$ANALYTICS_SCHEMAS_REPO_URL" "$ANALYTICS_SCHEMAS_ROOT"
-else
-  if [ -d "$ANALYTICS_SCHEMAS_ROOT/.git" ]; then
-    git -C "$ANALYTICS_SCHEMAS_ROOT" fetch --prune origin
-    git -C "$ANALYTICS_SCHEMAS_ROOT" pull --ff-only origin
-  else
-    echo "Analytics schemas path exists but is not a git repo: $ANALYTICS_SCHEMAS_ROOT" >&2
-    exit 1
-  fi
-fi
 
 if [ ! -d "$SRC_DIR" ]; then
   echo "Missing analytics schemas models directory: $SRC_DIR" >&2

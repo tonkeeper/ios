@@ -1,8 +1,8 @@
 import Foundation
 import KeeperCoreSensitive
 
-public enum WalletVersionImportResolver {
-    public enum Resolution {
+@frozen public enum WalletVersionImportResolver {
+    @frozen public enum Resolution {
         case importRevision(WalletContractVersion)
         case showVersionSelection(v4r2: ActiveWalletModel, w5: ActiveWalletModel)
         case useExistingWalletSelection([ActiveWalletModel])

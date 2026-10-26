@@ -5,7 +5,7 @@ import Foundation
 public final class RaffleStore: Store<RaffleStore.Event, RaffleStore.State> {
     public typealias State = [MultichainRaffle]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateRaffles(raffles: [MultichainRaffle])
     }
 

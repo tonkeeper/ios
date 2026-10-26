@@ -9,7 +9,6 @@ final class MultichainWalletBalanceSectionViewModel: ObservableObject {
 
     var onAddress: ((Wallet) -> Void)?
     var onBattery: ((Wallet) -> Void)?
-    var onBackup: ((Wallet) -> Void)?
     /// The amount is the wallet's asset listing, which the screen owns: this asks it for one.
     var onNeedsTotalRefresh: (() -> Void)?
 
@@ -131,10 +130,6 @@ final class MultichainWalletBalanceSectionViewModel: ObservableObject {
         onBattery?(wallet)
     }
 
-    func backupPressed() {
-        onBackup?(wallet)
-    }
-
     /// The store is only written when a listing answered for the wallet, so its update is what
     /// makes the amount current again.
     private func didUpdatePortfolio(wallet: Wallet) {
@@ -155,8 +150,8 @@ final class MultichainWalletBalanceSectionViewModel: ObservableObject {
         }
     }
 
-    /// The backup warning and the battery ride on the wallet value, so the section takes every
-    /// update to its own wallet rather than keeping the value it was created with.
+    /// The battery rides on the wallet value, so the section takes every update to its own wallet
+    /// rather than keeping the value it was created with.
     private func adopt(wallet: Wallet) {
         guard self.wallet == wallet else { return }
         self.wallet = wallet

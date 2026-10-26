@@ -86,6 +86,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     private let wallet: Wallet
     private let ledgerDevice: Wallet.LedgerDevice
     private let bleTransport: BleTransportProtocol
+    private let knownJettonResolver: ((Transaction) -> KnownJetton?)?
 
     // MARK: - Init
 
@@ -93,12 +94,14 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
         confirmItem: LedgerConfirmConfirmItem,
         wallet: Wallet,
         ledgerDevice: Wallet.LedgerDevice,
-        bleTransport: BleTransportProtocol
+        bleTransport: BleTransportProtocol,
+        knownJettonResolver: ((Transaction) -> KnownJetton?)?
     ) {
         self.confirmItem = confirmItem
         self.wallet = wallet
         self.ledgerDevice = ledgerDevice
         self.bleTransport = bleTransport
+        self.knownJettonResolver = knownJettonResolver
     }
 }
 
@@ -203,7 +206,7 @@ private extension LedgerConfirmViewModelImplementation {
                 case .success:
                     await MainActor.run {
                         self.setTonAppOpened()
-                        self.sign(tonTransport: tonTransport)
+                        self.sign(tonTransport: tonTransport, appVersion: version)
                     }
                 case let .failure(error):
                     await MainActor.run {
@@ -216,25 +219,29 @@ private extension LedgerConfirmViewModelImplementation {
         startPollTask()
     }
 
-    func sign(tonTransport: TonTransport) {
+    func sign(tonTransport: TonTransport, appVersion: String) {
         let accountPath = AccountPath(index: ledgerDevice.accountIndex)
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
                 switch confirmItem {
                 case let .transaction(transaction):
-                    let signature = try await tonTransport.signTransaction(
+                    let signature = try await signTransaction(
+                        transaction,
                         path: accountPath,
-                        transaction: transaction
+                        tonTransport: tonTransport,
+                        appVersion: appVersion
                     )
                     self.setConfirmed(idx: 0)
                     self.didSign?(.transaction(signature))
                 case let .transactions(transactions):
                     var signatures: [Data] = []
                     for (idx, transaction) in transactions.enumerated() {
-                        let signature = try await tonTransport.signTransaction(
+                        let signature = try await signTransaction(
+                            transaction,
                             path: accountPath,
-                            transaction: transaction
+                            tonTransport: tonTransport,
+                            appVersion: appVersion
                         )
                         self.setConfirmed(idx: idx)
                         signatures.append(signature)
@@ -268,6 +275,31 @@ private extension LedgerConfirmViewModelImplementation {
                     self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
                 }
             }
+        }
+    }
+
+    /// The known-jetton hint only changes what the device displays, so a device that cannot
+    /// parse it (older firmware, list mismatch) gets the plain transfer instead of an error.
+    func signTransaction(
+        _ transaction: Transaction,
+        path: AccountPath,
+        tonTransport: TonTransport,
+        appVersion: String
+    ) async throws -> Data {
+        guard let knownJetton = knownJettonResolver?(transaction),
+              let minAppVersion = LedgerKnownJettons.minAppVersion(jettonId: knownJetton.jettonId),
+              TonTransport.isVersion(appVersion, greaterThanOrEqualTo: minAppVersion)
+        else {
+            return try await tonTransport.signTransaction(path: path, transaction: transaction)
+        }
+        do {
+            return try await tonTransport.signTransaction(
+                path: path,
+                transaction: transaction.settingKnownJetton(knownJetton)
+            )
+        } catch TransportStatusError.txParsingFailed {
+            Log.w("Ledger rejected the known-jetton hint, signing without it")
+            return try await tonTransport.signTransaction(path: path, transaction: transaction)
         }
     }
 

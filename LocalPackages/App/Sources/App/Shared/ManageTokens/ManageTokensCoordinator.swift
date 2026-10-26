@@ -71,7 +71,7 @@ private extension ManageTokensCoordinator {
             displayCurrency: displayCurrency,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
-        let availableChains = MultichainChain.allCases.map { chain in
+        let availableChains = MultichainChain.displayOrder.map { chain in
             let configuration = chain.addressConfiguration
             return TokenManagementChain(
                 id: chain.rawValue,

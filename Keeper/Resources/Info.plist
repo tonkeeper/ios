@@ -10,6 +10,25 @@
 	<string>$(APTABASE_ENDPOINT)</string>
 	<key>APTABASE_KEY</key>
 	<string>$(APTABASE_KEY)</string>
+	<key>BRANCH_KEY_LIVE</key>
+	<string>$(BRANCH_KEY_LIVE)</string>
+	<key>BRANCH_KEY_TEST</key>
+	<string>$(BRANCH_KEY_TEST)</string>
+	<key>LINKRUNNER_TOKEN</key>
+	<string>$(LINKRUNNER_TOKEN)</string>
+	<key>branch_key</key>
+	<dict>
+		<key>live</key>
+		<string>$(BRANCH_KEY_LIVE)</string>
+		<key>test</key>
+		<string>$(BRANCH_KEY_TEST)</string>
+	</dict>
+	<key>branch_universal_link_domains</key>
+	<array>
+		<string>go.tonkeeper.com</string>
+		<string>x1zxr.app.link</string>
+		<string>x1zxr-alternate.app.link</string>
+	</array>
 	<key>AppIdentifierPrefix</key>
 	<string>$(AppIdentifierPrefix)</string>
 	<key>CFBundleURLTypes</key>
@@ -51,6 +70,14 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>keeper</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
 				<string>tonkeeper-mob</string>
 			</array>
 		</dict>
@@ -70,6 +97,14 @@
 				<string>tonkeeper-tc-mob</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>solana</string>
+			</array>
+		</dict>
 	</array>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
@@ -79,6 +114,8 @@
 		<string>tonsign</string>
 		<string>ledgerlive</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>

@@ -1,7 +1,7 @@
 import Foundation
 
 public final class CurrencyStore: Store<CurrencyStore.Event, Currency> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateCurrency(currency: Currency)
     }
 

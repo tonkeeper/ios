@@ -1,7 +1,7 @@
 import BigInt
 import Foundation
 
-public enum AmountInputFormatter {
+@frozen public enum AmountInputFormatter {
     public static func normalizedString(
         _ string: String?,
         decimalSeparator: String = AmountFormatter.Configuration.defaultLocale.decimalSeparator ?? ".",

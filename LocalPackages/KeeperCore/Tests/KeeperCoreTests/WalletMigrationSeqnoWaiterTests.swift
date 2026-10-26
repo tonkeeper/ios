@@ -119,7 +119,7 @@ private final class SeqnoStubSendService: SendService, @unchecked Sendable {
         wallet _: KeeperCore.Wallet,
         params _: [EmulateMessageToWalletRequestParamsInner]?,
         currency _: Currency?
-    ) async throws -> TonAPI.MessageConsequences {
+    ) async throws -> TonAPI.Components.Schemas.MessageConsequences {
         throw SeqnoStubError.unused
     }
 
@@ -133,6 +133,10 @@ private final class SeqnoStubSendService: SendService, @unchecked Sendable {
 
     func getTimeoutSafely(wallet _: KeeperCore.Wallet, TTL _: UInt64) async -> UInt64 {
         0
+    }
+
+    func getGaslessRelayAddress(wallet _: KeeperCore.Wallet) async throws -> Address {
+        throw SeqnoStubError.unused
     }
 
     func getJettonCustomPayload(wallet _: KeeperCore.Wallet, jetton _: Address) async throws -> KeeperCore.JettonTransferPayload {

@@ -34,6 +34,7 @@ final class MultichainSwapQuotePairViewModel {
     private var quoteTask: Task<Void, Never>?
     private var routeExpiryTask: Task<Void, Never>?
     private var sourceAmount: BigUInt?
+    private var isMax = false
     private var isRateInverted = false
     private var lastReadyRateText: MultichainSwapQuoteText?
     init(
@@ -59,6 +60,7 @@ final class MultichainSwapQuotePairViewModel {
 
     func updateSourceAmount(
         _ sourceAmount: BigUInt?,
+        isMax: Bool,
         debounce: Bool
     ) {
         quoteTask?.cancel()
@@ -66,6 +68,7 @@ final class MultichainSwapQuotePairViewModel {
         quoteTask = nil
         routeExpiryTask = nil
         self.sourceAmount = sourceAmount
+        self.isMax = isMax
 
         guard let sourceAmount, sourceAmount > 0 else {
             snapshot = snapshotMaker.initial()
@@ -127,7 +130,8 @@ private extension MultichainSwapQuotePairViewModel {
                     returnDepositAddress: MultichainSwapQuoteRequest.returnDepositAddress(
                         sourceChain: context.source.chain
                     ),
-                    includePayload: true
+                    includePayload: true,
+                    isMax: isMax ? true : nil
                 ),
                 walletId: context.walletId
             )

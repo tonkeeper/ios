@@ -1,6 +1,8 @@
 import BigInt
 import Foundation
-import OpenAPIRuntime
+import HTTPTypes
+@_spi(Generated) import OpenAPIRuntime
+import StreamURLSessionTransport
 import TKLogging
 import TonAPI
 import TonSwift
@@ -46,65 +48,107 @@ struct API {
     private let hostProvider: APIHostProvider
     private let urlSession: URLSession
     private let configuration: Configuration
-    private let requestCreationQueue: DispatchQueue
 
     init(
         hostProvider: APIHostProvider,
         urlSession: URLSession,
-        configuration: Configuration,
-        requestCreationQueue: DispatchQueue
+        configuration: Configuration
     ) {
         self.hostProvider = hostProvider
         self.urlSession = urlSession
         self.configuration = configuration
-        self.requestCreationQueue = requestCreationQueue
     }
 
-    private func createRequest<T>(requestCreation: () -> RequestBuilder<T>) async throws -> RequestBuilder<T> {
-        let apiKey = await configuration.tonApiV2Key
-        let hostUrl = await hostProvider.basePath
-        return requestCreationQueue.sync {
-            TonAPIAPI.basePath = hostUrl
-            var request = requestCreation()
-            request = request.addHeader(name: "Authorization", value: "Bearer \(apiKey)")
-            return request
+    private func serverURL() async throws -> URL {
+        let basePath = await hostProvider.basePath
+        guard let url = URL(string: basePath) else {
+            throw APIError.incorrectURL
         }
+        return url
     }
 
     /// Only 429 is retried: the gateway rejects before processing, so a repeat is safe even for a
     /// broadcast. A 5xx or a transport failure leaves the outcome unknown and reaches the caller.
-    @discardableResult
-    private func performRequest<T>(request: RequestBuilder<T>, attempt: Int = 0) async throws -> Response<T> {
+    private func perform<T>(
+        headers: [String: String] = [:],
+        attempt: Int = 0,
+        _ call: (Client) async throws -> T
+    ) async throws -> T {
+        let client = try await Client(
+            serverURL: serverURL(),
+            apiKey: configuration.tonApiV2Key,
+            urlSession: urlSession,
+            headers: headers
+        )
         do {
-            return try await request.execute()
+            return try await call(client)
         } catch {
-            if let errorResponse = error as? ErrorResponse {
-                switch errorResponse {
-                case let .error(statusCode, _, response, _):
-                    if statusCode == 429 {
-                        guard attempt < TonAPIRateLimitBackoff.maxRetryCount else {
-                            Log.tonAPI.w("rate limited request out of retry attempts", extraInfo: [
-                                "path": response?.url?.path ?? "-",
-                                "attempts": "\(attempt + 1)",
-                            ])
-                            throw errorResponse
-                        }
-                        let delay = TonAPIRateLimitBackoff.delayNanoseconds(attempt: attempt)
-                        Log.tonAPI.w("rate limited request retrying after cooldown", extraInfo: [
-                            "path": response?.url?.path ?? "-",
-                            "attempt": "\(attempt + 1)",
-                            "delayMs": "\(delay / 1_000_000)",
-                        ])
-                        try await Task.sleep(nanoseconds: delay)
-                        try Task.checkCancellation()
-                        return try await performRequest(request: request, attempt: attempt + 1)
-                    }
-                    throw errorResponse
-                }
-            } else {
-                throw error
+            guard let apiError = error.tonAPIError else { throw error }
+            guard apiError.statusCode == 429 else { throw apiError }
+            return try await retryAfterRateLimit(apiError, attempt: attempt) {
+                try await perform(headers: headers, attempt: attempt + 1, call)
             }
         }
+    }
+
+    /// A TonAPI POST using domain models rather than generated operation types.
+    private func send<Body: Encodable, Response: Decodable>(
+        _ operationID: String,
+        path: String,
+        body: Body,
+        headers: [String: String] = [:],
+        attempt: Int = 0
+    ) async throws -> Response {
+        let client = try await UniversalClient(
+            serverURL: serverURL(),
+            transport: URLSessionTransport(urlSession: urlSession),
+            middlewares: .tonAPI(apiKey: configuration.tonApiV2Key, headers: headers)
+        )
+        do {
+            let data = try await client.send(
+                input: JSONEncoder().encode(body),
+                forOperation: operationID,
+                serializer: { data in
+                    var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: path)
+                    request.headerFields[.contentType] = "application/json"
+                    return (request, HTTPBody(data))
+                },
+                deserializer: { _, body in
+                    guard let body else { return Data() }
+                    return try await Data(collecting: body, upTo: .max)
+                }
+            )
+            return try JSONDecoder().decode(Response.self, from: data)
+        } catch {
+            guard let apiError = error.tonAPIError else { throw error }
+            guard apiError.statusCode == 429 else { throw apiError }
+            return try await retryAfterRateLimit(apiError, attempt: attempt) {
+                try await send(operationID, path: path, body: body, headers: headers, attempt: attempt + 1)
+            }
+        }
+    }
+
+    private func retryAfterRateLimit<T>(
+        _ error: TonAPIError,
+        attempt: Int,
+        retry: () async throws -> T
+    ) async throws -> T {
+        guard attempt < TonAPIRateLimitBackoff.maxRetryCount else {
+            Log.tonAPI.w("rate limited request out of retry attempts", extraInfo: [
+                "path": error.path ?? "-",
+                "attempts": "\(attempt + 1)",
+            ])
+            throw error
+        }
+        let delay = TonAPIRateLimitBackoff.delayNanoseconds(attempt: attempt)
+        Log.tonAPI.w("rate limited request retrying after cooldown", extraInfo: [
+            "path": error.path ?? "-",
+            "attempt": "\(attempt + 1)",
+            "delayMs": "\(delay / 1_000_000)",
+        ])
+        try await Task.sleep(nanoseconds: delay)
+        try Task.checkCancellation()
+        return try await retry()
     }
 }
 
@@ -155,24 +199,19 @@ extension API {
 
 extension API {
     func getAccountInfo(accountId: String) async throws -> Account {
-        let request = try await createRequest {
-            AccountsAPI.getAccountWithRequestBuilder(
-                accountId: accountId
-            )
+        let response = try await perform {
+            try await $0.getAccount(path: .init(accountId: accountId)).ok.body.json
         }
-        let response = try await performRequest(request: request).body
         return try Account(account: response)
     }
 
     func getAccountJettonsBalances(address: Address, currencies: [Currency]) async throws -> [JettonBalance] {
-        let request = try await createRequest {
-            AccountsAPI.getAccountJettonsBalancesWithRequestBuilder(
-                accountId: address.toRaw(),
-                currencies: currencies.map { $0.code },
-                supportedExtensions: ["custom_payload"]
-            )
+        let response = try await perform {
+            try await $0.getAccountJettonsBalances(
+                path: .init(accountId: address.toRaw()),
+                query: .init(currencies: currencies.map { $0.code }, supportedExtensions: ["custom_payload"])
+            ).ok.body.json
         }
-        let response = try await performRequest(request: request).body
         return response.balances
             .compactMap { jetton in
                 do {
@@ -188,12 +227,12 @@ extension API {
             }
     }
 
-    private func mapJettonRates(rates: TokenRates?) -> [Currency: Rates.Rate] {
+    private func mapJettonRates(rates: TonAPI.Components.Schemas.TokenRates?) -> [Currency: Rates.Rate] {
         var result = [Currency: Rates.Rate]()
-        rates?.prices?.forEach { currencyCode, value in
+        rates?.prices?.additionalProperties.forEach { currencyCode, value in
             guard let currency = Currency(code: currencyCode) else { return }
             let rate = Decimal(value)
-            let diff24h = rates?.diff24h?.first(where: { $0.key == currencyCode })?.value
+            let diff24h = rates?.diff24h?.additionalProperties.first(where: { $0.key == currencyCode })?.value
             result[currency] = Rates.Rate(currency: currency, rate: rate, diff24h: diff24h)
         }
         return result
@@ -208,17 +247,12 @@ extension API {
         beforeLt: Int64?,
         limit: Int
     ) async throws -> AccountEvents {
-        let request = try await createRequest {
-            AccountsAPI.getAccountEventsWithRequestBuilder(
-                accountId: address.toRaw(),
-                limit: limit,
-                subjectOnly: true,
-                beforeLt: beforeLt,
-                startDate: nil,
-                endDate: nil
-            )
+        let response = try await perform {
+            try await $0.getAccountEvents(
+                path: .init(accountId: address.toRaw()),
+                query: .init(subjectOnly: true, beforeLt: beforeLt, limit: limit)
+            ).ok.body.json
         }
-        let response = try await performRequest(request: request).body
         let events: [AccountEvent] = response.events.compactMap {
             guard let activityEvent = try? AccountEvent(accountEvent: $0) else { return nil }
             return activityEvent
@@ -237,18 +271,12 @@ extension API {
         beforeLt: Int64?,
         limit: Int
     ) async throws -> AccountEvents {
-        let request = try await createRequest {
-            AccountsAPI.getAccountJettonHistoryByIDWithRequestBuilder(
-                accountId: address.toRaw(),
-                jettonId: jettonMasterAddress.toRaw(),
-                limit: limit,
-                beforeLt: beforeLt,
-                startDate: nil,
-                endDate: nil
-            )
+        let response = try await perform {
+            try await $0.getAccountJettonHistoryByID(
+                path: .init(accountId: address.toRaw(), jettonId: jettonMasterAddress.toRaw()),
+                query: .init(beforeLt: beforeLt, limit: limit)
+            ).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         let events: [AccountEvent] = response.events.compactMap {
             guard let activityEvent = try? AccountEvent(accountEvent: $0) else { return nil }
             return activityEvent
@@ -265,13 +293,9 @@ extension API {
         address: Address,
         eventId: String
     ) async throws -> AccountEvent {
-        let request = try await createRequest {
-            AccountsAPI.getAccountEventWithRequestBuilder(
-                accountId: address.toRaw(),
-                eventId: eventId
-            )
+        let response = try await perform {
+            try await $0.getAccountEvent(path: .init(accountId: address.toRaw(), eventId: eventId)).ok.body.json
         }
-        let response = try await performRequest(request: request).body
         return try AccountEvent(accountEvent: response)
     }
 }
@@ -280,35 +304,26 @@ extension API {
 
 extension API {
     func getSeqno(address: Address) async throws -> Int {
-        let request = try await createRequest {
-            WalletAPI.getAccountSeqnoWithRequestBuilder(
-                accountId: address.toRaw()
-            )
+        let response = try await perform {
+            try await $0.getAccountSeqno(path: .init(accountId: address.toRaw())).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
-        return response.seqno
+        return Int(response.seqno)
     }
 
     func getWalletInfo(address: Address) async throws -> WalletInfo {
-        let request = try await createRequest {
-            WalletAPI.getWalletInfoWithRequestBuilder(
-                accountId: address.toRaw()
-            )
+        let response = try await perform {
+            try await $0.getWalletInfo(path: .init(accountId: address.toRaw())).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return try WalletInfo(wallet: response)
     }
 
     func getWalletsByPubkeysBulk(publicKeys: [String], firebaseUserId: String?) async throws -> [(publicKey: String, wallets: [WalletInfo])] {
-        let request = try await createRequest {
-            WalletAPI.getWalletsByPublicKeysBulkWithRequestBuilder(
-                request: PubkeysWalletsBulkRequest(publicKeys: publicKeys),
-                firebaseUserId: firebaseUserId
-            )
-        }
-        let response = try await performRequest(request: request).body
+        let response: PubkeysWalletsBulkResponse = try await send(
+            "getWalletsByPubkeysBulk",
+            path: "/v2/pubkeys/wallets/_bulk",
+            body: PubkeysWalletsBulkRequest(publicKeys: publicKeys),
+            headers: firebaseUserId.map { ["F": $0] } ?? [:]
+        )
 
         return response.items.map { item in
             (publicKey: item.publicKey, wallets: item.wallets.compactMap { try? WalletInfo(wallet: $0) })
@@ -319,40 +334,25 @@ extension API {
         boc: String,
         params: [EmulateMessageToWalletRequestParamsInner]?,
         currency: String? = nil
-    ) async throws -> MessageConsequences {
-        let request = try await createRequest {
-            EmulationAPI.emulateMessageToWalletWithRequestBuilder(
-                emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc, params: params),
-                currency: currency
-            )
+    ) async throws -> TonAPI.Components.Schemas.MessageConsequences {
+        try await perform {
+            try await $0.emulateMessageToWallet(
+                query: .init(currency: currency),
+                body: .json(.init(boc: boc, params: params))
+            ).ok.body.json
         }
-
-        return try await performRequest(request: request).body
     }
 
     func sendTransaction(boc: String, headers: [String: String] = [:]) async throws {
-        var request = try await createRequest {
-            BlockchainAPI.sendBlockchainMessageWithRequestBuilder(
-                sendBlockchainMessageRequest: SendBlockchainMessageRequest(
-                    boc: boc
-                )
-            )
+        _ = try await perform(headers: headers) {
+            try await $0.sendBlockchainMessage(body: .json(.init(boc: boc))).ok
         }
-        for (name, value) in headers {
-            request = request.addHeader(name: name, value: value)
-        }
-        try await performRequest(request: request)
     }
 
     func sendTransactions(batch: [String]) async throws {
-        let request = try await createRequest {
-            BlockchainAPI.sendBlockchainMessageWithRequestBuilder(
-                sendBlockchainMessageRequest: SendBlockchainMessageRequest(
-                    batch: batch
-                )
-            )
+        _ = try await perform {
+            try await $0.sendBlockchainMessage(body: .json(.init(batch: batch))).ok
         }
-        try await performRequest(request: request)
     }
 }
 
@@ -366,32 +366,28 @@ extension API {
         offset: Int?,
         isIndirectOwnership: Bool
     ) async throws -> [NFT] {
-        let request = try await createRequest {
-            AccountsAPI.getAccountNftItemsWithRequestBuilder(
-                accountId: address.toRaw(),
-                collection: collectionAddress?.toRaw(),
-                limit: limit,
-                offset: offset,
-                indirectOwnership: isIndirectOwnership
-            )
+        let response = try await perform {
+            try await $0.getAccountNftItems(
+                path: .init(accountId: address.toRaw()),
+                query: .init(
+                    collection: collectionAddress?.toRaw(),
+                    limit: limit,
+                    offset: offset,
+                    indirectOwnership: isIndirectOwnership
+                )
+            ).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return response.nftItems.compactMap {
             try? NFT(nftItem: $0)
         }
     }
 
     func getNftItemsByAddresses(_ addresses: [Address]) async throws -> [NFT] {
-        let request = try await createRequest {
-            NFTAPI.getNftItemsByAddressesWithRequestBuilder(
-                getBlockchainRawAccountsRequest: GetBlockchainRawAccountsRequest(
-                    accountIds: addresses.map { $0.toRaw() }
-                )
-            )
+        let response = try await perform {
+            try await $0.getNftItemsByAddresses(
+                body: .json(.init(accountIds: addresses.map { $0.toRaw() }))
+            ).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return response.nftItems.compactMap {
             try? NFT(nftItem: $0)
         }
@@ -402,22 +398,19 @@ extension API {
 
 extension API {
     func resolveJetton(address: Address) async throws -> JettonInfo {
-        let request = try await createRequest {
-            JettonsAPI.getJettonInfoWithRequestBuilder(
-                accountId: address.toRaw()
-            )
+        let response = try await perform {
+            try await $0.getJettonInfo(path: .init(accountId: address.toRaw())).ok.body.json
         }
-        let response = try await performRequest(request: request).body
 
         let verification: JettonInfo.Verification
         switch response.verification {
-        case ._none:
+        case .none:
             verification = .none
         case .blacklist:
             verification = .blacklist
         case .whitelist:
             verification = .whitelist
-        case .unknownDefaultOpenApi:
+        case .unknown:
             verification = .none
         case .graylist:
             verification = .graylist
@@ -455,19 +448,14 @@ extension API {
 extension API {
     func getRates(currencies: [Currency], jettons: [String]) async throws -> Rates {
         let tokens = ["GRAM", "USDT"] + jettons
-        let request = try await createRequest {
-            RatesAPI.getRatesWithRequestBuilder(
-                tokens: tokens,
-                currencies: currencies.map { $0.code }
-            )
+        let response = try await perform {
+            try await $0.getRates(query: .init(tokens: tokens, currencies: currencies.map { $0.code })).ok.body.json
         }
 
-        let response = try await performRequest(request: request).body
-
-        return parseResponse(rates: response.rates, jettons: jettons)
+        return parseResponse(rates: response.rates.additionalProperties, jettons: jettons)
     }
 
-    private func parseResponse(rates: [String: TonAPI.TokenRates], jettons: [String]) -> Rates {
+    private func parseResponse(rates: [String: TonAPI.Components.Schemas.TokenRates], jettons: [String]) -> Rates {
         var tonRates = [Rates.Rate]()
         var usdtRates = [Rates.Rate]()
         var jettonsRates = [String: [Rates.Rate]]()
@@ -475,8 +463,8 @@ extension API {
         for key in rates.keys {
             guard let rates = rates[key] else { continue }
             if key.lowercased() == TonInfo.symbol.lowercased() {
-                guard let prices = rates.prices else { continue }
-                let diff24h = rates.diff24h
+                guard let prices = rates.prices?.additionalProperties else { continue }
+                let diff24h = rates.diff24h?.additionalProperties
                 tonRates = prices.compactMap { price -> Rates.Rate? in
                     guard let currency = Currency(code: price.key) else { return nil }
                     let diff24h = diff24h?[price.key]
@@ -485,8 +473,8 @@ extension API {
                 continue
             }
             if key.lowercased() == "usdt" {
-                guard let prices = rates.prices else { continue }
-                let diff24h = rates.diff24h
+                guard let prices = rates.prices?.additionalProperties else { continue }
+                let diff24h = rates.diff24h?.additionalProperties
                 usdtRates = prices.compactMap { price -> Rates.Rate? in
                     guard let currency = Currency(code: price.key) else { return nil }
                     let diff24h = diff24h?[price.key]
@@ -495,8 +483,8 @@ extension API {
                 continue
             }
             guard jettons.contains(where: { $0.lowercased() == key.lowercased() }) else { continue }
-            guard let prices = rates.prices else { continue }
-            let diff24h = rates.diff24h
+            guard let prices = rates.prices?.additionalProperties else { continue }
+            let diff24h = rates.diff24h?.additionalProperties
             let jettonRates: [Rates.Rate] = prices.compactMap { price -> Rates.Rate? in
                 guard let currency = Currency(code: price.key) else { return nil }
                 let diff24h = diff24h?[price.key]
@@ -521,13 +509,9 @@ extension API {
     }
 
     func resolveDomainName(_ domainName: String) async throws -> FriendlyAddress {
-        let request = try await createRequest {
-            DNSAPI.dnsResolveWithRequestBuilder(
-                domainName: domainName
-            )
+        let response = try await perform {
+            try await $0.dnsResolve(path: .init(domainName: domainName)).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         guard let wallet = response.wallet else {
             throw DNSError.noWalletData
         }
@@ -537,13 +521,9 @@ extension API {
     }
 
     func getDomainExpirationDate(_ domainName: String) async throws -> Date? {
-        let request = try await createRequest {
-            DNSAPI.getDnsInfoWithRequestBuilder(
-                domainName: domainName
-            )
+        let response = try await perform {
+            try await $0.getDnsInfo(path: .init(domainName: domainName)).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         guard let expiringAt = response.expiringAt else { return nil }
         return Date(timeIntervalSince1970: TimeInterval(integerLiteral: Int64(expiringAt)))
     }
@@ -608,13 +588,11 @@ extension API {
 
 extension API {
     func getCustomPayload(address: Address, jettonAddress: Address) async throws -> JettonTransferPayload {
-        let request = try await createRequest {
-            JettonsAPI.getJettonTransferPayloadWithRequestBuilder(
-                accountId: address.toRaw(),
-                jettonId: jettonAddress.toRaw()
-            )
+        let response = try await perform {
+            try await $0.getJettonTransferPayload(
+                path: .init(accountId: address.toRaw(), jettonId: jettonAddress.toRaw())
+            ).ok.body.json
         }
-        let response = try await performRequest(request: request).body
         return try JettonTransferPayload(customPayload: response.customPayload, stateInit: response.stateInit)
     }
 }
@@ -623,27 +601,20 @@ extension API {
 
 extension API {
     func getPools(address: Address) async throws -> [StackingPoolInfo] {
-        let request = try await createRequest {
-            StakingAPI.getStakingPoolsWithRequestBuilder(
-                availableFor: address.toRaw(),
-                includeUnverified: false
-            )
+        let response = try await perform {
+            try await $0.getStakingPools(
+                query: .init(availableFor: address.toRaw(), includeUnverified: false)
+            ).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return response.pools.compactMap {
-            try? StackingPoolInfo(accountStakingInfo: $0, implementations: response.implementations)
+            try? StackingPoolInfo(accountStakingInfo: $0, implementations: response.implementations.additionalProperties)
         }
     }
 
     func getNominators(address: Address) async throws -> [AccountStackingInfo] {
-        let request = try await createRequest {
-            StakingAPI.getAccountNominatorsPoolsWithRequestBuilder(
-                accountId: address.toRaw()
-            )
+        let response = try await perform {
+            try await $0.getAccountNominatorsPools(path: .init(accountId: address.toRaw())).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return response.pools.compactMap { try? AccountStackingInfo(accountStakingInfo: $0) }
     }
 }
@@ -652,17 +623,14 @@ extension API {
 
 extension API {
     func getWalletAddress(jettonMaster: String, owner: String) async throws -> Address {
-        let request = try await createRequest {
-            BlockchainAPI.execGetMethodForBlockchainAccountWithRequestBuilder(
-                accountId: jettonMaster,
-                methodName: "get_wallet_address",
-                args: [owner]
-            )
+        let response = try await perform {
+            try await $0.execGetMethodForBlockchainAccount(
+                path: .init(accountId: jettonMaster, methodName: "get_wallet_address"),
+                query: .init(args: [owner])
+            ).ok.body.json
         }
 
-        let response = try await performRequest(request: request).body
-
-        guard let decoded = response.decoded?.value as? [String: Any],
+        guard let decoded = response.decoded?.value as? [String: (any Sendable)?],
               let jettonWalletAddress = decoded["jetton_wallet_address"] as? String
         else {
             throw APIError.incorrectResponse
@@ -682,34 +650,25 @@ extension API {
         let signature = try tonProof.signature.signature().base64EncodedString()
         let walletAddress = try wallet.address.toRaw()
 
-        let request = try await createRequest {
-            WalletAPI.tonConnectProofWithRequestBuilder(
-                tonConnectProofRequest: TonConnectProofRequest(
-                    address: walletAddress,
-                    proof: TonConnectProofRequestProof(
-                        timestamp: Int64(tonProof.timestamp),
-                        domain: TonConnectProofRequestProofDomain(
-                            lengthBytes: Int(tonProof.domain.lengthBytes),
-                            value: tonProof.domain.value
-                        ),
-                        signature: signature,
-                        payload: tonProof.payload,
-                        stateInit: stateInit
-                    )
+        let response = try await perform {
+            try await $0.tonConnectProof(body: .json(.init(
+                address: walletAddress,
+                proof: .init(
+                    timestamp: Int64(tonProof.timestamp),
+                    domain: .init(lengthBytes: Int32(tonProof.domain.lengthBytes), value: tonProof.domain.value),
+                    signature: signature,
+                    payload: tonProof.payload,
+                    stateInit: stateInit
                 )
-            )
+            ))).ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return response.token
     }
 
     func getTonconnectPayload() async throws -> String {
-        let request = try await createRequest {
-            ConnectAPI.getTonConnectPayloadWithRequestBuilder(
-            )
+        let response = try await perform {
+            try await $0.getTonConnectPayload().ok.body.json
         }
-        let response = try await performRequest(request: request).body
         return response.payload
     }
 }
@@ -724,9 +683,11 @@ extension API {
         publicKey: String,
         gasPayer: MigrationGasPayer = .self
     ) async throws -> MigrationPrepareResponseBody {
-        let request = try await createRequest {
-            MigrationAPI.prepareMigrationWithRequestBuilder(
-                request: MigrationPrepareRequestBody(
+        do {
+            return try await send(
+                "prepareMigration",
+                path: "/v2/migration/prepare",
+                body: MigrationPrepareRequestBody(
                     from: from,
                     to: to,
                     currency: currency.code,
@@ -734,10 +695,7 @@ extension API {
                     gasPayer: gasPayer
                 )
             )
-        }
-        do {
-            return try await performRequest(request: request).body
-        } catch let error as ErrorResponse {
+        } catch let error as TonAPIError {
             guard gasPayer == .self,
                   let response = MigrationPrepareResponseBody(insufficientTonError: error)
             else {
@@ -750,16 +708,24 @@ extension API {
     func getMigrationWallets(
         accountIds: [String],
         currency: Currency
-    ) async throws -> MigrationWallets {
-        let request = try await createRequest {
-            MigrationAPI.getMigrationWalletsWithRequestBuilder(
-                currencies: [currency.code],
-                getBlockchainRawAccountsRequest: GetBlockchainRawAccountsRequest(
-                    accountIds: accountIds
-                )
-            )
+    ) async throws -> TonAPI.Components.Schemas.MigrationWallets {
+        try await perform {
+            try await $0.getMigrationWallets(
+                query: .init(currencies: [currency.code]),
+                body: .json(.init(accountIds: accountIds))
+            ).ok.body.json
         }
-        return try await performRequest(request: request).body
+    }
+}
+
+// MARK: - Gasless
+
+extension API {
+    func getGaslessRelayAddress() async throws -> Address {
+        let response = try await perform {
+            try await $0.gaslessConfig().ok.body.json
+        }
+        return try Address.parse(response.relayAddress)
     }
 }
 
@@ -767,12 +733,9 @@ extension API {
 
 extension API {
     func getTime() async throws -> TimeInterval {
-        let request = try await createRequest {
-            LiteServerAPI.getRawTimeWithRequestBuilder(
-            )
+        let response = try await perform {
+            try await $0.getRawTime().ok.body.json
         }
-
-        let response = try await performRequest(request: request).body
         return TimeInterval(response.time)
     }
 }
@@ -781,11 +744,9 @@ extension API {
 
 extension API {
     func getStatus() async throws -> Int {
-        let request = try await createRequest {
-            UtilitiesAPI.statusWithRequestBuilder(
-            )
+        let response = try await perform {
+            try await $0.status().ok.body.json
         }
-        let response = try await performRequest(request: request).body
-        return response.indexingLatency
+        return Int(response.indexingLatency)
     }
 }

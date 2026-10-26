@@ -53,6 +53,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .showRecoveryPhrase,
             onCancel: { [weak self] in
                 self?.didFinish?(self)
             },

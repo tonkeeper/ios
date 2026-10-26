@@ -1,4 +1,5 @@
 import KeeperCore
+import TKAppInfo
 import TKCoordinator
 import TKCore
 import TKLocalize
@@ -39,7 +40,12 @@ public final class MultichainWalletCoordinator: RouterCoordinator<NavigationCont
     var didTapAddress: ((Wallet) -> Void)?
     var didSelectMultichainAssetDetails: ((TradeAssetDetailsViewModel.PreviewContext) -> Void)?
     var didTapOpenCryptoAssets: (() -> Void)?
+    /// Nil disables the wallet-home perps section, the way every other perps entry point is gated.
+    var didTapOpenPerps: (() -> Void)?
+    var didTapOpenPerpsMarket: ((Int64) -> Void)?
+
     var collectiblesDidOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
+    var didOpenEarn: ((_ url: URL, _ source: DappOpenSource) -> Void)?
     var collectiblesDidRequestDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var didRequestBannerDeeplinkHandling: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var collectiblesDidRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
@@ -119,12 +125,26 @@ private extension MultichainWalletCoordinator {
         )
         let multichainService = keeperCoreMainAssembly.servicesAssembly.multichainService()
 
+        let isEarnEnabled = configuration.featureEnabled(.earnEnabled)
         let rootViewModel = MultichainWalletRootViewModel(
             wallet: wallet,
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             configuration: configuration,
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            earnFeaturedVaultsRepository: keeperCoreMainAssembly.repositoriesAssembly.earnFeaturedVaultsRepository(
+                isEarnEnabled: isEarnEnabled,
+                isAppStoreEnvironment: UIApplication.shared.isAppStoreEnvironment,
+                configuration: configuration
+            ),
+            earnVaultsRepository: keeperCoreMainAssembly.repositoriesAssembly.earnVaultsRepository(isEarnEnabled: isEarnEnabled),
+            earnCardMapper: { [amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter] vaults in
+                EarnCardViewDataMapper.cards(vaults) { apy in
+                    TKLocales.Trade.AssetDetails.apyValue(
+                        amountFormatter.format(decimal: apy, style: .percent)
+                    )
+                }
+            },
             makeWalletViewModel: { [weak self, keeperCoreMainAssembly, coreAssembly, configuration] wallet in
                 Self.makeWalletViewModel(
                     wallet: wallet,
@@ -142,6 +162,10 @@ private extension MultichainWalletCoordinator {
         rootViewModel.onOpenRaffle = { [weak self] in
             self?.openMysteryRaffle()
         }
+        rootViewModel.onOpenEarn = { [weak self] url in
+            self?.didOpenEarn?(url, .earnFeatured)
+        }
+        rootViewModel.loadEarnVaults()
         let balanceViewController = MultichainWalletBalanceViewController(viewModel: rootViewModel)
         rootViewModel.didChangeWallet = { [weak balanceViewController] in
             balanceViewController?.scrollToTop()
@@ -209,9 +233,6 @@ private extension MultichainWalletCoordinator {
         balanceViewModel.onBattery = { [weak coordinator] wallet in
             coordinator?.didTapBattery?(wallet)
         }
-        balanceViewModel.onBackup = { [weak coordinator] wallet in
-            coordinator?.didTapBackup?(wallet)
-        }
 
         let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
             wallet: wallet,
@@ -229,6 +250,7 @@ private extension MultichainWalletCoordinator {
         }
 
         let amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let isEarnEnabled = configuration.featureEnabled(.earnEnabled)
         let assetsListViewModel = WalletBalanceMultichainAssetsListViewModel(
             wallet: wallet,
             multichainService: multichainService,
@@ -256,6 +278,9 @@ private extension MultichainWalletCoordinator {
                     amountFormatter.format(decimal: value, style: .percent)
                 )
             },
+            earnAssetOffersRepository: keeperCoreMainAssembly.repositoriesAssembly.earnAssetOffersRepository(
+                isEarnEnabled: isEarnEnabled
+            ),
             canManage: true
         )
         assetsListViewModel.onTapOpenAssets = { [weak coordinator] in
@@ -283,12 +308,32 @@ private extension MultichainWalletCoordinator {
             coordinator?.openCollectibles()
         }
 
+        let earnPortfolioViewModel = WalletBalanceEarnPortfolioViewModel(
+            address: wallet.walletConnectAddress(for: .eth),
+            repository: keeperCoreMainAssembly.repositoriesAssembly.earnPortfolioRepository(isEarnEnabled: isEarnEnabled),
+            mapper: EarnPortfolioSectionMapper(fiatFormatter: { value in
+                amountFormatter.format(decimal: value, accessory: .fiat(Currency.USD), style: .fiatBalance)
+            }).map,
+            analyticsProvider: coreAssembly.analyticsProvider
+        )
+        earnPortfolioViewModel.onSelectPosition = { [weak coordinator, configuration] position in
+            coordinator?.didOpenEarn?(
+                configuration.earnUrl.appendingEarnVaultPath(network: position.network, vaultId: position.vaultId),
+                .earnYourVaults
+            )
+        }
+        earnPortfolioViewModel.onOpenCatalog = { [weak coordinator, configuration] in
+            coordinator?.didOpenEarn?(configuration.earnUrl, .earnYourVaults)
+        }
+
         let viewModel = MultichainWalletViewModel(
             wallet: wallet,
             balanceViewModel: balanceViewModel,
             homeBannersViewModel: homeBannersViewModel,
             assetsListViewModel: assetsListViewModel,
             collectiblesViewModel: collectiblesViewModel,
+            makePerpsSectionViewModel: { [weak coordinator] in coordinator?.makePerpsSectionViewModel(for: $0) },
+            earnPortfolioViewModel: earnPortfolioViewModel,
             setupModel: WalletBalanceSetupModel(
                 wallet: wallet,
                 walletsStore: storesAssembly.walletsStore,
@@ -360,7 +405,8 @@ private extension MultichainWalletCoordinator {
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .enableBiometry
         )
     }
 
@@ -477,5 +523,45 @@ private extension MultichainWalletCoordinator {
         }
 
         coordinator.start()
+    }
+}
+
+private extension MultichainWalletCoordinator {
+    func makePerpsSectionViewModel(for wallet: Wallet) -> MultichainWalletPerpsSectionViewModel? {
+        guard didTapOpenPerps != nil, didTapOpenPerpsMarket != nil, wallet.isMultichain else { return nil }
+        let perpsAssembly = keeperCoreMainAssembly.perpsAssembly
+        let marketsRepository = perpsAssembly.marketsRepository
+        // The assembly caches scopes weakly, so the section showing perps is what keeps this
+        // wallet on one store; releasing the section is what stops the poll behind it.
+        let walletScope = perpsAssembly.walletScope(for: wallet)
+        let viewModel = MultichainWalletPerpsSectionViewModel(
+            wallet: wallet,
+            portfolioStore: keeperCoreMainAssembly.storesAssembly.multichainPortfolioStore,
+            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+            accountStore: walletScope.accountStore,
+            marketsStore: perpsAssembly.marketsStore,
+            itemsMapper: TradeItemsMapper(
+                multichainEnabled: true,
+                signedAmountFormatter: keeperCoreMainAssembly.formattersAssembly.signedAmountFormatter
+            ),
+            shelfMarketsLoader: {
+                try await marketsRepository.markets(
+                    query: nil,
+                    sort: .volume,
+                    cursor: nil,
+                    pageSize: PerpsMarketsRepository.minimumPageSize
+                ).items
+            },
+            walletScope: walletScope
+        )
+        viewModel.onOpenPerps = { [weak self] in
+            self?.didTapOpenPerps?()
+        }
+        viewModel.onOpenMarket = { [weak self] marketId in
+            self?.didTapOpenPerpsMarket?(marketId)
+        }
+        return viewModel
     }
 }

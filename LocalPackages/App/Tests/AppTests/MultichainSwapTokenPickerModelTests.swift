@@ -14,7 +14,7 @@ final class MultichainSwapTokenPickerModelTests: XCTestCase {
                 decimals: 9,
                 image: ""
             ),
-            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 1
         )
         let multichainService = PickerMultichainServiceSpy(
@@ -30,7 +30,6 @@ final class MultichainSwapTokenPickerModelTests: XCTestCase {
             ),
             selectedAsset: nil,
             multichainService: multichainService,
-            multichainSwapService: PickerSwapServiceStub(),
             currencyStore: CurrencyStore(
                 keeperInfoStore: KeeperInfoStore(
                     keeperInfoRepository: KeeperInfoRepositoryStub()
@@ -42,7 +41,63 @@ final class MultichainSwapTokenPickerModelTests: XCTestCase {
 
         let requests = await multichainService.walletAssetsRequests()
         XCTAssertEqual(requests.map(\.capabilities), [[.swap]])
+        XCTAssertEqual(requests.map(\.availableOnly), [true])
+        XCTAssertEqual(requests.map(\.showHidden), [false])
+        XCTAssertEqual(requests.map(\.showAll), [nil])
+        XCTAssertEqual(requests.map(\.hideDust), [false])
         XCTAssertEqual(result.assets.map(\.asset.assetId), ["ton/mainnet/coin"])
+    }
+
+    func test_receivePickerRequestsSwapCapableWalletAssetsAndExcludesSource() async throws {
+        let source = makeAsset(assetId: "ton/mainnet/coin", symbol: "TON")
+        let destination = makeAsset(assetId: "sol/mainnet/coin", symbol: "SOL")
+        let multichainService = PickerMultichainServiceSpy(
+            walletAssetsResult: .success(
+                MultichainWalletAssetsPage(assets: [source, destination], nextCursor: "next", fiatPrice: [:])
+            )
+        )
+        let model = MultichainSwapTokenPickerModel(
+            side: .receive(sourceAssetId: source.asset.assetId),
+            multichainState: MultichainWalletState(
+                walletId: "wallet",
+                addresses: [.init(chain: .ton, address: "tonwallet")]
+            ),
+            selectedAsset: nil,
+            multichainService: multichainService,
+            currencyStore: CurrencyStore(
+                keeperInfoStore: KeeperInfoStore(
+                    keeperInfoRepository: KeeperInfoRepositoryStub()
+                )
+            )
+        )
+
+        let result = try await model.loadAssets(query: nil, filter: .all, limit: 10, cursor: nil)
+        let nextPage = try await model.loadAssets(query: nil, filter: .all, limit: 10, cursor: result.nextCursor)
+
+        let requests = await multichainService.walletAssetsRequests()
+        XCTAssertEqual(requests.map(\.capabilities), [[.swap], [.swap]])
+        XCTAssertEqual(requests.map(\.availableOnly), [false, false])
+        XCTAssertEqual(requests.map(\.showHidden), [true, true])
+        XCTAssertEqual(requests.map(\.showAll), [true, true])
+        XCTAssertEqual(requests.map(\.hideDust), [false, false])
+        XCTAssertEqual(requests.map(\.cursor), [nil, "next"])
+        XCTAssertEqual(result.assets.map(\.asset.assetId), [destination.asset.assetId])
+        XCTAssertEqual(result.nextCursor, "next")
+        XCTAssertEqual(nextPage.assets.map(\.asset.assetId), [destination.asset.assetId])
+    }
+
+    private func makeAsset(assetId: String, symbol: String) -> MultichainAsset {
+        MultichainAsset(
+            asset: MultichainAssetDetails(
+                assetId: assetId,
+                name: symbol,
+                symbol: symbol,
+                decimals: 9,
+                image: ""
+            ),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
+            balance: 1
+        )
     }
 }
 
@@ -51,6 +106,9 @@ private actor PickerMultichainServiceSpy: MultichainService {
         let capabilities: [MultichainAssetCapability]?
         let availableOnly: Bool?
         let showHidden: Bool?
+        let showAll: Bool?
+        let hideDust: Bool?
+        let cursor: String?
     }
 
     private let walletAssetsResult: Result<MultichainWalletAssetsPage, MultichainServiceError>
@@ -73,15 +131,19 @@ private actor PickerMultichainServiceSpy: MultichainService {
         search _: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
-        hideDust _: Bool?,
+        showAll: Bool?,
+        hideDust: Bool?,
         limit _: Int?,
-        cursor _: String?
+        cursor: String?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         recordedWalletAssetsRequests.append(
             WalletAssetsRequest(
                 capabilities: capabilities,
                 availableOnly: availableOnly,
-                showHidden: showHidden
+                showHidden: showHidden,
+                showAll: showAll,
+                hideDust: hideDust,
+                cursor: cursor
             )
         )
         return try walletAssetsResult.get()
@@ -126,6 +188,7 @@ private actor PickerMultichainServiceSpy: MultichainService {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .apiError(message: "Unimplemented")
@@ -147,7 +210,6 @@ private actor PickerMultichainServiceSpy: MultichainService {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .apiError(message: "Unimplemented")
@@ -159,51 +221,6 @@ private actor PickerMultichainServiceSpy: MultichainService {
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
-        throw .apiError(message: "Unimplemented")
-    }
-}
-
-private struct PickerSwapServiceStub: MultichainSwapService {
-    enum Error: Swift.Error {
-        case unimplemented
-    }
-
-    func listCrossSwapAssets(query _: MultichainSwapAssetsQuery) async throws -> [MultichainSwapAsset] {
-        throw Error.unimplemented
-    }
-
-    func getCrossSwapAsset(assetId _: String) async throws -> MultichainSwapAsset {
-        throw Error.unimplemented
-    }
-
-    func getCrossSwapConfig(
-        walletId _: String,
-        fromAssetId _: String?,
-        toAssetId _: String?
-    ) async throws -> MultichainSwapConfig {
-        throw Error.unimplemented
-    }
-
-    func createCrossSwapQuote(
-        request _: MultichainSwapQuoteRequest,
-        walletId _: String?
-    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
-        throw .unknown(statusCode: 0)
-    }
-
-    func prepareCrossSwapRoute(
-        routeId _: String,
-        request _: MultichainSwapPrepareRouteRequest?,
-        walletId: String?
-    ) async throws -> MultichainSwapPrepare {
-        throw Error.unimplemented
     }
 }
 

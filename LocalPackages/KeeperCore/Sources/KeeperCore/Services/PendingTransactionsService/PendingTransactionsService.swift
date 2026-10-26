@@ -58,6 +58,9 @@ actor PendingTransactionsServiceImplementation: PendingTransactionsService {
     }
 
     func report(_ transaction: MultichainPendingTransaction) async {
+        Task { @MainActor in
+            NotificationCenter.default.post(name: .multichainTransactionBroadcast, object: transaction)
+        }
         if await send(transaction) {
             return
         }

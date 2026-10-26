@@ -1,32 +1,26 @@
 import Foundation
-import TonAPI
 
-public enum WalletMigrationError: Error, Equatable {
+@frozen public enum WalletMigrationError: Error, Equatable {
     case insufficientTonForGas(required: UInt64, available: UInt64)
     case insufficientTrxForFees(required: UInt64, available: UInt64)
     case inactiveTronAccount
 
     public init?(apiError: Error) {
-        guard let errorResponse = apiError as? ErrorResponse,
-              case let .error(_, data, _, _) = errorResponse,
-              let data
+        guard let data = apiError.tonAPIError?.body,
+              let errorBody = try? JSONDecoder().decode(ErrorBody.self, from: data)
         else {
             return nil
         }
 
-        if let defaultError = try? JSONDecoder().decode(GetOpenapiJsonDefaultResponse.self, from: data),
-           let details = defaultError.details
-        {
+        if let details = errorBody.details {
             self = .insufficientTonForGas(
-                required: UInt64(details._required),
+                required: UInt64(details.required),
                 available: UInt64(details.available)
             )
             return
         }
 
-        if let modelError = try? JSONDecoder().decode(ModelError.self, from: data),
-           let parsed = Self(errorMessage: modelError.error)
-        {
+        if let parsed = Self(errorMessage: errorBody.error) {
             self = parsed
             return
         }
@@ -52,14 +46,23 @@ public enum WalletMigrationError: Error, Equatable {
     }
 
     public static func sendFailureMessage(from error: Error) -> String {
-        if case let ErrorResponse.error(_, data, _, _) = error,
-           let data,
-           let modelError = try? JSONDecoder().decode(ModelError.self, from: data),
-           !modelError.error.isEmpty
+        if let data = error.tonAPIError?.body,
+           let errorBody = try? JSONDecoder().decode(ErrorBody.self, from: data),
+           !errorBody.error.isEmpty
         {
-            return modelError.error
+            return errorBody.error
         }
         return error.localizedDescription
+    }
+
+    private struct ErrorBody: Decodable {
+        struct Details: Decodable {
+            let required: Int64
+            let available: Int64
+        }
+
+        let error: String
+        let details: Details?
     }
 
     private static func firstMatch(in string: String, pattern: String) -> UInt64? {

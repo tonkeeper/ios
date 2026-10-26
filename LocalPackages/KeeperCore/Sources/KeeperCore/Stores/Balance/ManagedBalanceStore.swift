@@ -12,7 +12,7 @@ public struct ManagedBalance {
     public let isManagable: Bool
 }
 
-public enum ManagedBalanceState {
+@frozen public enum ManagedBalanceState {
     case current(ManagedBalance)
     case previous(ManagedBalance)
 
@@ -29,7 +29,7 @@ public enum ManagedBalanceState {
 public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, ManagedBalanceStore.State> {
     public typealias State = [Wallet: ManagedBalanceState]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateManagedBalance(wallet: Wallet)
     }
 
@@ -120,17 +120,15 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
         var unpinnedItems = [ProcessedBalanceItem]()
 
         for balanceItem in balance.items {
-            switch balanceItem {
-            case let .ton(tonItem):
+            if case let .ton(tonItem) = balanceItem {
                 tonItems.append(tonItem)
-            default:
-                if statePinnedItems.contains(balanceItem.identifier) {
-                    pinnedItems.append(balanceItem)
-                } else {
-                    let isHidden = stateHiddenItems[balanceItem.identifier] == true
-                    guard !isHidden else { continue }
-                    unpinnedItems.append(balanceItem)
-                }
+            }
+            if statePinnedItems.contains(balanceItem.identifier) {
+                pinnedItems.append(balanceItem)
+            } else {
+                let isHidden = balanceItem.canHide && stateHiddenItems[balanceItem.identifier] == true
+                guard !isHidden else { continue }
+                unpinnedItems.append(balanceItem)
             }
         }
 
@@ -169,6 +167,11 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
 }
 
 extension ProcessedBalanceItem {
+    var canHide: Bool {
+        if case .ton = self { return false }
+        return true
+    }
+
     var balanceListRank: Int {
         switch self {
         case .ton:

@@ -1,5 +1,6 @@
 import KeeperCore
 import TKLogging
+import TKServices
 
 private let errorTag = "Analytics Failure (WalletInterface)"
 
@@ -31,7 +32,7 @@ extension Wallet {
             case let .regular(contract):
                 return contract.asWalletInterface
             }
-        case .eth, .base, .arb, .bsc, .tron:
+        case .eth, .base, .arb, .bsc, .tron, .sol, .polygon, .avax, .robinhood:
             return .eoa
         case .btc:
             return btcInterface

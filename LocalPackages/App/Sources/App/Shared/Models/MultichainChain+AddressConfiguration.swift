@@ -32,6 +32,14 @@ extension MultichainChain {
             "ARBITRUM"
         case .tron:
             "TRON"
+        case .sol:
+            "SOLANA"
+        case .polygon:
+            "POLYGON"
+        case .avax:
+            "AVALANCHE"
+        case .robinhood:
+            "ROBINHOOD"
         }
     }
 
@@ -51,6 +59,14 @@ extension MultichainChain {
             "ARB"
         case .tron:
             "TRON"
+        case .sol:
+            "SOL"
+        case .polygon:
+            "POL"
+        case .avax:
+            "AVAX"
+        case .robinhood:
+            "ROBINHOOD"
         }
     }
 
@@ -70,6 +86,10 @@ extension MultichainChain {
             "ERC20"
         case .tron:
             "TRC20"
+        case .sol:
+            "SPL"
+        case .polygon, .avax, .robinhood:
+            "ERC20"
         }
     }
 
@@ -89,6 +109,14 @@ extension MultichainChain {
             .TKUIKit.Icons.Size20.arbitrumChain
         case .tron:
             .TKUIKit.Icons.Size20.trxChain
+        case .sol:
+            .TKUIKit.Icons.Size20.solChain
+        case .polygon:
+            .TKUIKit.Icons.Size20.polygonChain
+        case .avax:
+            .TKUIKit.Icons.Size20.avalancheChain
+        case .robinhood:
+            .TKUIKit.Icons.Size20.robinhoodChain
         }
     }
 
@@ -108,6 +136,14 @@ extension MultichainChain {
             .TKUIKit.Icons.Size44.arbitrumChain
         case .tron:
             .TKUIKit.Icons.Size44.trxChain
+        case .sol:
+            .TKUIKit.Icons.Size44.solChain
+        case .polygon:
+            .TKUIKit.Icons.Size44.polygonChain
+        case .avax:
+            .TKUIKit.Icons.Size44.avalancheChain
+        case .robinhood:
+            .TKUIKit.Icons.Size44.robinhoodChain
         }
     }
 }

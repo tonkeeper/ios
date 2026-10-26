@@ -207,6 +207,7 @@ private extension ImportWalletKindPreviewLoader {
                 search: nil,
                 availableOnly: nil,
                 showHidden: false,
+                showAll: nil,
                 hideDust: nil
             )
             fiatTotal = portfolioFiatTotal(from: page.fiatPrice, currency: currency) ?? 0

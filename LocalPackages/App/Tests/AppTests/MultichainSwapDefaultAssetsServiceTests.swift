@@ -2,6 +2,7 @@
 import BigInt
 import Foundation
 @testable import KeeperCore
+import TonSwift
 import XCTest
 
 final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
@@ -38,7 +39,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(result.sendAsset, walletAsset)
         XCTAssertEqual(result.receiveAsset.asset.assetId, "eth/mainnet/coin")
         XCTAssertEqual(result.receiveAsset.balance, .zero)
-        XCTAssertEqual(result.catalog.count, 2)
         XCTAssertEqual(result.slippage, config.slippage)
 
         let requests = await multichainService.walletAssetsRequests()
@@ -47,11 +47,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(requests.map(\.showHidden), [false])
         let configRequests = await swapService.configRequests()
         XCTAssertEqual(configRequests, [.init(walletId: "wallet", fromAssetId: nil, toAssetId: nil)])
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertTrue(
-            catalogAssetRequests.isEmpty,
-            "The default pair assets come with the configuration and need no extra lookup"
-        )
         let listCrossSwapAssetsRequestCount = await swapService.listCrossSwapAssetsRequestCount()
         XCTAssertEqual(listCrossSwapAssetsRequestCount, 0)
     }
@@ -103,9 +98,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
             swapService: swapService
         ).load()
 
-        XCTAssertEqual(result.catalog.count, 2)
-        XCTAssertEqual(result.catalog["eth/mainnet/coin"]?.symbol, "ETH")
-        XCTAssertEqual(result.catalog["ton/mainnet/coin"]?.symbol, "TON")
         XCTAssertEqual(result.sendAsset.asset.symbol, "TON")
         XCTAssertEqual(result.sendAsset.balance, 42)
         XCTAssertEqual(result.receiveAsset.asset.symbol, "ETH")
@@ -192,12 +184,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
             configRequests,
             [.init(walletId: "wallet", fromAssetId: nil, toAssetId: "base/mainnet/coin")]
         )
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertEqual(
-            catalogAssetRequests,
-            ["base/mainnet/coin"],
-            "Only the requested asset is validated before the config request"
-        )
     }
 
     func test_loadWithSendInitialSelectionRequestsSelectedAssetAsSource() async throws {
@@ -235,11 +221,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
             configRequests,
             [.init(walletId: "wallet", fromAssetId: "base/mainnet/coin", toAssetId: nil)]
         )
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertEqual(
-            catalogAssetRequests,
-            ["base/mainnet/coin"]
-        )
     }
 
     func test_loadWithBothInitialSelectionsRequestsBothAssets() async throws {
@@ -275,12 +256,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(
             configRequests,
             [.init(walletId: "wallet", fromAssetId: "ton/mainnet/coin", toAssetId: "base/mainnet/coin")]
-        )
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertEqual(
-            catalogAssetRequests.sorted(),
-            ["base/mainnet/coin", "ton/mainnet/coin"],
-            "Both sides are validated concurrently, so only the multiset is deterministic"
         )
     }
 
@@ -320,12 +295,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(
             configRequests,
             [.init(walletId: "wallet", fromAssetId: "ton/mainnet/coin", toAssetId: usdtAssetId)]
-        )
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertEqual(
-            catalogAssetRequests,
-            ["ton/mainnet/coin"],
-            "The chain-scoped asset comes from the chain catalog and needs no extra lookup"
         )
         let listCrossSwapAssetsRequestCount = await swapService.listCrossSwapAssetsRequestCount()
         XCTAssertEqual(listCrossSwapAssetsRequestCount, 1)
@@ -375,12 +344,6 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
             1,
             "The generic token standard is resolved through the chain catalog"
         )
-        let catalogAssetRequests = await swapService.catalogAssetRequests()
-        XCTAssertEqual(
-            catalogAssetRequests,
-            ["eth/mainnet/coin"],
-            "Only the directly addressable deeplink side needs a lookup"
-        )
     }
 
     func test_loadDoesNotResolveUnknownTokenStandardByAddress() async throws {
@@ -407,10 +370,14 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
                 deeplinkReceiveAssetId: nil
             )
         )
+        let assetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(
+            loadedDetailsResults: ["eth/mainnet/dick/\(usdtAddress)": .failure(.notFound)]
+        )
 
         let result = try await makeService(
             multichainService: multichainService,
             swapService: swapService,
+            assetDetailsService: assetDetailsService,
             initialSelection: selection
         ).load()
 
@@ -426,28 +393,29 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
     }
 
     func test_loadPropagatesSelectedAssetLookupFailure() async {
-        let expectedError = MultichainSwapAPIError.internalServerError(
-            message: "Unavailable",
-            code: nil,
-            requestId: nil
-        )
         let multichainService = DefaultAssetsMultichainServiceSpy(
             walletAssetsResult: .success(.init(assets: [], nextCursor: nil, fiatPrice: [:]))
         )
         let swapService = DefaultAssetsSwapServiceSpy(
-            catalogResult: .failure(expectedError),
+            catalogResult: .success([
+                swapAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, chainId: "ton/mainnet"),
+                swapAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, chainId: "eth/mainnet"),
+            ]),
             configResult: .success(makeConfig())
+        )
+        let assetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(
+            loadedDetailsResults: ["eth/mainnet/coin": .failure(.networkError)]
         )
 
         do {
             _ = try await makeService(
                 multichainService: multichainService,
                 swapService: swapService,
+                assetDetailsService: assetDetailsService,
                 initialSelection: .init(assetId: "eth/mainnet/coin", side: .send)
             ).load()
             XCTFail("Expected asset lookup error")
-        } catch let error as MultichainSwapAPIError {
-            XCTAssertEqual(error, expectedError)
+        } catch TradingAssetDetailsServiceFailure.networkError {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
@@ -572,6 +540,79 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         )
     }
 
+    func test_loadFlagsUnavailableSelectionWhenTradingDetailsDoNotSupportSwap() async throws {
+        let selectedAssetId = "base/mainnet/coin"
+        let multichainService = DefaultAssetsMultichainServiceSpy(
+            walletAssetsResult: .success(.init(assets: [], nextCursor: nil, fiatPrice: [:]))
+        )
+        let swapService = DefaultAssetsSwapServiceSpy(
+            catalogResult: .success([
+                swapAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, chainId: "ton/mainnet"),
+                swapAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, chainId: "eth/mainnet"),
+            ]),
+            configResult: .success(makeConfig())
+        )
+        let assetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(
+            loadedDetailsResults: [
+                selectedAssetId: .success(
+                    DefaultAssetsTradingAssetDetailsServiceSpy.makeDetails(
+                        assetId: selectedAssetId,
+                        capabilities: []
+                    )
+                ),
+            ]
+        )
+
+        let result = try await makeService(
+            multichainService: multichainService,
+            swapService: swapService,
+            assetDetailsService: assetDetailsService,
+            initialSelection: .init(assetId: selectedAssetId, side: .send)
+        ).load()
+
+        XCTAssertTrue(result.hasUnavailableInitialSelection)
+        let loadedDetailsIds = await assetDetailsService.loadAssetDetailsIds()
+        XCTAssertEqual(loadedDetailsIds, [selectedAssetId])
+        let configRequests = await swapService.configRequests()
+        XCTAssertEqual(
+            configRequests,
+            [.init(walletId: "wallet", fromAssetId: nil, toAssetId: nil)]
+        )
+    }
+
+    func test_loadFlagsUnavailableSelectionWhenTradingDetailsAreNotFound() async throws {
+        let selectedAssetId = "base/mainnet/coin"
+        let multichainService = DefaultAssetsMultichainServiceSpy(
+            walletAssetsResult: .success(.init(assets: [], nextCursor: nil, fiatPrice: [:]))
+        )
+        let swapService = DefaultAssetsSwapServiceSpy(
+            catalogResult: .success([
+                swapAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, chainId: "ton/mainnet"),
+                swapAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, chainId: "eth/mainnet"),
+            ]),
+            configResult: .success(makeConfig())
+        )
+        let assetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(
+            loadedDetailsResults: [selectedAssetId: .failure(.notFound)]
+        )
+
+        let result = try await makeService(
+            multichainService: multichainService,
+            swapService: swapService,
+            assetDetailsService: assetDetailsService,
+            initialSelection: .init(assetId: selectedAssetId, side: .receive)
+        ).load()
+
+        XCTAssertTrue(result.hasUnavailableInitialSelection)
+        let loadedDetailsIds = await assetDetailsService.loadAssetDetailsIds()
+        XCTAssertEqual(loadedDetailsIds, [selectedAssetId])
+        let configRequests = await swapService.configRequests()
+        XCTAssertEqual(
+            configRequests,
+            [.init(walletId: "wallet", fromAssetId: nil, toAssetId: nil)]
+        )
+    }
+
     func test_loadDoesNotFlagLegacySymbolSelection() async throws {
         let multichainService = DefaultAssetsMultichainServiceSpy(
             walletAssetsResult: .success(.init(assets: [], nextCursor: nil, fiatPrice: [:]))
@@ -657,7 +698,87 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         }
     }
 
-    func test_usdFiatRateDerivesFromFirstWalletAssetWithBothPrices() {
+    func test_legacyPairBuildsAssetsFromDetailsAndConvertedHoldings() async throws {
+        let wallet = makeLegacyWallet()
+        let currencyStore = makeCurrencyStore()
+        let convertedBalanceStore = makeConvertedBalanceStore()
+        let convertedBalance = ConvertedBalance(
+            date: .distantPast,
+            currency: currencyStore.state,
+            tonBalance: ConvertedTonBalance(
+                tonBalance: TonBalance(amount: 2_000_000_000),
+                converted: 5,
+                price: 2.5,
+                diff: nil
+            ),
+            jettonsBalance: [],
+            stackingBalance: [],
+            tronUSDT: ConvertedBalanceTronUSDTItem(
+                amount: 1_500_000,
+                converted: 1.5,
+                price: 1,
+                diff: nil
+            ),
+            tronTRX: nil,
+            batteryBalance: nil
+        )
+        let convertedBalanceUpdated = expectation(description: "Converted balance updated")
+        convertedBalanceStore.updateState {
+            _ in .init(newState: [wallet: .current(convertedBalance)])
+        } completion: {
+            _ in convertedBalanceUpdated.fulfill()
+        }
+        await fulfillment(of: [convertedBalanceUpdated])
+
+        let tonAssetId = "ton/mainnet/coin"
+        let tronUsdtAssetId = "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+        let assetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(
+            loadedDetailsResults: [
+                tonAssetId: .success(
+                    DefaultAssetsTradingAssetDetailsServiceSpy.makeDetails(
+                        assetId: tonAssetId,
+                        symbol: "TON",
+                        title: "Toncoin",
+                        decimals: 9,
+                        imageURL: URL(string: "https://cdn.example/ton.png")
+                    )
+                ),
+                tronUsdtAssetId: .success(
+                    DefaultAssetsTradingAssetDetailsServiceSpy.makeDetails(
+                        assetId: tronUsdtAssetId,
+                        symbol: "USDT",
+                        title: "Tether USD",
+                        decimals: 6,
+                        imageURL: URL(string: "https://cdn.example/usdt.png")
+                    )
+                ),
+            ]
+        )
+        let service = LegacyPairMultichainSwapDefaultAssetsService(
+            wallet: wallet,
+            sendAssetId: tonAssetId,
+            receiveAssetId: tronUsdtAssetId,
+            assetDetailsService: assetDetailsService,
+            convertedBalanceStore: convertedBalanceStore,
+            currencyStore: currencyStore
+        )
+
+        let result = try await service.load()
+
+        XCTAssertEqual(result.sendAsset.asset.assetId, tonAssetId)
+        XCTAssertEqual(result.sendAsset.asset.name, "Toncoin")
+        XCTAssertEqual(result.sendAsset.asset.image, "https://cdn.example/ton.png")
+        XCTAssertEqual(result.sendAsset.balance, 2_000_000_000)
+        XCTAssertEqual(result.sendAsset.price.prices["usd"], 2.5)
+        XCTAssertEqual(result.receiveAsset.asset.assetId, tronUsdtAssetId)
+        XCTAssertEqual(result.receiveAsset.asset.name, "Tether USD")
+        XCTAssertEqual(result.receiveAsset.asset.image, "https://cdn.example/usdt.png")
+        XCTAssertEqual(result.receiveAsset.balance, 1_500_000)
+        XCTAssertEqual(result.receiveAsset.price.prices["usd"], 1)
+        XCTAssertNil(result.usdFiatRate)
+    }
+
+    func test_usdFiatRateDerivesFromFirstWalletAssetWithBothPrices() throws {
         let priceless = asset(assetId: "a/mainnet/coin", symbol: "A", decimals: 9)
         let priced = asset(
             assetId: "b/mainnet/coin",
@@ -667,18 +788,18 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         )
 
         XCTAssertEqual(
-            MultichainSwapFiatRateResolver(displayCurrency: .EUR).walletDerivedUsdFiatRate(
+            try MultichainSwapFiatRateResolver(displayCurrency: XCTUnwrap(Currency(code: "EUR"))).walletDerivedUsdFiatRate(
                 walletAssets: [priceless, priced]
             ),
             Decimal(string: "0.75")
         )
         XCTAssertNil(
-            MultichainSwapFiatRateResolver(displayCurrency: .EUR).walletDerivedUsdFiatRate(
+            try MultichainSwapFiatRateResolver(displayCurrency: XCTUnwrap(Currency(code: "EUR"))).walletDerivedUsdFiatRate(
                 walletAssets: [priceless]
             )
         )
         XCTAssertEqual(
-            MultichainSwapFiatRateResolver(displayCurrency: .EUR).walletDerivedUsdFiatRate(
+            try MultichainSwapFiatRateResolver(displayCurrency: XCTUnwrap(Currency(code: "EUR"))).walletDerivedUsdFiatRate(
                 walletAssets: [
                     asset(
                         assetId: "c/mainnet/coin",
@@ -704,6 +825,7 @@ private extension MultichainSwapDefaultAssetsServiceTests {
     func makeService(
         multichainService: MultichainService,
         swapService: MultichainSwapService,
+        assetDetailsService: TradingAssetDetailsService = DefaultAssetsTradingAssetDetailsServiceSpy(),
         initialSelection: MultichainSwapInitialAssetSelection? = nil
     ) -> DefaultMultichainSwapDefaultAssetsService {
         DefaultMultichainSwapDefaultAssetsService(
@@ -718,6 +840,7 @@ private extension MultichainSwapDefaultAssetsServiceTests {
             ),
             multichainService: multichainService,
             multichainSwapService: swapService,
+            assetDetailsService: assetDetailsService,
             currencyStore: makeCurrencyStore(),
             initialSelection: initialSelection
         )
@@ -728,6 +851,39 @@ private extension MultichainSwapDefaultAssetsServiceTests {
             keeperInfoStore: KeeperInfoStore(
                 keeperInfoRepository: KeeperInfoRepositoryMock(keeperInfo: nil)
             )
+        )
+    }
+
+    func makeLegacyWallet() -> Wallet {
+        let publicKey = PublicKey(data: Data(repeating: 0x01, count: 32))
+        return Wallet(
+            id: "legacy-wallet",
+            identity: WalletIdentity(network: .mainnet, kind: .Regular(publicKey, .v4R2)),
+            metaData: WalletMetaData(
+                label: "Legacy wallet",
+                tintColor: .defaultColor,
+                icon: .icon(.wallet)
+            ),
+            setupSettings: WalletSetupSettings(isSetupFinished: true),
+            batterySettings: BatterySettings()
+        )
+    }
+
+    func makeConvertedBalanceStore() -> ConvertedBalanceStore {
+        let keeperInfoStore = KeeperInfoStore(
+            keeperInfoRepository: KeeperInfoRepositoryMock(keeperInfo: nil)
+        )
+        let walletsStore = WalletsStore(keeperInfoStore: keeperInfoStore)
+        let balanceStore = BalanceStore(
+            walletsStore: walletsStore,
+            repository: LegacyPairWalletBalanceRepositoryStub()
+        )
+        let tonRatesStore = TonRatesStore(repository: LegacyPairRatesRepositoryStub())
+        return ConvertedBalanceStore(
+            walletsStore: walletsStore,
+            balanceStore: balanceStore,
+            tonRatesStore: tonRatesStore,
+            currencyStore: makeCurrencyStore()
         )
     }
 
@@ -761,8 +917,7 @@ private extension MultichainSwapDefaultAssetsServiceTests {
             price: MultichainAssetPrice(
                 prices: prices,
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: balance
         )
@@ -783,6 +938,69 @@ private extension MultichainSwapDefaultAssetsServiceTests {
             chainFamily: chainId.split(separator: "/").first.map(String.init) ?? "",
             supportedAggregators: ["test"],
             usdPrice: 1
+        )
+    }
+}
+
+private actor DefaultAssetsTradingAssetDetailsServiceSpy: TradingAssetDetailsService {
+    private let loadedDetailsResults: [String: Result<TradingAssetDetails, TradingAssetDetailsServiceFailure>]
+    private var recordedLoadAssetDetailsIds = [String]()
+
+    init(
+        loadedDetailsResults: [String: Result<TradingAssetDetails, TradingAssetDetailsServiceFailure>] = [:]
+    ) {
+        self.loadedDetailsResults = loadedDetailsResults
+    }
+
+    func loadAssetDetailsIds() -> [String] {
+        recordedLoadAssetDetailsIds
+    }
+
+    func assetDetails(for _: String) async -> TradingAssetDetails? {
+        nil
+    }
+
+    func loadAssetDetails(id: String) async throws(TradingAssetDetailsServiceFailure) -> TradingAssetDetails {
+        recordedLoadAssetDetailsIds.append(id)
+        if let result = loadedDetailsResults[id] {
+            return try result.get()
+        }
+        return Self.makeDetails(assetId: id)
+    }
+}
+
+private extension DefaultAssetsTradingAssetDetailsServiceSpy {
+    static func makeDetails(
+        assetId: String,
+        capabilities: Set<TradingAssetCapability> = [.swap],
+        symbol: String? = nil,
+        title: String? = nil,
+        decimals: Int = 9,
+        imageURL: URL? = nil
+    ) -> TradingAssetDetails {
+        TradingAssetDetails(
+            id: assetId,
+            assetInfo: TradingAssetInfo(
+                assetId: assetId,
+                category: .tokens,
+                address: assetId,
+                symbol: symbol ?? assetId,
+                decimals: decimals,
+                title: title ?? assetId,
+                imageURL: imageURL,
+                price: nil,
+                changePercent: nil,
+                changeAmount: nil,
+                earnAPY: nil,
+                verification: .whitelist
+            ),
+            capabilities: capabilities,
+            aboutParagraph: "",
+            overview: [],
+            tradingActivity: nil,
+            links: [],
+            primaryActionTitle: "",
+            infoSource: TradingAssetInfoSource(displayedName: "test", url: nil)
         )
     }
 }
@@ -814,6 +1032,7 @@ private actor DefaultAssetsMultichainServiceSpy: MultichainService {
         search _: String?,
         availableOnly _: Bool?,
         showHidden: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -867,6 +1086,7 @@ private actor DefaultAssetsMultichainServiceSpy: MultichainService {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
         throw .apiError(message: "Unimplemented")
@@ -888,7 +1108,6 @@ private actor DefaultAssetsMultichainServiceSpy: MultichainService {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainServiceError) -> [MultichainRaffle] {
         throw .apiError(message: "Unimplemented")
@@ -899,14 +1118,6 @@ private actor DefaultAssetsMultichainServiceSpy: MultichainService {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainServiceError) {
-        throw .apiError(message: "Unimplemented")
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
     }
 }
@@ -928,7 +1139,6 @@ private actor DefaultAssetsSwapServiceSpy: MultichainSwapService {
 
     private let catalogResult: Result<[MultichainSwapAsset], Error>
     private let configResult: Result<ConfigPlan, Error>
-    private var recordedCatalogAssetRequests = [String]()
     private var recordedConfigRequests = [ConfigRequest]()
     private var listCrossSwapAssetsRequests = 0
 
@@ -938,10 +1148,6 @@ private actor DefaultAssetsSwapServiceSpy: MultichainSwapService {
     ) {
         self.catalogResult = catalogResult
         self.configResult = configResult
-    }
-
-    func catalogAssetRequests() -> [String] {
-        recordedCatalogAssetRequests
     }
 
     func listCrossSwapAssetsRequestCount() -> Int {
@@ -977,19 +1183,6 @@ private actor DefaultAssetsSwapServiceSpy: MultichainSwapService {
             ),
             slippage: plan.slippage
         )
-    }
-
-    func getCrossSwapAsset(assetId: String) async throws -> MultichainSwapAsset {
-        recordedCatalogAssetRequests.append(assetId)
-        let catalogAssets = try catalogResult.get()
-        guard let asset = catalogAssets.first(where: { $0.assetId == assetId }) else {
-            throw MultichainSwapAPIError.notFound(
-                message: assetId,
-                code: nil,
-                requestId: nil
-            )
-        }
-        return asset
     }
 
     func createCrossSwapQuote(
@@ -1039,6 +1232,20 @@ private final class KeeperInfoRepositoryMock: KeeperInfoRepository {
 
     func removeKeeperInfo() throws {
         keeperInfo = nil
+    }
+}
+
+private struct LegacyPairWalletBalanceRepositoryStub: WalletBalanceRepositoryV2 {
+    func getBalance(address _: FriendlyAddress) throws -> KeeperCore.WalletBalance {
+        throw StubError.unimplemented
+    }
+}
+
+private struct LegacyPairRatesRepositoryStub: RatesRepository {
+    func saveRates(_: Rates) throws {}
+
+    func getRates() throws -> Rates {
+        Rates(ton: [], usdt: [], jettonRates: [:])
     }
 }
 

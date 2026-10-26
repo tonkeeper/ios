@@ -33,14 +33,17 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
     private let transferData: TransferData
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let reason: PasscodeReason
 
     init(
         router: ViewControllerRouter,
         wallet: Wallet,
         transferData: TransferData,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly
+        coreAssembly: TKCore.CoreAssembly,
+        reason: PasscodeReason = .confirmTransfer
     ) {
+        self.reason = reason
         self.wallet = wallet
         self.transferData = transferData
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
@@ -235,6 +238,7 @@ private extension WalletTransferSignCoordinator {
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            reason: reason,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
@@ -282,11 +286,16 @@ private extension WalletTransferSignCoordinator {
         await withCheckedContinuation { continuation in
             DispatchQueue.main.async { [self] in
                 let confirmItem: LedgerConfirmConfirmItem = transactions.count == 1 ? .transaction(transactions[0]) : .transactions(transactions)
+                let knownJettonResolver = LedgerKnownJettonResolver(
+                    balanceStore: self.keeperCoreMainAssembly.storesAssembly.balanceStore,
+                    wallet: self.wallet
+                )
                 let module = LedgerConfirmAssembly.module(
                     confirmItem: confirmItem,
                     wallet: self.wallet,
                     ledgerDevice: ledgerDevice,
-                    coreAssembly: self.coreAssembly
+                    coreAssembly: self.coreAssembly,
+                    knownJettonResolver: knownJettonResolver.knownJetton(for:)
                 )
 
                 let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

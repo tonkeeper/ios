@@ -83,6 +83,19 @@ extension MainCoordinator {
         }
     }
 
+    func openSolanaSendDeeplink(
+        transfer: Deeplink.SolanaTransferData,
+        sendSource: SendAnalyticsSource
+    ) {
+        runSendDeeplinkTask(expirationTimestamp: nil, sendSource: sendSource) { wallet in
+            try await self.handleSolanaSendDeeplink(
+                transfer: transfer,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+        }
+    }
+
     private func runSendDeeplinkTask(
         expirationTimestamp: Int64?,
         sendSource: SendAnalyticsSource,
@@ -561,6 +574,55 @@ extension MainCoordinator {
             throw SendDeeplinkFailure.assetUnavailable
         case .unsupported:
             throw SendDeeplinkFailure.invalidRecipient
+        }
+    }
+
+    /// The amount counts whole units of the asset, so it is converted only once the asset is
+    /// resolved, and an amount finer than the asset's decimals invalidates the link rather than
+    /// being rounded.
+    private func handleSolanaSendDeeplink(
+        transfer: Deeplink.SolanaTransferData,
+        wallet: Wallet,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        guard let multichainState = multichainSendState(for: wallet),
+              multichainState.addresses.contains(where: { $0.chain == .sol })
+        else {
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+
+        let recipient = try await resolveMultichainRecipient(
+            transfer.recipient,
+            chain: .sol,
+            wallet: wallet
+        )
+
+        guard let input = await multichainSendInput(
+            wallet: wallet,
+            multichainState: multichainState,
+            assetId: transfer.asset.assetId,
+            amount: 0
+        ) else {
+            throw SendDeeplinkFailure.assetUnavailable
+        }
+
+        var amount: BigUInt = 0
+        if let linkAmount = transfer.amount {
+            guard let atomicAmount = linkAmount.atomicUnits(decimals: input.item.fractionalDigits) else {
+                throw SendDeeplinkFailure.unsupported
+            }
+            amount = atomicAmount
+        }
+
+        finishSendDeeplinkTask {
+            self.openMultichainSend(
+                wallet: wallet,
+                multichainState: multichainState,
+                entry: .enterAmount(MultichainSendInput(item: input.item.setAmount(amount))),
+                sendSource: sendSource,
+                recipient: recipient,
+                comment: nil
+            )
         }
     }
 
@@ -1066,6 +1128,25 @@ extension MainCoordinator {
     }
 
     func handleStoryDeeplink(storyId: String) {
+        showStory { [weak self] in
+            try await self?.mainCoordinatorStoriesController?.handleDeeplinkStory(
+                storyId: storyId,
+                walletId: self?.activeWalletScopeId
+            )
+        }
+    }
+
+    func presentRequiredStory(storyId: String, onAction: @escaping () -> Void) {
+        showStory { [weak self] in
+            try await self?.mainCoordinatorStoriesController?.presentRequiredStory(
+                storyId: storyId,
+                walletId: self?.activeWalletScopeId,
+                onAction: onAction
+            )
+        }
+    }
+
+    private func showStory(_ present: @escaping @MainActor () async throws -> Void) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
 
@@ -1074,15 +1155,13 @@ extension MainCoordinator {
 
         deeplinkHandleTask = Task { @MainActor in
             do {
-                try await mainCoordinatorStoriesController?.handleDeeplinkStory(
-                    storyId: storyId,
-                    walletId: activeWalletScopeId
-                )
+                try await present()
                 self.deeplinkHandleTask = nil
                 ToastPresenter.hideAll()
             } catch {
-                self.deeplinkHandleTask = nil
                 ToastPresenter.hideAll()
+                guard !Task.isCancelled else { return }
+                self.deeplinkHandleTask = nil
                 ToastPresenter.showToast(configuration: .failed)
             }
         }

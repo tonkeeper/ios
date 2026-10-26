@@ -96,7 +96,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute(aggregator: "unknown")
@@ -123,7 +123,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         )
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(aggregator: "swapsxyz")
@@ -142,16 +142,16 @@ final class MultichainSwapExecutionTests: XCTestCase {
                 emulationResults: ["main": makeFee(1, assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)]
             )
         )
-        let wallet = makeWallet()
+        let swapWallet = makeSwapWallet()
 
         _ = try await service.prepareExecutionPlan(
-            wallet: wallet,
+            swapWallet: swapWallet,
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(aggregator: "swapsxyz")
         )
 
-        XCTAssertEqual(swapService.lastPrepareWalletId, wallet.multichainWalletId)
+        XCTAssertEqual(swapService.lastPrepareWalletId, swapWallet.walletId)
     }
 
     func test_prepareExecutionPlan_mapsPrepareTransportFailureToTypedNetworkFailure() async throws {
@@ -164,7 +164,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -197,7 +197,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute(payloads: [makePayload(id: "main", kind: "main")])
@@ -254,7 +254,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(payloads: payloads, aggregator: .swapsXyz)
@@ -275,7 +275,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "eth/mainnet/erc20/0xabc", symbol: "USDT", decimals: 6),
             executionPlan: makeExecutionPlan(
@@ -316,7 +316,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(
@@ -345,6 +345,30 @@ final class MultichainSwapExecutionTests: XCTestCase {
         )
     }
 
+    func test_execute_reportsNoPendingTransactionForAnUnregisteredWallet() async throws {
+        let pendingTransactionsService = PendingTransactionsServiceFake()
+        let service = makeExecutionService(
+            swapPipeline: StubChainKitSwapPipeline(
+                executionResult: MultichainSwapBroadcastResult(txHash: "main-hash", broadcastedPayloads: [])
+            ),
+            pendingTransactionsService: pendingTransactionsService
+        )
+
+        let result = try await service.execute(
+            passcodeProvider: { "passcode" },
+            swapWallet: makeSwapWallet(registration: .unregistered),
+            sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
+            destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
+            executionPlan: makeExecutionPlan(
+                payloads: .main(makePayload(id: "main", kind: "main"))
+            )
+        )
+
+        XCTAssertEqual(result.txHash, "main-hash")
+        let reported = await pendingTransactionsService.reported
+        XCTAssertTrue(reported.isEmpty)
+    }
+
     func test_execute_reportsNoPendingTransactionWhenBroadcastFails() async {
         let pendingTransactionsService = PendingTransactionsServiceFake()
         let swapPipeline = StubChainKitSwapPipeline(
@@ -357,7 +381,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try? await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(
@@ -381,7 +405,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(
@@ -416,7 +440,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let service = makeExecutionService(swapPipeline: swapPipeline)
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(
@@ -447,7 +471,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let service = makeExecutionService(swapService: swapService, swapPipeline: swapPipeline)
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(aggregator: "swapsxyz", providerRouteId: "quote-id")
@@ -467,7 +491,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let service = makeExecutionService(swapService: swapService, swapPipeline: swapPipeline)
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(providerRouteId: "quote-id")
@@ -498,14 +522,14 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let destinationAsset = makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18)
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             route: makeRoute(aggregator: "swapsxyz", providerRouteId: "quote-id")
         )
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             executionPlan: executionPlan
@@ -538,7 +562,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         )
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute(payloads: payloads)
@@ -605,7 +629,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         )
 
         let executionPlan = try await service.prepareExecutionPlan(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             route: makeRoute()
@@ -648,7 +672,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -677,7 +701,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -711,7 +735,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -734,7 +758,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -752,7 +776,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await service.prepareExecutionPlan(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 route: makeRoute()
@@ -795,7 +819,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         let result = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(payloads: payloads),
@@ -822,7 +846,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         _ = try await service.execute(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
             destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
             executionPlan: makeExecutionPlan(
@@ -847,7 +871,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         do {
             _ = try await service.execute(
                 passcodeProvider: { "passcode" },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 executionPlan: makeExecutionPlan(payloads: payloads)
@@ -866,7 +890,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         do {
             _ = try await service.execute(
                 passcodeProvider: { nil },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 executionPlan: makeExecutionPlan(payloads: payloads)
@@ -886,7 +910,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         do {
             _ = try await service.execute(
                 passcodeProvider: { "passcode" },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 executionPlan: makeExecutionPlan(payloads: payloads)
@@ -1040,7 +1064,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let payloads = makePipelinePayloads()
 
         let preparation = try await pipeline.prepareSwapPayloads(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(
                 assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                 symbol: "USDT",
@@ -1074,7 +1098,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await pipeline.prepareSwapPayloads(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(
                     assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                     symbol: "USDT",
@@ -1111,7 +1135,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await pipeline.prepareSwapPayloads(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(
                     assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                     symbol: "USDT",
@@ -1149,7 +1173,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let pipeline = ChainKitSwapPipelineImplementation(stages: stages)
 
         let preparation = try await pipeline.prepareSwapPayloads(
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9),
             destinationAsset: makeAsset(assetId: "btc/mainnet/coin", symbol: "BTC", decimals: 8),
             payloads: makeRelayableTonPayloads(),
@@ -1162,6 +1186,39 @@ final class MultichainSwapExecutionTests: XCTestCase {
         XCTAssertEqual(stages.events, ["fee:main", "defaultFee:main", "reserve:12", "reserve:12"])
     }
 
+    /// An Ethereum route without an approval has a relayable form, so a wallet short of ETH still
+    /// gets a plan: the relayer may pay the gas.
+    func test_realPipeline_keepsARelayableEVMRouteAliveWhenTheWalletCannotPayTheGas() async throws {
+        let shortage = MultichainNativeFeeShortage(
+            asset: .init(assetId: "eth/mainnet/coin", name: "Ether", symbol: "ETH", decimals: 18, image: ""),
+            requiredAmount: 10
+        )
+        let stages = RecordingSwapPipelineStages(reserveShortage: shortage)
+        let pipeline = ChainKitSwapPipelineImplementation(stages: stages)
+        let mainJSON = #"{"to":"0x1111111111111111111111111111111111111111","value":"0x0","data":"0xabcdef"}"#
+        var main = makePayload(id: "main", kind: "main", payloadJSON: mainJSON, calldataPayloadType: .exact)
+        main.payload = mainJSON
+
+        let preparation = try await pipeline.prepareSwapPayloads(
+            swapWallet: makeSwapWallet(),
+            sourceAsset: makeAsset(
+                assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
+                symbol: "USDT",
+                decimals: 6
+            ),
+            destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
+            payloads: .main(main),
+            provider: .swapKit
+        )
+
+        guard case let .evm(relay)? = preparation.batteryPayload else {
+            return XCTFail("expected a relayable evm payload, got \(String(describing: preparation.batteryPayload))")
+        }
+        XCTAssertEqual(relay.call.data, "0xabcdef")
+        XCTAssertEqual(preparation.nativeFeeShortage, shortage)
+        XCTAssertFalse(preparation.requiresApproval)
+    }
+
     func test_realPipeline_keepsThePricingFailureWhenTheBalanceCoversTheDefaultFee() async {
         let failure = MultichainSwapExecutionFailure.emulationFailed(
             kind: .unknown,
@@ -1172,7 +1229,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         do {
             _ = try await pipeline.prepareSwapPayloads(
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(
                     assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                     symbol: "USDT",
@@ -1200,7 +1257,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         let result = try await pipeline.executeSwapPayloads(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(
                 assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                 symbol: "USDT",
@@ -1246,7 +1303,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
 
         let result = try await pipeline.executeSwapPayloads(
             passcodeProvider: { "passcode" },
-            wallet: makeWallet(),
+            swapWallet: makeSwapWallet(),
             sourceAsset: makeAsset(
                 assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                 symbol: "USDT",
@@ -1284,7 +1341,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         do {
             _ = try await pipeline.executeSwapPayloads(
                 passcodeProvider: { "passcode" },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(
                     assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                     symbol: "USDT",
@@ -1312,7 +1369,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         do {
             _ = try await pipeline.executeSwapPayloads(
                 passcodeProvider: { "passcode" },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(
                     assetId: "eth/mainnet/erc20/0x4444444444444444444444444444444444444444",
                     symbol: "USDT",
@@ -1337,6 +1394,61 @@ final class MultichainSwapExecutionTests: XCTestCase {
         XCTAssertFalse(stages.events.contains { $0.hasPrefix("submit:main") })
     }
 
+    func test_realPipeline_reservesTheTonASplitJettonRouteCarriesOnTopOfTheFee() async throws {
+        let stages = RecordingSwapPipelineStages()
+        let pipeline = ChainKitSwapPipelineImplementation(stages: stages)
+
+        let preparation = try await pipeline.prepareSwapPayloads(
+            swapWallet: makeSwapWallet(),
+            sourceAsset: makeAsset(
+                assetId: "ton/mainnet/jetton/0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe",
+                symbol: "USDT",
+                decimals: 6
+            ),
+            destinationAsset: makeAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9),
+            payloads: makeSplitTonPayloads(),
+            provider: .swapXyz
+        )
+
+        XCTAssertEqual(preparation.fees.map(\.fee), [10])
+        XCTAssertEqual(stages.events, ["fee:main", "reserve:515000010"])
+        XCTAssertEqual(stages.reservePolicies, [.drainorerror])
+    }
+
+    func test_realPipeline_sendsEveryMessageOfASplitRouteInOneTransaction() async throws {
+        let stages = RecordingSwapPipelineStages()
+        let pipeline = ChainKitSwapPipelineImplementation(stages: stages)
+
+        let result = try await pipeline.executeSwapPayloads(
+            passcodeProvider: { "passcode" },
+            swapWallet: makeSwapWallet(),
+            sourceAsset: makeAsset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9),
+            destinationAsset: makeAsset(
+                assetId: "ton/mainnet/jetton/0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe",
+                symbol: "USDT",
+                decimals: 6
+            ),
+            payloads: makeSplitTonPayloads(calldataType: .flex),
+            payloadFees: MultichainSwapPayloadFees(["main": stages.mainFee]),
+            provider: .swapXyz,
+            approvalMode: .exact
+        )
+
+        XCTAssertEqual(result.txHash, "hash-main")
+        XCTAssertEqual(result.broadcastedPayloads.map(\.payloadId), ["main"])
+        XCTAssertEqual(
+            stages.events,
+            [
+                "fee:main",
+                "unlock",
+                "nonce:main",
+                "reserve:10",
+                "submit:main:7:185000000+330000000",
+            ]
+        )
+        XCTAssertEqual(stages.reservePolicies, [.drainorerror])
+    }
+
     func test_approvalFallback_scalesGasPriceAndAmountByOnePointFive() throws {
         let fee = makeChainKitFee(limit: 2, price: 10)
         let scaled = try XCTUnwrap(
@@ -1354,11 +1466,13 @@ final class MultichainSwapExecutionTests: XCTestCase {
         let three = BignumBigInteger.Companion.shared.fromInt(int: 3)
         let four = BignumBigInteger.Companion.shared.fromInt(int: 4)
         let five = BignumBigInteger.Companion.shared.fromInt(int: 5)
+        let eth = ChainEthereumMainnet.shared.toAsset()
         let fees = MultichainSwapPayloadFees([
-            "none": FeeNone.shared,
-            "value": FeeValue(amount: one),
-            "gas": FeeGas(limit: two, price: three, amount: four),
+            "none": FeeNone(asset: eth),
+            "value": FeeValue(asset: eth, amount: one),
+            "gas": FeeGas(asset: eth, limit: two, price: three, amount: four),
             "eip1559": FeeEip1559(
+                asset: eth,
                 limit: one,
                 networkPrice: two,
                 maxPrice: three,
@@ -1368,6 +1482,7 @@ final class MultichainSwapExecutionTests: XCTestCase {
         ])
 
         XCTAssertTrue(try fees.fee(for: "none") is FeeNone)
+        XCTAssertEqual(try fees.fee(for: "gas")?.asset.symbol, eth.symbol)
         XCTAssertEqual(try fees.fee(for: "value")?.amount.description, "1")
 
         let gas = try XCTUnwrap(try fees.fee(for: "gas") as? FeeGas)
@@ -1435,6 +1550,30 @@ private extension MultichainSwapExecutionTests {
         return .main(payload)
     }
 
+    func makeSplitTonPayloads(
+        calldataType: MultichainSwapCalldataPayloadType = .exact
+    ) -> MultichainSwapRoutePayloads {
+        let recipient = "UQB0k9JyF2iP0AN_iTYUwt8gmeGWxTlXrbuf3NdNNJSxU2hr"
+        let payload = MultichainSwapPreparedPayload(
+            payloadId: "main",
+            kind: "main",
+            chainId: "ton/mainnet",
+            chainFamily: "ton",
+            payloadType: "ton_boc",
+            payload: #"[{"address":"\#(recipient)","amount":"185000000","payload":"first"},{"address":"\#(recipient)","amount":"330000000","payload":"second"}]"#,
+            humanSummary: MultichainSwapHumanSummary(
+                action: "swap",
+                spendAsset: "ton/mainnet/coin",
+                spendAmount: "300000000",
+                receiveAsset: "ton/mainnet/coin"
+            ),
+            validationStatus: "validated",
+            dateExpire: Date(timeIntervalSince1970: 1000),
+            calldataPayloadType: calldataType
+        )
+        return .main(payload)
+    }
+
     func makeExecutionService(
         now: Date = Date(timeIntervalSince1970: 100),
         swapService: MultichainSwapService = StubMultichainSwapService(),
@@ -1460,7 +1599,7 @@ private extension MultichainSwapExecutionTests {
         do {
             _ = try await service.execute(
                 passcodeProvider: { "passcode" },
-                wallet: makeWallet(),
+                swapWallet: makeSwapWallet(),
                 sourceAsset: makeAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
                 destinationAsset: makeAsset(assetId: "base/mainnet/coin", symbol: "ETH", decimals: 18),
                 executionPlan: makeExecutionPlan(payloads: payloads)
@@ -1495,9 +1634,22 @@ private extension MultichainSwapExecutionTests {
         let limitValue = BignumBigInteger.Companion.shared.fromInt(int: limit)
         let priceValue = BignumBigInteger.Companion.shared.fromInt(int: price)
         return FeeGas(
+            asset: ChainEthereumMainnet.shared.toAsset(),
             limit: limitValue,
             price: priceValue,
             amount: limitValue.multiply(other: priceValue)
+        )
+    }
+
+    func makeSwapWallet(
+        registration: MultichainSwapWallet.Registration = .registered(walletId: "wallet")
+    ) -> MultichainSwapWallet {
+        let wallet = makeWallet()
+        return MultichainSwapWallet(
+            wallet: wallet,
+            addresses: wallet.multichainWalletState?.addresses ?? [],
+            registration: registration,
+            keys: .hd
         )
     }
 
@@ -1544,7 +1696,7 @@ private extension MultichainSwapExecutionTests {
                 decimals: decimals,
                 image: ""
             ),
-            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 0
         )
     }
@@ -1636,10 +1788,6 @@ private final class StubMultichainSwapService: MultichainSwapService {
         []
     }
 
-    func getCrossSwapAsset(assetId _: String) async throws -> MultichainSwapAsset {
-        throw StubError.unimplemented
-    }
-
     func getCrossSwapConfig(
         walletId _: String,
         fromAssetId _: String?,
@@ -1701,7 +1849,7 @@ private final class StubChainKitSwapPipeline: ChainKitSwapPipeline {
     }
 
     func prepareSwapPayloads(
-        wallet _: Wallet,
+        swapWallet _: MultichainSwapWallet,
         sourceAsset _: MultichainAsset,
         destinationAsset _: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -1732,7 +1880,7 @@ private final class StubChainKitSwapPipeline: ChainKitSwapPipeline {
 
     func executeSwapPayloads(
         passcodeProvider _: @escaping () async -> String?,
-        wallet _: Wallet,
+        swapWallet _: MultichainSwapWallet,
         sourceAsset _: MultichainAsset,
         destinationAsset _: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -1786,13 +1934,14 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
         self.failingSubmitPayloadId = failingSubmitPayloadId
         self.reserveShortage = reserveShortage
         self.feeFailure = feeFailure
-        mainFee = FeeValue(amount: BignumBigInteger.Companion.shared.fromInt(int: 10))
-        approvalFee = FeeValue(amount: BignumBigInteger.Companion.shared.fromInt(int: 15))
-        defaultFee = FeeValue(amount: BignumBigInteger.Companion.shared.fromInt(int: 12))
+        let eth = ChainEthereumMainnet.shared.toAsset()
+        mainFee = FeeValue(asset: eth, amount: BignumBigInteger.Companion.shared.fromInt(int: 10))
+        approvalFee = FeeValue(asset: eth, amount: BignumBigInteger.Companion.shared.fromInt(int: 15))
+        defaultFee = FeeValue(asset: eth, amount: BignumBigInteger.Companion.shared.fromInt(int: 12))
     }
 
     func resolveFee(
-        transaction _: any ChainKit.Transaction,
+        transactions _: [TransactionSwap],
         payloadFee: (any Fee)?,
         networkType _: ChainKit.Network.Type_,
         payloadId: String
@@ -1805,7 +1954,7 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
     }
 
     func defaultFee(
-        transaction _: any ChainKit.Transaction,
+        transactions _: [TransactionSwap],
         networkType _: ChainKit.Network.Type_,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> any Fee {
@@ -1814,7 +1963,7 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
     }
 
     func reserve(
-        transaction _: TransactionSwap,
+        transactions _: [TransactionSwap],
         feeAsset _: AssetCoin,
         fee: any Fee,
         policy: GasReservePolicy,
@@ -1833,7 +1982,7 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
     }
 
     func buildApproval(
-        mainTransaction: TransactionSwap,
+        mainTransactions: [TransactionSwap],
         approvalData _: String?,
         approvalFee: (any Fee)?,
         mainFee _: any Fee,
@@ -1842,15 +1991,14 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
         buildCallCount += 1
         events.append("build:\(approvalMode.rawValue)")
         approvalFeeInputs.append(approvalFee?.amount.description)
-        approvalMainAmounts.append(mainTransaction.amount.description)
-        if buildCallCount == failingBuildCall {
+        approvalMainAmounts.append(mainTransactions.map(\.amount.description).joined(separator: "+"))
+        guard buildCallCount != failingBuildCall, let mainTransaction = mainTransactions.first else {
             return nil
         }
         return SwapApprovalTransaction(
             transaction: TransactionCall(
                 account: mainTransaction.account,
                 amount: BignumBigInteger.Companion.shared.ZERO,
-                energy: mainTransaction.energy,
                 contract: mainTransaction.to,
                 data: "0x"
             ),
@@ -1869,12 +2017,14 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
 
     func unlockSigningWallet(
         passcodeProvider _: @escaping () async -> String?,
-        wallet _: Wallet
-    ) async throws(MultichainSwapExecutionFailure) -> CryptoWallet {
+        swapWallet _: MultichainSwapWallet
+    ) async throws(MultichainSwapExecutionFailure) -> SwapSigningWallet {
         events.append("unlock")
         do {
-            return try CryptoWallet.Companion.shared.fromMnemonic(
-                mnemonic_: "circle inch grow apart leaf cool crop tomato confirm teach example curtain"
+            return try .hd(
+                CryptoWallet.Companion.shared.fromMnemonic(
+                    mnemonic_: "circle inch grow apart leaf cool crop tomato confirm teach example curtain"
+                )
             )
         } catch {
             throw .internal(reason: "failed to build test wallet: \(error)")
@@ -1882,17 +2032,16 @@ private final class RecordingSwapPipelineStages: SwapPipelineStageProvider {
     }
 
     func signAndBroadcast(
-        transaction: any ChainKit.Transaction,
+        transactions: [any ChainKit.Transaction],
         fee _: any Fee,
         nonce: BignumBigInteger,
         sourceChain _: MultichainChain,
         networkType _: ChainKit.Network.Type_,
-        wallet _: CryptoWallet,
+        wallet _: SwapSigningWallet,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> String {
-        events.append(
-            "submit:\(payloadId):\(nonce.description):\(transaction.amount.description)"
-        )
+        let amounts = transactions.map(\.amount.description).joined(separator: "+")
+        events.append("submit:\(payloadId):\(nonce.description):\(amounts)")
         if payloadId == failingSubmitPayloadId {
             throw .broadcastFailed(
                 payloadId: payloadId,

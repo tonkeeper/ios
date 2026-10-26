@@ -12,6 +12,7 @@ public struct MultichainPortfolio: Equatable, Codable {
     public let currencyCode: String
     public let hidesDustBalances: Bool
     public let date: Date
+    public let perpsFiatPrice: [String: String]?
 
     public init(
         fiatPrice: [String: String],
@@ -19,7 +20,8 @@ public struct MultichainPortfolio: Equatable, Codable {
         accountsIdentifier: String,
         currencyCode: String,
         hidesDustBalances: Bool,
-        date: Date = Date()
+        date: Date = Date(),
+        perpsFiatPrice: [String: String]? = nil
     ) {
         self.fiatPrice = fiatPrice
         self.assets = assets
@@ -27,13 +29,14 @@ public struct MultichainPortfolio: Equatable, Codable {
         self.currencyCode = currencyCode
         self.hidesDustBalances = hidesDustBalances
         self.date = date
+        self.perpsFiatPrice = perpsFiatPrice
     }
 }
 
 public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Event, MultichainPortfolioStore.State> {
     public typealias State = [Wallet: MultichainPortfolio]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdatePortfolio(wallet: Wallet)
     }
 

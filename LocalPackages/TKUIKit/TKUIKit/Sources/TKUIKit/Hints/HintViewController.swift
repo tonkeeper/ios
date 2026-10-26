@@ -29,6 +29,7 @@ final class HintViewController: UIViewController {
         super.viewDidLoad()
 
         view.backgroundColor = .clear
+        dismissControl.accessibilityIdentifier = "tooltip_dismiss"
         view.addSubview(dismissControl)
 
         contentLayoutTracker.onSourceViewLost = { [weak self] in

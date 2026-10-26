@@ -1,7 +1,8 @@
 import Foundation
+import PerpsModels
 import TKTradingAPI
 
-public enum TradingCatalogRow: Equatable, Sendable {
+@frozen public enum TradingCatalogRow: Equatable, Sendable {
     case spot(TradingCatalogSpot)
     case perp(PerpsMarketSummary)
 }
@@ -57,7 +58,8 @@ public protocol TradingCatalogSearching: AnyObject, Sendable {
         showPerps: Bool,
         sort: MultichainAssetSearchSort,
         cursor: String?,
-        pageSize: Int
+        pageSize: Int,
+        category: TradingAssetCategory
     ) async throws -> TradingCatalogPage
 }
 

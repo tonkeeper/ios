@@ -13,6 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ) -> Bool {
         FirebaseConfigurator.configurator.configure()
         Log.configure()
+        CampaignAttributionService.shared.start(launchOptions: launchOptions)
 
         UNUserNotificationCenter.current().delegate = self
 
@@ -42,7 +43,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        return [.banner]
+        NotificationCenter.default.post(name: .foregroundPushReceived, object: nil)
+        return PushNotificationTapQueue.isShowingDestination?(notification.request.content.userInfo) == true ? [] : [.banner]
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {

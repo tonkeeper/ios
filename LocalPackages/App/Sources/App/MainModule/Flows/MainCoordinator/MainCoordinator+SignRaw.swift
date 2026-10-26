@@ -10,6 +10,7 @@ import UIKit
 extension MainCoordinator {
     func openSignRaw(
         wallet: Wallet,
+        mode: SignRawConfirmationMode,
         transferProvider: @escaping () async throws -> Transfer,
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
@@ -20,11 +21,13 @@ extension MainCoordinator {
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil
     ) {
         guard let windowScene = router.rootViewController.windowScene else { return }
+        let passcodeReason: PasscodeReason = dappUrl == nil ? .confirmTransfer : .dappRequest
 
         SignRawPresenter.presentSignRaw(
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
+            mode: mode,
             transferProvider: transferProvider,
             resultHandler: resultHandler,
             sendFrom: sendFrom,
@@ -43,7 +46,8 @@ extension MainCoordinator {
                     transferData: transferData,
                     wallet: wallet,
                     coordinator: coordinator,
-                    router: router
+                    router: router,
+                    reason: passcodeReason
                 )
             },
             didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
@@ -80,7 +84,7 @@ extension MainCoordinator {
             )
         }
 
-        openSignRaw(wallet: wallet, transferProvider: {
+        openSignRaw(wallet: wallet, mode: .sendTransaction, transferProvider: {
             try .signRaw(
                 await signRaw(), forceRelayer: true
             )
@@ -120,14 +124,16 @@ extension MainCoordinator {
         transferData: TransferData,
         wallet: Wallet,
         coordinator: Coordinator,
-        router: ViewControllerRouter
+        router: ViewControllerRouter,
+        reason: PasscodeReason
     ) async throws(WalletTransferSignError) -> SignedTransactions {
         let signCoordinator = WalletTransferSignCoordinator(
             router: router,
             wallet: wallet,
             transferData: transferData,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            coreAssembly: coreAssembly,
+            reason: reason
         )
 
         self.walletTransferSignCoordinator = signCoordinator
@@ -174,6 +180,52 @@ struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
                 try await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
             } catch {
                 Log.w("failed to cancel Ton Connect request due to error: \(error)")
+            }
+        }
+    }
+}
+
+struct BridgeSignMessageResultHandler: SignRawControllerResultHandler {
+    var didCancelHandler: (() -> Void)?
+
+    private let app: TonConnectApp
+    private let appRequest: TonConnect.SignMessageRequest
+    private let tonConnectService: TonConnectService
+
+    init(
+        app: TonConnectApp,
+        appRequest: TonConnect.SignMessageRequest,
+        tonConnectService: TonConnectService
+    ) {
+        self.app = app
+        self.appRequest = appRequest
+        self.tonConnectService = tonConnectService
+    }
+
+    func didConfirm(boc: String) {
+        Task {
+            do {
+                try await tonConnectService.confirmSignMessageRequest(internalBoc: boc, appRequest: appRequest, app: app)
+            } catch {
+                Log.w("failed to confirm Ton Connect sign message request due to error: \(error)")
+            }
+        }
+    }
+
+    func didFail(error: SomeOf<TransferError, TransactionConfirmationError>) {}
+
+    func didCancel() {
+        didCancelHandler?()
+        Task {
+            do {
+                try await tonConnectService.rejectSignMessageRequest(
+                    appRequest: appRequest,
+                    app: app,
+                    errorCode: .userDeclinedAction,
+                    message: "User declined the request"
+                )
+            } catch {
+                Log.w("failed to cancel Ton Connect sign message request due to error: \(error)")
             }
         }
     }
