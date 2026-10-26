@@ -3,7 +3,7 @@ import Foundation
 public final class StakingPoolsStore: Store<StakingPoolsStore.Event, StakingPoolsStore.State> {
     public typealias State = [Wallet: [StackingPoolInfo]]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateStakingPools(wallet: Wallet)
     }
 

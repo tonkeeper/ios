@@ -1,7 +1,7 @@
 import Foundation
 
 public final class WalletConnectSessionsStore: Store<WalletConnectSessionsStore.Event, [WalletConnectSession]> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateSessions
         case didFailDisconnect(message: String)
     }

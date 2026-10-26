@@ -62,7 +62,7 @@ private extension MultichainSwapMaxAmountTests {
                 decimals: decimals,
                 image: ""
             ),
-            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
             balance: balance
         )
     }

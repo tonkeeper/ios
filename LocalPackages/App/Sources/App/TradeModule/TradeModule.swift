@@ -62,7 +62,7 @@ extension TradeModule {
             fromCategory: TradingAssetCategory? = nil,
             toCategory: TradingAssetCategory? = nil
         )
-        case tron
+        case legacyTronUSDT(usdtSide: MultichainSwapInitialAssetSelection.Side)
         case multichain(MultichainSwapInitialAssetSelection)
     }
 
@@ -76,6 +76,7 @@ extension TradeModule {
         var onCashBuy: (Wallet, TradingAssetInfo, UINavigationController?) -> Void
         var onTronUsdtFees: (Wallet, TronUsdtFeesSnapshot, TradeAssetDetailsTronFeesTrigger) -> Void
         var onOpenStaking: (Wallet) -> Void
+        var onOpenEarnVault: (URL, UINavigationController?) -> Void
         var onOpenPerps: ((UINavigationController?) -> Void)?
         var onOpenPerpsMarket: ((Int64, UINavigationController?) -> Void)?
         var onOpenHistoryEvent: (TradeAssetHistorySelection, UINavigationController?) -> Void

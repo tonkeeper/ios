@@ -4,17 +4,16 @@ import TKFeatureFlags
 import XCTest
 
 final class RaffleLoaderTests: XCTestCase {
-    func test_changedDebugDateReplacesInFlightRequestAndIgnoresItsCompletion() async {
+    func test_changedLangReplacesInFlightRequestAndIgnoresItsCompletion() async {
         let recorder = RaffleRequestRecorder()
         let store = RaffleStore()
         let settings = AppSettingsStub()
         let loader = RaffleLoader(
-            loadRaffles: { walletId, lang, ids, debugNow, isNewUser in
+            loadRaffles: { walletId, lang, ids, isNewUser in
                 await recorder.load(
                     walletId: walletId,
                     lang: lang,
                     ids: ids,
-                    debugNow: debugNow,
                     isNewUser: isNewUser
                 )
             },
@@ -22,19 +21,15 @@ final class RaffleLoaderTests: XCTestCase {
             appSettings: settings
         )
 
-        let firstDate = Date(timeIntervalSince1970: 1000)
-        let secondDate = Date(timeIntervalSince1970: 2000)
         settings.raffleIsNewUser = true
-        settings.raffleDebugNow = firstDate
 
         let first = Task {
             await loader.loadRafflesNow(walletId: "wallet", lang: "en", ids: ["raffle"])
         }
         await recorder.waitForRequestCount(1)
 
-        settings.raffleDebugNow = secondDate
         let second = Task {
-            await loader.loadRafflesNow(walletId: "wallet", lang: "en", ids: ["raffle"])
+            await loader.loadRafflesNow(walletId: "wallet", lang: "ru", ids: ["raffle"])
         }
         await recorder.waitForRequestCount(2)
 
@@ -43,9 +38,9 @@ final class RaffleLoaderTests: XCTestCase {
         await first.value
         await second.value
 
-        let debugDates = await recorder.debugDates
+        let langs = await recorder.langs
         let newUserValues = await recorder.newUserValues
-        XCTAssertEqual(debugDates, [firstDate, secondDate])
+        XCTAssertEqual(langs, ["en", "ru"])
         XCTAssertEqual(newUserValues, [true, true])
         XCTAssertEqual(store.getState().map(\.id), ["current"])
     }
@@ -54,12 +49,11 @@ final class RaffleLoaderTests: XCTestCase {
         let recorder = RaffleRequestRecorder()
         let store = RaffleStore()
         let loader = RaffleLoader(
-            loadRaffles: { walletId, lang, ids, debugNow, isNewUser in
+            loadRaffles: { walletId, lang, ids, isNewUser in
                 await recorder.load(
                     walletId: walletId,
                     lang: lang,
                     ids: ids,
-                    debugNow: debugNow,
                     isNewUser: isNewUser
                 )
             },
@@ -87,15 +81,15 @@ final class RaffleLoaderTests: XCTestCase {
 private actor RaffleRequestRecorder {
     struct Request {
         let walletId: String
-        let debugNow: Date?
+        let lang: String?
         let isNewUser: Bool
         let continuation: CheckedContinuation<[MultichainRaffle], Never>
     }
 
     private var requests: [Request] = []
 
-    var debugDates: [Date?] {
-        requests.map(\.debugNow)
+    var langs: [String?] {
+        requests.map(\.lang)
     }
 
     var walletIds: [String] {
@@ -109,15 +103,14 @@ private actor RaffleRequestRecorder {
     func load(
         walletId: String,
         lang: String?,
-        ids: [String]?,
-        debugNow: Date?,
+        ids _: [String]?,
         isNewUser: Bool
     ) async -> [MultichainRaffle] {
         await withCheckedContinuation { continuation in
             requests.append(
                 Request(
                     walletId: walletId,
-                    debugNow: debugNow,
+                    lang: lang,
                     isNewUser: isNewUser,
                     continuation: continuation
                 )
@@ -139,7 +132,6 @@ private actor RaffleRequestRecorder {
 private final class AppSettingsStub: TKAppSettings {
     var isConfirmButtonInsteadSlider = false
     var raffleIsNewUser: Bool?
-    var raffleDebugNow: Date?
 }
 
 private func raffle(id: String) -> MultichainRaffle {

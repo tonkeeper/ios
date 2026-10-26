@@ -15,9 +15,11 @@ final class MainCoordinatorStoriesController {
     var fromViewControllerProvider: (() -> UIViewController?)?
     var deeplinkAction: ((String) -> Void)?
     var urlAction: ((URL) -> Void)?
+    var didFinishStory: ((String) -> Void)?
 
     private let storiesPresenter: RaffleStoryPresenting
     private let storiesController: BootConfigurationStoriesLoading
+    private var requiredStoryAction: (() -> Void)?
     private var bootConfigurationStoriesRunID = 0
     /// The run that still owes a `completion`, if any. Cancellation is a no-op without one —
     /// the coordinator cancels on every deeplink it handles, and an unguarded cancel would take
@@ -140,6 +142,7 @@ final class MainCoordinatorStoriesController {
                 story: story,
                 fromViewController: fromViewController,
                 fromAnalyticsProperty: "wallet",
+                isClosable: true,
                 deeplinkAction: { [weak self] in
                     self?.deeplinkAction?($0)
                 },
@@ -150,6 +153,9 @@ final class MainCoordinatorStoriesController {
                     guard let self else {
                         completion(false)
                         return
+                    }
+                    if reason == .lastPageButton {
+                        didFinishStory?(story.id)
                     }
                     guard reason == .completed else {
                         finishBootConfigurationStoriesRun(runID: runID, didComplete: false, completion: completion)
@@ -190,21 +196,56 @@ final class MainCoordinatorStoriesController {
     func handleDeeplinkStory(storyId: String, walletId: String?) async throws {
         guard let fromViewController = fromViewControllerProvider?() else { return }
         let result = await storiesController.loadStory(storyId: storyId, ignoreShowed: true, walletId: walletId)
+        try Task.checkCancellation()
         switch result {
         case let .success(story):
             storiesPresenter.presentStory(
                 story: story,
                 fromViewController: fromViewController,
                 fromAnalyticsProperty: "deep-link",
+                isClosable: true,
                 deeplinkAction: { [weak self] in
                     self?.deeplinkAction?($0)
                 }, urlAction: { [weak self] in
                     self?.urlAction?($0)
                 },
-                onDismiss: nil
+                onDismiss: { [weak self] reason in
+                    guard reason == .lastPageButton else { return }
+                    self?.didFinishStory?(story.id)
+                }
             )
         case let .failure(error):
             throw error
         }
+    }
+
+    @MainActor
+    func presentRequiredStory(storyId: String, walletId: String?, onAction: @escaping () -> Void) async throws {
+        guard requiredStoryAction == nil else {
+            requiredStoryAction = onAction
+            return
+        }
+        guard let fromViewController = fromViewControllerProvider?() else { return }
+        let story = try await storiesController.loadStory(storyId: storyId, ignoreShowed: true, walletId: walletId).get()
+        try Task.checkCancellation()
+        let didPresent = storiesPresenter.presentStory(
+            story: story,
+            fromViewController: fromViewController,
+            fromAnalyticsProperty: "required",
+            isClosable: false,
+            deeplinkAction: { _ in },
+            urlAction: { _ in },
+            onDismiss: { [weak self] reason in
+                let action = self?.requiredStoryAction
+                self?.requiredStoryAction = nil
+                guard reason == .lastPageButton else { return }
+                self?.didFinishStory?(story.id)
+                action?()
+            }
+        )
+        guard didPresent else {
+            throw Stories.StoriesController.Error.failedLoadStory(storyId: storyId)
+        }
+        requiredStoryAction = onAction
     }
 }

@@ -4,7 +4,7 @@ import TKCryptoKit
 import TonSwift
 import TronSwift
 
-public enum TonTron {
+@frozen public enum TonTron {
     public static func tonMnemonicToTronMnemonic(
         _ tonMnemonic: [String]
     ) -> [String] {

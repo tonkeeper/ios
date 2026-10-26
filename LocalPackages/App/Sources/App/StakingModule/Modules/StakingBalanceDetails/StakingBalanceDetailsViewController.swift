@@ -1,3 +1,5 @@
+import SwiftUI
+import TKLocalize
 import TKUIKit
 import UIKit
 
@@ -25,8 +27,25 @@ final class StakingBalanceDetailsViewController: GenericViewViewController<Staki
 
 private extension StakingBalanceDetailsViewController {
     func setupBindings() {
+        customView.rewardsView.didTapInfo = { [weak self] sourceView in
+            self?.showRewardsHint(sourceView: sourceView)
+        }
+
         viewModel.didUpdateTitleView = { [weak self] model in
             self?.customView.titleView.configure(model: model)
+        }
+
+        viewModel.didUpdateRewardsViewModel = { [weak self] model in
+            guard let model else {
+                self?.customView.rewardsViewContainer.isHidden = true
+                return
+            }
+            self?.customView.rewardsViewContainer.isHidden = false
+            self?.customView.rewardsView.configure(model: model)
+        }
+
+        viewModel.didUpdateDetailsTitle = { [weak self] model in
+            self?.customView.detailsTitleView.configure(model: model)
         }
 
         viewModel.didUpdateListViewModel = { [weak self] model in
@@ -69,7 +88,40 @@ private extension StakingBalanceDetailsViewController {
         }
 
         viewModel.didUpdateButtonsView = { [weak self] model in
-            self?.customView.buttonsView.configure(model: model)
+            self?.customView.actionBarView.configure(model: model)
+        }
+    }
+
+    private func showRewardsHint(sourceView: UIView) {
+        let maximumWidth: CGFloat = 280
+        HintController.toggle(
+            sourceView: sourceView,
+            configuration: HintConfiguration(
+                position: HintPosition(
+                    tailParameters: TKHintTextView.tailParameters,
+                    horizontal: .default,
+                    vertical: .init(absolute: 1),
+                    direction: .bottomLeft
+                ),
+                maximumWidth: maximumWidth,
+                animationStyle: .bouncing
+            )
+        ) { direction in
+            let hostingController = TKHostingController(
+                content: TKHintTextView(
+                    text: TKLocales.StakingBalanceDetails.rewardsHint,
+                    position: direction
+                )
+            )
+            hostingController.view.backgroundColor = .clear
+            let size = hostingController.sizeThatFits(
+                in: CGSize(width: maximumWidth, height: .greatestFiniteMagnitude)
+            )
+            hostingController.preferredContentSize = CGSize(
+                width: min(maximumWidth, ceil(size.width)),
+                height: ceil(size.height)
+            )
+            return hostingController
         }
     }
 

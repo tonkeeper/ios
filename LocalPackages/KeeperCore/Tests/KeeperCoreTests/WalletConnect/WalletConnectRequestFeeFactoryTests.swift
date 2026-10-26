@@ -30,6 +30,23 @@ final class WalletConnectRequestFeeFactoryTests: XCTestCase {
         XCTAssertEqual(eip1559Fee.amount.intValue(exactRequired: true), 2_100_000)
     }
 
+    func testZeroPriorityFeeCreatesRequestFee() throws {
+        let fee = try WalletConnectRequestFeeFactory.requestFee(
+            payload: transaction(
+                gas: "0x5208",
+                maxFeePerGas: "0x64",
+                maxPriorityFeePerGas: "0x0"
+            ),
+            chain: .arb
+        )
+
+        let eip1559Fee = try XCTUnwrap(fee as? FeeEip1559)
+        XCTAssertEqual(eip1559Fee.limit.intValue(exactRequired: true), 21000)
+        XCTAssertEqual(eip1559Fee.maxPrice.intValue(exactRequired: true), 100)
+        XCTAssertEqual(eip1559Fee.minerPrice.intValue(exactRequired: true), 0)
+        XCTAssertEqual(eip1559Fee.amount.intValue(exactRequired: true), 2_100_000)
+    }
+
     func testValidLegacyGasPriceCreatesRequestFee() throws {
         let fee = try WalletConnectRequestFeeFactory.requestFee(
             payload: transaction(

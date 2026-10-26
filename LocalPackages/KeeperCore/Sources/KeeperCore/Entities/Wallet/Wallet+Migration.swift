@@ -3,7 +3,7 @@ import TonSwift
 import TronSwift
 
 public extension Wallet {
-    enum MigrationError: Swift.Error {
+    @frozen enum MigrationError: Swift.Error {
         case missingTonAddress
         case missingTronAddress
     }

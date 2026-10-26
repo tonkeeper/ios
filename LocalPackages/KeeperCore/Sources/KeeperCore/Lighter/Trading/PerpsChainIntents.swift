@@ -1,5 +1,6 @@
 import ChainKit
 import Foundation
+import PerpsModels
 
 /// Turns a user intent plus one market read into the intent the SDK planner takes.
 /// Shared by review and submission, so the figure shown to the user and the trade
@@ -10,15 +11,15 @@ struct PerpsChainIntents {
     func open(
         _ intent: PerpsOpenMarketIntent,
         context: PerpsMarketContext,
-        operationId: String
+        operationId: String,
+        clientOrderIndices: PerpsClientOrderIndices
     ) throws -> PerpsTradeIntent {
         let now = PerpsPlannerMapping.nowUnixMs()
         let priceDecimals = context.rules.scale.priceDecimals
-        let persistentClientOrderIndex = !context.scope.isReviewOnly
         let order: PerpsOrderSpec
         if let limitPrice = intent.limitPrice, limitPrice > 0 {
             order = try PerpsOrderSpec.Limit(
-                limitPrice: PerpsScaled.scale(limitPrice, decimals: priceDecimals),
+                limitPrice: PerpsScaled.scale(limitPrice, decimals: priceDecimals, rounding: .nearest),
                 postOnly: false,
                 orderExpiryUnixMs: orderExpiryUnixMs(now: now)
             )
@@ -36,19 +37,17 @@ struct PerpsChainIntents {
             side: PerpsPlannerMapping.side(intent.side),
             marginBudgetQuote: PerpsScaled.parse(
                 intent.marginUsd,
-                decimals: context.rules.scale.quoteDecimals
+                decimals: context.rules.scale.quoteDecimals,
+                rounding: .down
             ),
             initialMarginBps: PerpsPlannerMapping.initialMarginBps(leverage: intent.leverage),
-            clientOrderIndex: PerpsPlannerMapping.clientOrderIndex(
-                nowUnixMs: now,
-                persistent: persistentClientOrderIndex
-            ),
+            clientOrderIndex: clientOrderIndices.order,
             order: order,
             autoClose: autoCloseSpec(
                 intent.autoClose,
                 now: now,
                 priceDecimals: priceDecimals,
-                persistentClientOrderIndex: persistentClientOrderIndex
+                clientOrderIndices: clientOrderIndices
             )
         )
     }
@@ -61,7 +60,8 @@ struct PerpsChainIntents {
     ) throws -> PerpsTradeIntent {
         let amountQuote = try PerpsScaled.parse(
             intent.amountUsd,
-            decimals: context.rules.scale.quoteDecimals
+            decimals: context.rules.scale.quoteDecimals,
+            rounding: .down
         )
         if intent.direction == .reduce, amountQuote >= present.allocatedMarginQuote {
             throw PerpsTradingError.validation("amount exceeds position margin")
@@ -82,7 +82,9 @@ struct PerpsChainIntents {
     func autoCloseLegs(
         _ update: PerpsAutoCloseUpdate,
         context: PerpsMarketContext,
-        now: Int64
+        now: Int64,
+        clientOrderIndices: PerpsClientOrderIndices,
+        renewsExpiry: Bool = false
     ) throws -> PerpsAutoCloseLegs {
         let target: PerpsAutoClose
         switch update {
@@ -94,8 +96,11 @@ struct PerpsChainIntents {
             target = value
         }
         let priceDecimals = context.rules.scale.priceDecimals
-        let persistentClientOrderIndex = !context.scope.isReviewOnly
-        switch PerpsAutoCloseChangePlanner.plan(target: target, resting: restingTriggerOrders(context)) {
+        switch PerpsAutoCloseChangePlanner.plan(
+            target: target,
+            resting: restingTriggerOrders(context),
+            renewsExpiry: renewsExpiry
+        ) {
         case .noChange:
             return PerpsAutoCloseLegs(target: target.isEmpty ? nil : target)
         case let .replace(normalized, stale):
@@ -103,16 +108,14 @@ struct PerpsChainIntents {
                 takeProfit: autoCloseLeg(
                     normalized.takeProfit,
                     now: now,
-                    offset: 1,
-                    priceDecimals: priceDecimals,
-                    persistentClientOrderIndex: persistentClientOrderIndex
+                    clientOrderIndex: clientOrderIndices.takeProfit,
+                    priceDecimals: priceDecimals
                 ),
                 stopLoss: autoCloseLeg(
                     normalized.stopLoss,
                     now: now,
-                    offset: 2,
-                    priceDecimals: priceDecimals,
-                    persistentClientOrderIndex: persistentClientOrderIndex
+                    clientOrderIndex: clientOrderIndices.stopLoss,
+                    priceDecimals: priceDecimals
                 ),
                 replacedTakeProfit: stale.takeProfit.map { KotlinLong(value: $0) },
                 replacedStopLoss: stale.stopLoss.map { KotlinLong(value: $0) },
@@ -145,9 +148,18 @@ struct PerpsChainIntents {
                 kind: kind,
                 side: PerpsPlannerMapping.tradeSide(order.side),
                 triggerPrice: PerpsScaled.double(trigger.int64Value, decimals: context.rules.scale.priceDecimals),
-                baseAmount: PerpsScaled.double(order.remainingBaseAmount, decimals: context.rules.scale.baseDecimals)
+                baseAmount: PerpsScaled.double(order.remainingBaseAmount, decimals: context.rules.scale.baseDecimals),
+                expiresAtSeconds: (order.expiryUnixMs?.int64Value ?? 0) / 1000
             )
         }
+    }
+
+    /// Review-only scopes never sign, so their indices stay off the disk.
+    func clientOrderIndices(for context: PerpsMarketContext) async throws -> PerpsClientOrderIndices {
+        if context.scope.isReviewOnly {
+            return try PerpsPlannerMapping.reviewClientOrderIndices()
+        }
+        return try await PerpsPlannerMapping.reserveClientOrderIndices()
     }
 
     func orderExpiryUnixMs(now: Int64) -> Int64 {
@@ -158,23 +170,21 @@ struct PerpsChainIntents {
         _ autoClose: PerpsAutoClose?,
         now: Int64,
         priceDecimals: Int32,
-        persistentClientOrderIndex: Bool
+        clientOrderIndices: PerpsClientOrderIndices
     ) throws -> PerpsAutoCloseSpec? {
         guard let autoClose, !autoClose.isEmpty else { return nil }
         return try PerpsAutoCloseSpec(
             takeProfit: autoCloseLeg(
                 autoClose.takeProfit,
                 now: now,
-                offset: 1,
-                priceDecimals: priceDecimals,
-                persistentClientOrderIndex: persistentClientOrderIndex
+                clientOrderIndex: clientOrderIndices.takeProfit,
+                priceDecimals: priceDecimals
             ),
             stopLoss: autoCloseLeg(
                 autoClose.stopLoss,
                 now: now,
-                offset: 2,
-                priceDecimals: priceDecimals,
-                persistentClientOrderIndex: persistentClientOrderIndex
+                clientOrderIndex: clientOrderIndices.stopLoss,
+                priceDecimals: priceDecimals
             ),
             replacedTakeProfitOrderIndex: nil,
             replacedStopLossOrderIndex: nil
@@ -184,19 +194,15 @@ struct PerpsChainIntents {
     private func autoCloseLeg(
         _ trigger: PerpsAutoCloseTrigger?,
         now: Int64,
-        offset: Int64,
-        priceDecimals: Int32,
-        persistentClientOrderIndex: Bool
+        clientOrderIndex: Int64,
+        priceDecimals: Int32
     ) throws -> PerpsAutoCloseLeg? {
         guard let trigger else { return nil }
         return try PerpsAutoCloseLeg(
-            triggerPrice: PerpsScaled.scale(trigger.triggerPrice, decimals: priceDecimals),
+            triggerPrice: PerpsScaled.scale(trigger.triggerPrice, decimals: priceDecimals, rounding: .nearest),
             maxSlippagePpm: nil,
             expiryUnixMs: orderExpiryUnixMs(now: now),
-            clientOrderIndex: PerpsPlannerMapping.clientOrderIndex(
-                nowUnixMs: now + offset,
-                persistent: persistentClientOrderIndex
-            )
+            clientOrderIndex: clientOrderIndex
         )
     }
 }

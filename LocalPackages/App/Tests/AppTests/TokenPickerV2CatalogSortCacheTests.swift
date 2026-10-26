@@ -73,14 +73,13 @@ final class TokenPickerV2CatalogSortCacheTests: XCTestCase {
         )
     }
 
-    func test_waitingForSelectionCompletionKeepsPickerOpenAndBlocksRepeatedSelection() async throws {
+    func test_selectingAssetClosesModalPicker() async throws {
         let model = CatalogSortTrackingModel()
         let viewModel = TokenPickerV2ViewModelImplementation(
             headerTitle: "Crypto",
             tokenPickerModel: model,
             amountFormatter: FormattersAssembly().amountFormatter,
-            currencyStore: makeCurrencyStore(),
-            waitsForSelectionCompletion: true
+            currencyStore: makeCurrencyStore()
         )
         var selectionCount = 0
         var finishCount = 0
@@ -96,20 +95,8 @@ final class TokenPickerV2CatalogSortCacheTests: XCTestCase {
         let id = try XCTUnwrap(viewModel.currentQueryViewModel?.presentation.items.first?.id)
 
         viewModel.selectRow(id)
-        viewModel.selectRow(id)
 
         XCTAssertEqual(selectionCount, 1)
-        XCTAssertTrue(viewModel.isAwaitingAssetSelection)
-
-        viewModel.finishAssetSelection(shouldClose: false)
-
-        XCTAssertEqual(finishCount, 0)
-        XCTAssertFalse(viewModel.isAwaitingAssetSelection)
-
-        viewModel.selectRow(id)
-        viewModel.finishAssetSelection(shouldClose: true)
-
-        XCTAssertEqual(selectionCount, 2)
         XCTAssertEqual(finishCount, 1)
     }
 }
@@ -180,8 +167,7 @@ private final class CatalogSortTrackingModel: TokenPickerV2Model {
                     price: MultichainAssetPrice(
                         prices: [:],
                         diff24h: [:],
-                        diff7d: [:],
-                        diff30d: [:]
+                        diff7d: [:]
                     ),
                     balance: BigUInt(0)
                 ),

@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TonToken: Equatable, Hashable {
+@frozen public enum TonToken: Equatable, Hashable {
     case ton
     case jetton(JettonItem)
 

@@ -37,7 +37,7 @@ public struct ProcessedBalance: Equatable, Codable {
     }
 }
 
-public enum ProcessedBalanceItem: Equatable, Codable {
+@frozen public enum ProcessedBalanceItem: Equatable, Codable {
     case ton(ProcessedBalanceTonItem)
     case jetton(ProcessedBalanceJettonItem)
     case staking(ProcessedBalanceStakingItem)

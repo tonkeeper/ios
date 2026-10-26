@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKFeatureFlags
 import TKLocalize
 import TKUIKit
 
@@ -10,6 +11,8 @@ final class MultichainWalletViewModel: ObservableObject {
     let homeBannersViewModel: WalletBalanceHomeBannersViewModel
     let assetsListViewModel: WalletBalanceMultichainAssetsListViewModel
     let collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel
+    @Published private(set) var perpsSectionViewModel: MultichainWalletPerpsSectionViewModel?
+    let earnPortfolioViewModel: WalletBalanceEarnPortfolioViewModel
 
     enum FinishSetup: Equatable {
         case hidden
@@ -40,6 +43,7 @@ final class MultichainWalletViewModel: ObservableObject {
     private let configuration: Configuration
     private let tooltipsService: TooltipsService
     private let syncStatusPoller: MultichainWalletSyncStatusPoller
+    private let makePerpsSectionViewModel: (Wallet) -> MultichainWalletPerpsSectionViewModel?
 
     private enum FirstLoad {
         case pending(generation: Int)
@@ -70,6 +74,8 @@ final class MultichainWalletViewModel: ObservableObject {
         homeBannersViewModel: WalletBalanceHomeBannersViewModel,
         assetsListViewModel: WalletBalanceMultichainAssetsListViewModel,
         collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel,
+        makePerpsSectionViewModel: @escaping (Wallet) -> MultichainWalletPerpsSectionViewModel?,
+        earnPortfolioViewModel: WalletBalanceEarnPortfolioViewModel,
         setupModel: WalletBalanceSetupModel,
         walletsStore: WalletsStore,
         multichainService: MultichainService,
@@ -85,6 +91,8 @@ final class MultichainWalletViewModel: ObservableObject {
         self.homeBannersViewModel = homeBannersViewModel
         self.assetsListViewModel = assetsListViewModel
         self.collectiblesViewModel = collectiblesViewModel
+        self.makePerpsSectionViewModel = makePerpsSectionViewModel
+        self.earnPortfolioViewModel = earnPortfolioViewModel
         self.setupModel = setupModel
         self.configuration = configuration
         iconButtons = Self.iconButtonsModel(wallet: wallet, configuration: configuration)
@@ -94,6 +102,7 @@ final class MultichainWalletViewModel: ObservableObject {
             wallet: wallet,
             multichainService: multichainService
         )
+        perpsSectionViewModel = makePerpsSectionViewModel(wallet)
 
         syncStatusPoller.onSyncStatusUpdate = { [weak self] in
             await self?.reloadAssets(startsSyncStatusPolling: false)
@@ -171,19 +180,25 @@ final class MultichainWalletViewModel: ObservableObject {
     func didAppear() {
         isOnScreen = true
         balanceViewModel.didAppear()
+        perpsSectionViewModel?.onAppear()
+        earnPortfolioViewModel.didAppear()
     }
 
     func didDisappear() {
         isOnScreen = false
         balanceViewModel.didDisappear()
+        perpsSectionViewModel?.onDisappear()
+        earnPortfolioViewModel.didDisappear()
     }
 
     func resignActive() {
         isActive = false
         isOnScreen = false
         balanceViewModel.didDisappear()
+        perpsSectionViewModel?.onDisappear()
         assetsListViewModel.setActive(false)
         collectiblesViewModel.setActive(false)
+        earnPortfolioViewModel.setActive(false)
         syncStatusPoller.stop()
         reloadAssetsTask?.cancel()
     }
@@ -193,12 +208,18 @@ final class MultichainWalletViewModel: ObservableObject {
         isOnScreen = isVisible
         assetsListViewModel.setActive(true)
         collectiblesViewModel.setActive(true)
+        if isVisible { perpsSectionViewModel?.onAppear() }
+        earnPortfolioViewModel.setActive(true)
+        if isVisible { earnPortfolioViewModel.didAppear() }
         scheduleAssetsReload(startsSyncStatusPolling: true)
     }
 
     func refresh() async {
         reloadBalance()
+        perpsSectionViewModel?.refresh()
+        async let earnPortfolioRefresh: Void = earnPortfolioViewModel.refresh()
         await reloadAssets()
+        await earnPortfolioRefresh
     }
 
     func reloadAssets() async {
@@ -384,8 +405,16 @@ final class MultichainWalletViewModel: ObservableObject {
         self.wallet = wallet
         assetsListViewModel.adopt(wallet: wallet)
         syncStatusPoller.adopt(wallet: wallet)
+        earnPortfolioViewModel.adopt(address: wallet.walletConnectAddress(for: .eth))
         refreshIconButtons()
+        attachPerpsSectionIfNeeded()
         return true
+    }
+
+    private func attachPerpsSectionIfNeeded() {
+        guard perpsSectionViewModel == nil, wallet.multichainWalletState?.syncState == .synced else { return }
+        perpsSectionViewModel = makePerpsSectionViewModel(wallet)
+        if isOnScreen { perpsSectionViewModel?.onAppear() }
     }
 
     private func applyFinishSetupState(_ state: WalletBalanceSetupModel.State?) {
@@ -436,7 +465,9 @@ final class MultichainWalletViewModel: ObservableObject {
                 isEnabled: wallet.isSendEnable
             ),
             deposit: MultichainWalletIconButtonsModel.Item(
-                title: TKLocales.WalletButtons.deposit,
+                title: configuration.featureEnabled(.moonpayRampEnabled)
+                    ? TKLocales.WalletButtons.buyCrypto
+                    : TKLocales.WalletButtons.deposit,
                 kind: .deposit,
                 isEnabled: wallet.isReceiveEnable
             ),

@@ -1,4 +1,4 @@
-public enum TradingAssetsListServiceFailure: Error {
+@frozen public enum TradingAssetsListServiceFailure: Error {
     case networkError
     case apiError(
         message: String?

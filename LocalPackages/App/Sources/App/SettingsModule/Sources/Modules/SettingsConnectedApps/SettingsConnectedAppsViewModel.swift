@@ -61,8 +61,6 @@ final class SettingsConnectedAppsViewModel: ObservableObject {
     private let connectedAppsStore: ConnectedAppsStore
     private let tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore
     private let walletConnectSessionsStore: WalletConnectSessionsStore?
-    private let notificationsService: NotificationsService
-    private let pushTokenProvider: PushNotificationTokenProvider
     private let dateFormatter: DateFormatter
 
     private var connectedApps = [ConnectedApp]()
@@ -76,16 +74,12 @@ final class SettingsConnectedAppsViewModel: ObservableObject {
         connectedAppsStore: ConnectedAppsStore,
         tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore,
         walletConnectSessionsStore: WalletConnectSessionsStore?,
-        notificationsService: NotificationsService,
-        pushTokenProvider: PushNotificationTokenProvider,
         dateFormatter: DateFormatter
     ) {
         self.wallet = wallet
         self.connectedAppsStore = connectedAppsStore
         self.tonConnectConnectionMetadataStore = tonConnectConnectionMetadataStore
         self.walletConnectSessionsStore = walletConnectSessionsStore
-        self.notificationsService = notificationsService
-        self.pushTokenProvider = pushTokenProvider
         let connectedAppsDateFormatter = dateFormatter.copy() as? DateFormatter ?? DateFormatter()
         connectedAppsDateFormatter.dateFormat = "d MMM, HH:mm"
         self.dateFormatter = connectedAppsDateFormatter
@@ -283,25 +277,6 @@ private extension SettingsConnectedAppsViewModel {
         walletConnectSessionsStore?.disconnect(
             topics: apps.compactMap(\.walletConnectConnection).flatMap(\.topics)
         )
-
-        turnOffDappNotifications(for: tonConnectApps)
-    }
-
-    func turnOffDappNotifications(for apps: [TonConnectApp]) {
-        guard !apps.isEmpty else { return }
-
-        Task { [weak self] in
-            guard let self else { return }
-            guard let token = await self.pushTokenProvider.getToken() else { return }
-            for app in apps {
-                _ = try? await self.notificationsService.turnOffDappNotifications(
-                    wallet: self.wallet,
-                    manifest: app.manifest,
-                    sessionId: app.clientId,
-                    token: token
-                )
-            }
-        }
     }
 }
 

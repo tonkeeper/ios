@@ -7,5 +7,8 @@ struct KeeperWidgetBundle: WidgetBundle {
         RateChartWidget()
         RateWidget()
         BalanceWidget()
+        if #available(iOS 16.2, *) {
+            TransactionLiveActivityWidget()
+        }
     }
 }

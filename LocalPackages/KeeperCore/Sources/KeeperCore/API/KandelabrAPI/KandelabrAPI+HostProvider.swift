@@ -1,3 +1,5 @@
+import Foundation
+
 struct KandelabrAPIHostProvider: APIHostProvider {
     private let configuration: Configuration
 
@@ -7,7 +9,12 @@ struct KandelabrAPIHostProvider: APIHostProvider {
 
     var basePath: String {
         get async {
-            await configuration.multichainHost(network: .mainnet).absoluteString
+            let multichainURL = await configuration.multichainHost(network: .mainnet)
+            var components = URLComponents()
+            components.scheme = multichainURL.scheme
+            components.host = multichainURL.host
+            components.port = multichainURL.port
+            return components.url?.absoluteString ?? multichainURL.absoluteString
         }
     }
 }

@@ -4,6 +4,7 @@ import Foundation
 import KeeperCore
 import SwiftUI
 import TKCore
+import TKCryptoKit
 import TKLocalize
 import TKUIKit
 import UIKit
@@ -211,13 +212,41 @@ private extension WalletConnectRequestAssembly {
                     trailingIconColor: .iconTertiary
                 )
             )
-        case .walletCapabilities:
+        case let .solanaTransaction(transaction, send):
+            return (
+                send
+                    ? TKLocales.WalletConnect.Request.Actions.sendTransaction
+                    : TKLocales.WalletConnect.Request.Actions.signTransaction,
+                WalletConnectRequestInfoRow(
+                    id: .request,
+                    title: TKLocales.WalletConnect.Request.Rows.request,
+                    value: attributed(TKLocales.WalletConnect.Request.Values.solanaTransaction),
+                    subtitle: transaction.pubkey.map { TKLocales.WalletConnect.Request.Rows.address(shortAddress($0)) },
+                    valueIcon: nil,
+                    trailingIcon: nil,
+                    trailingIconColor: .iconTertiary
+                )
+            )
+        case let .solanaTransactionBatch(batch):
+            return (
+                TKLocales.WalletConnect.Request.Actions.signTransaction,
+                WalletConnectRequestInfoRow(
+                    id: .request,
+                    title: TKLocales.WalletConnect.Request.Rows.request,
+                    value: attributed(TKLocales.WalletConnect.Request.Values.solanaTransactions),
+                    subtitle: TKLocales.WalletConnect.Request.Rows.transactions(batch.transactions.count),
+                    valueIcon: nil,
+                    trailingIcon: nil,
+                    trailingIconColor: .iconTertiary
+                )
+            )
+        case .walletCapabilities, .solanaAccounts:
             return (
                 TKLocales.WalletConnect.Request.confirmAction,
                 WalletConnectRequestInfoRow(
                     id: .request,
                     title: TKLocales.WalletConnect.Request.Rows.request,
-                    value: attributed(WalletConnectMethod.walletGetCapabilities.rawValue),
+                    value: attributed(request.method.rawValue),
                     subtitle: nil,
                     valueIcon: nil,
                     trailingIcon: nil,
@@ -274,6 +303,10 @@ private extension WalletConnectRequestAssembly {
                 return [rawDataItem(fromJSONString: message.message)].compactMap { $0 }
             case .personal, .tron:
                 return [detail(TKLocales.WalletConnect.Request.Details.message, message.message)].compactMap { $0 }
+            case .solana:
+                return [
+                    detail(TKLocales.WalletConnect.Request.Details.message, solanaMessageText(message.message)),
+                ].compactMap { $0 }
             }
 
         case let .evmTransaction(transaction, _):
@@ -312,7 +345,33 @@ private extension WalletConnectRequestAssembly {
             return [
                 detail(TKLocales.WalletConnect.Request.Details.rawData, capabilities.chainIds.joined(separator: ", ")),
             ].compactMap { $0 }
+
+        case let .solanaTransaction(transaction, _):
+            return [
+                detail(TKLocales.WalletConnect.Request.Details.rawData, transaction.transaction),
+            ].compactMap { $0 }
+
+        case let .solanaTransactionBatch(batch):
+            return [
+                detailItem(
+                    title: TKLocales.WalletConnect.Request.Details.rawData,
+                    value: .array(batch.transactions.map { .primitive($0) }),
+                    path: ["rawData"],
+                    depth: 0
+                ),
+            ].compactMap { $0 }
+
+        case .solanaAccounts:
+            return []
         }
+    }
+
+    static func solanaMessageText(_ base58Message: String) -> String {
+        let bytes = base58Message.decodeBase58
+        guard !bytes.isEmpty, let text = String(data: bytes, encoding: .utf8) else {
+            return base58Message
+        }
+        return text
     }
 
     static func detail(_ title: String, _ value: String?) -> WalletConnectRequestDetailItem? {
@@ -680,6 +739,8 @@ private extension WalletConnectSignMessageKind {
             TKLocales.WalletConnect.Request.Signature.typedData
         case .tron:
             TKLocales.WalletConnect.Request.Signature.tronMessage
+        case .solana:
+            TKLocales.WalletConnect.Request.Signature.solanaMessage
         }
     }
 }
@@ -699,6 +760,14 @@ private extension WalletConnectChain {
             "BEP20"
         case .tron:
             "TRC20"
+        case .polygon:
+            "Polygon"
+        case .avax:
+            "Avalanche"
+        case .robinhood:
+            "Robinhood"
+        case .sol:
+            "SPL"
         }
     }
 
@@ -706,20 +775,26 @@ private extension WalletConnectChain {
         switch self {
         case .ton:
             "TON"
-        case .eth, .base, .arb:
+        case .eth, .base, .arb, .robinhood:
             "ETH"
         case .bsc:
             "BNB"
+        case .polygon:
+            "POL"
+        case .avax:
+            "AVAX"
         case .tron:
             "TRX"
+        case .sol:
+            "SOL"
         }
     }
 
     var nativeTokenFractionDigits: Int {
         switch self {
-        case .ton:
+        case .ton, .sol:
             9
-        case .eth, .base, .arb, .bsc:
+        case .eth, .base, .arb, .bsc, .polygon, .avax, .robinhood:
             18
         case .tron:
             6

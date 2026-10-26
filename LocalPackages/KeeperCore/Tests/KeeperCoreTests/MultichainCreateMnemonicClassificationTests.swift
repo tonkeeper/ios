@@ -53,6 +53,7 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
                     XCTFail("ton-classified mnemonic must not be derived as multichain")
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
+                syncWallet: { _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -111,6 +112,7 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
                         addresses: [.init(chain: .eth, address: "0xderived")]
                     )
                 },
+                syncWallet: { _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )

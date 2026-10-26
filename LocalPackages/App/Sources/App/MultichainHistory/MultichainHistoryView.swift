@@ -1,6 +1,7 @@
 import AppUI
 import Foundation
 import KeeperCore
+import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -10,6 +11,7 @@ struct MultichainHistoryView: View {
     @ObservedObject var viewModel: MultichainHistoryViewModelImplementation
     let onClose: (() -> Void)?
     let onOpenTransaction: (URL, String?) -> Void
+    let onSelectPerpsEvent: ((PerpsHistoryEvent) -> Void)?
     @State private var selectedActivity: MultichainActivity?
     @State private var isFiltersPresented = false
     @Environment(\.tkPalette) private var palette
@@ -17,11 +19,13 @@ struct MultichainHistoryView: View {
     init(
         viewModel: MultichainHistoryViewModelImplementation,
         onClose: (() -> Void)? = nil,
-        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in }
+        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in },
+        onSelectPerpsEvent: ((PerpsHistoryEvent) -> Void)? = nil
     ) {
         self.viewModel = viewModel
         self.onClose = onClose
         self.onOpenTransaction = onOpenTransaction
+        self.onSelectPerpsEvent = onSelectPerpsEvent
     }
 
     var body: some View {
@@ -64,6 +68,13 @@ struct MultichainHistoryView: View {
         )
         .task {
             viewModel.viewDidLoad()
+        }
+        .onChange(of: viewModel.activityToOpen) { activity in
+            guard let activity else {
+                return
+            }
+            selectActivity(activity)
+            viewModel.didOpenPendingActivity()
         }
         .onDisappear {
             viewModel.disappeared()
@@ -158,7 +169,11 @@ private extension MultichainHistoryView {
     }
 
     func selectActivity(_ activity: MultichainActivity) {
-        selectedActivity = activity
+        if let onSelectPerpsEvent, let event = PerpsHistoryEvent(activity: activity) {
+            onSelectPerpsEvent(event)
+        } else {
+            selectedActivity = activity
+        }
     }
 
     struct FiltersSheet: View {
@@ -262,7 +277,7 @@ private extension MultichainHistoryView {
     }
 }
 
-private struct MultichainHistoryContentView: View {
+struct MultichainHistoryContentView: View {
     @ObservedObject var viewModel: MultichainHistoryQueryViewModel
     let onSelectActivity: (MultichainActivity) -> Void
     let isActive: Bool
@@ -355,10 +370,12 @@ private extension MultichainHistoryContentView {
                 lottieResource: .clock,
                 title: TKLocales.MultichainHistory.Placeholder.title,
                 subtitle: TKLocales.MultichainHistory.Placeholder.subtitle,
-                button: PlaceholderView.ButtonConfig(
-                    title: TKLocales.MultichainHistory.Placeholder.Buttons.addFunds,
-                    action: viewModel.addFunds
-                )
+                button: viewModel.onAddFunds.map { onAddFunds in
+                    PlaceholderView.ButtonConfig(
+                        title: TKLocales.MultichainHistory.Placeholder.Buttons.addFunds,
+                        action: onAddFunds
+                    )
+                }
             )
         case .filtered:
             return PlaceholderView.Config(

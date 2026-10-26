@@ -11,11 +11,4 @@ public extension String {
 
         return base64
     }
-
-    func base64URLEncoded() -> String {
-        self
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "=", with: "")
-    }
 }

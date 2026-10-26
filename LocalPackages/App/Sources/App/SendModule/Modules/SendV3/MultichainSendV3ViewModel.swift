@@ -219,7 +219,7 @@ final class MultichainSendV3ViewModelImplementation: SendV3ViewModel, Multichain
     func didTapSwap() {
         isSwapped.toggle()
         sendAmountTextFieldFormatter.maximumFractionDigits = isSwapped ? 2 : item.fractionalDigits
-        didUpdateCurrency?(isSwapped ? "\(sendController.getCurrency())" : "")
+        didUpdateCurrency?(isSwapped ? sendController.getCurrency().code : "")
         lastFiatInputString = nil
         didUpdateItem()
         updateViewState()

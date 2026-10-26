@@ -27,6 +27,8 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     @Atomic private var hasUserSelectedFeeMethod = false
     @Atomic private var cachedJettonTransferCost: BigUInt?
     @Atomic private var cachedFeeBalances: MultichainFeeBalances?
+    @Atomic private var evmQuote: EVMGaslessFeeEngine.Quote?
+    @Atomic private var evmPickedType: TransactionConfirmationModel.ExtraType?
 
     private let wallet: Wallet
     private let recipient: MultichainRecipient
@@ -36,7 +38,8 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     private let isMaxAmount: Bool
     private let chainKitService: ChainKitService
     private let passcodeProvider: () async -> String?
-    private let engine: MultichainFeeEngineResolver.Engine
+    private let engineResolver: MultichainFeeEngineResolver
+    @Atomic private var resolvedEngine: MultichainFeeEngineResolver.Resolution?
     private let tonJettonEngineFactory: MultichainTonJettonEngineFactory
     private let tronUsdtApi: TronUSDTAPI
     private let sendService: SendService
@@ -45,6 +48,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     private let batteryService: BatteryService
     private let batteryChargesReader: BatteryChargesReader
     private let multichainAssetBalanceProvider: MultichainAssetBalanceProvider
+    private let evmGaslessFeeEngine: EVMGaslessFeeEngine
 
     init(
         wallet: Wallet,
@@ -63,7 +67,8 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         configuration: Configuration,
         batteryService: BatteryService,
         batteryCalculation: BatteryCalculation,
-        multichainAssetBalanceProvider: MultichainAssetBalanceProvider
+        multichainAssetBalanceProvider: MultichainAssetBalanceProvider,
+        evmGaslessFeeEngine: EVMGaslessFeeEngine
     ) {
         self.wallet = wallet
         self.recipient = recipient
@@ -73,7 +78,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         self.isMaxAmount = isMaxAmount
         self.chainKitService = chainKitService
         self.passcodeProvider = passcodeProvider
-        engine = engineResolver.resolve(asset: asset, wallet: wallet)
+        self.engineResolver = engineResolver
         self.tonJettonEngineFactory = tonJettonEngineFactory
         self.tronUsdtApi = tronUsdtApi
         self.sendService = sendService
@@ -85,17 +90,43 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
             batteryCalculation: batteryCalculation
         )
         self.multichainAssetBalanceProvider = multichainAssetBalanceProvider
+        self.evmGaslessFeeEngine = evmGaslessFeeEngine
     }
 
-    private var feeSelection: MultichainFeeSelection {
+    /// A settled engine is kept for the controller's life, a provisional one only until the next load.
+    private func engine() async -> MultichainFeeEngineResolver.Engine {
+        if let resolvedEngine {
+            return resolvedEngine.engine
+        }
+        let resolution = await engineResolver.resolve(asset: asset, wallet: wallet)
+        resolvedEngine = resolution
+        return resolution.engine
+    }
+
+    private func feeSelection(engine: MultichainFeeEngineResolver.Engine) -> MultichainFeeSelection {
         MultichainFeeSelection(engine: engine, transferAmount: amount)
+    }
+
+    /// The transfer as the relayer is asked to carry it.
+    private func evmTransfer(engine: MultichainFeeEngineResolver.Engine) -> EVMGaslessFeeEngine.Transfer? {
+        guard case let .evm(chain) = engine else {
+            return nil
+        }
+        return EVMGaslessFeeEngine.Transfer(
+            wallet: wallet,
+            chain: chain,
+            asset: asset,
+            amount: amount,
+            recipient: recipient.address,
+            comment: comment
+        )
     }
 
     public func getModel() -> TransactionConfirmationModel {
         let engineModel = isChainKitFallback ? nil : feeEngine?.getModel()
         let extraState = engineModel?.extraState ?? self.extraState
         let extraOptions = engineExtraOptions ?? engineModel?.extraOptions ?? []
-        let availableExtraTypes = engineModel?.availableExtraTypes ?? []
+        let availableExtraTypes = engineModel?.availableExtraTypes ?? engineExtraOptions?.map(\.type) ?? []
 
         return TransactionConfirmationModel(
             wallet: wallet,
@@ -104,9 +135,10 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
             transaction: .transfer(.multichain(asset)),
             amount: .init(
                 token: .multichain(asset),
-                value: engineModel?.amount?.value ?? Self.chainKitAmount(
+                value: engineModel?.amount?.value ?? Self.sentAmount(
                     requestedAmount: amount,
-                    emulation: chainKitEmulation
+                    emulation: chainKitEmulation,
+                    selectedEVMFee: evmQuote?.selected(picked: evmPickedType)
                 )
             ),
             extraState: extraState,
@@ -127,15 +159,24 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         chainKitEmulation = nil
         isChainKitFallback = false
         cachedFeeBalances = nil
+        evmQuote = nil
+        if resolvedEngine?.isSettled == false {
+            resolvedEngine = nil
+        }
         feeEngine?.setLoading()
     }
 
     public func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
         hasUserSelectedFeeMethod = true
+        evmPickedType = extraType
         feeEngine?.setPrefferedExtraType(extraType: extraType)
     }
 
     public func emulate() async -> Result<Void, TransactionConfirmationError> {
+        let engine = await self.engine()
+        if let evmTransfer = evmTransfer(engine: engine) {
+            return await emulateEVM(evmTransfer)
+        }
         guard !isChainKitFallback, engine != .chainKit else {
             return await emulateWithChainKit()
         }
@@ -150,7 +191,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         case .success:
             var extraOptions = await resolvedExtraOptions(for: feeEngine)
 
-            let trxFeeType = feeSelection.trxTypeToPreselect(
+            let trxFeeType = feeSelection(engine: engine).trxTypeToPreselect(
                 in: extraOptions,
                 hasUserSelectedFeeMethod: hasUserSelectedFeeMethod
             )
@@ -182,6 +223,14 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     }
 
     public func prepareFeeOptions() async {
+        let engine = await self.engine()
+        if let evmTransfer = evmTransfer(engine: engine), let evmQuote {
+            // Only the rows are weighed again: written back into the quote, the new weights could
+            // resolve the send to a method other than the one on screen.
+            engineExtraOptions = await evmGaslessFeeEngine.reweighed(evmQuote.options, transfer: evmTransfer)
+                .map(\.extraOption)
+            return
+        }
         guard !isChainKitFallback, engine != .chainKit,
               let feeEngine = await resolveFeeEngine()
         else {
@@ -193,6 +242,23 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     }
 
     public func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
+        let engine = await self.engine()
+        if let evmTransfer = evmTransfer(engine: engine),
+           let quote = evmQuote,
+           let selected = quote.selected(picked: evmPickedType),
+           selected.isRelayed
+        {
+            guard !getModel().isSelectedFeeInsufficient else {
+                return .failure(.multichainTransactionFailure(.insufficientSelectedFee))
+            }
+            return await evmGaslessFeeEngine.send(
+                quote,
+                selected: selected,
+                transfer: evmTransfer,
+                passcodeProvider: passcodeProvider
+            ).map { .nothingToRecord }
+        }
+
         let feeEngine = !isChainKitFallback && engine != .chainKit
             ? await resolveFeeEngine()
             : nil
@@ -218,7 +284,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     /// would send a transaction the user did not approve — and let the guard above stop a send the
     /// balance no longer covers. A failed re-price keeps the previous quote.
     private func repriceTRXFeeIfNeeded(_ feeEngine: TransactionConfirmationController) async {
-        guard case .tronUSDT = engine,
+        guard case .tronUSDT = await engine(),
               selectedExtraType(of: feeEngine)?.isTRXGasless == true,
               case .success = await feeEngine.emulate()
         else {
@@ -234,7 +300,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         }
 
         let feeEngine: TransactionConfirmationController?
-        switch engine {
+        switch await engine() {
         case let .tronUSDT(tronAddress):
             guard let senderAddress = try? TronSwift.Address(address: tronAddress),
                   let tronRecipient = try? TronRecipient(address: recipient.address)
@@ -264,7 +330,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
                 comment: comment
             )
 
-        case .chainKit:
+        case .chainKit, .evm:
             feeEngine = nil
         }
 
@@ -277,6 +343,37 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         }
         self.feeEngine = feeEngine
         return feeEngine
+    }
+
+    /// The chain's own fee from ChainKit and the relayer's methods are priced side by side. A
+    /// relayer that offers nothing leaves the transfer exactly as it is without one; a ChainKit
+    /// emulation that fails only costs the list its coin method while the relayer has others.
+    private func emulateEVM(_ transfer: EVMGaslessFeeEngine.Transfer) async -> Result<Void, TransactionConfirmationError> {
+        async let nativeResult = emulateWithChainKit()
+        async let relayedQuote = evmGaslessFeeEngine.estimate(transfer)
+        let (native, relayed) = await(nativeResult, relayedQuote)
+        guard var quote = relayed else {
+            evmQuote = nil
+            return native
+        }
+        if let emulation = chainKitEmulation {
+            quote.options.append(
+                EVMGaslessFeeOption(
+                    payer: .native(emulation.asset, fee: emulation.fee),
+                    relayerAssetId: nil,
+                    isInsufficient: emulation.isInsufficientBalance
+                )
+            )
+        }
+        quote = await evmGaslessFeeEngine.quote(quote, picked: evmPickedType, transfer: transfer)
+        evmQuote = quote
+        engineExtraOptions = quote.options.map(\.extraOption)
+        if let selected = quote.selected(picked: evmPickedType) {
+            extraState = .extra(
+                TransactionConfirmationModel.Extra(value: selected.extraValue, kind: .fee)
+            )
+        }
+        return .success(())
     }
 
     private func emulateWithChainKit() async -> Result<Void, TransactionConfirmationError> {
@@ -377,7 +474,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     private func extraOptionsWithInsufficiency(
         _ extraOptions: [TransactionConfirmationModel.ExtraOption]
     ) async -> [TransactionConfirmationModel.ExtraOption] {
-        feeSelection.annotatingInsufficiency(extraOptions, balances: await feeBalances())
+        await feeSelection(engine: engine()).annotatingInsufficiency(extraOptions, balances: feeBalances())
     }
 
     /// One snapshot per emulation: the options a single decision is made from must be annotated
@@ -403,7 +500,7 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
     }
 
     private func jettonTransferCost() async -> BigUInt {
-        guard case let .tonJetton(master) = engine else {
+        guard case let .tonJetton(master) = await engine() else {
             return 0
         }
         if let cachedJettonTransferCost {
@@ -459,10 +556,10 @@ public final class MultichainTransactionConfirmationController: TransactionConfi
         for feeEngine: TransactionConfirmationController
     ) async -> [TransactionConfirmationModel.ExtraOption] {
         let extraOptions = feeEngine.getModel().extraOptions
-        switch engine {
+        switch await engine() {
         case .tronUSDT, .tonJetton:
             return await extraOptionsWithInsufficiency(extraOptions)
-        case .chainKit:
+        case .chainKit, .evm:
             return extraOptions
         }
     }
@@ -534,6 +631,17 @@ extension MultichainTransactionConfirmationController {
         emulation: MultichainTransactionEmulationResult?
     ) -> BigUInt {
         emulation?.adjustedAmount ?? requestedAmount
+    }
+
+    static func sentAmount(
+        requestedAmount: BigUInt,
+        emulation: MultichainTransactionEmulationResult?,
+        selectedEVMFee: EVMGaslessFeeOption?
+    ) -> BigUInt {
+        guard selectedEVMFee?.isRelayed != true else {
+            return requestedAmount
+        }
+        return chainKitAmount(requestedAmount: requestedAmount, emulation: emulation)
     }
 
     static func chainKitIsMax(

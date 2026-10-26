@@ -63,6 +63,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /kandelabr/public-api/v1/candles/batch:
+    post:
+      tags:
+        - candles
+      summary: Get candles (batch)
+      description: |
+        Get candles for multiple requests in one call. Request and response are arrays (same order).
+
+        **Limits:**
+        - Number of requests in `requests` array must not exceed 20.
+        - Sum of estimated candles across all requests must not exceed 3000.
+        Exceeding either limit returns 400.
+      operationId: getCandlesBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCandlesBatchRequest'
+      responses:
+        "200":
+          description: Candles retrieved successfully (one response per request item, same order)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCandlesBatchResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     GetCandlesRequest:
@@ -107,6 +139,27 @@ components:
           minimum: 1
           description: Number of candles to return (positive). When set, candles are counted backwards from end_ts (or now if end_ts omitted).
           example: 100
+    GetCandlesBatchRequest:
+      type: object
+      required:
+        - requests
+      properties:
+        requests:
+          type: array
+          maxItems: 20
+          description: Array of getCandles requests
+          items:
+            $ref: '#/components/schemas/GetCandlesRequest'
+    GetCandlesBatchResponse:
+      type: object
+      required:
+        - responses
+      properties:
+        responses:
+          type: array
+          description: Array of getCandles responses (same order as requests)
+          items:
+            $ref: '#/components/schemas/GetCandlesResponse'
     GetCandlesResponse:
       type: object
       required:

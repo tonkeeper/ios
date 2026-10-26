@@ -16,8 +16,6 @@ extension TokenPickerV2ChainFilter: CustomStringConvertible {
             return "all"
         case let .chain(chain):
             return chain.rawValue
-        case .perpetuals:
-            return "perpetuals"
         }
     }
 }

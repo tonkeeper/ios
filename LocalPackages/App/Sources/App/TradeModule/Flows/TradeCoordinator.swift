@@ -1,4 +1,5 @@
 import KeeperCore
+import PerpsModels
 import TKCoordinator
 import TKCore
 import TKLocalize
@@ -239,11 +240,12 @@ extension TradeCoordinator {
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             initialCatalogSearchSort: initialCatalogSearchSort,
-            catalogSearching: perpsRepository,
-            perpsSearching: perpsRepository
+            catalogSearching: keeperCoreMainAssembly.perpsAssembly.marketsRepository,
+            perpsSearching: perpsRepository,
+            initialCategory: initialCategory
         )
         let module = TokenPickerV2Assembly.module(
-            title: assetListTitle(for: initialCategory),
+            title: TKLocales.Trade.Assets.title,
             wallet: wallet,
             model: model,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -303,6 +305,14 @@ extension TradeCoordinator {
             typedAssetId: typedAssetId,
             wallet: wallet
         )
+        let isLegacyTronSwapUnavailable = switch balanceSource {
+        case .legacyStore(.tronUsdt):
+            wallet.legacySwapWallet == nil
+        case .legacyStore(.tronTrx):
+            true
+        case .legacyStore, .multichain:
+            false
+        }
         // TRC20 transfers are paid for out of TRX, battery charges or GRAM, none of which the
         // asset catalog knows about; only a legacy wallet spends them through this screen.
         let tronFeesViewModel: TradeAssetDetailsTronFeesViewModel? = switch balanceSource {
@@ -337,6 +347,18 @@ extension TradeCoordinator {
                 },
                 isMultichainTransferSupported: isMultichainTransferSupported
             )
+        }
+
+        let perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?
+        if wallet.isMultichain, output.onOpenPerpsMarket != nil {
+            let walletScope = keeperCoreMainAssembly.perpsAssembly.walletScope(for: wallet)
+            perpPositionViewModel = TradeAssetDetailsPerpPositionViewModel(
+                accountStore: walletScope.accountStore,
+                walletScope: walletScope,
+                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
+            )
+        } else {
+            perpPositionViewModel = nil
         }
 
         let historySource: TradeAssetDetailsViewModel.HistorySource
@@ -374,7 +396,9 @@ extension TradeCoordinator {
             viewModel: TradeAssetDetailsViewModel(
                 multichainState: multichainState,
                 preview: preview,
-                isSwapDisabled: keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.isSwapDisable, network: wallet.network),
+                isSwapDisabled: isLegacyTronSwapUnavailable
+                    || keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.isSwapDisable, network: wallet.network),
+                walletCapabilities: TradeAssetDetailsWalletCapabilities(wallet: wallet),
                 analyticsProvider: analyticsProvider,
                 analyticsSource: source,
                 favoriteAssetsService: favoriteAssetsService,
@@ -410,6 +434,7 @@ extension TradeCoordinator {
                 balanceViewModel: balanceViewModel,
                 historySource: historySource,
                 tronFeesViewModel: tronFeesViewModel,
+                perpPositionViewModel: perpPositionViewModel,
                 tonStakingAPYProvider: { [keeperCoreMainAssembly] in
                     let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
                     guard !configuration.flag(\.stakingDisabled, network: wallet.network) else {
@@ -551,12 +576,26 @@ extension TradeCoordinator {
                         navigationController: navigationController
                     )
                 },
+                onOpenPerpsMarket: { [weak self, weak navigationController] marketID in
+                    self?.output.onOpenPerpsMarket?(marketID, navigationController)
+                },
                 onTronFees: { [output, wallet] snapshot, trigger in
                     output.onTronUsdtFees(wallet, snapshot, trigger)
                 },
                 onOpenStaking: { [output] in
                     output.onOpenStaking(wallet)
                 },
+                onOpenEarnVault: { [output, keeperCoreMainAssembly, weak navigationController] offer in
+                    output.onOpenEarnVault(
+                        keeperCoreMainAssembly.configurationAssembly.configuration.earnUrl
+                            .appendingEarnVaultPath(network: offer.network, vaultId: offer.vaultId),
+                        navigationController
+                    )
+                },
+                earnAssetOffersRepository: keeperCoreMainAssembly.repositoriesAssembly.earnAssetOffersRepository(
+                    isEarnEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.earnEnabled)
+                        && wallet.walletConnectAddress(for: .eth) != nil
+                ),
                 onOpenTokenizedInfo: { [weak self] kind in
                     guard let self else { return }
                     openTokenizedAssetInfoPopup(kind: kind)
@@ -693,17 +732,6 @@ private extension TradeCoordinator {
         TradeAssetDetailsViewModel.PreviewContext(
             assetID: assetID
         )
-    }
-
-    func assetListTitle(for category: TradingAssetCategory) -> String {
-        switch category {
-        case .all, .tokens:
-            TKLocales.Trade.Assets.title
-        case .stocks:
-            TKLocales.Trade.Assets.Categories.stocks
-        case .etfs:
-            TKLocales.Trade.Assets.Categories.etfs
-        }
     }
 }
 
@@ -968,16 +996,10 @@ private extension TradeCoordinator {
             switch tonToken {
             case .ton:
                 guard
-                    let usdtAnyToken = await self.token(for: .jetton(JettonMasterAddress.tonUSDT), wallet: wallet)
+                    let usdtAnyToken = await self.token(for: .jetton(JettonMasterAddress.tonUSDT), wallet: wallet),
+                    case let .ton(usdt) = usdtAnyToken
                 else {
                     return
-                }
-                guard case let .ton(usdt) = usdtAnyToken else {
-                    return output.onSwap(
-                        .tron,
-                        wallet,
-                        navigationController
-                    )
                 }
                 switch direction {
                 case .buy:
@@ -1029,12 +1051,14 @@ private extension TradeCoordinator {
                 wallet,
                 navigationController
             )
-        case .tron:
+        case .tron(.usdt):
             output.onSwap(
-                .tron,
+                .legacyTronUSDT(usdtSide: direction.multichainSwapInitialSelectionSide),
                 wallet,
                 navigationController
             )
+        case .tron(.trx):
+            Log.trade.w("swap requested for TRX, which a legacy wallet cannot swap")
         }
     }
 }

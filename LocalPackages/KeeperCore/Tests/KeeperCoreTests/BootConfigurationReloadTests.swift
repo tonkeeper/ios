@@ -143,5 +143,4 @@ private struct RemoteConfigProviderStub: RemoteConfigProvider {
 private final class AppSettingsStub: TKAppSettings {
     var isConfirmButtonInsteadSlider = false
     var raffleIsNewUser: Bool?
-    var raffleDebugNow: Date?
 }

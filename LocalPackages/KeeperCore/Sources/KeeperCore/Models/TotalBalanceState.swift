@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TotalBalanceState {
+@frozen public enum TotalBalanceState {
     case current(TotalBalance)
     case previous(TotalBalance)
     case none

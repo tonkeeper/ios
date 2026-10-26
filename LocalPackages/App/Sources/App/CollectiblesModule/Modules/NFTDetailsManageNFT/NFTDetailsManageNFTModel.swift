@@ -1,6 +1,5 @@
 import Foundation
 import KeeperCore
-import TKLogging
 
 /// Reads and mutations happen on the main thread: the state feeds the NFT details screen and the
 /// actions are invoked from its buttons.
@@ -19,18 +18,15 @@ final class NFTDetailsManageNFTModel {
     private let wallet: Wallet
     private let nft: NFT
     private let nftManagementStore: WalletNFTsManagementStore
-    private let nftService: NFTService
 
     init(
         wallet: Wallet,
         nft: NFT,
-        nftManagementStore: WalletNFTsManagementStore,
-        nftService: NFTService
+        nftManagementStore: WalletNFTsManagementStore
     ) {
         self.wallet = wallet
         self.nft = nft
         self.nftManagementStore = nftManagementStore
-        self.nftService = nftService
     }
 
     func approveNFT() {
@@ -38,7 +34,6 @@ final class NFTDetailsManageNFTModel {
         approveNFTTask = Task { @MainActor [weak self] in
             guard let self else { return }
             await nftManagementStore.approveItem(nftManagementItem)
-            await changeSuspiciousState(isScam: false)
             approveNFTTask = nil
         }
     }
@@ -49,20 +44,7 @@ final class NFTDetailsManageNFTModel {
             guard let self else { return }
             await nftManagementStore.spamItem(nftManagementItem)
             didMarkAsSpam?()
-            await changeSuspiciousState(isScam: true)
             markSpamNFTTask = nil
-        }
-    }
-
-    private func changeSuspiciousState(isScam: Bool) async {
-        do {
-            try await nftService.changeSuspiciousState(
-                nft,
-                network: wallet.network,
-                isScam: isScam
-            )
-        } catch {
-            Log.w("NFTDetailsManageNFT: failed to change suspicious state to \(isScam), error: \(error)")
         }
     }
 

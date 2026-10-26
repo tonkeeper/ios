@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import Perps
 import TKUIKit
 import UIKit
 
@@ -86,6 +87,26 @@ enum TradeAssetDetailsActionBarState: Equatable {
     }
 }
 
+struct TradeAssetDetailsWalletCapabilities {
+    let canSend: Bool
+    let canReceive: Bool
+    let canSwap: Bool
+    let canStake: Bool
+
+    init(wallet: Wallet) {
+        canSend = wallet.isSendEnable
+        canReceive = wallet.isReceiveEnable
+        canSwap = wallet.isSwapEnable
+        canStake = wallet.isStakeEnable
+    }
+}
+
+enum TradeAssetDetailsPerpPositionViewData {
+    case loading
+    case banner(marketId: Int64, title: String, caption: String?)
+    case position(PerpsPositionRowItem)
+}
+
 struct TradeAssetDetailsScreenViewData {
     let id: String
     let title: String
@@ -101,6 +122,7 @@ struct TradeAssetDetailsScreenViewData {
     let tradingActivity: TradeAssetDetailsTradingActivityViewData?
     let assetType: TradeAssetDetailsAssetTypeSectionKind?
     let tronFees: TradeAssetDetailsTronFeesViewData?
+    let perpPosition: TradeAssetDetailsPerpPositionViewData?
     let history: TradeAssetDetailsHistorySectionViewData?
     let multichainHistory: TradeAssetDetailsMultichainHistorySectionViewData?
     let links: [TradeAssetDetailsLinkViewData]

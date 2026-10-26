@@ -120,14 +120,29 @@ public struct DefaultModalCardHeader: View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: Layout.subtitleElementsPadding) {
                 Spacer(minLength: 0)
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                HStack(alignment: subtitle.accentImageURL == nil ? .firstTextBaseline : .center, spacing: 0) {
                     Text(subtitle.text)
                         .textStyle(.body2)
                         .foregroundStyle(subtitle.color)
+                    if let url = subtitle.accentImageURL {
+                        AssetAvatarView(
+                            imageSource: .url(url),
+                            configuration: AssetAvatarView.Configuration(
+                                imageSize: Layout.subtitleAccentImageSize,
+                                chainIconSize: 0,
+                                chainIconPadding: 0,
+                                chainIconOffsetX: 0,
+                                chainIconOffsetY: 0
+                            ),
+                            shape: .circle
+                        )
+                        .padding(.leading, Layout.subtitleAccentImageLeading)
+                    }
                     if let accentText = subtitle.accentText, !accentText.isEmpty {
-                        Text(" \(accentText)")
+                        Text(subtitle.accentImageURL == nil ? " \(accentText)" : accentText)
                             .textStyle(.body2)
                             .foregroundStyle(subtitle.accentColor)
+                            .padding(.leading, subtitle.accentImageURL == nil ? 0 : Layout.subtitleAccentImageTrailing)
                     }
                 }
                 .multilineTextAlignment(.center)
@@ -398,6 +413,7 @@ public extension DefaultModalCardHeader {
         public var color: TKColor
         public var accentText: String?
         public var accentColor: TKColor
+        public var accentImageURL: URL?
         public var icon: SubtitleIcon?
         public var onTap: (() -> Void)?
 
@@ -406,6 +422,7 @@ public extension DefaultModalCardHeader {
             color: TKColor = .textSecondary,
             accentText: String? = nil,
             accentColor: TKColor = .accentBlue,
+            accentImageURL: URL? = nil,
             icon: SubtitleIcon? = nil,
             onTap: (() -> Void)? = nil
         ) {
@@ -413,6 +430,7 @@ public extension DefaultModalCardHeader {
             self.color = color
             self.accentText = accentText
             self.accentColor = accentColor
+            self.accentImageURL = accentImageURL
             self.icon = icon
             self.onTap = onTap
         }
@@ -467,6 +485,9 @@ extension DefaultModalCardHeader {
         static let titleTopPaddingRegular: CGFloat = 18
         static let titleTopPaddingCompact: CGFloat = 8
         static let subtitleElementsPadding: CGFloat = 4
+        static let subtitleAccentImageSize: CGFloat = 16
+        static let subtitleAccentImageLeading: CGFloat = 4
+        static let subtitleAccentImageTrailing: CGFloat = 4
         static let titleTrailingIconSpacing: CGFloat = 4
 
         static let iconTopPadding: CGFloat = 16

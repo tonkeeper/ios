@@ -2,7 +2,7 @@
 import XCTest
 
 final class PerpsNonceCoordinatorTests: XCTestCase {
-    private let scope = PerpsNonceCoordinator.Scope(accountIndex: 42, apiKeyIndex: 3, chainId: 304)
+    private let scope = PerpsNonceCoordinator.Scope(environment: "mainnet", accountIndex: 42, apiKeyIndex: 3, chainId: 304)
 
     func testUsesOneBackendAnchorThenAdvancesLocally() async throws {
         let coordinator = PerpsNonceCoordinator()
@@ -39,5 +39,33 @@ final class PerpsNonceCoordinatorTests: XCTestCase {
 
         let next = try await coordinator.next(scope: scope) { 20 }
         XCTAssertEqual(next, 20)
+    }
+
+    func testAdvancingToVenueNonceNeverReusesOrRollsBackALocalNonce() async throws {
+        let coordinator = PerpsNonceCoordinator()
+        _ = try await coordinator.next(scope: scope) { 5 }
+
+        try await coordinator.advance(scope: scope, nextNonce: 8)
+        let first = try await coordinator.next(scope: scope) { 99 }
+        try await coordinator.advance(scope: scope, nextNonce: 6)
+        let second = try await coordinator.next(scope: scope) { 99 }
+
+        XCTAssertEqual(first, 8)
+        XCTAssertEqual(second, 9)
+    }
+
+    func testAnotherEnvironmentKeepsItsOwnCursor() async throws {
+        let coordinator = PerpsNonceCoordinator()
+        let other = PerpsNonceCoordinator.Scope(
+            environment: "testnet",
+            accountIndex: scope.accountIndex,
+            apiKeyIndex: scope.apiKeyIndex,
+            chainId: scope.chainId
+        )
+
+        _ = try await coordinator.next(scope: scope) { 5 }
+        let first = try await coordinator.next(scope: other) { 100 }
+
+        XCTAssertEqual(first, 100)
     }
 }

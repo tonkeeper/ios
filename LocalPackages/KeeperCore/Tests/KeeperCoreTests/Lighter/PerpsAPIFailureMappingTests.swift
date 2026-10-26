@@ -23,6 +23,14 @@ final class PerpsAPIFailureMappingTests: XCTestCase {
             PerpsTradingErrorMapper.map(failure(code: "validation_error", reason: "lighter_rejected")),
             .serverRejected("validation_error")
         )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(failure(code: "validation_error", reason: "integrator_not_approved")),
+            .serverRejected("validation_error")
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(failure(status: 409, code: "conflict", reason: "no_ro_token")),
+            .serverRejected("conflict")
+        )
     }
 
     func testTheEnvelopeCodeClassifiesEverythingElse() {

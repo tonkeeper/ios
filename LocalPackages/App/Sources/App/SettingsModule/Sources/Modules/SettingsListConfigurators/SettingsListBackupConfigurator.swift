@@ -1,4 +1,3 @@
-import BigInt
 import KeeperCore
 import SwiftUI
 import TKLocalize
@@ -25,24 +24,18 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
 
     private var wallet: Wallet
     private let walletsStore: WalletsStore
-    private let processedBalanceStore: ProcessedBalanceStore
     private let dateFormatter: DateFormatter
-    private let amountFormatter: AmountFormatter
 
     // MARK: - Init
 
     init(
         wallet: Wallet,
         walletsStore: WalletsStore,
-        processedBalanceStore: ProcessedBalanceStore,
-        dateFormatter: DateFormatter,
-        amountFormatter: AmountFormatter
+        dateFormatter: DateFormatter
     ) {
         self.wallet = wallet
         self.walletsStore = walletsStore
-        self.processedBalanceStore = processedBalanceStore
         self.dateFormatter = dateFormatter
-        self.amountFormatter = amountFormatter
 
         walletsStore.addObserver(self) { observer, event in
             switch event {
@@ -61,21 +54,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     private func createState() -> SettingsListState {
         var sections = [SettingsListSection]()
 
-        let proccessedBalance = processedBalanceStore.getState()[wallet]?.balance
-        let balanceBackupWarningState = BalanceBackupWarningCheck()
-            .check(
-                wallet: wallet,
-                tonAmount: UInt64(proccessedBalance?.tonItem.amount ?? 0)
-            )
-
-        if let backupWarningNotificationSection = createBackupWarningNotificationSection(
-            state: balanceBackupWarningState,
-            processedBalanceTonItem: proccessedBalance?.tonItem
-        ) {
-            sections.append(backupWarningNotificationSection)
-        }
-
-        sections.append(createBackupSection(state: balanceBackupWarningState))
+        sections.append(createBackupSection())
 
         if let showRecoveryPhraseSection = createShowRecoveryPhraseSection() {
             sections.append(showRecoveryPhraseSection)
@@ -85,12 +64,12 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
         )
     }
 
-    private func createBackupSection(state: BalanceBackupWarningCheck.State) -> SettingsListSection {
+    private func createBackupSection() -> SettingsListSection {
         var items = [SettingsListItemsSectionItem]()
         if let backupDate = wallet.setupSettings.backupDate {
             items.append(.listItem(createBackUpOnItem(date: backupDate)))
         } else {
-            items.append(.button(createBackupManuallyItem(state: state)))
+            items.append(.button(createBackupManuallyItem()))
         }
         return .items(SettingsListItemsSection(
             items: items,
@@ -105,19 +84,6 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
         guard wallet.setupSettings.backupDate != nil else { return nil }
         return .items(SettingsListItemsSection(
             items: [.listItem(createShowRecoveryPhraseItem())]
-        ))
-    }
-
-    private func createBackupWarningNotificationSection(
-        state: BalanceBackupWarningCheck.State,
-        processedBalanceTonItem: ProcessedBalanceTonItem?
-    ) -> SettingsListSection? {
-        guard let item = createBackupNotificationWarning(
-            state: state,
-            processedBalanceTonItem: processedBalanceTonItem
-        ) else { return nil }
-        return .items(SettingsListItemsSection(
-            items: [.banner(item)]
         ))
     }
 
@@ -145,19 +111,11 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
         )
     }
 
-    private func createBackupManuallyItem(state: BalanceBackupWarningCheck.State) -> SettingsListButtonItem {
-        let appearance: ButtonView.Appearance
-        switch state {
-        case .error, .warning:
-            appearance = .primary
-        case .none:
-            appearance = .secondary
-        }
-
-        return SettingsListButtonItem(
+    private func createBackupManuallyItem() -> SettingsListButtonItem {
+        SettingsListButtonItem(
             id: .backupManualyItemIdentifier,
             title: TKLocales.Backup.Manually.button,
-            appearance: appearance,
+            appearance: .secondary,
             action: { [weak self] in
                 self?.didTapBackupManually?()
             }
@@ -174,44 +132,10 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
             }
         )
     }
-
-    private func createBackupNotificationWarning(
-        state: BalanceBackupWarningCheck.State,
-        processedBalanceTonItem: ProcessedBalanceTonItem?
-    ) -> SettingsListBannerItem? {
-        let convertedAmount: String = {
-            guard let processedBalanceTonItem else {
-                return ""
-            }
-            return amountFormatter.format(
-                decimal: processedBalanceTonItem.converted,
-                accessory: .fiat(processedBalanceTonItem.currency),
-                style: .fiatBalance
-            )
-        }()
-
-        let bannerState: NotificationBanner.State
-        switch state {
-        case .none: return nil
-        case .error:
-            bannerState = .accentRed
-        case .warning:
-            bannerState = .accentOrange
-        }
-        return SettingsListBannerItem(
-            id: .backupNotificationWarningIdentifier,
-            content: NotificationBannerContent(
-                title: nil,
-                description: TKLocales.Backup.Balance.warning(convertedAmount),
-                state: bannerState
-            )
-        )
-    }
 }
 
 private extension String {
     static let backupManualyItemIdentifier = "BackupManuallyItem"
     static let backupDoneItemIdentifier = "BackupDoneItem"
     static let showRecoveryPhraseItemIdentifier = "showRecoveryPhraseItem"
-    static let backupNotificationWarningIdentifier = "BackupNotificationWarningIdentifier"
 }

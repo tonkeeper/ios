@@ -6,15 +6,30 @@ import UIKit
 import WebKit
 
 open class TKBridgeWebViewController: UIViewController {
+    public enum LoadFailure: Equatable {
+        case network(domain: String, code: Int)
+        case httpError(status: Int)
+        case processTerminated
+    }
+
     public struct Configuration {
         public let copyToastConfiguration: ToastPresenter.Configuration
         public let websiteDataStore: WKWebsiteDataStore?
+        public let applicationNameForUserAgent: String?
+        public let showsInitialLoadingIndicator: Bool
+        public let allowsBackForwardNavigationGestures: Bool
         public init(
             copyToastConfiguration: ToastPresenter.Configuration,
-            websiteDataStore: WKWebsiteDataStore? = nil
+            websiteDataStore: WKWebsiteDataStore? = nil,
+            applicationNameForUserAgent: String? = nil,
+            showsInitialLoadingIndicator: Bool = false,
+            allowsBackForwardNavigationGestures: Bool = false
         ) {
             self.copyToastConfiguration = copyToastConfiguration
             self.websiteDataStore = websiteDataStore
+            self.applicationNameForUserAgent = applicationNameForUserAgent
+            self.showsInitialLoadingIndicator = showsInitialLoadingIndicator
+            self.allowsBackForwardNavigationGestures = allowsBackForwardNavigationGestures
         }
     }
 
@@ -28,15 +43,21 @@ open class TKBridgeWebViewController: UIViewController {
 
     public var didTapCopy: ((URL) -> Void)?
     public var didTapShare: ((URL) -> Void)?
+    public var didTapClose: (() -> Void)?
 
     public var didLoadInitialURLHandler: (() -> Void)?
 
     public var didCommitLoad: ((URL) -> Void)?
     public var didFinishLoad: ((URL) -> Void)?
-    public var didFailLoad: (() -> Void)?
+    public var didFailLoad: ((LoadFailure) -> Void)?
+    public var didChangeCanGoBack: ((Bool) -> Void)?
 
     public var currentURL: URL? {
         webView.url
+    }
+
+    public var canGoBack: Bool {
+        webView.canGoBack
     }
 
     private let userContentController = WKUserContentController()
@@ -49,17 +70,49 @@ open class TKBridgeWebViewController: UIViewController {
             forMainFrameOnly: true
         )
         userContentController.addUserScript(script)
+        if self.configuration.showsInitialLoadingIndicator {
+            userContentController.addUserScript(
+                WKUserScript(
+                    source: Self.firstPaintScript,
+                    injectionTime: .atDocumentStart,
+                    forMainFrameOnly: true
+                )
+            )
+        }
         configuration.userContentController = userContentController
         configuration.allowsInlineMediaPlayback = true
         if let websiteDataStore = self.configuration.websiteDataStore {
             configuration.websiteDataStore = websiteDataStore
         }
+        if let applicationNameForUserAgent = self.configuration.applicationNameForUserAgent {
+            configuration.applicationNameForUserAgent = applicationNameForUserAgent
+        }
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.allowsBackForwardNavigationGestures = self.configuration.allowsBackForwardNavigationGestures
         customizeWebView?(webView)
         return webView
     }()
 
     private let navigationBar = TKUINavigationBar()
+    private var initialLoadingIndicator: TKLoaderView?
+    private static let firstPaintMessageName = "tkBridgeFirstPaint"
+    private static let firstPaintScript = """
+    (function () {
+        var report = function () {
+            window.webkit.messageHandlers.\(TKBridgeWebViewController.firstPaintMessageName).postMessage('');
+        };
+        var schedule = function () {
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(report);
+            });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', schedule);
+        } else {
+            schedule();
+        }
+    })();
+    """
     private let titleView = TKUINavigationBarTitleView()
     private lazy var backButton: TKUIHeaderIconButton = {
         let button = TKUINavigationBar.createBackButton { [weak self] in
@@ -93,7 +146,7 @@ open class TKBridgeWebViewController: UIViewController {
 
     // MARK: - KVO
 
-    private var canGoBack: NSKeyValueObservation?
+    private var canGoBackObservation: NSKeyValueObservation?
 
     // MARK: - State
 
@@ -176,6 +229,9 @@ open class TKBridgeWebViewController: UIViewController {
         #endif
 
         view.addSubview(webView)
+        if configuration.showsInitialLoadingIndicator {
+            showInitialLoadingIndicator()
+        }
         view.addSubview(navigationBar)
 
         navigationBar.isHidden = isHeaderHidden
@@ -189,9 +245,10 @@ open class TKBridgeWebViewController: UIViewController {
         navigationBar.rightViews = [rightPillButton]
 
         backButton.isHidden = true
-        canGoBack = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
+        canGoBackObservation = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
             guard let canGoBack = value.newValue else { return }
             self?.backButton.isHidden = !canGoBack
+            self?.didChangeCanGoBack?(canGoBack)
         }
 
         let urlRequest = URLRequest(url: updateURLWithTonkeeperUTM(url: url))
@@ -239,6 +296,26 @@ open class TKBridgeWebViewController: UIViewController {
         }
     }
 
+    private func showInitialLoadingIndicator() {
+        let loaderView = TKLoaderView(size: .medium, style: .primary)
+        view.addSubview(loaderView)
+        loaderView.snp.makeConstraints { make in
+            make.center.equalTo(webView)
+        }
+        loaderView.isLoading = true
+        initialLoadingIndicator = loaderView
+        addBridgeMessageObserver(message: Self.firstPaintMessageName) { [weak self] _ in
+            self?.hideInitialLoadingIndicator()
+        }
+    }
+
+    private func hideInitialLoadingIndicator() {
+        guard let initialLoadingIndicator else { return }
+        initialLoadingIndicator.isLoading = false
+        initialLoadingIndicator.removeFromSuperview()
+        self.initialLoadingIndicator = nil
+    }
+
     private func backButtonAction() {
         webView.goBack()
     }
@@ -246,7 +323,11 @@ open class TKBridgeWebViewController: UIViewController {
     private func closeButtonAction() {
         webView.scrollView.layer.masksToBounds = true
         webView.layer.masksToBounds = true
-        dismiss(animated: true)
+        if let didTapClose {
+            didTapClose()
+        } else {
+            dismiss(animated: true)
+        }
     }
 
     private func menuButtonAction() {
@@ -317,33 +398,7 @@ open class TKBridgeWebViewController: UIViewController {
 
     private func didUpdateUrl() {
         func update(title: String?, caption: String, isSecure: Bool) {
-            var icon: TKPlainButton.Model.Icon?
-            if isSecure {
-                icon = TKPlainButton.Model.Icon(
-                    image: .TKUIKit.Icons.Size12.lock,
-                    tintColor: .Text.secondary,
-                    padding: UIEdgeInsets(top: 5, left: 0, bottom: 3, right: 4),
-                    iconPosition: .left
-                )
-            }
-
-            let caption = TKPlainButton.Model(
-                title: caption.withTextStyle(
-                    .body2,
-                    color: .Text.secondary,
-                    alignment: .center,
-                    lineBreakMode: .byTruncatingTail
-                ),
-                icon: icon,
-                action: nil
-            )
-
-            let titleConfiguration = TKUINavigationBarTitleView.Model(
-                title: title,
-                caption: caption
-            )
-
-            titleView.configure(model: titleConfiguration)
+            titleView.configure(model: .webPage(title: title, host: caption, isSecure: isSecure))
         }
 
         if let serverTrust = webView.serverTrust {
@@ -367,6 +422,7 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        hideInitialLoadingIndicator()
         guard let url = webView.url else { return }
         if !didLoadInitialURL {
             didLoadInitialURL = true
@@ -380,11 +436,11 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
-        handleLoadFailure(error: error)
+        handleNavigationError(error)
     }
 
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        handleLoadFailure(error: error)
+        handleNavigationError(error)
     }
 
     public func webView(
@@ -395,41 +451,48 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
            let response = navigationResponse.response as? HTTPURLResponse,
            response.statusCode >= 400
         {
-            handleLoadFailure(error: nil)
+            handleLoadFailure(.httpError(status: response.statusCode))
         }
         return .allow
     }
 
     public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        handleLoadFailure(error: nil)
+        handleLoadFailure(.processTerminated)
     }
 
-    private func handleLoadFailure(error: Error?) {
-        if let error, (error as NSError).code == NSURLErrorCancelled {
-            return
-        }
-        didFailLoad?()
+    private func handleNavigationError(_ error: Error) {
+        let error = error as NSError
+        guard error.code != NSURLErrorCancelled else { return }
+        handleLoadFailure(.network(domain: error.domain, code: error.code))
+    }
+
+    private func handleLoadFailure(_ failure: LoadFailure) {
+        hideInitialLoadingIndicator()
+        didFailLoad?(failure)
     }
 
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard let url = navigationAction.request.url else { return .allow }
+        return navigationPolicy(for: url)
+    }
+
+    private func navigationPolicy(for url: URL) -> WKNavigationActionPolicy {
         let externalOpenHosts = ["t.me"]
         let externalOpenUrlSchemes = ["tg"]
-        if let url = navigationAction.request.url {
-            if let scheme = url.scheme, externalOpenUrlSchemes.contains(scheme), UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        if let scheme = url.scheme, externalOpenUrlSchemes.contains(scheme), UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            return .cancel
+        }
+        if let host = url.host, externalOpenHosts.contains(host) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            return .cancel
+        }
+        if let handler = deeplinkHandler {
+            do {
+                try handler(url.absoluteString)
                 return .cancel
-            }
-            if let host = url.host, externalOpenHosts.contains(host) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                return .cancel
-            }
-            if let handler = deeplinkHandler {
-                do {
-                    try handler(url.absoluteString)
-                    return .cancel
-                } catch {
-                    return .allow
-                }
+            } catch {
+                return .allow
             }
         }
         return .allow
@@ -443,10 +506,58 @@ extension TKBridgeWebViewController: WKUIDelegate {
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        if navigationAction.targetFrame == nil {
+        guard navigationAction.targetFrame == nil else { return nil }
+        // A sized window.open is a popup, e.g. Telegram Login: it hands its result back through
+        // window.opener, so it gets a web view of its own instead of replacing the opener's page.
+        guard windowFeatures.width != nil || windowFeatures.height != nil else {
             webView.load(navigationAction.request)
+            return nil
         }
-        return nil
+        if let url = navigationAction.request.url, navigationPolicy(for: url) == .cancel {
+            return nil
+        }
+        configuration.userContentController = WKUserContentController()
+        let popupWebView = WKWebView(frame: .zero, configuration: configuration)
+        let sourceHost = navigationAction.sourceFrame.securityOrigin.host
+        let popupViewController = TKBridgeWebPopupViewController(
+            webView: popupWebView,
+            openerHost: sourceHost.isEmpty ? webView.url?.host ?? "" : sourceHost,
+            navigationPolicy: { [weak self] url in
+                self?.navigationPolicy(for: url) ?? .allow
+            }
+        )
+        present(popupViewController, animated: true)
+        return popupWebView
+    }
+}
+
+extension TKUINavigationBarTitleView.Model {
+    static func webPage(title: String?, host: String, isSecure: Bool) -> TKUINavigationBarTitleView.Model {
+        var icon: TKPlainButton.Model.Icon?
+        if isSecure {
+            icon = TKPlainButton.Model.Icon(
+                image: .TKUIKit.Icons.Size12.lock,
+                tintColor: .Text.secondary,
+                padding: UIEdgeInsets(top: 5, left: 0, bottom: 3, right: 4),
+                iconPosition: .left
+            )
+        }
+
+        let caption = TKPlainButton.Model(
+            title: host.withTextStyle(
+                .body2,
+                color: .Text.secondary,
+                alignment: .center,
+                lineBreakMode: .byTruncatingTail
+            ),
+            icon: icon,
+            action: nil
+        )
+
+        return TKUINavigationBarTitleView.Model(
+            title: title,
+            caption: caption
+        )
     }
 }
 

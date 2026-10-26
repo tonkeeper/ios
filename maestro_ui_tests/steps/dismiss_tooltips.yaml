@@ -1,8 +1,10 @@
-# Dismisses entry-point tooltips (`id: tooltip`). A hint is presented above the screen
-# behind a full-screen dismiss control, so the first tap anywhere only closes the bubble —
+# Dismisses entry-point tooltips. A hint is presented above the screen behind a full-screen
+# dismiss control (`id: tooltip_dismiss`), so the first tap anywhere only closes the bubble —
 # a test that taps its own target right away silently loses that tap.
-# Tapping the bubble dismisses it without firing its target action, and the next queued
-# tooltip may appear right after, hence the loop. Times cap it so a stuck queue cannot hang.
+# Tap the dismiss control, never the bubble (`id: tooltip`): a tap on the bubble performs the
+# hint's target action (the add-multichain-wallet hint opens the wallets list, which then
+# covers the tab bar). The next queued tooltip may appear right after, hence the loop; times
+# cap it so a stuck queue cannot hang.
 appId: com.jbig.tonkeeper
 ---
 - repeat:
@@ -12,6 +14,6 @@ appId: com.jbig.tonkeeper
         id: tooltip
     commands:
       - tapOn:
-          id: tooltip
+          id: tooltip_dismiss
       - waitForAnimationToEnd:
           timeout: 1500

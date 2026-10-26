@@ -23,6 +23,8 @@ struct MultichainWalletAssetRecord: Equatable {
 struct MultichainWalletAssetRecordsPage: Equatable {
     let records: [MultichainWalletAssetRecord]
     let nextCursor: String?
+    var fiatPrice: [String: String] = [:]
+    var perpsFiatPrice: [String: String]? = nil
 }
 
 protocol MultichainClientAPI {
@@ -46,6 +48,7 @@ protocol MultichainClientAPI {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?,
         limit: Int?,
         cursor: String?
@@ -59,6 +62,7 @@ protocol MultichainClientAPI {
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage
     func getWalletChallenge() async throws(MultichainClientAPIError) -> MultichainWalletChallenge
@@ -69,16 +73,10 @@ protocol MultichainClientAPI {
         walletId: String,
         lang: String?,
         ids: [String]?,
-        debugNow: Date?,
         isNewUser: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle]
     func completeRaffleMigration(walletId: String) async throws(MultichainClientAPIError)
     func markRaffleImport(walletId: String, importedWalletId: String) async throws(MultichainClientAPIError)
-    func forcePickRaffleWinners(
-        raffleId: String,
-        walletId: String?,
-        prizeId: String?
-    ) async throws(MultichainClientAPIError)
     func getRealtimeConnectionToken() async throws(MultichainClientAPIError) -> String
     func getWalletRealtimeToken(walletId: String) async throws(MultichainClientAPIError) -> String
 }
@@ -195,6 +193,7 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         search: String?,
         availableOnly: Bool?,
         showHidden: Bool?,
+        showAll: Bool?,
         hideDust: Bool?,
         limit: Int?,
         cursor: String?
@@ -207,7 +206,7 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             search: search,
             available_only: availableOnly,
             show_hidden: showHidden,
-            show_all: nil,
+            show_all: showAll,
             currencies: currencies,
             hide_dust: hideDust,
             limit: limit,
@@ -254,9 +253,11 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         assetId: String?,
         activityTypeFilter: MultichainActivityTypeFilter?,
         showPerps: Bool?,
+        market: Int?,
         hideDust: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         let path = MultichainAPI.Operations.getWalletActivities.Input.Path(wallet_id: walletId)
+        let assetMarket = assetId.flatMap(PerpsMarketAssetID.marketId(assetId:))
         let query = MultichainAPI.Operations.getWalletActivities.Input.Query(
             limit: limit,
             cursor: cursor,
@@ -264,9 +265,10 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             activity_type: activityTypeFilter.flatMap {
                 MultichainAPI.Components.Schemas.ActivityTypeFilter(rawValue: $0.rawValue)
             },
-            asset_id: assetId,
+            asset_id: assetMarket == nil ? assetId : nil,
             hide_dust: hideDust,
-            show_perps: showPerps
+            show_perps: showPerps,
+            market: market ?? assetMarket.map { Int($0) }
         )
         let output = try await apiCall(await walletScopedAPIClient(walletId).getWalletActivities(path: path, query: query))
         return try mapWalletActivitiesOutput(output)
@@ -289,7 +291,7 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         let body = MultichainAPI.Components.RequestBodies.BroadcastTx.json(
             .init(
                 chain: chain.toAPISchemaChain(),
-                tx: Base64EncodedData(data: ArraySlice(signedTransaction))
+                tx: Base64EncodedData(ArraySlice(signedTransaction))
             )
         )
         let output = try await apiCall(await deviceScopedAPIClient().broadcastTx(body: body))
@@ -352,21 +354,19 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         walletId: String,
         lang: String?,
         ids: [String]?,
-        debugNow: Date?,
         isNewUser: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle] {
         let path = MultichainAPI.Operations.getWalletRaffles.Input.Path(wallet_id: walletId)
         let query = MultichainAPI.Operations.getWalletRaffles.Input.Query(
             lang: lang,
             ids: ids,
-            _debug_now: debugNow,
             is_new: isNewUser
         )
         let output = try await apiCall(await walletScopedAPIClient(walletId).getWalletRaffles(path: path, query: query))
         switch output {
         case let .ok(response):
             let payload = try decodeResponse(response.body.json)
-            return payload.raffles.map { MultichainRaffle(api: $0) }
+            return payload.raffles.compactMap { MultichainRaffle(api: $0) }
         case let .badRequest(error):
             throw try badRequest(from: error)
         case let .unauthorized(error):
@@ -422,31 +422,6 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             throw try unauthorized(from: error)
         case let .forbidden(error):
             throw try forbidden(from: error)
-        case let .notFound(error):
-            throw try notFound(from: error)
-        case let .internalServerError(error):
-            throw try internalError(from: error)
-        case let .undocumented(statusCode, _):
-            throw MultichainClientAPIError.undocumented(statusCode: statusCode)
-        }
-    }
-
-    /// QA-only: returns 404 on prod pods, where the endpoint is gated off.
-    func forcePickRaffleWinners(
-        raffleId: String,
-        walletId: String?,
-        prizeId: String?
-    ) async throws(MultichainClientAPIError) {
-        let path = MultichainAPI.Operations.forcePickRaffleWinners.Input.Path(raffle_id: raffleId)
-        let body = MultichainAPI.Components.RequestBodies.ForceRafflePick.json(
-            .init(wallet_id: walletId, prize_id: prizeId)
-        )
-        let output = try await apiCall(
-            await deviceScopedAPIClient().forcePickRaffleWinners(path: path, body: body)
-        )
-        switch output {
-        case .ok:
-            return
         case let .notFound(error):
             throw try notFound(from: error)
         case let .internalServerError(error):
@@ -531,7 +506,14 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             }
             return MultichainWalletAssetRecordsPage(
                 records: records,
-                nextCursor: normalizedNextCursor(payload.next_cursor)
+                nextCursor: normalizedNextCursor(payload.next_cursor),
+                fiatPrice: Dictionary(
+                    payload.fiat_price.additionalProperties.map { ($0.key.lowercased(), $0.value) },
+                    uniquingKeysWith: { first, _ in first }
+                ),
+                perpsFiatPrice: payload.perps.flatMap {
+                    [.unavailable, .unknown].contains($0.status) ? nil : $0.fiat_price?.additionalProperties ?? [:]
+                }
             )
         case let .badRequest(error):
             throw try badRequest(from: error)

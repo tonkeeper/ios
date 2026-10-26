@@ -14,9 +14,10 @@ extension AnalyticsProvider {
     func logWalletImportSuccess(
         walletMode: WalletMode,
         walletSource: WalletSource,
-        from: AddWalletSource
+        from: AddWalletSource,
+        ledgerModel: LedgerModel? = nil
     ) {
-        log(WalletImportSuccess(walletMode: walletMode, walletSource: walletSource, from: from))
+        log(WalletImportSuccess(walletMode: walletMode, walletSource: walletSource, from: from, ledgerModel: ledgerModel))
     }
 
     func logWalletImportSuccess(
@@ -31,7 +32,8 @@ extension AnalyticsProvider {
         walletMode: WalletMode,
         walletSource: WalletSource,
         from: AddWalletSource,
-        errorMessage: String?
+        errorMessage: String?,
+        ledgerModel: LedgerModel? = nil
     ) {
         log(WalletImportError(
             walletMode: walletMode,
@@ -39,7 +41,8 @@ extension AnalyticsProvider {
             from: from,
             errorType: nil,
             errorCode: nil,
-            errorMessage: errorMessage
+            errorMessage: errorMessage,
+            ledgerModel: ledgerModel
         ))
     }
 
@@ -47,13 +50,15 @@ extension AnalyticsProvider {
         walletMode: WalletMode,
         walletSource: WalletSource,
         from: AddWalletSource,
-        error: Error
+        error: Error,
+        ledgerModel: LedgerModel? = nil
     ) {
         logWalletImportError(
             walletMode: walletMode,
             walletSource: walletSource,
             from: from,
-            errorMessage: error.localizedDescription
+            errorMessage: error.localizedDescription,
+            ledgerModel: ledgerModel
         )
     }
 

@@ -62,7 +62,7 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
     }
 
     func test_mainScreenEntryIsHiddenForOfferPayloadWithoutProgress() throws {
-        let now = RaffleClock.now
+        let now = Date()
         let raffle = raffle(
             status: .joined,
             startsAt: now.addingTimeInterval(-86400),
@@ -77,7 +77,7 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
     }
 
     func test_mainScreenEntryAppearsForLivePayloadWhileBenefitWindowIsOpen() throws {
-        let now = RaffleClock.now
+        let now = Date()
         let raffle = liveRaffle(
             status: .joined,
             endsAt: now.addingTimeInterval(20 * 86400),
@@ -369,10 +369,10 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
     func test_faqFallsBackToTheCampaignNumbersWithoutAMigrationTask() {
         let content = MysteryRaffleContent(raffle: liveRaffle(tasks: [task]))
 
-        XCTAssertEqual(content.faq[0].answer, TKLocales.MysteryRaffle.Faq.Earn.answer(10, 10))
+        XCTAssertEqual(content.faq[0].answer, TKLocales.MysteryRaffle.Faq.Earn.answer(5, 10))
         XCTAssertEqual(
             MysteryRaffleContent.activeFAQ(endsAt: Date())[0].answer,
-            TKLocales.MysteryRaffle.Faq.Earn.answer(10, 1000)
+            TKLocales.MysteryRaffle.Faq.Earn.answer(5, 1000)
         )
     }
 

@@ -322,10 +322,6 @@ private struct NFTServiceStub: NFTService {
     }
 
     func saveNFT(nft: NFT, network: Network) throws {}
-
-    func changeSuspiciousState(_ nft: NFT, network: Network, isScam: Bool) async throws {
-        throw BannerTestError.unsupported
-    }
 }
 
 private struct WalletNFTsRepositoryStub: WalletNFTsRepository {

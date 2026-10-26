@@ -17,6 +17,115 @@ final class PerpsTradingMappersTests: XCTestCase {
         XCTAssertEqual(PerpsLiquidationReasonMapper.map(nil), .unknown)
     }
 
+    func testADisabledMarketDoesNotBlameTheCallersRegion() {
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.tradingdisabled)),
+            .tradingUnavailable
+        )
+    }
+
+    func testAnUnsupportedMarketReadsTheSameWay() {
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.unsupportedmarket)),
+            .tradingUnavailable
+        )
+    }
+
+    func testAPriceThatMovedIsNotAThinBook() {
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.slippageexceeded)),
+            .slippageExceeded
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.insufficientliquidity)),
+            .insufficientLiquidity
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.needsmoredepth)),
+            .insufficientLiquidity
+        )
+    }
+
+    func testARefusedAutoCloseNamesTheLegThePlannerBlamed() {
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.invalidautoclose, field: "takeProfit")),
+            .invalidAutoClose(.takeProfit)
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.invalidautoclose, field: "stopLoss")),
+            .invalidAutoClose(.stopLoss)
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(
+                tradeFailure(kind: PerpsTradeError.invalidautoclose, field: "replacedTakeProfitOrderIndex")
+            ),
+            .invalidAutoClose(nil)
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.invalidautoclose)),
+            .invalidAutoClose(nil)
+        )
+    }
+
+    func testRefusalsTheUserCanActOnKeepTheirOwnKind() {
+        XCTAssertEqual(PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.invalidinput)), .invalidAmount)
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.unrepresentablevalue)),
+            .invalidAmount
+        )
+        XCTAssertEqual(
+            PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.conflictingposition)),
+            .conflictingPosition
+        )
+        XCTAssertEqual(PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.exceedsposition)), .exceedsPosition)
+        XCTAssertEqual(PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.ordernotfound)), .orderNotFound)
+        XCTAssertEqual(PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.noposition)), .positionNotFound)
+        XCTAssertEqual(PerpsTradingErrorMapper.map(tradeFailure(kind: PerpsTradeError.invalidnonce)), .validation("refused"))
+    }
+
+    func testTheSlippageCapIsTheOneTheCopyNames() {
+        let config = PerpsTradingConfig()
+
+        XCTAssertEqual(config.maxSlippage, 0.05, accuracy: 1e-9)
+        XCTAssertEqual(config.closeMaxSlippage, 0.05, accuracy: 1e-9)
+    }
+
+    func testARefusedPlanCarriesItsKindAndReasonIntoTheLog() {
+        let failure = PerpsTradeFailure(
+            exception: PerpsTradeException(
+                kind: PerpsTradeError.staleinput,
+                message: "market snapshot source is stale",
+                field: "marketSnapshot",
+                suggestion: nil,
+                cause: nil
+            )
+        )
+
+        XCTAssertEqual(PerpsTradingErrorMapper.map(failure), .stalePreparedTransaction)
+        XCTAssertTrue(failure.logDescription.contains("market snapshot source is stale"), failure.logDescription)
+        XCTAssertTrue(failure.logDescription.contains("marketSnapshot"), failure.logDescription)
+        XCTAssertTrue(
+            failure.logDescription.lowercased().contains("staleinput"),
+            failure.logDescription
+        )
+    }
+
+    private func tradeFailure(kind: PerpsTradeError, field: String? = nil) -> Error {
+        NSError(
+            domain: "ChainKitPerpsTrade",
+            code: 1,
+            userInfo: [
+                "KotlinException": PerpsTradeException(
+                    kind: kind,
+                    message: "refused",
+                    field: field,
+                    suggestion: nil,
+                    cause: nil
+                ),
+            ]
+        )
+    }
+
     func testMapsTypedFoundationNetworkErrors() {
         XCTAssertEqual(
             PerpsTradingErrorMapper.map(NSError(domain: NSURLErrorDomain, code: NSURLErrorTimedOut)),

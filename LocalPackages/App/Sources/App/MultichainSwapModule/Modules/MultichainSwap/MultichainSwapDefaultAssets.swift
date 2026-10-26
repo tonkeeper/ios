@@ -7,7 +7,6 @@ import TonSwift
 struct MultichainSwapInitialAssets {
     let sendAsset: MultichainAsset
     let receiveAsset: MultichainAsset
-    let catalog: [String: MultichainSwapAsset]
     let slippage: MultichainSwapSlippage?
     var usdFiatRate: Decimal? = nil
     var hasUnavailableInitialSelection: Bool = false
@@ -114,6 +113,7 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
     private let multichainState: MultichainWalletState
     private let multichainService: MultichainService
     private let multichainSwapService: MultichainSwapService
+    private let assetDetailsService: TradingAssetDetailsService
     private let currencyStore: CurrencyStore
     private let initialSelection: MultichainSwapInitialAssetSelection?
 
@@ -121,12 +121,14 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
         multichainState: MultichainWalletState,
         multichainService: MultichainService,
         multichainSwapService: MultichainSwapService,
+        assetDetailsService: TradingAssetDetailsService,
         currencyStore: CurrencyStore,
         initialSelection: MultichainSwapInitialAssetSelection? = nil
     ) {
         self.multichainState = multichainState
         self.multichainService = multichainService
         self.multichainSwapService = multichainSwapService
+        self.assetDetailsService = assetDetailsService
         self.currencyStore = currencyStore
         self.initialSelection = initialSelection
     }
@@ -145,6 +147,7 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
             search: nil,
             availableOnly: nil,
             showHidden: false,
+            showAll: nil,
             hideDust: nil
         ).assets
         let resolvedSelection = try await resolvedInitialSelection()
@@ -206,11 +209,6 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
             )
             throw MultichainSwapInitialAssetsError.missingDestinationAsset
         }
-        let catalog = Dictionary(
-            [sourceCatalogAsset, destinationCatalogAsset].map { ($0.assetId, $0) },
-            uniquingKeysWith: { current, _ in current }
-        )
-
         let sourceAsset = sourceCatalogAsset.multichainAsset(
             walletAsset: walletAssetsById[sourceCatalogAsset.assetId]
         )
@@ -228,7 +226,6 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
         return MultichainSwapInitialAssets(
             sendAsset: sourceAsset,
             receiveAsset: destinationAsset,
-            catalog: catalog,
             slippage: config.slippage,
             usdFiatRate: MultichainSwapFiatRateResolver(displayCurrency: currency)
                 .walletDerivedUsdFiatRate(walletAssets: walletAssets),
@@ -239,51 +236,43 @@ struct DefaultMultichainSwapDefaultAssetsService: MultichainSwapDefaultAssetsSer
 
 private extension DefaultMultichainSwapDefaultAssetsService {
     struct ResolvedInitialSelection {
-        let fromAsset: MultichainSwapAsset?
-        let toAsset: MultichainSwapAsset?
+        let fromAssetId: String?
+        let toAssetId: String?
         let hasUnavailableSelection: Bool
-
-        var fromAssetId: String? {
-            fromAsset?.assetId
-        }
-
-        var toAssetId: String? {
-            toAsset?.assetId
-        }
     }
 
     func resolvedInitialSelection() async throws -> ResolvedInitialSelection {
         guard let initialSelection else {
             return ResolvedInitialSelection(
-                fromAsset: nil,
-                toAsset: nil,
+                fromAssetId: nil,
+                toAssetId: nil,
                 hasUnavailableSelection: false
             )
         }
         async let resolvedFromAsset = configAsset(for: initialSelection.sendAssetId)
         async let resolvedToAsset = configAsset(for: initialSelection.receiveAssetId)
-        let (fromAsset, toAsset) = try await(resolvedFromAsset, resolvedToAsset)
-        let hasUnavailableSelection = isUnavailable(requested: initialSelection.sendAssetId, resolved: fromAsset)
-            || isUnavailable(requested: initialSelection.receiveAssetId, resolved: toAsset)
+        let (fromAssetId, toAssetId) = try await(resolvedFromAsset, resolvedToAsset)
+        let hasUnavailableSelection = isUnavailable(requested: initialSelection.sendAssetId, resolved: fromAssetId)
+            || isUnavailable(requested: initialSelection.receiveAssetId, resolved: toAssetId)
         return ResolvedInitialSelection(
-            fromAsset: fromAsset,
-            toAsset: fromAsset?.assetId == toAsset?.assetId ? nil : toAsset,
+            fromAssetId: fromAssetId,
+            toAssetId: fromAssetId == toAssetId ? nil : toAssetId,
             hasUnavailableSelection: hasUnavailableSelection
         )
     }
 
     /// Only catalog-shaped ids are worth reporting: legacy symbol deeplinks (`ft=USDT`) never
     /// resolve on multichain wallets and are expected to fall back silently.
-    func isUnavailable(requested: String?, resolved: MultichainSwapAsset?) -> Bool {
+    func isUnavailable(requested: String?, resolved: String?) -> Bool {
         MultichainSwapInitialAssetSelection.isCatalogAssetId(requested) && resolved == nil
     }
 
-    func configAsset(for value: String?) async throws -> MultichainSwapAsset? {
+    func configAsset(for value: String?) async throws -> String? {
         switch MultichainSwapInitialAssetSelection.catalogAssetReference(value) {
         case .none:
             return nil
         case let .assetId(assetId):
-            return try await catalogAsset(assetId: assetId).flatMap(availableCatalogAsset)
+            return try await swappableAssetId(assetId)
         case let .token(chainId, standard, address):
             return try await resolvedTokenAsset(
                 chainId: chainId,
@@ -291,9 +280,9 @@ private extension DefaultMultichainSwapDefaultAssetsService {
                 address: address
             )
         case let .chainScope(chainId, .none):
-            return try await catalogAsset(
-                assetId: "\(chainId)/\(MultichainSwapInitialAssetSelection.nativeAssetIdSuffix)"
-            ).flatMap(availableCatalogAsset)
+            return try await swappableAssetId(
+                "\(chainId)/\(MultichainSwapInitialAssetSelection.nativeAssetIdSuffix)"
+            )
         case let .chainScope(chainId, .some(standard)):
             let assets = try await chainCatalogAssets(chainId: chainId)
             let matches = assets.filter { $0.assetId.hasPrefix("\(chainId)/\(standard)/") }
@@ -309,7 +298,7 @@ private extension DefaultMultichainSwapDefaultAssetsService {
                 )
                 return nil
             }
-            return availableCatalogAsset(asset)
+            return availableAssetId(asset.assetId)
         }
     }
 
@@ -317,12 +306,12 @@ private extension DefaultMultichainSwapDefaultAssetsService {
         chainId: String,
         standard: String,
         address: String
-    ) async throws -> MultichainSwapAsset? {
+    ) async throws -> String? {
         let address = MultichainSwapInitialAssetSelection.normalizedAssetAddress(address, chainId: chainId)
         if standard != "token" {
-            return try await catalogAsset(
-                assetId: "\(chainId)/\(standard)/\(address)"
-            ).flatMap(availableCatalogAsset)
+            return try await swappableAssetId(
+                "\(chainId)/\(standard)/\(address)"
+            )
         }
         let assets = try await chainCatalogAssets(chainId: chainId)
         let matches = assets.filter { asset in
@@ -346,7 +335,7 @@ private extension DefaultMultichainSwapDefaultAssetsService {
             )
             return nil
         }
-        return availableCatalogAsset(asset)
+        return availableAssetId(asset.assetId)
     }
 
     func chainCatalogAssets(chainId: String) async throws -> [MultichainSwapAsset] {
@@ -355,30 +344,38 @@ private extension DefaultMultichainSwapDefaultAssetsService {
         )
     }
 
-    func catalogAsset(assetId: String) async throws -> MultichainSwapAsset? {
-        do {
-            return try await multichainSwapService.getCrossSwapAsset(assetId: assetId)
-        } catch MultichainSwapAPIError.notFound {
+    func swappableAssetId(_ assetId: String) async throws -> String? {
+        let details: TradingAssetDetails
+        if let cached = await assetDetailsService.assetDetails(for: assetId) {
+            details = cached
+        } else {
+            do {
+                details = try await assetDetailsService.loadAssetDetails(id: assetId)
+            } catch .notFound {
+                return nil
+            }
+        }
+        guard details.capabilities.supportsSwap else {
             return nil
         }
+        return availableAssetId(details.assetInfo.assetId)
     }
 
-    func availableCatalogAsset(_ asset: MultichainSwapAsset) -> MultichainSwapAsset? {
+    func availableAssetId(_ assetId: String) -> String? {
         guard
-            let chain = MultichainChain(assetIdChain: asset.chainIdChain),
+            let chain = MultichainChain(assetId: assetId),
             multichainState.addresses.contains(where: { $0.chain == chain })
         else {
             Log.multichainSwap.w(
                 "initial selection asset chain is unavailable for this wallet",
                 extraInfo: [
-                    "selectedAsset": asset.assetId,
-                    "chain": asset.chainIdChain,
+                    "selectedAsset": assetId,
                     "addressChainCount": "\(multichainState.addresses.count)",
                 ]
             )
             return nil
         }
-        return asset
+        return assetId
     }
 }
 
@@ -401,10 +398,6 @@ extension MultichainSwapInitialAssetsError {
 }
 
 extension MultichainSwapAsset {
-    var chainIdChain: String {
-        assetId.split(separator: "/").first.map(String.init) ?? ""
-    }
-
     func multichainAsset(
         walletAsset: MultichainAsset?
     ) -> MultichainAsset {
@@ -417,15 +410,13 @@ extension MultichainSwapAsset {
             price = MultichainAssetPrice(
                 prices: [Currency.USD.code.lowercased(): usdPrice],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             )
         } else {
             price = MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             )
         }
 

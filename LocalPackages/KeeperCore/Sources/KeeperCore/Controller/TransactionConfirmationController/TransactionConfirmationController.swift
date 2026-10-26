@@ -4,9 +4,9 @@ import TonSwift
 import TronSwift
 
 public struct TransactionConfirmationModel {
-    public enum Transaction {
+    @frozen public enum Transaction {
         public struct Staking {
-            public enum Flow {
+            @frozen public enum Flow {
                 case deposit
                 case withdraw(isCollect: Bool)
             }
@@ -16,7 +16,7 @@ public struct TransactionConfirmationModel {
         }
 
         public typealias IsMaxAmount = Bool
-        public enum Transfer {
+        @frozen public enum Transfer {
             case ton(IsMaxAmount)
             case jetton(JettonInfo)
             case nft(NFT)
@@ -30,7 +30,7 @@ public struct TransactionConfirmationModel {
     }
 
     public struct Amount {
-        public enum Item {
+        @frozen public enum Item {
             case ton(TonToken)
             case tronUSDT
             case tronTRX
@@ -67,7 +67,7 @@ public struct TransactionConfirmationModel {
         public let value: BigUInt
     }
 
-    public enum ExtraState {
+    @frozen public enum ExtraState {
         case none
         case loading
         case extra(Extra)
@@ -90,12 +90,12 @@ public struct TransactionConfirmationModel {
         }
     }
 
-    public enum ExtraKind {
+    @frozen public enum ExtraKind {
         case fee
         case refund
     }
 
-    public enum ExtraValue {
+    @frozen public enum ExtraValue {
         case `default`(amount: BigUInt)
         case battery(charges: Int?, excess: Int?)
         case gasless(token: JettonInfo, amount: BigUInt)
@@ -115,7 +115,7 @@ public struct TransactionConfirmationModel {
         }
     }
 
-    public enum ExtraType: Equatable {
+    @frozen public enum ExtraType: Equatable {
         case `default`
         case battery
         case gasless(token: JettonInfo)
@@ -170,7 +170,7 @@ public struct TransactionConfirmationModel {
     }
 }
 
-public enum TransactionConfirmationError: Swift.Error {
+@frozen public enum TransactionConfirmationError: Swift.Error {
     case failedToCalculateFee
     case failedToSendTransaction(message: String? = nil)
     case multichainTransactionFailure(MultichainTransactionFailure)
@@ -212,5 +212,20 @@ public extension TransactionConfirmationModel {
             return false
         }
         return extraOptions.first { $0.type == extra.value.extraType }?.isInsufficient ?? false
+    }
+
+    /// The chain's coin a multichain transfer is short of for the fee it has selected. A relayer's
+    /// fee in a token of the chain leaves the wallet short of that token instead, which the fee
+    /// picker deposits.
+    var nativeFeeShortage: MultichainNativeFeeShortage? {
+        guard isSelectedFeeInsufficient,
+              case .transfer(.multichain) = transaction,
+              case let .extra(extra) = extraState,
+              case let .multichain(asset, amount) = extra.value,
+              asset.isNative
+        else {
+            return nil
+        }
+        return MultichainNativeFeeShortage(asset: asset, requiredAmount: amount)
     }
 }

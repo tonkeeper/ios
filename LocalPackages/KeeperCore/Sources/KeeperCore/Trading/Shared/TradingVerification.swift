@@ -1,7 +1,7 @@
 import Foundation
 import TKTradingAPI
 
-public enum TradingVerification: String, Hashable, Sendable, Codable {
+@frozen public enum TradingVerification: String, Hashable, Sendable, Codable {
     case trusted
     case whitelist
     case none
@@ -36,7 +36,7 @@ public extension TradingVerification {
             self = .trusted
         case .whitelist:
             self = .whitelist
-        case .none:
+        case .none, .unknown:
             self = .none
         case .blacklist:
             self = .blacklist
@@ -49,7 +49,7 @@ public extension TradingVerification {
             self = .trusted
         case .whitelist:
             self = .whitelist
-        case .none:
+        case .none, .unknown:
             self = .none
         case .blacklist:
             self = .blacklist

@@ -12,6 +12,7 @@ struct TradeAssetDetailsView: View {
         case balance(TradeAssetDetailsBalanceSectionViewData?)
         case actions([TradeAssetDetailsActionButton])
         case tronFees(TradeAssetDetailsTronFeesViewData)
+        case perpPosition(TradeAssetDetailsPerpPositionViewData)
         case assetType(TradeAssetDetailsAssetTypeSectionKind)
         case history(TradeAssetDetailsHistorySectionViewData)
         case multichainHistory(TradeAssetDetailsMultichainHistorySectionViewData)
@@ -38,6 +39,7 @@ struct TradeAssetDetailsView: View {
                         onBuy: viewModel.handleBuyAction,
                         onSell: viewModel.handleSellAction
                     )
+                    .disabled(!viewModel.walletCapabilities.canSwap)
                     .padding(.top, Layout.actionsBarTopPadding)
                 }
             }
@@ -267,6 +269,10 @@ extension TradeAssetDetailsView {
                         )
                     }
                     .buttonStyle(.plain)
+                    .disabled(!viewModel.walletCapabilities.canStake)
+                    .opacity(viewModel.walletCapabilities.canStake ? 1 : Layout.disabledOpacity)
+                    .onAppear(perform: viewModel.earnBadgeDidAppear)
+                    .onDisappear(perform: viewModel.earnBadgeDidDisappear)
                 }
             }
             .padding(.leading, Layout.secondaryHorizontalPadding)
@@ -317,6 +323,11 @@ extension TradeAssetDetailsView {
             TradeAssetDetailsTronFeesSectionView(
                 data: tronFees,
                 onTap: viewModel.handleTronFeesAction
+            )
+        case let .perpPosition(perpPosition):
+            TradeAssetDetailsPerpPositionSectionView(
+                data: perpPosition,
+                onTap: viewModel.handlePerpPositionAction
             )
         case let .assetType(kind):
             TradeAssetDetailsAssetTypeSectionView(
@@ -369,6 +380,7 @@ extension TradeAssetDetailsView {
                     id: "trade_asset_details_send",
                     icon: .TKUIKit.Icons.Size16.linkSmall,
                     title: TKLocales.WalletButtons.send,
+                    isEnabled: viewModel.walletCapabilities.canSend,
                     action: viewModel.handleSendAction
                 )
             case .receive:
@@ -376,6 +388,7 @@ extension TradeAssetDetailsView {
                     id: "trade_asset_details_receive",
                     icon: .TKUIKit.Icons.Size16.qrCode,
                     title: TKLocales.WalletButtons.receive,
+                    isEnabled: viewModel.walletCapabilities.canReceive,
                     action: viewModel.handleReceiveAction
                 )
             case .cashBuy:
@@ -383,6 +396,7 @@ extension TradeAssetDetailsView {
                     id: "trade_asset_details_cash_buy",
                     icon: .TKUIKit.Icons.Size16.dollarOutlinePlus,
                     title: TKLocales.Trade.AssetDetails.Actions.cashBuy,
+                    isEnabled: viewModel.walletCapabilities.canReceive,
                     action: viewModel.handleCashBuyAction
                 )
             case .cashSell:
@@ -390,6 +404,7 @@ extension TradeAssetDetailsView {
                     id: "trade_asset_details_cash_sell",
                     icon: .TKUIKit.Icons.Size16.dollarOutlineMinus,
                     title: TKLocales.Trade.AssetDetails.Actions.cashSell,
+                    isEnabled: viewModel.walletCapabilities.canSend,
                     action: viewModel.handleSellToCardAction
                 )
             }
@@ -424,6 +439,9 @@ extension TradeAssetDetailsView {
         }
         if let tronFees = screen.tronFees {
             sections.append(.tronFees(tronFees))
+        }
+        if let perpPosition = screen.perpPosition {
+            sections.append(.perpPosition(perpPosition))
         }
         if let history = screen.history {
             sections.append(.history(history))
@@ -460,5 +478,6 @@ private extension TradeAssetDetailsView {
         static let secondaryTopPadding: CGFloat = 8
         static let placeholderTopPadding: CGFloat = 152
         static let actionsBarTopPadding: CGFloat = 8
+        static let disabledOpacity: CGFloat = 0.48
     }
 }

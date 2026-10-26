@@ -10,13 +10,15 @@ struct SwapApprovalTransactionResolver {
     let client: CryptoKitClient
 
     func resolveApprovalTransaction(
-        mainTransaction: TransactionSwap,
+        mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: Fee?,
         mainFee: Fee,
         approvalMode: MultichainSwapApprovalMode
     ) -> SwapApprovalTransaction? {
         guard let approvalData,
+              mainTransactions.count == 1,
+              let mainTransaction = mainTransactions.first,
               let transactions = client.tx.buildApproval(tx: mainTransaction, approvalData: approvalData)
         else {
             return nil
@@ -40,6 +42,7 @@ struct SwapApprovalTransactionResolver {
         if let gas = fee as? FeeGas {
             let price = scaledBignum(gas.price, numerator: 3, denominator: 2)
             return FeeGas(
+                asset: gas.asset,
                 limit: gas.limit,
                 price: price,
                 amount: gas.limit.multiply(other: price)
@@ -49,6 +52,7 @@ struct SwapApprovalTransactionResolver {
             let maxPrice = scaledBignum(eip1559.maxPrice, numerator: 3, denominator: 2)
             let minerPrice = scaledBignum(eip1559.minerPrice, numerator: 3, denominator: 2)
             return FeeEip1559(
+                asset: eip1559.asset,
                 limit: eip1559.limit,
                 networkPrice: eip1559.networkPrice,
                 maxPrice: maxPrice,

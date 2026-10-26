@@ -202,8 +202,7 @@ final class MultichainPortfolioStoreTests: XCTestCase {
             price: MultichainAssetPrice(
                 prices: ["usd": 1, "eur": 0.9],
                 diff24h: ["usd": "+0.1%"],
-                diff7d: ["usd": "-0.2%"],
-                diff30d: ["usd": "+1%"]
+                diff7d: ["usd": "-0.2%"]
             ),
             balance: BigUInt("123456789012345678901234567890"),
             marketCap: ["usd": "100000000000"]

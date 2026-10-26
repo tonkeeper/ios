@@ -8,6 +8,7 @@ public enum TransportStatusError: Error, LocalizedError {
     case invalidDataReceived
     case invalidParameterReceived
     case lockedDevice
+    case txParsingFailed
     case internalError
     case unknownError(code: UInt16)
 
@@ -27,6 +28,8 @@ public enum TransportStatusError: Error, LocalizedError {
             return "Invalid parameter received"
         case .lockedDevice:
             return "Locked device"
+        case .txParsingFailed:
+            return "Transaction parsing failed"
         case .internalError:
             return "Internal error, please report"
         case let .unknownError(code):
@@ -50,6 +53,8 @@ public enum TransportStatusError: Error, LocalizedError {
             return .invalidParameterReceived
         case 0x5515:
             return .lockedDevice
+        case 0xB010:
+            return .txParsingFailed
         case 0x6F00 ... 0x6FFF:
             return .internalError
         default:

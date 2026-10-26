@@ -48,36 +48,6 @@ final class TonConnectAppsTests: XCTestCase {
 
         XCTAssertEqual(decoded.connectionType, .remote)
         XCTAssertNil(decoded.manifestURL)
-        XCTAssertFalse(decoded.hasVerifiedManifestOrigin)
-    }
-
-    func testLegacyAppWithoutManifestURLIsPreservedWithoutBeingVerified() {
-        let app = makeApp(clientId: "client", host: "example.com")
-
-        XCTAssertFalse(app.hasVerifiedManifestOrigin)
-        XCTAssertTrue(app.shouldPreserveStoredConnection)
-    }
-
-    func testAppWithMatchingManifestOriginIsVerified() {
-        let app = makeApp(
-            clientId: "client",
-            host: "example.com",
-            manifestURL: URL(string: "https://EXAMPLE.com:443/tonconnect-manifest.json")
-        )
-
-        XCTAssertTrue(app.hasVerifiedManifestOrigin)
-        XCTAssertTrue(app.shouldPreserveStoredConnection)
-    }
-
-    func testAppWithMismatchedManifestOriginIsNotVerified() {
-        let app = makeApp(
-            clientId: "client",
-            host: "legitimate.example",
-            manifestURL: URL(string: "https://attacker.example/tonconnect-manifest.json")
-        )
-
-        XCTAssertFalse(app.hasVerifiedManifestOrigin)
-        XCTAssertFalse(app.shouldPreserveStoredConnection)
     }
 
     func testManifestURLRoundTripsThroughPersistenceEncoding() throws {
@@ -92,7 +62,6 @@ final class TonConnectAppsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(TonConnectApp.self, from: data)
 
         XCTAssertEqual(decoded.manifestURL, manifestURL)
-        XCTAssertTrue(decoded.hasVerifiedManifestOrigin)
     }
 
     func testRecordConnectionMetadataStoresPendingSourceByActualClientId() {
@@ -275,6 +244,19 @@ private final class TonConnectServiceMock: TonConnectService {
         signed: SignedDataResult,
         appRequest: TonConnect.SignDataRequest,
         app: TonConnectApp
+    ) async throws {}
+
+    func confirmSignMessageRequest(
+        internalBoc: String,
+        appRequest: TonConnect.SignMessageRequest,
+        app: TonConnectApp
+    ) async throws {}
+
+    func rejectSignMessageRequest(
+        appRequest: TonConnect.SignMessageRequest,
+        app: TonConnectApp,
+        errorCode: TonConnect.SendResponseError.ErrorCode,
+        message: String
     ) async throws {}
 
     func confirmDisconnectRequest(

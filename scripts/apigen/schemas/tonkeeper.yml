@@ -1301,6 +1301,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Button'
+        links:
+          type: array
+          description: "Substrings of description the client makes tappable"
+          items:
+            $ref: '#/components/schemas/StoryLink'
+    StoryLink:
+      type: object
+      required:
+        - text
+        - url
+      properties:
+        text:
+          type: string
+          example: "Terms of Use"
+        url:
+          type: string
+          example: "https://tonkeeper.com/terms"
     StakingEthenaMethod:
       type: object
       required:

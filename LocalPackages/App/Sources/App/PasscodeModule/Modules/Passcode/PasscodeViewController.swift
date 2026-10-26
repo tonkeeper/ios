@@ -63,13 +63,4 @@ extension PasscodeViewController {
         customView.keyboardView.isUserInteractionEnabled = isEnabled
         customView.keyboardView.alpha = isEnabled ? 1.0 : 0.32
     }
-
-    func setupLogoutButton(title: String?, _ action: @escaping (() -> Void)) {
-        let button = TKUIHeaderTitleIconButton()
-        button.configure(
-            model: TKUIButtonTitleIconContentView.Model(title: title)
-        )
-        button.addTapAction(action)
-        navigationItem.rightBarButtonItem = .customView(button, pinnedTo: .trailing)
-    }
 }

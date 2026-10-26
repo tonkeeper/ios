@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 import TonSwift
 
-public enum NativeSwapConstants {
+@frozen public enum NativeSwapConstants {
     public static let tonFeeReserve = BigUInt(1_000_000_000)
 
     public static var tonFeeReserveWholeUnits: BigUInt {

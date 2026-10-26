@@ -9,6 +9,7 @@ import UIKit
 
 final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didClose: (() -> Void)?
+    var didRequestOpenDeposit: (() -> Void)?
 
     private weak var confirmationCoordinator: StakingConfirmationCoordinator?
 
@@ -115,6 +116,10 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
         coordinator.didClose = { [weak self, weak coordinator] in
             self?.didClose?()
             self?.removeChild(coordinator)
+        }
+
+        coordinator.didRequestOpenDeposit = { [weak self] in
+            self?.didRequestOpenDeposit?()
         }
 
         self.confirmationCoordinator = coordinator

@@ -2,16 +2,8 @@ import Foundation
 import TKBatteryAPI
 
 struct BatteryAPI {
-    private let hostProvider: APIHostProvider
-    private let urlSession: URLSession
-
-    init(
-        hostProvider: APIHostProvider,
-        urlSession: URLSession
-    ) {
-        self.hostProvider = hostProvider
-        self.urlSession = urlSession
-    }
+    let hostProvider: APIHostProvider
+    let urlSession: URLSession
 }
 
 // MARK: - Convenience
@@ -238,7 +230,7 @@ extension BatteryAPI {
         switch response {
         case let .ok(ok):
             return try decodeResponse(ok.body.json.purchases)
-                .map(BatteryPurchase.init(purchase:))
+                .compactMap(BatteryPurchase.init(purchase:))
         case let .default(statusCode, error):
             throw try .badStatus(
                 status: statusCode,
@@ -362,6 +354,91 @@ extension BatteryAPI {
         switch response {
         case let .ok(ok):
             return try decodeResponse(ok.body.json.status)
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+}
+
+// MARK: - Gasless 2.0
+
+extension BatteryAPI {
+    func gaslessConfig() async throws(ApiError) -> Components.Schemas.GaslessV2Config {
+        let client = try await apiClient()
+        let response = try await apiCall(
+            await client.gaslessBatteryConfig()
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    func gaslessEstimate(
+        authorization: BatteryAuthorization,
+        request: Components.Schemas.GaslessV2EstimateRequest
+    ) async throws(ApiError) -> Components.Schemas.GaslessV2EstimateResponse {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.gaslessEstimate(body: .json(request))
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    func gaslessEmulate(
+        authorization: BatteryAuthorization,
+        request: Components.Schemas.GaslessV2EmulateRequest
+    ) async throws(ApiError) -> Components.Schemas.GaslessV2EmulateResponse {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.gaslessEmulate(body: .json(request))
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    func gaslessSend(
+        authorization: BatteryAuthorization,
+        request: Components.Schemas.GaslessV2SendRequest
+    ) async throws(ApiError) -> Components.Schemas.GaslessV2SendResponse {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.gaslessSend(body: .json(request))
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
         case let .default(statusCode, error):
             throw try .badStatus(
                 status: statusCode,

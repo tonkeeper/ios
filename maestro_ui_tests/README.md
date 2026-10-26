@@ -1,8 +1,8 @@
 # Maestro UI tests
 
-iOS UI tests run with [Maestro](https://maestro.mobile.dev) against the Tonkeeper
+iOS UI tests run with [Maestro](https://maestro.mobile.dev) against the Keeper
 app on the iOS Simulator — one multichain-enabled build, sharded by section and
-orchestrated by `.github/workflows/maestro-ui-tests.yml`.
+orchestrated by `.github/workflows/ios-maestro-ui-tests.yml`.
 
 This README is the fast-context map: **where things live, how the pipeline is
 wired, and where to change X**. Update it as the setup evolves.
@@ -23,6 +23,7 @@ wired, and where to change X**. Update it as the setup evolves.
 | Skip a flaky/broken flow but keep it green | wrap its body in `runFlow: { when: { true: "${false}" } }` |
 | Run the suite's build locally | `ios/Keeper/Resources/FlagsOverride.json`, seeded from `ios/maestro_ui_tests/ci/multichain-flags.json`. CI merges that file onto the secret `MAESTRO_FEATURE_FLAG_OVERRIDES` |
 | Explore the app / write a flow against the live simulator | the **maestro** MCP server (see *Authoring flows with the Maestro MCP*) |
+| Verify a ticket locally with video, mocks and a report | `tools/` runners + the `tk-qa-verify` skill (see *Local QA verification*) |
 | Stop running a whole section in CI | comment its line out of `config.yaml` `flows:` (see `swap_pairs`), and drop it from `skip_auto_rerun` |
 | Understand CI pass/fail gating | `pipeline-gate` job (build, both canaries, every shard, auto-rerun) |
 | File a task / name a branch for autotest work | *Task & branch workflow for autotest fixes* below |
@@ -171,7 +172,10 @@ misses the target on another. Always bind to:
 asset screen) sits behind a full-screen dismiss control, so the next tap anywhere only
 closes the bubble and never reaches its target. Call `steps/dismiss_tooltips.yaml`
 before the first tap on a screen that can show one — do not "tap twice", which would
-hit the freshly opened content on runs where the tooltip was already consumed.
+hit the freshly opened content on runs where the tooltip was already consumed. The step
+taps the dismiss control (`id: tooltip_dismiss`), never the bubble: a tap on the bubble
+performs the hint's action (the add-multichain-wallet hint opens the Wallets list sheet,
+which hides the tab bar).
 **Amount strings:** watch thin space (`\u2009`) vs normal space in `+ 0.89 tsTON`
 style assertions; match what the app actually renders. The separator is not a
 style choice — `SimplifiedAmountFormatter` uses a plain space only when the ticker
@@ -206,7 +210,7 @@ in Linear: team **Tonkeeper (TK)**, project **[QA] Maestro**. One CI incident �
 covering all its failures, root cause per flow spelled out in the description; keep
 "verified" (build, syntax, tooling) separate from "not verified" (a flow that has not run
 end-to-end against the CI wallets) — the real acceptance check is a `workflow_dispatch`
-of *Maestro UI Tests* with the relevant cluster. Attach the failing run URL.
+of *iOS Maestro UI Tests* with the relevant cluster. Attach the failing run URL.
 An agent files the issue via the Linear MCP (needs corporate VPN + one-time OAuth).
 
 Branches follow the repo-wide `author/TASK/description` scheme enforced by the
@@ -254,14 +258,38 @@ Notes:
 - `Failed to connect to /127.0.0.1:<port>` means a stale iOS driver: another Maestro
   client (Maestro Studio, an orphaned `xcodebuild test-without-building`) owns the
   port. One plain `maestro test` re-establishes it; don't retry the MCP call in a loop.
-- A local import that leaves the phrase fields empty after `Paste` is almost always the
+- A local import that leaves the phrase fields empty after `Paste` is either the
   simulator pasteboard being re-synced from the Mac clipboard between `simctl pbcopy`
-  and the tap (copying anything on the host is enough). Turn the sync off for local runs:
+  and the tap (copying anything on the host is enough) — turn the sync off for local runs:
   `defaults write com.apple.iphonesimulator PasteboardAutomaticSync -bool false`, then
-  restart Simulator.app. A driver that dies mid-run with `isScreenStatic … code: 500` is
+  restart Simulator.app — or the iOS 27 simulator refusing the read because it cannot
+  show the "Allow Paste" sheet (`PBErrorDomain Code=13 "Operation not authorized"` in the
+  app log). The import steps go through `steps/mnemonic/enter_recovery_phrase.yaml`, which
+  types the phrase word by word when the Paste button is still on screen after the tap,
+  so the `-e` phrase variable (`WALLET_WITH_MONEY`, `TON_v4`) must be set for that path.
+  A driver that dies mid-run with `isScreenStatic … code: 500` is
   the same stale-driver story as above — usually Maestro Studio running alongside.
 - The MCP is for authoring and spot-checks only. A flow is done when it passes through
   the CI entrypoints (`ci/run_maestro_shard.sh`), which own the `-e` wiring and retries.
+
+---
+
+## Local QA verification (`tools/`, tk-qa-verify)
+
+`tools/` holds the runners the `.agents/skills/tk-qa-verify` skill uses to verify a
+Linear ticket on a booted simulator with evidence: `preflight.sh` (host, simulator,
+build, leftovers), `qa_run.sh` / `qa_suite.sh` (Maestro + `simctl io recordVideo` +
+the app's unified log + junit + a crash sweep, one or many flows per invocation),
+`qa_run_mock.sh` (the same behind a mitmproxy scenario from `mocks/`), `qa_case.sh`
+(video + log around any command), and the side channels `relaunch.sh`, `set_flag.sh`,
+`read_state.sh`, `build_info.sh`, `sweep_crashes.sh`. Everything reads the app id and
+paths from `tools/_lib.sh`; nothing here is used by CI.
+
+Local-only material is gitignored and never lands in `config.yaml`: `flows/local/<area>/`
+(same depth as a shard flow, so `../../../steps/` resolves), `mocks/scenarios/`,
+`mocks/_recorded/`, `secrets/wallets.env` (template `wallets.env.example`; the runner's
+`--wallet <profile>` maps it onto `WALLET_WITH_MONEY*` and primes the pasteboard).
+The suite rules above apply to local flows too — in particular **no coordinates**.
 
 ---
 
@@ -294,7 +322,7 @@ make -C ios maestro_api_check   # verify in sync (CI runs this in discover-maest
 
 ---
 
-## CI pipeline (`.github/workflows/maestro-ui-tests.yml`)
+## CI pipeline (`.github/workflows/ios-maestro-ui-tests.yml`)
 
 Nightly `schedule` + manual dispatch (no inputs). Jobs:
 
@@ -305,7 +333,7 @@ Nightly `schedule` + manual dispatch (no inputs). Jobs:
    built from the secret `MAESTRO_FEATURE_FLAG_OVERRIDES` + `ci/multichain-flags.json`.
    Composite actions in `.github/actions/*maestro*` do checkout → keys → build →
    artifact.
-3. **unit-tests** — reuses `.github/workflows/unit-tests.yml` with
+3. **unit-tests** — reuses `.github/workflows/ios-unit-tests.yml` with
    `non_blocking: true` (runs in parallel, does **not** gate).
 4. **maestro-canary** — a two-entry matrix (`canary – multichain`, `canary – ton`),
    one import-to-home smoke per seed (`flows/canary/<wallet>/`, deliberately outside

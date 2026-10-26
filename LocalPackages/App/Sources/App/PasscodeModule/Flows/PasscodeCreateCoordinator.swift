@@ -5,7 +5,7 @@ import TKUIKit
 import UIKit
 
 final class PasscodeCreateCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    var didCreatePasscode: ((String) -> Void)?
+    var didCreatePasscode: ((_ passcode: String, _ isBiometryAccepted: Bool) -> Void)?
     var didCancel: (() -> Void)?
     var didMismatch: (() -> Void)?
 
@@ -88,11 +88,9 @@ private extension PasscodeCreateCoordinator {
 
         passcodeInput.output.didFinish = { [weak self] passcode in
             Task {
-                if let enabler = self?.biometryEnabler {
-                    await enabler.offerBiometry(passcode: passcode)
-                }
+                let isBiometryAccepted = await self?.biometryEnabler?.offerBiometry(passcode: passcode) ?? false
                 await MainActor.run {
-                    self?.didCreatePasscode?(passcode)
+                    self?.didCreatePasscode?(passcode, isBiometryAccepted)
                 }
             }
         }
@@ -119,7 +117,7 @@ extension PasscodeCreateCoordinator {
         biometryEnabler: PasscodeBiometryEnabler? = nil,
         onCancel: @escaping () -> Void,
         onMismatch: @escaping () -> Void = {},
-        onCreate: @escaping (String) -> Void
+        onCreate: @escaping (_ passcode: String, _ isBiometryAccepted: Bool) -> Void
     ) {
         let coordinator = PasscodeCreateCoordinator(
             router: parentRouter,
@@ -133,8 +131,8 @@ extension PasscodeCreateCoordinator {
             }
         }
 
-        coordinator.didCreatePasscode = { passcode in
-            onCreate(passcode)
+        coordinator.didCreatePasscode = { passcode, isBiometryAccepted in
+            onCreate(passcode, isBiometryAccepted)
         }
 
         coordinator.didMismatch = onMismatch

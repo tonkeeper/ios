@@ -15,19 +15,24 @@ protocol MultichainRampAPI {
     func offrampQuote(request: OffRampQuoteRequest) async throws -> OffRampQuotesResult
     func createOfframpOrder(request: OffRampCreateOrderRequest) async throws -> OffRampOrder
     func getOfframpOrder(orderId: String) async throws -> OffRampOrder
+
+    func createMoonPaySession(sandbox: Bool) async throws -> String
 }
 
 final class MultichainRampAPIImplementation: MultichainRampAPI {
     private let client: SwapAPI.Client
+    private let deviceSessionClient: () -> SwapAPI.Client
     private let appInfoProvider: AppInfoProvider
     private let firebaseUserIdProvider: @Sendable () -> String?
 
     init(
         swapAPIClient: SwapAPI.Client,
+        deviceSessionSwapAPIClient: (() -> SwapAPI.Client)? = nil,
         appInfoProvider: AppInfoProvider,
         firebaseUserIdProvider: @escaping @Sendable () -> String?
     ) {
         client = swapAPIClient
+        deviceSessionClient = deviceSessionSwapAPIClient ?? { swapAPIClient }
         self.appInfoProvider = appInfoProvider
         self.firebaseUserIdProvider = firebaseUserIdProvider
     }
@@ -117,6 +122,22 @@ final class MultichainRampAPIImplementation: MultichainRampAPI {
             .init(query: query, headers: headers, body: request.swapAPIRequestBody())
         ))
         return try mapOnrampOrder(output)
+    }
+
+    func createMoonPaySession(sandbox: Bool) async throws -> String {
+        let output = try await apiCall(
+            await deviceSessionClient().createMoonPaySession(.init(query: .init(sandbox: sandbox)))
+        )
+        switch output {
+        case let .ok(ok):
+            return try ok.body.json.sessionToken
+        case let .default(statusCode, response):
+            throw try Self.errorPayload(response.body.json) { payload in
+                statusCode >= 500
+                    ? .internalServerError(message: payload.error, requestId: payload.request_id)
+                    : .badRequest(message: payload.error, code: payload.code, requestId: payload.request_id)
+            }
+        }
     }
 
     func getOnrampOrder(orderId: String) async throws -> OnRampOrder {
@@ -511,7 +532,7 @@ final class MultichainRampAPIImplementation: MultichainRampAPI {
     }
 }
 
-public enum MultichainRampAPIError: Error, Sendable {
+@frozen public enum MultichainRampAPIError: Error, Sendable {
     case cancelled
     case badRequest(message: String, code: String?, requestId: String?)
     case notFound(message: String, requestId: String?)

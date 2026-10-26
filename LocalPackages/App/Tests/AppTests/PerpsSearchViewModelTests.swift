@@ -1,9 +1,73 @@
 @testable import App
 import Combine
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import XCTest
 
 final class PerpsSearchViewModelTests: XCTestCase {
+    @MainActor
+    func test_setFilter_preservesQueryAndSortAndResetsPagination() async {
+        let repository = PerpsMarketsSearchingSpy()
+        repository.setResults([makeMarket(id: 1, symbol: "BTC")], nextCursor: "next")
+        let viewModel = makeViewModel(repository: repository)
+        await expectPublished(viewModel.$marketsState, description: "initial", matching: { $0.loadedMarketIDs == [1] }) {
+            viewModel.updateSearchText(" BTC ")
+            viewModel.setSort(.openInterest)
+        }
+        repository.setResults([makeMarket(id: 2, symbol: "GOLD")], nextCursor: "commodities-next")
+        await expectPublished(viewModel.$marketsState, description: "filtered", matching: { $0.loadedMarketIDs == [2] }) {
+            viewModel.setFilter(.commodities)
+        }
+        XCTAssertEqual(viewModel.searchText, " BTC ")
+        XCTAssertEqual(repository.requests.last, .init(query: "BTC", sort: .openInterest, cursor: nil, filter: .commodities))
+        let count = repository.requests.count
+        viewModel.setFilter(.commodities)
+        XCTAssertEqual(repository.requests.count, count)
+
+        repository.pages["commodities-next"] = PerpsMarketsPage(items: [makeMarket(id: 3, symbol: "SILVER")], nextCursor: nil)
+        await expectPublished(viewModel.$marketsState, description: "next page", matching: { $0.loadedMarketIDs == [2, 3] }) {
+            viewModel.rowAppeared(2)
+        }
+        XCTAssertEqual(repository.requests.last, .init(query: "BTC", sort: .openInterest, cursor: "commodities-next", filter: .commodities))
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_setFilter_ignoresPreviousFiltersInFlightPage() async {
+        let repository = PerpsMarketsSearchingSpy()
+        let pageStarted = expectation(description: "previous filter pagination started")
+        let pageFinished = expectation(description: "previous filter pagination completed")
+        var continuation: CheckedContinuation<PerpsMarketsPage, Never>?
+        repository.handler = { request in
+            if request.cursor == "old-next" {
+                let page = await withCheckedContinuation { pending in
+                    continuation = pending
+                    pageStarted.fulfill()
+                }
+                pageFinished.fulfill()
+                return page
+            }
+            let id: Int64 = request.filter == .stocks ? 9 : 1
+            return PerpsMarketsPage(items: [self.makeMarket(id: id, symbol: "BTC")], nextCursor: "old-next")
+        }
+        let viewModel = makeViewModel(repository: repository)
+        await expectPublished(viewModel.$marketsState, description: "initial", matching: { $0.loadedMarketIDs == [1] }) {
+            viewModel.onAppear()
+        }
+        viewModel.rowAppeared(1)
+        await fulfillment(of: [pageStarted], timeout: 1)
+        await expectPublished(viewModel.$marketsState, description: "stocks", matching: { $0.loadedMarketIDs == [9] }) {
+            viewModel.setFilter(.stocks)
+        }
+        continuation?.resume(returning: PerpsMarketsPage(items: [makeMarket(id: 2, symbol: "ETH")], nextCursor: nil))
+        await fulfillment(of: [pageFinished], timeout: 1)
+        await Task.yield()
+        XCTAssertEqual(viewModel.marketsState.loadedMarketIDs, [9])
+        XCTAssertEqual(repository.requests.map(\.filter), [.all, .all, .stocks])
+        viewModel.onDisappear()
+    }
+
     @MainActor
     func test_onAppear_requestsVolumeSortWithoutQuery_andSelectsMarket() async {
         let repository = PerpsMarketsSearchingSpy()
@@ -47,6 +111,9 @@ final class PerpsSearchViewModelTests: XCTestCase {
 
         repository.setResults([makeMarket(id: 7, symbol: "ETH")])
         viewModel.updateSearchText("e")
+        guard case .loading = viewModel.marketsState else {
+            return XCTFail("expected loading, got \(viewModel.marketsState)")
+        }
         viewModel.updateSearchText("et")
         viewModel.updateSearchText("eth ")
 
@@ -59,6 +126,9 @@ final class PerpsSearchViewModelTests: XCTestCase {
         }
 
         XCTAssertEqual(repository.requests.map(\.query), [nil, "eth"])
+
+        viewModel.updateSearchText(" eth")
+        XCTAssertEqual(viewModel.marketsState.loadedMarketIDs, [7])
         viewModel.onDisappear()
     }
 
@@ -126,7 +196,7 @@ final class PerpsSearchViewModelTests: XCTestCase {
             viewModel.$marketsState,
             description: "price patched in place",
             matching: { state in
-                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.usd(60)
+                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.usd(60)
             }
         ) {
             await client.emit([("ETH/USD", "60")])
@@ -186,7 +256,8 @@ private extension PerpsSearchViewModelTests {
         PerpsSearchViewModel(
             repository: repository,
             marketsStore: store,
-            debounceNanoseconds: 50_000_000
+            debounceNanoseconds: 50_000_000,
+            format: PerpsFormatting.live
         )
     }
 
@@ -243,13 +314,16 @@ private extension PerpsSearchViewModel.MarketsState {
 
 private struct SearchFailure: Error {}
 
-private final class PerpsMarketsSearchingSpy: PerpsMarketsSearching, @unchecked Sendable {
+@MainActor
+private final class PerpsMarketsSearchingSpy: PerpsMarketsSearching {
     struct Request: Equatable {
         let query: String?
         let sort: PerpsMarketsSort
         let cursor: String?
+        var filter: PerpsMarketFilter = .all
     }
 
+    var handler: ((Request) async throws -> PerpsMarketsPage)?
     var pages: [String?: PerpsMarketsPage] = [:]
     var error: Error?
     private(set) var requests: [Request] = []
@@ -258,8 +332,10 @@ private final class PerpsMarketsSearchingSpy: PerpsMarketsSearching, @unchecked 
         pages[nil] = PerpsMarketsPage(items: items, nextCursor: nextCursor)
     }
 
-    func markets(query: String?, sort: PerpsMarketsSort, cursor: String?) async throws -> PerpsMarketsPage {
-        requests.append(.init(query: query, sort: sort, cursor: cursor))
+    func markets(query: String?, sort: PerpsMarketsSort, cursor: String?, filter: PerpsMarketFilter) async throws -> PerpsMarketsPage {
+        let request = Request(query: query, sort: sort, cursor: cursor, filter: filter)
+        requests.append(request)
+        if let handler { return try await handler(request) }
         if let error {
             throw error
         }

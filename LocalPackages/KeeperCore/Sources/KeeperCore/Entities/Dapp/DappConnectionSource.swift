@@ -1,6 +1,6 @@
 import Foundation
 
-public enum DappConnectionSource: String, Codable, Sendable, Equatable {
+@frozen public enum DappConnectionSource: String, Codable, Sendable, Equatable {
     case qr
     case browser
     case dapp
@@ -30,7 +30,7 @@ public struct DappConnectionExtraInfo: Sendable, Equatable {
     }
 }
 
-public enum DappConnectionSourceState: Sendable, Equatable {
+@frozen public enum DappConnectionSourceState: Sendable, Equatable {
     case known(DappConnectionExtraInfo)
     case unknown
 

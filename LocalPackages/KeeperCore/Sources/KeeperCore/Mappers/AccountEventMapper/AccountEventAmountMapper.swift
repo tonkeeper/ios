@@ -1,7 +1,7 @@
 import BigInt
 import Foundation
 
-public enum AccountEventActionAmountMapperActionType {
+@frozen public enum AccountEventActionAmountMapperActionType {
     case income
     case outcome
     case none

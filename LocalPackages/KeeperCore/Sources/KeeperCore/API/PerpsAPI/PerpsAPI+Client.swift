@@ -1,6 +1,7 @@
 import Foundation
 import OpenAPIRuntime
 import StreamURLSessionTransport
+import TKLogging
 import TKPerpsAPI
 
 extension TKPerpsAPI.Client {
@@ -24,8 +25,13 @@ extension TKPerpsAPI.Client {
         }
         self = Client(
             serverURL: serverURL,
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
             transport: URLSessionTransport(urlSession: urlSession),
-            middlewares: .logged(middlewares)
+            middlewares: .logged(
+                middlewares,
+                domain: .perps,
+                bodies: ["getPositionState", "sendTransactions", "getOrder", "getOpenPosition", "getTradingScreen", "quoteDeposit"]
+            )
         )
     }
 }

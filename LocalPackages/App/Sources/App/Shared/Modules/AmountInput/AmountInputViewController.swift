@@ -1,24 +1,22 @@
+import AppUI
+import Combine
 import TKUIKit
 import UIKit
 
-final class AmountInputViewController: GenericViewViewController<AmountInputView> {
-    var isInputEditing: Bool = false
+/// Hosts the shared amount card on a UIKit screen. Its height follows the balance row, since a
+/// hosting view reports no height to Auto Layout on iOS 15.
+final class AmountInputViewController: UIViewController {
+    private let viewModel: AmountInputSwiftUIViewModel
+    private let hostingController: TKHostingController<AmountInputSwiftUIView>
+    private var heightConstraint: NSLayoutConstraint?
+    private var cancellable: AnyCancellable?
 
-    private let viewModel: AmountInputViewModel
-
-    private let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
-        let numberFormatter = NumberFormatter()
-        numberFormatter.groupingSize = 3
-        numberFormatter.usesGroupingSeparator = true
-        numberFormatter.maximumIntegerDigits = 16
-        numberFormatter.roundingMode = .down
-        return SendAmountTextFieldFormatter(
-            currencyFormatter: numberFormatter
-        )
-    }()
-
-    init(viewModel: AmountInputViewModel) {
+    init(viewModel: AmountInputSwiftUIViewModel, textFieldAccessibilityIdentifier: String? = nil) {
         self.viewModel = viewModel
+        hostingController = TKHostingController(content: AmountInputSwiftUIView(
+            viewModel: viewModel,
+            textFieldAccessibilityIdentifier: textFieldAccessibilityIdentifier
+        ))
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -28,55 +26,36 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
     }
 
     override func becomeFirstResponder() -> Bool {
-        return customView.valueView.inputControl.inputTextField.becomeFirstResponder()
+        viewModel.requestFocus()
+        return true
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .clear
+        hostingController.view.backgroundColor = .clear
+        addChild(hostingController)
+        view.addSubview(hostingController.view)
+        hostingController.view.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        hostingController.didMove(toParent: self)
 
-        setup()
-        setupBindings()
-        viewModel.viewDidLoad()
-    }
-
-    private func setup() {
-        customView.valueView.inputControl.inputTextField.delegate = sendAmountTextFieldFormatter
-        customView.valueView.convertedButton.addAction(UIAction(handler: { [weak self] _ in
-            self?.viewModel.toggle()
-        }), for: .touchUpInside)
-        customView.valueView.inputControl.inputTextField.addAction(UIAction(handler: { [weak self] _ in
-            guard let self else { return }
-            let text = customView.valueView.inputControl.inputTextField.text ?? ""
-            let unformatted = sendAmountTextFieldFormatter.unformatString(text)
-            viewModel.didEditText(unformatted)
-        }), for: .editingChanged)
-        customView.valueView.inputControl.inputTextField.addAction(UIAction(handler: { [weak self] _ in
-            self?.isInputEditing = true
-        }), for: .editingDidBegin)
-        customView.valueView.inputControl.inputTextField.addAction(UIAction(handler: { [weak self] _ in
-            self?.isInputEditing = false
-        }), for: .editingDidEnd)
-    }
-
-    private func setupBindings() {
-        viewModel.didUpdateMaximumFractionDigits = { [weak self] in
-            self?.sendAmountTextFieldFormatter.maximumFractionDigits = $0
-        }
-        viewModel.didUpdateValueViewConfiguration = { [weak self] in
-            self?.customView.valueView.configuration = $0
-        }
-        viewModel.didUpdateInputText = { [weak self] in
-            guard let self else { return }
-            customView.valueView.inputControl.setInputValue(string: $0)
-        }
-        viewModel.didUpdateBalanceViewConfiguration = { [weak self] in
-            self?.customView.balanceView.configuration = $0
-        }
-        viewModel.didUpdateMaxButtonIsSelected = { [weak self] in
-            self?.customView.balanceView.maxButton.isSelected = $0
-        }
-        viewModel.didUpdateBalanceIsVisible = { [weak self] in
-            self?.customView.setBalance(isVisible: $0)
-        }
+        let heightConstraint = view.heightAnchor.constraint(
+            equalToConstant: AmountInputSheet.height(
+                showsBalance: viewModel.showsBalance,
+                showsQuickOptions: viewModel.showsQuickOptions
+            )
+        )
+        heightConstraint.isActive = true
+        self.heightConstraint = heightConstraint
+        cancellable = Publishers.CombineLatest(viewModel.$showsBalance, viewModel.$showsQuickOptions)
+            .removeDuplicates { $0 == $1 }
+            .sink { [weak self] showsBalance, showsQuickOptions in
+                self?.heightConstraint?.constant = AmountInputSheet.height(
+                    showsBalance: showsBalance,
+                    showsQuickOptions: showsQuickOptions
+                )
+            }
     }
 }

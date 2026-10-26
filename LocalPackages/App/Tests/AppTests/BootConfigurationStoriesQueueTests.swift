@@ -211,6 +211,93 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
         XCTAssertEqual(completionCount, 1)
     }
 
+    func test_requiredStoryCannotBeClosedAndItsButtonRunsTheActionInsteadOfThePayload() async throws {
+        var routedDeeplinks = [String]()
+        controller.deeplinkAction = { routedDeeplinks.append($0) }
+        var finishedStoryIds = [String]()
+        controller.didFinishStory = { finishedStoryIds.append($0) }
+        var actionCount = 0
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
+
+        XCTAssertEqual(presenter.presentedStoryIds, ["perps"])
+        XCTAssertEqual(presenter.presentedClosableFlags, [false])
+        XCTAssertEqual(actionCount, 0)
+
+        presenter.tapLastPageButton(payload: "tonkeeper://perps")
+
+        XCTAssertEqual(actionCount, 1)
+        XCTAssertEqual(finishedStoryIds, ["perps"])
+        XCTAssertEqual(routedDeeplinks, [])
+    }
+
+    func test_requiredStoryRunsTheActionOnlyFromItsLastPageButton() async throws {
+        var finishedStoryIds = [String]()
+        controller.didFinishStory = { finishedStoryIds.append($0) }
+        var actionCount = 0
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
+        presenter.dismissCurrent(reason: .action)
+
+        XCTAssertEqual(actionCount, 0)
+        XCTAssertEqual(finishedStoryIds, [])
+    }
+
+    func test_requiredStoryOnScreenTakesTheLatestActionInsteadOfPresentingAgain() async throws {
+        var actions = [String]()
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actions.append("first") }
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actions.append("latest") }
+
+        XCTAssertEqual(presenter.presentedStoryIds, ["perps"])
+
+        presenter.tapLastPageButton(payload: "tonkeeper://perps")
+        XCTAssertEqual(actions, ["latest"])
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) {}
+        XCTAssertEqual(presenter.presentedStoryIds, ["perps", "perps"])
+    }
+
+    func test_cancelledRequiredStoryLoadPresentsNothing() async {
+        let task = Task { @MainActor in
+            try await controller.presentRequiredStory(storyId: "perps", walletId: nil) {}
+        }
+        task.cancel()
+        _ = await task.result
+
+        XCTAssertEqual(presenter.presentedStoryIds, [])
+    }
+
+    func test_closableStoriesReportFinishingThroughTheirLastPageButton() async throws {
+        var finishedStoryIds = [String]()
+        controller.didFinishStory = { finishedStoryIds.append($0) }
+
+        try await controller.handleDeeplinkStory(storyId: "perps", walletId: nil)
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.handleDeeplinkStory(storyId: "perps", walletId: nil)
+        presenter.dismissCurrent(reason: .lastPageButton)
+
+        var didComplete: Bool?
+        start(storyIDs: ["intro", "prizes"]) { didComplete = $0 }
+        await settle()
+        await dismissCurrent(reason: .lastPageButton)
+
+        XCTAssertEqual(finishedStoryIds, ["perps", "intro"])
+        XCTAssertEqual(didComplete, false)
+    }
+
+    func test_refusedRequiredStoryThrows() async {
+        presenter.canPresent = false
+        var actionCount = 0
+
+        do {
+            try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
+            XCTFail("expected the refused presentation to throw")
+        } catch {}
+
+        XCTAssertEqual(actionCount, 0)
+    }
+
     private func start(storyIDs: [String], completion: @escaping (Bool) -> Void) {
         controller.presentBootConfigurationStories(
             stories: stories(storyIDs),
@@ -245,21 +332,32 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
 private final class SpyBootStoryPresenter: RaffleStoryPresenting {
     var canPresent = true
     private(set) var presentedStoryIds: [String] = []
+    private(set) var presentedClosableFlags: [Bool] = []
     private(set) var dismissCurrentStoryCallCount = 0
     private var onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
+    private var deeplinkAction: ((String) -> Void)?
 
     func presentStory(
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
+        isClosable: Bool,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
     ) -> Bool {
         guard canPresent else { return false }
         presentedStoryIds.append(story.id)
+        presentedClosableFlags.append(isClosable)
         self.onDismiss = onDismiss
+        self.deeplinkAction = deeplinkAction
         return true
+    }
+
+    func tapLastPageButton(payload: String) {
+        let deeplinkAction = deeplinkAction
+        dismissCurrent(reason: .lastPageButton)
+        deeplinkAction?(payload)
     }
 
     func dismissCurrent(reason: Stories.StoriesPresenter.DismissReason) {

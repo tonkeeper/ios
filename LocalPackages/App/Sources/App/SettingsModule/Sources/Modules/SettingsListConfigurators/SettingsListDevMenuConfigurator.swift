@@ -14,11 +14,11 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     var didSelectSeedPhrasesRecovery: (() -> Void)?
     var didSelectExportLogs: (() -> Void)?
     var didSelectImportTestnetWallet: (() -> Void)?
+    var didSelectRemoveNewNetworks: (() -> Void)?
     var didSelectFeatureFlags: (() -> Void)?
     var didSelectTooltips: (() -> Void)?
     var didSelectDesignSystem: (() -> Void)?
     var didSelectToastTesting: (() -> Void)?
-    var didSelectMysteryRaffle: (() -> Void)?
 
     var didSelectStoreCountryCode: ((_ completion: @escaping () -> Void) -> Void)?
     var didSelectDeviceCountryCode: ((_ completion: @escaping () -> Void) -> Void)?
@@ -63,6 +63,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     private let appInfoProvider: KeeperCore.AppInfoProvider
     private let featureFlags: TKFeatureFlags
     private let tkAppSettings: TKAppSettings
+    private let appSettings: AppSettings
 
     init(
         uniqueIdProvider: UniqueIdProvider,
@@ -71,7 +72,8 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         mysteryRaffleTradeBannerDismissStore: MysteryRaffleTradeBannerDismissStore = UserDefaultsMysteryRaffleTradeBannerDismissStore(),
         appInfoProvider: KeeperCore.AppInfoProvider,
         featureFlags: TKFeatureFlags,
-        tkAppSettings: TKAppSettings
+        tkAppSettings: TKAppSettings,
+        appSettings: AppSettings
     ) {
         self.uniqueIdProvider = uniqueIdProvider
         self.storiesService = storiesService
@@ -80,11 +82,13 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         self.appInfoProvider = appInfoProvider
         self.featureFlags = featureFlags
         self.tkAppSettings = tkAppSettings
+        self.appSettings = appSettings
     }
 
     private func createState() -> SettingsListState {
         var sections = [SettingsListSection]()
 
+        sections.append(createWarningSection())
         sections.append(createCacheSection())
         sections.append(createLogsSection())
         if let seedPhraseRecoverySection = createSeedPhraseRecoverySection() {
@@ -96,7 +100,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
         if let regionSection = createDevOverridesSection() {
             sections.append(createDesignSystemSection())
-            sections.append(createMysteryRaffleSection())
+            sections.append(createLiveActivityMockSection())
             sections.append(regionSection)
         }
 
@@ -114,6 +118,18 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem)
         ))
+    }
+
+    private func createWarningSection() -> SettingsListSection {
+        let item = SettingsListBannerItem(
+            id: .devMenuWarningIdentifier,
+            content: NotificationBannerContent(
+                title: nil,
+                description: TKLocales.DevMenu.warning,
+                state: .accentOrange
+            )
+        )
+        return .items(SettingsListItemsSection(items: [.banner(item)]))
     }
 
     private func createCacheSection() -> SettingsListSection {
@@ -167,6 +183,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             title: SettingsListItemTitle("Reset watched stories"),
             onTap: { [weak self] _ in
                 self?.storiesService.resetShownStories()
+                self?.appSettings.isPerpsStoryAccepted = false
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
             }
         )
@@ -272,9 +289,22 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             SettingsListItemsSection(
                 items: [
                     .listItem(createImportTestnetWalletItem()),
+                    .listItem(createRemoveNewNetworksItem()),
                 ],
                 header: SettingsListSectionHeader(title: "Wallets")
             )
+        )
+    }
+
+    /// For QA of the new networks screen: the chains become new again for the selected wallet.
+    private func createRemoveNewNetworksItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .removeNewNetworksItemIdentifier,
+            title: SettingsListItemTitle("Remove SOL, POL, AVAX, RBH from selected wallet"),
+            accessory: .none,
+            onTap: { [weak self] _ in
+                self?.didSelectRemoveNewNetworks?()
+            }
         )
     }
 
@@ -369,24 +399,29 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         )
     }
 
-    /// Single entry into the consolidated Mystery Raffle design-review + QA screen
-    /// (banner, entry point, every modal state, `_debug_now`, `pick-winners`, stories).
-    private func createMysteryRaffleSection() -> SettingsListSection {
-        .items(
+    private func createLiveActivityMockSection() -> SettingsListSection {
+        var items = TransactionLiveActivityMock.Scenario.allCases.map { scenario in
+            SettingsListItem(
+                id: "liveActivityMock.\(scenario)",
+                title: SettingsListItemTitle(scenario.title),
+                onTap: { _ in
+                    TransactionLiveActivityMock.start(scenario)
+                    ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Mock started"))
+                }
+            )
+        }
+        items.append(SettingsListItem(
+            id: "liveActivityMock.resolvePending",
+            title: SettingsListItemTitle("Resolve pending mocks"),
+            onTap: { _ in
+                TransactionLiveActivityMock.resolvePending()
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Resolved"))
+            }
+        ))
+        return .items(
             SettingsListItemsSection(
-                items: [
-                    .listItem(
-                        SettingsListItem(
-                            id: .mysteryRaffleItemIdentifier,
-                            title: SettingsListItemTitle("Design review & QA hooks"),
-                            accessory: .chevron,
-                            onTap: { [weak self] _ in
-                                self?.didSelectMysteryRaffle?()
-                            }
-                        )
-                    ),
-                ],
-                header: SettingsListSectionHeader(title: "Mystery Raffle")
+                items: items.map(SettingsListItemsSectionItem.listItem),
+                header: SettingsListSectionHeader(title: "Live Activity mock")
             )
         )
     }
@@ -398,6 +433,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             SettingsListItemsSection(
                 items: [
                     .listItem(createShowTouchesItem()),
+                    .listItem(createMoonPaySandboxItem()),
                     .listItem(createStoreCountryCodeItem()),
                     .listItem(createDeviceCountryCodeItem()),
                     .listItem(sendStatsImmediatelyItem()),
@@ -455,6 +491,15 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             id: .showTouchesItemIdentifier,
             isOn: TKAppPreferences.showTouches,
             action: action
+        )
+    }
+
+    private func createMoonPaySandboxItem() -> SettingsListItem {
+        createSwitchItem(
+            title: "Use MoonPay sandbox",
+            id: .moonPaySandboxItemIdentifier,
+            isOn: TKAppPreferences.useMoonPaySandbox,
+            action: { TKAppPreferences.useMoonPaySandbox = $0 }
         )
     }
 
@@ -552,6 +597,7 @@ private extension LogSeverity {
 }
 
 private extension String {
+    static let devMenuWarningIdentifier = "devMenuWarningIdentifier"
     static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
     static let version5SeedPhrasesIdentifier = "version5SeedPhrasesIdentifier"
     static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
@@ -563,9 +609,10 @@ private extension String {
     static let firebaseUserIDIdentifier = "firebaseUserIDIdentifier"
     static let buildVersionItemIdentifier = "buildVersionItemIdentifier"
     static let loggingSeverityItemIdentifier = "loggingSeverityItemIdentifier"
-    static let mysteryRaffleItemIdentifier = "mysteryRaffleItemIdentifier"
     static let showTouchesItemIdentifier = "showTouchesItemIdentifier"
+    static let moonPaySandboxItemIdentifier = "moonPaySandboxItemIdentifier"
     static let importTestnetWalletItemIdentifier = "importTestnetWalletItemIdentifier"
+    static let removeNewNetworksItemIdentifier = "removeNewNetworksItemIdentifier"
     static let tooltipsItemIdentifier = "tooltipsItemIdentifier"
     static let featureFlagsItemIdentifier = "featureFlagsItemIdentifier"
     static let designSystemItemIdentifier = "designSystemItemIdentifier"

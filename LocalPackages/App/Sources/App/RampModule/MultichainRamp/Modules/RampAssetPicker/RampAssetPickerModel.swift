@@ -44,17 +44,8 @@ final class RampAssetPickerModel: TokenPickerV2Model {
                 ),
                 walletId: walletId
             )
-            var filters: [TokenPickerV2ChainFilter] = [.all]
-            var seen = Set<MultichainChain>()
-            for chainId in response.chains {
-                guard let chain = MultichainChain(assetIdChain: chainId),
-                      seen.insert(chain).inserted
-                else {
-                    continue
-                }
-                filters.append(.chain(chain))
-            }
-            return filters
+            let chains = response.chains.compactMap(MultichainChain.init(assetIdChain:))
+            return [.all] + MultichainChain.orderedByDisplayOrder(chains).map(TokenPickerV2ChainFilter.chain)
         } catch {
             Log.multichainRamp.failure(
                 "onramp chains loading failed",
@@ -137,7 +128,7 @@ private extension RampAssetPickerModel {
 
     func apiChain(for filter: TokenPickerV2ChainFilter) -> MultichainChain? {
         switch filter {
-        case .all, .perpetuals:
+        case .all:
             return nil
         case let .chain(chain):
             return chain
@@ -158,8 +149,7 @@ private extension RampAssetPickerModel {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: .zero
         )

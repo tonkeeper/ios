@@ -1,23 +1,55 @@
 import ChainKit
 import Foundation
+import PerpsModels
+import TKLogging
 import TKPerpsAPI
 
 enum PerpsScaled {
-    static func parse(_ decimal: String, decimals: Int32) throws -> Int64 {
-        try PerpsFixedPoint.shared.parse(decimal: decimal, decimals: decimals)
+    /// Which way a value moves when the market's scale cannot hold all of it. A bound
+    /// rounds away from what it bounds — a minimum up, a maximum down — so a request
+    /// the venue would refuse is not let through here; money we might spend rounds
+    /// down, so we never claim more than there is; everything else goes to the nearest
+    /// value the scale can hold.
+    enum Rounding {
+        case nearest
+        case down
+        case up
+
+        var mode: NumberFormatter.RoundingMode {
+            switch self {
+            case .nearest: .halfUp
+            case .down: .down
+            case .up: .up
+            }
+        }
     }
 
-    static func scale(_ value: Double, decimals: Int32) throws -> Int64 {
+    static func parse(_ decimal: String, decimals: Int32, rounding: Rounding) throws -> Int64 {
+        guard let value = Decimal(string: decimal, locale: posixLocale) else {
+            throw PerpsTradingError.validation("value is not representable: \(decimal)")
+        }
+        let formatter = NumberFormatter()
+        formatter.locale = posixLocale
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = false
+        formatter.roundingMode = rounding.mode
+        formatter.minimumFractionDigits = Int(decimals)
+        formatter.maximumFractionDigits = Int(decimals)
+        formatter.minimumIntegerDigits = 1
+        guard let text = formatter.string(from: NSDecimalNumber(decimal: value)) else {
+            throw PerpsTradingError.validation("value is not representable: \(decimal)")
+        }
+        return try PerpsFixedPoint.shared.parse(decimal: text, decimals: decimals)
+    }
+
+    static func scale(_ value: Double, decimals: Int32, rounding: Rounding) throws -> Int64 {
         guard value.isFinite, value >= 0 else {
             throw PerpsTradingError.validation("value is not representable: \(value)")
         }
         return try parse(
-            String(
-                format: "%.\(decimals)f",
-                locale: Locale(identifier: "en_US_POSIX"),
-                value
-            ),
-            decimals: decimals
+            String(format: "%.\(decimals + 6)f", locale: posixLocale, value),
+            decimals: decimals,
+            rounding: rounding
         )
     }
 
@@ -50,7 +82,7 @@ enum PerpsScaled {
     }
 
     static func ppm(percent: String) throws -> Int64 {
-        let scaled = try parse(percent, decimals: 10)
+        let scaled = try parse(percent, decimals: 10, rounding: .up)
         let divisor: Int64 = 1_000_000
         return scaled / divisor + (scaled % divisor == 0 ? 0 : 1)
     }
@@ -58,6 +90,8 @@ enum PerpsScaled {
     static func feeRate(takerPpm: Int64) -> String {
         decimalString(takerPpm, decimals: 6, maxFractionDigits: 8)
     }
+
+    private static let posixLocale = Locale(identifier: "en_US_POSIX")
 }
 
 private extension String {
@@ -78,15 +112,17 @@ enum PerpsPlannerMapping {
     static let priceSlippagePpm: Int64 = 10000
     static let tpslPriceSlippagePpm: Int64 = 30000
     static let tpslBufferPpm: Int64 = 2000
+    static let removeMarginBufferPpm: Int64 = 100
+    static let minRemoveMarginBufferUsd = "0.01"
 
     static func freshnessPolicy() -> PerpsFreshnessPolicy {
         PerpsFreshnessPolicy(
             maxRulesAgeUnixMs: 60000,
             maxAccountSnapshotAgeUnixMs: 60000,
-            maxMarketSnapshotAgeUnixMs: 60000,
+            maxMarketSnapshotAgeUnixMs: PerpsServerClock.maxDeviceSkewMs,
             maxMarkAgeUnixMs: 60000,
             maxTriggerMarkAgeUnixMs: 15000,
-            maxFutureSkewUnixMs: 5000,
+            maxFutureSkewUnixMs: PerpsServerClock.maxDeviceSkewMs,
             planLifetimeUnixMs: 120_000
         )
     }
@@ -112,21 +148,24 @@ enum PerpsPlannerMapping {
     private static let ephemeralClientOrderIndexLock = NSLock()
     private static var lastEphemeralClientOrderIndex: Int64?
 
-    static func clientOrderIndex(nowUnixMs: Int64, persistent: Bool = true) throws -> Int64 {
-        guard persistent else {
-            let minimum = LighterConstants.shared.MinClientOrderIndex
-            let maximum = LighterConstants.shared.MaxClientOrderIndex
-            let candidate = max(nowUnixMs % maximum, minimum)
-            ephemeralClientOrderIndexLock.lock()
-            defer { ephemeralClientOrderIndexLock.unlock() }
-            let next = max(candidate, (lastEphemeralClientOrderIndex ?? minimum - 1) + 1)
-            guard next < maximum else {
-                throw PerpsTradingError.protocolFailure("client order index exhausted")
-            }
-            lastEphemeralClientOrderIndex = next
-            return next
+    static func reserveClientOrderIndices() async throws -> PerpsClientOrderIndices {
+        try await clientOrderIndexAllocator.reserve(nowUnixMs: nowUnixMs())
+    }
+
+    /// Nothing reviewed is signed, so these never reach the disk.
+    static func reviewClientOrderIndices() throws -> PerpsClientOrderIndices {
+        let minimum = LighterConstants.shared.MinClientOrderIndex
+        let maximum = LighterConstants.shared.MaxClientOrderIndex
+        let candidate = max(nowUnixMs() % maximum, minimum)
+        ephemeralClientOrderIndexLock.lock()
+        defer { ephemeralClientOrderIndexLock.unlock() }
+        let first = max(candidate, (lastEphemeralClientOrderIndex ?? minimum - 1) + 1)
+        let lastReserved = first + PerpsClientOrderIndices.count - 1
+        guard lastReserved < maximum else {
+            throw PerpsTradingError.protocolFailure("client order index exhausted")
         }
-        return try clientOrderIndexAllocator.next(nowUnixMs: nowUnixMs)
+        lastEphemeralClientOrderIndex = lastReserved
+        return PerpsClientOrderIndices(first: first)
     }
 
     static func orderRefs(_ step: PerpsSignedStep) -> [PerpsPendingOrderRef] {
@@ -173,7 +212,8 @@ enum PerpsPlannerMapping {
     static func rules(
         market: Components.Schemas.Market,
         environment: String,
-        receivedAtUnixMs: Int64
+        receivedAtUnixMs: Int64,
+        integrator: Components.Schemas.Integrator
     ) throws -> PerpsMarketRules {
         guard let marketId = market.market_index.map(Int64.init) else {
             throw PerpsTradingError.validation("market index is missing")
@@ -187,29 +227,40 @@ enum PerpsPlannerMapping {
             throw PerpsTradingError.validation("market status is missing")
         }
         let quoteDecimals = priceDecimals + baseDecimals
-        let minAdjustMarginQuote = try PerpsScaled.parse(minAdjustMarginUsd, decimals: quoteDecimals)
+        let minAdjustMarginQuote = try PerpsScaled.parse(minAdjustMarginUsd, decimals: quoteDecimals, rounding: .up)
+        let minRemoveMarginBufferQuote = try PerpsScaled.parse(
+            minRemoveMarginBufferUsd,
+            decimals: quoteDecimals,
+            rounding: .up
+        )
         let scale = PerpsScale(
             priceDecimals: priceDecimals,
             baseDecimals: baseDecimals,
             quoteDecimals: quoteDecimals
         )
-        let tick = try parseRequired(market.tick_size, decimals: priceDecimals, field: "tick_size")
-        let step = try parseRequired(market.step_size, decimals: baseDecimals, field: "step_size")
-        let minBase = try parseRequired(market.min_size_base, decimals: baseDecimals, field: "min_size_base")
-        let maxBase = try parseOptional(market.max_size_base, decimals: baseDecimals)
-        let minNotional = try parseOptional(market.min_size_quote, decimals: quoteDecimals)
-        let maxNotional = try parseOptional(market.max_size_quote, decimals: quoteDecimals)
+        let tick = try parseRequired(market.tick_size, decimals: priceDecimals, field: "tick_size", rounding: .up)
+        let step = try parseRequired(market.step_size, decimals: baseDecimals, field: "step_size", rounding: .up)
+        let minBase = try parseRequired(market.min_size_base, decimals: baseDecimals, field: "min_size_base", rounding: .up)
+        let maxBase = try parseOptional(market.max_size_base, decimals: baseDecimals, rounding: .down)
+        let minNotional = try parseOptional(market.min_size_quote, decimals: quoteDecimals, rounding: .up)
+        let maxNotional = try parseOptional(market.max_size_quote, decimals: quoteDecimals, rounding: .down)
         let makerPpm = try ppm(market.maker_fee_pct, field: "maker_fee_pct")
         let takerPpm = try ppm(market.taker_fee_pct, field: "taker_fee_pct")
-        guard let initialMargin = market.initial_margin_fraction else {
-            throw PerpsTradingError.validation("initial_margin_fraction is missing")
-        }
-        let maxInitial: Int32 = 10000
         guard let maintenanceMargin = market.maintenance_margin_fraction else {
             throw PerpsTradingError.validation("maintenance_margin_fraction is missing")
         }
-        let minInitial = Int32(initialMargin)
+        let maxInitial: Int32 = 10000
         let maintenance = Int32(maintenanceMargin)
+        // `initial_margin_fraction` is the margin the venue opens a position at, not the
+        // least it accepts — the limit is max_leverage, and reading the default as the
+        // limit refuses every leverage above it. Derived through the same formula that
+        // encodes a chosen leverage, so the two cannot disagree at the boundary.
+        guard let venueFloor = market.max_leverage.flatMap({ $0 > 0 ? initialMarginBps(leverage: Double($0)) : nil })
+            ?? market.initial_margin_fraction.map({ Int32($0) })
+        else {
+            throw PerpsTradingError.validation("market leverage limit is missing")
+        }
+        let minInitial = max(venueFloor, maintenance + 1)
         let closeout = market.closeout_margin_fraction.map { KotlinInt(value: Int32($0)) }
         return PerpsMarketRules(
             scopeEnvironment: environment,
@@ -233,8 +284,28 @@ enum PerpsPlannerMapping {
             tpslPriceSlippagePpm: tpslPriceSlippagePpm,
             tpslBufferPpm: tpslBufferPpm,
             minAdjustMarginQuote: minAdjustMarginQuote,
-            integrator: PerpsIntegratorFees.companion.NONE,
+            removeMarginBufferPpm: removeMarginBufferPpm,
+            minRemoveMarginBufferQuote: minRemoveMarginBufferQuote,
+            integrator: integratorFees(from: integrator),
             freshness: PerpsFreshness(receivedAtUnixMs: receivedAtUnixMs, sourceUpdatedAtUnixMs: nil)
+        )
+    }
+
+    static func integratorFees(from integrator: Components.Schemas.Integrator) -> PerpsIntegratorFees {
+        guard integrator.integrator_account_index != 0 else {
+            return PerpsIntegratorFees.companion.NONE
+        }
+        // The planner receives the account and per-order rates from the backend.
+        let rates = PerpsFeeRates(
+            takerFeePpm: Int64(integrator.integrator_taker_fee),
+            makerFeePpm: Int64(integrator.integrator_maker_fee)
+        )
+        return PerpsIntegratorFees(
+            accountIndex: integrator.integrator_account_index,
+            open: rates,
+            close: rates,
+            takeProfit: rates,
+            stopLoss: rates
         )
     }
 
@@ -244,14 +315,17 @@ enum PerpsPlannerMapping {
         screen: Components.Schemas.TradingScreen,
         rules: PerpsMarketRules,
         receivedAtUnixMs: Int64,
-        restingOrders: [PerpsRestingOrder]
+        restingOrders: [PerpsRestingOrder],
+        ordersKnown: Bool,
+        openInitialMarginBps: Int32? = nil
     ) throws -> PerpetualAccountSnapshot {
         let available = try parseOptional(
             screen.balance?.available_balance,
-            decimals: rules.scale.quoteDecimals
+            decimals: rules.scale.quoteDecimals,
+            rounding: .down
         )?.int64Value ?? 0
         let position = try positionState(screen.position?.value1, rules: rules, marketId: marketId)
-        let openEnabled = screen.flags?.open_enabled ?? false
+        let openEnabled = PerpsBackendMapping.openEnabled(screen.flags)
         let marginSettings: PerpsMarginSettings
         if let position = screen.position?.value1, let leverage = position.leverage, leverage > 0 {
             let mode: Int32 = position.margin_mode == .cross
@@ -261,6 +335,15 @@ enum PerpsPlannerMapping {
                 mode: mode,
                 initialMarginBps: initialMarginBps(leverage: Double(leverage))
             )
+        } else if let openInitialMarginBps,
+                  screen.margin_mode?.value1 == .isolated,
+                  let leverage = screen.leverage, leverage > 0,
+                  initialMarginBps(leverage: Double(leverage)) == openInitialMarginBps
+        {
+            marginSettings = PerpsMarginSettings.Known(
+                mode: LighterConstants.shared.IsolatedMargin,
+                initialMarginBps: openInitialMarginBps
+            )
         } else {
             marginSettings = PerpsMarginSettings.Unknown.shared
         }
@@ -268,7 +351,7 @@ enum PerpsPlannerMapping {
             scope: scope,
             marketId: marketId,
             freshness: PerpsFreshness(receivedAtUnixMs: receivedAtUnixMs, sourceUpdatedAtUnixMs: nil),
-            completeness: screen.open_orders != nil && PerpsBackendMapping.ordersVisible(screen.flags)
+            completeness: ordersKnown
                 ? PerpsContextCompleteness.Complete.shared
                 : PerpsContextCompleteness.Incomplete(reason: "open orders are unavailable"),
             openEnabled: openEnabled,
@@ -299,11 +382,46 @@ enum PerpsPlannerMapping {
                     ?? (order.category == .take_profit || order.category == .stop_loss || order.category == .close),
                 positionTied: order.category == .take_profit || order.category == .stop_loss,
                 remainingBaseAmount: remaining,
-                limitPrice: parseOptional(order.price, decimals: rules.scale.priceDecimals),
-                triggerPrice: parseOptional(order.trigger_price, decimals: rules.scale.priceDecimals),
+                limitPrice: parseOptional(order.price, decimals: rules.scale.priceDecimals, rounding: .nearest),
+                triggerPrice: parseOptional(order.trigger_price, decimals: rules.scale.priceDecimals, rounding: .nearest),
                 expiryUnixMs: order.expires_at.map { KotlinLong(value: Int64($0.timeIntervalSince1970 * 1000)) }
             )
         }
+    }
+
+    static func restingOrders(
+        autoClose: Components.Schemas.PositionAutoClose?,
+        positionSide: Components.Schemas.PositionSide?,
+        rules: PerpsMarketRules
+    ) throws -> [PerpsRestingOrder] {
+        let closingSide: PerpsSide = positionSide == .short ? .long_ : .short_
+        var orders = [PerpsRestingOrder]()
+        let legs: [(Components.Schemas.PositionAutoCloseLeg?, Components.Schemas.OrderCategory)] = [
+            (autoClose?.take_profit?.value1, .take_profit),
+            (autoClose?.stop_loss?.value1, .stop_loss),
+        ]
+        for (leg, legCategory) in legs {
+            guard let leg, let orderIndex = leg.order_index else { continue }
+            try orders.append(PerpsRestingOrder(
+                orderIndex: orderIndex,
+                clientOrderIndex: leg.client_order_index.map { KotlinLong(value: $0) },
+                side: closingSide,
+                category: category(legCategory),
+                orderType: orderType(leg.order_type, category: legCategory),
+                status: status(nil),
+                reduceOnly: true,
+                positionTied: true,
+                remainingBaseAmount: parseOptional(
+                    leg.base_size,
+                    decimals: rules.scale.baseDecimals,
+                    rounding: .down
+                )?.int64Value ?? 0,
+                limitPrice: parseOptional(leg.price, decimals: rules.scale.priceDecimals, rounding: .nearest),
+                triggerPrice: parseOptional(leg.trigger_price, decimals: rules.scale.priceDecimals, rounding: .nearest),
+                expiryUnixMs: leg.valid_to.map { KotlinLong(value: $0 * 1000) }
+            ))
+        }
+        return orders
     }
 
     struct SnapshotNeed {
@@ -315,10 +433,9 @@ enum PerpsPlannerMapping {
     static func snapshotNeed(intent: PerpsTradeIntent, context: PerpsMarketContext) -> SnapshotNeed {
         let mark = context.mark?.price ?? 0
         let quoteScale = pow10(context.rules.scale.quoteDecimals)
-        let baseScale = pow10(context.rules.scale.baseDecimals)
         func notional(_ base: Int64) -> Int64 {
             guard base > 0, mark > 0 else { return quoteScale }
-            let value = Double(base) * Double(mark) / Double(baseScale)
+            let value = Double(base) * Double(mark)
             return max(quoteScale, Int64(min(value * 2.0, Double(Int64.max))))
         }
         switch intent {
@@ -341,6 +458,17 @@ enum PerpsPlannerMapping {
         }
     }
 
+    static func effectiveTakerFeePpm(intent: PerpsTradeIntent, rules: PerpsMarketRules) -> Int64 {
+        switch intent {
+        case is PerpsTradeIntent.Open, is PerpsTradeIntent.Add:
+            return rules.takerFeePpm + rules.integrator.open.takerFeePpm
+        case is PerpsTradeIntent.Close:
+            return rules.takerFeePpm + rules.integrator.close.takerFeePpm
+        default:
+            return rules.takerFeePpm
+        }
+    }
+
     static func marketSnapshot(
         side: PerpsSide,
         coverageQuote: Int64,
@@ -354,17 +482,26 @@ enum PerpsPlannerMapping {
         let levelsSource = side === PerpsSide.short_ ? book.bids : book.asks
         let levels = try (levelsSource ?? []).map { level in
             try PerpsBookLevel(
-                price: parseRequired(level.price, decimals: rules.scale.priceDecimals, field: "book.price"),
-                baseAmount: parseRequired(level.size, decimals: rules.scale.baseDecimals, field: "book.size")
+                price: parseRequired(level.price, decimals: rules.scale.priceDecimals, field: "book.price", rounding: .nearest),
+                baseAmount: parseRequired(level.size, decimals: rules.scale.baseDecimals, field: "book.size", rounding: .down)
             )
         }
         let sourceUpdated = Int64(book.updated_at.timeIntervalSince1970 * 1000)
+        logBookMarkDivergence(
+            side: side,
+            best: levels.first?.price,
+            mark: mark,
+            priceDecimals: rules.scale.priceDecimals,
+            marketId: marketId,
+            sourceUpdatedAtUnixMs: sourceUpdated,
+            receivedAtUnixMs: receivedAtUnixMs
+        )
         return PerpetualMarketSnapshot(
             snapshotId: UUID().uuidString,
             marketId: marketId,
             environment: environment,
             receivedAtUnixMs: receivedAtUnixMs,
-            sourceUpdatedAtUnixMs: KotlinLong(value: sourceUpdated),
+            sourceUpdatedAtUnixMs: nil,
             book: PerpsBookSlice(
                 side: side,
                 levels: levels,
@@ -373,6 +510,31 @@ enum PerpsPlannerMapping {
                 requestedCoverageBaseAmount: nil
             ),
             mark: mark
+        )
+    }
+
+    static func logBookMarkDivergence(
+        side: PerpsSide,
+        best: Int64?,
+        mark: PerpsMarkPrice?,
+        priceDecimals: Int32,
+        marketId: Int64,
+        sourceUpdatedAtUnixMs: Int64,
+        receivedAtUnixMs: Int64
+    ) {
+        guard let best, let mark else { return }
+        let bestPrice = PerpsScaled.double(best, decimals: priceDecimals)
+        let markPrice = PerpsScaled.double(mark.price, decimals: priceDecimals)
+        guard bestPrice > 0, markPrice > 0 else { return }
+        let divergencePpm = Int64((abs(bestPrice - markPrice) / markPrice * 1_000_000).rounded())
+        guard divergencePpm > priceSlippagePpm else { return }
+        Log.perps.w(
+            """
+            book disagrees with mark market=\(marketId) \
+            side=\(side === PerpsSide.short_ ? "short" : "long") \
+            best=\(bestPrice) mark=\(markPrice) divergence=\(divergencePpm)ppm \
+            bookUpdatedAt=\(sourceUpdatedAtUnixMs) markObservedAt=\(mark.observedAtUnixMs) read=\(receivedAtUnixMs)
+            """
         )
     }
 
@@ -399,12 +561,12 @@ enum PerpsPlannerMapping {
         decimals: Int32,
         nowUnixMs: Int64
     ) throws -> PerpsMarkPrice? {
-        if let live, live > 0, let scaled = try? PerpsScaled.scale(live, decimals: decimals), scaled > 0 {
+        if let live, live > 0, let scaled = try? PerpsScaled.scale(live, decimals: decimals, rounding: .nearest), scaled > 0 {
             return PerpsMarkPrice(price: scaled, observedAtUnixMs: nowUnixMs)
         }
         guard let decimal else { return nil }
         return try PerpsMarkPrice(
-            price: PerpsScaled.parse(decimal, decimals: decimals),
+            price: PerpsScaled.parse(decimal, decimals: decimals, rounding: .nearest),
             observedAtUnixMs: nowUnixMs
         )
     }
@@ -455,7 +617,8 @@ enum PerpsPlannerMapping {
         marginDeltaUsd: Double,
         oldBase: Int64,
         oldEntry: Int64,
-        oldNotionalUsd: Double
+        oldNotionalUsd: Double,
+        liquidationBefore: Int64?
     ) -> PerpsSizeChangeReview {
         let decimals = review.scale
         return PerpsSizeChangeReview(
@@ -479,7 +642,11 @@ enum PerpsPlannerMapping {
                 old: PerpsScaled.double(oldBase, decimals: decimals.baseDecimals),
                 new: PerpsScaled.double(review.mergedBaseAmount, decimals: decimals.baseDecimals)
             ),
-            liquidationPrice: PerpsScaled.optionalDouble(review.liquidationPrice, decimals: decimals.priceDecimals),
+            liquidationPrice: liquidationChange(
+                after: review.liquidationPrice,
+                before: liquidationBefore,
+                decimals: decimals.priceDecimals
+            ),
             liquidationUnavailableReason: review.liquidationPrice == nil
                 ? PerpsLiquidationReasonMapper.map(review.liquidationUnavailableReason)
                 : nil,
@@ -495,7 +662,8 @@ enum PerpsPlannerMapping {
         leverage: Double?,
         oldBase: Int64,
         oldEntry: Int64,
-        oldNotionalUsd: Double
+        oldNotionalUsd: Double,
+        liquidationBefore: Int64?
     ) -> PerpsSizeChangeReview {
         let decimals = review.scale
         return PerpsSizeChangeReview(
@@ -517,11 +685,27 @@ enum PerpsPlannerMapping {
                 old: PerpsScaled.double(oldBase, decimals: decimals.baseDecimals),
                 new: PerpsScaled.double(review.remainingBaseAmount, decimals: decimals.baseDecimals)
             ),
-            liquidationPrice: PerpsScaled.optionalDouble(review.liquidationPrice, decimals: decimals.priceDecimals),
+            liquidationPrice: liquidationChange(
+                after: review.liquidationPrice,
+                before: liquidationBefore,
+                decimals: decimals.priceDecimals
+            ),
             liquidationUnavailableReason: review.liquidationPrice == nil
                 ? PerpsLiquidationReasonMapper.map(review.liquidationUnavailableReason)
                 : nil,
             estimatedFeeUsd: PerpsScaled.double(review.estimatedFeeQuote, decimals: decimals.quoteDecimals)
+        )
+    }
+
+    static func liquidationChange(
+        after: KotlinLong?,
+        before: Int64?,
+        decimals: Int32
+    ) -> PerpsValueChange? {
+        guard let new = PerpsScaled.optionalDouble(after, decimals: decimals) else { return nil }
+        return PerpsValueChange(
+            old: before.map { PerpsScaled.double($0, decimals: decimals) } ?? new,
+            new: new
         )
     }
 
@@ -561,6 +745,41 @@ enum PerpsPlannerMapping {
         )
     }
 
+    static func minimumOpenMarginUsd(
+        _ open: PerpsTradeIntent.Open,
+        rules: PerpsMarketRules,
+        marketSnapshot: PerpetualMarketSnapshot?,
+        nowUnixMs: Int64
+    ) throws -> Double {
+        let bounds = try perpsValue(PerpsTradeBounds().openBounds(
+            intent: open,
+            rules: rules,
+            marketSnapshot: marketSnapshot,
+            nowUnixMs: nowUnixMs
+        ))
+        return PerpsScaled.double(bounds.minMarginBudgetQuote, decimals: rules.scale.quoteDecimals)
+    }
+
+    static func marginChangeLimits(context: PerpsMarketContext) throws -> PerpsMarginChangeLimits {
+        guard let mark = context.mark?.price else {
+            throw PerpsTradingError.validation("mark price is missing")
+        }
+        let bounds = try perpsValue(PerpsTradeBounds().marginBounds(
+            context: context.accountSnapshot,
+            rules: context.rules,
+            mark: mark
+        ))
+        if let unavailable = bounds.unavailable {
+            throw PerpsTradingError.validation("margin bounds are unavailable: \(unavailable)")
+        }
+        let decimals = context.rules.scale.quoteDecimals
+        let maxReduce = bounds.maxRemoveQuote
+        return PerpsMarginChangeLimits(
+            minUsd: PerpsScaled.double(context.rules.minAdjustMarginQuote, decimals: decimals),
+            maxReduceUsd: PerpsScaled.double(maxReduce - maxReduce % pow10(max(decimals - 2, 0)), decimals: decimals)
+        )
+    }
+
     static func autoCloseReview(
         _ review: PerpetualReview.AutoClose,
         scale: PerpsScale
@@ -577,20 +796,29 @@ enum PerpsPlannerMapping {
 }
 
 private extension PerpsPlannerMapping {
-    static func parseRequired(_ value: String?, decimals: Int32, field: String) throws -> Int64 {
+    static func parseRequired(
+        _ value: String?,
+        decimals: Int32,
+        field: String,
+        rounding: PerpsScaled.Rounding
+    ) throws -> Int64 {
         guard let value, !value.isEmpty else {
             throw PerpsTradingError.validation("\(field) is missing")
         }
         do {
-            return try PerpsScaled.parse(value, decimals: decimals)
+            return try PerpsScaled.parse(value, decimals: decimals, rounding: rounding)
         } catch {
             throw PerpsTradingError.validation("\(field) is not a valid decimal")
         }
     }
 
-    static func parseOptional(_ value: String?, decimals: Int32) throws -> KotlinLong? {
+    static func parseOptional(
+        _ value: String?,
+        decimals: Int32,
+        rounding: PerpsScaled.Rounding
+    ) throws -> KotlinLong? {
         guard let value, !value.isEmpty else { return nil }
-        return try KotlinLong(value: PerpsScaled.parse(value, decimals: decimals))
+        return try KotlinLong(value: PerpsScaled.parse(value, decimals: decimals, rounding: rounding))
     }
 
     static func ppm(_ percent: String?, field: String) throws -> Int64 {
@@ -612,24 +840,34 @@ private extension PerpsPlannerMapping {
         guard let position, let size = position.size, !size.isEmpty else {
             return PerpsPositionState.KnownFlat.shared
         }
-        let base = try PerpsScaled.parse(size, decimals: rules.scale.baseDecimals)
+        let base = try parseRequired(size, decimals: rules.scale.baseDecimals, field: "size", rounding: .down)
         guard base > 0 else { return PerpsPositionState.KnownFlat.shared }
         let side: PerpsSide = position.side == .short ? .short_ : .long_
-        let entry = try parseRequired(position.avg_entry_price, decimals: rules.scale.priceDecimals, field: "avg_entry_price")
-        let margin = try parseRequired(position.allocated_margin, decimals: rules.scale.quoteDecimals, field: "allocated_margin")
+        let entry = try parseRequired(
+            position.avg_entry_price,
+            decimals: rules.scale.priceDecimals,
+            field: "avg_entry_price",
+            rounding: .nearest
+        )
+        let margin = try parseRequired(
+            position.allocated_margin,
+            decimals: rules.scale.quoteDecimals,
+            field: "allocated_margin",
+            rounding: .down
+        )
         return try PerpsPositionState.Present(
             positionId: positionId(marketId: marketId),
             side: side,
             baseAmount: base,
             entryPrice: entry,
             allocatedMarginQuote: margin,
-            liquidationPrice: parseOptional(position.liquidation_price, decimals: rules.scale.priceDecimals)
+            liquidationPrice: parseOptional(position.liquidation_price, decimals: rules.scale.priceDecimals, rounding: .nearest)
         )
     }
 
     static func remainingBase(_ order: Components.Schemas.Order, decimals: Int32) throws -> Int64 {
-        let base = try parseOptional(order.base_size, decimals: decimals)?.int64Value ?? 0
-        let filled = try parseOptional(order.filled_base, decimals: decimals)?.int64Value ?? 0
+        let base = try parseOptional(order.base_size, decimals: decimals, rounding: .down)?.int64Value ?? 0
+        let filled = try parseOptional(order.filled_base, decimals: decimals, rounding: .up)?.int64Value ?? 0
         return max(0, base - filled)
     }
 
@@ -662,7 +900,7 @@ private extension PerpsPlannerMapping {
         case .open, .partially_filled: .open
         case .filled: .filled
         case .canceled, .rejected: .canceled
-        case .none: .open
+        case .none, .unknown: .open
         }
     }
 }

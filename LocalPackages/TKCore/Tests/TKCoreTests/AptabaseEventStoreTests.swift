@@ -1,5 +1,6 @@
 import Foundation
 @testable import TKCore
+@testable import TKServices
 import XCTest
 
 final class AptabaseEventStoreTests: XCTestCase {
@@ -45,14 +46,15 @@ final class AptabaseEventStoreTests: XCTestCase {
 
     func test_loadDropsEventsTheServerWouldRefuseAsTooOld() async {
         let base = Date(timeIntervalSince1970: 1_700_000_000)
-        let writer = makeStore(currentDate: { base.addingTimeInterval(-24 * 60 * 60) })
-        await writer.append(makeEvent(name: "expired", timestamp: base.addingTimeInterval(-24 * 60 * 60)))
+        let writer = makeStore(currentDate: { base.addingTimeInterval(-72 * 60 * 60) })
+        await writer.append(makeEvent(name: "expired", timestamp: base.addingTimeInterval(-72 * 60 * 60)))
+        await writer.append(makeEvent(name: "aged", timestamp: base.addingTimeInterval(-48 * 60 * 60)))
         await writer.append(makeEvent(name: "fresh", timestamp: base))
 
         let reader = makeStore(currentDate: { base })
         let batch = await reader.peek(limit: 10)
 
-        XCTAssertEqual(batch.events.map(\.eventName), ["fresh"])
+        XCTAssertEqual(batch.events.map(\.eventName), ["aged", "fresh"])
     }
 
     func test_appendDropsTheOldestEventOnceTheLimitIsReached() async {

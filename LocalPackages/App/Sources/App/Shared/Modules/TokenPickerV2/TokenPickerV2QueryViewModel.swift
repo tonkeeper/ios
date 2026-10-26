@@ -1,12 +1,15 @@
 import BigInt
 import Foundation
 import KeeperCore
+import Perps
 import TKLocalize
 import TKLogging
 import TKUIKit
 
 @MainActor
 final class TokenPickerV2QueryViewModel: ObservableObject {
+    private let perpsFormat = PerpsFormatting(amounts: PerpsLiveAmountFormatting())
+
     private enum Constants {
         static let pageSize = 30
         static let loadMoreThreshold = 5
@@ -41,6 +44,13 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
                 return row
             }
             return nil
+        }
+
+        var isPerpetualMarket: Bool {
+            if case .perp = payload {
+                return true
+            }
+            return false
         }
     }
 
@@ -116,6 +126,10 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
 
     var presentation: Presentation {
         Self.presentation(for: state)
+    }
+
+    var splitsPerpetualsIntoSections: Bool {
+        category == .all && !(query ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     static func presentation(for state: State) -> Presentation {
@@ -365,7 +379,7 @@ private extension TokenPickerV2QueryViewModel {
     func makeItem(asset: TokenPickerLoadResult.Item) -> Item {
         switch asset {
         case let .perp(market):
-            return Item(payload: .perp(PerpsMarketRowMapping.item(from: market)))
+            return Item(payload: .perp(PerpsMarketRowMapping.item(from: market, format: perpsFormat)))
         case let .asset(asset):
             let badge = category == .all
                 ? AssetIdResolver.tag(for: asset.asset.assetId, multichainEnabled: true)

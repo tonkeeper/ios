@@ -3,7 +3,7 @@ import TonSwift
 
 public struct WalletInfo: Codable {
     public struct WalletInfoPlugin: Codable {
-        public enum AccountStatus: String, Codable, CaseIterable {
+        @frozen public enum AccountStatus: String, Codable, CaseIterable {
             case nonexist
             case uninit
             case active

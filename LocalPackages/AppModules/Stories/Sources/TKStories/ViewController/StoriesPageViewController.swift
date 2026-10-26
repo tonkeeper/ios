@@ -9,6 +9,7 @@ final class StoriesPageViewController: UIViewController {
     private let button = TKButton()
     private let buttonContainer = UIView()
     private var hasAnimatedBackground = false
+    private var linkRanges: [(range: NSRange, link: StoriesPageModel.Link)] = []
 
     private let model: StoriesPageModel
 
@@ -47,13 +48,57 @@ final class StoriesPageViewController: UIViewController {
             )
         )
         titleLabel.attributedText = model.title.withTextStyle(.h1, color: .Constant.white)
-        descriptionLabel.attributedText = model.description.withTextStyle(.body1, color: .Constant.white)
+        let description = NSMutableAttributedString(
+            attributedString: model.description.withTextStyle(.body1, color: .Constant.white, lineBreakMode: .byWordWrapping)
+        )
+        linkRanges = model.links.compactMap { link in
+            let range = (description.string as NSString).range(of: link.text)
+            return range.location == NSNotFound ? nil : (range, link)
+        }
+        for (range, _) in linkRanges {
+            description.addAttribute(.foregroundColor, value: UIColor.Accent.blue, range: range)
+        }
+        descriptionLabel.attributedText = description
+        descriptionLabel.accessibilityCustomActions = linkRanges.map { _, link in
+            UIAccessibilityCustomAction(name: link.text) { _ in
+                link.action()
+                return true
+            }
+        }
         if let button = model.button {
             buttonContainer.isHidden = false
             self.button.configuration.content = TKButton.Configuration.Content(title: .plainString(button.title))
             self.button.configuration.action = button.action
         } else {
             buttonContainer.isHidden = true
+        }
+    }
+
+    func link(at gesture: UIGestureRecognizer) -> StoriesPageModel.Link? {
+        guard !linkRanges.isEmpty, let text = descriptionLabel.attributedText else { return nil }
+        let point = gesture.location(in: descriptionLabel)
+        let textStorage = NSTextStorage(attributedString: text)
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(
+            size: CGSize(width: descriptionLabel.bounds.width, height: .greatestFiniteMagnitude)
+        )
+        textContainer.lineFragmentPadding = 0
+        layoutManager.addTextContainer(textContainer)
+        textStorage.addLayoutManager(layoutManager)
+
+        return withExtendedLifetime(textStorage) {
+            linkRanges.first { range, _ in
+                var isHit = false
+                layoutManager.enumerateEnclosingRects(
+                    forGlyphRange: layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil),
+                    withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                    in: textContainer
+                ) { rect, stop in
+                    isHit = rect.insetBy(dx: -8, dy: -8).contains(point)
+                    stop.pointee = ObjCBool(isHit)
+                }
+                return isHit
+            }?.link
         }
     }
 
@@ -100,7 +145,8 @@ final class StoriesPageViewController: UIViewController {
             make.edges.equalTo(view)
         }
         stackView.snp.makeConstraints { make in
-            make.left.bottom.right.equalTo(view)
+            make.left.right.equalTo(view)
+            make.bottom.equalTo(view.safeAreaLayoutGuide)
         }
     }
 }

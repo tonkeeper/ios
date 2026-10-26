@@ -15,6 +15,7 @@ final class InMemoryKeychainVault: TKKeychainVault, @unchecked Sendable {
     }
 
     private var items = [String: Data]()
+    private let insertionLock = NSLock()
 
     func exists(query: TKKeychainQuery) throws -> Bool {
         items[key(for: query)] != nil
@@ -43,7 +44,12 @@ final class InMemoryKeychainVault: TKKeychainVault, @unchecked Sendable {
     }
 
     func get<T: Codable>(query: TKKeychainQuery) throws -> T {
-        try JSONDecoder().decode(T.self, from: get(query: query))
+        let data: Data = try get(query: query)
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch let error as DecodingError {
+            throw TKKeychainVaultError.decodingError(error)
+        }
     }
 
     func set(_ value: Data, query: TKKeychainQuery) throws {
@@ -51,6 +57,13 @@ final class InMemoryKeychainVault: TKKeychainVault, @unchecked Sendable {
             throw writeError
         }
         items[key(for: query)] = value
+    }
+
+    func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws {
+        insertionLock.lock()
+        defer { insertionLock.unlock() }
+        guard items[key(for: query)] == nil else { return }
+        try set(value, query: query)
     }
 
     func set(_ value: String, query: TKKeychainQuery) throws {

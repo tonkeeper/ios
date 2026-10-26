@@ -43,19 +43,26 @@ final class MultichainRampCoordinator: RouterCoordinator<NavigationControllerRou
     let keeperCoreMainAssembly: KeeperCore.MainAssembly
     let coreAssembly: TKCore.CoreAssembly
     let multichainRampService: MultichainRampService
+    let entrySource: DepositAnalyticsSource
+    let utm: UtmParameters
+    private var loggedAddFundsOption: AddFundsOption?
     init(
         mode: Mode,
         router: NavigationControllerRouter,
         wallet: Wallet,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
-        multichainRampService: MultichainRampService
+        multichainRampService: MultichainRampService,
+        entrySource: DepositAnalyticsSource = .walletScreen,
+        utm: UtmParameters = .empty
     ) {
         self.mode = mode
         self.wallet = wallet
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
         self.multichainRampService = multichainRampService
+        self.entrySource = entrySource
+        self.utm = utm
         super.init(router: router)
     }
 
@@ -97,13 +104,20 @@ extension MultichainRampCoordinator {
             self?.finishFlow()
         }
 
+        viewModel.onDidPresent = { [weak self] hasFiatCards in
+            self?.logDepositStarted(hasFiatCards: hasFiatCards)
+        }
+
         viewModel.onTapReceiveTokens = { [weak self] in
             guard let self else { return }
-            self.didTapReceiveTokens?(self.wallet)
+            logDepositOptionClick(.receiveTokens)
+            didTapReceiveTokens?(wallet)
         }
 
         viewModel.onTapLayoutCard = { [weak self] card in
-            self?.openAssetPicker(preferredFiat: card.preferredCurrency)
+            guard let self else { return }
+            logDepositOptionClick(.buyWithFiat)
+            openAssetPicker(preferredFiat: card.preferredCurrency)
         }
 
         let viewController = RampOnViewController(viewModel: viewModel)
@@ -183,6 +197,7 @@ extension MultichainRampCoordinator {
 
         viewModel.onSelectPaymentMethod = { [weak self] row, currency, assetDetail in
             guard let self else { return }
+            logDepositOptionClickIfNeeded(.buyWithFiat)
             if row.isP2P {
                 openP2PExpress(asset: asset, currencyCode: currency.code)
                 return
@@ -236,5 +251,68 @@ extension MultichainRampCoordinator {
         pickerModule.view.setupBackButton()
 
         navigationController.pushViewController(pickerModule.view, animated: true)
+    }
+}
+
+extension MultichainRampCoordinator {
+    func logDepositStarted(hasFiatCards: Bool) {
+        guard flow == .deposit else { return }
+        var options: Set<String> = [AddFundsOption.receiveTokens.rawValue]
+        if hasFiatCards {
+            options.insert(AddFundsOption.buyWithFiat.rawValue)
+        }
+        coreAssembly.analyticsProvider.log(
+            DepositStarted(from: entrySource, walletMode: .multi, availableOptions: options),
+            utm: utm
+        )
+    }
+
+    func logDepositOptionClick(_ option: AddFundsOption) {
+        guard flow == .deposit else { return }
+        loggedAddFundsOption = option
+        coreAssembly.analyticsProvider.log(
+            DepositOptionClick(from: entrySource, walletMode: .multi, addFundsOption: option),
+            utm: utm
+        )
+    }
+
+    func logDepositOptionClickIfNeeded(_ option: AddFundsOption) {
+        guard loggedAddFundsOption == nil else { return }
+        logDepositOptionClick(option)
+    }
+
+    func logDepositContinueToP2pMarket() {
+        guard flow == .deposit else { return }
+        coreAssembly.analyticsProvider.log(
+            DepositContinueToP2pMarket(
+                from: entrySource,
+                walletMode: .multi,
+                addFundsOption: loggedAddFundsOption ?? .buyWithFiat
+            ),
+            utm: utm
+        )
+    }
+
+    func logDepositContinueToRampProvider(
+        assetId: String,
+        paymentMethod: String,
+        currencyCode: String,
+        context: RampOnrampContinueContext
+    ) {
+        guard flow == .deposit else { return }
+        coreAssembly.analyticsProvider.log(
+            DepositContinueToRampProvider(
+                from: entrySource,
+                walletMode: .multi,
+                addFundsOption: loggedAddFundsOption ?? .buyWithFiat,
+                buyAsset: assetId,
+                sellAsset: currencyCode,
+                paymentMethod: paymentMethod,
+                providerName: context.providerName,
+                amount: NSDecimalNumber(decimal: context.amount).floatValue,
+                txId: context.txId
+            ),
+            utm: utm
+        )
     }
 }

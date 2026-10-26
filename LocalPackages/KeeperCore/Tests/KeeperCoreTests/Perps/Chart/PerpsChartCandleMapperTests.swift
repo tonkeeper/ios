@@ -1,4 +1,5 @@
 @testable import KeeperCore
+import PerpsModels
 import TKKandelabrAPI
 import XCTest
 
@@ -46,16 +47,32 @@ final class PerpsChartCandleMapperTests: XCTestCase {
         XCTAssertEqual(mapped.map(\.close), [1, 3])
     }
 
-    func test_wireCandles_convertsBaseVolumeToQuote() throws {
-        let batch = makeBatch(
-            candles: [makeWireCandle(open: "2", high: "4", low: "1", close: "3", volume: "10")]
+    func test_mapBatch_keepsBaseVolumeApartFromPrices() throws {
+        let batch = PerpsChartCandleMapper.mapBatch(
+            from: makeBatch(candles: [makeWireCandle(open: "2", high: "4", low: "1", close: "3", volume: "10")]),
+            timeframe: .h1
         )
-        let mapped = try XCTUnwrap(PerpsChartCandleMapper.wireCandles(from: batch, timeframe: .h1).first)
+        let mapped = try XCTUnwrap(batch.candles.first)
         XCTAssertEqual(mapped.open, 2)
         XCTAssertEqual(mapped.high, 4)
         XCTAssertEqual(mapped.low, 1)
         XCTAssertEqual(mapped.close, 3)
-        XCTAssertEqual(mapped.volume, 30)
+        XCTAssertNil(mapped.volume)
+        XCTAssertEqual(batch.volumes, [1_700_000_000_000: 10])
+    }
+
+    func test_mapBatch_keysPositiveNonEmptyVolumesByWireTimestamp() {
+        let step = PerpsChartTimeframe.h1.wireStepMilliseconds
+        let batch = makeBatch(candles: [
+            makeWireCandle(volume: "3"),
+            makeWireCandle(volume: "0"),
+            makeWireCandle(volume: "5", empty: true),
+            makeWireCandle(volume: "7"),
+        ])
+        XCTAssertEqual(
+            PerpsChartCandleMapper.mapBatch(from: batch, timeframe: .h1).volumes,
+            [1_700_000_000_000: 3, 1_700_000_000_000 + 3 * step: 7]
+        )
     }
 
     func test_wireCandles_dropsInvalidPrices() {

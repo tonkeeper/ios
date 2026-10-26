@@ -108,8 +108,7 @@ private extension MultichainAssetBalanceProviderPrimeCacheTests {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             isHidden: isHidden,
             balance: balance

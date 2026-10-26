@@ -5,12 +5,12 @@ import TronSwift
 import TronSwiftAPI
 
 public struct TronTransaction: Codable, Hashable, Equatable, Sendable {
-    public enum TransactionType {
+    @frozen public enum TransactionType {
         case send
         case receive
     }
 
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case invalidValue
     }
 

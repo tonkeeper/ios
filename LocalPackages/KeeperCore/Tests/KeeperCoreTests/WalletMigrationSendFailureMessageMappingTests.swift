@@ -1,6 +1,5 @@
 import Foundation
 @testable import KeeperCore
-import TonAPI
 import XCTest
 
 final class WalletMigrationSendFailureMessageMappingTests: XCTestCase {
@@ -8,12 +7,7 @@ final class WalletMigrationSendFailureMessageMappingTests: XCTestCase {
         let data = try JSONSerialization.data(withJSONObject: [
             "error": "error 3: invalid seqno",
         ])
-        let error = ErrorResponse.error(
-            406,
-            data,
-            nil,
-            NSError(domain: "WalletMigrationSendFailureMessageMappingTests", code: 406)
-        )
+        let error = TonAPIError(statusCode: 406, body: data, path: nil)
 
         XCTAssertEqual(
             WalletMigrationError.sendFailureMessage(from: error),
@@ -22,10 +16,7 @@ final class WalletMigrationSendFailureMessageMappingTests: XCTestCase {
     }
 
     func test_undecodableErrorResponseBody_fallsBackToLocalizedDescription() {
-        let error = ErrorResponse.error(500, Data("not json".utf8), nil, NSError(
-            domain: "WalletMigrationSendFailureMessageMappingTests",
-            code: 500
-        ))
+        let error = TonAPIError(statusCode: 500, body: Data("not json".utf8), path: nil)
 
         XCTAssertEqual(
             WalletMigrationError.sendFailureMessage(from: error),

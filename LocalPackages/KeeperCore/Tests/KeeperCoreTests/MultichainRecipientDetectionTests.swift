@@ -5,6 +5,7 @@ import XCTest
 final class MultichainRecipientDetectionTests: XCTestCase {
     private let evmAddress = "0x000000000000000000000000000000000000dead"
     private let bitcoinAddress = "1BoatSLRHtKNngkdXEeobR76b53LETtpyT"
+    private let solanaAddress = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
     /// The zero address in all four user-friendly forms: the tag byte carries both the bounceable
     /// and the test-only flag, so these differ only by network and bounceability.
     private let tonAddress = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
@@ -22,7 +23,7 @@ final class MultichainRecipientDetectionTests: XCTestCase {
         let candidates = MultichainRecipientCandidates(string: evmAddress)
 
         XCTAssertEqual(candidates?.address, evmAddress)
-        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc])
+        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc, .polygon, .avax, .robinhood])
     }
 
     func test_candidates_detectChecksummedEthereumRawAddress() {
@@ -30,7 +31,7 @@ final class MultichainRecipientDetectionTests: XCTestCase {
             string: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
         )
 
-        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc])
+        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc, .polygon, .avax, .robinhood])
     }
 
     func test_candidates_detectUppercaseEthereumRawAddress() {
@@ -38,7 +39,7 @@ final class MultichainRecipientDetectionTests: XCTestCase {
             string: "0xD8DA6BF26964AF9D7EED9E03E53415D37AA96045"
         )
 
-        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc])
+        XCTAssertEqual(candidates.map { Set($0.chains) }, [.eth, .base, .arb, .bsc, .polygon, .avax, .robinhood])
     }
 
     func test_candidates_tronAddress_offersTronOnly() {
@@ -57,6 +58,12 @@ final class MultichainRecipientDetectionTests: XCTestCase {
         let candidates = MultichainRecipientCandidates(string: bitcoinAddress)
 
         XCTAssertEqual(candidates?.chains, [.btc])
+    }
+
+    func test_candidates_solanaAddress_offersSolanaOnly() {
+        let candidates = MultichainRecipientCandidates(string: solanaAddress)
+
+        XCTAssertEqual(candidates?.chains, [.sol])
     }
 
     func test_candidates_trimWhitespace() {

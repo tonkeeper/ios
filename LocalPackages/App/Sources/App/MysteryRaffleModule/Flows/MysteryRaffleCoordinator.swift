@@ -1,6 +1,7 @@
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKLogging
 import TKUIKit
 import TronSwift
 import UIKit
@@ -280,46 +281,6 @@ extension MysteryRaffleCoordinator {
     private static let launchStoryAnalyticsSource = "raffle-launch"
     private static let ctaStoryAnalyticsSource = "raffle-cta"
     private static let autoStoryAnalyticsSource = "raffle-auto"
-    private static let debugStoryAnalyticsSource = "raffle-dev-menu"
-
-    /// Presents `content` statically, with no store/loader — the dev-menu design-review
-    /// surface previews mock states that have no backing `MultichainRaffle`, and a live
-    /// backend update must not overwrite them.
-    @MainActor
-    static func presentStub(
-        content: MysteryRaffleContent,
-        rootViewController: UIViewController
-    ) {
-        let module = MysteryRaffleAssembly.module(content: content)
-        module.output.onClose = { [weak viewController = module.view] in
-            viewController?.dismiss(animated: true)
-        }
-        module.output.onPrimaryAction = { [weak viewController = module.view] in
-            guard content.statusBadge == nil else { return }
-            viewController?.dismiss(animated: true)
-        }
-        rootViewController.present(module.view, animated: true)
-    }
-
-    /// Opens one of the live raffle's stories from the dev menu, bypassing the shown-once
-    /// bookkeeping the auto-open path respects.
-    @MainActor
-    static func presentStory(
-        _ story: MultichainRaffleStory,
-        rootViewController: UIViewController,
-        keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly,
-        openDeeplink: ((String) -> Void)?
-    ) {
-        MysteryRaffleStoriesRouter
-            .make(keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
-            .present(
-                story: story,
-                from: rootViewController,
-                source: debugStoryAnalyticsSource,
-                openDeeplink: openDeeplink
-            )
-    }
 
     @MainActor
     private static func launch(
@@ -519,7 +480,7 @@ private extension MysteryRaffleCoordinator {
     }
 
     private func maybeScheduleBoundaryRefresh(for raffle: MultichainRaffle) {
-        let now = RaffleClock.now
+        let now = Date()
         var boundaries: [MysteryRaffleBoundaryRefreshTracker.DatedBoundary] = [(.startsAt, raffle.startsAt)]
         if let zeroFeeEndsAt = raffle.progress?.zeroFeeEndsAt {
             boundaries.append((.zeroFeeEndsAt, zeroFeeEndsAt))
@@ -721,16 +682,29 @@ private extension MysteryRaffleCoordinator {
         let swapNavigationController = TKNavigationController()
         swapNavigationController.configureDefaultAppearance()
         swapNavigationController.setNavigationBarHidden(true, animated: false)
+        let swapRouter = NavigationControllerRouter(rootViewController: swapNavigationController)
 
         let coordinator = MultichainSwapCoordinator(
-            wallet: wallet,
-            multichainState: multichainState,
+            swapWallet: MultichainSwapWallet(wallet: wallet, registeredState: multichainState),
             nativeSwapContext: NativeSwapContext(),
-            initialSelection: Self.ticketSwapAssetSelection,
+            assetSource: .walletAssets(multichainState, initialSelection: Self.ticketSwapAssetSelection),
+            raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
             initiatedBy: .user,
-            router: NavigationControllerRouter(rootViewController: swapNavigationController),
+            router: swapRouter,
             coreAssembly: coreAssembly,
-            keeperCoreMainAssembly: keeperCoreMainAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            openBattery: { [weak self] onRecharged in
+                self?.openBatteryRefill(wallet: wallet, router: swapRouter, onRecharged: onRecharged)
+            },
+            openFeeDeposit: { [weak self] assetId, onDismiss in
+                self?.openFeeReceive(
+                    assetId: assetId,
+                    wallet: wallet,
+                    multichainState: multichainState,
+                    router: swapRouter,
+                    onDismiss: onDismiss
+                )
+            }
         )
         coordinator.didRequestDeeplinkHandling = openDeeplink
 
@@ -765,6 +739,83 @@ private extension MysteryRaffleCoordinator {
                 onDismiss: finishSwapHandOff
             )
         }
+    }
+
+    func openBatteryRefill(
+        wallet: Wallet,
+        router: NavigationControllerRouter,
+        onRecharged: @escaping () -> Void
+    ) {
+        let navigationController = TKNavigationController()
+        navigationController.setNavigationBarHidden(true, animated: false)
+
+        let coordinator = BatteryRefillCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet,
+            jettonMasterAddress: nil,
+            initiatedBy: .user,
+            utm: .empty,
+            coreAssembly: coreAssembly,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+        coordinator.didRechargeSuccess = { [weak self, weak navigationController, weak coordinator] in
+            navigationController?.dismiss(animated: true) {
+                self?.removeChild(coordinator)
+                onRecharged()
+            }
+        }
+        coordinator.didFinish = { [weak self, weak navigationController] coordinator in
+            navigationController?.dismiss(animated: true)
+            self?.removeChild(coordinator)
+        }
+
+        addChild(coordinator)
+        coordinator.start(deeplink: nil)
+        router.presentOverTopPresented(
+            navigationController,
+            completion: {
+                coordinator.didAppear()
+            },
+            onDismiss: { [weak self, weak coordinator] in
+                self?.removeChild(coordinator)
+            }
+        )
+    }
+
+    func openFeeReceive(
+        assetId: String,
+        wallet: Wallet,
+        multichainState: MultichainWalletState,
+        router: NavigationControllerRouter,
+        onDismiss: @escaping () -> Void
+    ) {
+        guard let chain = MultichainChain(assetId: assetId),
+              let address = multichainState.walletAddress(
+                  for: chain,
+                  preferredType: wallet.preferredMultichainAddressType(for: chain)
+              )
+        else {
+            return Log.multichainSwap.w(
+                "deposit skipped - no receive address for fee asset",
+                extraInfo: ["assetId": assetId]
+            )
+        }
+        let coordinator = ReceiveModule(
+            dependencies: .init(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        ).createReceiveCoordinator(
+            router: router,
+            wallet: wallet,
+            address: ReceiveAddressPreview(address: address)
+        )
+        coordinator.didClose = { [weak self, weak coordinator] in
+            self?.removeChild(coordinator)
+            onDismiss()
+        }
+        addChild(coordinator)
+        coordinator.start()
     }
 
     static let ticketSwapAssetSelection = MultichainSwapInitialAssetSelection(

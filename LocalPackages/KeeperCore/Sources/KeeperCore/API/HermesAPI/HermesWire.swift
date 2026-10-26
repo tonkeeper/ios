@@ -63,6 +63,22 @@ struct HermesOutboundMessage<Payload: Encodable>: Encodable {
     }
 }
 
+enum HermesRequest {
+    static func encode(
+        channel: String,
+        name: String,
+        reqid: Int64,
+        payload: [String: String]? = nil
+    ) throws -> Data {
+        try JSONEncoder().encode(
+            HermesOutboundEnvelope(
+                channel: channel,
+                message: HermesOutboundMessage(name: name, reqid: reqid, payload: payload)
+            )
+        )
+    }
+}
+
 struct HermesInboundEnvelope<Payload: Decodable>: Decodable {
     let channel: String?
     let message: HermesInboundMessage<Payload>?

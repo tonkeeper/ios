@@ -146,7 +146,7 @@ private extension MultichainChain {
         switch self {
         case .ton:
             TKLocales.Receive.Multichain.Networks.Ton.disclaimerTitle
-        case .eth, .btc, .base, .bsc, .arb, .tron:
+        case .eth, .btc, .base, .bsc, .arb, .tron, .sol, .polygon, .avax, .robinhood:
             disclaimerNetworkTitle
         }
     }
@@ -159,7 +159,7 @@ private extension MultichainChain {
         switch self {
         case .bsc:
             TKLocales.Receive.Multichain.Networks.Smartchain.disclaimerTitle
-        case .ton, .eth, .btc, .base, .arb, .tron:
+        case .ton, .eth, .btc, .base, .arb, .tron, .sol, .polygon, .avax, .robinhood:
             shortDisplayTitle
         }
     }
@@ -170,8 +170,12 @@ private extension MultichainChain {
             .Accent.blue
         case .btc, .bsc:
             .Accent.orange
-        case .tron:
+        case .tron, .avax:
             .Accent.red
+        case .sol, .polygon:
+            .Accent.purple
+        case .robinhood:
+            .Accent.green
         }
     }
 }

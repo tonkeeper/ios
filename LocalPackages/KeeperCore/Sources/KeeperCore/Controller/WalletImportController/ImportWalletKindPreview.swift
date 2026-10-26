@@ -1,11 +1,11 @@
 import Foundation
 
-public enum ImportWalletKind: String, Equatable, Hashable, Sendable {
+@frozen public enum ImportWalletKind: String, Equatable, Hashable, Sendable {
     case ton
     case multichain
 }
 
-public enum ImportWalletKindPreference: Equatable, Sendable {
+@frozen public enum ImportWalletKindPreference: Equatable, Sendable {
     case automatic
     case selected(ImportWalletKind)
 }

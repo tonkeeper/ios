@@ -3,7 +3,7 @@ import TonAPI
 import TonSwift
 
 extension WalletInfo {
-    init(wallet: TonAPI.Wallet) throws {
+    init(wallet: TonAPI.Components.Schemas.Wallet) throws {
         address = try Address.parse(wallet.address)
         isWallet = wallet.isWallet
         signatureDisabled = wallet.signatureDisabled
@@ -14,7 +14,7 @@ extension WalletInfo {
             .map {
                 try WalletInfoPlugin(
                     address: Address.parse($0.address),
-                    type: $0.type,
+                    type: $0._type,
                     status: .init(rawValue: $0.status.rawValue)
                 )
             }

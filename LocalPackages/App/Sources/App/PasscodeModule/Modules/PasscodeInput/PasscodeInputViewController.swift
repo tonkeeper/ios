@@ -55,6 +55,10 @@ private extension PasscodeInputViewController {
             customView?.title = title
         }
 
+        viewModel.didUpdateReason = { [weak customView] reason in
+            customView?.reason = reason
+        }
+
         viewModel.didUpdateState = { [weak customView] state, completion in
             customView?.setState(state, completion: { completion?() })
         }

@@ -1,4 +1,4 @@
-public enum MultichainSwapAggregator: String, Sendable, Hashable, CaseIterable {
+@frozen public enum MultichainSwapAggregator: String, Sendable, Hashable, CaseIterable {
     case swapsXyz = "swapsxyz"
     case swapKit = "swapkit"
     case omniston

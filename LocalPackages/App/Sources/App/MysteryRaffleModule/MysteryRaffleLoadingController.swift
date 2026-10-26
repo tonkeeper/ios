@@ -42,6 +42,16 @@ final class MysteryRaffleLoadingController {
             }
         }
 
+        keeperCoreMainAssembly.multichainAssembly.realtimeManager.addHistoryInvalidationObserver(self) { observer, walletId in
+            Task { @MainActor in
+                guard let wallet = try? observer.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                      case let .multichain(multichainState) = wallet.multichain,
+                      multichainState.walletId == walletId
+                else { return }
+                observer.scheduleRefresh()
+            }
+        }
+
         appStateTracker.addObserver(self)
         reachabilityTracker.addObserver(self)
     }

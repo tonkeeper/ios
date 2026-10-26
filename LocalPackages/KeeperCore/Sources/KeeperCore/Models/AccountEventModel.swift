@@ -3,7 +3,7 @@ import TonSwift
 
 public struct AccountEventModel {
     public struct Action {
-        public enum ActionType {
+        @frozen public enum ActionType {
             case sent
             case receieved
             case mint
@@ -53,7 +53,7 @@ public struct AccountEventModel {
             }
         }
 
-        public enum EncryptedComment {
+        @frozen public enum EncryptedComment {
             case encrypted(EncryptedCommentPayload)
             case decrypted(String?)
         }

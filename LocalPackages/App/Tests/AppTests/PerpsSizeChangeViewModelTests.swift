@@ -1,6 +1,8 @@
 @testable import App
 import ChainKit
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import TKLocalize
 import TonSwift
 import XCTest
@@ -11,7 +13,8 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
     private func makeViewModel(
         direction: PerpsSizeChangeDirection,
         triggerOrders: [PerpsTriggerOrderSummary] = [],
-        leverage: Double? = 27
+        leverage: Double? = 27,
+        marketsStore: PerpsMarketsStore = .makeForTests()
     ) async -> PerpsSizeChangeViewModel {
         let reader = SizeChangeAccountReadingSpy()
         reader.triggerOrders = triggerOrders
@@ -52,7 +55,9 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
             ),
             displayPrice: 66141.70,
             sizeDecimals: 5,
-            accountStore: store
+            accountStore: store,
+            marketsStore: marketsStore,
+            format: PerpsFormatting.live
         )
         XCTAssertEqual(viewModel.restingTriggerOrders.count, triggerOrders.count, "fixture: store must settle before the VM is built")
         return viewModel
@@ -60,16 +65,16 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
 
     func test_sizeText_showsOldOnlyWhenEmpty_andOldToNewScaledByLeverage() async {
         let viewModel = await makeViewModel(direction: .add)
-        XCTAssertEqual(viewModel.sizeText, PerpsFormatting.usd(540))
+        XCTAssertEqual(viewModel.sizeText, PerpsFormatting.live.usd(540))
 
         viewModel.setAmount("20")
-        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.usd(540)) → \(PerpsFormatting.usd(1080))")
+        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.live.usd(540)) → \(PerpsFormatting.live.usd(1080))")
     }
 
     func test_reduceSizeText_shrinksScaledByLeverage() async {
         let viewModel = await makeViewModel(direction: .reduce)
         viewModel.setAmount("10")
-        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.usd(540)) → \(PerpsFormatting.usd(270))")
+        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.live.usd(540)) → \(PerpsFormatting.live.usd(270))")
     }
 
     func test_reduceAtOrAboveMargin_disablesReviewWithWarning() async {
@@ -105,7 +110,7 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
             PerpsTriggerOrderSummary(orderIndex: 2, kind: .stopLoss, side: .short, triggerPrice: 64720, baseAmount: 0.008),
         ])
         let value = withLegs.optionRows.first { $0.id == "autoClose" }?.value
-        XCTAssertEqual(value, "\(PerpsFormatting.usd(68141)) TP · \(PerpsFormatting.usd(64720)) SL")
+        XCTAssertEqual(value, "\(PerpsFormatting.live.usd(68141)) TP · \(PerpsFormatting.live.usd(64720)) SL")
     }
 
     func test_underivableLeverage_keepsTheProjectionAndDropsTheRow() async {
@@ -113,7 +118,53 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.optionRows.map(\.id), ["autoClose"])
 
         viewModel.setAmount("20")
-        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.usd(540)) → \(PerpsFormatting.usd(1080))")
+        XCTAssertEqual(viewModel.sizeText, "\(PerpsFormatting.live.usd(540)) → \(PerpsFormatting.live.usd(1080))")
+    }
+
+    func test_autoCloseSheet_carriesTheSizeTheTriggersWillClose() async throws {
+        let add = await makeViewModel(direction: .add)
+        var contexts = [PerpsAutoCloseSheetContext]()
+        add.onOpenAutoClose = { contexts.append($0) }
+
+        add.openAutoClose()
+        XCTAssertEqual(try XCTUnwrap(contexts.last?.baseSize), 0.008, accuracy: 1e-12)
+
+        add.setAmount("30")
+        add.openAutoClose()
+        XCTAssertEqual(try XCTUnwrap(contexts.last?.baseSize), 0.02024, accuracy: 1e-12)
+
+        let reduce = await makeViewModel(direction: .reduce)
+        reduce.onOpenAutoClose = { contexts.append($0) }
+        reduce.setAmount("5")
+        reduce.openAutoClose()
+        XCTAssertEqual(try XCTUnwrap(contexts.last?.baseSize), 0.006, accuracy: 1e-12)
+    }
+
+    func test_reduceProjection_usesAllocatedMarginAndSizeStep_evenAfterTheMarkMoves() async throws {
+        let client = FakeMarkPricesClient()
+        let viewModel = await makeViewModel(
+            direction: .reduce,
+            marketsStore: .makeForTests(tickers: [1: "BTC/USD"], client: client)
+        )
+        var context: PerpsAutoCloseSheetContext?
+        viewModel.onOpenAutoClose = { context = $0 }
+        viewModel.onAppear()
+        viewModel.setAmount("5.01")
+        viewModel.openAutoClose()
+        XCTAssertEqual(try XCTUnwrap(context?.baseSize), 0.006, accuracy: 1e-12)
+
+        await waitForTickers(client, toEqual: ["BTC/USD"])
+        await client.emit([("BTC/USD", "80000")])
+        await waitUntil { viewModel.livePrice == 80000 }
+        viewModel.openAutoClose()
+        XCTAssertEqual(try XCTUnwrap(context?.baseSize), 0.006, accuracy: 1e-12)
+        XCTAssertEqual(context?.entryPrice, 66000)
+        viewModel.toggleSizeMode()
+        XCTAssertEqual(
+            viewModel.sizeText,
+            "\(PerpsFormatting.live.token(0.008, symbol: "BTC", decimals: 5)) → \(PerpsFormatting.live.token(0.006, symbol: "BTC", decimals: 5))"
+        )
+        viewModel.onDisappear()
     }
 
     func test_review_carriesAutoCloseOnlyWhenEdited() async {
@@ -166,6 +217,27 @@ final class PerpsSizeChangeViewModelTests: XCTestCase {
         )
     }
 
+    func test_livePriceTick_movesTheHeaderAndTheAutoCloseReference() async {
+        let client = FakeMarkPricesClient()
+        let viewModel = await makeViewModel(
+            direction: .add,
+            marketsStore: .makeForTests(tickers: [1: "BTC/USD"], client: client)
+        )
+        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.usd(66141.70))
+
+        viewModel.onAppear()
+        await waitForTickers(client, toEqual: ["BTC/USD"])
+        await client.emit([("BTC/USD", "67000")])
+        await waitUntil { viewModel.priceText == PerpsFormatting.live.usd(67000) }
+
+        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.usd(67000))
+        var sheet: PerpsAutoCloseSheetContext?
+        viewModel.onOpenAutoClose = { sheet = $0 }
+        viewModel.openAutoClose()
+        XCTAssertEqual(sheet?.referencePrice, 67000)
+        XCTAssertEqual(sheet?.livePriceMarketId, 1)
+    }
+
     private func waitUntil(
         timeout: TimeInterval = 2,
         intervalNanoseconds: UInt64 = 5_000_000,
@@ -209,13 +281,11 @@ private final class SizeChangeAccountReadingSpy: PerpsAccountReading, @unchecked
         PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: triggerOrders))
     }
 
-    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
-        []
-    }
-
     func watchPositions(
         wallet: Wallet,
-        onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
+        pollInterval _: TimeInterval,
+        focus _: @escaping @Sendable () -> PerpsWatchFocus,
+        onUpdate: @escaping @Sendable (PerpsAccountTick) -> Void,
         onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}

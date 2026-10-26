@@ -28,7 +28,7 @@ public struct HomeBanner: Codable, Equatable, Hashable, Identifiable {
     }
 
     public struct Button: Codable, Equatable, Hashable {
-        public enum ButtonType: Equatable, Hashable {
+        @frozen public enum ButtonType: Equatable, Hashable {
             case deeplink(URL)
             case link(URL)
             case unknown

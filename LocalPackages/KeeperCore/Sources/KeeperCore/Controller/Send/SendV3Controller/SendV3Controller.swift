@@ -5,7 +5,7 @@ import TonSwift
 import TronSwift
 
 public final class SendV3Controller {
-    public enum Remaining {
+    @frozen public enum Remaining {
         case insufficient
         case remaining(String)
     }
@@ -110,7 +110,7 @@ public final class SendV3Controller {
                 amount: converted.amount,
                 fractionDigits: converted.fractionLength
             )
-            return showCurrency ? "\(formatted) \(currency)" : "\(formatted)"
+            return showCurrency ? "\(formatted) \(currency.code)" : "\(formatted)"
         case let .jetton(jettonItem):
             guard let jettonRate = balanceStore.state[wallet]?.balance.jettonsBalance
                 .first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo })?
@@ -128,7 +128,7 @@ public final class SendV3Controller {
                 amount: converted.amount,
                 fractionDigits: converted.fractionLength
             )
-            return showCurrency ? "\(formatted) \(currency)" : "\(formatted)"
+            return showCurrency ? "\(formatted) \(currency.code)" : "\(formatted)"
         }
     }
 
@@ -144,7 +144,7 @@ public final class SendV3Controller {
             amount: converted.amount,
             fractionDigits: converted.fractionLength
         )
-        return showCurrency ? "\(formatted) \(currency)" : "\(formatted)"
+        return showCurrency ? "\(formatted) \(currency.code)" : "\(formatted)"
     }
 
     public func convertMultichainAmountToCurrency(
@@ -358,7 +358,7 @@ public final class SendV3Controller {
         currencyStore.state
     }
 
-    public enum CommentState {
+    @frozen public enum CommentState {
         case ledgerNonAsciiError
         case ok
     }

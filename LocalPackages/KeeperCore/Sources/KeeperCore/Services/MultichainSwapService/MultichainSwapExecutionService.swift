@@ -5,7 +5,7 @@ import TKLogging
 
 public protocol MultichainSwapExecutionService {
     func prepareExecutionPlan(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         route: MultichainSwapRoute
@@ -13,7 +13,7 @@ public protocol MultichainSwapExecutionService {
 
     func execute(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
@@ -44,7 +44,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
     }
 
     func prepareExecutionPlan(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         route: MultichainSwapRoute
@@ -79,7 +79,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
                 let prepare = try await swapService.prepareCrossSwapRoute(
                     routeId: route.routeId,
                     request: nil,
-                    walletId: wallet.multichainWalletId
+                    walletId: swapWallet.walletId
                 )
                 preparedPayloads = prepare.payloads
                 providerRouteId = prepare.providerRouteId ?? providerRouteId
@@ -104,7 +104,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         do {
             payloads = try validatedPayloads(preparedPayloads, routeId: route.routeId)
             preparation = try await swapPipeline.prepareSwapPayloads(
-                wallet: wallet,
+                swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 payloads: payloads,
@@ -119,14 +119,16 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             throw error
         }
         let aggregated = Self.aggregatedFees(preparation.fees)
+        let spentSourceAmount = route.spentSourceAmount(sourceAsset: sourceAsset)
         let feeOptions = await feeMethodResolver.options(
             context: preparation.batteryPayload.map { batteryPayload in
                 MultichainSwapFeeContext(
-                    wallet: wallet,
+                    swapWallet: swapWallet,
                     sourceAsset: sourceAsset,
                     payloadId: payloads.main.payloadId,
                     requiresApproval: preparation.requiresApproval,
-                    payload: batteryPayload
+                    payload: batteryPayload,
+                    spentSourceAmount: spentSourceAmount
                 )
             },
             nativeFees: aggregated,
@@ -166,13 +168,14 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             requiresApproval: preparation.requiresApproval,
             feeOptions: feeOptions,
             payloadFees: preparation.payloadFees,
-            batteryPayload: preparation.batteryPayload
+            batteryPayload: preparation.batteryPayload,
+            spentSourceAmount: spentSourceAmount
         )
     }
 
     func execute(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
@@ -208,10 +211,10 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         )
 
         switch feeMethod {
-        case .battery, .gram:
+        case .battery, .gram, .token:
             return try await executeWithRelayedFee(
                 passcodeProvider: passcodeProvider,
-                wallet: wallet,
+                swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 executionPlan: executionPlan,
@@ -224,7 +227,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         do {
             let broadcast = try await swapPipeline.executeSwapPayloads(
                 passcodeProvider: passcodeProvider,
-                wallet: wallet,
+                swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 payloads: payloads,
@@ -239,11 +242,11 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             )
             Log.multichainSwap.i(
                 "execution completed after client broadcast",
-                extraInfo: planInfo(["txHash": result.txHash])
+                extraInfo: planInfo(["txHash": broadcast.txHash])
             )
             await reportPendingTransaction(
-                txHash: result.txHash,
-                wallet: wallet,
+                txHash: broadcast.txHash,
+                swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 executionPlan: executionPlan
@@ -275,7 +278,7 @@ extension MultichainSwapExecutionServiceImplementation {
     /// and paying with something else is a different transaction.
     func executeWithRelayedFee(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
@@ -305,11 +308,12 @@ extension MultichainSwapExecutionServiceImplementation {
         let mainPayload = executionPlan.payloads.main
         let txHash = try await engine.send(
             context: MultichainSwapFeeContext(
-                wallet: wallet,
+                swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 payloadId: mainPayload.payloadId,
                 requiresApproval: executionPlan.requiresApproval,
-                payload: relayedSend.payload
+                payload: relayedSend.payload,
+                spentSourceAmount: executionPlan.spentSourceAmount
             ),
             confirmed: relayedSend.confirmed,
             passcodeProvider: passcodeProvider
@@ -317,32 +321,38 @@ extension MultichainSwapExecutionServiceImplementation {
         let result = MultichainSwapExecutionResult(
             routeId: executionPlan.routeId,
             txHash: txHash,
-            broadcastedPayloads: [
-                MultichainSwapBroadcastedPayload(
-                    payloadId: mainPayload.payloadId,
-                    kind: mainPayload.kind,
-                    payloadType: mainPayload.payloadType,
-                    txHash: txHash
-                ),
-            ]
+            broadcastedPayloads: txHash.map { txHash in
+                [
+                    MultichainSwapBroadcastedPayload(
+                        payloadId: mainPayload.payloadId,
+                        kind: mainPayload.kind,
+                        payloadType: mainPayload.payloadType,
+                        txHash: txHash
+                    ),
+                ]
+            } ?? []
         )
         Log.multichainSwap.i(
             "execution completed after relay",
-            extraInfo: planInfo(["txHash": txHash, "feeMethod": feeMethod.rawValue])
+            extraInfo: planInfo(["txHash": txHash ?? "none", "feeMethod": feeMethod.id])
         )
-        await reportPendingTransaction(
-            txHash: txHash,
-            wallet: wallet,
-            sourceAsset: sourceAsset,
-            destinationAsset: destinationAsset,
-            executionPlan: executionPlan
-        )
+        // A relayer that names no transaction leaves nothing to report: the swap reaches the
+        // history once the relayer's own transaction does.
+        if let txHash {
+            await reportPendingTransaction(
+                txHash: txHash,
+                swapWallet: swapWallet,
+                sourceAsset: sourceAsset,
+                destinationAsset: destinationAsset,
+                executionPlan: executionPlan
+            )
+        }
         return result
     }
 
     func reportPendingTransaction(
         txHash: String,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan
@@ -357,9 +367,9 @@ extension MultichainSwapExecutionServiceImplementation {
             )
             return
         }
-        guard let walletId = wallet.multichainWalletState?.walletId else {
+        guard let walletId = swapWallet.walletId else {
             Log.multichainSwap.w(
-                "pending transaction report skipped: wallet is not multichain",
+                "pending transaction report skipped: wallet is not registered",
                 extraInfo: [
                     "sourceAssetId": sourceAsset.asset.assetId,
                     "txHash": txHash,
@@ -371,7 +381,7 @@ extension MultichainSwapExecutionServiceImplementation {
             MultichainPendingTransaction(
                 walletId: walletId,
                 chain: sourceChain,
-                network: MultichainNetwork(walletNetwork: wallet.network),
+                network: MultichainNetwork(walletNetwork: swapWallet.wallet.network),
                 txHash: txHash,
                 activityType: .swap(
                     MultichainPendingTransaction.SwapDetails(

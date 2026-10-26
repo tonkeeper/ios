@@ -110,7 +110,7 @@ private extension CreateWalletCoordinator {
                 guard let self else { return }
                 analyticsContext.logOnboarding(OnboardingPasscodeMismatch(), using: analyticsProvider)
             },
-            onCreate: { [weak self] passcode in
+            onCreate: { [weak self] passcode, isBiometryAccepted in
                 guard let self else { return }
                 analyticsContext.logOnboarding(OnboardingPasscodeCreated(), using: analyticsProvider)
                 guard let phrase = makeMnemonic() else {
@@ -122,6 +122,7 @@ private extension CreateWalletCoordinator {
                     router: router,
                     animated: true,
                     passcode: passcode,
+                    isBiometryAccepted: isBiometryAccepted,
                     phrase: phrase
                 )
             }
@@ -139,6 +140,7 @@ private extension CreateWalletCoordinator {
             mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess,
             securityStore: storesAssembly.securityStore,
             analyticsProvider: analyticsProvider,
+            reason: .addWallet,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
@@ -155,6 +157,7 @@ private extension CreateWalletCoordinator {
                     router: NavigationControllerRouter(rootViewController: navigationController),
                     animated: false,
                     passcode: passcode,
+                    isBiometryAccepted: false,
                     phrase: phrase
                 )
                 self.router.present(navigationController, onDismiss: { [weak self] in
@@ -168,6 +171,7 @@ private extension CreateWalletCoordinator {
         router: NavigationControllerRouter,
         animated: Bool,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String],
         backupDate: Date?
     ) {
@@ -188,6 +192,7 @@ private extension CreateWalletCoordinator {
                     try await self.createWallet(
                         model: model,
                         passcode: passcode,
+                        isBiometryAccepted: isBiometryAccepted,
                         phrase: phrase,
                         backupDate: backupDate
                     )
@@ -235,6 +240,7 @@ private extension CreateWalletCoordinator {
     func createWallet(
         model: CustomizeWalletModel,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String],
         backupDate: Date?
     ) async throws {
@@ -253,6 +259,9 @@ private extension CreateWalletCoordinator {
             setupSettings: WalletSetupSettings(backupDate: backupDate),
             derivationType: mode == .multichain ? .bip39 : nil
         )
+        if isBiometryAccepted {
+            await storesAssembly.securityStore.setIsBiometryEnable(true)
+        }
     }
 
     func shouldOfferOnboardingMigration() async -> Bool {
@@ -323,6 +332,7 @@ private extension CreateWalletCoordinator {
         router: NavigationControllerRouter,
         animated: Bool,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String]
     ) {
         guard !phrase.isEmpty else {
@@ -335,6 +345,7 @@ private extension CreateWalletCoordinator {
                 router: router,
                 animated: animated,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase
             )
         } else {
@@ -342,6 +353,7 @@ private extension CreateWalletCoordinator {
                 router: router,
                 animated: animated,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase,
                 backupDate: nil
             )
@@ -352,6 +364,7 @@ private extension CreateWalletCoordinator {
         router: NavigationControllerRouter,
         animated: Bool,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String]
     ) {
         let state = OnboardingInfoScreenState(
@@ -367,6 +380,7 @@ private extension CreateWalletCoordinator {
             self?.openRecoveryPhrase(
                 router: router,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase
             )
         }
@@ -385,6 +399,7 @@ private extension CreateWalletCoordinator {
                 router: router,
                 animated: true,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase,
                 backupDate: nil
             )
@@ -395,6 +410,7 @@ private extension CreateWalletCoordinator {
     func openRecoveryPhrase(
         router: NavigationControllerRouter,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String]
     ) {
         var provider = OnboardingRecoveryPhraseDataProvider(phrase: phrase)
@@ -402,6 +418,7 @@ private extension CreateWalletCoordinator {
             self?.openCheckRecoveryPhrase(
                 router: router,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase
             )
         }
@@ -413,6 +430,7 @@ private extension CreateWalletCoordinator {
     func openCheckRecoveryPhrase(
         router: NavigationControllerRouter,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String]
     ) {
         let module = TKCheckRecoveryPhraseAssembly.module(
@@ -425,6 +443,7 @@ private extension CreateWalletCoordinator {
                 router: router,
                 animated: true,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase,
                 backupDate: Date()
             )
@@ -441,17 +460,23 @@ private extension CreateWalletCoordinator {
         router: NavigationControllerRouter,
         animated: Bool,
         passcode: String,
+        isBiometryAccepted: Bool,
         phrase: [String],
         backupDate: Date?
     ) {
         OnboardingNotificationsStep.push(
             router: router,
-            animated: animated
+            animated: animated,
+            onAppear: { [weak self] in
+                guard let self else { return }
+                analyticsContext.logOnboarding(OnboardingViewNotifications(), using: analyticsProvider)
+            }
         ) { [weak self] in
             self?.openCustomizeWallet(
                 router: router,
                 animated: true,
                 passcode: passcode,
+                isBiometryAccepted: isBiometryAccepted,
                 phrase: phrase,
                 backupDate: backupDate
             )
@@ -463,8 +488,7 @@ private extension CreateWalletCoordinator {
     func makePasscodeBiometryEnabler() -> PasscodeBiometryEnabler? {
         guard analyticsContext.from == .onboarding else { return nil }
         return PasscodeBiometryEnabler(
-            mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess,
-            securityStore: storesAssembly.securityStore
+            mnemonicAccess: walletsUpdateAssembly.secureAssembly.mnemonicAccess
         )
     }
 }

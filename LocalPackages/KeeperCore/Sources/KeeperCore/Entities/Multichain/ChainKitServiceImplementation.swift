@@ -3,7 +3,7 @@ import ChainKit
 import Foundation
 import TKLogging
 
-final class ChainKitServiceImplementation: ChainKitService {
+final class ChainKitServiceImplementation: ChainKitService, MultichainRelayedOperationSigner {
     private let supportedChains: [MultichainChain]
     private let mnemonicAccess: MnemonicAccess
     private let client: CryptoKitClient
@@ -93,29 +93,7 @@ final class ChainKitServiceImplementation: ChainKitService {
                 reason: "failed to determine chain for asset id \(asset.asset.assetId)"
             )
         }
-        guard let passcode = await passcodeProvider() else {
-            throw .canceled
-        }
-        let phrase: String
-        do {
-            let coreMnemonic = try await mnemonicAccess.getMnemonic(
-                wallet: wallet,
-                passcode: passcode
-            )
-            phrase = coreMnemonic.mnemonicWords.joined(separator: " ")
-        } catch {
-            let message = "failed to read mnemonic during multichain transfer"
-            Log.e(message, error: error)
-            throw .internal(reason: "\(message): \(error.logDescription)")
-        }
-        let chainKitWallet: CryptoWallet
-        do {
-            chainKitWallet = try CryptoWallet.Companion.shared.fromMnemonic(
-                mnemonic_: normalize(mnemonic: phrase)
-            )
-        } catch {
-            throw .internal(reason: "failed to derive multichain wallet: \(error.logDescription)")
-        }
+        let chainKitWallet = try await unlockCryptoWallet(passcodeProvider: passcodeProvider, wallet: wallet)
 
         var transfer: TransactionTransfer
         let feeAsset: AssetCoin
@@ -236,7 +214,7 @@ final class ChainKitServiceImplementation: ChainKitService {
                     wallet: chainKitWallet,
                     completionHandler: handler
                 )
-            case .ton, .eth, .base, .tron, .arb, .bsc:
+            case .ton, .eth, .base, .tron, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
                 mediator.sign.transaction.signAndEncode(
                     transaction: transfer,
                     fee: fee,
@@ -291,6 +269,73 @@ final class ChainKitServiceImplementation: ChainKitService {
             txHashes.append(txHash)
         }
         return txHashes
+    }
+
+    func signRelayedOperation(
+        passcodeProvider: @escaping () async -> String?,
+        wallet: Wallet,
+        chain: MultichainChain,
+        operation: MultichainRelayedOperation
+    ) async throws(MultichainTransactionFailure) -> Data {
+        let chainKitWallet = try await unlockCryptoWallet(passcodeProvider: passcodeProvider, wallet: wallet)
+        let account: ChainKit.Account
+        do {
+            account = try ChainKitOperationSender.account(wallet: wallet, chain: chain)
+            try ChainKitOperationSender.verifyKeys(of: account, unlocked: chainKitWallet)
+        } catch {
+            throw .internal(reason: "relayed operation is not the wallet's to sign: \(error.logDescription)")
+        }
+        return try await Self.signRelayedOperation(
+            operation,
+            account: account,
+            wallet: chainKitWallet,
+            client: client
+        )
+    }
+
+    /// Signs every payload of `operation` with the unlocked `wallet` for `account` and returns the
+    /// envelope the relayer takes, `{"operation": {"id": …, "payloads": [ … ]}}`, as ChainKit
+    /// writes it.
+    static func signRelayedOperation(
+        _ operation: MultichainRelayedOperation,
+        account: ChainKit.Account,
+        wallet chainKitWallet: CryptoWallet,
+        client: CryptoKitClient
+    ) async throws(MultichainTransactionFailure) -> Data {
+        let mediator = client.blockchain.getMediator(network: account.chain.network.type)
+        // Relayer documents carry their own nonce and cost the sender no gas: neither argument is read.
+        let zero = BignumBigInteger.Companion.shared.parseString(string: "0", base: 10)
+        let noFee = FeeValue(asset: account.chain.toAsset(), amount: zero)
+
+        var signedPayloads = [SignedPayload]()
+        for payload in operation.operation.payloads {
+            let result: SignRes<SignedPayload>
+            do {
+                result = try await mediator.operation.sign(
+                    payload: payload,
+                    account: account,
+                    fee: noFee,
+                    nonce: zero,
+                    wallet: chainKitWallet
+                )
+            } catch {
+                throw .failedToSign(
+                    kind: .unknown,
+                    reason: "chain kit failed to sign relayed payload \(payload.id) due to error: \(error.logDescription)"
+                )
+            }
+            guard let signed = result.getOrNull() else {
+                let error = result.error?.logValue ?? "unknown"
+                throw .failedToSign(
+                    kind: ChainKitErrorKindClassifier.kind(signError: result.error),
+                    reason: "chain kit failed to sign relayed payload \(payload.id) due to error: \(error)"
+                )
+            }
+            signedPayloads.append(signed)
+        }
+
+        // Read as text: the ObjC export hands the JSON object itself over as a dictionary.
+        return Data(SignedOperation(id: operation.id, payloads: signedPayloads).toJsonString().utf8)
     }
 
     func makeWalletState(mnemonic: String) throws -> MultichainWalletState {
@@ -443,6 +488,33 @@ private extension ChainKitServiceImplementation {
         )
     }
 
+    /// Asks for the passcode and derives the keys that sign for the wallet on every chain.
+    func unlockCryptoWallet(
+        passcodeProvider: () async -> String?,
+        wallet: Wallet
+    ) async throws(MultichainTransactionFailure) -> CryptoWallet {
+        guard let passcode = await passcodeProvider() else {
+            throw .canceled
+        }
+        let phrase: String
+        do {
+            let coreMnemonic = try await mnemonicAccess.getMnemonic(
+                wallet: wallet,
+                passcode: passcode
+            )
+            phrase = coreMnemonic.mnemonicWords.joined(separator: " ")
+        } catch {
+            let message = "failed to read mnemonic during multichain transfer"
+            Log.e(message, error: error)
+            throw .internal(reason: "\(message): \(error.logDescription)")
+        }
+        do {
+            return try makeCryptoWallet(mnemonic: phrase)
+        } catch {
+            throw .internal(reason: "failed to derive multichain wallet: \(error.logDescription)")
+        }
+    }
+
     func addressTypes(for chain: MultichainChain) -> [(Address.Type_, MultichainWalletAddressType?)] {
         switch chain {
         case .ton:
@@ -452,7 +524,7 @@ private extension ChainKitServiceImplementation {
             ]
         case .btc:
             return [(.btcsegwit, .btcP2WPKH)]
-        case .eth, .base, .tron, .arb, .bsc:
+        case .eth, .base, .tron, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
             return [(.default_, nil)]
         }
     }
@@ -643,7 +715,6 @@ private extension ChainKitServiceImplementation {
         let transfer = TransactionTransfer(
             account: account,
             amount: BignumBigInteger.Companion.shared.parseString(string: amount.description, base: 10),
-            energy: feeAsset,
             isMax: isMaxAmount,
             to: recipientAddress,
             memo: comment,
@@ -664,7 +735,6 @@ extension ChainKitServiceImplementation {
         return TransactionTransfer(
             account: transfer.account,
             amount: gasReserve.amount,
-            energy: transfer.energy,
             isMax: true,
             to: transfer.to,
             memo: transfer.memo,
@@ -694,7 +764,7 @@ extension MultichainPublicKey {
     }
 }
 
-private extension MultichainWalletAddressType {
+extension MultichainWalletAddressType {
     var chainKitAddressType: Address.Type_ {
         switch self {
         case .tonV3R1, .tonV3R2, .tonV4R1:

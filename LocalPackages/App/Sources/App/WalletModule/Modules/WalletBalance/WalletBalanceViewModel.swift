@@ -311,9 +311,6 @@ final class WalletBalanceViewModelImplementation:
         viewModel.headerViewModel.onBattery = { [weak self] wallet in
             self?.didTapBattery?(wallet)
         }
-        viewModel.headerViewModel.onBackup = { [weak self] wallet in
-            self?.didTapBackup?(wallet)
-        }
         viewModel.homeBannersViewModel.onOpenDeeplink = { [weak self] deeplink, utm in
             self?.didRequestBannerDeeplinkHandling?(deeplink, utm)
         }

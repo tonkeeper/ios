@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKServices
 
 public struct FormattersAssembly {
     public func chartFormatter(

@@ -6,7 +6,7 @@ import TKLogging
 import TonAPI
 import TonSwift
 
-public enum TransferError: Swift.Error {
+@frozen public enum TransferError: Swift.Error {
     case nothingToSend
     case unsupportedTransfer
     case failedToCreateTransferData(
@@ -21,7 +21,7 @@ public enum TransferError: Swift.Error {
 
 public struct TransferEmulationResult {
     public struct Extra {
-        public enum Amount {
+        @frozen public enum Amount {
             case fee(BigUInt)
             case refund(BigUInt)
         }
@@ -33,11 +33,11 @@ public struct TransferEmulationResult {
 
     public let transferType: TransferType
     public let extra: Extra
-    public let transactionInfo: MessageConsequences?
+    public let transactionInfo: TonAPI.Components.Schemas.MessageConsequences?
     public let isGaslessAvailable: Bool
 }
 
-public enum TransferType {
+@frozen public enum TransferType {
     case `default`
     case battery(excessAddress: Address)
     case gasless(excessAddress: Address, fee: BigUInt)
@@ -117,7 +117,7 @@ public struct TransferService {
             }
             return .battery(excessAddress: excessAddress)
         }
-        let batteryConfig: Components.Schemas.Config
+        let batteryConfig: TKBatteryAPI.Components.Schemas.Config
         do {
             batteryConfig = try await batteryService.loadBatteryConfig(
                 wallet: wallet
@@ -159,6 +159,65 @@ public struct TransferService {
         )
     }
 
+    public func signMessage<SignError: Error>(
+        wallet: Wallet,
+        transfer: Transfer,
+        signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
+    ) async throws(SomeOf<TransferError, SignError>) -> String {
+        let transferData: TransferData
+        do {
+            transferData = try await prepareTransferData(
+                wallet: wallet,
+                transfer: transfer,
+                transferType: .default
+            )
+        } catch {
+            throw .certain(error)
+        }
+
+        let requestedValidUntil: UInt64? = switch transfer {
+        case let .signRaw(request, _, _):
+            request.validUntil
+        default:
+            nil
+        }
+        let timeout: UInt64
+        do {
+            timeout = try await Self.signMessageTimeout(
+                validUntil: requestedValidUntil,
+                now: sendService.getTimeoutSafely(wallet: wallet, TTL: 0)
+            )
+        } catch {
+            throw .certain(error)
+        }
+
+        let signedTransactions: SignedTransactions
+        do {
+            signedTransactions = try await signClosure(
+                TransferData(
+                    transfer: transferData.transfer,
+                    wallet: wallet,
+                    messageType: .int,
+                    seqno: transferData.seqno,
+                    timeout: timeout
+                )
+            ).get()
+        } catch {
+            throw .certain(error)
+        }
+
+        guard let externalBoc = signedTransactions.first else {
+            throw .certain(.nothingToSend)
+        }
+        do {
+            return try SignedInternalMessage.boc(fromExternalBoc: externalBoc, wallet: wallet)
+        } catch {
+            throw .certain(
+                .failedToCreateTransferData(message: "failed to wrap signed message due to error: \(error.localizedDescription)")
+            )
+        }
+    }
+
     @discardableResult
     private func doSendTransaction<SignError: Error>(
         wallet: Wallet,
@@ -166,21 +225,11 @@ public struct TransferService {
         transferType: TransferType,
         signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
     ) async throws(SomeOf<TransferError, SignError>) -> SignedTransactions {
-        let seqno: UInt64
-        do {
-            seqno = try await sendService.loadSeqno(wallet: wallet)
-        } catch {
-            throw .certain(
-                .failedToCreateTransferData(message: "failed to get seqno due to error: \(error.localizedDescription)")
-            )
-        }
-
         let transferData: TransferData
         do {
-            transferData = try await createTransferData(
+            transferData = try await prepareTransferData(
                 wallet: wallet,
                 transfer: transfer,
-                seqno: seqno,
                 transferType: transferType
             )
         } catch {
@@ -210,6 +259,37 @@ public struct TransferService {
         }
 
         return signedTransactions
+    }
+
+    static let signMessageMaxTTL: UInt64 = 600
+
+    static func signMessageTimeout(validUntil: UInt64?, now: UInt64) throws(TransferError) -> UInt64 {
+        guard let validUntil else {
+            return now + DEFAULT_TTL
+        }
+        guard validUntil > now else {
+            throw .failedToCreateTransferData(message: "sign message request expired at \(validUntil)")
+        }
+        return min(validUntil, now + signMessageMaxTTL)
+    }
+
+    private func prepareTransferData(
+        wallet: Wallet,
+        transfer: Transfer,
+        transferType: TransferType
+    ) async throws(TransferError) -> TransferData {
+        let seqno: UInt64
+        do {
+            seqno = try await sendService.loadSeqno(wallet: wallet)
+        } catch {
+            throw .failedToCreateTransferData(message: "failed to get seqno due to error: \(error.localizedDescription)")
+        }
+        return try await createTransferData(
+            wallet: wallet,
+            transfer: transfer,
+            seqno: seqno,
+            transferType: transferType
+        )
     }
 
     enum BroadcastRoute: Equatable {
@@ -382,7 +462,7 @@ public struct TransferService {
                 return nil
             }()
             let transferCost = batteryConfig?.transferCost(jettonMasterAddress: jettonMasterAddress)
-                ?? Components.Schemas.Config.fallbackTransferCost
+                ?? TKBatteryAPI.Components.Schemas.Config.fallbackTransferCost
             let amount = {
                 switch result.extra.amount {
                 case let .fee(fee):
@@ -461,7 +541,7 @@ public struct TransferService {
     public func transferCost(wallet: Wallet, jettonMasterAddress: Address?) async -> BigUInt {
         let config = try? await batteryService.loadBatteryConfig(wallet: wallet)
         return config?.transferCost(jettonMasterAddress: jettonMasterAddress)
-            ?? Components.Schemas.Config.fallbackTransferCost
+            ?? TKBatteryAPI.Components.Schemas.Config.fallbackTransferCost
     }
 
     func isGaslessAvailable(wallet: Wallet, transfer: Transfer) async -> Bool {

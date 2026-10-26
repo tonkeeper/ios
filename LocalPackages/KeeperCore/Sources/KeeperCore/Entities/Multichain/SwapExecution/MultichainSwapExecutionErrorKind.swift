@@ -1,4 +1,4 @@
-public enum MultichainSwapExecutionErrorKind: Sendable, Hashable {
+@frozen public enum MultichainSwapExecutionErrorKind: Sendable, Hashable {
     case unknown
     case insufficientBalance
     case invalidAddress

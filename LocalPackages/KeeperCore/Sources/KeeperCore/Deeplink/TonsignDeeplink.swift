@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TonsignDeeplink {
+@frozen public enum TonsignDeeplink {
     case plain
 
     public var string: String {

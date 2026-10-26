@@ -35,6 +35,10 @@ public final class WidgetAssembly {
         servicesAssembly.walletsService()
     }
 
+    public func currenciesService() -> CurrenciesService {
+        servicesAssembly.currenciesService()
+    }
+
     public func balanceWidgetController() -> BalanceWidgetController {
         BalanceWidgetController(
             walletService: servicesAssembly.walletsService(),

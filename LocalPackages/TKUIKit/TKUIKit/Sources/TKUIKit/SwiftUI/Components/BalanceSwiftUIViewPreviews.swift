@@ -122,8 +122,7 @@ private extension BalanceSwiftUIViewPreviews {
         BalanceViewContent(
             balance: balanceCase.balance.settingFreshness(pending ? .pending : .actual),
             address: statusConfig,
-            battery: batteryConfig(for: balanceCase),
-            backupButton: backupButton(for: balanceCase)
+            battery: batteryConfig(for: balanceCase)
         )
     }
 
@@ -136,15 +135,6 @@ private extension BalanceSwiftUIViewPreviews {
             size: .size34,
             state: .fill(0.5)
         )
-    }
-
-    func backupButton(for balanceCase: BalancePreviewCase) -> BalanceViewContent.BackupButton? {
-        switch balanceCase {
-        case .backupWarning:
-            return BalanceViewContent.BackupButton(color: .accentOrange)
-        default:
-            return nil
-        }
     }
 
     var statusConfig: BalanceHeaderBalanceStatusViewConfig? {
@@ -206,7 +196,6 @@ private enum BalancePreviewCase: String, CaseIterable, Identifiable {
     case millionReduced
     case compactMillion
     case compactBillion
-    case backupWarning
     case secure
 
     var id: String {
@@ -221,7 +210,6 @@ private enum BalancePreviewCase: String, CaseIterable, Identifiable {
             .millionReduced,
             .compactMillion,
             .compactBillion,
-            .backupWarning,
             .secure,
         ]
     }
@@ -246,8 +234,6 @@ private enum BalancePreviewCase: String, CaseIterable, Identifiable {
             return "Compact M with tooltip"
         case .compactBillion:
             return "Compact B with tooltip"
-        case .backupWarning:
-            return "Backup warning"
         case .secure:
             return "Secure"
         }
@@ -319,16 +305,6 @@ private enum BalancePreviewCase: String, CaseIterable, Identifiable {
                 ],
                 tooltipText: "1 250 000 000.00 \u{20BD}",
                 accessibilityText: "1 250 000 000.00 \u{20BD}"
-            )
-        case .backupWarning:
-            return amount(
-                trailingText: "\u{20BD}",
-                textParts: [
-                    .init(text: "845", role: .primary),
-                    .init(text: ".12", role: .fraction),
-                ],
-                accessibilityText: "845.12 \u{20BD}",
-                color: .accentOrange
             )
         case .secure:
             return .secure()

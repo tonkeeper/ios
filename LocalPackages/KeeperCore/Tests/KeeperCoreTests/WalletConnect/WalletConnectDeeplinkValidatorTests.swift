@@ -43,6 +43,7 @@ final class WalletConnectDeeplinkValidatorTests: XCTestCase {
             "https://app.tonkeeper.com/wc?uri=wc:123@2?relay-protocol=irn&symKey=abc",
             "https://app.tonkeeper.com/wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc",
             "https://app.tonkeeper.org/wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc",
+            "https://app.keeperwallet.com/wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc",
         ]
 
         for uri in uris {

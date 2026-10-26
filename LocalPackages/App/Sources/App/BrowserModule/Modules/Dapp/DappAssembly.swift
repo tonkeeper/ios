@@ -1,6 +1,5 @@
 import Foundation
 import KeeperCore
-import os
 import TKCore
 
 struct DappAssembly {
@@ -12,22 +11,26 @@ struct DappAssembly {
         deeplinkParser: DeeplinkParser,
         messageHandler: DappMessageHandler,
         wallet: Wallet?,
-        explorerURLMatcher: BlockchainExplorerURLMatcher
+        isSignMessageSupported: Bool,
+        explorerURLMatcher: BlockchainExplorerURLMatcher,
+        earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository,
+        userAgent: String
     )
         -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput>
     {
-        let logger = Logger(subsystem: "com.tonkeeper.dapps", category: "dApps")
         let viewModel = DappViewModelImplementation(
             dapp: dapp,
             analyticsSession: analyticsSession,
             messageHandler: messageHandler,
             wallet: wallet,
-            explorerURLMatcher: explorerURLMatcher
+            isSignMessageSupported: isSignMessageSupported,
+            explorerURLMatcher: explorerURLMatcher,
+            earnFeaturedVaultsRepository: earnFeaturedVaultsRepository,
+            userAgent: userAgent
         )
 
         let viewController = DappViewController(
             viewModel: viewModel,
-            logger: logger,
             deeplinkHandler: deeplinkHandler,
             deeplinkParser: deeplinkParser
         )

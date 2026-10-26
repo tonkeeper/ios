@@ -1,5 +1,6 @@
 import ChainKit
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 /// The "before" figures are the caller's, the "after" ones are the venue's, and
@@ -39,7 +40,8 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
             marginDeltaUsd: 10,
             oldBase: 100_000,
             oldEntry: 20_000_000,
-            oldNotionalUsd: 2000
+            oldNotionalUsd: 2000,
+            liquidationBefore: nil
         )
 
         XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.add)
@@ -82,7 +84,8 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
             leverage: 5,
             oldBase: 100_000,
             oldEntry: 20_000_000,
-            oldNotionalUsd: 2000
+            oldNotionalUsd: 2000,
+            liquidationBefore: nil
         )
 
         XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.reduce)
@@ -91,5 +94,64 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         XCTAssertEqual(mapped.entryPrice.new, 2000, accuracy: 1e-6)
         XCTAssertEqual(mapped.notionalUsd.old, 2000, accuracy: 1e-9)
         XCTAssertEqual(mapped.notionalUsd.new, 1200, accuracy: 1e-9)
+    }
+
+    func testAddCarriesTheLiquidationMove() {
+        let mapped = PerpsPlannerMapping.addReview(
+            addReview(liquidationPrice: KotlinLong(value: 19_000_000)),
+            symbol: "BTC",
+            direction: .add,
+            marginDeltaUsd: 10,
+            oldBase: 100_000,
+            oldEntry: 20_000_000,
+            oldNotionalUsd: 2000,
+            liquidationBefore: 18_000_000
+        )
+
+        let liquidation = try? XCTUnwrap(mapped.liquidationPrice)
+        XCTAssertEqual(liquidation?.old ?? 0, 1800, accuracy: 1e-6)
+        XCTAssertEqual(liquidation?.new ?? 0, 1900, accuracy: 1e-6)
+        XCTAssertEqual(liquidation?.isChanged, true)
+    }
+
+    func testAddWithoutAPreviousLiquidationReportsNoMove() {
+        let mapped = PerpsPlannerMapping.addReview(
+            addReview(liquidationPrice: KotlinLong(value: 19_000_000)),
+            symbol: "BTC",
+            direction: .add,
+            marginDeltaUsd: 10,
+            oldBase: 100_000,
+            oldEntry: 20_000_000,
+            oldNotionalUsd: 2000,
+            liquidationBefore: nil
+        )
+
+        XCTAssertEqual(mapped.liquidationPrice?.isChanged, false)
+    }
+
+    private func addReview(liquidationPrice: KotlinLong?) -> PerpetualReview.Add {
+        PerpetualReview.Add(
+            side: PerpsSide.long_,
+            kind: PerpsOrderKind.market,
+            scale: scale,
+            marginBudgetQuote: 10_000_000_000,
+            initialMarginBps: 1000,
+            baseAmount: 50000,
+            notionalQuote: 150_000_000_000,
+            referencePrice: 30_000_000,
+            estimatedEntryPrice: 30_000_000,
+            mergedBaseAmount: 150_000,
+            mergedEntryPrice: 23_333_333,
+            estimatedFeeQuote: 1_000_000_000,
+            estimatedCollateralQuote: 40_000_000_000,
+            priceBoundOrLimit: 31_000_000,
+            maxNotionalQuote: 150_000_000_000,
+            maxFeeQuote: 1_000_000_000,
+            takeProfitTrigger: nil,
+            stopLossTrigger: nil,
+            liquidationPrice: liquidationPrice,
+            liquidationUnavailableReason: nil,
+            isImmediateRisk: false
+        )
     }
 }

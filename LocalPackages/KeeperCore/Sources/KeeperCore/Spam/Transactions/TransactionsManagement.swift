@@ -1,3 +1,3 @@
 import Foundation
 
-public enum TransactionsManagement {}
+@frozen public enum TransactionsManagement {}

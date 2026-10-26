@@ -120,7 +120,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
                             }
                             return
                         }
-                        try self.mnemonicsAccess.setPasscode(passcode)
+                        try await self.mnemonicsAccess.setBiometryProtectedPasscode(passcode)
                         await self.securityStore.setIsBiometryEnable(true)
                     } else {
                         do {

@@ -40,6 +40,8 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
             switch error {
             case .transportError:
                 throw .networkError
+            case .notFound:
+                throw .notFound
             default:
                 throw .apiError(message: error.localizedDescription)
             }

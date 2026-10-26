@@ -1,5 +1,4 @@
 import KeeperCore
-import Kingfisher
 import SwiftUI
 import TKUIKit
 import UIKit
@@ -233,24 +232,18 @@ private extension WalletConnectConfirmationView {
         case let .remoteImage(url, size, cornerRadius):
             Group {
                 if let url {
-                    KFImage
-                        .url(url)
-                        .placeholder {
-                            ShimmerSwiftUIView(
-                                config: ShimmerSwiftUIView.Config(
-                                    color: .backgroundContentTint,
-                                    cornerRadius: .value(cornerRadius)
-                                )
+                    TKRemoteImage(url: url) {
+                        ShimmerSwiftUIView(
+                            config: ShimmerSwiftUIView.Config(
+                                color: .backgroundContentTint,
+                                cornerRadius: .value(cornerRadius)
                             )
-                        }
-                        .cancelOnDisappear(true)
-                        .resizable()
-                        .scaledToFill()
+                        )
+                    } failure: {
+                        remoteImagePlaceholder
+                    }
                 } else {
-                    SwiftUI.Image.TKUIKit.Icons.Size44.placeholder
-                        .resizable()
-                        .scaledToFit()
-                        .padding(14)
+                    remoteImagePlaceholder
                 }
             }
             .frame(width: size, height: size)
@@ -262,6 +255,13 @@ private extension WalletConnectConfirmationView {
                 )
             )
         }
+    }
+
+    var remoteImagePlaceholder: some View {
+        SwiftUI.Image.TKUIKit.Icons.Size44.placeholder
+            .resizable()
+            .scaledToFit()
+            .padding(14)
     }
 }
 

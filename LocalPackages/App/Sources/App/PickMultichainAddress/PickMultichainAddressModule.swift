@@ -7,11 +7,13 @@ import UIKit
 struct PickMultichainAddressModule {
     func makeCoordinator<V: UIViewController>(
         router: ContainerViewControllerRouter<V>,
-        addresses: [MultichainWalletAddress]
+        addresses: [MultichainWalletAddress],
+        newChainBadgeService: NewChainBadgeService
     ) -> PickMultichainAddressCoordinator {
         PickMultichainAddressCoordinatorImplementation(
             router: router,
-            addresses: addresses
+            addresses: addresses,
+            newChainBadgeService: newChainBadgeService
         )
     }
 }

@@ -18,6 +18,9 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
             .ethSignTransaction,
             .tronSignTransaction,
             .tonSendMessage,
+            .solanaSignTransaction,
+            .solanaSignAndSendTransaction,
+            .solanaSignAllTransactions,
         ]
 
         for method in transactionMethods {
@@ -33,6 +36,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
             .ethSignTypedDataV4,
             .tronSignMessage,
             .tonSignData,
+            .solanaSignMessage,
         ]
 
         for method in messageMethods {
@@ -59,6 +63,12 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
     func testPermissionItemsDoNotAddPermissionForGetCapabilitiesOnly() {
         let permissions = WalletConnectProposalPermissionItem.items(methods: [.walletGetCapabilities])
+
+        XCTAssertEqual(permissions.map(\.permission), [.infoAndActivity])
+    }
+
+    func testPermissionItemsDoNotAddPermissionForSolanaAccountsOnly() {
+        let permissions = WalletConnectProposalPermissionItem.items(methods: [.solanaGetAccounts, .solanaRequestAccounts])
 
         XCTAssertEqual(permissions.map(\.permission), [.infoAndActivity])
     }

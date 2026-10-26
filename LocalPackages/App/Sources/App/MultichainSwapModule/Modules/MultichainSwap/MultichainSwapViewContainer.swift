@@ -29,9 +29,9 @@ struct MultichainSwapViewContainer: View {
                 updateSendAmount: viewModel.updateSendAmount,
                 applyMaxSend: viewModel.applyMaxSend,
                 toggleSendAmountInputMode: viewModel.toggleSendAmountInputMode,
-                requestPickSendToken: viewModel.requestPickSendToken,
+                requestPickSendToken: requestPickSendToken,
                 toggleReceiveAmountInputMode: viewModel.toggleReceiveAmountInputMode,
-                requestPickReceiveToken: viewModel.requestPickReceiveToken,
+                requestPickReceiveToken: requestPickReceiveToken,
                 swapTokens: viewModel.swapTokens,
                 toggleRateDisplayDirection: viewModel.toggleRateDisplayDirection,
                 notifyQuoteRefreshCompleted: viewModel.notifyCircularProgressCompleted,
@@ -42,6 +42,20 @@ struct MultichainSwapViewContainer: View {
 }
 
 private extension MultichainSwapViewContainer {
+    var requestPickSendToken: (() -> Void)? {
+        guard !viewModel.isAssetSelectionLocked else {
+            return nil
+        }
+        return { viewModel.requestPickSendToken() }
+    }
+
+    var requestPickReceiveToken: (() -> Void)? {
+        guard !viewModel.isAssetSelectionLocked else {
+            return nil
+        }
+        return { viewModel.requestPickReceiveToken() }
+    }
+
     var promoTitle: String? {
         guard viewModel.rafflePresentation?.shouldShowSwapPromo == true else {
             return nil

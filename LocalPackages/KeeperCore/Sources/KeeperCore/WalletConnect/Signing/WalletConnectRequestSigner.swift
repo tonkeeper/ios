@@ -20,6 +20,10 @@ struct WalletConnectRequestSigner {
             .tronSignTransaction: WalletConnectTronSignTransactionSigner(),
             .tonSendMessage: WalletConnectTONSendMessageSigner(),
             .tonSignData: WalletConnectTONSignDataSigner(),
+            .solanaSignMessage: WalletConnectSolanaSignMessageSigner(),
+            .solanaSignTransaction: WalletConnectSolanaSignTransactionSigner(),
+            .solanaSignAndSendTransaction: WalletConnectSolanaSignTransactionSigner(),
+            .solanaSignAllTransactions: WalletConnectSolanaSignAllTransactionsSigner(),
         ]
     }
 

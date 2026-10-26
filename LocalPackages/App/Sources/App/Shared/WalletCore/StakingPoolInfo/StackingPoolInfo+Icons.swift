@@ -18,13 +18,13 @@ extension StackingPoolInfo {
 
     var bigIcon: UIImage {
         switch implementation.type {
-        case .liquidTF: .TKUIKit.Icons.Size96.stakingTonstakers
-        case .tf: .TKUIKit.Icons.Size96.stakingTonNominators
+        case .liquidTF: .TKUIKit.Shared.stakingTonstakers
+        case .tf: .TKUIKit.Shared.stakingTonNominators
         case .whales:
             if name.lowercased().contains("keeper") {
                 BrandMarks.stakingPoolBadge
             } else {
-                .TKUIKit.Icons.Size96.stakingWhales
+                .TKUIKit.Shared.stakingWhales
             }
         }
     }
@@ -41,9 +41,9 @@ extension StackingPoolInfo.Implementation {
 
     var bigIcon: UIImage {
         switch type {
-        case .liquidTF: .TKUIKit.Icons.Size96.stakingTonstakers
-        case .tf: .TKUIKit.Icons.Size96.stakingTonNominators
-        case .whales: .TKUIKit.Icons.Size96.stakingWhales
+        case .liquidTF: .TKUIKit.Shared.stakingTonstakers
+        case .tf: .TKUIKit.Shared.stakingTonNominators
+        case .whales: .TKUIKit.Shared.stakingWhales
         }
     }
 }

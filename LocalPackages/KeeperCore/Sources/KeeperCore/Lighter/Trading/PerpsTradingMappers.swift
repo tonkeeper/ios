@@ -1,5 +1,6 @@
 import ChainKit
 import Foundation
+import PerpsModels
 
 enum PerpsLiquidationReasonMapper {
     static func map(_ reason: PerpsLiquidationUnavailable?) -> PerpsLiquidationUnavailableReason {
@@ -57,9 +58,13 @@ struct PerpsAutoCloseLegs {
     }
 }
 
-public enum PerpsAutoCloseChangePlanner {
-    static func plan(target: PerpsAutoClose, resting: [PerpsTriggerOrderSummary]) -> PerpsAutoCloseTxPlan {
-        guard !matches(target: target, resting: resting) else { return .noChange }
+@frozen public enum PerpsAutoCloseChangePlanner {
+    static func plan(
+        target: PerpsAutoClose,
+        resting: [PerpsTriggerOrderSummary],
+        renewsExpiry: Bool = false
+    ) -> PerpsAutoCloseTxPlan {
+        guard matches(target: target, resting: resting) == renewsExpiry else { return .noChange }
         // Position-tied triggers expose a composite read `order_index` that is
         // not a cancel identity; prefer the client order index used at creation.
         let stale = PerpsAutoCloseStaleLegs(
@@ -108,6 +113,9 @@ enum PerpsTradingErrorMapper {
             return map(kind: execution.kind, message: execution.message ?? "execution failed")
         }
         if let trade = kotlinException(from: error, as: PerpsTradeException.self) {
+            if trade.kind === PerpsTradeError.invalidautoclose {
+                return .invalidAutoClose(autoCloseLeg(trade.field))
+            }
             return map(kind: trade.kind, message: trade.message ?? "invalid transaction")
         }
         if let validation = lighterValidationException(from: error) {
@@ -120,18 +128,20 @@ enum PerpsTradingErrorMapper {
     private static func map(kind: PerpsTradeError, message: String) -> PerpsTradingError {
         if kind === PerpsTradeError.protocolfailure { return .protocolFailure(message) }
         if kind === PerpsTradeError.insufficientbalance { return .insufficientBalance }
-        if kind === PerpsTradeError.insufficientliquidity
-            || kind === PerpsTradeError.needsmoredepth
-            || kind === PerpsTradeError.slippageexceeded
-        {
+        if kind === PerpsTradeError.slippageexceeded { return .slippageExceeded }
+        if kind === PerpsTradeError.insufficientliquidity || kind === PerpsTradeError.needsmoredepth {
             return .insufficientLiquidity
         }
-        if kind === PerpsTradeError.noposition || kind === PerpsTradeError.ordernotfound {
-            return .positionNotFound
+        if kind === PerpsTradeError.noposition { return .positionNotFound }
+        if kind === PerpsTradeError.ordernotfound { return .orderNotFound }
+        if kind === PerpsTradeError.conflictingposition { return .conflictingPosition }
+        if kind === PerpsTradeError.exceedsposition { return .exceedsPosition }
+        if kind === PerpsTradeError.invalidinput || kind === PerpsTradeError.unrepresentablevalue {
+            return .invalidAmount
         }
         if kind === PerpsTradeError.marginbelowrequirement { return .immediateLiquidationRisk }
         if kind === PerpsTradeError.tradingdisabled || kind === PerpsTradeError.unsupportedmarket {
-            return .regionUnavailable
+            return .tradingUnavailable
         }
         if kind === PerpsTradeError.staleinput
             || kind === PerpsTradeError.planexpired
@@ -141,6 +151,14 @@ enum PerpsTradingErrorMapper {
             return .stalePreparedTransaction
         }
         return .validation(message)
+    }
+
+    private static func autoCloseLeg(_ field: String?) -> PerpsTriggerOrderSummary.Kind? {
+        switch field {
+        case "takeProfit": .takeProfit
+        case "stopLoss": .stopLoss
+        default: nil
+        }
     }
 
     private static func map(
@@ -183,7 +201,7 @@ enum PerpsTradingErrorMapper {
             return .stalePreparedTransaction
         case "invalid_transaction", "malformed_tx_info", "empty_batch", "foreign_account", "batch_not_accepted":
             return .protocolFailure(text)
-        case "lighter_rejected":
+        case "lighter_rejected", "no_ro_token", "integrator_not_approved":
             return .serverRejected(text)
         default:
             break
@@ -255,6 +273,7 @@ enum PerpsTradingErrorMapper {
 
     private static func kotlinException<T>(from error: Error, as type: T.Type) -> T? {
         if let typed = error as? T { return typed }
+        if let failure = error as? PerpsTradeFailure, let typed = failure.exception as? T { return typed }
         return (error as NSError).userInfo["KotlinException"] as? T
     }
 }

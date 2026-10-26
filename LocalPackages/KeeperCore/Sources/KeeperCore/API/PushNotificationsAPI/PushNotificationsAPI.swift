@@ -1,8 +1,9 @@
 import Foundation
 
 public struct PushNotificationsAPI {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case incorrectURL
+        case unexpectedStatusCode(Int)
     }
 
     struct Response: Decodable {
@@ -13,6 +14,19 @@ public struct PushNotificationsAPI {
 
     init(urlSession: URLSession) {
         self.urlSession = urlSession
+    }
+
+    /// Reject error statuses even when the body says `ok`.
+    private func isOk(_ request: URLRequest) async throws -> Bool {
+        try await JSONDecoder().decode(Response.self, from: validatedData(request)).ok
+    }
+
+    private func validatedData(_ request: URLRequest) async throws -> Data {
+        let (data, response) = try await urlSession.data(for: request)
+        if let statusCode = (response as? HTTPURLResponse)?.statusCode, !(200 ..< 300).contains(statusCode) {
+            throw Error.unexpectedStatusCode(statusCode)
+        }
+        return data
     }
 
     public struct SubscribeData: Encodable {
@@ -52,9 +66,7 @@ public struct PushNotificationsAPI {
         urlRequest.httpBody = httpBody
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, _) = try await urlSession.data(for: urlRequest)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        return response.ok
+        return try await isOk(urlRequest)
     }
 
     public struct UnsubscribeData: Encodable {
@@ -90,9 +102,7 @@ public struct PushNotificationsAPI {
         urlRequest.httpBody = httpBody
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, _) = try await urlSession.data(for: urlRequest)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        return response.ok
+        return try await isOk(urlRequest)
     }
 
     public struct DappSubscribeData {
@@ -150,9 +160,7 @@ public struct PushNotificationsAPI {
         urlRequest.setValue("close", forHTTPHeaderField: "Connection")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, _) = try await urlSession.data(for: urlRequest)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        return response.ok
+        return try await isOk(urlRequest)
     }
 
     public struct DappUnsubscribeData {
@@ -174,34 +182,28 @@ public struct PushNotificationsAPI {
         }
     }
 
+    /// Toggles use POST; only DELETE removes a dApp subscription.
     public func unsubscribeDappNotifications(unsubscribeData: DappUnsubscribeData) async throws -> Bool {
         guard var components = URLComponents(url: .host, resolvingAgainstBaseURL: true) else {
             throw Error.incorrectURL
         }
         components.path = "/v1/internal/pushes/tonconnect"
+        components.queryItems = [
+            URLQueryItem(name: "firebase_token", value: unsubscribeData.token),
+            URLQueryItem(name: "app_url", value: unsubscribeData.appURL),
+            URLQueryItem(name: "account", value: unsubscribeData.account),
+        ]
         guard let url = components.url else {
             throw Error.incorrectURL
         }
 
-        let bodyJson: [String: Any] = [
-            "app_url": unsubscribeData.appURL,
-            "account": unsubscribeData.account,
-            "firebase_token": unsubscribeData.token,
-            "commercial": false,
-            "silent": true,
-        ]
-        let bodyData = try? JSONSerialization.data(withJSONObject: bodyJson)
-
         var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.httpBody = bodyData
+        urlRequest.httpMethod = "DELETE"
         urlRequest.setValue(unsubscribeData.tonProof, forHTTPHeaderField: "X-TonConnect-Auth")
         urlRequest.setValue("close", forHTTPHeaderField: "Connection")
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, _) = try await urlSession.data(for: urlRequest)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        return response.ok
+        _ = try await validatedData(urlRequest)
+        return true
     }
 }
 

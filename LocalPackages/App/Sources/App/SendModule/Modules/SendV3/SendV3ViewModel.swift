@@ -447,7 +447,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
             }
         }
 
-        didUpdateCurrency?(isSwapped ? "\(sendController.getCurrency())" : "")
+        didUpdateCurrency?(isSwapped ? sendController.getCurrency().code : "")
         didUpdateAmount?(formatted)
         self.converted = converted
         updateViewState()

@@ -29,7 +29,7 @@ struct MigrationPrepareResponseBody: Decodable {
     let transactions: [MigrationTransactionBody]
     let error: String?
     let errorCode: Int64?
-    let details: InsufficientFunds?
+    let details: TonAPI.Components.Schemas.InsufficientFunds?
 
     enum CodingKeys: String, CodingKey {
         case from
@@ -50,8 +50,8 @@ struct MigrationTransactionBody: Decodable {
     let seqno: Int
     let boc: String
     let stateInit: String?
-    let messages: [MigrationOutMessage]
-    let emulation: MessageConsequences
+    let messages: [TonAPI.Components.Schemas.MigrationOutMessage]
+    let emulation: TonAPI.Components.Schemas.MessageConsequences
     /// Burned network fees in nanotons. Prefer this over `emulation.event.extra` —
     /// extra is "net Gram unexplained by actions" and for a GRAM sweep can approach the
     /// full balance, which must not drive Battery charge quotes or sweep gas checks.
@@ -82,10 +82,9 @@ struct MigrationTransactionBody: Decodable {
 }
 
 extension MigrationPrepareResponseBody {
-    init?(insufficientTonError: ErrorResponse) {
-        guard case let .error(statusCode, data, _, _) = insufficientTonError,
-              statusCode == 409,
-              let data,
+    init?(insufficientTonError: TonAPIError) {
+        guard insufficientTonError.statusCode == 409,
+              let data = insufficientTonError.body,
               let response = try? JSONDecoder().decode(Self.self, from: data),
               response.isInsufficientTonConflict,
               response.details != nil
@@ -93,29 +92,5 @@ extension MigrationPrepareResponseBody {
             return nil
         }
         self = response
-    }
-}
-
-extension MigrationAPI {
-    static func prepareMigrationWithRequestBuilder(
-        request: MigrationPrepareRequestBody
-    ) -> RequestBuilder<MigrationPrepareResponseBody> {
-        let localVariablePath = "/v2/migration/prepare"
-        let localVariableURLString = TonAPIAPI.basePath + localVariablePath
-        let localVariableParameters = JSONEncodingHelper.encodingParameters(forEncodableObject: request)
-        let localVariableUrlComponents = URLComponents(string: localVariableURLString)
-        let localVariableNillableHeaders: [String: Any?] = [
-            "Content-Type": "application/json",
-        ]
-        let localVariableHeaderParameters = APIHelper.rejectNilHeaders(localVariableNillableHeaders)
-        let localVariableRequestBuilder: RequestBuilder<MigrationPrepareResponseBody>.Type =
-            TonAPIAPI.requestBuilderFactory.getBuilder()
-        return localVariableRequestBuilder.init(
-            method: "POST",
-            URLString: localVariableUrlComponents?.string ?? localVariableURLString,
-            parameters: localVariableParameters,
-            headers: localVariableHeaderParameters,
-            requiresAuthentication: false
-        )
     }
 }

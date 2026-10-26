@@ -1,4 +1,5 @@
 @testable import TKCore
+@testable import TKServices
 import XCTest
 
 final class AptabaseEndpointStateTests: XCTestCase {

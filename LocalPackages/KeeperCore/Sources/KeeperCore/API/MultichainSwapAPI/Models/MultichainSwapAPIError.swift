@@ -1,4 +1,4 @@
-public enum MultichainSwapAPIError: Error, Sendable, Hashable {
+@frozen public enum MultichainSwapAPIError: Error, Sendable, Hashable {
     case badRequest(message: String, code: String?, requestId: String?)
     case notFound(message: String, code: String?, requestId: String?)
     case internalServerError(message: String, code: String?, requestId: String?)

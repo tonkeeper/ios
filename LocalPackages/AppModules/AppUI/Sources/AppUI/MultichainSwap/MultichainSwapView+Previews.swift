@@ -12,6 +12,15 @@ import TKUIKit
 }
 
 @available(iOS 17.0, *)
+#Preview("Locked pair") {
+    MultichainSwapView(
+        state: .previewLoaded,
+        actions: .previewLockedPair
+    )
+    .tkPreviewTheme(.deepBlue)
+}
+
+@available(iOS 17.0, *)
 #Preview("Shimmer") {
     MultichainSwapView(
         state: .init(content: .shimmer),
@@ -170,6 +179,22 @@ private extension MultichainSwapViewActions {
         requestPickSendToken: {},
         toggleReceiveAmountInputMode: {},
         requestPickReceiveToken: {},
+        swapTokens: {},
+        toggleRateDisplayDirection: {},
+        notifyQuoteRefreshCompleted: {},
+        continueSwap: {}
+    )
+
+    static let previewLockedPair = MultichainSwapViewActions(
+        close: {},
+        retryLoading: {},
+        openRaffle: {},
+        updateSendAmount: { _ in },
+        applyMaxSend: {},
+        toggleSendAmountInputMode: {},
+        requestPickSendToken: nil,
+        toggleReceiveAmountInputMode: {},
+        requestPickReceiveToken: nil,
         swapTokens: {},
         toggleRateDisplayDirection: {},
         notifyQuoteRefreshCompleted: {},

@@ -24,22 +24,19 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
         let balanceAction: (() -> Void)?
         let addressAction: (() -> Void)?
         let batteryAction: (() -> Void)?
-        let backupAction: (() -> Void)?
 
         init(
             walletIdentifier: String,
             config: BalanceViewConfig,
             balanceAction: (() -> Void)? = nil,
             addressAction: (() -> Void)? = nil,
-            batteryAction: (() -> Void)? = nil,
-            backupAction: (() -> Void)? = nil
+            batteryAction: (() -> Void)? = nil
         ) {
             self.walletIdentifier = walletIdentifier
             self.config = config
             self.balanceAction = balanceAction
             self.addressAction = addressAction
             self.batteryAction = batteryAction
-            self.backupAction = backupAction
         }
     }
 
@@ -98,8 +95,7 @@ private struct BalanceHeaderBalanceContentView: View {
             animatesAmountUpdates: store.state.animatesAmountUpdates,
             balanceAction: store.state.model.balanceAction,
             addressAction: store.state.model.addressAction,
-            batteryAction: store.state.model.batteryAction,
-            backupAction: store.state.model.backupAction
+            batteryAction: store.state.model.batteryAction
         )
     }
 }

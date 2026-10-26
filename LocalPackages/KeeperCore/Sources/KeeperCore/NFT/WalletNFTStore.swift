@@ -21,7 +21,7 @@ public actor WalletNFTStore {
         public let nfts: WalletNFTs
     }
 
-    public enum LoadingState {
+    @frozen public enum LoadingState {
         case idle
         case loading
     }

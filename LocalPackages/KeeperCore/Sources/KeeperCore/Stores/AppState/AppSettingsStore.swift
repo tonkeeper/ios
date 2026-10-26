@@ -8,7 +8,7 @@ public final class AppSettingsStore: Store<AppSettingsStore.Event, AppSettingsSt
         public var hidesDustBalances: Bool
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateIsSecureMode(isSecureMode: Bool)
         case didUpdateSearchEngine
         case didUpdateHistoryFilter

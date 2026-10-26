@@ -1,6 +1,6 @@
 import Foundation
 
-public enum IconButton {
+@frozen public enum IconButton {
     case send(Token)
     case receive(Token)
     case swap(Token)

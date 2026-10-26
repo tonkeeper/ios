@@ -9,9 +9,9 @@ public struct SendTransactionModel {
     public let extra: Int64
 
     init(
-        accountEvent: TonAPI.AccountEvent,
-        risk: TonAPI.Risk,
-        transaction: TonAPI.Transaction
+        accountEvent: TonAPI.Components.Schemas.AccountEvent,
+        risk: TonAPI.Components.Schemas.Risk,
+        transaction: TonAPI.Components.Schemas.Transaction
     ) throws {
         self.accountEvent = try AccountEvent(accountEvent: accountEvent)
         self.fee = transaction.totalFees

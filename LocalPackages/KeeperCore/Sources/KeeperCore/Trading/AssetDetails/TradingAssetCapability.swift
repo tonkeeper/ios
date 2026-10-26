@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TradingAssetCapability: String, Equatable, Sendable, Codable, Hashable {
+@frozen public enum TradingAssetCapability: String, Equatable, Sendable, Codable, Hashable {
     case onramp
     case offramp
     case swap

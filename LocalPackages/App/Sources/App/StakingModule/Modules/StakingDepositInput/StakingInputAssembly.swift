@@ -16,7 +16,8 @@ struct StakingInputAssembly {
         let amountInput = AmountInputAssembly.module(
             sourceUnit: TonToken.ton,
             destinationUnit: Currency.USD,
-            keeperCoreMainAssembly: keeperCoreMainAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            textFieldAccessibilityIdentifier: "staking_amount_input"
         )
 
         let viewModel = StakingInputViewModelImplementation(

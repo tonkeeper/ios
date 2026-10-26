@@ -1,8 +1,10 @@
 import AppUI
 import KeeperCore
+import SignRaw
 import TKCore
 import TKLocalize
 import TKLogging
+import TKUIKit
 import UIKit
 
 extension MainCoordinator {
@@ -15,19 +17,7 @@ extension MainCoordinator {
         case let .sendTransaction(request):
             guard let signRawRequest = request.params.first else { return }
 
-            let sendFrom: SendOpen.From
-            let appId: String?
-            let initiatedBy: InitiatedBy
-            switch app.connectionType {
-            case .bridge:
-                sendFrom = .tonconnectLocal
-                appId = app.manifest.host
-                initiatedBy = .tonconnectLocal
-            case .remote, .unknown:
-                sendFrom = .tonconnectRemote
-                appId = nil
-                initiatedBy = .tonconnectRemote
-            }
+            let (sendFrom, appId, initiatedBy) = tonConnectRequestSource(app: app)
 
             var resultHandler = BridgeSignRawResultHandler(
                 app: app,
@@ -38,7 +28,7 @@ extension MainCoordinator {
                 self?.showTonConnectDisconnectAppToast(app: app)
             }
 
-            openSignRaw(wallet: wallet, transferProvider: {
+            openSignRaw(wallet: wallet, mode: .sendTransaction, transferProvider: {
                 .signRaw(signRawRequest, forceRelayer: false)
             }, resultHandler: resultHandler, sendFrom: sendFrom, appId: appId, initiatedBy: initiatedBy, dappUrl: app.manifest.host, redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
@@ -51,6 +41,8 @@ extension MainCoordinator {
                     .connectionType: app.connectionType.rawValue,
                 ]
             ))
+        case let .signMessage(request):
+            handleTonConnectSignMessageRequest(request, wallet: wallet, app: app)
         case let .signData(request):
             var resultHandler = BridgeSignDataResultHandler(
                 app: app,
@@ -94,6 +86,91 @@ extension MainCoordinator {
         }
     }
 
+    private func handleTonConnectSignMessageRequest(
+        _ request: TonConnect.SignMessageRequest,
+        wallet: Wallet,
+        app: TonConnectApp
+    ) {
+        let tonConnectService = keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
+        let sendService = keeperCoreMainAssembly.servicesAssembly.sendService()
+        let isSignMessageEnabled = keeperCoreMainAssembly.tonConnectAssembly.isSignMessageEnabled
+        Task { @MainActor [weak self] in
+            do throws(TonConnectSignMessageValidationError) {
+                try await TonConnectSignMessageValidation.validate(
+                    request.params,
+                    wallet: wallet,
+                    isSignMessageEnabled: isSignMessageEnabled,
+                    sendService: sendService
+                )
+            } catch {
+                ToastPresenter.showToast(configuration: .init(title: error.toastTitle))
+                do {
+                    try await tonConnectService.rejectSignMessageRequest(
+                        appRequest: request,
+                        app: app,
+                        errorCode: error.errorCode,
+                        message: error.message
+                    )
+                } catch {
+                    Log.w("failed to reject Ton Connect sign message request due to error: \(error)")
+                }
+                return
+            }
+            self?.openTonConnectSignMessage(request, wallet: wallet, app: app, tonConnectService: tonConnectService)
+        }
+    }
+
+    private func openTonConnectSignMessage(
+        _ request: TonConnect.SignMessageRequest,
+        wallet: Wallet,
+        app: TonConnectApp,
+        tonConnectService: TonConnectService
+    ) {
+        let (sendFrom, appId, initiatedBy) = tonConnectRequestSource(app: app)
+
+        var resultHandler = BridgeSignMessageResultHandler(
+            app: app,
+            appRequest: request,
+            tonConnectService: tonConnectService
+        )
+        resultHandler.didCancelHandler = { [weak self] in
+            self?.showTonConnectDisconnectAppToast(app: app)
+        }
+
+        openSignRaw(
+            wallet: wallet,
+            mode: .signMessage(appName: app.manifest.name.isEmpty ? app.manifest.host : app.manifest.name),
+            transferProvider: {
+                .signRaw(request.params, forceRelayer: false)
+            },
+            resultHandler: resultHandler,
+            sendFrom: sendFrom,
+            appId: appId,
+            initiatedBy: initiatedBy,
+            dappUrl: app.manifest.host,
+            redAnalyticsConfiguration: .init(
+                flow: .tonConnect,
+                operation: .confirmTransaction,
+                attemptSource: sendFrom == .tonconnectLocal
+                    ? .tonconnectLocal
+                    : .tonconnectRemote,
+                staticMetadata: [
+                    .dappHost: app.manifest.host,
+                    .connectionType: app.connectionType.rawValue,
+                ]
+            )
+        )
+    }
+
+    private func tonConnectRequestSource(app: TonConnectApp) -> (SendOpen.From, String?, InitiatedBy) {
+        switch app.connectionType {
+        case .bridge:
+            return (.tonconnectLocal, app.manifest.host, .tonconnectLocal)
+        case .remote, .unknown:
+            return (.tonconnectRemote, nil, .tonconnectRemote)
+        }
+    }
+
     func showTonConnectDisconnectAppToast(app: TonConnectApp) {
         guard let windowScene = self.router.rootViewController.windowScene else { return }
         let model = DisconnectDappToastModel(
@@ -106,22 +183,6 @@ extension MainCoordinator {
                 keeperCoreMainAssembly.storesAssembly.connectedAppsStore(
                     tonConnectAppsStore: tonConnectAppsStore
                 ).deleteApp(app)
-                let pushTokenProvider = PushNotificationTokenProvider()
-                let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-                let notificationsService = keeperCoreMainAssembly.servicesAssembly.notificationsService(
-                    walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-                    tonConnectAppsStore: tonConnectAppsStore
-                )
-                Task {
-                    guard let token = await pushTokenProvider.getToken(),
-                          let wallet = try? walletsStore.activeWallet else { return }
-                    _ = try? await notificationsService.turnOffDappNotifications(
-                        wallet: wallet,
-                        manifest: app.manifest,
-                        sessionId: app.clientId,
-                        token: token
-                    )
-                }
             }
         )
         DisconnectDappToastPresenter.presentToast(

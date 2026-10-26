@@ -3,7 +3,7 @@ import os
 
 public extension TransactionsManagement {
     final class Store {
-        public enum Event {
+        @frozen public enum Event {
             case updateStates(states: TransactionsStates)
             case updateState(txID: String, state: TransactionState)
         }
@@ -32,17 +32,14 @@ public extension TransactionsManagement {
 
         private let wallet: Wallet
         private let repository: Repository
-        private let scamApi: ScamAPI
         private let queue = DispatchQueue(label: "com.walletconnect.transactions-management-store")
 
         init(
             wallet: Wallet,
-            repository: Repository,
-            scamApi: ScamAPI
+            repository: Repository
         ) {
             self.wallet = wallet
             self.repository = repository
-            self.scamApi = scamApi
         }
 
         public func addObserver(_ observer: Observer) {
@@ -54,10 +51,6 @@ public extension TransactionsManagement {
         }
 
         public func markAsSpam(_ txID: txID) async {
-            Task { [weak self] in
-                guard let self else { return }
-                try await scamApi.reportScamTransaction(txID, recipient: wallet.address)
-            }
             await updateTxState(txID, .spam)
         }
 

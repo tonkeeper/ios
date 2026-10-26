@@ -61,17 +61,14 @@ extension MultichainHistoryActivityItem {
         }
     }
 
-    var transactionAmount: TransactionCellContent.Amount {
+    var transactionAmount: TransactionCellContent.Amount? {
         guard let primaryAmount else {
-            return TransactionCellContent.Amount(
-                title: "-",
-                style: .tertiary
-            )
+            return nil
         }
 
         return TransactionCellContent.Amount(
             spans: primaryAmount.transactionAmountSpans,
-            style: primaryAmount.transactionAmountStyle
+            style: showsStatusDetails ? .warning : primaryAmount.transactionAmountStyle
         )
     }
 
@@ -87,7 +84,7 @@ extension MultichainHistoryActivityItem {
         return TransactionCellContent.Accessory(
             spans: secondaryAmount.transactionAccessorySpans,
             textStyle: .label1,
-            color: secondaryAmount.transactionAccessoryColor
+            color: showsStatusDetails ? .accentOrange : secondaryAmount.transactionAccessoryColor
         )
     }
 

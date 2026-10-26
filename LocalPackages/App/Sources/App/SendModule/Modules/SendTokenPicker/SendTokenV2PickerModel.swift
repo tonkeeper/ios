@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import PerpsModels
 
 enum SendTokenV2PickerDisplayMode {
     case includingMarketData
@@ -20,10 +21,13 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
     private let catalogSearching: TradingCatalogSearching?
     private let perpsSearching: PerpsMarketsSearching?
     private let isTransferSupported: (MultichainAsset) -> Bool
+    private let isTradingCatalogEnabled: Bool
     private let isPerpsCatalogEnabled: Bool
 
     let initialState: TokenPickerV2ModelState
+    let assetTypes: [TokenPickerV2AssetType]
 
+    private(set) var assetType: TokenPickerV2AssetType
     private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
     private(set) var perpsSearchSort: PerpsMarketsSort = .volume
 
@@ -42,7 +46,8 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         allowedChains: Set<MultichainChain>? = nil,
         initialChain: MultichainChain? = nil,
         catalogSearching: TradingCatalogSearching? = nil,
-        perpsSearching: PerpsMarketsSearching? = nil
+        perpsSearching: PerpsMarketsSearching? = nil,
+        initialCategory: TradingAssetCategory = .all
     ) {
         self.multichainState = multichainState
         self.searchBehavior = searchBehavior
@@ -52,24 +57,33 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         self.perpsSearching = perpsSearching
         self.isTransferSupported = isTransferSupported
         catalogSearchSort = initialCatalogSearchSort
-        isPerpsCatalogEnabled = searchBehavior == .catalog
-            && allowedChains == nil
-            && catalogSearching != nil
-            && perpsSearching != nil
+        isTradingCatalogEnabled = searchBehavior == .catalog && allowedChains == nil && catalogSearching != nil
+        isPerpsCatalogEnabled = isTradingCatalogEnabled && perpsSearching != nil
         let selection = Self.chainFilters(
             walletFilters: multichainState.tokenPickerV2Filters,
             allowedChains: allowedChains,
             initialChain: initialChain
         )
-        var filters = selection.filters
-        if isPerpsCatalogEnabled {
-            filters.append(.perpetuals)
-        }
         initialState = TokenPickerV2ModelState(
-            filters: filters,
+            filters: selection.filters,
             displayMode: displayMode,
             initialFilter: selection.initialFilter
         )
+        if isTradingCatalogEnabled {
+            assetTypes = TradingAssetCategory.allCases.map(TokenPickerV2AssetType.category)
+                + (isPerpsCatalogEnabled ? [.perpetuals] : [])
+            assetType = .category(initialCategory)
+        } else {
+            assetTypes = []
+            assetType = .category(.all)
+        }
+    }
+
+    func setAssetType(_ assetType: TokenPickerV2AssetType) {
+        guard assetTypes.contains(assetType) else {
+            return
+        }
+        self.assetType = assetType
     }
 
     func setCatalogSearchSort(_ sort: MultichainAssetSearchSort) {
@@ -117,7 +131,7 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
         let normalizedQuery = normalizedQuery(query)
 
-        if isPerpsCatalogEnabled, filter == .perpetuals {
+        if assetType == .perpetuals {
             return try await loadPerpsMarkets(
                 query: normalizedQuery,
                 cursor: cursor
@@ -155,7 +169,7 @@ private extension SendTokenV2PickerModel {
         limit: Int,
         cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
-        if isPerpsCatalogEnabled {
+        if isTradingCatalogEnabled {
             return try await loadTradingCatalogAssets(
                 query: query,
                 filter: filter,
@@ -187,10 +201,11 @@ private extension SendTokenV2PickerModel {
             page = try await catalogSearching.catalogSearch(
                 query: query,
                 chain: filter.chain?.rawValue,
-                showPerps: filter == .all,
+                showPerps: isPerpsCatalogEnabled && filter == .all && assetType == .category(.all),
                 sort: catalogSearchSort,
                 cursor: cursor,
-                pageSize: limit
+                pageSize: limit,
+                category: assetType.category
             )
         } catch {
             throw mapCatalogError(error)
@@ -289,6 +304,7 @@ private extension SendTokenV2PickerModel {
             search: nil,
             availableOnly: nil,
             showHidden: nil,
+            showAll: nil,
             hideDust: nil,
             limit: limit,
             cursor: cursor
@@ -324,6 +340,7 @@ private extension SendTokenV2PickerModel {
             search: nil,
             availableOnly: nil,
             showHidden: nil,
+            showAll: nil,
             hideDust: nil
         ).assets
         for asset in assets {
@@ -416,8 +433,7 @@ private extension TradingCatalogSpot {
             price: MultichainAssetPrice(
                 prices: parsedPrice.map { [currencyCode: $0] } ?? [:],
                 diff24h: [currencyCode: change24hPercent],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: walletAsset?.balance ?? .zero,
             marketCap: marketCap.map { [currencyCode: $0] } ?? [:]

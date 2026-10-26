@@ -16,11 +16,11 @@ public struct WalletMetaData: Codable, Equatable {
     }
 }
 
-public enum WalletIcon: Codable, Equatable {
+@frozen public enum WalletIcon: Codable, Equatable {
     case emoji(String)
     case icon(Image)
 
-    public enum Image: String, Codable, CaseIterable {
+    @frozen public enum Image: String, Codable, CaseIterable {
         case wallet
         case leaf
         case lock
@@ -45,7 +45,7 @@ public enum WalletIcon: Codable, Equatable {
     }
 }
 
-public enum WalletTintColor: String, Codable, CaseIterable, Equatable {
+@frozen public enum WalletTintColor: String, Codable, CaseIterable, Equatable {
     case SteelGray
     case LightSteelGray
     case Gray

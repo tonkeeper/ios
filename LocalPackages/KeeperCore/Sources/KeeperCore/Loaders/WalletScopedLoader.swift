@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WalletScope {
+@frozen public enum WalletScope {
     case activeWallet
     case walletId(String?)
 }

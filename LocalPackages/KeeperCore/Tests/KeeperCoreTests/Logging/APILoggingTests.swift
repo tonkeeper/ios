@@ -2,7 +2,9 @@ import Foundation
 import HTTPTypes
 @testable import KeeperCore
 import OpenAPIRuntime
+import TKFeatureFlags
 import TKLogging
+import TonAPI
 import XCTest
 
 final class APILoggingTests: XCTestCase {
@@ -77,6 +79,81 @@ final class APILoggingTests: XCTestCase {
     }
 
     // MARK: - Middleware
+
+    func testTonAPIClientLogsHTTPErrorBeforeThrowingWithBodyIntact() async throws {
+        let backend = RecordingLogBackend()
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [TonAPIErrorURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let client = try TonAPI.Client(
+            serverURL: XCTUnwrap(URL(string: "https://tonapi.test")),
+            apiKey: "secret-token",
+            urlSession: session
+        )
+
+        do {
+            _ = try await withRecording(backend) {
+                try await client.status()
+            }
+            XCTFail("expected TonAPIError")
+        } catch {
+            let apiError = try XCTUnwrap(error.tonAPIError)
+            XCTAssertEqual(apiError.statusCode, 503)
+            XCTAssertEqual(apiError.body, Data(TonAPIErrorURLProtocol.payload.utf8))
+            XCTAssertEqual(apiError.path, "/v2/status")
+        }
+
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.severity, .warning)
+        XCTAssertEqual(record.category, "TonAPI")
+        XCTAssertTrue(record.message.contains("→ 503 cf-ray=test-ray in"), record.message)
+        XCTAssertEqual(record.extraInfo["responseBody"], TonAPIErrorURLProtocol.payload)
+        XCTAssertEqual(record.extraInfo["host"], "tonapi.test")
+    }
+
+    func testTonAPIBulkRequestLogsHTTPErrorWithBodyAndCanonicalPath() async throws {
+        let backend = RecordingLogBackend()
+        let session = makeTonAPISession()
+        defer { session.invalidateAndCancel() }
+        let api = try makeTonAPI(session: session)
+
+        do {
+            _ = try await withRecording(backend) {
+                try await api.getWalletsByPubkeysBulk(publicKeys: ["public-key"], firebaseUserId: "firebase-user")
+            }
+            XCTFail("expected TonAPIError")
+        } catch let error as TonAPIError {
+            XCTAssertEqual(error.statusCode, 503)
+            XCTAssertEqual(error.body, Data(TonAPIErrorURLProtocol.payload.utf8))
+            XCTAssertEqual(error.path, "/v2/pubkeys/wallets/_bulk")
+        }
+
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.category, "TonAPI")
+        XCTAssertEqual(record.severity, .warning)
+        XCTAssertTrue(record.message.hasPrefix("getWalletsByPubkeysBulk POST /v2/pubkeys/wallets/_bulk → 503"), record.message)
+        XCTAssertEqual(record.extraInfo["responseBody"], TonAPIErrorURLProtocol.payload)
+    }
+
+    func testTonAPIMigrationLogsConflictAndPreservesPreparedResponse() async throws {
+        let backend = RecordingLogBackend()
+        let session = makeTonAPISession()
+        defer { session.invalidateAndCancel() }
+        let api = try makeTonAPI(session: session)
+
+        let response = try await withRecording(backend) {
+            try await api.prepareMigration(from: "from", to: "to", currency: .USD, publicKey: "public-key")
+        }
+
+        XCTAssertTrue(response.isInsufficientTonConflict)
+        XCTAssertEqual(response.details?.required, 250_000_000)
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.category, "TonAPI")
+        XCTAssertEqual(record.severity, .warning)
+        XCTAssertTrue(record.message.hasPrefix("prepareMigration POST /v2/migration/prepare → 409"), record.message)
+        XCTAssertEqual(record.extraInfo["responseBody"], TonAPIErrorURLProtocol.migrationPayload)
+    }
 
     func testMiddlewareLogsErrorStatusWithServerPayloadAndForwardsBodyIntact() async throws {
         let backend = RecordingLogBackend()
@@ -185,6 +262,29 @@ final class APILoggingTests: XCTestCase {
         XCTAssertTrue(record.message.contains("→ 200 in"), record.message)
     }
 
+    /// The decoder spends the body before a decoding failure surfaces, so the failure can say what
+    /// the server sent only when the middleware handed it a buffered copy.
+    func testUndecodedSuccessBodyIsReadableOnlyForABufferedOperation() async throws {
+        let payload = #"{"operation":{"id":"1"}}"#
+        func undecoded(bodies: Set<String>) async throws -> String? {
+            var fields = HTTPFields()
+            fields[.contentType] = "application/json"
+            let streamed = HTTPBody(
+                AsyncStream { $0.yield(ArraySlice(payload.utf8)); $0.finish() },
+                length: .unknown,
+                iterationBehavior: .single
+            )
+            let (response, body) = try await send(response: (HTTPResponse(status: .ok, headerFields: fields), streamed), bodies: bodies)
+            _ = try await Data(collecting: XCTUnwrap(body), upTo: 1024)
+            return await makeClientError(response: response, responseBody: body).undecodedResponseBody()
+        }
+
+        let buffered = try await undecoded(bodies: ["createCrossSwapQuote"])
+        XCTAssertEqual(buffered, payload)
+        let streamed = try await undecoded(bodies: [])
+        XCTAssertNil(streamed)
+    }
+
     func testMiddlewareReportsTransportFailureAsWarningAndRethrows() async throws {
         let backend = RecordingLogBackend()
 
@@ -224,11 +324,31 @@ final class APILoggingTests: XCTestCase {
 }
 
 private extension APILoggingTests {
+    func makeTonAPISession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [TonAPIErrorURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
+
+    func makeTonAPI(session: URLSession) throws -> API {
+        let mainnet = try JSONDecoder().decode(BootConfiguration.self, from: Data(#"{"tonApiV2Key":"secret-token"}"#.utf8))
+        return API(
+            hostProvider: TonAPIHostProviderStub(),
+            urlSession: session,
+            configuration: Configuration(
+                bootConfigurationService: TonAPIBootConfigurationStub(bootConfigurations: .init(mainnet: mainnet, testnet: .empty)),
+                featureFlags: DummyFeatureFlags(),
+                tkAppSettings: TonAPIAppSettingsStub()
+            )
+        )
+    }
+
     func makeClientError(
         path: String = "/v2/cross/quote",
         underlying: any Error = URLError(.unknown),
         causeDescription: String = "Transport threw an error.",
-        response: HTTPResponse? = nil
+        response: HTTPResponse? = nil,
+        responseBody: HTTPBody? = nil
     ) -> ClientError {
         ClientError(
             operationID: "createCrossSwapQuote",
@@ -236,6 +356,7 @@ private extension APILoggingTests {
             request: HTTPRequest(method: .post, scheme: nil, authority: nil, path: path),
             baseURL: URL(string: "https://swap.tonkeeper.com")!,
             response: response,
+            responseBody: responseBody,
             causeDescription: causeDescription,
             underlyingError: underlying
         )
@@ -268,9 +389,10 @@ private extension APILoggingTests {
     func send(
         response: (HTTPResponse, HTTPBody?)? = nil,
         failure: (any Error)? = nil,
-        slowRequestThreshold: TimeInterval = 3
+        slowRequestThreshold: TimeInterval = 3,
+        bodies: Set<String> = []
     ) async throws -> (HTTPResponse, HTTPBody?) {
-        try await APILoggingMiddleware(slowRequestThreshold: slowRequestThreshold).intercept(
+        try await APILoggingMiddleware(slowRequestThreshold: slowRequestThreshold, bodyLoggedOperations: bodies).intercept(
             HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v2/cross/quote"),
             body: nil,
             baseURL: URL(string: "https://swap.tonkeeper.com")!,
@@ -291,4 +413,66 @@ private final class RecordingLogBackend: LogBackend, @unchecked Sendable {
     func log(_ record: LogRecord) {
         records.append(record)
     }
+}
+
+private final class TonAPIErrorURLProtocol: URLProtocol {
+    static let payload = #"{"error":"service unavailable"}"#
+    static let migrationPayload = #"{"from":"from","to":"to","wallet_version":"v5R1","transactions":[],"error":"insufficient TON for gas","error_code":50000,"details":{"required":250000000,"available":10000000}}"#
+
+    override class func canInit(with _: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer secret-token")
+        let isMigration = request.url?.path == "/v2/migration/prepare"
+        if request.url?.path == "/v2/pubkeys/wallets/_bulk" {
+            XCTAssertEqual(request.value(forHTTPHeaderField: "F"), "firebase-user")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+            XCTAssertEqual(request.httpMethod, "POST")
+        }
+        let data = Data((isMigration ? Self.migrationPayload : Self.payload).utf8)
+        let response = HTTPURLResponse(
+            url: request.url!,
+            statusCode: isMigration ? 409 : 503,
+            httpVersion: nil,
+            headerFields: [
+                "Content-Type": "application/json",
+                "Content-Length": "\(data.count)",
+                "cf-ray": "test-ray",
+            ]
+        )!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
+
+private struct TonAPIHostProviderStub: APIHostProvider {
+    var basePath: String {
+        "https://tonapi.test"
+    }
+}
+
+private struct TonAPIBootConfigurationStub: BootConfigurationService {
+    let bootConfigurations: BootConfigurations
+
+    func getConfiguration() throws -> BootConfigurations {
+        bootConfigurations
+    }
+
+    func loadConfiguration() async throws -> BootConfigurations {
+        bootConfigurations
+    }
+}
+
+private final class TonAPIAppSettingsStub: TKAppSettings {
+    var isConfirmButtonInsteadSlider = false
+    var raffleIsNewUser: Bool?
 }

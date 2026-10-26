@@ -85,7 +85,7 @@ final class EthenaDetailsConfigurator: TokenDetailsConfigurator {
         var buttons = [
             TokenDetailsModel.Button(
                 iconButton: .send(.ton(.jetton(usdeJettonItem))),
-                isEnable: balance?.usde?.amount.isZero == false
+                isEnable: wallet.isSendAvailable && balance?.usde?.amount.isZero == false
             ),
             TokenDetailsModel.Button(
                 iconButton: .receive(.ton(.jetton(usdeJettonItem))),

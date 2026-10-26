@@ -10,10 +10,7 @@ enum WalletConnectRequestFeeFactory {
         let gasLimit = try payload.optionalEVMQuantity(.gas)
         let gasPrice = try positiveFeeValue(payload.optionalEVMQuantity(.gasPrice), field: .gasPrice)
         let maxFeePerGas = try positiveFeeValue(payload.optionalEVMQuantity(.maxFeePerGas), field: .maxFeePerGas)
-        let maxPriorityFeePerGas = try positiveFeeValue(
-            payload.optionalEVMQuantity(.maxPriorityFeePerGas),
-            field: .maxPriorityFeePerGas
-        )
+        let maxPriorityFeePerGas = try payload.optionalEVMQuantity(.maxPriorityFeePerGas)
 
         guard let gasLimit else {
             return nil
@@ -21,9 +18,11 @@ enum WalletConnectRequestFeeFactory {
         guard gasLimit > 0 else {
             throw .invalidTransaction(reason: "WalletConnect transaction gas must be greater than zero")
         }
+        let asset = chain.multichainChain.asChainKitChain.toAsset()
 
         if chain.supportsEip1559Fees, maxFeePerGas != nil || maxPriorityFeePerGas != nil {
             return try eip1559Fee(
+                asset: asset,
                 gasLimit: gasLimit,
                 gasPrice: gasPrice,
                 maxFeePerGas: maxFeePerGas,
@@ -43,6 +42,7 @@ enum WalletConnectRequestFeeFactory {
         }
 
         return FeeGas(
+            asset: asset,
             limit: bignum(gasLimit),
             price: bignum(gasPrice),
             amount: bignum(gasLimit * gasPrice)
@@ -50,6 +50,7 @@ enum WalletConnectRequestFeeFactory {
     }
 
     private static func eip1559Fee(
+        asset: AssetCoin,
         gasLimit: BigUInt,
         gasPrice: BigUInt?,
         maxFeePerGas: BigUInt?,
@@ -64,6 +65,7 @@ enum WalletConnectRequestFeeFactory {
         }
 
         return FeeEip1559(
+            asset: asset,
             limit: bignum(gasLimit),
             networkPrice: bignum(gasPrice ?? 0),
             maxPrice: bignum(maxFeePerGas),

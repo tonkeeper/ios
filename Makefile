@@ -8,19 +8,23 @@ SWIFTFORMAT := $(TOOL) swiftformat
 SWIFTGEN := $(TOOL) swiftgen
 SWIFTLINT := $(TOOL) swiftlint
 XCBEAUTIFY := $(TOOL) xcbeautify
+SHARED_UIKIT_PACKAGE := $(if $(wildcard ../shared/resources),../shared/resources,resources)
 
 .PHONY: \
 	locale \
 	resources \
 	analytics \
 	analytics_check \
+	appstore_toolings \
 	format \
 	hooks \
 	setup \
 	tonconnect_generate \
 	tonkeeper_generate \
+	tonapi_generate \
 	trading_generate \
 	perps_generate \
+	battery_generate \
 	kandelabr_generate \
 	multichain_generate \
 	swap_generate \
@@ -37,6 +41,9 @@ XCBEAUTIFY := $(TOOL) xcbeautify
 	test \
 	test_all \
 	test_app_package \
+	test_perps \
+	test_ledger \
+	test_moonpay \
 	test_app
 
 locale:
@@ -45,7 +52,7 @@ locale:
 
 resources:
 	mkdir -p "./LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Generated"
-	$(SWIFTGEN) config run --config "./LocalPackages/TKUIKit/codegen/swiftgen.yml"
+	TK_UIKIT_RESOURCES="$(abspath $(SHARED_UIKIT_PACKAGE)/Sources/KeeperResources/Resources)" $(SWIFTGEN) config run --config "./LocalPackages/TKUIKit/codegen/swiftgen.yml"
 	$(SWIFTFORMAT) --config "./.swiftformat" "./LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Generated"
 
 analytics:
@@ -58,11 +65,26 @@ analytics:
 analytics_check:
 	@scripts/analytics/check_key_limits.py
 
-format:
-	$(SWIFTFORMAT) --config "./.swiftformat" "."
+# App Store Connect release steps from the terminal: attach the processed build, push the "What's New"
+# from scripts/appstore/whats_new.txt, submit to review. Without ACTION it shows a chooser.
+# Needs ASC_KEY_ID / ASC_ISSUER_ID / ASC_PRIVATE_KEY_PATH (env or the repository-root .env).
+appstore_toolings:
+	@scripts/appstore/appstore_toolings.py $(ACTION) \
+		$(if $(NOTES),--notes "$(NOTES)") \
+		$(if $(VERSION),--version "$(VERSION)") \
+		$(if $(BUNDLE_ID),--bundle-id "$(BUNDLE_ID)") \
+		$(if $(BUILD),--build "$(BUILD)") \
+		$(if $(CREATE),--create) \
+		$(if $(ENCRYPTION_EXEMPT),--encryption-exempt) \
+		$(if $(YES),--yes) \
+		$(if $(DRY_RUN),--dry-run)
 
+format:
+	$(SWIFTFORMAT) --config "./.swiftformat" "." "$(SHARED_UIKIT_PACKAGE)"
+
+# The public mirror has no .githooks/.
 hooks:
-	@scripts/hooks/setup_hooks.sh
+	@[ ! -d ../.githooks ] || git config core.hooksPath .githooks
 
 setup:
 	@scripts/setup.sh
@@ -71,7 +93,7 @@ setup:
 # per-API target names kept as the entry points. Spelled out rather than generated
 # from a name list, because shell completion parses the Makefile text and does not
 # expand functions, so a computed target list leaves `make <tab>` with nothing to offer.
-tonconnect_generate tonkeeper_generate trading_generate perps_generate kandelabr_generate multichain_generate swap_generate:
+tonapi_generate tonconnect_generate tonkeeper_generate trading_generate perps_generate battery_generate kandelabr_generate multichain_generate swap_generate:
 	@scripts/apigen/generate.sh $(patsubst %_generate,%,$@)
 
 api_generate:
@@ -98,9 +120,11 @@ BUILD_ROOT := $(CURDIR)/$(BUILD_DIR)
 SOURCE_PACKAGES_DIR := $(BUILD_ROOT)/SourcePackages
 GIT_CONFIG_FILE := $(BUILD_ROOT)/git-config
 MODULE_CACHE_PATH := $(HOME)/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
-# Shared xcodebuild env: route git auth through the in-repo credential store and
-# expose the cloned SourcePackages path to build-phase scripts (see comment below).
-XCODEBUILD_ENV := GIT_CONFIG_GLOBAL=$(GIT_CONFIG_FILE) CLONED_SOURCE_PACKAGES_DIR=$(SOURCE_PACKAGES_DIR)
+# Shared xcodebuild env: route git auth through the in-repo credential store,
+# expose the cloned SourcePackages path to build-phase scripts (see comment below)
+# and apply the package-target settings the CI builds use.
+XCODEBUILD_ENV := GIT_CONFIG_GLOBAL=$(GIT_CONFIG_FILE) CLONED_SOURCE_PACKAGES_DIR=$(SOURCE_PACKAGES_DIR) \
+	XCODE_XCCONFIG_FILE=$(CURDIR)/Configurations/PackageBuildSettings.xcconfig
 # Optional quiet output. Default (empty) keeps full progress output for humans.
 XCBEAUTIFY_FLAGS := $(if $(filter 1,$(QUIET)),-qq,)
 
@@ -192,7 +216,7 @@ TEST_ONLY ?=
 test: test_all
 
 # Single complete unit-test run via the unified KeeperUnitTests scheme
-# (9 bundles across KeeperCore/TronSwift/TKCore/TKLocalize/App/TKUIKit).
+# (12 bundles across KeeperCore/TronSwift/TKCore/TKLocalize/App/TKUIKit/Perps/Ledger/MoonPay).
 # Reuses the test_project_scheme template for SCM/lockfile flags.
 test_all: SCHEME=KeeperUnitTests
 test_all: test_project_scheme
@@ -268,6 +292,18 @@ test_tklocalize: test_project_scheme
 test_tkuikit: SCHEME=TKUIKit
 test_tkuikit: TEST_ONLY=TKUIKitTests
 test_tkuikit: test_project_scheme
+
+test_perps: SCHEME=Perps
+test_perps: TEST_ONLY=PerpsTests
+test_perps: test_project_scheme
+
+test_ledger: SCHEME=Ledger
+test_ledger: TEST_ONLY=TonTransportTests
+test_ledger: test_project_scheme
+
+test_moonpay: SCHEME=MoonPay
+test_moonpay: TEST_ONLY=MoonPayTests
+test_moonpay: test_project_scheme
 
 test_app: SCHEME=App
 test_app: TEST_ONLY=AppTests

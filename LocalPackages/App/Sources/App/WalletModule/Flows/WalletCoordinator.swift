@@ -323,7 +323,8 @@ private extension WalletCoordinator {
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .enableBiometry
         )
     }
 }

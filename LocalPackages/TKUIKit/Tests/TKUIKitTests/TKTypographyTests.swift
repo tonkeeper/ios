@@ -126,6 +126,31 @@ final class TKTypographyTests: XCTestCase {
         }
     }
 
+    func testDesignSystemStylesDrawCJKWithAPublicFont() {
+        for entry in designSystem {
+            for run in runs(of: "钱包设置", in: entry.style.font) {
+                let name = fontName(of: run)
+                XCTAssertFalse(name.hasPrefix("."), "\(entry.name): \(name)")
+                XCTAssertFalse(glyphs(in: run).contains(0), "\(entry.name): \(name)")
+            }
+        }
+    }
+
+    func testDesignSystemStylesDrawEmojiInColor() {
+        for entry in designSystem {
+            for run in runs(of: "💎", in: entry.style.font) {
+                XCTAssertTrue(fontName(of: run).contains("Emoji"), "\(entry.name): \(fontName(of: run))")
+            }
+        }
+    }
+
+    func testDesignSystemStylesDoNotCollapseTheThinSpace() {
+        for entry in designSystem {
+            let thinSpace = runs(of: "\u{2009}", in: entry.style.font).map(width(of:)).reduce(0, +)
+            XCTAssertGreaterThan(thinSpace, entry.size * 0.08, entry.name)
+        }
+    }
+
     private func expectedStylisticSets(_ features: TKFontFeatures) -> Set<String> {
         Set(features.stylisticSets.map(\.rawValue))
     }
@@ -149,15 +174,29 @@ final class TKTypographyTests: XCTestCase {
     }
 
     private func glyphs(of string: String, in font: UIFont) -> [CGGlyph] {
+        runs(of: string, in: font).flatMap(glyphs(in:))
+    }
+
+    private func runs(of string: String, in font: UIFont) -> [CTRun] {
         let line = CTLineCreateWithAttributedString(
             NSAttributedString(string: string, attributes: [.font: font])
         )
-        let runs = CTLineGetGlyphRuns(line) as? [CTRun] ?? []
-        return runs.flatMap { run -> [CGGlyph] in
-            let count = CTRunGetGlyphCount(run)
-            var buffer = [CGGlyph](repeating: 0, count: count)
-            CTRunGetGlyphs(run, CFRange(location: 0, length: count), &buffer)
-            return buffer
-        }
+        return CTLineGetGlyphRuns(line) as? [CTRun] ?? []
+    }
+
+    private func glyphs(in run: CTRun) -> [CGGlyph] {
+        let count = CTRunGetGlyphCount(run)
+        var buffer = [CGGlyph](repeating: 0, count: count)
+        CTRunGetGlyphs(run, CFRange(location: 0, length: count), &buffer)
+        return buffer
+    }
+
+    private func fontName(of run: CTRun) -> String {
+        let font = (CTRunGetAttributes(run) as NSDictionary)[kCTFontAttributeName as String] as? UIFont
+        return font?.fontName ?? ""
+    }
+
+    private func width(of run: CTRun) -> CGFloat {
+        CGFloat(CTRunGetTypographicBounds(run, CFRange(location: 0, length: 0), nil, nil, nil))
     }
 }

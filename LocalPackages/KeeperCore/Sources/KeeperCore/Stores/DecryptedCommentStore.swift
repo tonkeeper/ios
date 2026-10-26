@@ -10,7 +10,7 @@ public final class DecryptedCommentStore: Store<DecryptedCommentStore.Event, Dec
         let senderAddress: Address
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didDecryptComment(eventId: String, wallet: Wallet)
     }
 

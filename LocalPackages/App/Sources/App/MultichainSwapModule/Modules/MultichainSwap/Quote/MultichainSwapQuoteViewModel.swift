@@ -61,12 +61,12 @@ final class MultichainSwapQuoteViewModel {
         onSnapshotChange?(pairViewModel.snapshot)
     }
 
-    func updateSourceAmount(_ sourceAmount: BigUInt?, debounce: Bool) {
+    func updateSourceAmount(_ sourceAmount: BigUInt?, isMax: Bool, debounce: Bool) {
         guard let activePairViewModel else {
             onSnapshotChange?(.initial())
             return
         }
-        activePairViewModel.updateSourceAmount(sourceAmount, debounce: debounce)
+        activePairViewModel.updateSourceAmount(sourceAmount, isMax: isMax, debounce: debounce)
     }
 
     func notifyCircularProgressCompleted() {

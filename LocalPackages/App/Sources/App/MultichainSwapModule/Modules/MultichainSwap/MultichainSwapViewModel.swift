@@ -9,9 +9,9 @@ import TKUIKit
 final class MultichainSwapViewModel: ObservableObject {
     let amountFormatter: AmountFormatter
     let quoteRefreshDuration: TimeInterval = 30
+    let isAssetSelectionLocked: Bool
 
-    private let multichainState: MultichainWalletState
-    private let wallet: Wallet
+    private let swapWallet: MultichainSwapWallet
     private let defaultAssetsService: MultichainSwapDefaultAssetsService
     private var raffleObserver: MysteryRafflePresentationObserver?
     private var shownRaffleBannerIDs = Set<String>()
@@ -42,9 +42,9 @@ final class MultichainSwapViewModel: ObservableObject {
     init(
         amountFormatter: AmountFormatter,
         multichainSwapService: MultichainSwapService,
-        multichainState: MultichainWalletState,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         defaultAssetsService: MultichainSwapDefaultAssetsService,
+        isAssetSelectionLocked: Bool = false,
         displayCurrency: Currency = .defaultCurrency,
         isSwapKitEnabled: Bool = false,
         raffleStore: RaffleStore? = nil,
@@ -57,9 +57,9 @@ final class MultichainSwapViewModel: ObservableObject {
         onOpenRaffle: @escaping () -> Void = {}
     ) {
         self.amountFormatter = amountFormatter
-        self.multichainState = multichainState
-        self.wallet = wallet
+        self.swapWallet = swapWallet
         self.defaultAssetsService = defaultAssetsService
+        self.isAssetSelectionLocked = isAssetSelectionLocked
         self.analyticsProvider = analyticsProvider
         self.onClose = onClose
         self.onContinue = onContinue
@@ -77,7 +77,7 @@ final class MultichainSwapViewModel: ObservableObject {
             calculator: calculator,
             validator: MultichainSwapValidator(
                 calculator: calculator,
-                multichainState: multichainState
+                swapWallet: swapWallet
             )
         )
         self.quoteViewModel = MultichainSwapQuoteViewModel(
@@ -140,6 +140,10 @@ final class MultichainSwapViewModel: ObservableObject {
             "swap confirmation opened: \(input.quoteState.quote.quoteId) / \(input.quoteState.route.routeId)"
         )
         onContinue(input)
+    }
+
+    func requestFreshQuote() {
+        refreshQuote(recreatePair: false, debounce: false)
     }
 
     func notifyCircularProgressCompleted() {
@@ -351,13 +355,17 @@ final class MultichainSwapViewModel: ObservableObject {
         else {
             return nil
         }
-        let sourceAmount = selectedRoute.sourceAmount.flatMap { BigUInt($0) }
-            ?? calculator.sourceAmount(
-                inputs: inputs,
-                usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
-            )
-        guard let sourceAmount,
-              sourceAmount > 0,
+        guard let requested = calculator.sourceAmount(
+            inputs: inputs,
+            usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
+        ), requested > 0 else {
+            return nil
+        }
+        let sourceAmount = MultichainSwapSourceCharge.tradeAmount(
+            requested: requested,
+            route: selectedRoute
+        )
+        guard sourceAmount > 0,
               sourceAmount <= inputs.sendAsset.balance,
               BigUInt(selectedRoute.estimatedDestinationAmount) != nil
         else {
@@ -526,6 +534,7 @@ private extension MultichainSwapViewModel {
         }
         quoteViewModel.updateSourceAmount(
             quoteSourceAmount(for: inputs),
+            isMax: inputs.isMaxSend,
             debounce: debounce
         )
     }
@@ -533,8 +542,8 @@ private extension MultichainSwapViewModel {
     func pairContext(for inputs: MultichainSwapInputs) -> MultichainSwapQuotePairContext? {
         guard let sourceChain = inputs.sendAsset.asset.chain,
               let destinationChain = inputs.receiveAsset.asset.chain,
-              let senderAddress = multichainState.address(for: sourceChain, preferredType: wallet.preferredMultichainAddressType(for: sourceChain)),
-              let recipientAddress = multichainState.address(for: destinationChain, preferredType: wallet.preferredMultichainAddressType(for: destinationChain))
+              let senderAddress = swapWallet.address(for: sourceChain),
+              let recipientAddress = swapWallet.address(for: destinationChain)
         else {
             return nil
         }
@@ -558,7 +567,7 @@ private extension MultichainSwapViewModel {
                 sourceChain: sourceChain,
                 slippage: inputs.slippage
             ).defaultBps,
-            walletId: multichainState.walletId
+            walletId: swapWallet.walletId
         )
     }
 
@@ -568,7 +577,6 @@ private extension MultichainSwapViewModel {
             usdFiatRate: effectiveUsdFiatRate(inputs: inputs)
         ),
             sourceAmount > 0,
-            sourceAmount <= inputs.sendAsset.balance,
             pairContext(for: inputs) != nil
         else {
             return nil

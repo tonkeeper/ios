@@ -5,6 +5,7 @@ public struct SignRawRequest: Decodable {
     public let messages: [SignRawRequestMessage]
     public let validUntil: UInt64?
     public let from: Address?
+    public let network: String?
     public let messagesVariants: MessagesVariants?
 
     public struct MessagesVariants: Decodable {
@@ -17,17 +18,20 @@ public struct SignRawRequest: Decodable {
         case validUntil = "valid_until"
         case from
         case source
+        case network
     }
 
     public init(
         messages: [SignRawRequestMessage],
         validUntil: UInt64?,
         from: Address?,
+        network: String? = nil,
         messagesVariants: MessagesVariants?
     ) {
         self.messages = messages
         self.validUntil = validUntil
         self.from = from
+        self.network = network
         self.messagesVariants = messagesVariants
     }
 
@@ -38,10 +42,17 @@ public struct SignRawRequest: Decodable {
 
         messagesVariants = try? container.decode(MessagesVariants.self, forKey: .messagesVariants)
 
-        if let fromValue = try? container.decode(String.self, forKey: .from) {
-            from = try Address.parse(fromValue)
-        } else {
-            from = try Address.parse(container.decode(String.self, forKey: .source))
+        let fromValue = try container.decodeIfPresent(String.self, forKey: .from)
+            ?? container.decodeIfPresent(String.self, forKey: .source)
+        from = try fromValue.map { try Address.parse($0) }
+        network = try Self.decodeNetwork(from: container)
+    }
+
+    private static func decodeNetwork(from container: KeyedDecodingContainer<CodingKeys>) throws -> String? {
+        do {
+            return try container.decodeIfPresent(String.self, forKey: .network)
+        } catch DecodingError.typeMismatch {
+            return try container.decodeIfPresent(Int.self, forKey: .network).map(String.init)
         }
     }
 }

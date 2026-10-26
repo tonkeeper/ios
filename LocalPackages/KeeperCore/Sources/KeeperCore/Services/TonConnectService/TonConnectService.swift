@@ -4,7 +4,7 @@ import KeeperCoreComponents
 import TonConnectAPI
 import TonSwift
 
-public enum TonConnectManifestError: Swift.Error {
+@frozen public enum TonConnectManifestError: Swift.Error {
     case incorrectURL
     case loadFailed(error: Swift.Error)
     case invalidManifest
@@ -74,6 +74,19 @@ public protocol TonConnectService {
         app: TonConnectApp
     ) async throws
 
+    func confirmSignMessageRequest(
+        internalBoc: String,
+        appRequest: TonConnect.SignMessageRequest,
+        app: TonConnectApp
+    ) async throws
+
+    func rejectSignMessageRequest(
+        appRequest: TonConnect.SignMessageRequest,
+        app: TonConnectApp,
+        errorCode: TonConnect.SendResponseError.ErrorCode,
+        message: String
+    ) async throws
+
     func confirmDisconnectRequest(
         appRequest: TonConnect.DisconnectRequest,
         app: TonConnectApp
@@ -93,6 +106,7 @@ final class TonConnectServiceImplementation: TonConnectService {
     private let tonConnectRepository: TonConnectRepository
     private let walletBalanceRepository: WalletBalanceRepository
     private let sendService: SendService
+    private let isSignMessageEnabled: Bool
 
     init(
         urlSession: URLSession,
@@ -100,7 +114,8 @@ final class TonConnectServiceImplementation: TonConnectService {
         tonConnectAppsVault: TonConnectAppsVault,
         tonConnectRepository: TonConnectRepository,
         walletBalanceRepository: WalletBalanceRepository,
-        sendService: SendService
+        sendService: SendService,
+        isSignMessageEnabled: Bool
     ) {
         self.manifestLoader = TonConnectManifestLoader(urlSession: urlSession)
         self.tonConnectBridgeAPIClientProvider = tonConnectBridgeAPIClientProvider
@@ -108,6 +123,7 @@ final class TonConnectServiceImplementation: TonConnectService {
         self.tonConnectRepository = tonConnectRepository
         self.walletBalanceRepository = walletBalanceRepository
         self.sendService = sendService
+        self.isSignMessageEnabled = isSignMessageEnabled
     }
 
     func loadAppManifest(parameters: TonConnectParameters) async -> Result<TonConnectManifest, TonConnectManifestError> {
@@ -135,7 +151,8 @@ final class TonConnectServiceImplementation: TonConnectService {
         return try TonConnectResponseBuilder.buildReconnectConnectEventSuccessResponse(
             wallet: wallet,
             keeperVersion: keeperVersion,
-            manifest: manifest
+            manifest: manifest,
+            isSignMessageSupported: isSignMessageEnabled && wallet.isTonConnectSignMessageAvailable
         )
     }
 
@@ -146,12 +163,6 @@ final class TonConnectServiceImplementation: TonConnectService {
         signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
         keeperVersion: String
     ) async throws -> TonConnect.ConnectEventSuccess {
-        guard let requestOrigin = parameters.requestPayload.manifestUrl.normalizedOrigin,
-              let manifestOrigin = manifest.url.normalizedOrigin,
-              requestOrigin == manifestOrigin
-        else {
-            throw TonConnectManifestError.invalidManifest
-        }
         guard wallet.isTonconnectAvailable else {
             throw
                 TonConnectServiceError.unsupportedWalletKind(
@@ -164,6 +175,7 @@ final class TonConnectServiceImplementation: TonConnectService {
                 wallet: wallet,
                 keeperVersion: keeperVersion,
                 manifest: manifest,
+                isSignMessageSupported: isSignMessageEnabled && wallet.isTonConnectSignMessageAvailable,
                 signTonProof: signTonProofHandler
             )
     }
@@ -256,15 +268,7 @@ final class TonConnectServiceImplementation: TonConnectService {
     }
 
     private func getConnectedAppsLocked(forWallet wallet: Wallet) throws -> TonConnectApps {
-        let apps = try tonConnectAppsVault.loadValue(key: wallet)
-        let preservedApps = apps.apps.filter(\.shouldPreserveStoredConnection)
-        guard preservedApps.count != apps.apps.count else {
-            return apps
-        }
-
-        let result = TonConnectApps(apps: preservedApps)
-        try tonConnectAppsVault.saveValue(result, for: wallet)
-        return result
+        try tonConnectAppsVault.loadValue(key: wallet)
     }
 
     func cancelRequest(appRequest: TonConnect.SendTransactionRequest, app: TonConnectApp) async throws {
@@ -328,6 +332,45 @@ final class TonConnectServiceImplementation: TonConnectService {
                 clientId: app.clientId
             )
 
+        _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
+            query: .init(
+                client_id: sessionCrypto.sessionId,
+                to: app.clientId,
+                ttl: 300
+            ),
+            body: .plainText(.init(stringLiteral: body))
+        )
+    }
+
+    func confirmSignMessageRequest(internalBoc: String, appRequest: TonConnect.SignMessageRequest, app: TonConnectApp) async throws {
+        let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+        let body = try TonConnectResponseBuilder.buildSignMessageResponseSuccess(
+            sessionCrypto: sessionCrypto,
+            internalBoc: internalBoc,
+            id: appRequest.id,
+            clientId: app.clientId
+        )
+        try await sendBridgeMessage(body, sessionCrypto: sessionCrypto, app: app)
+    }
+
+    func rejectSignMessageRequest(
+        appRequest: TonConnect.SignMessageRequest,
+        app: TonConnectApp,
+        errorCode: TonConnect.SendResponseError.ErrorCode,
+        message: String
+    ) async throws {
+        let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+        let body = try TonConnectResponseBuilder.buildSendTransactionResponseError(
+            sessionCrypto: sessionCrypto,
+            errorCode: errorCode,
+            message: message,
+            id: appRequest.id,
+            clientId: app.clientId
+        )
+        try await sendBridgeMessage(body, sessionCrypto: sessionCrypto, app: app)
+    }
+
+    private func sendBridgeMessage(_ body: String, sessionCrypto: TonConnectSessionCrypto, app: TonConnectApp) async throws {
         _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
             query: .init(
                 client_id: sessionCrypto.sessionId,

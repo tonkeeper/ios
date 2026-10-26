@@ -5,9 +5,6 @@ import TKUIKit
 
 struct TradeAssetsListView: View {
     @Environment(\.tkPalette) private var palette
-    private enum Constants {
-        static let autoFocusDelayNanoseconds: UInt64 = 150_000_000
-    }
 
     @ObservedObject var viewModel: TradeAssetsListViewModel
     @FocusState private var isSearchFocused: Bool
@@ -40,11 +37,8 @@ struct TradeAssetsListView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .task {
-            viewModel.loadIfNeeded()
-            try? await Task.sleep(nanoseconds: Constants.autoFocusDelayNanoseconds)
-            isSearchFocused = true
-        }
+        .onAppear(perform: viewModel.loadIfNeeded)
+        .onChange(of: viewModel.isSearchFocusRequested) { isSearchFocused = $0 }
     }
 
     private var header: some View {

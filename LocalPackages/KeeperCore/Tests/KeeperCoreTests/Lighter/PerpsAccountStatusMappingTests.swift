@@ -5,6 +5,136 @@ import TonSwift
 import XCTest
 
 final class PerpsAccountStatusMappingTests: XCTestCase {
+    func testPortfolioKeepsTransferableSeparateFromAvailable() async throws {
+        for transferable in ["7.25", nil] as [String?] {
+            let api = AccountStubAPI(account: .init(), balance: .init(
+                available_balance: "100", transferable_balance: transferable
+            ))
+            let snapshot = try await PerpsTkAccountReading(api: api).portfolio(wallet: makeWallet())
+            XCTAssertEqual(snapshot?.availableBalance, "100")
+            XCTAssertEqual(snapshot?.transferableBalance, transferable)
+        }
+    }
+
+    func testPortfolioWithoutReadOnlyTokenSurfacesTheRefusal() async {
+        let api = AccountStubAPI(
+            account: .init(),
+            balance: .init(equity: "120", available_balance: "100", transferable_balance: "80"),
+            portfolioError: .badStatus(.init(
+                httpStatus: 400,
+                code: "readonly_token_unavailable",
+                message: nil,
+                retryable: false,
+                reason: nil
+            )),
+            positions: [.init(market_index: 1, symbol: "BTC", size: "0.1")]
+        )
+
+        do {
+            _ = try await PerpsTkAccountReading(api: api).portfolio(wallet: makeWallet())
+            XCTFail("a refused portfolio must not be replaced by another read")
+        } catch let error as PerpsAPIError {
+            XCTAssertTrue(error.isReadOnlyTokenUnavailable)
+        } catch {
+            XCTFail("unexpected error \(error)")
+        }
+    }
+
+    func testPositionsWatchKeepsPollingWhenPortfolioAndOrdersNeedAToken() async {
+        let api = AccountStubAPI(
+            account: .init(),
+            portfolioError: .badStatus(.init(
+                httpStatus: 400,
+                code: "readonly_token_unavailable",
+                message: nil,
+                retryable: false,
+                reason: nil
+            )),
+            positions: [.init(market_index: 1, symbol: "BTC", size: "0.1")],
+            orderError: .badStatus(.init(
+                httpStatus: 400,
+                code: "readonly_token_unavailable",
+                message: nil,
+                retryable: false,
+                reason: nil
+            ))
+        )
+        let updated = expectation(description: "positions read without a token")
+        updated.expectedFulfillmentCount = 2
+        updated.assertForOverFulfill = false
+        let reading = PerpsTkAccountReading(api: api)
+        let watch = reading.watchPositions(
+            wallet: makeWallet(),
+            pollInterval: 0.5,
+            focus: { .positionsAndOrders(["order"]) },
+            onUpdate: { tick in
+                guard case let .positions(positions, openOrders) = tick,
+                      positions.map(\.marketId) == [1],
+                      openOrders == nil
+                else { return }
+                updated.fulfill()
+            },
+            onInterrupted: { XCTFail("the positions read should use the fallback") }
+        )
+
+        await fulfillment(of: [updated], timeout: 2)
+        withExtendedLifetime(reading) { watch.cancel() }
+    }
+
+    func testThePositionsPollCarriesThePortfolioOrders() async {
+        let api = AccountStubAPI(
+            account: .init(),
+            openOrders: [.init(
+                order_index: 21,
+                market_index: 1,
+                symbol: "BTC",
+                side: .long,
+                _type: .limit,
+                category: .open,
+                base_size: "0.0003",
+                price: "80000"
+            )]
+        )
+        let updated = expectation(description: "orders read with the positions")
+        updated.assertForOverFulfill = false
+        let reading = PerpsTkAccountReading(api: api)
+        let watch = reading.watchPositions(
+            wallet: makeWallet(),
+            pollInterval: 0.5,
+            focus: { .positions },
+            onUpdate: { tick in
+                guard case let .positions(_, openOrders) = tick, openOrders?.map(\.order.orderIndex) == [21] else { return }
+                updated.fulfill()
+            },
+            onInterrupted: { XCTFail("the portfolio read should succeed") }
+        )
+
+        await fulfillment(of: [updated], timeout: 2)
+        withExtendedLifetime(reading) { watch.cancel() }
+    }
+
+    func testAnotherPortfolioErrorDoesNotUseTheFallback() async {
+        let api = AccountStubAPI(
+            account: .init(),
+            portfolioError: .badStatus(.init(
+                httpStatus: 400,
+                code: "invalid_request",
+                message: nil,
+                retryable: false,
+                reason: nil
+            ))
+        )
+
+        do {
+            _ = try await PerpsTkAccountReading(api: api).portfolio(wallet: makeWallet())
+            XCTFail("an unrelated refusal must not appear as a portfolio")
+        } catch let PerpsAPIError.badStatus(failure) {
+            XCTAssertEqual(failure.code, "invalid_request")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
     func testAnAccountWithoutATradingKeyIsStillReadable() async {
         let reading = PerpsTkAccountReading(api: AccountStubAPI(account: .init(
             account_index: 747_112,
@@ -12,13 +142,20 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
             status: .not_registered,
             has_l2_key: false,
             collateral: "2.000000",
+            equity: "2.500000",
             available_balance: "2.000000"
         )))
 
-        guard case let .account(accountIndex) = await reading.status(wallet: makeWallet()) else {
+        guard case let .account(accountIndex, hasTradingKey, _, availableBalance, collateral, equity) = await reading.status(
+            wallet: makeWallet()
+        ) else {
             return XCTFail("an account the venue knows must resolve to .account")
         }
         XCTAssertEqual(accountIndex, 747_112)
+        XCTAssertEqual(hasTradingKey, false)
+        XCTAssertEqual(availableBalance, "2.000000")
+        XCTAssertEqual(collateral, "2.000000")
+        XCTAssertEqual(equity, "2.500000")
     }
 
     func testABoundWalletAwaitingItsFirstDepositIsNoAccount() async {
@@ -125,17 +262,67 @@ private extension PerpsAccountStatusMappingTests {
     }
 }
 
-private final class AccountStubAPI: PerpsAPI, @unchecked Sendable {
+final class AccountStubAPI: PerpsAPI, Sendable {
     struct Unsupported: Error {}
 
     private let account: Components.Schemas.Account
+    private let balance: Components.Schemas.Balance?
+    private let portfolioError: PerpsAPIError?
+    private let positions: [Components.Schemas.OpenPosition]
+    private let openOrders: [Components.Schemas.Order]
+    private let orderError: PerpsAPIError?
+    private let onAccount: @Sendable () async throws -> Void
+    /// `nil` refuses every issue.
+    private let onIssueReadOnlyToken: (@Sendable () async -> Void)?
+    private let onAccountTier: (@Sendable () async throws -> Components.Schemas.AccountTier)?
+    private let onChangeAccountTier: (@Sendable (String) async -> Void)?
+    private let integrator: Components.Schemas.Integrator
+    private let nonce: Int64?
+    private let tradingScreen: Components.Schemas.TradingScreen?
+    private let orderBook: Components.Schemas.TruncatedOrderBook?
+    private let onSendTransactions: (@Sendable ([Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)?
 
-    init(account: Components.Schemas.Account) {
+    init(
+        account: Components.Schemas.Account,
+        balance: Components.Schemas.Balance? = nil,
+        portfolioError: PerpsAPIError? = nil,
+        positions: [Components.Schemas.OpenPosition] = [],
+        openOrders: [Components.Schemas.Order] = [],
+        orderError: PerpsAPIError? = nil,
+        onIssueReadOnlyToken: (@Sendable () async -> Void)? = nil,
+        onAccountTier: (@Sendable () async throws -> Components.Schemas.AccountTier)? = nil,
+        onChangeAccountTier: (@Sendable (String) async -> Void)? = nil,
+        integrator: Components.Schemas.Integrator = .none,
+        nonce: Int64? = nil,
+        tradingScreen: Components.Schemas.TradingScreen? = nil,
+        orderBook: Components.Schemas.TruncatedOrderBook? = nil,
+        onSendTransactions: (@Sendable ([Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)? = nil,
+        onAccount: @escaping @Sendable () async throws -> Void = {}
+    ) {
         self.account = account
+        self.balance = balance
+        self.portfolioError = portfolioError
+        self.positions = positions
+        self.openOrders = openOrders
+        self.orderError = orderError
+        self.onAccount = onAccount
+        self.onIssueReadOnlyToken = onIssueReadOnlyToken
+        self.onAccountTier = onAccountTier
+        self.onChangeAccountTier = onChangeAccountTier
+        self.integrator = integrator
+        self.nonce = nonce
+        self.tradingScreen = tradingScreen
+        self.orderBook = orderBook
+        self.onSendTransactions = onSendTransactions
     }
 
     func account(walletId _: String) async throws -> Components.Schemas.Account {
-        account
+        try await onAccount()
+        return account
+    }
+
+    func integrator(walletId _: String) async throws -> Components.Schemas.Integrator {
+        integrator
     }
 
     func bindAccount(
@@ -146,7 +333,8 @@ private final class AccountStubAPI: PerpsAPI, @unchecked Sendable {
     }
 
     func tradingScreen(walletId _: String, marketId _: Int64) async throws -> Components.Schemas.TradingScreen {
-        throw Unsupported()
+        guard let tradingScreen else { throw Unsupported() }
+        return tradingScreen
     }
 
     func truncatedOrderBook(
@@ -156,26 +344,73 @@ private final class AccountStubAPI: PerpsAPI, @unchecked Sendable {
         feeRate _: String,
         notional _: String
     ) async throws -> Components.Schemas.TruncatedOrderBook {
-        throw Unsupported()
+        guard let orderBook else { throw Unsupported() }
+        return orderBook
+    }
+
+    func issueReadOnlyToken(
+        walletId _: String,
+        lighterAuth _: String
+    ) async throws -> Components.Schemas.IssuedRoToken {
+        guard let onIssueReadOnlyToken else { throw PerpsAPIError.unauthorized }
+        await onIssueReadOnlyToken()
+        return .init(token: "ro", token_id: 1, account_index: 1, issued_at: Date(), expires_at: Date())
     }
 
     func nextNonce(walletId _: String, apiKeyIndex _: Int) async throws -> Components.Schemas.NextNonce {
-        throw Unsupported()
+        guard let nonce else { throw Unsupported() }
+        return .init(account_index: 0, nonce: nonce)
     }
 
     func sendTransactions(
         walletId _: String,
-        transactions _: [Components.Schemas.SignedTransaction]
+        transactions: [Components.Schemas.SignedTransaction]
     ) async throws -> Components.Schemas.SendTransactionsResponse {
+        guard let onSendTransactions else { throw Unsupported() }
+        return try await onSendTransactions(transactions)
+    }
+
+    func openDeposit(
+        walletId _: String,
+        request _: Components.Schemas.OpenDepositRequest
+    ) async throws -> Components.Schemas.Deposit {
         throw Unsupported()
     }
 
-    func portfolioScreen(walletId _: String) async throws -> Components.Schemas.PortfolioScreen {
+    func getDeposit(walletId _: String, depositId _: String) async throws -> Components.Schemas.Deposit {
+        throw Unsupported()
+    }
+
+    func quoteDeposit(
+        walletId _: String,
+        request _: Components.Schemas.DepositQuoteRequest
+    ) async throws -> Components.Schemas.DepositQuote {
+        throw Unsupported()
+    }
+
+    func quoteWithdraw(walletId _: String, request _: Components.Schemas.WithdrawQuoteRequest) async throws -> Components.Schemas.WithdrawQuote {
+        throw Unsupported()
+    }
+
+    func getFundingStatus(
+        walletId _: String,
+        executionId _: String
+    ) async throws -> Components.Schemas.FundingStatus {
+        throw Unsupported()
+    }
+
+    func portfolio(walletId _: String) async throws -> Components.Schemas.Portfolio {
+        if let portfolioError { throw portfolioError }
+        return .init(balance: balance, positions: positions, open_orders: openOrders)
+    }
+
+    func getOrder(walletId _: String, id _: String) async throws -> Components.Schemas.OrderDetail {
+        if let orderError { throw orderError }
         throw Unsupported()
     }
 
     func listOpenPositions(walletId _: String) async throws -> Components.Schemas.OpenPositionsPage {
-        throw Unsupported()
+        .init(positions: positions)
     }
 
     func getOpenPosition(walletId _: String, id _: String) async throws -> Components.Schemas.OpenPositionDetail {
@@ -190,7 +425,17 @@ private final class AccountStubAPI: PerpsAPI, @unchecked Sendable {
         throw Unsupported()
     }
 
-    func activity(walletId _: String, marketId _: Int64?, limit _: Int) async throws -> Components.Schemas.ActivityPage {
+    func accountTier(walletId _: String) async throws -> Components.Schemas.AccountTier {
+        guard let onAccountTier else { throw Unsupported() }
+        return try await onAccountTier()
+    }
+
+    func changeAccountTier(walletId _: String, lighterAuth _: String, newTier: String) async throws {
+        guard let onChangeAccountTier else { throw Unsupported() }
+        await onChangeAccountTier(newTier)
+    }
+
+    func withdrawals(walletId _: String, cursor _: String?) async throws -> Components.Schemas.ActivityPage {
         throw Unsupported()
     }
 }

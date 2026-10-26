@@ -85,12 +85,13 @@ enum PopupContentPresenter {
         }
     }
 
+    @discardableResult
     static func presentBatteryFeeShortage(
         content: BatteryFeeShortagePopupContent,
         from viewController: UIViewController,
         onRecharge: @escaping () -> Void,
         onDeposit: @escaping () -> Void
-    ) {
+    ) -> TKBottomSheetViewController {
         present(from: viewController) { dismisser in
             BatteryFeeShortagePopupView(
                 content: content,

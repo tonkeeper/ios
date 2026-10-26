@@ -4,6 +4,38 @@ import BigInt
 import XCTest
 
 final class MultichainSwapAmountCalculatorTests: XCTestCase {
+    /// Max sells the spendable balance. A field string that rounds above that balance still
+    /// quotes the balance, and a TON coin keeps its fee reserve.
+    func test_maxSendAmountStaysWithinTheSpendableBalance() {
+        let calculator = makeCalculator()
+        let balance = BigUInt(1_500_000)
+        var inputs = makeInputs(
+            assetId: "bsc/mainnet/bep20/0xusdt",
+            decimals: 6,
+            balance: balance,
+            amount: "1.500001",
+            isMax: true
+        )
+
+        XCTAssertEqual(calculator.sourceAmount(inputs: inputs, usdFiatRate: nil), balance)
+
+        inputs = inputs.settingSendAmount("1.5")
+        XCTAssertEqual(calculator.sourceAmount(inputs: inputs, usdFiatRate: nil), balance)
+
+        let tonBalance = BigUInt(3_000_000_000)
+        let tonInputs = makeInputs(
+            assetId: "ton/mainnet/coin",
+            decimals: 9,
+            balance: tonBalance,
+            amount: "3",
+            isMax: true
+        )
+        XCTAssertEqual(
+            calculator.sourceAmount(inputs: tonInputs, usdFiatRate: nil),
+            tonBalance - 1_000_000_000
+        )
+    }
+
     /// The receive field is editable and `swapTokens()` moves its text into the send field, so a
     /// formatted quote has to parse back to the exact base units it was built from.
     func test_formattedAmountRoundTripsThroughInputParser() {
@@ -34,22 +66,43 @@ final class MultichainSwapAmountCalculatorTests: XCTestCase {
         )
     }
 
-    private func asset(decimals: Int) -> MultichainAsset {
+    private func makeInputs(
+        assetId: String,
+        decimals: Int,
+        balance: BigUInt,
+        amount: String,
+        isMax: Bool
+    ) -> MultichainSwapInputs {
+        var inputs = MultichainSwapInputs(
+            initialAssets: MultichainSwapInitialAssets(
+                sendAsset: asset(assetId: assetId, decimals: decimals, balance: balance),
+                receiveAsset: asset(assetId: "ton/mainnet/coin", decimals: 9, balance: 0),
+                slippage: nil
+            )
+        )
+        inputs = inputs.settingSendAmount(amount, isMax: isMax)
+        return inputs
+    }
+
+    private func asset(
+        assetId: String = "eth/mainnet/coin",
+        decimals: Int,
+        balance: BigUInt = .zero
+    ) -> MultichainAsset {
         MultichainAsset(
             asset: MultichainAssetDetails(
-                assetId: "eth/mainnet/coin",
-                name: "ETH",
-                symbol: "ETH",
+                assetId: assetId,
+                name: "asset",
+                symbol: "AST",
                 decimals: decimals,
                 image: ""
             ),
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
-            balance: .zero
+            balance: balance
         )
     }
 }

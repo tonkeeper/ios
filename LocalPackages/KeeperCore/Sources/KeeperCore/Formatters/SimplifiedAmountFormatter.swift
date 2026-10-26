@@ -12,7 +12,7 @@ import TKLocalize
 
 // MARK: - Public Types
 
-public enum AmountDisplayStyle {
+@frozen public enum AmountDisplayStyle {
     case regular // Show up to 8 fraction digits for values >= 1
     case compact // Show compact display rules for short UI
     case fiatBalance // Show fiat balances with 2 fraction digits
@@ -20,13 +20,13 @@ public enum AmountDisplayStyle {
     case percent // Show percentage values with up to 2 fraction digits and percent sign
 }
 
-public enum AmountSignPolicy {
+@frozen public enum AmountSignPolicy {
     case negativeOnly // "−" for < 0, nothing for > 0 (default)
     case always // "+" for > 0, "−" for < 0
     case none // never show sign
 }
 
-public enum CurrencyDisplayType {
+@frozen public enum CurrencyDisplayType {
     case fiat
     case token
 }
@@ -53,7 +53,7 @@ struct AmountCurrency: CurrencyDisplayable {
     }
 }
 
-public enum AmountAccessoryType {
+@frozen public enum AmountAccessoryType {
     case none
     case token(CurrencyDisplayable)
     case fiat(CurrencyDisplayable)
@@ -80,7 +80,7 @@ public enum AmountAccessoryType {
 
 public struct BalanceHeaderAmountFormat: Hashable {
     public struct NumberPart: Hashable {
-        public enum Role: Hashable {
+        @frozen public enum Role: Hashable {
             case primary
             case fraction
         }
@@ -94,7 +94,7 @@ public struct BalanceHeaderAmountFormat: Hashable {
         }
     }
 
-    public enum TextSize: Hashable {
+    @frozen public enum TextSize: Hashable {
         case regular
         case reduced
     }
@@ -410,7 +410,8 @@ public class AmountFormatter: Foundation.Formatter {
             currencyPlacement: placement,
             symbolSpacing: symbol.isEmpty ? nil : space(for: symbol),
             symbolOverride: nil,
-            percentSpacing: config.space
+            percentSpacing: config.space,
+            isolateLtr: false
         )
     }
 

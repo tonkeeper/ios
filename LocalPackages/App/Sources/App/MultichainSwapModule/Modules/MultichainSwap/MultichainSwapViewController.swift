@@ -45,6 +45,9 @@ final class MultichainSwapViewController: UIViewController {
         super.viewWillAppear(animated)
         if hasAppearedBefore, isReturningFromPushedController {
             viewModel.requestFocusOnAppear()
+            // The quote stood still under the confirmation: its route may have expired there, and
+            // the timer only refreshes a quote that is still ready.
+            viewModel.requestFreshQuote()
         }
     }
 

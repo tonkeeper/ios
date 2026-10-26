@@ -7,7 +7,7 @@ public final class TonRatesStore: Store<TonRatesStore.Event, TonRatesStore.State
         public let jettonRates: [String: [Rates.Rate]]
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateRates(state: State)
     }
 

@@ -1,0 +1,31 @@
+# App Store "What's New", pushed by `make appstore_toolings ACTION=whats-new` (scripts/appstore/appstore_toolings.py).
+# One [locale] section per App Store Connect locale (en-US, ru, de-DE, es-MX, tr, uk, id, zh-Hans, ...);
+# [default] is used for every locale of the version that has no section of its own.
+# Comments are only allowed before the first section.
+
+[default]
+Bug fixes and stability improvements to enhance user experience and app performance.
+
+[ru]
+Исправление ошибок и улучшение стабильности.
+
+[de-DE]
+Fehlerbehebungen und Stabilitätsverbesserungen für ein besseres Nutzererlebnis und eine höhere App-Leistung.
+
+[es-MX]
+Corrección de errores y mejoras de estabilidad para optimizar la experiencia de usuario y el rendimiento de la app.
+
+[id]
+Perbaikan bug dan peningkatan stabilitas untuk pengalaman pengguna dan performa aplikasi yang lebih baik.
+
+[nl-NL]
+Bugfixes en stabiliteitsverbeteringen voor een betere gebruikerservaring en app-prestaties.
+
+[tr]
+Kullanıcı deneyimini ve uygulama performansını iyileştirmek için hata düzeltmeleri ve kararlılık iyileştirmeleri.
+
+[uk]
+Виправлення помилок і покращення стабільності для кращого користувацького досвіду та продуктивності застосунку.
+
+[zh-Hans]
+修复错误并提升稳定性，以改善用户体验和应用性能。

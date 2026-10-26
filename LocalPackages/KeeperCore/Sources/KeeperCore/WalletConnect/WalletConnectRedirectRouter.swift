@@ -1,8 +1,8 @@
 import Foundation
 import ReownRouter
 
-public enum WalletConnectRedirectRouter {
-    public enum RoutingPolicy: Equatable {
+@frozen public enum WalletConnectRedirectRouter {
+    @frozen public enum RoutingPolicy: Equatable {
         case qr
         case browser
         case nativeDapp
@@ -66,6 +66,7 @@ private extension WalletConnectRedirectRouter {
             "tc",
             "ton",
             "tonkeeper",
+            "keeper",
             "tonkeeper-mob",
             "tonkeeper-tc",
             "tonkeeper-tc-mob",

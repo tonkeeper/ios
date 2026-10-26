@@ -1,5 +1,6 @@
-public enum TradingAssetDetailsServiceFailure: Error {
+@frozen public enum TradingAssetDetailsServiceFailure: Error {
     case networkError
+    case notFound
     case apiError(
         message: String?
     )

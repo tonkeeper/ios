@@ -25,6 +25,14 @@ public final class BatteryAssembly {
     }
 
     public func batteryService() -> BatteryService {
+        makeBatteryService()
+    }
+
+    func batteryGaslessService() -> BatteryGaslessService {
+        makeBatteryService()
+    }
+
+    private func makeBatteryService() -> BatteryServiceImplementation {
         BatteryServiceImplementation(
             batteryAPIProvider: batteryAPIAssembly.apiProvider,
             rechargeMethodsRepository: rechargeMethodsRepository(),

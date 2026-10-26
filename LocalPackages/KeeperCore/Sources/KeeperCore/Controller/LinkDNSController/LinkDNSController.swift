@@ -4,13 +4,13 @@ import TKLogging
 import TonAPI
 import TonSwift
 
-public enum LinkDNSEmulation {
+@frozen public enum LinkDNSEmulation {
     case confirmation(SendTransactionModel)
     case insufficientFunds(required: BigUInt, available: BigUInt)
 }
 
 public final class LinkDNSController {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case failedToSign
         case indexerOffline
     }
@@ -121,7 +121,7 @@ public final class LinkDNSController {
 private extension LinkDNSController {
     /// What the wallet has to hold when the message is sent: the Gram the operation puts at
     /// stake plus its fee. Change comes back only after the transaction lands.
-    func requiredAmount(for transactionInfo: MessageConsequences) -> BigUInt {
+    func requiredAmount(for transactionInfo: TonAPI.Components.Schemas.MessageConsequences) -> BigUInt {
         BigUInt(max(transactionInfo.risk.gram, 0))
             + BigUInt(max(transactionInfo.trace.transaction.totalFees, 0))
     }
@@ -175,6 +175,6 @@ private extension LinkDNSController {
     }
 }
 
-public enum OP_AMOUNT {
+@frozen public enum OP_AMOUNT {
     public static var CHANGE_DNS_RECORD = BigUInt(stringLiteral: "020000000")
 }

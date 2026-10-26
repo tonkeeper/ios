@@ -8,6 +8,7 @@ public final class TonConnectAssembly {
     let coreAssembly: CoreAssembly
     let formattersAssembly: FormattersAssembly
     let secureAssembly: SecureAssembly
+    public let isSignMessageEnabled: Bool
 
     init(
         repositoriesAssembly: RepositoriesAssembly,
@@ -16,7 +17,8 @@ public final class TonConnectAssembly {
         apiAssembly: APIAssembly,
         coreAssembly: CoreAssembly,
         formattersAssembly: FormattersAssembly,
-        secureAssembly: SecureAssembly
+        secureAssembly: SecureAssembly,
+        isSignMessageEnabled: Bool
     ) {
         self.repositoriesAssembly = repositoriesAssembly
         self.servicesAssembly = servicesAssembly
@@ -25,6 +27,7 @@ public final class TonConnectAssembly {
         self.coreAssembly = coreAssembly
         self.formattersAssembly = formattersAssembly
         self.secureAssembly = secureAssembly
+        self.isSignMessageEnabled = isSignMessageEnabled
     }
 
     func tonConnectRepository() -> TonConnectRepository {
@@ -38,7 +41,8 @@ public final class TonConnectAssembly {
             tonConnectAppsVault: coreAssembly.tonConnectAppsVault(),
             tonConnectRepository: tonConnectRepository(),
             walletBalanceRepository: repositoriesAssembly.walletBalanceRepository(),
-            sendService: servicesAssembly.sendService()
+            sendService: servicesAssembly.sendService(),
+            isSignMessageEnabled: isSignMessageEnabled
         )
     }
 

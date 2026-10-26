@@ -1,8 +1,8 @@
 import Foundation
 import TonSwift
 
-public enum DNSLink {
-    public enum LinkAddress: Equatable {
+@frozen public enum DNSLink {
+    @frozen public enum LinkAddress: Equatable {
         case friendly(FriendlyAddress)
         case raw(Address)
         case domain(Domain)

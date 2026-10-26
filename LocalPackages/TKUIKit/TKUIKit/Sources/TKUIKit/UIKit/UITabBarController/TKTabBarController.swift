@@ -8,10 +8,10 @@ public final class TKTabBarController: UITabBarController {
     private let customTabBar = TKTabBarView()
     private var displayedSelectedIndex = 0
     private var capturedTabTitles = [ObjectIdentifier: String]()
+    private var systemTabBar: TKSystemTabBar?
 
     public init() {
         super.init(nibName: nil, bundle: nil)
-        object_setClass(self.tabBar, TKTabBar.self)
     }
 
     @available(*, unavailable)
@@ -22,6 +22,14 @@ public final class TKTabBarController: UITabBarController {
     override public func viewDidLoad() {
         super.viewDidLoad()
 
+        #if XCODE_VERSION_AT_LEAST_27_1
+            if #available(iOS 27.1, *) {
+                registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) { (controller: Self, _) in
+                    _ = controller.adoptSystemTabBarIfNeeded()
+                }
+            }
+        #endif
+        if adoptSystemTabBarIfNeeded() { return }
         setupCustomTabBar()
     }
 
@@ -29,20 +37,27 @@ public final class TKTabBarController: UITabBarController {
         super.viewWillAppear(animated)
 
         navigationController?.setNavigationBarHidden(true, animated: true)
+        if adoptSystemTabBarIfNeeded() { return }
         reloadItems()
     }
 
     override public func setViewControllers(_ viewControllers: [UIViewController]?, animated: Bool) {
         super.setViewControllers(viewControllers, animated: animated)
+        if systemTabBar != nil { return }
         reloadItems()
     }
 
     override public func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if let systemTabBar {
+            systemTabBar.layoutSubviews()
+            return
+        }
         customTabBar.selectedIndex = displayedSelectedIndex
     }
 
     public func applyCustomBarSelection(at index: Int) {
+        guard systemTabBar == nil else { return }
         displayedSelectedIndex = index
         customTabBar.selectedIndex = index
     }
@@ -50,24 +65,63 @@ public final class TKTabBarController: UITabBarController {
     /// The tab bar owns the icon views, so the animated icons attach to them instead of
     /// reaching into `UITabBarItem`'s private view hierarchy.
     public func tabBarIconContainer(at index: Int) -> UIView? {
-        customTabBar.iconContainer(at: index)
+        guard systemTabBar == nil else { return nil }
+        return customTabBar.iconContainer(at: index)
     }
 
     public func tabBarItemView(at index: Int) -> UIView? {
-        customTabBar.itemView(at: index)
+        guard systemTabBar == nil else { return nil }
+        return customTabBar.itemView(at: index)
     }
 
     public func setTabBarStaticIconHidden(_ isHidden: Bool, at index: Int) {
+        guard systemTabBar == nil else { return }
         customTabBar.setStaticIconHidden(isHidden, at: index)
     }
 
     func tabBarDidLayoutSubviews() {
+        guard systemTabBar == nil else { return }
         didLayoutTabBar?()
     }
 }
 
 private extension TKTabBarController {
+    func adoptSystemTabBarIfNeeded() -> Bool {
+        let verticalBarEdgeIsSpecified: Bool
+        #if XCODE_VERSION_AT_LEAST_27_1
+            if #available(iOS 27.1, *) {
+                verticalBarEdgeIsSpecified = traitCollection.verticalBarEdge != .unspecified
+            } else {
+                verticalBarEdgeIsSpecified = false
+            }
+        #else
+            verticalBarEdgeIsSpecified = false
+        #endif
+        let style = TKTabBarStyle.resolve(
+            verticalBarEdgeIsSpecified: verticalBarEdgeIsSpecified,
+            systemTabBarLocked: systemTabBar != nil
+        )
+        guard style == .system else { return false }
+        guard systemTabBar == nil else { return true }
+
+        customTabBar.removeFromSuperview()
+        restoreCapturedTitles()
+        let systemTabBar = TKSystemTabBar(controller: self)
+        self.systemTabBar = systemTabBar
+        systemTabBar.install()
+        return true
+    }
+
+    func restoreCapturedTitles() {
+        for viewController in viewControllers ?? [] {
+            guard let title = capturedTabTitles[ObjectIdentifier(viewController)] else { continue }
+            viewController.tabBarItem.title = title
+        }
+    }
+
     func setupCustomTabBar() {
+        object_setClass(tabBar, TKTabBar.self)
+
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
         let itemAppearance = hiddenSystemItemAppearance()

@@ -1,6 +1,6 @@
 import TKLogging
 
-public enum MultichainSwapExecutionFailure: Error, Sendable, Hashable {
+@frozen public enum MultichainSwapExecutionFailure: Error, Sendable, Hashable {
     case canceled
     case routeExpired(routeId: String)
     case emptyPreparedPayloads(routeId: String)

@@ -1,7 +1,7 @@
 import TonSwift
 
-public enum AnyAddress: Decodable {
-    public enum Error: Swift.Error {
+@frozen public enum AnyAddress: Decodable {
+    @frozen public enum Error: Swift.Error {
         case incorrenctRawAddress(rawAddress: String)
     }
 

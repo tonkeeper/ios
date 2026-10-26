@@ -2,6 +2,8 @@
 import ChainKit
 import Combine
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import TKLocalize
 import TonSwift
 import XCTest
@@ -100,26 +102,33 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     }
 
     func test_triggerProjection_signedByPositionDirection() {
-        let long = makeSummary(side: .long, entryPrice: 100, notionalUsd: 100, marginUsd: 20)
+        let long = makeSummary(side: .long, entryPrice: 100, notionalUsd: 100, marginUsd: 20, leverage: 5)
         let longTP = long.triggerProjection(triggerPrice: 110, baseAmount: 1)
         XCTAssertEqual(longTP.pnlUsd, 10, accuracy: 1e-9)
         XCTAssertEqual(longTP.roePercent ?? .nan, 50, accuracy: 1e-9)
 
-        let short = makeSummary(side: .short, entryPrice: 100, notionalUsd: 100, marginUsd: 20)
+        let short = makeSummary(side: .short, entryPrice: 100, notionalUsd: 100, marginUsd: 20, leverage: 5)
         XCTAssertEqual(short.triggerProjection(triggerPrice: 110, baseAmount: 1).pnlUsd, -10, accuracy: 1e-9)
+        XCTAssertEqual(short.triggerProjection(triggerPrice: 110, baseAmount: 1).roePercent ?? .nan, -50, accuracy: 1e-9)
+    }
+
+    func test_triggerProjection_readsAsTheAutoCloseSheetDoes_whateverTheVenueMarginIs() {
+        // The venue's margin drifts — funding folds into it, a cross position reprices
+        // it — while the sheet measures a leg against the initial margin. Both screens
+        // must read one trigger price as one percent.
+        let drifted = makeSummary(side: .long, entryPrice: 100, notionalUsd: 104, marginUsd: 17, leverage: 5)
+        let projection = drifted.triggerProjection(triggerPrice: 110, baseAmount: 0.4)
+        XCTAssertEqual(
+            projection.roePercent ?? .nan,
+            PerpsTriggerROI.percent(side: .long, entryPrice: 100, leverage: 5, triggerPrice: 110) ?? .nan,
+            accuracy: 1e-9
+        )
+        XCTAssertEqual(projection.roePercent ?? .nan, 50, accuracy: 1e-9)
     }
 
     func test_triggerOrder_cancelsByClientIndexWhenItHasOne() {
         XCTAssertEqual(makeTrigger(orderIndex: 7, clientOrderIndex: 42).cancelKey, 42)
         XCTAssertEqual(makeTrigger(orderIndex: 7, clientOrderIndex: 0).cancelKey, 7)
-    }
-
-    func test_activityOutcome_inferredFromKindAndRealizedPnl() {
-        XCTAssertEqual(makeActivity(kind: .trade).outcome, .opened)
-        XCTAssertEqual(makeActivity(kind: .trade, realizedPnl: 5).outcome, .closed)
-        XCTAssertEqual(makeActivity(kind: .liquidation).outcome, .liquidated)
-        XCTAssertEqual(makeActivity(kind: .funding).outcome, .funding)
-        XCTAssertEqual(makeActivity(kind: .deposit).outcome, .other)
     }
 
     // MARK: View model — load via shared store
@@ -165,8 +174,8 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
 
         await client.emit([("BTC/USD", "200")])
 
-        await waitUntil(viewModel, timeout: 3) { viewModel.state.ready?.priceText == PerpsFormatting.usd(200) }
-        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.usd(snapshot.volume24h))
+        await waitUntil(viewModel, timeout: 3) { viewModel.state.ready?.priceText == PerpsFormatting.live.usd(200) }
+        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.live.usd(snapshot.volume24h))
         viewModel.onDisappear()
     }
 
@@ -185,9 +194,28 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.state.ready != nil }
         XCTAssertEqual(viewModel.state.ready?.priceText, "")
-        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.usd(1000))
+        XCTAssertEqual(viewModel.state.ready?.volumeText, PerpsFormatting.live.usd(1000))
         XCTAssertEqual(viewModel.state.ready?.actions, .longShort(enabled: true))
         viewModel.onDisappear()
+    }
+
+    func test_tradingFlagsApply_onceLighterHoldsTheKey_evenWhenThisDeviceCannotSign() {
+        XCTAssertTrue(PerpsAssetPageViewModel.tradingFlagsApply(to: PerpsAccount(accountIndex: 1, availableBalance: "1")))
+        XCTAssertTrue(PerpsAssetPageViewModel.tradingFlagsApply(
+            to: PerpsAccount(accountIndex: 1, availableBalance: "1", hasTradingKey: true, needsActivation: true)
+        ))
+        XCTAssertFalse(PerpsAssetPageViewModel.tradingFlagsApply(
+            to: PerpsAccount(accountIndex: 1, availableBalance: "1", hasTradingKey: false, needsActivation: true)
+        ))
+    }
+
+    func test_tradingFlagsApply_notWhileOnlyActivationCanIssueTheTokenTheyAreReadWith() {
+        XCTAssertFalse(PerpsAssetPageViewModel.tradingFlagsApply(
+            to: PerpsAccount(accountIndex: 1, availableBalance: "1", hasTradingKey: true, hasReadOnlyToken: false, needsActivation: true)
+        ))
+        XCTAssertTrue(PerpsAssetPageViewModel.tradingFlagsApply(
+            to: PerpsAccount(accountIndex: 1, availableBalance: "1", hasTradingKey: true, hasReadOnlyToken: false)
+        ))
     }
 
     @MainActor
@@ -228,7 +256,8 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
             store: marketsStore,
             marketDetailsStore: detailsStore,
             accountStore: accountStore,
-            openPositionFlow: PerpsOpenPositionFlow()
+            openPositionFlow: PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
         )
         trackedViewModels.append(viewModel)
 
@@ -286,19 +315,19 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let block = ready?.position
         XCTAssertEqual(block?.isLong, true)
         XCTAssertEqual(block?.sideText, TKLocales.Perps.Asset.long.uppercased())
-        XCTAssertEqual(block?.leverageText, PerpsFormatting.leverage(27).uppercased())
+        XCTAssertEqual(block?.leverageText, PerpsFormatting.live.leverage(27).uppercased())
         XCTAssertTrue(block?.isPnlPositive ?? false)
         XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: true, cashOutEnabled: true))
     }
 
     // MARK: Backend action flags
 
-    func test_openPosition_withoutFlags_refusesEveryAction() {
+    func test_openPosition_withoutFlags_keepsEveryWayOutOpen() {
         let ready = reduceReady(lifecycle: .open(summary()), extras: extras(flags: nil))
-        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
-        XCTAssertEqual(ready?.canAdjustMargin, false)
-        XCTAssertEqual(ready?.canEditAutoClose, false)
-        XCTAssertEqual(ready?.canCancelOrders, false)
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: true, cashOutEnabled: true))
+        XCTAssertEqual(ready?.canAdjustMargin, true)
+        XCTAssertEqual(ready?.canEditAutoClose, true)
+        XCTAssertEqual(ready?.canCancelOrders, true)
     }
 
     func test_flatMarket_withoutAnActiveAccount_stillFollowsTheCatalog() {
@@ -357,7 +386,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         XCTAssertEqual(ready?.canAdjustMargin, true)
     }
 
-    func test_aPartialFlagsBlock_refusesTheUnsaidCapabilities() {
+    func test_aPartialFlagsBlock_leavesTheUnsaidWaysOutOpen() {
         let ready = reduceReady(
             lifecycle: .open(summary()),
             extras: extras(flags: flags(
@@ -369,9 +398,9 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
                 autoCloseEnabled: nil
             ))
         )
-        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
-        XCTAssertEqual(ready?.canAdjustMargin, false)
-        XCTAssertEqual(ready?.canEditAutoClose, false)
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: true, cashOutEnabled: true))
+        XCTAssertEqual(ready?.canAdjustMargin, true)
+        XCTAssertEqual(ready?.canEditAutoClose, true)
         XCTAssertEqual(ready?.canCancelOrders, true)
     }
 
@@ -415,10 +444,10 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         )
     }
 
-    func test_editDirections_withoutFlags_offerNothing() {
+    func test_editDirections_withoutFlags_offerOnlyTheWayOut() {
         XCTAssertEqual(
             PerpsAssetPageViewModel.editDirections(snapshot: makeSnapshot(), flags: nil, isAccountActive: true),
-            []
+            [.reduce]
         )
     }
 
@@ -441,7 +470,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let ready = reduceReady(lifecycle: .opening(descriptor))
         XCTAssertEqual(ready?.actions, .hidden)
         XCTAssertNil(ready?.position)
-        guard case .progress = PerpsAssetPageViewModel.lifecycleToast(.opening(descriptor)) else {
+        guard case .progress = PerpsAssetPageViewModel.lifecycleToast(.opening(descriptor), format: PerpsFormatting.live) else {
             return XCTFail("expected progress toast while opening")
         }
     }
@@ -451,13 +480,13 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let ready = reduceReady(lifecycle: .closing(closing))
         XCTAssertNotNil(ready?.position)
         XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
-        guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.closing(closing)) else {
+        guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.closing(closing), format: PerpsFormatting.live) else {
             return XCTFail("expected progress toast while closing")
         }
         // Design pill copy: "Closing BTC long · 27x".
         XCTAssertEqual(
             text,
-            "\(TKLocales.Perps.Toast.closing) BTC \(TKLocales.Perps.Asset.long.lowercased()) · \(PerpsFormatting.leverage(27))"
+            "\(TKLocales.Perps.Toast.closing) BTC \(TKLocales.Perps.Asset.long.lowercased()) · \(PerpsFormatting.live.leverage(27))"
         )
     }
 
@@ -466,27 +495,34 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let ready = reduceReady(lifecycle: .adjusting(adjusting, .add))
         XCTAssertNotNil(ready?.position)
         XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
-        guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.adjusting(adjusting, .add)) else {
+        guard case let .progress(text) = PerpsAssetPageViewModel.lifecycleToast(.adjusting(adjusting, .add), format: PerpsFormatting.live) else {
             return XCTFail("expected progress toast while adjusting")
         }
         // Design pill copy: "Increasing BTC long · 27x".
         XCTAssertEqual(
             text,
-            "\(TKLocales.Perps.Toast.increasing) BTC \(TKLocales.Perps.Asset.long.lowercased()) · \(PerpsFormatting.leverage(27))"
+            "\(TKLocales.Perps.Toast.increasing) BTC \(TKLocales.Perps.Asset.long.lowercased()) · \(PerpsFormatting.live.leverage(27))"
         )
-        guard case let .progress(reducing) = PerpsAssetPageViewModel.lifecycleToast(.adjusting(adjusting, .reduce)) else {
+        guard case let .progress(reducing) = PerpsAssetPageViewModel.lifecycleToast(.adjusting(adjusting, .reduce), format: PerpsFormatting.live) else {
             return XCTFail("expected progress toast while reducing")
         }
         XCTAssertTrue(reducing.hasPrefix(TKLocales.Perps.Toast.reducing))
     }
 
+    func test_adjustingMarginLifecycle_keepsBlock_andDisablesActions() {
+        let adjusting = summary(notionalUsd: 540, marginUsd: 20)
+        let ready = reduceReady(lifecycle: .adjustingMargin(adjusting, .add, amountUsd: 20))
+        XCTAssertNotNil(ready?.position)
+        XCTAssertEqual(ready?.actions, .editCashOut(editEnabled: false, cashOutEnabled: false))
+    }
+
     func test_reduce_keepsLastReadyDuringTransientFailure() {
         let previous = reduceReady(lifecycle: .flat).map(PerpsAssetPageViewModel.State.ready) ?? .loading
         // A failed/notFound market input must not blank a page that already had content.
-        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .failed, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: previous).ready)
-        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: previous).ready)
+        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .failed, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, isLimitOrderBusy: false, previous: previous, format: PerpsFormatting.live).ready)
+        XCTAssertNotNil(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, isLimitOrderBusy: false, previous: previous, format: PerpsFormatting.live).ready)
         // From no content, notFound stays a distinct empty state.
-        XCTAssertEqual(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, previous: .loading), .notFound)
+        XCTAssertEqual(PerpsAssetPageViewModel.reduce(market: .notFound, lifecycle: .flat, extras: nil, isAccountActive: true, isOpenPositionSubmitting: false, isLimitOrderBusy: false, previous: .loading, format: PerpsFormatting.live), .notFound)
     }
 
     // MARK: View model — Orders + Auto Close + history mapping
@@ -499,7 +535,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let ready = reduceReady(lifecycle: .open(summary(side: .long, baseSize: 1, entryPrice: 66541.7)), extras: extras)
         let order = ready?.orders.first
         XCTAssertEqual(order?.kindText, TKLocales.Perps.OpenPosition.tp)
-        XCTAssertEqual(order?.actionText, "\(TKLocales.Perps.Asset.sell) 100%")
+        XCTAssertEqual(order?.actionText, TKLocales.Perps.Asset.closeLong)
         XCTAssertEqual(order?.isPositive, true) // TP above entry on a long
         XCTAssertNotNil(order?.valueText)
         XCTAssertEqual(ready?.autoClose, .setStopLoss) // only TP set
@@ -518,13 +554,21 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         )
 
         let ready = reduceReady(
-            lifecycle: .open(summary(side: .long, baseSize: 2, marginUsd: 20, entryPrice: 100)),
+            lifecycle: .open(summary(side: .long, baseSize: 2, marginUsd: 20, leverage: 10, entryPrice: 100)),
             extras: extras
         )
 
-        XCTAssertEqual(ready?.orders.first?.actionText, "\(TKLocales.Perps.Asset.sell) 100%")
-        XCTAssertEqual(ready?.orders.first?.valueText, PerpsFormatting.signedUsd(20))
-        XCTAssertEqual(ready?.orders.first?.percentText, PerpsFormatting.signedPercent(100))
+        XCTAssertEqual(ready?.orders.first?.actionText, TKLocales.Perps.Asset.closeLong)
+        XCTAssertEqual(ready?.orders.first?.valueText, PerpsFormatting.live.signedUsd(20))
+        XCTAssertEqual(ready?.orders.first?.percentText, PerpsFormatting.live.signedPercent(100))
+    }
+
+    func test_position_readsPendingWhileAnOperationIsInFlight() {
+        let live = summary(side: .long, baseSize: 1, entryPrice: 100)
+
+        XCTAssertEqual(reduceReady(lifecycle: .open(live))?.position?.isPending, false)
+        XCTAssertEqual(reduceReady(lifecycle: .closing(live))?.position?.isPending, true)
+        XCTAssertEqual(reduceReady(lifecycle: .adjusting(live, .add))?.position?.isPending, true)
     }
 
     func test_orders_hiddenWithoutPosition() {
@@ -552,8 +596,9 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         let ready = reduceReady(lifecycle: .flat, extras: extras)
 
         XCTAssertEqual(ready?.limitOrders.first?.orderIndex, 9)
-        XCTAssertEqual(ready?.limitOrders.first?.priceText, PerpsFormatting.usd(64000))
-        XCTAssertEqual(ready?.actions, .longShort(enabled: true))
+        XCTAssertEqual(ready?.limitOrders.first?.limitPriceText, PerpsFormatting.live.usd(64000))
+        XCTAssertEqual(ready?.limitOrders.first?.sideText, TKLocales.Perps.Asset.long.uppercased())
+        XCTAssertEqual(ready?.actions, .editCancelLimitOrder(orderIndex: 9, enabled: true))
     }
 
     func test_autoClose_noOrders_offersSetAutoClose() {
@@ -588,14 +633,24 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         XCTAssertEqual(ready?.autoClose, PerpsAssetPageViewModel.AutoCloseAffordance.none)
     }
 
-    func test_historyBlock_rendersActivity() {
+    func test_historyBlock_namesTriggerClosesAndSignsTheirResult() {
         let extras = PerpsMarketExtras(
             triggerOrders: [],
-            recentActivity: [PerpsActivityItem(id: "a1", kind: .trade, marketId: 1, side: .long, baseSize: 1, price: 66000, usdAmount: nil, realizedPnl: 10.25, date: Date(timeIntervalSince1970: 0))]
+            recentActivity: [
+                makeEvent(id: "tp", kind: .takeProfit, pnl: 10.25),
+                makeEvent(id: "liq", kind: .liquidated, pnl: -5),
+                makeEvent(id: "open", kind: .opened, margin: 20.5),
+            ]
         )
-        let row = reduceReady(lifecycle: .open(summary()), extras: extras)?.history.first
-        XCTAssertEqual(row?.title, TKLocales.Perps.Asset.activityClosed(TKLocales.Perps.Asset.short))
-        XCTAssertEqual(row?.isAmountPositive, true)
+        let rows = reduceReady(lifecycle: .open(summary()), extras: extras)?.history ?? []
+        XCTAssertEqual(rows.map(\.title), [
+            TKLocales.MultichainHistory.Perps.takeProfitExecuted,
+            TKLocales.MultichainHistory.Perps.liquidatedShort,
+            TKLocales.MultichainHistory.Perps.openedShort,
+        ])
+        XCTAssertEqual(rows.map(\.amountStyle), [.positive, .negative, .primary])
+        XCTAssertEqual(rows.last?.amountText, PerpsFormatting.live.usd(20.5))
+        XCTAssertEqual(rows.first?.subtitle, TKLocales.MultichainHistory.Perps.subtitle("BTC"))
     }
 
     func test_history_standsAloneWithoutPosition() {
@@ -603,7 +658,7 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
         // computed (and rendered) independently of the position block.
         let extras = PerpsMarketExtras(
             triggerOrders: [],
-            recentActivity: [PerpsActivityItem(id: "a1", kind: .trade, marketId: 1, side: .long, baseSize: 1, price: 66000, usdAmount: nil, realizedPnl: 10, date: Date(timeIntervalSince1970: 0))]
+            recentActivity: [makeEvent(id: "a1", kind: .closed, pnl: 10)]
         )
         let ready = reduceReady(lifecycle: .flat, extras: extras)
         XCTAssertNil(ready?.position)
@@ -657,16 +712,12 @@ final class PerpsAssetPageViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_perpetualInfo_andMore_route() {
+    func test_perpetualInfo_routes() {
         let (viewModel, _) = makeViewModel(service: MarketsReadingSpy(), marketId: 1)
         var perpetual = false
-        var more = false
         viewModel.onPerpetualInfo = { perpetual = true }
-        viewModel.onMore = { more = true }
         viewModel.perpetualInfo()
-        viewModel.more()
         XCTAssertTrue(perpetual)
-        XCTAssertTrue(more)
     }
 
     @MainActor
@@ -767,7 +818,8 @@ private extension PerpsAssetPageViewModelTests {
                 error: tradingError
             ),
             accountStore: accountStore,
-            openPositionFlow: openPositionFlow ?? PerpsOpenPositionFlow()
+            openPositionFlow: openPositionFlow ?? PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
         )
         trackedViewModels.append(viewModel)
         return (viewModel, accountStore)
@@ -801,7 +853,9 @@ private extension PerpsAssetPageViewModelTests {
             extras: extras,
             isAccountActive: isAccountActive,
             isOpenPositionSubmitting: isOpenPositionSubmitting,
-            previous: .loading
+            isLimitOrderBusy: false,
+            previous: .loading,
+            format: PerpsFormatting.live
         ).ready
     }
 
@@ -847,7 +901,7 @@ private extension PerpsAssetPageViewModelTests {
     func summary(
         marketId: Int64 = 1,
         symbol: String = "BTC",
-        side: KeeperCore.PerpsTradeSide = .long,
+        side: PerpsModels.PerpsTradeSide = .long,
         baseSize: Double = 1,
         notionalUsd: Double = 540,
         marginUsd: Double = 20,
@@ -893,7 +947,8 @@ private extension PerpsAssetPageViewModelTests {
             fundingRatePercent: fundingRatePercent,
             priceDecimals: 2,
             sizeDecimals: 2,
-            minBaseSize: 0
+            minBaseSize: 0,
+            minNotionalUsd: 0
         )
     }
 
@@ -937,17 +992,16 @@ private extension PerpsAssetPageViewModelTests {
         )
     }
 
-    func makeActivity(kind: PerpsActivityItem.Kind, realizedPnl: Double? = nil) -> PerpsActivityItem {
-        PerpsActivityItem(
-            id: "act-1",
+    func makeEvent(id: String, kind: PerpsHistoryEvent.Kind, pnl: Double? = nil, margin: Double? = nil) -> PerpsHistoryEvent {
+        PerpsHistoryEvent(
+            id: id,
             kind: kind,
             marketId: 1,
+            symbol: "BTC",
             side: .short,
-            baseSize: 1,
-            price: 66000,
-            usdAmount: nil,
-            realizedPnl: realizedPnl,
-            date: Date(timeIntervalSince1970: 0)
+            date: Date(timeIntervalSince1970: 0),
+            margin: margin,
+            pnl: pnl
         )
     }
 
@@ -1044,7 +1098,7 @@ private final class MarketsReadingSpy: PerpsMarketsReading, @unchecked Sendable 
 private final class LivePositionsAccountSpy: PerpsAccountReading, @unchecked Sendable {
     let accountIndex: Int64 = 7
     let watchOpened = XCTestExpectation(description: "positions watch opened")
-    private(set) var capturedOnUpdate: (@Sendable ([PerpsPositionSummary]) -> Void)?
+    private(set) var capturedOnUpdate: (@Sendable (PerpsAccountTick) -> Void)?
 
     func status(wallet: Wallet) async -> PerpsAccountStatus {
         .account(accountIndex: accountIndex)
@@ -1058,13 +1112,11 @@ private final class LivePositionsAccountSpy: PerpsAccountReading, @unchecked Sen
         PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
-        []
-    }
-
     func watchPositions(
         wallet: Wallet,
-        onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
+        pollInterval _: TimeInterval,
+        focus _: @escaping @Sendable () -> PerpsWatchFocus,
+        onUpdate: @escaping @Sendable (PerpsAccountTick) -> Void,
         onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         capturedOnUpdate = onUpdate
@@ -1089,13 +1141,11 @@ private final class AccountReadingSpy: PerpsAccountReading, @unchecked Sendable 
         PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet: Wallet, marketId: Int64, limit: Int) async throws -> [PerpsActivityItem] {
-        []
-    }
-
     func watchPositions(
         wallet: Wallet,
-        onUpdate: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
+        pollInterval _: TimeInterval,
+        focus _: @escaping @Sendable () -> PerpsWatchFocus,
+        onUpdate: @escaping @Sendable (PerpsAccountTick) -> Void,
         onInterrupted: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}

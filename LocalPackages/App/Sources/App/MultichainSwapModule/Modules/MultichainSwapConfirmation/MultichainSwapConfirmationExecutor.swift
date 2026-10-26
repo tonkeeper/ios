@@ -5,7 +5,7 @@ struct MultichainSwapConfirmationExecutor {
 
     func execute(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         input: MultichainSwapConfirmationInput,
         executionPlan: MultichainSwapExecutionPlan,
         isUnlimitedApprovalEnabled: Bool,
@@ -15,7 +15,7 @@ struct MultichainSwapConfirmationExecutor {
             return try .success(
                 await executionService.execute(
                     passcodeProvider: passcodeProvider,
-                    wallet: wallet,
+                    swapWallet: swapWallet,
                     sourceAsset: input.userInput.sendAsset,
                     destinationAsset: input.userInput.receiveAsset,
                     executionPlan: executionPlan,

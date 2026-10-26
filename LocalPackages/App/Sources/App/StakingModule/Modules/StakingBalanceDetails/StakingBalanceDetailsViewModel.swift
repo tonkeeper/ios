@@ -21,13 +21,15 @@ protocol StakingBalanceDetailsModuleOutput: AnyObject {
 protocol StakingBalanceDetailsViewModel: AnyObject {
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
+    var didUpdateRewardsViewModel: ((StakingBalanceDetailsRewardsView.Model?) -> Void)? { get set }
+    var didUpdateDetailsTitle: ((TKListTitleView.Model) -> Void)? { get set }
     var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)? { get set }
     var didUpdateDescription: ((NSAttributedString?) -> Void)? { get set }
     var didUpdateLinksViewModel: ((StakingDetailsLinksView.Model) -> Void)? { get set }
     var didUpdateJettonItemView: ((TKListItemButton.Configuration?) -> Void)? { get set }
     var didUpdateJettonButtonDescription: ((NSAttributedString?) -> Void)? { get set }
     var didUpdateStakeStateView: ((TKListItemButton.Configuration?) -> Void)? { get set }
-    var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
+    var didUpdateButtonsView: ((StakingBalanceDetailsActionBarView.Model) -> Void)? { get set }
 
     func viewDidLoad()
 }
@@ -50,13 +52,15 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
 
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
+    var didUpdateRewardsViewModel: ((StakingBalanceDetailsRewardsView.Model?) -> Void)?
+    var didUpdateDetailsTitle: ((TKListTitleView.Model) -> Void)?
     var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)?
     var didUpdateDescription: ((NSAttributedString?) -> Void)?
     var didUpdateLinksViewModel: ((StakingDetailsLinksView.Model) -> Void)?
     var didUpdateJettonItemView: ((TKListItemButton.Configuration?) -> Void)?
     var didUpdateJettonButtonDescription: ((NSAttributedString?) -> Void)?
     var didUpdateStakeStateView: ((TKListItemButton.Configuration?) -> Void)?
-    var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
+    var didUpdateButtonsView: ((StakingBalanceDetailsActionBarView.Model) -> Void)?
 
     // MARK: - State
 
@@ -115,6 +119,8 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
             prepareInitialState()
             updateInformation()
             updateDescription()
+            updateRewards()
+            updateDetailsTitle()
             updateList()
             updateLinks()
             updateJettonItemView()
@@ -125,6 +131,20 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
 }
 
 private extension StakingBalanceDetailsViewModelImplementation {
+    func updateRewards() {
+        // api call later
+        DispatchQueue.main.async {
+            self.didUpdateRewardsViewModel?(nil)
+        }
+    }
+
+    func updateDetailsTitle() {
+        let model = TKListTitleView.Model(title: TKLocales.StakingBalanceDetails.details, textStyle: .h3)
+        DispatchQueue.main.async {
+            self.didUpdateDetailsTitle?(model)
+        }
+    }
+
     func updateList() {
         let profitablePools = stakingPoolsStore.getState()[wallet]?.profitablePools
         let model = self.listViewModelBuilder.build(
@@ -374,24 +394,18 @@ private extension StakingBalanceDetailsViewModelImplementation {
     }
 
     func updateButtons() {
-        let model = TokenDetailsHeaderButtonsView.Model(
+        let model = StakingBalanceDetailsActionBarView.Model(
             buttons: [
-                TokenDetailsHeaderButtonsView.Model.Button(
-                    configuration: TKUIIconButton.Model(
-                        image: .TKUIKit.Icons.Size28.plusOutline,
-                        title: .stakeTitle
-                    ),
+                StakingBalanceDetailsActionBarView.Model.Button(
+                    title: .stakeTitle,
                     isEnabled: !configuration.flag(\.stakingDisabled, network: wallet.network) && wallet.isStakeEnable,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapStake?(wallet, stakingPoolInfo)
                     },
                     accessibilityIdentifier: "staking_balance_stake"
                 ),
-                TokenDetailsHeaderButtonsView.Model.Button(
-                    configuration: TKUIIconButton.Model(
-                        image: .TKUIKit.Icons.Size28.minusOutline,
-                        title: .unstakeTitle
-                    ),
+                StakingBalanceDetailsActionBarView.Model.Button(
+                    title: .unstakeTitle,
                     isEnabled: wallet.isStakeEnable,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapUnstake?(wallet, stakingPoolInfo)

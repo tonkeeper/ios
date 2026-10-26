@@ -34,8 +34,8 @@ EXPLICIT_KEY_RE = re.compile(r'^case\s+`?\w+`?\s*=\s*"([^"]*)"')
 IMPLICIT_KEY_RE = re.compile(r"^case\s+`?(\w+)`?\s*$")
 
 DEFAULT_DIRECTORIES = (
-    "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Generated",
-    "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Deprecated",
+    "LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Generated",
+    "LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Deprecated",
 )
 
 

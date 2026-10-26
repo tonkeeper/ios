@@ -1,12 +1,12 @@
 import Foundation
 
 public struct TonConnectRequestPayload: Decodable, Equatable {
-    public enum Item: Decodable, Equatable {
+    @frozen public enum Item: Decodable, Equatable {
         case tonAddress
         case tonProof(payload: String)
         case unknown
 
-        public enum CodingKeys: CodingKey {
+        @frozen public enum CodingKeys: CodingKey {
             case name
             case payload
         }

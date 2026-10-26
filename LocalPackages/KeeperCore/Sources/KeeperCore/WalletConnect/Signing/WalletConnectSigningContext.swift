@@ -55,13 +55,34 @@ struct WalletConnectSigningContext {
         return address
     }
 
+    func chainKitAccount(
+        chain: WalletConnectChain,
+        cryptoWallet: CryptoWallet
+    ) throws(WalletConnectSigningError) -> ChainKit.Account {
+        let chainKitChain = chain.multichainChain.asChainKitChain
+        let addressString = try accountAddress(chain: chain)
+        guard let address = Address.Companion.shared.from(value: addressString, chain: chainKitChain, type: .default_) else {
+            throw .invalidTransaction(reason: "invalid sender address: \(addressString)")
+        }
+        return ChainKit.Account(
+            address: address,
+            asset: chainKitChain.toAsset(),
+            derivation: DerivationDefaultPath.shared,
+            publicKey: cryptoWallet.getPublicKey(chain: chainKitChain)
+        )
+    }
+
     func validateSameAddress(
         expected: String,
-        actual: String
+        actual: String,
+        chain: WalletConnectChain
     ) throws(WalletConnectSigningError) {
-        let lhs = expected.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let rhs = actual.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard lhs == rhs else {
+        let lhs = expected.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rhs = actual.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isSame = chain.eip155ChainId != nil
+            ? lhs.caseInsensitiveCompare(rhs) == .orderedSame
+            : lhs == rhs
+        guard isSame else {
             throw .senderAddressMismatch(expected: expected, actual: actual)
         }
     }
@@ -75,7 +96,8 @@ struct WalletConnectSigningContext {
         }
         try validateSameAddress(
             expected: accountAddress(chain: chain),
-            actual: address
+            actual: address,
+            chain: chain
         )
     }
 }

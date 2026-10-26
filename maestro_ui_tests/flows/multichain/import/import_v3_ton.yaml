@@ -18,8 +18,10 @@ appId: com.jbig.tonkeeper
     direction: DOWN
     timeout: 15000
 - assertVisible: ${NATIVE_TOKEN_DISPLAY_TEXT}
-- scrollUntilVisible:
-    element: Collectibles
-    direction: DOWN
-    timeout: 30000
-- assertVisible: Collectibles
+# The Collectibles section needs an NFT on the v3R2 address of this seed; it holds none yet
+# (the v4 flow keeps the check). Re-enable once one lands on it.
+#- scrollUntilVisible:
+#    element: Collectibles
+#    direction: DOWN
+#    timeout: 30000
+#- assertVisible: Collectibles

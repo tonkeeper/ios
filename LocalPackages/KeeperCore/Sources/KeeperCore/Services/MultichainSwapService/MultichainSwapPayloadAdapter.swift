@@ -5,7 +5,10 @@ import TKLogging
 
 struct MultichainSwapPayloadAdapter {
     struct Normalized {
-        let transaction: TransactionSwap
+        /// One per message of the payload, in envelope order: Omniston splits a larger TON swap
+        /// across pools and every part has to leave in the same wallet transaction.
+        let transactions: [TransactionSwap]
+        let account: ChainKit.Account
         let feeAsset: AssetCoin
         let fee: (any Fee)?
         let approvalData: String?
@@ -24,13 +27,20 @@ struct MultichainSwapPayloadAdapter {
 
         /// Exact calldata is never trimmed to make room for the fee: a wallet that cannot cover
         /// both is short, and says so, rather than sending an amount the calldata no longer matches.
+        /// Neither is a split route, whose parts were quoted as one amount.
         var gasReservePolicy: GasReservePolicy {
-            isExactCalldata ? .drainorerror : .shrinktofit
+            isExactCalldata || transactions.count > 1 ? .drainorerror : .shrinktofit
+        }
+
+        var attachedEnergy: BignumBigInteger {
+            transactions.reduce(BignumBigInteger.Companion.shared.ZERO) { total, transaction in
+                total.add(other: transaction.attachedEnergy)
+            }
         }
     }
 
     func normalize(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payload: MultichainSwapPreparedPayload,
@@ -80,26 +90,28 @@ struct MultichainSwapPayloadAdapter {
             )
         }
 
-        let sourceAddressString = try walletAddress(
-            wallet: wallet,
+        let sourceWalletAddress = try walletAddress(
+            swapWallet: swapWallet,
             chain: sourceChain,
             payloadId: payload.payloadId
         )
-        let destinationAddressString = try walletAddress(
-            wallet: wallet,
+        let destinationWalletAddress = try walletAddress(
+            swapWallet: swapWallet,
             chain: destinationChain,
             payloadId: payload.payloadId
         )
 
         let sourceAddress = try chainKitAddress(
-            sourceAddressString,
+            sourceWalletAddress.address,
             chain: sourceChain,
+            type: senderAddressType(sourceWalletAddress),
             payloadId: payload.payloadId,
             role: "source"
         )
         let destinationAddress = try chainKitAddress(
-            destinationAddressString,
+            destinationWalletAddress.address,
             chain: destinationChain,
+            type: .default_,
             payloadId: payload.payloadId,
             role: "destination"
         )
@@ -123,19 +135,21 @@ struct MultichainSwapPayloadAdapter {
             sourceChain: sourceChain
         )
 
-        let transaction = TransactionSwap(
-            account: account,
-            amount: BignumBigInteger.Companion.shared.parseString(
-                string: tradePayload.amount.description,
-                base: 10
-            ),
-            energy: feeAsset,
-            isMax: false,
-            destination: destination,
-            to: tradePayload.to,
-            data: tradePayload.data,
-            initData: nil
-        )
+        let transactions = tradePayload.messages.map { message in
+            TransactionSwap(
+                account: account,
+                amount: BignumBigInteger.Companion.shared.parseString(
+                    string: message.amount.description,
+                    base: 10
+                ),
+                isMax: false,
+                destination: destination,
+                to: message.to,
+                data: message.data,
+                initData: nil,
+                memo: nil
+            )
+        }
 
         Log.multichainSwap.i(
             "payload normalization completed",
@@ -147,12 +161,14 @@ struct MultichainSwapPayloadAdapter {
                     "sourceChain": sourceChain.rawValue,
                     "destinationChain": destinationChain.rawValue,
                     "feeAsset": feeAsset.id,
+                    "messageCount": "\(transactions.count)",
                 ]
             )
         )
 
         return Normalized(
-            transaction: transaction,
+            transactions: transactions,
+            account: account,
             feeAsset: feeAsset,
             fee: tradePayload.fee,
             approvalData: tradePayload.approvalData,
@@ -162,6 +178,7 @@ struct MultichainSwapPayloadAdapter {
                 payload: payload,
                 sourceAsset: sourceAsset,
                 sourceChain: sourceChain,
+                sender: sourceWalletAddress.address,
                 tradePayload: tradePayload
             ),
             calldataType: tradePayload.calldataType
@@ -218,7 +235,7 @@ extension MultichainSwapPayloadAdapter {
         switch chain {
         case .ton:
             return "[\(payload)]"
-        case .eth, .base, .arb, .bsc:
+        case .eth, .base, .arb, .bsc, .polygon, .avax, .robinhood:
             guard descriptor["value"] == nil, let amount = descriptor["amount"] else {
                 return payload
             }
@@ -230,27 +247,27 @@ extension MultichainSwapPayloadAdapter {
                 return payload
             }
             return text
-        case .btc, .tron:
+        case .btc, .tron, .sol:
             return payload
         }
     }
 
-    /// `nil` when the `ton_boc` envelope is one message this path can hand to a relayer unchanged;
-    /// otherwise what stands in the way. A relayed swap is rebuilt from the parsed recipient, amount
-    /// and body and nothing else, so anything further in the envelope — a state init, a send mode, a
-    /// key we have never seen — would reach the chain as a different transaction than the quote
-    /// described. ChainKit's parse exposes neither state init nor mode, so rather than guess at them
-    /// the swap keeps the native path, which sends the BOC verbatim.
+    /// `nil` when every message of the `ton_boc` envelope is one this path can hand to a relayer
+    /// unchanged; otherwise what stands in the way. A relayed swap is rebuilt from the parsed
+    /// recipient, amount and body and nothing else, so anything further in the envelope — a state
+    /// init, a send mode, a key we have never seen — would reach the chain as a different
+    /// transaction than the quote described. ChainKit's parse exposes neither state init nor mode,
+    /// so rather than guess at them the swap keeps the native path, which sends the BOC verbatim.
     static func tonRelayObstacle(_ payload: String) -> String? {
         guard let data = payload.data(using: .utf8),
               let messages = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         else {
             return "envelope is not a list of messages"
         }
-        guard messages.count == 1, let message = messages.first else {
-            return "envelope holds \(messages.count) messages"
+        guard !messages.isEmpty else {
+            return "envelope holds no messages"
         }
-        let carried = message.keys.filter { key in
+        let carried = Set(messages.flatMap(\.keys)).filter { key in
             !reproducibleTonMessageKeys.contains(key.lowercased().replacingOccurrences(of: "_", with: ""))
         }
         guard !carried.isEmpty else {
@@ -262,12 +279,16 @@ extension MultichainSwapPayloadAdapter {
 
 private extension MultichainSwapPayloadAdapter {
     struct TradePayload {
-        let amount: BigUInt
-        let to: Address
-        let data: String?
+        let messages: [TradeMessage]
         let approvalData: String?
         let fee: (any Fee)?
         let calldataType: MultichainSwapCalldataPayloadType
+    }
+
+    struct TradeMessage {
+        let amount: BigUInt
+        let to: Address
+        let data: String?
     }
 
     func tradePayload(
@@ -286,12 +307,6 @@ private extension MultichainSwapPayloadAdapter {
                 throw .invalidPayload(
                     payloadId: payload.payloadId,
                     reason: "approval payload must use evm_approval_tx, got \(payload.payloadType)"
-                )
-            }
-            guard provider == .swapKit else {
-                throw .invalidPayload(
-                    payloadId: payload.payloadId,
-                    reason: "\(provider.rawValue) does not support approval payloads"
                 )
             }
             isApproval = true
@@ -318,43 +333,107 @@ private extension MultichainSwapPayloadAdapter {
         let rawPayload = payload.preparedPayloadType == .altVmDeposit
             ? Self.parsableDepositDescriptor(payload.payload, chain: sourceChain)
             : payload.payload
-        let parsed: SwapPayload
-        do {
-            parsed = try SwapPayload.Companion.shared.fromQuote(
-                provider: provider.chainKitProvider,
-                type: calldataType.chainKitType,
-                chain: sourceChain.asChainKitChain,
-                payload: rawPayload,
-                depositAddress: payload.humanSummary.depositAddress?.nonEmpty,
-                spendAmount: payload.humanSummary.spendAmount
-            )
-        } catch {
-            throw .invalidPayload(
-                payloadId: payload.payloadId,
-                reason: "\(provider.rawValue) payload is not parsable: \(error.logDescription)"
+        let envelope = try Self.envelopeMessages(rawPayload, chain: sourceChain, payloadId: payload.payloadId)
+        let depositAddress = envelope.count == 1 ? payload.humanSummary.depositAddress?.nonEmpty : nil
+        var parsedMessages = [SwapPayload]()
+        for message in envelope {
+            do {
+                try parsedMessages.append(
+                    SwapPayload.Companion.shared.fromQuote(
+                        provider: provider.chainKitProvider,
+                        type: calldataType.chainKitType,
+                        chain: sourceChain.asChainKitChain,
+                        payload: message,
+                        depositAddress: depositAddress,
+                        spendAmount: payload.humanSummary.spendAmount
+                    )
+                )
+            } catch {
+                throw .invalidPayload(
+                    payloadId: payload.payloadId,
+                    reason: "\(provider.rawValue) payload is not parsable: \(error.logDescription)"
+                )
+            }
+        }
+
+        var messages = [TradeMessage]()
+        for parsed in parsedMessages {
+            guard let amount = BigUInt(parsed.amount.description) else {
+                throw .invalidPayload(
+                    payloadId: payload.payloadId,
+                    reason: "payload amount is not an unsigned integer: \(parsed.amount.description)"
+                )
+            }
+            try messages.append(
+                TradeMessage(
+                    amount: amount,
+                    to: chainKitAddress(
+                        parsed.to,
+                        chain: sourceChain,
+                        type: .default_,
+                        payloadId: payload.payloadId,
+                        role: "\(provider.rawValue) to"
+                    ),
+                    data: isApproval ? nil : parsed.data
+                )
             )
         }
 
-        guard let amount = BigUInt(parsed.amount.description) else {
-            throw .invalidPayload(
-                payloadId: payload.payloadId,
-                reason: "payload amount is not an unsigned integer: \(parsed.amount.description)"
-            )
-        }
-
-        return try TradePayload(
-            amount: amount,
-            to: chainKitAddress(
-                parsed.to,
-                chain: sourceChain,
-                payloadId: payload.payloadId,
-                role: "\(provider.rawValue) to"
-            ),
-            data: isApproval ? nil : parsed.data,
-            approvalData: isApproval ? parsed.data : nil,
-            fee: parsed.fee,
+        let single = parsedMessages.count == 1 ? parsedMessages.first : nil
+        return TradePayload(
+            messages: messages,
+            approvalData: isApproval ? single?.data : nil,
+            fee: single?.fee,
             calldataType: calldataType
         )
+    }
+
+    /// ChainKit's TON parser reads the first message of an envelope, so a split route is handed to
+    /// it one message at a time. A part names its own recipient and amount: the deposit address and
+    /// the spend amount describe the whole route, never one of its parts.
+    static func envelopeMessages(
+        _ payload: String,
+        chain: MultichainChain,
+        payloadId: String
+    ) throws(MultichainSwapExecutionFailure) -> [String] {
+        guard chain == .ton else {
+            return [payload]
+        }
+        let messages: [Any]
+        do {
+            guard let envelope = try JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [Any],
+                  envelope.count > 1
+            else {
+                return [payload]
+            }
+            messages = envelope
+        } catch {
+            Log.multichainSwap.w(
+                "ton payload is not json",
+                error: error,
+                extraInfo: ["payloadId": payloadId]
+            )
+            return [payload]
+        }
+        guard tonMessageValues(payload) != nil else {
+            throw .invalidPayload(
+                payloadId: payloadId,
+                reason: "a message of a split envelope names no amount"
+            )
+        }
+        var envelopes = [String]()
+        for message in messages {
+            do {
+                let data = try JSONSerialization.data(withJSONObject: [message], options: .withoutEscapingSlashes)
+                envelopes.append(String(decoding: data, as: UTF8.self))
+            } catch {
+                throw .invalidPayload(
+                    payloadId: payloadId,
+                    reason: "a message of a split envelope cannot be encoded: \(error.localizedDescription)"
+                )
+            }
+        }
+        return envelopes
     }
 
     /// Whether an `evm_tx` payload holds router calldata rather than a plain value transfer this
@@ -397,7 +476,7 @@ private extension MultichainSwapPayloadAdapter {
                 return provider == .swapXyz || !Self.carriesEvmCalldata(payload.payload) ? .flex : .exact
             case .utxoPSBT, .tronTransaction:
                 return provider == .swapXyz ? .flex : .exact
-            case .tonBOC, .evmApprovalTransaction, .unsupported:
+            case .tonBOC, .solanaTransaction, .evmApprovalTransaction, .unsupported:
                 return .exact
             }
         }()
@@ -418,21 +497,29 @@ private extension MultichainSwapPayloadAdapter {
         payload: MultichainSwapPreparedPayload,
         sourceAsset: MultichainAsset,
         sourceChain: MultichainChain,
+        sender: String,
         tradePayload: TradePayload
     ) -> MultichainSwapBatteryPayload? {
+        // An approval is never relayed on its own: the relayer carries the main call, and a route
+        // that needs an approval keeps the wallet paying.
+        guard payload.payloadKind == .main else {
+            return nil
+        }
         switch sourceChain {
         case .ton:
             if payload.preparedPayloadType == .altVmDeposit {
                 guard MultichainSwapRelayedAsset(sourceAsset) == .tonJetton,
                       TonJettonSwapTransferFactory.jettonMasterAddress(sourceAsset: sourceAsset) != nil,
-                      tradePayload.data == nil
+                      tradePayload.messages.count == 1,
+                      let deposit = tradePayload.messages.first,
+                      deposit.data == nil
                 else {
                     return nil
                 }
                 return .tonJettonDeposit(
                     TonJettonSwapDeposit(
-                        recipient: tradePayload.to.display,
-                        amount: tradePayload.amount
+                        recipient: deposit.to.display,
+                        amount: deposit.amount
                     )
                 )
             }
@@ -450,50 +537,79 @@ private extension MultichainSwapPayloadAdapter {
                 return nil
             }
             return .ton(
-                TonSwapMessage(
-                    to: tradePayload.to.display,
-                    amount: tradePayload.amount,
-                    payload: tradePayload.data,
-                    stateInit: nil
-                )
+                tradePayload.messages.map { message in
+                    TonSwapMessage(
+                        to: message.to.display,
+                        amount: message.amount,
+                        payload: message.data,
+                        stateInit: nil
+                    )
+                }
             )
         case .tron:
             // A relayer signs its own TRON transaction, so only a payload that carries no call data
             // can be rebuilt from the route: anything else would have to be replayed verbatim.
-            guard tradePayload.data == nil else {
+            guard tradePayload.messages.count == 1,
+                  let transfer = tradePayload.messages.first,
+                  transfer.data == nil
+            else {
                 return nil
             }
             return .tron(
-                TronSwapTransfer(to: tradePayload.to.display, amount: tradePayload.amount)
+                TronSwapTransfer(to: transfer.to.display, amount: transfer.amount)
             )
-        case .btc, .eth, .base, .arb, .bsc:
+        case .eth, .base, .arb, .bsc, .polygon, .avax, .robinhood:
+            // The relayer's estimate prices one call: the route's, exactly as it was quoted.
+            guard tradePayload.messages.count == 1,
+                  let message = tradePayload.messages.first,
+                  let call = EVMGaslessCall.swap(
+                      chain: sourceChain,
+                      sender: sender,
+                      assetId: sourceAsset.asset.assetId,
+                      to: message.to.display,
+                      amount: message.amount,
+                      data: message.data
+                  )
+            else {
+                return nil
+            }
+            return .evm(EVMSwapRelay(chain: sourceChain, call: call))
+        case .btc, .sol:
             return nil
         }
     }
 
     func walletAddress(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         chain: MultichainChain,
-        payloadId: String
-    ) throws(MultichainSwapExecutionFailure) -> String {
-        guard case let .multichain(state) = wallet.multichain,
-              let address = state.address(for: chain, preferredType: wallet.preferredMultichainAddressType(for: chain))
-        else {
+        payloadId _: String
+    ) throws(MultichainSwapExecutionFailure) -> MultichainWalletAddress {
+        guard let address = swapWallet.walletAddress(for: chain) else {
             throw .missingWalletAddress(chain: chain)
         }
         return address
     }
 
+    func senderAddressType(_ walletAddress: MultichainWalletAddress) -> Address.Type_ {
+        switch walletAddress.chain {
+        case .ton:
+            walletAddress.type?.chainKitAddressType ?? .default_
+        case .eth, .base, .btc, .tron, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
+            .default_
+        }
+    }
+
     func chainKitAddress(
         _ string: String,
         chain: MultichainChain,
+        type: Address.Type_,
         payloadId: String,
         role: String
     ) throws(MultichainSwapExecutionFailure) -> Address {
         guard let address = Address.Companion.shared.from(
             value: string,
             chain: chain.asChainKitChain,
-            type: .default_
+            type: type
         ) else {
             throw .invalidPayload(
                 payloadId: payloadId,

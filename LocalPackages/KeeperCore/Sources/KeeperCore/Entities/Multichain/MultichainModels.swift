@@ -11,7 +11,7 @@ public struct MultichainHealth: Equatable, Sendable {
     }
 }
 
-public enum MultichainNetwork: String, Sendable, Equatable, Codable {
+@frozen public enum MultichainNetwork: String, Sendable, Equatable, Codable {
     case mainnet
     case testnet
 }
@@ -24,18 +24,19 @@ public extension MultichainNetwork {
 
 // MARK: - Assets
 
-public enum MultichainAssetVerification: String, Hashable, Sendable, Codable {
+@frozen public enum MultichainAssetVerification: String, Hashable, Sendable, Codable {
     case trusted
     case whitelist
     case none
     case blacklist
 }
 
-public enum MultichainAssetCapability: String, Hashable, Sendable, Codable {
+@frozen public enum MultichainAssetCapability: String, Hashable, Sendable, Codable {
     case onramp
     case offramp
     case swap
     case p2p
+    case perpDeposit = "perp_deposit"
 }
 
 public struct MultichainAssetDetails: Hashable, Sendable, Codable {
@@ -96,18 +97,15 @@ public struct MultichainAssetPrice: Equatable, Sendable, Codable {
     public let prices: [String: Double]
     public let diff24h: [String: String]
     public let diff7d: [String: String]
-    public let diff30d: [String: String]
 
     public init(
         prices: [String: Double],
         diff24h: [String: String],
-        diff7d: [String: String],
-        diff30d: [String: String]
+        diff7d: [String: String]
     ) {
         self.prices = prices
         self.diff24h = diff24h
         self.diff7d = diff7d
-        self.diff30d = diff30d
     }
 }
 
@@ -158,14 +156,14 @@ public extension MultichainAsset {
     }
 }
 
-public enum MultichainAssetSearchSort: String, Sendable, Equatable {
+@frozen public enum MultichainAssetSearchSort: String, Sendable, Equatable {
     case marketCap = "market_cap"
     case volume
     case priceDiffAsc = "price_diff_asc"
     case priceDiffDesc = "price_diff_desc"
 }
 
-public enum MultichainAssetFilterAction: String, Sendable, Equatable, Codable {
+@frozen public enum MultichainAssetFilterAction: String, Sendable, Equatable, Codable {
     case show
     case hide
 }
@@ -260,19 +258,19 @@ public struct MultichainWalletSyncStatus: Equatable, Sendable {
 }
 
 public struct MultichainChainSyncStatus: Equatable, Sendable {
-    public enum Status: String, Sendable, Equatable {
+    @frozen public enum Status: String, Sendable, Equatable {
         case ready
         case inProgress = "in_progress"
         case failed
     }
 
-    public enum Backfill: String, Sendable, Equatable {
+    @frozen public enum Backfill: String, Sendable, Equatable {
         case complete
         case inProgress = "in_progress"
         case queued
     }
 
-    public enum Reason: String, Sendable, Equatable {
+    @frozen public enum Reason: String, Sendable, Equatable {
         case providerTimeout = "provider_timeout"
         case provider5xx = "provider_5xx"
         case rateLimited = "rate_limited"
@@ -309,17 +307,24 @@ public struct MultichainWalletAssetsPage: Equatable, Sendable {
     public let nextCursor: String?
     /// Fiat portfolio totals per currency code (e.g. USD).
     public let fiatPrice: [String: String]
+    public let perpsFiatPrice: [String: String]?
 
-    public init(assets: [MultichainAsset], nextCursor: String?, fiatPrice: [String: String]) {
+    public init(
+        assets: [MultichainAsset],
+        nextCursor: String?,
+        fiatPrice: [String: String],
+        perpsFiatPrice: [String: String]? = nil
+    ) {
         self.assets = assets
         self.nextCursor = nextCursor
         self.fiatPrice = fiatPrice
+        self.perpsFiatPrice = perpsFiatPrice
     }
 }
 
 // MARK: - Activities
 
-public enum MultichainActivityType: String, Sendable, Equatable, Codable, CaseIterable {
+@frozen public enum MultichainActivityType: String, Sendable, Equatable, Codable, CaseIterable {
     case send
     case receive
     case swap
@@ -351,6 +356,8 @@ public enum MultichainActivityType: String, Sendable, Equatable, Codable, CaseIt
     case repay
     case airdrop
     case perpsPositionOpened = "perps.position_opened"
+    case perpsPositionIncreased = "perps.position_increased"
+    case perpsPositionReduced = "perps.position_reduced"
     case perpsPositionClosed = "perps.position_closed"
     case perpsBalanceDeposit = "perps.balance_deposit"
     case perpsBalanceWithdrawal = "perps.balance_withdrawal"
@@ -359,20 +366,20 @@ public enum MultichainActivityType: String, Sendable, Equatable, Codable, CaseIt
     case unknown
 }
 
-public enum MultichainActivityStatus: String, Sendable, Equatable, Codable {
+@frozen public enum MultichainActivityStatus: String, Sendable, Equatable, Codable {
     case pending
     case confirmed
     case failed
     case dropped
 }
 
-public enum MultichainActivityDirection: String, Sendable, Equatable, Codable {
+@frozen public enum MultichainActivityDirection: String, Sendable, Equatable, Codable {
     case incoming = "in"
     case outgoing = "out"
     case selfTransfer = "self"
 }
 
-public enum MultichainActivityFeeType: String, Sendable, Hashable {
+@frozen public enum MultichainActivityFeeType: String, Sendable, Hashable {
     case gasless
     case native
     case battery
@@ -395,7 +402,8 @@ public extension MultichainActivityType {
 
     var isPerps: Bool {
         switch self {
-        case .perpsPositionOpened, .perpsPositionClosed, .perpsBalanceDeposit, .perpsBalanceWithdrawal:
+        case .perpsPositionOpened, .perpsPositionIncreased, .perpsPositionReduced, .perpsPositionClosed,
+             .perpsBalanceDeposit, .perpsBalanceWithdrawal:
             true
         default:
             false
@@ -403,19 +411,43 @@ public extension MultichainActivityType {
     }
 }
 
-public enum MultichainActivityTypeFilter: String, Sendable, Equatable {
+public extension MultichainActivity {
+    /// Perps settle in USDC, which every perps surface shows as dollars.
+    func isPerpsDollar(_ token: MultichainAssetDetails) -> Bool {
+        activityType.isPerps && token.symbol == "USDC"
+    }
+
+    func displaySymbol(for token: MultichainAssetDetails) -> String {
+        isPerpsDollar(token) ? "USD" : token.symbol
+    }
+
+    /// What a withdrawal took off the perps balance: Lighter debits its fee on top of the amount sent.
+    var perpsDebitedOutAmount: String? {
+        guard activityType == .perpsBalanceWithdrawal,
+              let outAmount, let outToken, let feeAmount, let feeToken,
+              outToken.assetId.caseInsensitiveCompare(feeToken.assetId) == .orderedSame
+        else { return outAmount }
+        let sign = outAmount.hasPrefix("-") ? "-" : ""
+        guard let amount = BigUInt(outAmount.dropFirst(sign.count)),
+              let fee = BigUInt(feeAmount.drop { $0 == "-" })
+        else { return outAmount }
+        return sign + (amount + fee).description
+    }
+}
+
+@frozen public enum MultichainActivityTypeFilter: String, Sendable, Equatable {
     case send
     case receive
     case swap
     case perps
 }
 
-public enum MultichainPerpsSide: String, Sendable, Equatable {
+@frozen public enum MultichainPerpsSide: String, Sendable, Equatable {
     case long
     case short
 }
 
-public enum MultichainPerpsCloseReason: String, Sendable, Equatable {
+@frozen public enum MultichainPerpsCloseReason: String, Sendable, Equatable {
     case manual
     case takeProfit = "take_profit"
     case stopLoss = "stop_loss"
@@ -429,6 +461,20 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
     public let closeReason: MultichainPerpsCloseReason?
     public let accountIndex: Int64?
     public let settledAt: Date?
+    public let leverage: Double?
+    public let entryPrice: Double?
+    /// Closing events only.
+    public let closePrice: Double?
+    /// In the market's base coin.
+    public let size: Double?
+    public let sizeUsd: Double?
+    /// Opening events only.
+    public let marginUsd: Double?
+    /// Closing events only: the result as a percentage of the position's margin.
+    public let resultPercent: Double?
+    /// Closing events only: funding accrued over the position's life, already inside the result.
+    /// Positive is received, negative is paid.
+    public let fundingUsd: Double?
 
     public init(
         symbol: String?,
@@ -436,7 +482,15 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
         side: MultichainPerpsSide?,
         closeReason: MultichainPerpsCloseReason?,
         accountIndex: Int64?,
-        settledAt: Date?
+        settledAt: Date?,
+        leverage: Double? = nil,
+        entryPrice: Double? = nil,
+        closePrice: Double? = nil,
+        size: Double? = nil,
+        sizeUsd: Double? = nil,
+        marginUsd: Double? = nil,
+        resultPercent: Double? = nil,
+        fundingUsd: Double? = nil
     ) {
         self.symbol = symbol
         self.assetId = assetId
@@ -444,6 +498,14 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
         self.closeReason = closeReason
         self.accountIndex = accountIndex
         self.settledAt = settledAt
+        self.leverage = leverage
+        self.entryPrice = entryPrice
+        self.closePrice = closePrice
+        self.size = size
+        self.sizeUsd = sizeUsd
+        self.marginUsd = marginUsd
+        self.resultPercent = resultPercent
+        self.fundingUsd = fundingUsd
     }
 }
 

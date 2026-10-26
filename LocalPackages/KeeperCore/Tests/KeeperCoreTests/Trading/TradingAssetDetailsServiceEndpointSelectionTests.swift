@@ -19,6 +19,19 @@ final class TradingAssetDetailsServiceEndpointSelectionTests: XCTestCase {
             ]
         )
     }
+
+    func test_loadAssetDetails_mapsNotFound() async {
+        let api = TradingAPISpy(assetDetailsFailure: .notFound)
+        let service = makeService(api: api)
+
+        do {
+            _ = try await service.loadAssetDetails(id: "sol/mainnet/coin")
+            XCTFail("Expected notFound")
+        } catch TradingAssetDetailsServiceFailure.notFound {
+        } catch {
+            XCTFail("Expected notFound, got \(error)")
+        }
+    }
 }
 
 private extension TradingAssetDetailsServiceEndpointSelectionTests {
@@ -57,6 +70,11 @@ private actor TradingAPISpy: TradingAPI {
     }
 
     private var recordedCalls = [Call]()
+    private let assetDetailsFailure: TradingAPIError
+
+    init(assetDetailsFailure: TradingAPIError = .transportError(underlying: nil)) {
+        self.assetDetailsFailure = assetDetailsFailure
+    }
 
     func calls() -> [Call] {
         recordedCalls
@@ -122,7 +140,7 @@ private actor TradingAPISpy: TradingAPI {
         assetId: String
     ) async throws(TradingAPIError) -> Components.Schemas.AssetDetailsResponse {
         recordedCalls.append(.getAssetsDetailsV2(assetId: assetId))
-        throw .transportError(underlying: nil)
+        throw assetDetailsFailure
     }
 }
 

@@ -335,6 +335,85 @@ final class WalletConnectSessionNamespaceBuilderTests: XCTestCase {
         XCTAssertEqual(namespaces["ton"]?.methods, Set(WalletConnectMethod.tonMethods.map(\.rawValue)))
     }
 
+    func testSessionNamespacesApproveSolanaMethodsAndEvents() throws {
+        let builder = WalletConnectSessionNamespaceBuilder()
+        let solana = try XCTUnwrap(Blockchain(WalletConnectChain.sol.caip2))
+        let requestedMethods = Set(WalletConnectMethod.solanaMethods.map(\.rawValue)).union(["solana_signAndSendAllTransactions"])
+
+        let namespaces = try builder.sessionNamespaces(
+            requiredNamespaces: [
+                "solana": ProposalNamespace(
+                    chains: [solana],
+                    methods: Set(WalletConnectMethod.solanaMethods.map(\.rawValue)),
+                    events: ["accountsChanged", "chainChanged"]
+                ),
+            ],
+            optionalNamespaces: [
+                "solana": ProposalNamespace(
+                    chains: [solana],
+                    methods: requestedMethods,
+                    events: ["accountsChanged", "chainChanged", "disconnect"]
+                ),
+            ],
+            walletConnectAccounts: [
+                WalletConnectAccount(chain: .sol, address: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"),
+            ]
+        )
+
+        let namespace = try XCTUnwrap(namespaces["solana"])
+        XCTAssertEqual(namespace.chains, [solana])
+        XCTAssertEqual(namespace.methods, Set(WalletConnectMethod.solanaMethods.map(\.rawValue)))
+        XCTAssertEqual(namespace.events, ["accountsChanged", "chainChanged"])
+        XCTAssertEqual(
+            namespace.accounts.map(\.absoluteString),
+            ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"]
+        )
+    }
+
+    func testSessionNamespacesAnswerTheLegacySolanaMainnetIdentifierTheDappAsksFor() throws {
+        let builder = WalletConnectSessionNamespaceBuilder()
+        let legacySolana = try XCTUnwrap(Blockchain("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ"))
+
+        let namespaces = try builder.sessionNamespaces(
+            requiredNamespaces: [
+                "solana": ProposalNamespace(
+                    chains: [legacySolana],
+                    methods: [WalletConnectMethod.solanaSignMessage.rawValue],
+                    events: []
+                ),
+            ],
+            optionalNamespaces: nil,
+            walletConnectAccounts: [
+                WalletConnectAccount(chain: .sol, address: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"),
+            ]
+        )
+
+        let namespace = try XCTUnwrap(namespaces["solana"])
+        XCTAssertEqual(namespace.chains, [legacySolana])
+        XCTAssertEqual(
+            namespace.accounts.map(\.absoluteString),
+            ["solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"]
+        )
+        XCTAssertEqual(WalletConnectSessionNamespaceBuilder.chains(from: namespaces), [.sol])
+    }
+
+    func testProposalNamespacesDefaultTheSolanaNamespaceToMainnet() {
+        let builder = WalletConnectSessionNamespaceBuilder()
+
+        let namespaces = builder.proposalNamespaces(
+            requiredNamespaces: [
+                "solana": ProposalNamespace(
+                    methods: [WalletConnectMethod.solanaSignTransaction.rawValue],
+                    events: []
+                ),
+            ],
+            optionalNamespaces: nil
+        )
+
+        XCTAssertEqual(namespaces.map(\.chains), [[.sol]])
+        XCTAssertEqual(namespaces.map(\.methods), [[.solanaSignTransaction]])
+    }
+
     func testSessionNamespacesRejectsUnsupportedReownEVMMethodsWithoutOverApproving() throws {
         let builder = WalletConnectSessionNamespaceBuilder()
         let eth = try XCTUnwrap(Blockchain(WalletConnectChain.eth.caip2))

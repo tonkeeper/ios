@@ -2,9 +2,10 @@ import Foundation
 import TKBatteryAPI
 
 extension BatteryPurchase {
-    init(purchase: Components.Schemas.Purchases.purchasesPayloadPayload) {
+    init?(purchase: Components.Schemas.Purchases.purchasesPayloadPayload) {
+        guard let kind = Kind(type: purchase._type) else { return nil }
         identifier = purchase.purchase_id
-        kind = Kind(type: purchase._type)
+        self.kind = kind
         isRefunded = purchase.refund_information.map {
             $0.fully_refunded || $0.partially_refunded
         } ?? false
@@ -12,7 +13,7 @@ extension BatteryPurchase {
 }
 
 private extension BatteryPurchase.Kind {
-    init(type: Components.Schemas.Purchases.purchasesPayloadPayload._typePayload) {
+    init?(type: Components.Schemas.Purchases.purchasesPayloadPayload._typePayload) {
         switch type {
         case .ios:
             self = .ios
@@ -26,6 +27,8 @@ private extension BatteryPurchase.Kind {
             self = .gift
         case .on_hyphen_the_hyphen_way_hyphen_gift:
             self = .onTheWayGift
+        case .unknown:
+            return nil
         }
     }
 }

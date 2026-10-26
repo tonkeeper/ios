@@ -22,21 +22,22 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
         XCTAssertEqual(sessionCallCount, 0)
     }
 
-    func test_multichainWallet_sendsTonProofAndWalletCredentialsTogether() async throws {
+    func test_multichainWallet_sendsOnlyWalletCredentials() async throws {
         let deviceAuth = DeviceAuthFake(sessionToken: "device-access-token")
         let service = BatteryAuthorizationService(
             tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
             deviceAuth: deviceAuth,
-            walletAuthTokenProvider: WalletAuthTokenProviderStub()
+            walletAuthTokenProvider: WalletAuthTokenProviderStub(isWarm: true)
         )
 
         let authorization = try await service.authorization(
             for: makeWallet(multichainWalletId: "backend-wallet-id")
         )
 
-        XCTAssertEqual(authorization.tonProof, "ton-proof")
+        XCTAssertNil(authorization.tonProof)
         XCTAssertEqual(authorization.walletId, "backend-wallet-id")
         XCTAssertEqual(authorization.deviceAccessToken, "device-access-token")
+        XCTAssertEqual(authorization.walletAuthToken, "signed(backend-wallet-id,device-access-token)")
     }
 
     func test_multichainWalletWithoutTonProof_stillAuthorizesByWalletId() async throws {
@@ -54,20 +55,17 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
         XCTAssertEqual(authorization.deviceAccessToken, "device-access-token")
     }
 
-    func test_multichainWalletWithoutDeviceSession_fallsBackToTonProof() async throws {
+    func test_multichainWalletWithoutDeviceSession_returnsUnavailable() async {
         let service = BatteryAuthorizationService(
             tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
             deviceAuth: DeviceAuthFake(sessionToken: ""),
             walletAuthTokenProvider: WalletAuthTokenProviderStub()
         )
 
-        let authorization = try await service.authorization(
-            for: makeWallet(multichainWalletId: "backend-wallet-id")
+        await assertAuthorizationUnavailable(
+            for: makeWallet(multichainWalletId: "backend-wallet-id"),
+            service: service
         )
-
-        XCTAssertEqual(authorization.tonProof, "ton-proof")
-        XCTAssertEqual(authorization.walletId, "backend-wallet-id")
-        XCTAssertNil(authorization.deviceAccessToken)
     }
 
     func test_missingLegacyCredentials_returnsUnavailable() async {
@@ -287,8 +285,23 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
             for: makeWallet(multichainWalletId: "backend-wallet-id")
         ) { $0 }
 
-        XCTAssertEqual(authorization.tonProof, "ton-proof")
+        XCTAssertNil(authorization.tonProof)
+        XCTAssertEqual(authorization.walletId, "backend-wallet-id")
         XCTAssertEqual(authorization.deviceAccessToken, "device-access-token")
+    }
+
+    func test_optionalAuthorization_multichainWithoutDeviceSession_runsUnauthorized() async throws {
+        let service = BatteryAuthorizationService(
+            tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
+            deviceAuth: DeviceAuthFake(sessionToken: ""),
+            walletAuthTokenProvider: WalletAuthTokenProviderStub()
+        )
+
+        let authorization: BatteryAuthorization = try await service.withOptionalAuthorization(
+            for: makeWallet(multichainWalletId: "backend-wallet-id")
+        ) { $0 }
+
+        XCTAssertEqual(authorization, .none)
     }
 
     func test_optionalAuthorization_recoversExpiredSession() async throws {
@@ -397,6 +410,7 @@ private struct WalletAuthTokenProviderStub: WalletAuthTokenProviding {
     }
 
     func warm(walletId _: String, mnemonic _: String) async {}
+    func persistAppKey(_: Data, walletId _: String) async {}
     func forget(walletId _: String) async {}
     func wipe() async {}
 }

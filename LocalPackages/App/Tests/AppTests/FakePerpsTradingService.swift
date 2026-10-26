@@ -1,6 +1,8 @@
 @testable import App
 import Foundation
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 
 /// Test double for the KeeperCore trading seam so App view models can be tested
 /// without ChainKit/session plumbing.
@@ -9,9 +11,14 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
     /// When true, `openMarketContext` returns nil to exercise the terminal load-error path.
     var failsMarketLoad = false
     var previewResult: Result<PerpsOpenOrderReview, PerpsTradingError> = .success(FakePerpsTradingService.makeReview())
+    var previewHandler: ((PerpsOpenMarketIntent) -> Result<PerpsOpenOrderReview, PerpsTradingError>)?
+    var previewSuspension: (() async -> Void)?
     var prepareResult: Result<PerpsPreparedTradingAction, PerpsTradingError> = .failure(.unknown("not set"))
+    var previewCloseResult: Result<PerpsCloseReview, PerpsTradingError> = .failure(.unknown("not set"))
     var prepareCloseResult: Result<PerpsPreparedCloseAction, PerpsTradingError> = .failure(.unknown("not set"))
+    var previewSizeChangeResult: Result<PerpsSizeChangeReview, PerpsTradingError> = .failure(.unknown("not set"))
     var prepareSizeChangeResult: Result<PerpsPreparedSizeChangeAction, PerpsTradingError> = .failure(.unknown("not set"))
+    var previewMarginChangeResult: Result<PerpsMarginChangeReview, PerpsTradingError> = .failure(.unknown("not set"))
     var prepareMarginChangeResult: Result<PerpsPreparedMarginChangeAction, PerpsTradingError> = .failure(.unknown("not set"))
     var prepareAutoCloseChangeResult: Result<PerpsPreparedAutoCloseChangeAction, PerpsTradingError> = .failure(.unknown("not set"))
     var prepareLimitOrderChangeResult: Result<PerpsPreparedLimitOrderChangeAction, PerpsTradingError> = .failure(.unknown("not set"))
@@ -24,25 +31,22 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
     private(set) var preparedLimitOrderChangeIntents: [PerpsLimitOrderChangeIntent] = []
     private(set) var positionLiquidationPreviews: [Double] = []
     private(set) var previewedIntents: [PerpsOpenMarketIntent] = []
-    private(set) var passcodeRequested = false
 
-    func openMarketContext(marketId: Int64, side: KeeperCore.PerpsTradeSide) async -> PerpsOpenMarketContext? {
+    func openMarketContext(marketId: Int64, side: PerpsModels.PerpsTradeSide) async -> PerpsOpenMarketContext? {
         if failsMarketLoad { return nil }
         return context ?? Self.makeContext(marketId: marketId, side: side)
     }
 
     func previewOpenMarket(_ intent: PerpsOpenMarketIntent) async -> Result<PerpsOpenOrderReview, PerpsTradingError> {
         previewedIntents.append(intent)
-        return previewResult
+        await previewSuspension?()
+        return previewHandler?(intent) ?? previewResult
     }
 
     func prepareOpenMarket(
-        _ intent: PerpsOpenMarketIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _ intent: PerpsOpenMarketIntent
     ) async -> Result<PerpsPreparedTradingAction, PerpsTradingError> {
         preparedIntents.append(intent)
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareResult
     }
 
@@ -50,83 +54,88 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
         reconcileResult
     }
 
-    func submit(_ prepared: PerpsPreparedTradingAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedTradingAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
+    }
+
+    func previewClose(_: PerpsCloseIntent) async -> Result<PerpsCloseReview, PerpsTradingError> {
+        previewCloseResult
     }
 
     func prepareClose(
-        _ intent: PerpsCloseIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _ intent: PerpsCloseIntent
     ) async -> Result<PerpsPreparedCloseAction, PerpsTradingError> {
         preparedCloseIntents.append(intent)
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareCloseResult
     }
 
-    func submit(_ prepared: PerpsPreparedCloseAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedCloseAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
+    }
+
+    func previewSizeChange(_: PerpsSizeChangeIntent) async -> Result<PerpsSizeChangeReview, PerpsTradingError> {
+        previewSizeChangeResult
     }
 
     func prepareSizeChange(
-        _ intent: PerpsSizeChangeIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _ intent: PerpsSizeChangeIntent
     ) async -> Result<PerpsPreparedSizeChangeAction, PerpsTradingError> {
         preparedSizeChangeIntents.append(intent)
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareSizeChangeResult
     }
 
-    func submit(_ prepared: PerpsPreparedSizeChangeAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedSizeChangeAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
     }
 
+    func previewMarginChange(_: PerpsMarginChangeIntent) async -> Result<PerpsMarginChangeReview, PerpsTradingError> {
+        previewMarginChangeResult
+    }
+
     func prepareMarginChange(
-        _: PerpsMarginChangeIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _: PerpsMarginChangeIntent
     ) async -> Result<PerpsPreparedMarginChangeAction, PerpsTradingError> {
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareMarginChangeResult
     }
 
-    func submit(_ prepared: PerpsPreparedMarginChangeAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedMarginChangeAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
     }
 
     func prepareAutoCloseChange(
-        _: PerpsAutoCloseChangeIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _: PerpsAutoCloseChangeIntent
     ) async -> Result<PerpsPreparedAutoCloseChangeAction, PerpsTradingError> {
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareAutoCloseChangeResult
     }
 
-    func submit(_ prepared: PerpsPreparedAutoCloseChangeAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedAutoCloseChangeAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
     }
 
     func prepareLimitOrderChange(
-        _ intent: PerpsLimitOrderChangeIntent,
-        passcodeProvider: @escaping @Sendable () async -> String?
+        _ intent: PerpsLimitOrderChangeIntent
     ) async -> Result<PerpsPreparedLimitOrderChangeAction, PerpsTradingError> {
         preparedLimitOrderChangeIntents.append(intent)
-        _ = await passcodeProvider()
-        passcodeRequested = true
         return prepareLimitOrderChangeResult
     }
 
-    func submit(_ prepared: PerpsPreparedLimitOrderChangeAction) async -> PerpsSubmitResult {
+    func submit(_ prepared: PerpsPreparedLimitOrderChangeAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult {
         submitResult ?? .failed(.unknown("not set"))
     }
 
-    let reviewer = FakePerpetualReviewer()
-    private(set) var reviewerLoads = 0
+    var blockedByPending = Set<Int64>()
 
-    func loadReviewer(for _: PerpsOpenMarketIntent) async -> Result<any PerpetualReviewer, PerpsTradingError> {
+    func marketsBlockedByPending() async -> Set<Int64> {
+        blockedByPending
+    }
+
+    var reviewer = FakePerpetualReviewer()
+    private(set) var reviewerLoads = 0
+    private(set) var reviewerIntents = [PerpsOpenMarketIntent]()
+
+    func loadReviewer(for intent: PerpsOpenMarketIntent) async -> Result<any PerpetualReviewer, PerpsTradingError> {
         reviewerLoads += 1
+        reviewerIntents.append(intent)
         return .success(reviewer)
     }
 
@@ -135,12 +144,20 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
         return .success(reviewer)
     }
 
+    var marginLimits: Result<PerpsMarginChangeLimits, PerpsTradingError> = .failure(.unknown("not set"))
+
+    func marginChangeLimits(marketId _: Int64) async -> Result<PerpsMarginChangeLimits, PerpsTradingError> {
+        marginLimits
+    }
+
     // MARK: Builders
 
     static func makeContext(
         marketId: Int64 = 1,
-        side: KeeperCore.PerpsTradeSide = .long,
-        displayPrice: Double = 66141.70
+        side: PerpsModels.PerpsTradeSide = .long,
+        displayPrice: Double = 66141.70,
+        sizeDecimals: Int = 5,
+        minNotionalUsd: Double = 0
     ) -> PerpsOpenMarketContext {
         PerpsOpenMarketContext(
             marketId: marketId,
@@ -148,11 +165,12 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
             symbol: "BTC",
             displayPrice: displayPrice,
             priceDecimals: 2,
-            sizeDecimals: 5,
+            sizeDecimals: sizeDecimals,
             leverageBounds: PerpsLeverageBounds(min: 1, max: 40),
             defaultLeverage: 27,
             maxSlippage: 0.01,
-            minBaseSize: 0.0001
+            minBaseSize: 0.0001,
+            minNotionalUsd: minNotionalUsd
         )
     }
 
@@ -178,7 +196,7 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
     }
 
     static func makeCloseReview(
-        side: KeeperCore.PerpsTradeSide = .long,
+        side: PerpsModels.PerpsTradeSide = .long,
         leverage: Double? = 27,
         marginUsd: Double = 20,
         notionalUsd: Double = 540,
@@ -202,13 +220,13 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
 
     static func makeSizeChangeReview(
         direction: PerpsSizeChangeDirection = .add,
-        side: KeeperCore.PerpsTradeSide = .long,
+        side: PerpsModels.PerpsTradeSide = .long,
         leverage: Double? = 27,
         marginDeltaUsd: Double = 20,
         entryPrice: PerpsValueChange = PerpsValueChange(old: 66541.70, new: 66021.17),
         notionalUsd: PerpsValueChange = PerpsValueChange(old: 540, new: 1080),
         baseSize: PerpsValueChange = PerpsValueChange(old: 0.008, new: 0.0163),
-        liquidationPrice: Double? = 64141.75,
+        liquidationPrice: PerpsValueChange? = PerpsValueChange(old: 64141.75, new: 63200),
         estimatedFeeUsd: Double? = 0.144
     ) -> PerpsSizeChangeReview {
         PerpsSizeChangeReview(
@@ -261,10 +279,10 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
 
     static func makeTriggerOrders(
         autoClose: PerpsAutoClose?,
-        side: KeeperCore.PerpsTradeSide,
+        side: PerpsModels.PerpsTradeSide,
         baseAmount: Double
     ) -> [PerpsTriggerOrderSummary] {
-        let closeSide: KeeperCore.PerpsTradeSide = side == .long ? .short : .long
+        let closeSide: PerpsModels.PerpsTradeSide = side == .long ? .short : .long
         var orders: [PerpsTriggerOrderSummary] = []
         if let takeProfit = autoClose?.takeProfit {
             orders.append(PerpsTriggerOrderSummary(
@@ -289,7 +307,7 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
 
     static func makeMarginChangeReview(
         direction: PerpsMarginChangeDirection = .add,
-        side: KeeperCore.PerpsTradeSide = .long,
+        side: PerpsModels.PerpsTradeSide = .long,
         leverage: Double? = 27,
         amountUsd: Double = 20,
         allocatedMargin: PerpsValueChange = PerpsValueChange(old: 20.5, new: 40.5),
@@ -333,10 +351,15 @@ final class FakePerpsTradingService: PerpsTradingService, @unchecked Sendable {
 final class FakePerpetualReviewer: PerpetualReviewer, @unchecked Sendable {
     var isStale = false
     var openReview: PerpsOpenOrderReview?
+    var minimumOpenMargin: Double?
     var marginReview: PerpsMarginChangeReview?
 
     func reviewOpen(_: PerpsOpenMarketIntent) -> PerpsOpenOrderReview? {
         openReview
+    }
+
+    func minimumOpenMarginUsd(_: PerpsOpenMarketIntent) -> Double? {
+        minimumOpenMargin
     }
 
     func reviewMarginChange(_: PerpsMarginChangeIntent) -> PerpsMarginChangeReview? {

@@ -29,7 +29,7 @@ public struct OnRampLimits: Codable, Equatable, Hashable {
 
 // MARK: - Calculate (v2/onramp/calculate)
 
-public enum OnRampPurchaseType: String {
+@frozen public enum OnRampPurchaseType: String {
     case buy
     case sell
     case swap
@@ -52,7 +52,7 @@ public struct OnRampQuoteResult: Equatable {
 
 // MARK: - Layout (v2/onramp/layout)
 
-public enum OnRampLayoutItemType: String, Codable, Equatable, Hashable, Sendable {
+@frozen public enum OnRampLayoutItemType: String, Codable, Equatable, Hashable, Sendable {
     case fiat
     case crypto
     case stablecoin

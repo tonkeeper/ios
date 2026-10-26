@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import PerpsModels
 import TKLocalize
 import TKUIKit
 import UIKit
@@ -10,7 +11,6 @@ protocol TokenPickerV2ModuleOutput: AnyObject {
     var didSelectAsset: ((MultichainAsset) -> Void)? { get set }
     var didSelectPerpMarket: ((Int64) -> Void)? { get set }
     var didDismiss: (() -> Void)? { get set }
-    func finishAssetSelection(shouldClose: Bool)
 }
 
 @MainActor
@@ -33,21 +33,33 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     @Published private(set) var showsPerpsSortControl = false
     @Published private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
     @Published private(set) var perpsSearchSort: PerpsMarketsSort = .volume
-    @Published private(set) var isAwaitingAssetSelection = false
+    @Published private(set) var assetType: TokenPickerV2AssetType = .category(.all)
 
     let headerTitle: String
     let headerStyle: TokenPickerV2HeaderStyle
     let onBack: (() -> Void)?
 
-    var catalogSortButtonTitle: String {
-        Self.catalogSortTitle(for: catalogSearchSort)
+    var assetTypes: [TokenPickerV2AssetType] {
+        tokenPickerModel.assetTypes
+    }
+
+    static func catalogSortTitle(for sort: MultichainAssetSearchSort) -> String {
+        switch sort {
+        case .marketCap:
+            return TKLocales.TokensPicker.Sort.marketCap
+        case .volume:
+            return TKLocales.TokensPicker.Sort.volume
+        case .priceDiffAsc:
+            return TKLocales.TokensPicker.Sort.topLosers
+        case .priceDiffDesc:
+            return TKLocales.TokensPicker.Sort.topGainers
+        }
     }
 
     private let tokenPickerModel: any TokenPickerV2Model
     private let amountFormatter: AmountFormatter
     private let currencyStore: CurrencyStore
     private let presentation: TokenPickerV2Presentation
-    private let waitsForSelectionCompletion: Bool
 
     private var categoryViewModels = [TokenPickerV2ChainFilter: TokenPickerV2CategoryViewModel]()
     private var activateQueryTask: Task<Void, Never>?
@@ -62,7 +74,6 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         currencyStore: CurrencyStore,
         presentation: TokenPickerV2Presentation = .modal,
         headerStyle: TokenPickerV2HeaderStyle = .modal,
-        waitsForSelectionCompletion: Bool = false,
         onBack: (() -> Void)? = nil
     ) {
         self.headerTitle = headerTitle
@@ -71,7 +82,6 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         self.amountFormatter = amountFormatter
         self.currencyStore = currencyStore
         self.presentation = presentation
-        self.waitsForSelectionCompletion = waitsForSelectionCompletion
         self.onBack = onBack
     }
 
@@ -104,7 +114,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     }
 
     func selectPerpsSort(_ sort: PerpsMarketsSort) {
-        guard selectedChainFilter == .perpetuals else {
+        guard assetType == .perpetuals else {
             return
         }
         guard tokenPickerModel.perpsSearchSort != sort else {
@@ -114,7 +124,22 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         tokenPickerModel.setPerpsSearchSort(sort)
         syncCatalogSortState()
 
-        categoryViewModels[.perpetuals]?.invalidateCachedQueries()
+        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        activateCurrentQuery()
+    }
+
+    func selectAssetType(_ assetType: TokenPickerV2AssetType) {
+        guard tokenPickerModel.assetType != assetType else {
+            return
+        }
+
+        tokenPickerModel.setAssetType(assetType)
+        syncCatalogSortState()
+
+        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        guard hasLoaded else {
+            return
+        }
         activateCurrentQuery()
     }
 
@@ -146,8 +171,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     }
 
     func selectRow(_ id: String) {
-        guard !isAwaitingAssetSelection,
-              let item = currentQueryViewModel?.item(withID: id)
+        guard let item = currentQueryViewModel?.item(withID: id)
         else {
             return
         }
@@ -157,29 +181,12 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
             guard let didSelectAsset else {
                 return
             }
-            if waitsForSelectionCompletion {
-                isAwaitingAssetSelection = true
-            }
             didSelectAsset(asset)
-            guard !waitsForSelectionCompletion else {
-                return
-            }
             if presentation.closesOnSelection {
                 close()
             }
         case let .perp(market):
             didSelectPerpMarket?(market.id)
-        }
-    }
-
-    func finishAssetSelection(shouldClose: Bool) {
-        guard waitsForSelectionCompletion, !hasDisappeared else {
-            return
-        }
-
-        isAwaitingAssetSelection = false
-        if shouldClose {
-            close()
         }
     }
 
@@ -231,24 +238,12 @@ private extension TokenPickerV2ViewModelImplementation {
     }
 
     func syncCatalogSortState() {
-        showsPerpsSortControl = selectedChainFilter == .perpetuals
+        assetType = tokenPickerModel.assetType
+        showsPerpsSortControl = assetType == .perpetuals
         showsCatalogSortControl = tokenPickerModel.showsCatalogSortControl && !showsPerpsSortControl
         catalogSearchSort = tokenPickerModel.catalogSearchSort
         perpsSearchSort = tokenPickerModel.perpsSearchSort
         onCatalogSortOverlayStateChanged?()
-    }
-
-    static func catalogSortTitle(for sort: MultichainAssetSearchSort) -> String {
-        switch sort {
-        case .marketCap:
-            return TKLocales.TokensPicker.Sort.marketCap
-        case .volume:
-            return TKLocales.TokensPicker.Sort.volume
-        case .priceDiffAsc:
-            return TKLocales.TokensPicker.Sort.topLosers
-        case .priceDiffDesc:
-            return TKLocales.TokensPicker.Sort.topGainers
-        }
     }
 
     var normalizedSearchText: String? {
@@ -297,13 +292,6 @@ private extension TokenPickerV2ViewModelImplementation {
                     id: .chain(chain),
                     title: chain.addressConfiguration.title,
                     image: chain.addressConfiguration.icon,
-                    isSelectable: true
-                )
-            case .perpetuals:
-                return TokenPickerV2TabModel(
-                    id: .perpetuals,
-                    title: TKLocales.Perps.title,
-                    image: nil,
                     isSelectable: true
                 )
             }
@@ -375,13 +363,12 @@ struct TokenPickerV2TabModel: Identifiable, Hashable {
 enum TokenPickerV2ChainFilter: Hashable {
     case all
     case chain(MultichainChain)
-    case perpetuals
 }
 
 extension TokenPickerV2ChainFilter {
     var chain: MultichainChain? {
         switch self {
-        case .all, .perpetuals:
+        case .all:
             return nil
         case let .chain(chain):
             return chain
@@ -394,8 +381,6 @@ extension TokenPickerV2ChainFilter {
             return true
         case let .chain(expectedChain):
             return expectedChain == chain
-        case .perpetuals:
-            return false
         }
     }
 
@@ -405,8 +390,23 @@ extension TokenPickerV2ChainFilter {
             return "token_picker_chain_all"
         case let .chain(chain):
             return "token_picker_chain_\(chain.rawValue)"
+        }
+    }
+}
+
+extension TokenPickerV2AssetType {
+    var title: String {
+        switch self {
+        case .category(.all):
+            return TKLocales.TokensPicker.AssetType.all
+        case .category(.tokens):
+            return TKLocales.Trade.Assets.Categories.tokens
+        case .category(.stocks):
+            return TKLocales.Trade.Assets.Categories.stocks
+        case .category(.etfs):
+            return TKLocales.Trade.Assets.Categories.etfs
         case .perpetuals:
-            return "token_picker_chain_perps"
+            return TKLocales.Perps.title
         }
     }
 }

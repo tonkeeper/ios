@@ -3,7 +3,7 @@ import XCTest
 
 final class HermesCandleCodecTests: XCTestCase {
     func test_request_encodesChannelNameReqidAndPayload() throws {
-        let data = try HermesCandleCodec.request(
+        let data = try HermesRequest.encode(
             channel: HermesChannel.subscribe,
             name: HermesMessageName.subscribe,
             reqid: 1,
@@ -19,7 +19,7 @@ final class HermesCandleCodecTests: XCTestCase {
     }
 
     func test_request_omitsPayloadKeyWhenNil() throws {
-        let data = try HermesCandleCodec.request(
+        let data = try HermesRequest.encode(
             channel: HermesChannel.ping,
             name: HermesMessageName.ping,
             reqid: 2
@@ -31,12 +31,13 @@ final class HermesCandleCodecTests: XCTestCase {
 
     func test_event_decodesCandlesPush() throws {
         let frame = """
-        {"channel":"candles","message":{"name":"candlesFeedMessage","payload":{"data":{"ticker":"BTC/USD","resolution":"1m","start_ts":1700000000000,"candles":[{"o":"1","h":"2","l":"0.5","c":"1.5","v":"10"}]}}}}
+        {"channel":"candles","message":{"name":"candlesFeedMessage","payload":{"feedId":"BTC/USD/PERP_TRADE/1m","data":{"ticker":"BTC/USD","resolution":"1m","start_ts":1700000000000,"candles":[{"o":"1","h":"2","l":"0.5","c":"1.5","v":"10"}]}}}}
         """
         let event = try HermesCandleCodec.event(from: XCTUnwrap(frame.data(using: .utf8)))
-        guard case let .candles(batch) = event else {
+        guard case let .candles(feedId, batch) = event else {
             return XCTFail("expected candles, got \(event)")
         }
+        XCTAssertEqual(feedId, "BTC/USD/PERP_TRADE/1m")
         XCTAssertEqual(batch.ticker, "BTC/USD")
         XCTAssertEqual(batch.resolution, "1m")
         XCTAssertEqual(batch.start_ts, 1_700_000_000_000)
@@ -58,26 +59,27 @@ final class HermesCandleCodecTests: XCTestCase {
     }
 
     func test_event_mapsPermanentSubscribeErrorsToRejected() throws {
-        let frames = [
-            #"{"channel":"subscribeCandleFeed","message":{"name":"errorResponse","payload":{"code":"not.found","description":"unknown feed"}}}"#,
-            #"{"channel":"subscribeCandleFeed","message":{"name":"errorMessage","payload":{"code":"invalid.request"}}}"#,
-            #"{"channel":"subscribeCandleFeed","message":{"name":"errorResponse","payload":{"code":"unauthorized","description":"Unauthorized"}}}"#,
+        let cases: [(String, HermesCandleEvent)] = [
+            (#"{"channel":"subscribeCandleFeed","message":{"name":"errorResponse","payload":{"code":"not.found","description":"unknown feed"}}}"#, .rejected(requestId: nil)),
+            (#"{"channel":"subscribeCandleFeed","message":{"name":"errorMessage","payload":{"code":"invalid.request"}}}"#, .rejected(requestId: nil)),
+            (#"{"channel":"subscribeCandleFeed","message":{"name":"errorResponse","payload":{"code":"unauthorized","description":"Unauthorized"}}}"#, .rejected(requestId: nil)),
+            (#"{"channel":"subscribeCandleFeed","message":{"reqid":5,"name":"errorResponse","payload":{"code":"invalid.request","description":"Unsupported feedId","fatal":false}}}"#, .rejected(requestId: 5)),
         ]
-        for frame in frames {
+        for (frame, expected) in cases {
             XCTAssertEqual(
                 try HermesCandleCodec.event(from: XCTUnwrap(frame.data(using: .utf8))),
-                .rejected
+                expected
             )
         }
     }
 
-    func test_event_transientSubscribeErrorRequestsReconnect() throws {
+    func test_event_transientSubscribeErrorIsRetryable() throws {
         let frame = """
-        {"channel":"subscribeCandleFeed","message":{"name":"errorResponse","payload":{"code":"unavailable"}}}
+        {"channel":"subscribeCandleFeed","message":{"name":"errorResponse","reqid":3,"payload":{"code":"unavailable"}}}
         """
         XCTAssertEqual(
             try HermesCandleCodec.event(from: XCTUnwrap(frame.data(using: .utf8))),
-            .retryableFailure
+            .retryableFailure(requestId: 3)
         )
     }
 

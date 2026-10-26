@@ -1,7 +1,7 @@
 import Foundation
 
 public final class KeeperInfoStore: Store<KeeperInfoStore.Event, KeeperInfo?> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateKeeperInfo(KeeperInfo?)
     }
 

@@ -20,16 +20,23 @@ public struct Story: Decodable, Equatable {
             }
         }
 
+        public struct Link: Decodable, Equatable {
+            public let text: String
+            public let url: URL
+        }
+
         public let title: String
         public let description: String
         public let image: URL?
         public let button: Button?
+        public let links: [Link]
 
-        public init(title: String, description: String, image: URL?, button: Button?) {
+        public init(title: String, description: String, image: URL?, button: Button?, links: [Link] = []) {
             self.title = title
             self.description = description
             self.image = image
             self.button = button
+            self.links = links
         }
     }
 
@@ -81,5 +88,8 @@ extension Story.Page {
                 return nil
             }
         }()
+        self.links = (page.links ?? []).compactMap { link in
+            URL(string: link.url).map { Story.Page.Link(text: link.text, url: $0) }
+        }
     }
 }

@@ -119,6 +119,12 @@ extension WalletConnectEVMTransaction: Decodable {
     }
 }
 
+public extension WalletConnectEVMTransaction {
+    func valueAmount() throws(WalletConnectSigningError) -> BigUInt {
+        try requiredEVMQuantity(.value)
+    }
+}
+
 enum WalletConnectEVMQuantityField: String, Hashable {
     case value
     case nonce

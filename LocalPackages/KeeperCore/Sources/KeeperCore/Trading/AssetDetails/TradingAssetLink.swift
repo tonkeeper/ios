@@ -29,7 +29,7 @@ extension TradingAssetLink {
                     .github
                 case .getgems:
                     .getgems
-                case .website, .unspecified, .other:
+                case .website, .unspecified, .other, .unknown:
                     .website
                 }
             }(),

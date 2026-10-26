@@ -347,7 +347,6 @@ struct StoredMultichainAsset: Codable {
     let prices: [String: Double]
     let diff24h: [String: String]
     let diff7d: [String: String]
-    let diff30d: [String: String]
     let isHidden: Bool
     let balance: String
     let marketCap: [String: String]
@@ -362,7 +361,6 @@ struct StoredMultichainAsset: Codable {
         prices = asset.price.prices
         diff24h = asset.price.diff24h
         diff7d = asset.price.diff7d
-        diff30d = asset.price.diff30d
         isHidden = asset.isHidden
         balance = asset.balance.description
         marketCap = asset.marketCap
@@ -382,8 +380,7 @@ struct StoredMultichainAsset: Codable {
             price: MultichainAssetPrice(
                 prices: prices,
                 diff24h: diff24h,
-                diff7d: diff7d,
-                diff30d: diff30d
+                diff7d: diff7d
             ),
             isHidden: isHidden,
             balance: balance,

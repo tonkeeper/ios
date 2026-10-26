@@ -474,7 +474,8 @@ private extension MainCoordinator {
                 parentRouter: self.router,
                 mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
                 securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
-                analyticsProvider: self.coreAssembly.analyticsProvider
+                analyticsProvider: self.coreAssembly.analyticsProvider,
+                reason: .dappRequest
             )
         }
 

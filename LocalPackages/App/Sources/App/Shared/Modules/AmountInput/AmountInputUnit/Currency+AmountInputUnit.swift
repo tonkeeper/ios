@@ -11,10 +11,6 @@ extension Currency: AmountInputUnit {
 }
 
 extension RemoteCurrency: AmountInputUnit {
-    var symbol: String {
-        Currency(code: self.code)?.symbol ?? self.code
-    }
-
     var inputSymbol: AmountInputSymbol {
         .text(self.code)
     }

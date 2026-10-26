@@ -3,6 +3,7 @@ import KeeperCore
 @testable import TKCore
 import TKFeatureFlags
 import TKKeychain
+@testable import TKServices
 import XCTest
 
 final class AnalyticsProviderTests: XCTestCase {
@@ -277,6 +278,11 @@ private final class KeychainVaultMock: TKKeychainVault {
     }
 
     func set(_ value: Data, query: TKKeychainQuery) throws {
+        storedData = value
+    }
+
+    func setIfAbsent(_ value: Data, query: TKKeychainQuery) throws {
+        guard storedData == nil else { return }
         storedData = value
     }
 

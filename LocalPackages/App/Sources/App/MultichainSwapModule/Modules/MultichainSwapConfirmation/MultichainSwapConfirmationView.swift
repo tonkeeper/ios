@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -20,6 +21,21 @@ struct MultichainSwapConfirmationView: View {
             }
             .tkImmediateButtonPresses()
 
+            confirmAction
+                .frame(height: 88)
+                .padding(16)
+        }
+        .background(.backgroundPage)
+    }
+
+    @ViewBuilder
+    private var confirmAction: some View {
+        if let quoteFailureMessage = viewModel.quoteFailureMessage {
+            MultichainSwapConfirmationQuoteFailureView(
+                message: quoteFailureMessage,
+                onRetry: viewModel.retryQuote
+            )
+        } else {
             MultichainSwapConfirmationSliderRepresentable(
                 title: confirmSliderTitle(for: viewModel.executionState),
                 appearance: viewModel.priceImpactSeverity.sliderAppearance,
@@ -27,10 +43,7 @@ struct MultichainSwapConfirmationView: View {
                 resetToken: viewModel.sliderResetToken,
                 onConfirm: viewModel.confirmSwipe
             )
-            .frame(height: 88)
-            .padding(16)
         }
-        .background(.backgroundPage)
     }
 
     private var headerView: some View {
@@ -122,16 +135,18 @@ struct MultichainSwapConfirmationView: View {
             MultichainSwapConfirmationDetailRow(
                 title: TKLocales.MultichainSwap.Screen.Confirm.Field.rate,
                 value: model.rateLine,
-                trailingAccessory: AnyView(
-                    CircularLoader(
-                        preset: .small,
-                        duration: viewModel.confirmationRefreshDuration,
-                        onComplete: {
-                            viewModel.notifyCircularProgressCompleted()
-                        },
-                        restartToken: viewModel.circularProgressRestartToken
+                trailingAccessory: viewModel.quoteFailureMessage == nil
+                    ? AnyView(
+                        CircularLoader(
+                            preset: .small,
+                            duration: viewModel.confirmationRefreshDuration,
+                            onComplete: {
+                                viewModel.notifyCircularProgressCompleted()
+                            },
+                            restartToken: viewModel.circularProgressRestartToken
+                        )
                     )
-                )
+                    : nil
             )
             MultichainSwapConfirmationDetailRow(
                 title: TKLocales.MultichainSwap.Screen.Confirm.Field.slippage,

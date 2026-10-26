@@ -40,7 +40,8 @@ struct BatteryRefillAssembly {
             tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-            promocodeOutput: promocodeViewModel
+            promocodeOutput: promocodeViewModel,
+            relayedEVMChains: keeperCoreMainAssembly.batteryRelayedEVMChains
         )
 
         viewModel.endPromocodeEditing = { [weak promocodeViewModel] in

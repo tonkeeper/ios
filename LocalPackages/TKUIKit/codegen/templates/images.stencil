@@ -28,7 +28,7 @@ public static var {% call imageMemberName asset %}: {{outputType}} {
 
 import Foundation
 import SwiftUI
-import TKUIKitResources
+import KeeperResources
 import UIKit
 
 enum TKUIKitGeneratedImageAsset: CaseIterable {
@@ -43,13 +43,13 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
 
 private extension UIImage {
     static func from(asset: TKUIKitGeneratedImageAsset) -> UIImage {
-        UIImage(named: asset.resourceName, in: TKUIKitResourcesBundle.bundle, compatibleWith: nil) ?? UIImage()
+        UIImage(named: asset.resourceName, in: KeeperResourcesBundle.bundle, compatibleWith: nil) ?? UIImage()
     }
 }
 
 private extension SwiftUI.Image {
     static func from(asset: TKUIKitGeneratedImageAsset) -> SwiftUI.Image {
-        SwiftUI.Image(asset.resourceName, bundle: TKUIKitResourcesBundle.bundle)
+        SwiftUI.Image(asset.resourceName, bundle: KeeperResourcesBundle.bundle)
     }
 }
 

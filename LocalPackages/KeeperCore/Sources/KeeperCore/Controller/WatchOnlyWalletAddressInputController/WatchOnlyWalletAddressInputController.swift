@@ -1,7 +1,7 @@
 import Foundation
 
 public actor WatchOnlyWalletAddressInputController {
-    public enum State {
+    @frozen public enum State {
         case none
         case resolving
         case resolved(ResolvableAddress)

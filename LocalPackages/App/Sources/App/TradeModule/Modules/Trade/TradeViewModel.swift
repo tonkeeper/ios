@@ -1,5 +1,7 @@
+import AppUI
 import Foundation
 import KeeperCore
+import PerpsModels
 import TKCore
 import TKLocalize
 import TKUIKit
@@ -7,19 +9,7 @@ import UIKit
 
 @MainActor
 final class TradeViewModel: ObservableObject {
-    struct ServiceViewData: Identifiable {
-        enum Kind: String {
-            case perps
-        }
-
-        let kind: Kind
-        let title: String
-        let icon: UIImage
-
-        var id: String {
-            kind.rawValue
-        }
-    }
+    typealias ServiceViewData = TradeServiceItem
 
     struct ScrollToShelfRequest: Equatable {
         let id: Int
@@ -200,8 +190,16 @@ final class TradeViewModel: ObservableObject {
     func openService(_ service: ServiceViewData) {
         switch service.kind {
         case .perps:
-            guard isPerpsEnabled else { return }
-            onOpenPerps?()
+            openPerps()
+        case .tokens:
+            exitFavoritesEditing()
+            onOpenAssetList(.tokens, .marketCap)
+        case .stocks:
+            exitFavoritesEditing()
+            onOpenAssetList(.stocks, .marketCap)
+        case .etfs:
+            exitFavoritesEditing()
+            onOpenAssetList(.etfs, .marketCap)
         }
     }
 
@@ -339,17 +337,15 @@ private extension TradeViewModel {
     }
 
     static func makeServices(isPerpsEnabled: Bool) -> [ServiceViewData] {
-        guard isPerpsEnabled else {
-            return []
+        var services = [ServiceViewData(kind: .tokens, title: TKLocales.Trade.Assets.Categories.tokens, icon: .TKUIKit.Icons.Size28.tokens)]
+        if isPerpsEnabled {
+            services.append(ServiceViewData(kind: .perps, title: TKLocales.Trade.Services.perps, icon: .TKUIKit.Icons.Size28.perps))
         }
-
-        return [
-            ServiceViewData(
-                kind: .perps,
-                title: TKLocales.Trade.Services.perps,
-                icon: .TKUIKit.Icons.Size28.perps
-            ),
+        services += [
+            ServiceViewData(kind: .stocks, title: TKLocales.Trade.Assets.Categories.stocks, icon: .TKUIKit.Icons.Size28.trade),
+            ServiceViewData(kind: .etfs, title: TKLocales.Trade.Assets.Categories.etfs, icon: .TKUIKit.Icons.Size28.etfs),
         ]
+        return services
     }
 
     var itemsMapper: TradeItemsMapper {
@@ -402,7 +398,10 @@ private extension TradeViewModel {
             do {
                 let markets = try await loader()
                 guard let self, self.isCurrentPerpsShelfLoad(generation) else { return }
-                self.perpsShelfMarkets = Array(markets.prefix(8)).map(self.makePerpsShelfMarket)
+                self.perpsShelfMarkets = PerpsShelfMarketMapping.items(
+                    from: markets,
+                    itemsMapper: self.itemsMapper
+                )
                 self.perpsShelfMarketsTask = nil
             } catch is CancellationError {
                 return
@@ -426,18 +425,6 @@ private extension TradeViewModel {
         !Task.isCancelled
             && generation == perpsShelfGeneration
             && isPerpsShelfAvailable(for: try? walletsStore.activeWallet)
-    }
-
-    func makePerpsShelfMarket(_ market: PerpsMarketSummary) -> PerpsShelfMarketViewData {
-        let change = Decimal(market.priceChangePercent)
-        return PerpsShelfMarketViewData(
-            id: market.marketId,
-            symbol: market.symbol,
-            iconURL: market.iconURL,
-            leverage: PerpsFormatting.leverageBadge(Double(market.maxLeverage)),
-            changeText: itemsMapper.formatChange(change),
-            changeColor: itemsMapper.changeColor(for: change)
-        )
     }
 
     func updateShelvesMode(for wallet: Wallet) {

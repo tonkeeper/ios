@@ -14,6 +14,9 @@ public protocol WalletAuthTokenProviding: Sendable {
     /// Derives and keeps the wallet's app key so later tokens need no passcode. Called from the
     /// paths that already hold a mnemonic.
     func warm(walletId: String, mnemonic: String) async
+    /// Stores an already-derived app key and updates the in-memory absence cache atomically.
+    /// Used by flows that already hold the derived wallet key rather than its mnemonic.
+    func persistAppKey(_ appKey: Data, walletId: String) async
     func forget(walletId: String) async
     func wipe() async
 }
@@ -199,6 +202,15 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
         } catch {
             Log.w("🪵 WalletAuth: failed to derive app key", error: error)
         }
+    }
+
+    func persistAppKey(_ appKey: Data, walletId: String) async {
+        guard !walletId.isEmpty, !appKey.isEmpty else { return }
+        ephemeralKeys.removeValue(forKey: walletId)
+        appKeys[walletId] = appKey
+        walletsWithoutAppKey.remove(walletId)
+        removeCachedTokens(walletId: walletId)
+        store.saveAppKey(appKey, walletId: walletId)
     }
 
     func withEphemeralKey<T: Sendable>(

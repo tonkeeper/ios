@@ -2,6 +2,8 @@
 import ChainKit
 import Combine
 @testable import KeeperCore
+@testable import Perps
+import PerpsModels
 import TKLocalize
 import TonSwift
 import XCTest
@@ -12,22 +14,42 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
 
     func test_confirm_rendersPreviewEntryLiquidationAndFee() {
         let viewModel = PerpsTradeConfirmViewModel(
-            context: FakePerpsTradingService.makeConfirmContext()
+            context: FakePerpsTradingService.makeConfirmContext(),
+            format: PerpsFormatting.live
         )
         XCTAssertTrue(viewModel.titleText.contains("BTC"))
         let entry = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.entryPrice }
-        XCTAssertEqual(entry?.value, PerpsFormatting.usd(66541.70))
+        XCTAssertEqual(entry?.value, PerpsFormatting.live.usd(66541.70))
         let liquidation = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.liquidation }
-        XCTAssertEqual(liquidation?.value, PerpsFormatting.usd(64141.75))
+        XCTAssertEqual(liquidation?.value, PerpsFormatting.live.usd(64141.75))
         let fee = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.fee }
-        XCTAssertEqual(fee?.value, PerpsFormatting.usd(0.27))
+        XCTAssertEqual(fee?.value, PerpsFormatting.live.usd(0.27))
+    }
+
+    func test_confirm_withoutAutoClose_offersToSetIt() {
+        let viewModel = PerpsTradeConfirmViewModel(
+            context: FakePerpsTradingService.makeConfirmContext(),
+            format: PerpsFormatting.live
+        )
+        XCTAssertEqual(viewModel.rows.map(\.id), [.youPay, .entry, .leverage, .liquidation, .size, .fee, .autoClose])
+        let autoClose = viewModel.rows.last
+        XCTAssertEqual(autoClose?.value, TKLocales.Perps.OpenPosition.set)
+        XCTAssertEqual(autoClose?.tone, .accent)
+        XCTAssertEqual(autoClose?.showsChevron, true)
+
+        viewModel.updateOpenAutoClose(PerpsAutoClose(takeProfit: PerpsAutoCloseTrigger(triggerPrice: 70000), stopLoss: nil))
+        XCTAssertEqual(viewModel.rows.last?.value, takeProfitLeg(70000))
+
+        viewModel.updateOpenAutoClose(nil)
+        XCTAssertEqual(viewModel.rows.last?.value, TKLocales.Perps.OpenPosition.set)
     }
 
     func test_confirm_liquidationUnavailable_showsUnavailableNotZero() {
         let viewModel = PerpsTradeConfirmViewModel(
             context: FakePerpsTradingService.makeConfirmContext(
                 review: FakePerpsTradingService.makeReview(liquidationPrice: nil)
-            )
+            ),
+            format: PerpsFormatting.live
         )
         let liquidation = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.liquidation }
         XCTAssertEqual(liquidation?.value, TKLocales.Perps.Confirm.unavailable)
@@ -37,7 +59,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let viewModel = PerpsTradeConfirmViewModel(
             context: FakePerpsTradingService.makeConfirmContext(
                 review: FakePerpsTradingService.makeReview(entryPrice: nil)
-            )
+            ),
+            format: PerpsFormatting.live
         )
         let entry = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.entryPrice }
         XCTAssertEqual(entry?.value, TKLocales.Perps.Confirm.unavailable)
@@ -49,28 +72,30 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             context: FakePerpsTradingService.makeConfirmContext(
                 intent: intent,
                 review: FakePerpsTradingService.makeReview(entryPrice: 65000, liquidationPrice: 63000)
-            )
+            ),
+            format: PerpsFormatting.live
         )
         let entry = viewModel.rows.first { $0.title == TKLocales.Perps.Confirm.entryPrice }
-        XCTAssertEqual(entry?.value, PerpsFormatting.usd(65000))
+        XCTAssertEqual(entry?.value, PerpsFormatting.live.usd(65000))
     }
 
     // MARK: Cash Out confirm
 
     func test_closeConfirm_buildsTitleAndRowsFromReview() {
-        let viewModel = PerpsTradeConfirmViewModel(closeContext: Self.makeCloseContext())
+        let viewModel = PerpsTradeConfirmViewModel(closeContext: Self.makeCloseContext(), format: PerpsFormatting.live)
         XCTAssertEqual(viewModel.titleText, "\(TKLocales.Perps.Confirm.close) \(TKLocales.Perps.Asset.long) BTC")
         XCTAssertEqual(viewModel.rows.map(\.id), [.position, .leverage, .size, .fee, .pnl, .youReceive])
         let pnl = viewModel.rows.first { $0.id == .pnl }
-        XCTAssertEqual(pnl?.value, PerpsFormatting.signedUsd(0.5))
+        XCTAssertEqual(pnl?.value, PerpsFormatting.live.signedUsd(0.5))
         XCTAssertEqual(pnl?.tone, .positive)
         let receive = viewModel.rows.first { $0.id == .youReceive }
-        XCTAssertEqual(receive?.value, PerpsFormatting.usd(20.34))
+        XCTAssertEqual(receive?.value, PerpsFormatting.live.usd(20.34))
     }
 
     func test_closeConfirm_lossTintsNegative_missingEstimatesShowUnavailable() {
         let loss = PerpsTradeConfirmViewModel(
-            closeContext: Self.makeCloseContext(review: FakePerpsTradingService.makeCloseReview(estimatedPnlUsd: -1.2))
+            closeContext: Self.makeCloseContext(review: FakePerpsTradingService.makeCloseReview(estimatedPnlUsd: -1.2)),
+            format: PerpsFormatting.live
         )
         XCTAssertEqual(loss.rows.first { $0.id == .pnl }?.tone, .negative)
 
@@ -81,7 +106,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
                 estimatedFeeUsd: nil,
                 estimatedPnlUsd: nil,
                 estimatedReceiveUsd: nil
-            ))
+            )),
+            format: PerpsFormatting.live
         )
         for kind in [PerpsTradeConfirmViewModel.Row.Kind.leverage, .fee, .pnl, .youReceive] {
             let row = unavailable.rows.first { $0.id == kind }
@@ -93,7 +119,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
     private static func makeCloseContext(
         review: PerpsCloseReview = FakePerpsTradingService.makeCloseReview()
     ) -> PerpsCloseConfirmContext {
-        PerpsCloseConfirmContext(sizeDecimals: 5, review: review)
+        PerpsCloseConfirmContext(marketId: 1, sizeDecimals: 5, review: review)
     }
 
     // MARK: Size-change confirm
@@ -108,17 +134,14 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         XCTAssertEqual(viewModel.rows.map(\.id), [.youPay, .entry, .leverage, .liquidation, .size, .fee, .autoClose])
 
         let entry = viewModel.rows.first { $0.id == .entry }
-        XCTAssertEqual(entry?.value, "\(PerpsFormatting.usd(66541.70)) → \(PerpsFormatting.usd(66021.17))")
+        XCTAssertEqual(entry?.value, "\(PerpsFormatting.live.usd(66541.70)) → \(PerpsFormatting.live.usd(66021.17))")
 
         let size = viewModel.rows.first { $0.id == .size }
-        XCTAssertEqual(size?.value, "\(PerpsFormatting.usd(540)) → \(PerpsFormatting.usd(1080))")
-        XCTAssertEqual(size?.subValue, "+\(PerpsFormatting.token(0.0083, symbol: "BTC", decimals: 5))")
+        XCTAssertEqual(size?.value, "\(PerpsFormatting.live.usd(540)) → \(PerpsFormatting.live.usd(1080))")
+        XCTAssertEqual(size?.subValue, "+\(PerpsFormatting.live.token(0.0083, symbol: "BTC", decimals: 5))")
 
         let autoClose = viewModel.rows.first { $0.id == .autoClose }
-        XCTAssertEqual(
-            autoClose?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(68141))"
-        )
+        XCTAssertEqual(autoClose?.value, takeProfitLeg(68141))
         XCTAssertEqual(autoClose?.showsChevron, true)
         XCTAssertEqual(autoClose?.valueParts?.map(\.tone), [.neutral])
     }
@@ -138,10 +161,10 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         XCTAssertEqual(youClose?.title, TKLocales.Perps.Confirm.youClose)
 
         let entry = viewModel.rows.first { $0.id == .entry }
-        XCTAssertEqual(entry?.value, PerpsFormatting.usd(66541.70))
+        XCTAssertEqual(entry?.value, PerpsFormatting.live.usd(66541.70))
 
         let size = viewModel.rows.first { $0.id == .size }
-        XCTAssertEqual(size?.subValue, "−\(PerpsFormatting.token(0.004, symbol: "BTC", decimals: 5))")
+        XCTAssertEqual(size?.subValue, "−\(PerpsFormatting.live.token(0.004, symbol: "BTC", decimals: 5))")
         XCTAssertNil(viewModel.rows.first { $0.id == .autoClose })
     }
 
@@ -153,10 +176,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             )
         )
         let autoClose = viewModel.rows.first { $0.id == .autoClose }
-        XCTAssertEqual(
-            autoClose?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(70000))"
-        )
+        XCTAssertEqual(autoClose?.value, takeProfitLeg(70000))
     }
 
     func test_sizeChangeConfirm_keepsPreparedRestingSnapshot() async {
@@ -167,7 +187,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let session = FakePerpsTradingService.makeReviewingSizeChangeSession(autoClose: initial)
         guard let viewModel = PerpsTradeConfirmViewModel(
             sizeChangeSession: session,
-            sizeDecimals: 5
+            sizeDecimals: 5,
+            format: PerpsFormatting.live
         ) else {
             return XCTFail("reviewing session must make a confirm view model")
         }
@@ -203,7 +224,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         let session = FakePerpsTradingService.makeReviewingSizeChangeSession(autoClose: resting)
         let viewModel = try XCTUnwrap(PerpsTradeConfirmViewModel(
             sizeChangeSession: session,
-            sizeDecimals: 5
+            sizeDecimals: 5,
+            format: PerpsFormatting.live
         ))
         let review = try XCTUnwrap(session.prepared?.review)
         let initialValue = viewModel.rows.first { $0.id == .autoClose }?.value
@@ -232,10 +254,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         viewModel.confirm()
 
         XCTAssertTrue(confirmed)
-        XCTAssertEqual(
-            viewModel.rows.first { $0.id == .autoClose }?.value,
-            "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.usd(70000))"
-        )
+        XCTAssertEqual(viewModel.rows.first { $0.id == .autoClose }?.value, takeProfitLeg(70000))
     }
 
     func test_confirm_autoClose_marksStaleTakeProfitNegative() {
@@ -249,7 +268,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             context: FakePerpsTradingService.makeConfirmContext(
                 intent: intent,
                 review: FakePerpsTradingService.makeReview(entryPrice: 66000, liquidationPrice: 50000)
-            )
+            ),
+            format: PerpsFormatting.live
         )
         let autoClose = viewModel.rows.first { $0.id == .autoClose }
         XCTAssertEqual(autoClose?.valueParts?.map(\.tone), [.negative, .tertiary, .neutral])
@@ -258,32 +278,34 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
 
     func test_marginChangeConfirm_add_rendersYouPayAndLiquidationChange_withoutFee() {
         let viewModel = PerpsTradeConfirmViewModel(marginChangeContext: PerpsMarginChangeConfirmContext(
+            marketId: 1,
             review: FakePerpsTradingService.makeMarginChangeReview()
-        ))
+        ), format: PerpsFormatting.live)
         XCTAssertEqual(viewModel.titleText, TKLocales.Perps.AdjustMargin.addConfirmTitle("\(TKLocales.Perps.Asset.long) BTC"))
         XCTAssertEqual(viewModel.rows.map(\.id), [.youPay, .liquidation])
 
         let youPay = viewModel.rows.first { $0.id == .youPay }
-        XCTAssertEqual(youPay?.value, PerpsFormatting.usd(20))
+        XCTAssertEqual(youPay?.value, PerpsFormatting.live.usd(20))
 
         let liquidation = viewModel.rows.first { $0.id == .liquidation }
-        XCTAssertEqual(liquidation?.value, "\(PerpsFormatting.usd(64141.75)) → \(PerpsFormatting.usd(63639.99))")
+        XCTAssertEqual(liquidation?.value, "\(PerpsFormatting.live.usd(64141.75)) → \(PerpsFormatting.live.usd(63639.99))")
     }
 
     func test_marginChangeConfirm_reduce_showsYouClose_andUnavailableLiquidation() {
         let viewModel = PerpsTradeConfirmViewModel(marginChangeContext: PerpsMarginChangeConfirmContext(
+            marketId: 1,
             review: FakePerpsTradingService.makeMarginChangeReview(
                 direction: .reduce,
                 amountUsd: 10,
                 allocatedMargin: PerpsValueChange(old: 20, new: 10),
                 liquidationPrice: nil
             )
-        ))
+        ), format: PerpsFormatting.live)
         XCTAssertEqual(viewModel.titleText, TKLocales.Perps.AdjustMargin.reduceConfirmTitle("\(TKLocales.Perps.Asset.long) BTC"))
 
         let youClose = viewModel.rows.first { $0.id == .youClose }
         XCTAssertEqual(youClose?.title, TKLocales.Perps.Confirm.youClose)
-        XCTAssertEqual(youClose?.value, PerpsFormatting.usd(10))
+        XCTAssertEqual(youClose?.value, PerpsFormatting.live.usd(10))
 
         let liquidation = viewModel.rows.first { $0.id == .liquidation }
         XCTAssertEqual(liquidation?.value, TKLocales.Perps.Confirm.unavailable)
@@ -292,7 +314,7 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
     // MARK: Confirm swipe
 
     func test_confirm_swipe_invokesOnConfirm_withoutPreparing() {
-        let viewModel = PerpsTradeConfirmViewModel(context: FakePerpsTradingService.makeConfirmContext())
+        let viewModel = PerpsTradeConfirmViewModel(context: FakePerpsTradingService.makeConfirmContext(), format: PerpsFormatting.live)
         var confirmed = false
         viewModel.onConfirm = { confirmed = true }
         viewModel.confirm()
@@ -309,7 +331,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         )
         guard let viewModel = PerpsTradeConfirmViewModel(
             sizeChangeSession: session,
-            sizeDecimals: 5
+            sizeDecimals: 5,
+            format: PerpsFormatting.live
         ) else {
             preconditionFailure("reviewing session must make a confirm view model")
         }
@@ -324,7 +347,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: PerpsAccountStore.makeStub(),
-            openPositionFlow: PerpsOpenPositionFlow()
+            openPositionFlow: PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
         )
         var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
@@ -339,7 +363,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: PerpsAccountStore.makeStub(),
-            openPositionFlow: PerpsOpenPositionFlow()
+            openPositionFlow: PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
         )
         var captured: (Int64, PerpsTradeSide)?
         viewModel.onTrade = { captured = ($0, $1) }
@@ -356,7 +381,8 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             store: PerpsMarketsStore.makeUnsubscribed(),
             marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
             accountStore: accountStore,
-            openPositionFlow: PerpsOpenPositionFlow()
+            openPositionFlow: PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
         )
         // The opening progress is driven by the store lifecycle, not the view model,
         // so it survives leaving the Asset Page. The store notifies asynchronously.
@@ -376,6 +402,27 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
         XCTAssertEqual(viewModel.tradeToast, .success("Opened BTC long: $20 · 27x"))
     }
 
+    /// A canceled approval passcode takes its own progress toast down, never a newer one.
+    func test_toast_dismissingAProgressLeavesANewerToast() {
+        let viewModel = PerpsAssetPageViewModel(
+            marketId: 1,
+            store: PerpsMarketsStore.makeUnsubscribed(),
+            marketDetailsStore: PerpsMarketDetailsStore.makeFailingLoad(),
+            accountStore: PerpsAccountStore.makeStub(),
+            openPositionFlow: PerpsOpenPositionFlow(),
+            format: PerpsFormatting.live
+        )
+        let progress = PerpsAssetPageTradeToast.progress("Canceling order")
+
+        viewModel.showTradeResult(progress)
+        viewModel.dismissTradeResult(progress)
+        XCTAssertNil(viewModel.tradeToast)
+
+        viewModel.showTradeResult(.success("Done"))
+        viewModel.dismissTradeResult(progress)
+        XCTAssertEqual(viewModel.tradeToast, .success("Done"))
+    }
+
     /// Margin pills are amount-based ("Adding $20 margin"), unlike the size
     /// pills' "symbol side · leverage" pattern — locked to the design nodes.
     func test_marginLifecycleToast_usesAmountBasedCopy() {
@@ -386,20 +433,20 @@ final class PerpsTradeConfirmAndRouteTests: XCTestCase {
             unrealizedPnlUsd: 0.5, realizedPnlUsd: 0, fundingPaidUsd: nil
         )
         XCTAssertEqual(
-            PerpsAssetPageViewModel.lifecycleToast(.adjustingMargin(summary, .add, amountUsd: 20)),
-            .progress(TKLocales.Perps.Toast.marginAdding(PerpsFormatting.usd(20)))
+            PerpsAssetPageViewModel.lifecycleToast(.adjustingMargin(summary, .add, amountUsd: 20), format: PerpsFormatting.live),
+            .progress(TKLocales.Perps.Toast.marginAdding(PerpsFormatting.live.usd(20)))
         )
         XCTAssertEqual(
-            PerpsAssetPageViewModel.lifecycleToast(.adjustingMargin(summary, .reduce, amountUsd: 10)),
-            .progress(TKLocales.Perps.Toast.marginReducing(PerpsFormatting.usd(10)))
+            PerpsAssetPageViewModel.lifecycleToast(.adjustingMargin(summary, .reduce, amountUsd: 10), format: PerpsFormatting.live),
+            .progress(TKLocales.Perps.Toast.marginReducing(PerpsFormatting.live.usd(10)))
         )
         XCTAssertEqual(
-            PerpsAssetPageViewModel.marginToastText(direction: .add, amountUsd: 20, isDone: true),
-            TKLocales.Perps.Toast.marginAdded(PerpsFormatting.usd(20))
+            PerpsAssetPageViewModel.marginToastText(direction: .add, amountUsd: 20, isDone: true, format: PerpsFormatting.live),
+            TKLocales.Perps.Toast.marginAdded(PerpsFormatting.live.usd(20))
         )
         XCTAssertEqual(
-            PerpsAssetPageViewModel.marginToastText(direction: .reduce, amountUsd: 10, isDone: true),
-            TKLocales.Perps.Toast.marginReduced(PerpsFormatting.usd(10))
+            PerpsAssetPageViewModel.marginToastText(direction: .reduce, amountUsd: 10, isDone: true, format: PerpsFormatting.live),
+            TKLocales.Perps.Toast.marginReduced(PerpsFormatting.live.usd(10))
         )
     }
 }
@@ -447,6 +494,11 @@ private extension PerpsAccountStore {
     }
 }
 
+private func takeProfitLeg(_ price: Double) -> String {
+    "\(TKLocales.Perps.OpenPosition.tp) \(PerpsFormatting.live.usd(price))"
+        .replacingOccurrences(of: " ", with: "\u{00A0}")
+}
+
 private func makeConfirmRouteWallet() -> Wallet {
     let raw = Data("perps-confirm-test-public-key".utf8)
     let padded = raw + Data(repeating: 0, count: max(0, 32 - raw.count))
@@ -473,13 +525,11 @@ private final class NoopAccountReading: PerpsAccountReading {
         PerpsTradingSnapshot(flags: .testAllEnabled, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
     }
 
-    func recentActivity(wallet _: Wallet, marketId _: Int64, limit _: Int) async throws -> [PerpsActivityItem] {
-        []
-    }
-
     func watchPositions(
         wallet _: Wallet,
-        onUpdate _: @escaping @Sendable ([PerpsPositionSummary]) -> Void,
+        pollInterval _: TimeInterval,
+        focus _: @escaping @Sendable () -> PerpsWatchFocus,
+        onUpdate _: @escaping @Sendable (PerpsAccountTick) -> Void,
         onInterrupted _: @escaping @Sendable () -> Void
     ) -> PerpsPositionsWatch {
         PerpsPositionsWatch {}

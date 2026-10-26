@@ -32,7 +32,7 @@ public struct TonConnectApp: Codable, Equatable {
         lhs.manifest.host == rhs.manifest.host
     }
 
-    public enum ConnectionType: Int, Codable {
+    @frozen public enum ConnectionType: Int, Codable {
         case bridge
         case remote
         case unknown
@@ -81,17 +81,4 @@ public struct TonConnectApp: Codable, Equatable {
     public let manifestURL: URL?
     public let keyPair: TonSwift.KeyPair
     public let connectionType: ConnectionType
-
-    var hasVerifiedManifestOrigin: Bool {
-        guard let manifestURL,
-              let manifestOrigin = manifest.url.normalizedOrigin
-        else {
-            return false
-        }
-        return manifestURL.normalizedOrigin == manifestOrigin
-    }
-
-    var shouldPreserveStoredConnection: Bool {
-        manifestURL == nil || hasVerifiedManifestOrigin
-    }
 }

@@ -10,7 +10,7 @@ public struct FiatMethodItem: Codable, Equatable, Hashable {
         public let url: String
     }
 
-    public enum CodingKeys: String, CodingKey {
+    @frozen public enum CodingKeys: String, CodingKey {
         case id
         case title
         case isDisabled = "disabled"
@@ -34,7 +34,7 @@ public struct FiatMethodItem: Codable, Equatable, Hashable {
 }
 
 public struct FiatMethodCategory: Codable, Equatable, Hashable {
-    public enum Asset: String, Codable {
+    @frozen public enum Asset: String, Codable {
         case USDT
         case BTC
         case ETH

@@ -3,6 +3,7 @@ import Combine
 import Foundation
 import KeeperCore
 import TKLocalize
+import TKLogging
 import TKUIKit
 import UIKit
 
@@ -90,6 +91,8 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
     private let appSettingsStore: AppSettingsStore
     private let tonStakingAPYProvider: (Wallet) -> Decimal?
     private let tonStakingAPYTextFormatter: (Decimal?) -> String?
+    private let earnAssetOffersRepository: EarnAssetOffersRepository
+    private var earnOffers = [String: EarnAssetOffer]()
     private let multichainFormatter = MultichainPortfolioAmountFormatting()
     private let rateConverter = RateConverter()
     private let stakingCommentMapper: StakingItemCommentMapper
@@ -141,6 +144,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         appSettingsStore: AppSettingsStore,
         tonStakingAPYProvider: @escaping (Wallet) -> Decimal?,
         tonStakingAPYTextFormatter: @escaping (Decimal?) -> String?,
+        earnAssetOffersRepository: EarnAssetOffersRepository,
         canManage: Bool
     ) {
         self.wallet = wallet
@@ -154,6 +158,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         self.appSettingsStore = appSettingsStore
         self.tonStakingAPYProvider = tonStakingAPYProvider
         self.tonStakingAPYTextFormatter = tonStakingAPYTextFormatter
+        self.earnAssetOffersRepository = earnAssetOffersRepository
         self.canManage = canManage
         stakingCommentMapper = StakingItemCommentMapper(amountFormatter: amountFormatter)
 
@@ -270,21 +275,7 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
             isMoreAssetsExpanded: rowData.isMoreAssetsExpanded,
             hidesDustBalances: rowData.hidesDustBalances
         )
-        let hadAnswer = state.answer != nil
         state = .answered(.rows(updated))
-        guard hadAnswer, case let .multichain(multichainState) = wallet.multichain else { return }
-
-        let fiatTotal = portfolioFiatTotal(from: updated.assets, displayCurrency: displayCurrency)
-        portfolioStore.setPortfolio(
-            MultichainPortfolio(
-                fiatPrice: fiatTotal.map { [$0.currency.code.lowercased(): "\($0.amount)"] } ?? [:],
-                assets: updated.assets,
-                accountsIdentifier: multichainState.accountsIdentifier,
-                currencyCode: displayCurrency.code.lowercased(),
-                hidesDustBalances: updated.hidesDustBalances
-            ),
-            wallet: wallet
-        )
     }
 
     @discardableResult
@@ -355,11 +346,14 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
                 search: nil,
                 availableOnly: nil,
                 showHidden: false,
+                showAll: nil,
                 hideDust: appSettings.hidesDustBalances ? true : nil
             )
             guard !Task.isCancelled else { return }
 
             let visibleAssets = page.assets.filter { !$0.isHidden }
+            await loadEarnOffers(assetIds: visibleAssets.map(\.asset.assetId))
+            guard !Task.isCancelled else { return }
             multichainAssetBalanceProvider.primeCache(
                 assets: visibleAssets,
                 multichainState: multichainState
@@ -377,7 +371,8 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
                     assets: rowData.assets,
                     accountsIdentifier: multichainState.accountsIdentifier,
                     currencyCode: displayCurrency.code.lowercased(),
-                    hidesDustBalances: appSettings.hidesDustBalances
+                    hidesDustBalances: appSettings.hidesDustBalances,
+                    perpsFiatPrice: page.perpsFiatPrice ?? portfolioStore.getState()[wallet]?.perpsFiatPrice
                 ),
                 wallet: wallet,
                 requestToken: requestToken
@@ -610,24 +605,6 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
         return nanotons.int64Value
     }
 
-    private func portfolioFiatTotal(
-        from assets: [MultichainAsset],
-        displayCurrency: Currency
-    ) -> (amount: Decimal, currency: Currency)? {
-        let amounts = assets.compactMap {
-            multichainFormatter.convertedAmount(
-                for: $0,
-                currency: displayCurrency
-            )
-        }
-        guard !amounts.isEmpty else {
-            return nil
-        }
-
-        let total = amounts.reduce(Decimal.zero, +)
-        return (total, displayCurrency)
-    }
-
     private static func previewAvatarSource(from source: AssetAvatarViewImageSource) -> AssetAvatarViewImageSource {
         switch source {
         case let .url(url, _):
@@ -724,10 +701,22 @@ final class WalletBalanceMultichainAssetsListViewModel: ObservableObject {
     }
 
     private func apyText(for assetId: String) -> String? {
-        guard case .ton = TradingAssetToken(assetId: assetId) else {
-            return nil
+        if case .ton = TradingAssetToken(assetId: assetId) {
+            return tonStakingAPYTextFormatter(tonStakingAPYProvider(wallet))
         }
-        return tonStakingAPYTextFormatter(tonStakingAPYProvider(wallet))
+        return earnOffers[assetId].flatMap { tonStakingAPYTextFormatter($0.apy) }
+    }
+
+    private func loadEarnOffers(assetIds: [String]) async {
+        guard wallet.walletConnectAddress(for: .eth) != nil else {
+            earnOffers = [:]
+            return
+        }
+        do {
+            earnOffers = try await earnAssetOffersRepository.offers(assetIds: assetIds)
+        } catch {
+            Log.w("failed to load earn offers", extraInfo: ["error": "\(error)"])
+        }
     }
 
     private func isTonstakersLiquidStakingJetton(_ asset: MultichainAsset) -> Bool {

@@ -27,6 +27,16 @@ public extension TonConnect {
         }
     }
 
+    struct SignMessageRequest: Decodable {
+        public let params: SignRawRequest
+        public let id: String
+
+        public init(params: SignRawRequest, id: String) {
+            self.params = params
+            self.id = id
+        }
+    }
+
     struct DisconnectRequest: Decodable {
         public let id: String
 
@@ -35,9 +45,10 @@ public extension TonConnect {
         }
     }
 
-    enum AppRequest: Decodable {
+    @frozen enum AppRequest: Decodable {
         case sendTransaction(SendTransactionRequest)
         case signData(SignDataRequest)
+        case signMessage(SignMessageRequest)
         case disconnect(DisconnectRequest)
 
         enum CodingKeys: String, CodingKey {
@@ -70,6 +81,14 @@ public extension TonConnect {
                 }
                 let params = try jsonDecoder.decode(TonConnectSignDataPayload.self, from: param)
                 self = .signData(SignDataRequest(params: params, id: id))
+
+            case "signMessage":
+                let paramsArray = try container.decode([String].self, forKey: .params)
+                guard let param = paramsArray.first?.data(using: .utf8) else {
+                    throw AppRequestError.noParams
+                }
+                let params = try JSONDecoder().decode(SignRawRequest.self, from: param)
+                self = .signMessage(SignMessageRequest(params: params, id: id))
 
             case "disconnect":
                 self = .disconnect(DisconnectRequest(id: id))

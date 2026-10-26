@@ -16,6 +16,19 @@ final class DappNativeMessageHandlingTests: XCTestCase {
         }
     }
 
+    func test_closeClosesTheScreen() throws {
+        let handler = DefaultDappMessageHandler()
+        var didNavigateBack = false
+        handler.navigateBack = { didNavigateBack = true }
+
+        let result = try invoke(handler, type: .uiClose, args: [])
+
+        XCTAssertTrue(didNavigateBack)
+        guard case .success = result else {
+            return XCTFail("expected ui.close to resolve, got \(result)")
+        }
+    }
+
     func test_trackForwardsEventWithScalarParams() throws {
         let handler = DefaultDappMessageHandler()
         var tracked: (event: String, params: [String: Any])?
@@ -62,6 +75,7 @@ final class DappNativeMessageHandlingTests: XCTestCase {
 
     func test_onlyNativeBridgeMethodsAreHostGated() {
         XCTAssertTrue(DappBridgeFunctionType.uiNavigateBack.isNativeBridge)
+        XCTAssertTrue(DappBridgeFunctionType.uiClose.isNativeBridge)
         XCTAssertTrue(DappBridgeFunctionType.analyticsTrack.isNativeBridge)
         XCTAssertFalse(DappBridgeFunctionType.send.isNativeBridge)
         XCTAssertFalse(DappBridgeFunctionType.tonapiFetch.isNativeBridge)

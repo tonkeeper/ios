@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WalletConnectRequestPayload: Sendable, Equatable {
+@frozen public enum WalletConnectRequestPayload: Sendable, Equatable {
     case signMessage(WalletConnectSignMessage)
     case evmTransaction(WalletConnectEVMTransaction, send: Bool)
     case switchEthereumChain(WalletConnectChain)
@@ -8,4 +8,7 @@ public enum WalletConnectRequestPayload: Sendable, Equatable {
     case tronTransaction(WalletConnectTronTransaction)
     case tonSendMessage(WalletConnectTONSendMessage)
     case tonSignData(WalletConnectTONSignData)
+    case solanaAccounts
+    case solanaTransaction(WalletConnectSolanaTransaction, send: Bool)
+    case solanaTransactionBatch(WalletConnectSolanaTransactionBatch)
 }

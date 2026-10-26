@@ -1,10 +1,10 @@
 import Foundation
 
-public enum PerpsMarketAssetID {
+@frozen public enum PerpsMarketAssetID {
     private static let currentPrefix = "lighter/mainnet/market/"
     private static let legacyPrefix = "lighter/mainnet/"
 
-    static func make(marketId: Int64) -> String {
+    public static func make(marketId: Int64) -> String {
         "\(currentPrefix)\(marketId)"
     }
 

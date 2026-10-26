@@ -2,7 +2,7 @@ import ChainKit
 
 protocol ChainKitSwapPipeline {
     func prepareSwapPayloads(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
@@ -11,7 +11,7 @@ protocol ChainKitSwapPipeline {
 
     func executeSwapPayloads(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,

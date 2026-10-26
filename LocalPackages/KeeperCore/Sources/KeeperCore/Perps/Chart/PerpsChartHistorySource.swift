@@ -1,3 +1,4 @@
+import PerpsModels
 import TKKandelabrAPI
 import TKLogging
 
@@ -45,31 +46,37 @@ struct PerpsChartHistorySource {
         endTs: Int64?,
         window: Window
     ) async -> FetchResult {
-        let batch: TKKandelabrAPI.Components.Schemas.GetCandlesResponse
+        let volumeTicker = PerpsChartCandleMapper.volumeTicker(ticker)
+        let responses: [TKKandelabrAPI.Components.Schemas.GetCandlesResponse]
         do {
-            batch = try await kandelabr.candles(
-                ticker: ticker,
+            responses = try await kandelabr.candles(
+                tickers: [ticker, volumeTicker],
                 resolution: timeframe.resolution,
                 limit: limit,
-                startTs: nil,
                 endTs: endTs
             )
-        } catch KandelabrAPIError.badRequest, KandelabrAPIError.notFound {
+        } catch KandelabrAPIError.badRequest {
             if case .latest = window {
-                Log.w("🪵 Perps: kandelabr snapshot rejected — ticker=\(ticker) resolution=\(timeframe.resolution)")
+                Log.perps.w("kandelabr snapshot rejected — ticker=\(ticker) resolution=\(timeframe.resolution)")
             }
             return .rejected
         } catch {
             switch window {
             case .latest:
-                Log.w("🪵 Perps: kandelabr snapshot failed — \(error)")
+                Log.perps.w("kandelabr snapshot failed — \(error)")
             case .older:
-                Log.w("🪵 Perps: kandelabr page failed — \(error)")
+                Log.perps.w("kandelabr page failed — \(error)")
             }
             return .unavailable
         }
+        guard var batch = responses.first else { return .unavailable }
+        if let volumes = responses.dropFirst().first,
+           PerpsChartCandleMapper.matchesFeed(volumes, ticker: volumeTicker, timeframe: timeframe)
+        {
+            batch = PerpsChartCandleMapper.mergingVolumes(from: volumes, into: batch, timeframe: timeframe)
+        }
         if case .latest = window, batch.candles.isEmpty {
-            Log.w("🪵 Perps: kandelabr snapshot empty — ticker=\(ticker) resolution=\(timeframe.resolution)")
+            Log.perps.w("kandelabr snapshot empty — ticker=\(ticker) resolution=\(timeframe.resolution)")
         }
         return .response(batch)
     }

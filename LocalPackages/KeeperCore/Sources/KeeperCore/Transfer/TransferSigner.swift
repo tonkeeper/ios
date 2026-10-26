@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public enum TransferSigner {
+@frozen public enum TransferSigner {
     public static func signWalletTransfer(
         _ walletTransfer: WalletTransfer,
         wallet: Wallet,

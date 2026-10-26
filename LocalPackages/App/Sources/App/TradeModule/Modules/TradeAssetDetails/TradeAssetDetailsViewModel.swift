@@ -4,6 +4,7 @@ import Foundation
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKLogging
 import TKUIKit
 import UIKit
 
@@ -79,6 +80,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     let chartState: TokenChartViewState?
+    let walletCapabilities: TradeAssetDetailsWalletCapabilities
 
     private let multichainState: MultichainWalletState?
     private let assetID: String
@@ -98,7 +100,9 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     private let balanceViewModel: any TradeAssetDetailsBalanceViewModeling
     private let historySource: HistorySource
     private let tronFeesViewModel: TradeAssetDetailsTronFeesViewModel?
+    private let perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?
     private let tonStakingAPYProvider: () -> Decimal?
+    private let earnAssetOffersRepository: EarnAssetOffersRepository
     private let tokenDetailsConfiguratorProvider: (TradingAssetInfo) async -> TokenDetailsConfigurator?
     private let onOpenHistory: (TradeAssetHistoryContext) -> Void
     private let onOpenHistoryEvent: (TradeAssetHistorySelection) -> Void
@@ -111,7 +115,9 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     private let onSellToCard: (TradingAssetInfo, MultichainAsset?) -> Void
     private let onCashBuy: (TradingAssetInfo) -> Void
     private let onTronFees: (TronUsdtFeesSnapshot, TradeAssetDetailsTronFeesTrigger) -> Void
+    private let onOpenPerpsMarket: (Int64) -> Void
     private let onOpenStaking: () -> Void
+    private let onOpenEarnVault: (EarnAssetOffer) -> Void
     private let onOpenTokenizedInfo: (TokenizedAssetInfoKind) -> Void
     private let onOpenUnverifiedTokenInfo: () -> Void
     private let onOpenVerifiedTokenInfo: () -> Void
@@ -122,12 +128,15 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     private weak var favoriteTooltipSourceView: UIView?
     private var hasAppeared = false
     private var details: TradingAssetDetails?
+    private var earnOffer: EarnAssetOffer?
+    private var isEarnBadgeViewReported = false
     private var supplementalMarketData: TradeAssetDetailsMarketData?
     private var balanceSnapshot: TradeAssetDetailsBalanceSnapshot?
     private var assetVisibility: TradeAssetDetailsAssetVisibility?
     private var historyPreview: TradeAssetDetailsHistoryPreview?
     private var multichainHistoryPreview: TradeAssetDetailsMultichainHistoryPreview?
     private var tronFeesSnapshot: TronUsdtFeesSnapshot?
+    private var perpPositionState: TradeAssetDetailsPerpPositionViewModel.State = .unknown
     private var cancellables = Set<AnyCancellable>()
     private var transactionSendNotificationToken: NSObjectProtocol?
     private var isVisibilityUpdateInProgress = false
@@ -136,6 +145,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         multichainState: MultichainWalletState?,
         preview: PreviewContext,
         isSwapDisabled: Bool,
+        walletCapabilities: TradeAssetDetailsWalletCapabilities,
         analyticsProvider: AnalyticsProvider,
         analyticsSource: AssetViewAnalyticsSource,
         favoriteAssetsService: TradingFavoriteAssetsService,
@@ -152,6 +162,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         balanceViewModel: any TradeAssetDetailsBalanceViewModeling,
         historySource: HistorySource,
         tronFeesViewModel: TradeAssetDetailsTronFeesViewModel?,
+        perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?,
         tonStakingAPYProvider: @escaping () -> Decimal?,
         onOpenUrl: @escaping (URL) -> Void,
         chartState: TokenChartViewState?,
@@ -164,8 +175,11 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         onReceive: @escaping (TradingAssetInfo) -> Void,
         onSellToCard: @escaping (TradingAssetInfo, MultichainAsset?) -> Void,
         onCashBuy: @escaping (TradingAssetInfo) -> Void,
+        onOpenPerpsMarket: @escaping (Int64) -> Void,
         onTronFees: @escaping (TronUsdtFeesSnapshot, TradeAssetDetailsTronFeesTrigger) -> Void,
         onOpenStaking: @escaping () -> Void,
+        onOpenEarnVault: @escaping (EarnAssetOffer) -> Void,
+        earnAssetOffersRepository: EarnAssetOffersRepository,
         onOpenTokenizedInfo: @escaping (TokenizedAssetInfoKind) -> Void,
         onOpenUnverifiedTokenInfo: @escaping () -> Void,
         onOpenVerifiedTokenInfo: @escaping () -> Void,
@@ -175,6 +189,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.multichainState = multichainState
         self.assetID = preview.assetID
         self.isSwapDisabled = isSwapDisabled
+        self.walletCapabilities = walletCapabilities
         self.analyticsProvider = analyticsProvider
         self.analyticsSource = analyticsSource
         self.favoriteAssetsService = favoriteAssetsService
@@ -203,6 +218,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.balanceViewModel = balanceViewModel
         self.historySource = historySource
         self.tronFeesViewModel = tronFeesViewModel
+        self.perpPositionViewModel = perpPositionViewModel
         self.tonStakingAPYProvider = tonStakingAPYProvider
         self.onOpenHistory = onOpenHistory
         self.onOpenHistoryEvent = onOpenHistoryEvent
@@ -214,7 +230,10 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.onSellToCard = onSellToCard
         self.onCashBuy = onCashBuy
         self.onTronFees = onTronFees
+        self.onOpenPerpsMarket = onOpenPerpsMarket
         self.onOpenStaking = onOpenStaking
+        self.onOpenEarnVault = onOpenEarnVault
+        self.earnAssetOffersRepository = earnAssetOffersRepository
         self.onOpenTokenizedInfo = onOpenTokenizedInfo
         self.onOpenUnverifiedTokenInfo = onOpenUnverifiedTokenInfo
         self.onOpenVerifiedTokenInfo = onOpenVerifiedTokenInfo
@@ -260,6 +279,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     func loadIfNeeded() {
         guard !hasLoaded else { return }
         hasLoaded = true
+        loadEarnOffer()
         analyticsProvider.log(
             AssetView(
                 from: analyticsSource.assetView,
@@ -310,11 +330,14 @@ final class TradeAssetDetailsViewModel: ObservableObject {
                 switch error {
                 case let .apiError(message):
                     errorMessage = message
+                case .notFound:
+                    errorMessage = nil
                 case .networkError:
                     errorMessage = TKLocales.ConnectionStatus.noInternet
                 }
             }
         }
+        perpPositionViewModel?.refresh()
     }
 
     func goBack() {
@@ -366,7 +389,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     func handleBuyAction() {
-        guard let details, details.capabilities.supportsSwap, !isSwapDisabled else {
+        guard let details, details.capabilities.supportsSwap, !isSwapDisabled, walletCapabilities.canSwap else {
             return
         }
         logButtonClick(.buy, assetID: details.assetInfo.assetId)
@@ -374,7 +397,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     func handleSellAction() {
-        guard let details, details.capabilities.supportsSwap, !isSwapDisabled else {
+        guard let details, details.capabilities.supportsSwap, !isSwapDisabled, walletCapabilities.canSwap else {
             return
         }
         logButtonClick(.sell, assetID: details.assetInfo.assetId)
@@ -382,7 +405,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     func handleSendAction() {
-        guard screen?.isSendAvailable == true, let assetInfo = details?.assetInfo else {
+        guard walletCapabilities.canSend, screen?.isSendAvailable == true, let assetInfo = details?.assetInfo else {
             return
         }
         // A TRC20 transfer the wallet cannot pay fees for fails in the send flow, so the
@@ -393,6 +416,17 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         }
         logButtonClick(.send, assetID: assetInfo.assetId)
         onSend(assetInfo, resolvedMultichainAsset)
+    }
+
+    func handlePerpPositionAction() {
+        switch screen?.perpPosition {
+        case let .banner(marketId, _, _):
+            onOpenPerpsMarket(marketId)
+        case let .position(row):
+            onOpenPerpsMarket(row.id)
+        case .loading, nil:
+            break
+        }
     }
 
     func handleTronFeesAction() {
@@ -408,7 +442,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     func handleReceiveAction() {
-        guard let assetInfo = details?.assetInfo else {
+        guard walletCapabilities.canReceive, let assetInfo = details?.assetInfo else {
             return
         }
         logButtonClick(.receive, assetID: assetInfo.assetId)
@@ -417,6 +451,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
 
     func handleSellToCardAction() {
         guard
+            walletCapabilities.canSend,
             multichainState != nil,
             let details,
             details.capabilities.supportsOfframp
@@ -428,6 +463,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
 
     func handleCashBuyAction() {
         guard
+            walletCapabilities.canReceive,
             multichainState != nil,
             let details,
             details.capabilities.supportsOnramp
@@ -464,11 +500,32 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     }
 
     func handleOpenEarnAction() {
-        guard case .ton? = details?.assetInfo.typedAssetId else {
+        guard walletCapabilities.canStake else { return }
+        switch earnDestination {
+        case .none:
             return
+        case .staking:
+            onOpenStaking()
+        case let .vault(offer):
+            onOpenEarnVault(offer)
         }
+    }
 
-        onOpenStaking()
+    func earnBadgeDidAppear() {
+        guard !isEarnBadgeViewReported, case .vault = earnDestination else { return }
+        isEarnBadgeViewReported = true
+        analyticsProvider.log(EarnEntryView(from: .earnApy, asset: assetID))
+    }
+
+    func earnBadgeDidDisappear() {
+        isEarnBadgeViewReported = false
+    }
+
+    var earnDestination: TradeAssetDetailsEarnDestination {
+        if case .ton? = details?.assetInfo.typedAssetId {
+            return TradeAssetDetailsEarnDestination(isStakingAsset: true, offer: earnOffer)
+        }
+        return TradeAssetDetailsEarnDestination(isStakingAsset: false, offer: earnOffer)
     }
 
     func openAssetExplorer() {
@@ -549,11 +606,13 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     func viewDidAppear() {
         hasAppeared = true
         balanceViewModel.didAppear()
+        perpPositionViewModel?.didAppear()
         showFavoriteTooltipIfNeeded()
     }
 
     func viewDidDisappear() {
         balanceViewModel.didDisappear()
+        perpPositionViewModel?.didDisappear()
     }
 
     private func showFavoriteTooltipIfNeeded() {
@@ -627,6 +686,7 @@ private extension TradeAssetDetailsViewModel {
         }
 
         self.details = details
+        perpPositionViewModel?.setMarket(details.perpMarket?.marketId, iconURL: details.assetInfo.imageURL)
         if isFavorite == true {
             Task {
                 await favoriteAssetsService.updateAsset(
@@ -637,6 +697,21 @@ private extension TradeAssetDetailsViewModel {
         rebuildScreen()
     }
 
+    func loadEarnOffer() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                earnOffer = try await earnAssetOffersRepository.offer(assetId: assetID)
+                rebuildScreen()
+            } catch {
+                Log.w("failed to load earn offer", extraInfo: [
+                    "asset": assetID,
+                    "error": "\(error)",
+                ])
+            }
+        }
+    }
+
     func rebuildScreen() {
         let output = mapper.map(
             details: details,
@@ -645,6 +720,8 @@ private extension TradeAssetDetailsViewModel {
             history: historySection(),
             multichainHistory: multichainHistorySection(),
             tronFees: tronFeesSnapshot,
+            earnOffer: earnOffer,
+            perpPosition: perpPositionState,
             isSecureMode: appSettingsStore.getState().isSecureMode
         )
         header = output.header
@@ -687,6 +764,26 @@ private extension TradeAssetDetailsViewModel {
 
         bindHistorySource()
         bindTronFees()
+        bindPerpPosition()
+    }
+
+    func bindPerpPosition() {
+        guard let perpPositionViewModel else {
+            return
+        }
+        perpPositionViewModel.$state
+            .removeDuplicates()
+            .sink { [weak self] state in
+                guard let self else {
+                    return
+                }
+                self.perpPositionState = state
+                guard self.details != nil else {
+                    return
+                }
+                self.rebuildScreen()
+            }
+            .store(in: &cancellables)
     }
 
     func bindTronFees() {

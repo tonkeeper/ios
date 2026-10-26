@@ -142,7 +142,10 @@ public struct TKValueRulerView: View {
                 // Dragging right reveals lower values at the center.
                 let steps = Int((gesture.translation.width / configuration.tickSpacing).rounded())
                 let target = min(max(start - steps, range.lowerBound), range.upperBound)
-                if target != value { value = target }
+                if target != value {
+                    value = target
+                    UISelectionFeedbackGenerator().selectionChanged()
+                }
             }
             .onEnded { _ in dragStartValue = nil }
     }

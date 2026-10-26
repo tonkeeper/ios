@@ -21,12 +21,10 @@ appId: com.jbig.tonkeeper
           timeout: 3000
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn: Paste
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - tapOn:
-          text: Allow Paste
-          optional: true
+      - runFlow:
+          file: mnemonic/enter_recovery_phrase.yaml
+          env:
+            PHRASE: ${WALLET_WITH_MONEY}
       - tapOn: Continue
       - waitForAnimationToEnd:
           timeout: 3000
@@ -72,6 +70,14 @@ appId: com.jbig.tonkeeper
 - waitForAnimationToEnd:
     timeout: 5000
 
+# Onboarding stories close on their own after the last page; a tap aimed at the close
+# button while they vanish lands on the home Settings gear underneath. Wait them out
+# (0.7 s when there are none), tap only if a story is still up afterwards.
+- extendedWaitUntil:
+    notVisible:
+      id: stories_close
+    timeout: 45000
+    optional: true
 - tapOn:
     id: stories_close
     optional: true

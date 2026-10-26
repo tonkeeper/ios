@@ -43,7 +43,8 @@ final class TradeAssetDetailsMultichainHistoryViewModel: ObservableObject, Trade
         self.multichainService = multichainService
         self.itemMapper = MultichainHistoryActivityItemMapper(
             amountFormatter: amountFormatter,
-            dateFormatter: dateFormatter
+            dateFormatter: dateFormatter,
+            timeStyle: .dateAndTime
         )
     }
 

@@ -3,7 +3,7 @@ import Foundation
 public final class TokenManagementStore: Store<TokenManagementStore.Event, TokenManagementStore.State> {
     public typealias State = [Wallet: TokenManagementState]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateState(wallet: Wallet)
     }
 

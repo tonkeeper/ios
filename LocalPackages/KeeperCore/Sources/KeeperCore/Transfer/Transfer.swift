@@ -3,7 +3,7 @@ import Foundation
 import TonSwift
 import TronSwift
 
-public enum Transfer {
+@frozen public enum Transfer {
     case ton(amount: BigUInt, recipient: TonRecipient, comment: String?)
     case jetton(JettonItem, transferAmount: BigUInt, amount: BigUInt, recipient: TonRecipient, comment: String?)
     case nft(NFT, transferAmount: BigUInt, recipient: TonRecipient, comment: String?)
@@ -13,7 +13,7 @@ public enum Transfer {
     case renewDNS(nft: NFT)
     case multichainSwap(SignRawRequest)
 
-    public enum Broadcast {
+    @frozen public enum Broadcast {
         case tonAPI
         case battery
     }

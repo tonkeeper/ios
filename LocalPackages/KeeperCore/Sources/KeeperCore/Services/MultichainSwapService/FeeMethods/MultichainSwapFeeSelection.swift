@@ -1,5 +1,5 @@
 /// Pure so the confirmation screen and the execution service always land on the same method.
-public enum MultichainSwapFeeSelection {
+@frozen public enum MultichainSwapFeeSelection {
     public static func resolve(
         options: [MultichainSwapFeeOption],
         picked: MultichainSwapFeeMethod?

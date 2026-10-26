@@ -29,7 +29,7 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
         }
     }
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateIsBiometryEnabled(isBiometryEnable: Bool)
         case didUpdateIsLockScreen(isLockScreen: Bool)
         case didUpdatePasscodeBruteForce(failedAttempts: Int, lockoutEndDate: Date?)

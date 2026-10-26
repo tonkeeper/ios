@@ -1,6 +1,6 @@
 import Foundation
 
-enum WalletConnectRequestParsingError: Error, Equatable {
+@frozen public enum WalletConnectRequestParsingError: Error, Equatable {
     case unsupportedMethod(String)
     case unsupportedChain(String)
     case invalidParams(method: WalletConnectMethod, reason: String)
@@ -29,6 +29,12 @@ struct WalletConnectMethodParser {
             .tronSignTransaction: WalletConnectTronSignTransactionParser(),
             .tonSendMessage: WalletConnectTONSendMessageParser(),
             .tonSignData: WalletConnectTONSignDataParser(),
+            .solanaGetAccounts: WalletConnectSolanaAccountsParser(),
+            .solanaRequestAccounts: WalletConnectSolanaAccountsParser(),
+            .solanaSignMessage: WalletConnectSolanaSignMessageParser(),
+            .solanaSignTransaction: WalletConnectSolanaSignTransactionParser(send: false),
+            .solanaSignAndSendTransaction: WalletConnectSolanaSignTransactionParser(send: true),
+            .solanaSignAllTransactions: WalletConnectSolanaSignAllTransactionsParser(),
         ]
     }
 

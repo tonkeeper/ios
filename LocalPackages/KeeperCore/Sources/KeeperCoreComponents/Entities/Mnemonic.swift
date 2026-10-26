@@ -1,5 +1,4 @@
 import Foundation
-import TonSwift
 
 public struct Mnemonic: Equatable, Codable {
     public enum Failure: Error {

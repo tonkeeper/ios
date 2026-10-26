@@ -32,6 +32,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
             ]
         )
         let persistenceSpy = MultichainPersistenceSpy()
+        let syncSpy = MultichainSyncSpy()
         let enricher = MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
                 supportedChains: [.eth, .btc],
@@ -53,6 +54,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                         ]
                     )
                 },
+                syncWallet: syncSpy.sync,
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -92,6 +94,110 @@ final class MultichainWalletEnricherTests: XCTestCase {
                 ),
             ]
         )
+        XCTAssertTrue(syncSpy.syncedStates.isEmpty, "A wallet the backend does not know yet is left to the sync controller")
+    }
+
+    func test_enrichMissingWallets_registersSyncedWalletBeforeSavingItsNewChains() async {
+        let wallet = makeWallet(id: "synced-wallet", multichain: .multichain(syncedState))
+        let derived = MultichainWalletState(
+            walletId: syncedState.walletId,
+            addresses: [
+                makeAddress(chain: .eth, address: "0xexisting"),
+                makeAddress(chain: .btc, address: "bc1derived", type: .btcP2WPKH),
+            ]
+        )
+        let persistenceSpy = MultichainPersistenceSpy()
+        let syncSpy = MultichainSyncSpy()
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: derived,
+            syncSpy: syncSpy,
+            persistenceSpy: persistenceSpy
+        )
+
+        XCTAssertEqual(enricher.missingChains, [.btc])
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertEqual(syncSpy.syncedStates, [derived])
+        XCTAssertEqual(
+            persistenceSpy.savedMultichainWallets,
+            [
+                .multichain(
+                    MultichainWalletState(
+                        walletId: syncedState.walletId,
+                        addresses: derived.addresses,
+                        syncState: .synced
+                    )
+                ),
+            ]
+        )
+    }
+
+    func test_enrichMissingWallets_keepsSyncedWalletWhenRegistrationFails() async {
+        let wallet = makeWallet(id: "synced-wallet", multichain: .multichain(syncedState))
+        let persistenceSpy = MultichainPersistenceSpy()
+        let syncSpy = MultichainSyncSpy(results: [.failure(.apiError(message: "rejected"))])
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: MultichainWalletState(
+                walletId: syncedState.walletId,
+                addresses: syncedState.addresses + [makeAddress(chain: .btc, address: "bc1derived", type: .btcP2WPKH)]
+            ),
+            syncSpy: syncSpy,
+            persistenceSpy: persistenceSpy
+        )
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertEqual(syncSpy.syncedStates.count, 1)
+        XCTAssertTrue(persistenceSpy.savedMultichainWallets.isEmpty)
+        XCTAssertEqual(enricher.missingChains, [.btc])
+    }
+
+    func test_enrichMissingWallets_retriesTransientRegistrationFailure() async {
+        let wallet = makeWallet(id: "synced-wallet", multichain: .multichain(syncedState))
+        let persistenceSpy = MultichainPersistenceSpy()
+        let syncSpy = MultichainSyncSpy(results: [.failure(.connectionError), .success(())])
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: MultichainWalletState(
+                walletId: syncedState.walletId,
+                addresses: syncedState.addresses + [makeAddress(chain: .btc, address: "bc1derived", type: .btcP2WPKH)]
+            ),
+            syncSpy: syncSpy,
+            persistenceSpy: persistenceSpy
+        )
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertEqual(syncSpy.syncedStates.count, 2)
+        XCTAssertEqual(persistenceSpy.savedWalletIds, [wallet.id])
+    }
+
+    func test_missingChains_listsWhatWalletsOnMultichainLackInDisplayOrder() {
+        let syncedWallet = makeWallet(id: "synced-wallet", multichain: .multichain(syncedState))
+        let pendingWallet = makeWallet(
+            id: "pending-wallet",
+            multichain: .multichain(
+                MultichainWalletState(
+                    walletId: "pending-multichain",
+                    addresses: [makeAddress(chain: .eth, address: "0xpending"), makeAddress(chain: .btc, address: "bc1pending", type: .btcP2WPKH)]
+                )
+            )
+        )
+        let legacyWallet = makeWallet(id: "legacy-wallet")
+        let unavailableWallet = makeWallet(id: "unavailable-wallet", multichain: .unavailable)
+        let enricher = makeEnricher(
+            supportedChains: [.sol, .eth, .btc, .tron],
+            wallets: [syncedWallet, pendingWallet, legacyWallet, unavailableWallet],
+            derived: MultichainWalletState(walletId: "unexpected", addresses: []),
+            syncSpy: MultichainSyncSpy(),
+            persistenceSpy: MultichainPersistenceSpy()
+        )
+
+        XCTAssertEqual(enricher.missingChains, [.sol, .tron, .btc])
+        XCTAssertTrue(enricher.needsStartupEnrichment, "The legacy wallet still needs its first enrichment")
     }
 
     func test_enrichMissingWallets_savesUnavailableForUnsupportedMnemonic() async {
@@ -118,6 +224,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     XCTFail("Unsupported mnemonic must not be derived")
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
+                syncWallet: MultichainSyncSpy().sync,
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -158,6 +265,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                         ]
                     )
                 },
+                syncWallet: MultichainSyncSpy().sync,
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -203,6 +311,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     XCTFail("Enriched wallets must not be derived again")
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
+                syncWallet: MultichainSyncSpy().sync,
                 saveWallet: { _, _ in }
             )
         )
@@ -229,6 +338,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     XCTFail("Wallet must not be derived while checking enrichment")
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
+                syncWallet: MultichainSyncSpy().sync,
                 saveWallet: { _, _ in }
             )
         )
@@ -266,7 +376,55 @@ private final class MultichainPersistenceSpy {
     }
 }
 
+/// Answers each registration with the next result, then succeeds.
+private final class MultichainSyncSpy {
+    private var results: [Result<Void, MultichainServiceError>]
+    private(set) var syncedStates = [MultichainWalletState]()
+
+    init(results: [Result<Void, MultichainServiceError>] = []) {
+        self.results = results
+    }
+
+    func sync(mnemonic _: String, state: MultichainWalletState) async throws(MultichainServiceError) {
+        syncedStates.append(state)
+        guard !results.isEmpty else { return }
+        try results.removeFirst().get()
+    }
+}
+
 private extension MultichainWalletEnricherTests {
+    var syncedState: MultichainWalletState {
+        MultichainWalletState(
+            walletId: "synced-multichain",
+            addresses: [makeAddress(chain: .eth, address: "0xexisting")],
+            syncState: .synced
+        )
+    }
+
+    func makeEnricher(
+        supportedChains: Set<MultichainChain> = [.eth, .btc],
+        wallets: [Wallet],
+        derived: MultichainWalletState,
+        syncSpy: MultichainSyncSpy,
+        persistenceSpy: MultichainPersistenceSpy
+    ) -> MultichainWalletEnricherImplementation {
+        MultichainWalletEnricherImplementation(
+            dependencies: MultichainWalletEnricherDependencies(
+                supportedChains: supportedChains,
+                getWallets: { wallets },
+                getMnemonics: { wallets, _ in
+                    wallets.reduce(into: [:]) { result, wallet in
+                        result[wallet.id] = CoreMnemonic(mnemonicWords: Array(repeating: "abandon", count: 12), type: .bip39)
+                    }
+                },
+                deriveWallet: { _ in derived },
+                syncWallet: syncSpy.sync,
+                saveWallet: persistenceSpy.saveWallet
+            ),
+            sleep: { _ in }
+        )
+    }
+
     func makeAddress(
         chain: MultichainChain,
         address: String,

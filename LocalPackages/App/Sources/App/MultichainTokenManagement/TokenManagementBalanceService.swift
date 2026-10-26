@@ -98,6 +98,7 @@ final class MultichainPortfolioTokenManagementService: TokenManagementService {
             search: search,
             availableOnly: nil,
             showHidden: true,
+            showAll: nil,
             hideDust: hidesDustBalances ? true : nil,
             limit: limit,
             cursor: cursor

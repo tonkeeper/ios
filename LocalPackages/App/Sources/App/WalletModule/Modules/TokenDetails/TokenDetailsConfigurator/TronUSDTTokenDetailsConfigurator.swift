@@ -13,35 +13,20 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
     private let mapper: TokenDetailsMapper
     private let configuration: Configuration
     private let feesSnapshotService: TronUsdtFeesService
-    private let buySellMethodsService: BuySellMethodsService
     private let amountFormatter: AmountFormatter
-
-    private enum State {
-        case idle
-        case loading
-        case loaded(swapURL: URL?)
-    }
-
-    @Atomic private var state: State = .idle {
-        didSet {
-            didUpdate?()
-        }
-    }
 
     init(
         wallet: Wallet,
         mapper: TokenDetailsMapper,
         configuration: Configuration,
         feesSnapshotService: TronUsdtFeesService,
-        amountFormatter: AmountFormatter,
-        buySellMethodsService: BuySellMethodsService
+        amountFormatter: AmountFormatter
     ) {
         self.wallet = wallet
         self.mapper = mapper
         self.configuration = configuration
         self.feesSnapshotService = feesSnapshotService
         self.amountFormatter = amountFormatter
-        self.buySellMethodsService = buySellMethodsService
 
         feesSnapshotService.addUpdateObserver(self) { observer, updatedWallet in
             guard updatedWallet == observer.wallet else { return }
@@ -50,41 +35,17 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
     }
 
     func viewDidLoad() {
-        state = .loading
-        load()
+        refreshFees()
     }
 
     func reload() {
-        load()
+        refreshFees()
     }
 
-    private func load() {
-        Task { @MainActor in
-            do {
-                async let swapUrl = loadSwapURL()
-                async let refresh: Void = feesSnapshotService.refresh(wallet: wallet)
-
-                let swapURL = try await swapUrl
-                _ = await refresh
-                state = .loaded(swapURL: swapURL)
-            } catch {
-                state = .idle
-            }
+    private func refreshFees() {
+        Task {
+            await feesSnapshotService.refresh(wallet: wallet)
         }
-    }
-
-    private func loadSwapURL() async throws -> URL? {
-        let methods = try await buySellMethodsService.loadFiatMethods(
-            countryCode: nil,
-            walletId: wallet.multichainWalletState?.walletId
-        )
-
-        if Task.isCancelled { return nil }
-
-        return methods.buy
-            .flatMap(\.items)
-            .first(where: { $0.id == "letsexchange_buy_swap" })
-            .flatMap { URL(string: $0.actionButton.url) }
     }
 
     func getTokenModel(balance: ProcessedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
@@ -104,7 +65,7 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
 
         if
             !configuration.flag(\.isSwapDisable, network: wallet.network),
-            case let .loaded(swapURL) = state, swapURL != nil
+            wallet.legacySwapWallet != nil
         {
             buttons.append(TokenDetailsModel.Button(
                 iconButton: .swap(.tron(.usdt)),

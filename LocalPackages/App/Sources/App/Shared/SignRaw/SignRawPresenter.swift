@@ -1,4 +1,5 @@
 import KeeperCore
+import SignRaw
 import TKCoordinator
 import TKCore
 import TKUIKit
@@ -11,6 +12,7 @@ final class SignRawPresenter {
         windowScene: UIWindowScene,
         windowLevel: UIWindow.Level,
         wallet: Wallet,
+        mode: SignRawConfirmationMode,
         transferProvider: @escaping () async throws -> Transfer,
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
@@ -31,6 +33,7 @@ final class SignRawPresenter {
         let coordinator = SignRawConfirmationCoordinator(
             router: router,
             wallet: wallet,
+            mode: mode,
             transferProvider: transferProvider,
             resultHandler: resultHandler,
             sendFrom: sendFrom,

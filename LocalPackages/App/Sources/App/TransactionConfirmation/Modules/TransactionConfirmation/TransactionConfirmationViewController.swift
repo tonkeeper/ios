@@ -1,11 +1,12 @@
+import AppUI
+import SwiftUI
 import TKLocalize
 import TKUIKit
 import UIKit
 
-final class TransactionConfirmationViewController: GenericViewViewController<TransactionConfirmationView> {
+final class TransactionConfirmationViewController: UIViewController {
     private let viewModel: TransactionConfirmationViewModel
-
-    private let popUpViewController = TKPopUp.ViewController()
+    private var hostingController: TKHostingController<ConfirmActionView>?
 
     init(viewModel: TransactionConfirmationViewModel) {
         self.viewModel = viewModel
@@ -19,8 +20,7 @@ final class TransactionConfirmationViewController: GenericViewViewController<Tra
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        setup()
+        view.backgroundColor = .Background.page
         setupBindings()
         viewModel.viewDidLoad()
     }
@@ -28,8 +28,8 @@ final class TransactionConfirmationViewController: GenericViewViewController<Tra
 
 private extension TransactionConfirmationViewController {
     func setupBindings() {
-        viewModel.didUpdateConfiguration = { [weak self] configuration in
-            self?.popUpViewController.configuration = configuration
+        viewModel.didUpdateState = { [weak self] state in
+            self?.render(state)
         }
 
         viewModel.didRequestSendAllConfirmation = { [weak self] tokenName, completion in
@@ -37,31 +37,34 @@ private extension TransactionConfirmationViewController {
         }
     }
 
-    func setup() {
-        setupNavigationBar()
-        setupModalContent()
-    }
-
-    private func setupNavigationBar() {
-        customView.navigationBar.scrollView = popUpViewController.scrollView
-
-        guard let navigationController,
-              !navigationController.viewControllers.isEmpty
-        else {
+    func render(_ state: ConfirmActionState) {
+        let content = ConfirmActionView(
+            state: state,
+            onBack: backAction,
+            onClose: { [weak self] in
+                self?.viewModel.didTapCloseButton()
+            }
+        )
+        if let hostingController {
+            hostingController.content = content
             return
         }
-        if navigationController.viewControllers.count > 1 {
-            customView.navigationBar.leftViews = [
-                TKUINavigationBar.createBackButton {
-                    navigationController.popViewController(animated: true)
-                },
-            ]
+        let hostingController = TKHostingController(content: content)
+        hostingController.view.backgroundColor = .clear
+        addChild(hostingController)
+        view.addSubview(hostingController.view)
+        hostingController.view.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
-        customView.navigationBar.rightViews = [
-            TKUINavigationBar.createCloseButton { [weak self] in
-                self?.viewModel.didTapCloseButton()
-            },
-        ]
+        hostingController.didMove(toParent: self)
+        self.hostingController = hostingController
+    }
+
+    var backAction: (() -> Void)? {
+        guard let navigationController, navigationController.viewControllers.count > 1 else { return nil }
+        return { [weak navigationController] in
+            navigationController?.popViewController(animated: true)
+        }
     }
 
     private func presentSendAllConfirmationAlert(tokenName: String, completion: @escaping (Bool) -> Void) {
@@ -78,11 +81,5 @@ private extension TransactionConfirmationViewController {
             completion(true)
         }))
         present(alert, animated: true)
-    }
-
-    func setupModalContent() {
-        addChild(popUpViewController)
-        customView.embedContent(popUpViewController.view)
-        popUpViewController.didMove(toParent: self)
     }
 }

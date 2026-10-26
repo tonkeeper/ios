@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public struct TonRecipient: Equatable {
-    public enum RecipientAddress: Equatable {
+    @frozen public enum RecipientAddress: Equatable {
         case friendly(FriendlyAddress)
         case raw(Address)
         case domain(Domain)

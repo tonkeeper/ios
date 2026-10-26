@@ -5,7 +5,7 @@ extension MultichainSwapExecutionService {
     /// say `native` once, here, rather than at every call.
     func execute(
         passcodeProvider: @escaping () async -> String?,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
@@ -13,7 +13,7 @@ extension MultichainSwapExecutionService {
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult {
         try await execute(
             passcodeProvider: passcodeProvider,
-            wallet: wallet,
+            swapWallet: swapWallet,
             sourceAsset: sourceAsset,
             destinationAsset: destinationAsset,
             executionPlan: executionPlan,

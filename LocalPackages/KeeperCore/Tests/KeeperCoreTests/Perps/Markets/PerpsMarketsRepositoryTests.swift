@@ -1,9 +1,32 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKTradingAPI
 import XCTest
 
 final class PerpsMarketsRepositoryTests: XCTestCase {
+    func testMarketsForwardsEveryFilterAndKeepsPerpetualsTab() async throws {
+        let api = TradingAPIFake()
+        api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [], data_freshness_sec: 1)
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD))
+        for filter in PerpsMarketFilter.allCases {
+            _ = try await repository.markets(query: nil, sort: .volume, cursor: nil, filter: filter)
+            XCTAssertEqual(api.catalogRequests.last?.tab, .perpetuals)
+            XCTAssertEqual(api.catalogRequests.last?.filter, filter == .all ? nil : Components.Schemas.AssetsFilter(rawValue: filter.rawValue))
+        }
+    }
+
+    func testCatalogForwardsSpotCategoryFilter() async throws {
+        let api = TradingAPIFake()
+        api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [], data_freshness_sec: 1)
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD))
+        for category in TradingAssetCategory.allCases {
+            _ = try await repository.catalogSearch(query: nil, chain: nil, showPerps: false, sort: .marketCap, cursor: nil, pageSize: 30, category: category)
+            XCTAssertEqual(api.catalogRequests.last?.tab, .all)
+            XCTAssertEqual(api.catalogRequests.last?.filter, category == .all ? nil : Components.Schemas.AssetsFilter(rawValue: category.rawValue))
+        }
+    }
+
     func testMarketsRequestsPerpetualsPageAndMapsCatalogRows() async throws {
         let api = TradingAPIFake()
         api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(
@@ -24,7 +47,7 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
             next_cursor: "c2",
             data_freshness_sec: 5
         )
-        let contextProvider = RequestContextStub(currency: .EUR)
+        let contextProvider = try RequestContextStub(currency: XCTUnwrap(Currency(code: "EUR")))
         let repository = PerpsMarketsRepository(api: api, requestContextProvider: contextProvider)
 
         let page = try await repository.markets(query: nil, sort: .openInterest, cursor: nil)
@@ -53,7 +76,7 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
         ])
         let context = await contextProvider.makeRequestContext()
         XCTAssertEqual(api.catalogContexts.first?.currency, .USD)
-        XCTAssertEqual(context.currency, .EUR)
+        XCTAssertEqual(context.currency, Currency(code: "EUR"))
         XCTAssertEqual(api.catalogContexts, [context.withCurrency(.USD)])
     }
 
@@ -144,11 +167,21 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
         )
     }
 
-    func testMetadataMapperRejectsUnusableMarkets() {
+    func testMetadataMapperRejectsOnlyAMarketItCannotName() {
         XCTAssertNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 1, symbol: "")))
-        XCTAssertNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 2, symbol: "ETH", maxLeverage: 0)))
-        XCTAssertNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 3, symbol: "ETH", minSizeBase: "0")))
         XCTAssertNotNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 5, symbol: "ETH")))
+    }
+
+    func testAMarketKeepsItsPageWhenTheVenuePublishesNoLimits() throws {
+        let withoutLeverage = try XCTUnwrap(
+            PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 2, symbol: "ETH", maxLeverage: 0))
+        )
+        let withoutMinimum = try XCTUnwrap(
+            PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 3, symbol: "ETH", minSizeBase: "0"))
+        )
+
+        XCTAssertEqual(withoutLeverage.maxLeverage, 0)
+        XCTAssertEqual(withoutMinimum.minBaseSize, 0)
     }
 }
 
@@ -252,6 +285,7 @@ private final class TradingAPIFake: TradingAPI, @unchecked Sendable {
         let pageSize: Int?
         let showPerps: Bool?
         let chain: String?
+        var filter: Components.Schemas.AssetsFilter? = nil
     }
 
     private let lock = NSLock()
@@ -310,7 +344,7 @@ private final class TradingAPIFake: TradingAPI, @unchecked Sendable {
         sourceShelf _: String?,
         showPerps: Bool?,
         chain: String?,
-        filter _: Components.Schemas.AssetsFilter?
+        filter: Components.Schemas.AssetsFilter?
     ) async throws(TradingAPIError) -> Components.Schemas.AssetsCatalogResponse {
         let page = lock.withLock { () -> Components.Schemas.AssetsCatalogResponse? in
             _catalogContexts.append(requestContext)
@@ -322,7 +356,8 @@ private final class TradingAPIFake: TradingAPI, @unchecked Sendable {
                     cursor: cursor,
                     pageSize: pageSize,
                     showPerps: showPerps,
-                    chain: chain
+                    chain: chain,
+                    filter: filter
                 )
             )
             return catalogPages[cursor]

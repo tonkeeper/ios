@@ -34,17 +34,20 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
     private let walletsStore: WalletsStore
     private let configuration: Configuration
     private let keeperInfoStore: KeeperInfoStore
+    private let networks: BatteryNetworks
     private let batteryChargesMapper: BatteryChargesMapper
 
     init(
         walletsStore: WalletsStore,
         configuration: Configuration,
         keeperInfoStore: KeeperInfoStore,
+        networks: BatteryNetworks,
         batteryChargesMapper: BatteryChargesMapper
     ) {
         self.walletsStore = walletsStore
         self.configuration = configuration
         self.keeperInfoStore = keeperInfoStore
+        self.networks = networks
         self.batteryChargesMapper = batteryChargesMapper
     }
 
@@ -61,7 +64,9 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
                 TKTitleDescriptionCell.Configuration(
                     model: TKTitleDescriptionView.Model(
                         title: TKLocales.Battery.Settings.title,
-                        bottomDescription: TKLocales.Battery.Settings.caption
+                        bottomDescription: [TKLocales.Battery.Settings.caption, networks.caption]
+                            .compactMap { $0 }
+                            .joined(separator: "\n")
                     ),
                     padding: NSDirectionalEdgeInsets(
                         top: 0,
@@ -76,7 +81,7 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
 
         snapshot.appendSections([.listItems])
         let items = wallet.supportedBatteryTransactions.map { transaction in
-            let caption = batteryChargesMapper.getChargesCountString(transaction: transaction, wallet: wallet)
+            let caption = batteryChargesMapper.getChargesCountString(transaction: transaction, wallet: wallet, networks: networks)
             let cellConfiguration = TKListItemCell.Configuration(
                 listItemContentViewConfiguration: TKListItemContentView.Configuration(
                     textContentViewConfiguration: TKListItemTextContentView.Configuration(

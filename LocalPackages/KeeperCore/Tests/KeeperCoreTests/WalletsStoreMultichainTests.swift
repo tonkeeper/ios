@@ -34,6 +34,36 @@ final class WalletsStoreMultichainTests: XCTestCase {
         XCTAssertEqual(state.walletId, "mc-1")
         XCTAssertEqual(state.syncState, .pending)
     }
+
+    /// Battery Settings hands over the wallet it read before the switch flipped. The main screen keeps
+    /// the announced wallet for Send and Swap, so the event must carry the new settings.
+    func test_setWalletBatterySettings_announcesTheWalletWithTheNewSettings() async {
+        let wallet = makeWallet(notificationsIsOn: false)
+        let keeperInfoStore = KeeperInfoStore(
+            keeperInfoRepository: InMemoryKeeperInfoRepository(info: makeKeeperInfo(wallet: wallet))
+        )
+        let walletsStore = WalletsStore(keeperInfoStore: keeperInfoStore)
+        let announced = expectation(description: "battery settings announced")
+        var announcedWallet: Wallet?
+        await withCheckedContinuation { continuation in
+            walletsStore.addObserver(self) { _, event in
+                guard case let .didUpdateWalletBatterySettings(wallet) = event else { return }
+                announcedWallet = wallet
+                announced.fulfill()
+            } onRegistered: {
+                continuation.resume()
+            }
+        }
+
+        walletsStore.setWalletBatterySettings(
+            wallet: wallet,
+            batterySettings: wallet.batterySettings.setIsJettonTransactionEnable(isEnable: false),
+            completion: nil
+        )
+
+        await fulfillment(of: [announced], timeout: 5)
+        XCTAssertEqual(announcedWallet?.batterySettings.isJettonTransactionEnable, false)
+    }
 }
 
 private extension WalletsStoreMultichainTests {

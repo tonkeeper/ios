@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 
 enum PerpsMarketDetailsLoadError: Error {
     case notFound

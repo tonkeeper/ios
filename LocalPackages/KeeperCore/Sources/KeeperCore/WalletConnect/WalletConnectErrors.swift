@@ -5,7 +5,7 @@ enum WalletConnectConfigurationError: Error, Equatable {
     case sdk(message: String)
 }
 
-public enum WalletConnectPairingError: Error, Equatable {
+@frozen public enum WalletConnectPairingError: Error, Equatable {
     case invalidURI(String)
     case missingPairingTopic(String)
     case sdk(message: String)
@@ -25,7 +25,7 @@ extension WalletConnectPairingError {
     }
 }
 
-public enum WalletConnectSessionApprovalError: Error, Equatable {
+@frozen public enum WalletConnectSessionApprovalError: Error, Equatable {
     case missingProposal(id: String)
     case unsupportedWalletKind
     case missingMultichainAddresses(walletId: String)
@@ -37,12 +37,12 @@ public enum WalletConnectSessionApprovalError: Error, Equatable {
     case sdk(message: String, retryable: Bool)
 }
 
-public enum WalletConnectSessionRejectionError: Error, Equatable {
+@frozen public enum WalletConnectSessionRejectionError: Error, Equatable {
     case missingProposal(id: String)
     case sdk(message: String, retryable: Bool)
 }
 
-public enum WalletConnectResponseError: Error, Equatable {
+@frozen public enum WalletConnectResponseError: Error, Equatable {
     case missingRequest(id: String)
     case requestExpired(id: String)
     case missingSession(topic: String)
@@ -50,7 +50,7 @@ public enum WalletConnectResponseError: Error, Equatable {
     case sdk(message: String, retryable: Bool)
 }
 
-public enum WalletConnectRequestRejectionReason: Sendable, Equatable {
+@frozen public enum WalletConnectRequestRejectionReason: Sendable, Equatable {
     case userRejected
     case invalidParams
     case unsupportedChain
@@ -185,7 +185,7 @@ extension WalletConnectSessionRejectionError: LocalizedError {
     }
 }
 
-public enum WalletConnectSigningError: Error, Equatable {
+@frozen public enum WalletConnectSigningError: Error, Equatable {
     case canceled
     case unsupportedWalletKind
     case missingMultichainAddress(chain: WalletConnectChain, walletId: String)

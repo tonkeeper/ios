@@ -5,10 +5,10 @@ import XCTest
 final class MultichainAssetCapabilityMappingTests: XCTestCase {
     func test_mapsKnownCapabilitiesAndDropsUnknownValues() {
         let details = MultichainAssetDetails(api: Self.makeAssetInfo(
-            capabilities: ["swap", "onramp", "offramp", "p2p", "teleport"]
+            capabilities: ["swap", "onramp", "offramp", "p2p", "perp_deposit", "teleport"]
         ))
 
-        XCTAssertEqual(details.capabilities, [.swap, .onramp, .offramp, .p2p])
+        XCTAssertEqual(details.capabilities, [.swap, .onramp, .offramp, .p2p, .perpDeposit])
     }
 
     func test_absentCapabilitiesMapToEmptySet() {

@@ -23,7 +23,8 @@ enum DecryptCommentHandler {
                     parentRouter: parentRouter,
                     mnemonicAccess: keeperCoreAssembly.mnemonicAccess,
                     securityStore: keeperCoreAssembly.storesAssembly.securityStore,
-                    analyticsProvider: coreAssembly.analyticsProvider
+                    analyticsProvider: coreAssembly.analyticsProvider,
+                    reason: .decryptComment
                 ) else { return }
 
                 do {

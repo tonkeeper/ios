@@ -10,7 +10,7 @@ enum BalanceLoaderMode: Equatable {
 
 /// Silence is held per owner rather than as a flag, so releasing one owner cannot speak for
 /// another: `id` keeps two concurrent flows from sharing a single slot.
-public enum BalanceQuietOwner: Hashable {
+@frozen public enum BalanceQuietOwner: Hashable {
     case appLifecycle
     case flow(id: String)
 

@@ -65,10 +65,11 @@ public final class WalletAddController {
         try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: passcode)
 
         await walletsStore.addWallets([wallet])
+        await multichainAssembly.keepTradingKey(wallet: wallet, mnemonic: mnemonic)
         await enrichWalletsIfNeeded(passcode: passcode)
     }
 
-    public enum AddWalletRevisionError: Swift.Error {
+    @frozen public enum AddWalletRevisionError: Swift.Error {
         case unsupportedWalletKind
     }
 
@@ -107,6 +108,7 @@ public final class WalletAddController {
         )
         try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: passcode)
         await walletsStore.addWallets([wallet])
+        await multichainAssembly.keepTradingKey(wallet: wallet, mnemonic: mnemonic)
         await enrichWalletsIfNeeded(passcode: passcode)
     }
 
@@ -164,6 +166,9 @@ public final class WalletAddController {
             passcode: passcode
         )
         await walletsStore.addWallets(wallets)
+        for wallet in wallets {
+            await multichainAssembly.keepTradingKey(wallet: wallet, mnemonic: mnemonic)
+        }
         await enrichWalletsIfNeeded(passcode: passcode)
         await reportRaffleImport(of: wallets)
     }

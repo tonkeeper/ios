@@ -1,4 +1,3 @@
-import Kingfisher
 import SwiftUI
 import UIKit
 
@@ -63,11 +62,14 @@ public struct NFTImageView: View {
         switch imageSource {
         case let .url(url):
             if let url {
-                NFTImageViewURLContent(
+                TKRemoteImage(
                     url: url,
-                    width: configuration.imageWidth,
-                    height: configuration.imageHeight
-                )
+                    downsampleSize: CGSize(width: configuration.imageWidth, height: configuration.imageHeight)
+                ) {
+                    ShimmerSwiftUIView(config: shimmerConfig())
+                } failure: {
+                    EmptyView()
+                }
             }
         case let .image(image):
             if let image {
@@ -98,47 +100,6 @@ public extension NFTImageView.Size {
                 cardWidth: 171,
                 cardHeight: 237
             )
-        }
-    }
-}
-
-private struct NFTImageViewURLContent: View {
-    let url: URL
-    let width: CGFloat
-    let height: CGFloat
-
-    @State private var didFail = false
-
-    var body: some View {
-        Group {
-            if didFail {
-                EmptyView()
-            } else {
-                KFImage
-                    .url(url)
-                    .setProcessor(
-                        DownsamplingImageProcessor(
-                            size: CGSize(
-                                width: width * UIScreen.main.scale,
-                                height: height * UIScreen.main.scale
-                            )
-                        )
-                    )
-                    .loadDiskFileSynchronously()
-                    .fade(duration: 0)
-                    .placeholder {
-                        ShimmerSwiftUIView(config: shimmerConfig())
-                    }
-                    .onSuccess { _ in
-                        didFail = false
-                    }
-                    .onFailure { _ in
-                        didFail = true
-                    }
-                    .cancelOnDisappear(true)
-                    .resizable()
-                    .scaledToFill()
-            }
         }
     }
 }

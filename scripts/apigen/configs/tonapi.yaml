@@ -1,0 +1,35 @@
+generate:
+  - types
+  - client
+namingStrategy: idiomatic
+# The spec covers all of TonAPI; generate only what the app calls.
+filter:
+  operations:
+    - getAccount
+    - getAccountJettonsBalances
+    - getAccountEvents
+    - getAccountJettonHistoryByID
+    - getAccountEvent
+    - getAccountNftItems
+    - getAccountSeqno
+    - getWalletInfo
+    - emulateMessageToWallet
+    - sendBlockchainMessage
+    - getNftItemsByAddresses
+    - getJettonInfo
+    - getJettonTransferPayload
+    - getRates
+    - dnsResolve
+    - getDnsInfo
+    - getStakingPools
+    - getAccountNominatorsPools
+    - execGetMethodForBlockchainAccount
+    - tonConnectProof
+    - getTonConnectPayload
+    - getMigrationWallets
+    - gaslessConfig
+    - getRawTime
+    - status
+  schemas:
+    # Used by the domain migration response.
+    - MigrationOutMessage

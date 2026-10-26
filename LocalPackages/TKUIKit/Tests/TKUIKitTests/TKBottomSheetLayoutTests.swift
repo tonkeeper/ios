@@ -144,13 +144,121 @@ final class TKBottomSheetLayoutTests: XCTestCase {
         )
         XCTAssertEqual(sheet.contentViewController.view.frame.height, 200, accuracy: 0.5)
     }
+
+    func testPortraitSheetStaysFullWidthAndFlushWithTheBottom() {
+        let sheet = startSheet(stubContent())
+
+        XCTAssertEqual(sheet.containerView.frame.minX, 0, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.width, 390, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.maxY, 844, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.layer.maskedCorners, topCorners)
+    }
+
+    /// iPhone landscape page sheets are the portrait width, centered. The wallet picker and every
+    /// other bottom sheet share this container, so the cap lives here rather than on one screen.
+    func testLandscapePhoneSheetMatchesPortraitWidthAndIsCentered() {
+        resizeWindow(to: CGSize(width: 852, height: 393))
+
+        let sheet = startSheet(stubContent())
+
+        XCTAssertEqual(sheet.containerView.frame.width, 393, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.minX, (852 - 393) / 2, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.maxY, 393, accuracy: 0.5)
+        XCTAssertEqual(sheet.headerView.frame.width, 393, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.layer.maskedCorners, topCorners)
+    }
+
+    func testRotationToLandscapeRecentersTheSheet() {
+        let contentViewController = stubContent()
+        let sheet = startSheet(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+
+        sheet.view.frame = CGRect(x: 0, y: 0, width: 852, height: 393)
+        sheet.view.layoutIfNeeded()
+
+        XCTAssertEqual(sheet.containerView.frame.width, 393, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.minX, (852 - 393) / 2, accuracy: 0.5)
+        XCTAssertEqual(sheet.headerView.frame.width, 393, accuracy: 0.5)
+    }
+
+    func testPadLandscapeSheetStaysFullWidth() {
+        guard #available(iOS 17.0, *) else { return }
+        resizeWindow(to: CGSize(width: 852, height: 393))
+
+        let sheet = startSheet(stubContent(), idiom: .pad)
+
+        XCTAssertEqual(sheet.containerView.frame.width, 852, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.minX, 0, accuracy: 0.5)
+    }
+
+    func testLiftedSheetRoundsEveryCorner() {
+        let contentViewController = stubContent()
+        let sheet = startSheet(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+
+        sheet.additionalBottomInset = 120
+
+        XCTAssertEqual(sheet.containerView.frame.maxY, 844 - 120, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.layer.maskedCorners, allCorners)
+    }
+
+    func testLayoutUpdateDuringADragKeepsTheSheetUnderTheFingerAndLandsOnRelease() {
+        let contentViewController = stubContent()
+        let sheet = startSheet(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+        let restingFrame = sheet.containerView.frame
+
+        sheet.didDrag(offset: 40)
+        contentViewController.contentHeight = 260
+        contentViewController.didUpdateHeight?()
+
+        XCTAssertEqual(sheet.containerView.frame.minY, restingFrame.minY + 40, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.height, restingFrame.height, accuracy: 0.5)
+
+        sheet.didEndDragging(offset: 40)
+
+        XCTAssertEqual(sheet.containerView.frame.height, restingFrame.height + 60, accuracy: 0.5)
+        XCTAssertEqual(sheet.containerView.frame.maxY, restingFrame.maxY, accuracy: 0.5)
+    }
 }
 
 private extension TKBottomSheetLayoutTests {
+    var topCorners: CACornerMask {
+        [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+    }
+
+    var allCorners: CACornerMask {
+        [
+            .layerMinXMinYCorner,
+            .layerMaxXMinYCorner,
+            .layerMinXMaxYCorner,
+            .layerMaxXMaxYCorner,
+        ]
+    }
+
+    func stubContent() -> StubContentViewController {
+        StubContentViewController(
+            contentHeight: 200,
+            title: .title(title: "Network fee", subtitle: "Choose method")
+        )
+    }
+
+    func resizeWindow(to size: CGSize) {
+        window.frame = CGRect(origin: .zero, size: size)
+        rootViewController.view.frame = window.bounds
+        rootViewController.view.layoutIfNeeded()
+    }
+
     /// UIKit modal presentation never completes in this test bundle (no window scene), so install the
     /// sheet's view directly and run the same entry point `present(fromViewController:)` uses.
-    func startSheet(_ contentViewController: TKBottomSheetContentViewController) -> TKBottomSheetViewController {
+    func startSheet(
+        _ contentViewController: TKBottomSheetContentViewController,
+        idiom: UIUserInterfaceIdiom? = nil
+    ) -> TKBottomSheetViewController {
         let sheet = TKBottomSheetViewController(contentViewController: contentViewController)
+        if #available(iOS 17.0, *), let idiom {
+            sheet.traitOverrides.userInterfaceIdiom = idiom
+        }
         rootViewController.addChild(sheet)
         sheet.view.frame = rootViewController.view.bounds
         rootViewController.view.addSubview(sheet.view)

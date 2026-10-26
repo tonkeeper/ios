@@ -11,6 +11,14 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
         XCTAssertEqual(relayedAsset(assetId: "tron/mainnet/coin", chain: .tron), .tron(.trx))
     }
 
+    /// A legacy wallet swaps on its own TON and TRON addresses, unregistered, and the relayer pays
+    /// for it the way it pays for the USDT send of the same wallet.
+    func testALegacySwapWalletIsRelayableOnItsOwnAddresses() {
+        let legacy = makeSwapWallet(registration: .unregistered, keys: .legacy)
+
+        XCTAssertEqual(relayedAsset(swapWallet: legacy, assetId: usdtAssetId, chain: .tron), .tron(.usdt))
+    }
+
     /// The TON coin would have to reimburse the relayer in the very asset being spent, and any other
     /// TRC-20 has no resource estimate to price it with.
     func testAssetsWithNoRelayableFormAreRefused() {
@@ -31,11 +39,8 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
     func testEverySwitchOffMakesTheSwapUnrelayable() {
         let cases: [(String, () -> MultichainSwapRelayedAsset?)] = [
             ("route needs an approval", { self.relayedAsset(requiresApproval: true) }),
-            ("testnet wallet", { self.relayedAsset(wallet: self.makeWallet(network: .testnet)) }),
-            ("no address on the chain", { self.relayedAsset(wallet: self.makeWallet(addresses: [])) }),
-            ("not a multichain wallet", {
-                self.relayedAsset(wallet: self.makeWallet(isMultichain: false))
-            }),
+            ("testnet wallet", { self.relayedAsset(swapWallet: self.makeSwapWallet(network: .testnet)) }),
+            ("no address on the chain", { self.relayedAsset(swapWallet: self.makeSwapWallet(addresses: [])) }),
         ]
         for (reason, subject) in cases {
             XCTAssertNil(subject(), reason)
@@ -59,7 +64,7 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
             XCTAssertFalse(isAllowed, reason)
         }
         XCTAssertNotNil(
-            relayedAsset(wallet: makeWallet(batterySettings: .init(isSwapTransactionEnable: false)))
+            relayedAsset(swapWallet: makeSwapWallet(batterySettings: .init(isSwapTransactionEnable: false)))
         )
     }
 
@@ -217,17 +222,14 @@ private extension MultichainSwapBatteryFeeRulesTests {
     }
 
     func relayedAsset(
-        wallet: Wallet? = nil,
+        swapWallet: MultichainSwapWallet? = nil,
         assetId: String? = nil,
         chain: MultichainChain = .ton,
         requiresApproval: Bool = false,
         isTRXOnlyRegion: Bool = false
     ) -> MultichainSwapRelayedAsset? {
         MultichainSwapBatteryFeeRules.relayedAsset(
-            wallet: wallet ?? makeWallet(addresses: [
-                .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
-                .init(chain: .tron, address: "TMultichainTronAddress"),
-            ]),
+            swapWallet: swapWallet ?? makeSwapWallet(),
             sourceAsset: makeAsset(assetId: assetId ?? tonJettonAssetId, chain: chain),
             requiresApproval: requiresApproval,
             isTRXOnlyRegion: isTRXOnlyRegion
@@ -246,14 +248,29 @@ private extension MultichainSwapBatteryFeeRulesTests {
         )
     }
 
-    func makeWallet(
+    static let addresses: [MultichainWalletAddress] = [
+        .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
+        .init(chain: .tron, address: "TMultichainTronAddress"),
+    ]
+
+    func makeSwapWallet(
         network: Network = .mainnet,
         batterySettings: BatterySettings = .init(),
-        addresses: [MultichainWalletAddress] = [
-            .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
-            .init(chain: .tron, address: "TMultichainTronAddress"),
-        ],
-        isMultichain: Bool = true
+        addresses: [MultichainWalletAddress] = MultichainSwapBatteryFeeRulesTests.addresses,
+        registration: MultichainSwapWallet.Registration = .registered(walletId: "multichain-wallet-id"),
+        keys: MultichainSwapWallet.Keys = .hd
+    ) -> MultichainSwapWallet {
+        MultichainSwapWallet(
+            wallet: makeWallet(network: network, batterySettings: batterySettings),
+            addresses: addresses,
+            registration: registration,
+            keys: keys
+        )
+    }
+
+    func makeWallet(
+        network: Network = .mainnet,
+        batterySettings: BatterySettings = .init()
     ) -> Wallet {
         Wallet(
             id: "wallet-id",
@@ -268,9 +285,7 @@ private extension MultichainSwapBatteryFeeRulesTests {
             ),
             setupSettings: .init(isSetupFinished: true),
             batterySettings: batterySettings,
-            multichain: isMultichain
-                ? .multichain(.init(walletId: "multichain-wallet-id", addresses: addresses))
-                : nil
+            multichain: .multichain(.init(walletId: "multichain-wallet-id", addresses: Self.addresses))
         )
     }
 
@@ -283,7 +298,7 @@ private extension MultichainSwapBatteryFeeRulesTests {
                 decimals: chain == .ton ? 9 : 6,
                 image: ""
             ),
-            price: .init(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: .init(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 0
         )
     }

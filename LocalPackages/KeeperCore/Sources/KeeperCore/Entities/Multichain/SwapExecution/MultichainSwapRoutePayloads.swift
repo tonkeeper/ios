@@ -1,7 +1,7 @@
 /// Executable payload set of a validated route: exactly one main transaction,
 /// optionally preceded by an ERC20 approval. Makes the structural invariant and
 /// the broadcast order unrepresentable to violate.
-public enum MultichainSwapRoutePayloads: Sendable, Hashable {
+@frozen public enum MultichainSwapRoutePayloads: Sendable, Hashable {
     case main(MultichainSwapPreparedPayload)
     case approvalThenMain(approval: MultichainSwapPreparedPayload, main: MultichainSwapPreparedPayload)
 

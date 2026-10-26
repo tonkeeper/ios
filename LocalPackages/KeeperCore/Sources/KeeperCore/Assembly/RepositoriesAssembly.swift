@@ -9,6 +9,33 @@ public struct RepositoriesAssembly {
         self.coreAssembly = coreAssembly
     }
 
+    public func earnFeaturedVaultsRepository(
+        isEarnEnabled: Bool,
+        isAppStoreEnvironment: Bool,
+        configuration: Configuration
+    ) -> EarnFeaturedVaultsRepository {
+        EarnFeaturedVaultsRepositoryImplementation(
+            isEarnEnabled: isEarnEnabled,
+            isAppStoreEnvironment: isAppStoreEnvironment,
+            configuration: configuration
+        )
+    }
+
+    public func earnVaultsRepository(isEarnEnabled: Bool) -> EarnVaultsRepository {
+        HardcodedEarnVaultsRepository(isEarnEnabled: isEarnEnabled)
+    }
+
+    public func earnAssetOffersRepository(isEarnEnabled: Bool) -> EarnAssetOffersRepository {
+        HardcodedEarnAssetOffersRepository(isEarnEnabled: isEarnEnabled)
+    }
+
+    public func earnPortfolioRepository(isEarnEnabled: Bool) -> EarnPortfolioRepository {
+        EarnPortfolioRepository(
+            service: HardcodedEarnPortfolioService(isEarnEnabled: isEarnEnabled),
+            fileSystemVault: coreAssembly.fileSystemVault()
+        )
+    }
+
     public func settingsRepository() -> SettingsRepository {
         SettingsRepository(settingsVault: coreAssembly.settingsVault())
     }

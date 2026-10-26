@@ -8,6 +8,7 @@ public struct SignRawConfirmationAssembly {
     private init() {}
     public static func module(
         wallet: Wallet,
+        mode: SignRawConfirmationMode,
         transferProvider: @escaping () async throws -> Transfer,
         resultHandler: SignRawControllerResultHandler?,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -15,10 +16,12 @@ public struct SignRawConfirmationAssembly {
     ) -> MVVMModule<SignRawConfirmationViewController, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput> {
         let viewModel = SignRawConfirmationViewModelImplementation(
             wallet: wallet,
+            mode: mode,
             signRawController: SignRawController(
                 wallet: wallet,
                 transferProvider: transferProvider,
                 transferService: keeperCoreMainAssembly.transferAssembly.transferService(),
+                sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
                 currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
@@ -29,6 +32,7 @@ public struct SignRawConfirmationAssembly {
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
                 currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
                 totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+                balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
                 nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
                 accountEventMapper: AccountEventMapper(
                     dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,

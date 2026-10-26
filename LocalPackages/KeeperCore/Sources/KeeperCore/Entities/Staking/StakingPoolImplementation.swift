@@ -1,4 +1,4 @@
-public enum StakingPoolImplementation: String, CaseIterable, Codable {
+@frozen public enum StakingPoolImplementation: String, CaseIterable, Codable {
     case liquidTF
     case whales
     case tf

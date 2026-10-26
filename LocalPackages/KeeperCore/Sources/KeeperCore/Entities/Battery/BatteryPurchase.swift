@@ -1,7 +1,7 @@
 import Foundation
 
 public struct BatteryPurchase: Equatable {
-    public enum Kind: Equatable {
+    @frozen public enum Kind: Equatable {
         case ios
         case android
         case promocode

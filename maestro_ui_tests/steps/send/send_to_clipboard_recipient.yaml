@@ -79,7 +79,10 @@ env:
 
 - runFlow: ../password/enter_password.yaml
 
-- assertVisible: Done
+# Broadcast time differs per chain (BSC took over 18 s on CI); wait for the result.
+- extendedWaitUntil:
+    visible: Done
+    timeout: 60000
 
 - extendedWaitUntil:
     visible: History

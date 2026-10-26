@@ -38,6 +38,20 @@ final class WalletAuthTokenProviderTests: XCTestCase {
         XCTAssertFalse(hasKey)
     }
 
+    func test_persistedAppKey_wakesAPreviouslyMissingWallet() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let provider = makeProvider(chainKit: chainKit)
+
+        let initiallyHasKey = await provider.hasPersistentAppKey(walletId: "wallet-1")
+        XCTAssertFalse(initiallyHasKey)
+        await provider.persistAppKey(Data("key-direct".utf8), walletId: "wallet-1")
+
+        let hasKeyAfterPersist = await provider.hasPersistentAppKey(walletId: "wallet-1")
+        XCTAssertTrue(hasKeyAfterPersist)
+        let token = await provider.token(walletId: "wallet-1", accessToken: "jwt-1")
+        XCTAssertEqual(token, "signed(key-direct,jwt-1)")
+    }
+
     func test_warmedKey_mintsAndCachesToken() async {
         let chainKit = ChainKitWalletAuthFake()
         let provider = makeProvider(chainKit: chainKit)

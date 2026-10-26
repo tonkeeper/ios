@@ -20,8 +20,16 @@ tags:
     description: Cross-chain swap operations (multi-provider)
   - name: system
     description: Operational endpoints (probes, etc.)
+  - name: moonpay
+    description: MoonPay Platform (native on-ramp frames)
 
 components:
+  securitySchemes:
+    DeviceJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Device access token issued by multichain-backend (keeper-auth).
   parameters:
     FromAssetQuery:
       name: fromAsset
@@ -370,6 +378,13 @@ components:
         default: false
 
   schemas:
+    MoonPaySession:
+      type: object
+      required: [ sessionToken ]
+      properties:
+        sessionToken:
+          type: string
+          description: Single-use MoonPay Platform session token for the check-connection frame. Expires 24 hours after issuance; request a new one for every attempt.
     ErrorResponse:
       type: object
       required:
@@ -2949,6 +2964,12 @@ components:
                 description: BCP-47 tag
 
   responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     InternalError:
       description: Internal server error
       content:
@@ -3920,3 +3941,43 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalError'
+
+  /v2/moonpay/session:
+    post:
+      operationId: createMoonPaySession
+      summary: Create a MoonPay Platform session token
+      description: |
+        Creates a MoonPay Platform session (`POST /platform/v1/sessions`) for the
+        calling device and returns its single-use token. The device IP is taken
+        from the request, the customer is the device of the access token.
+
+        Errors use `ErrorResponse`; branch on `code`:
+        - `401` `unauthorized`, `token_expired`: the access token is missing or invalid.
+        - `429` `rate_limited`: too many sessions for this device; retry later.
+        - `400` `validation_failed`: the device IP cannot be determined.
+        - MoonPay 4xx (`400`, `403`, `404`, `409`, `422`, `429`) keep MoonPay's
+          status; `code` is MoonPay's code prefixed with `moonpay_`
+          (e.g. `moonpay_too_many_requests`), `error` is MoonPay's message.
+        - `503` `provider_unavailable`: MoonPay is unreachable, failing or
+          rejects our key, or `sandbox` is requested but not configured.
+          Use the regular merchant flow.
+      tags:
+        - moonpay
+      security:
+        - DeviceJWT: [ ]
+      parameters:
+        - name: sandbox
+          in: query
+          description: Create the session with the MoonPay test key (sandbox, no real payments).
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoonPaySession'
+        default:
+          $ref: '#/components/responses/Error'

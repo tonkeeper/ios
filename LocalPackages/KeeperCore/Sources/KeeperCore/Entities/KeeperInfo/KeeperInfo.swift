@@ -1,4 +1,5 @@
 import Foundation
+import TKLogging
 
 /// Represents the entire state of the application install
 public struct KeeperInfo: Equatable {
@@ -73,9 +74,21 @@ extension KeeperInfo: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        self.wallets = try container.decode([Wallet].self, forKey: .wallets)
+        self.wallets = try container.decode(DecodableWalletList.self, forKey: .wallets).wallets
+        guard let firstWallet = wallets.first else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .wallets,
+                in: container,
+                debugDescription: "no stored wallet could be decoded"
+            )
+        }
 
-        self.currentWallet = try container.decode(Wallet.self, forKey: .currentWallet)
+        do {
+            self.currentWallet = try container.decode(Wallet.self, forKey: .currentWallet)
+        } catch {
+            Log.e("🪵 KeeperInfo: current wallet is undecodable, falling back to the first wallet", error: error)
+            self.currentWallet = firstWallet
+        }
         self.currency = try container.decode(Currency.self, forKey: .currency)
         self.securitySettings = try container.decode(SecuritySettings.self, forKey: .securitySettings)
 
@@ -99,4 +112,28 @@ extension KeeperInfo: Codable {
             self.batterySettings = BatterySettings()
         }
     }
+}
+
+private struct DecodableWalletList: Decodable {
+    let wallets: [Wallet]
+
+    init(from decoder: any Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var wallets: [Wallet] = []
+        while !container.isAtEnd {
+            let index = container.currentIndex
+            do {
+                try wallets.append(container.decode(Wallet.self))
+            } catch {
+                // A failed decode leaves the container on the same element; consuming it moves past it.
+                _ = try container.decode(SkippedElement.self)
+                Log.e("🪵 KeeperInfo: skipped undecodable wallet at index \(index)", error: error)
+            }
+        }
+        self.wallets = wallets
+    }
+}
+
+private struct SkippedElement: Decodable {
+    init(from decoder: any Decoder) throws {}
 }

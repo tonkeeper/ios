@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public struct BatteryRechargeMethod: Codable {
-    public enum Token: Equatable, Codable {
+    @frozen public enum Token: Equatable, Codable {
         case ton
         case jetton(Jetton)
 

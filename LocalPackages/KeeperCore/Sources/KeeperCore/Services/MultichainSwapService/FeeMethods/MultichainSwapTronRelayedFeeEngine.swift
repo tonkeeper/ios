@@ -87,7 +87,7 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         context: MultichainSwapFeeContext,
         confirmed: MultichainSwapRelayedFee,
         passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String {
+    ) async throws(MultichainSwapExecutionFailure) -> String? {
         let payloadId = context.payloadId
         guard let transfer = await relayedTransfer(context: context) else {
             throw .internal(reason: "no relayed method can pay for swap payload \(payloadId)")
@@ -96,7 +96,7 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         case let .batteryCharges(confirmedCharges):
             return try await sendWithBattery(
                 transfer,
-                wallet: context.wallet,
+                swapWallet: context.swapWallet,
                 confirmedCharges: confirmedCharges,
                 payloadId: payloadId,
                 passcodeProvider: passcodeProvider
@@ -104,11 +104,13 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         case let .gram(confirmedAmountNano):
             return try await sendWithGram(
                 transfer,
-                wallet: context.wallet,
+                swapWallet: context.swapWallet,
                 confirmedAmountNano: confirmedAmountNano,
                 payloadId: payloadId,
                 passcodeProvider: passcodeProvider
             )
+        case .token:
+            throw .internal(reason: "a tron swap cannot be relayed against a token fee")
         }
     }
 }
@@ -123,11 +125,12 @@ private extension MultichainSwapTronRelayedFeeEngine {
 
     func sendWithBattery(
         _ transfer: RelayedTransfer,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         confirmedCharges: Int,
         payloadId: String,
         passcodeProvider: @escaping () async -> String?
     ) async throws(MultichainSwapExecutionFailure) -> String {
+        let wallet = swapWallet.wallet
         guard await isBatteryAllowed(wallet: wallet) else {
             throw .internal(reason: "battery cannot pay for swap payload \(payloadId)")
         }
@@ -158,7 +161,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
         )
         let signedTransaction = try await signedTransaction(
             transfer,
-            wallet: wallet,
+            keys: swapWallet.keys,
             mnemonic: mnemonic,
             payloadId: payloadId
         )
@@ -176,11 +179,12 @@ private extension MultichainSwapTronRelayedFeeEngine {
 
     func sendWithGram(
         _ transfer: RelayedTransfer,
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         confirmedAmountNano: BigUInt,
         payloadId: String,
         passcodeProvider: @escaping () async -> String?
     ) async throws(MultichainSwapExecutionFailure) -> String {
+        let wallet = swapWallet.wallet
         guard let estimate = await estimate(transfer, wallet: wallet),
               let quote = gramQuote(estimate: estimate)
         else {
@@ -212,7 +216,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
         )
         let signedTransaction = try await signedTransaction(
             transfer,
-            wallet: wallet,
+            keys: swapWallet.keys,
             mnemonic: mnemonic,
             payloadId: payloadId
         )
@@ -322,13 +326,12 @@ private extension MultichainSwapTronRelayedFeeEngine {
         }
         let isTRXOnlyRegion = configuration.isTRXOnlyRegion(network: context.wallet.network)
         guard case let .tron(asset) = MultichainSwapBatteryFeeRules.relayedAsset(
-            wallet: context.wallet,
+            swapWallet: context.swapWallet,
             sourceAsset: context.sourceAsset,
             requiresApproval: context.requiresApproval,
             isTRXOnlyRegion: isTRXOnlyRegion
         ),
-            case let .multichain(state) = context.wallet.multichain,
-            let senderAddress = state.address(for: .tron)
+            let senderAddress = context.swapWallet.address(for: .tron)
         else {
             Log.multichainSwap.i(
                 "relayed tron swap not offered",
@@ -501,7 +504,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
 
     func signedTransaction(
         _ transfer: RelayedTransfer,
-        wallet: Wallet,
+        keys: MultichainSwapWallet.Keys,
         mnemonic: CoreMnemonic,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> Transaction {
@@ -521,7 +524,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
                 )
             }
             let extended = try transaction.extendingExpiration(byMilliseconds: 600_000)
-            let privateKey = try tronPrivateKey(wallet: wallet, mnemonic: mnemonic)
+            let privateKey = try tronPrivateKey(keys: keys, mnemonic: mnemonic)
             var signed = extended
             signed.signature = try Signer()
                 .sign(hash: extended.signingDigest(), privateKey: privateKey)
@@ -541,20 +544,22 @@ private extension MultichainSwapTronRelayedFeeEngine {
         }
     }
 
-    /// A multichain wallet keeps its TRON key on the BIP39 branch; a wallet imported from a TON
-    /// mnemonic derives it from that phrase instead, exactly as the USDT send does.
-    func tronPrivateKey(wallet: Wallet, mnemonic: CoreMnemonic) throws -> TronSwift.PrivateKey {
-        guard wallet.isMultichain, mnemonic.type == .bip39 else {
+    /// A multichain wallet keeps its TRON key on the BIP39 branch; a legacy wallet derives it from
+    /// the phrase through `TonTron`, whatever the type of the phrase, exactly as the USDT send does.
+    func tronPrivateKey(keys: MultichainSwapWallet.Keys, mnemonic: CoreMnemonic) throws -> TronSwift.PrivateKey {
+        switch keys {
+        case .legacy:
             return try TonTron.derivedKeyPair(
                 tonMnemonic: mnemonic.mnemonicWords,
                 index: 0
             ).privateKey
+        case .hd:
+            return try TronSwift.PrivateKey(
+                data: chainKitService.tronPrivateKey(
+                    mnemonic: mnemonic.mnemonicWords.joined(separator: " ")
+                ),
+                chainCode: Data()
+            )
         }
-        return try TronSwift.PrivateKey(
-            data: chainKitService.tronPrivateKey(
-                mnemonic: mnemonic.mnemonicWords.joined(separator: " ")
-            ),
-            chainCode: Data()
-        )
     }
 }

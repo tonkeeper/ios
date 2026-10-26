@@ -50,6 +50,7 @@ private extension AddDifferentVersionWalletCoordinator {
             mnemonicAccess: mnemonicAccess,
             securityStore: securityStore,
             analyticsProvider: analyticsProvider,
+            reason: .addWallet,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },

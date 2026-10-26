@@ -46,6 +46,27 @@ final class RatesCodingTests: XCTestCase {
         XCTAssertEqual(decoded.rate, Decimal(string: "0.1"))
     }
 
+    func test_rateReadsACurrencyOutsideTheFormerBuiltInList() throws {
+        let json = Data(#"{"currency":"NOK","rate":"1.389"}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(Rates.Rate.self, from: json)
+
+        XCTAssertEqual(decoded.currency.code, "NOK")
+    }
+
+    func test_currencyKeyedDictionaryKeepsItsArrayEncoding() throws {
+        let rate = try Rates.Rate(currency: .USD, rate: XCTUnwrap(Decimal(string: "1.389")), diff24h: nil)
+        let rates: [Currency: Rates.Rate] = [.USD: rate]
+
+        let data = try JSONEncoder().encode(rates)
+        let decoded = try JSONDecoder().decode([Currency: Rates.Rate].self, from: data)
+
+        // Cached balances were written with `Currency` as a non-`CodingKeyRepresentable` key,
+        // so the dictionary must stay an unkeyed array of alternating keys and values.
+        XCTAssertEqual(String(data: data, encoding: .utf8)?.first, "[")
+        XCTAssertEqual(decoded[.USD]?.rate, rate.rate)
+    }
+
     func test_jettonBalanceKeepsItsRatesThroughARoundTrip() throws {
         let price = try XCTUnwrap(Decimal(string: "0.0001970304146"))
         let balance = try JettonBalance(

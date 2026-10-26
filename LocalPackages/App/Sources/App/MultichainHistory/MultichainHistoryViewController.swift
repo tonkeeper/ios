@@ -1,22 +1,27 @@
 import Foundation
+import PerpsModels
 import SwiftUI
 import TKUIKit
 import UIKit
 
 final class MultichainHistoryViewController: UIViewController {
     private let hostingController: TKHostingController<MultichainHistoryView>
+    private let viewModel: MultichainHistoryViewModelImplementation
     private var wasNavigationBarHidden: Bool?
 
     init(
         viewModel: MultichainHistoryViewModelImplementation,
         onClose: (() -> Void)? = nil,
-        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in }
+        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in },
+        onSelectPerpsEvent: ((PerpsHistoryEvent) -> Void)? = nil
     ) {
+        self.viewModel = viewModel
         self.hostingController = TKHostingController(
             content: MultichainHistoryView(
                 viewModel: viewModel,
                 onClose: onClose,
-                onOpenTransaction: onOpenTransaction
+                onOpenTransaction: onOpenTransaction,
+                onSelectPerpsEvent: onSelectPerpsEvent
             )
         )
         super.init(nibName: nil, bundle: nil)
@@ -53,6 +58,11 @@ final class MultichainHistoryViewController: UIViewController {
             wasNavigationBarHidden = navigationController?.isNavigationBarHidden
         }
         navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        viewModel.screenDidAppear()
     }
 
     override func viewWillDisappear(_ animated: Bool) {

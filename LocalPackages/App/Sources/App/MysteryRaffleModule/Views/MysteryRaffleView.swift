@@ -1,5 +1,4 @@
 import Combine
-import Kingfisher
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -213,18 +212,19 @@ private extension View {
 // MARK: - Hero
 
 /// The full-bleed hero illustration (`hero.image`); the bundled glyph is the placeholder
-/// while it loads and the fallback when the URL is absent.
+/// while it loads and the fallback when the URL is absent or fails to load.
 struct RaffleHeroArt: View {
     let imageURL: URL?
     let icon: RaffleSymbol
 
     var body: some View {
         if let imageURL {
-            KFImage(source: RaffleKingfisherSource.source(imageURL))
-                .resizable()
-                .placeholder { glyph.frame(height: Self.placeholderHeight) }
-                .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: .infinity)
+            TKRemoteImage(source: RaffleKingfisherSource.source(imageURL), contentMode: .fit) {
+                glyph.frame(height: Self.placeholderHeight)
+            } failure: {
+                glyph.frame(height: Self.placeholderHeight)
+            }
+            .frame(maxWidth: .infinity)
         } else {
             glyph
         }
@@ -283,7 +283,7 @@ private struct RaffleHeroTextContent: View {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     RaffleInfoLine(
                         icon: .TKUIKit.Icons.Size28.clock,
-                        text: raffleCountdownText(to: countdown.target, now: RaffleClock.now(context.date), prefix: countdown.prefix),
+                        text: raffleCountdownText(to: countdown.target, now: context.date, prefix: countdown.prefix),
                         tint: .textAccent
                     )
                 }
@@ -572,14 +572,15 @@ private struct RaffleBenefitCardView: View {
         .background(.backgroundContent)
         .overlay(alignment: .trailing) {
             if let imageURL = card.imageURL {
-                KFImage(source: RaffleKingfisherSource.source(imageURL))
-                    .resizable()
-                    .placeholder { Color.clear }
-                    .scaledToFill()
-                    .frame(width: Self.illustrationWidth)
-                    .frame(maxHeight: .infinity)
-                    .clipped()
-                    .allowsHitTesting(false)
+                TKRemoteImage(source: RaffleKingfisherSource.source(imageURL)) {
+                    Color.clear
+                } failure: {
+                    Color.clear
+                }
+                .frame(width: Self.illustrationWidth)
+                .frame(maxHeight: .infinity)
+                .clipped()
+                .allowsHitTesting(false)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))

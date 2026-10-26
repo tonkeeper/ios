@@ -332,4 +332,17 @@ final class TonkeeperDeeplinksParserTests: XCTestCase {
     func testUnsupportedRafflePathThrows() {
         XCTAssertThrowsError(try parser.parse(string: "raffle/unknown"))
     }
+
+    func testPerpsParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "perps"), .perps(.home))
+        XCTAssertEqual(try parser.parse(string: "perps/market/1"), .perps(.market(id: 1)))
+        XCTAssertEqual(try parser.parse(string: "perps/market/1/position"), .perps(.market(id: 1)))
+        XCTAssertEqual(try parser.parse(string: "perps/market/1/auto-close?utm_source=push"), .perps(.autoClose(marketId: 1)))
+        XCTAssertThrowsError(try parser.parse(string: "perps/market/GRAM"))
+        XCTAssertThrowsError(try parser.parse(string: "perps/positions"))
+    }
+
+    func testHistoryParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "history"), .history)
+    }
 }

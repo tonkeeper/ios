@@ -1,7 +1,8 @@
 import Foundation
+import PerpsModels
 import TKLogging
 
-public final class PerpsMarketsPriceInterest {
+public final class PerpsMarketsPriceInterest: PerpsPriceInteresting {
     fileprivate let id = UUID()
     private let store: PerpsMarketsStore
 
@@ -23,58 +24,10 @@ public final class PerpsMarketsPriceInterest {
 }
 
 public final class PerpsMarketsStore: Store<PerpsMarketsStore.Event, PerpsMarketsStore.State>, @unchecked Sendable {
-    public struct Markets: Equatable, Sendable {
-        public let sort: PerpsMarketsSort
-        public let items: [PerpsMarketSummary]
-        public let livePrices: [Int64: Double]
-        public let hasNextPage: Bool
-        public let isLoadingNextPage: Bool
+    public typealias Markets = PerpsMarkets
+    public typealias State = PerpsMarketsState
 
-        public init(
-            sort: PerpsMarketsSort,
-            items: [PerpsMarketSummary],
-            livePrices: [Int64: Double],
-            hasNextPage: Bool,
-            isLoadingNextPage: Bool
-        ) {
-            self.sort = sort
-            self.items = items
-            self.livePrices = livePrices
-            self.hasNextPage = hasNextPage
-            self.isLoadingNextPage = isLoadingNextPage
-        }
-
-        public func livePrice(marketId: Int64) -> Double? {
-            livePrices[marketId]
-        }
-
-        public func price(marketId: Int64) -> Double? {
-            if let livePrice = livePrices[marketId] {
-                return livePrice
-            }
-            guard let item = items.first(where: { $0.marketId == marketId }), item.hasPrice else { return nil }
-            return item.price
-        }
-    }
-
-    public enum State {
-        case idle
-        case loading
-        case loaded(Markets)
-        case failed
-
-        public func livePrice(marketId: Int64) -> Double? {
-            guard case let .loaded(markets) = self else { return nil }
-            return markets.livePrice(marketId: marketId)
-        }
-
-        public func price(marketId: Int64) -> Double? {
-            guard case let .loaded(markets) = self else { return nil }
-            return markets.price(marketId: marketId)
-        }
-    }
-
-    public enum Event {
+    @frozen public enum Event {
         case didUpdate(State)
     }
 
@@ -142,7 +95,7 @@ public final class PerpsMarketsStore: Store<PerpsMarketsStore.Event, PerpsMarket
         commandContinuation.yield(.loadNextPage)
     }
 
-    public func makePriceInterest() -> PerpsMarketsPriceInterest {
+    public func makePriceInterest() -> any PerpsPriceInteresting {
         PerpsMarketsPriceInterest(store: self)
     }
 
@@ -375,7 +328,7 @@ private extension PerpsMarketsController {
                 phase = .failed
                 publish()
             }
-            Log.w("🪵 Perps: markets load failed — \(error)")
+            Log.perps.w("markets load failed — \(error)")
         }
     }
 
@@ -407,7 +360,7 @@ private extension PerpsMarketsController {
             nextCursor = page.nextCursor
             loadedPageCount += 1
         case let .failure(error):
-            Log.w("🪵 Perps: markets page load failed — \(error)")
+            Log.perps.w("markets page load failed — \(error)")
         }
         publish()
     }
@@ -429,7 +382,7 @@ private extension PerpsMarketsController {
             items.append(item)
         }
         if !duplicateMarketIds.isEmpty {
-            Log.w("🪵 Perps: ignored duplicate market ids — \(duplicateMarketIds.sorted())")
+            Log.perps.w("ignored duplicate market ids — \(duplicateMarketIds.sorted())")
         }
     }
 }
@@ -491,7 +444,7 @@ private extension PerpsMarketsController {
             tickersByMarketId = try await repository.tickers(for: marketIds)
         } catch {
             guard generation == priceGeneration else { return }
-            Log.w("🪵 Perps: live prices metadata lookup failed — \(error)")
+            Log.perps.w("live prices metadata lookup failed — \(error)")
             schedulePriceRetry(generation: generation, after: Self.metadataRetryInterval)
             return
         }
@@ -499,7 +452,7 @@ private extension PerpsMarketsController {
 
         let missing = marketIds.count - tickersByMarketId.count
         if missing > 0 {
-            Log.w("🪵 Perps: live prices skip \(missing) markets without tickers")
+            Log.perps.w("live prices skip \(missing) markets without tickers")
         }
         let marketIdsByTicker = marketIdsByTicker(tickersByMarketId)
         let tickers = marketIdsByTicker.keys.sorted()
@@ -599,7 +552,7 @@ private extension PerpsMarketsController {
         priceApplyTask?.cancel()
         priceApplyTask = nil
         clearLivePrices()
-        Log.w("🪵 Perps: hermes prices subscription rejected")
+        Log.perps.w("hermes prices subscription rejected")
         publish()
         schedulePriceRetry(generation: priceGeneration, after: rejectedWatchRetryInterval)
     }

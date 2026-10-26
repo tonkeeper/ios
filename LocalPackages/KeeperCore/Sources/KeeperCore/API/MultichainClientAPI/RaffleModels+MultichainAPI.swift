@@ -2,13 +2,14 @@ import Foundation
 import MultichainAPI
 
 extension MultichainRaffleStatus {
-    init(api: MultichainAPI.Components.Schemas.RaffleStatus) {
+    init?(api: MultichainAPI.Components.Schemas.RaffleStatus) {
         switch api {
         case .not_joined: self = .notJoined
         case .joined: self = .joined
         case .ended_pending: self = .endedPending
         case .won: self = .won
         case .lost: self = .lost
+        case .unknown: return nil
         }
     }
 }
@@ -30,12 +31,13 @@ extension MultichainRaffleCompactBanner {
 }
 
 extension MultichainRaffleBanner {
-    init(api: MultichainAPI.Components.Schemas.RaffleBanner) {
+    init?(api: MultichainAPI.Components.Schemas.RaffleBanner) {
+        guard let button = MultichainRaffleCTA(api: api.button) else { return nil }
         self.init(
             title: api.title,
             description: api.description,
             imageURL: api.image_url,
-            button: MultichainRaffleCTA(api: api.button)
+            button: button
         )
     }
 }
@@ -92,11 +94,12 @@ extension MultichainRaffleMilestone {
 }
 
 extension MultichainRaffleCTA {
-    init(api: MultichainAPI.Components.Schemas.RaffleCTA) {
+    init?(api: MultichainAPI.Components.Schemas.RaffleCTA) {
         let action: Action
         switch api.action {
         case .deeplink: action = .deeplink
         case .link: action = .link
+        case .unknown: return nil
         }
         self.init(title: api.title, action: action, payload: api.payload)
     }
@@ -117,7 +120,7 @@ extension MultichainRaffleStoryPage {
             title: api.title,
             description: api.description,
             image: api.image,
-            buttons: (api.buttons ?? []).map { MultichainRaffleCTA(api: $0) }
+            buttons: (api.buttons ?? []).compactMap { MultichainRaffleCTA(api: $0) }
         )
     }
 }
@@ -153,10 +156,13 @@ extension MultichainRaffleProgress {
 }
 
 extension MultichainRaffle {
-    init(api: MultichainAPI.Components.Schemas.Raffle) {
+    /// A status or CTA action the spec does not list leaves the raffle unrenderable, so it is skipped.
+    init?(api: MultichainAPI.Components.Schemas.Raffle) {
+        guard let status = MultichainRaffleStatus(api: api.status),
+              let cta = MultichainRaffleCTA(api: api.cta) else { return nil }
         self.init(
             id: api.id,
-            status: MultichainRaffleStatus(api: api.status),
+            status: status,
             hero: MultichainRaffleHero(api: api.hero),
             title: api.title,
             subtitle: api.subtitle,
@@ -170,9 +176,9 @@ extension MultichainRaffle {
             prizes: api.prizes.map { MultichainRafflePrize(api: $0) },
             tasks: api.tasks.map { MultichainRaffleTask(api: $0) },
             milestones: api.milestones.map { MultichainRaffleMilestone(api: $0) },
-            cta: MultichainRaffleCTA(api: api.cta),
+            cta: cta,
             progress: api.progress.map { MultichainRaffleProgress(api: $0) },
-            banner: api.banner.map { MultichainRaffleBanner(api: $0) },
+            banner: api.banner.flatMap { MultichainRaffleBanner(api: $0) },
             stories: (api.stories ?? []).map { MultichainRaffleStory(api: $0) }
         )
     }

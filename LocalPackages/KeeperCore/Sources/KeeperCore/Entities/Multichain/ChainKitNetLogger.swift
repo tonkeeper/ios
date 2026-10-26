@@ -12,7 +12,17 @@ final class ChainKitNetLogger: NSObject, ModuleNetLogger, @unchecked Sendable {
         self.domain = domain
     }
 
-    func log(message: String) {
-        domain.i(message)
+    /// `details` carries ChainKit's redacted RPC fields; they stay searchable in an exported log.
+    func log(message: String, details: [String: String], level: ModuleLoggerLevel) {
+        domain.log(Self.severity(of: level), message, extraInfo: details)
+    }
+
+    private static func severity(of level: ModuleLoggerLevel) -> LogSeverity {
+        switch level {
+        case .debug: .debug
+        case .warning: .warning
+        case .error: .error
+        default: .info
+        }
     }
 }

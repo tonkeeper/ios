@@ -1,9 +1,17 @@
 import ChainKit
 import Foundation
+import PerpsModels
+import TKLogging
 import TKPerpsAPI
 
 /// One market read, before any intent exists: the position an intent is built
 /// from lives here, so nothing has to invent a probe intent to load it.
+struct PerpsReviewInputs {
+    let context: PerpsMarketContext
+    let marketSnapshot: PerpetualMarketSnapshot?
+    let symbol: String
+}
+
 struct PerpsMarketContext {
     let walletId: String
     let scope: PerpsScope
@@ -32,21 +40,27 @@ final class PerpsPlannerHost {
     private let api: PerpsAPI
     private let nonceCoordinator: PerpsNonceCoordinator
     private let freshReadDelayNanoseconds: UInt64
+    private let reissueReadOnlyToken: @Sendable () async -> Bool
+    private let serverClock: PerpsServerClock
     private let mediator = LighterPerpsMediator()
 
     init(
         api: PerpsAPI,
-        nonceCoordinator: PerpsNonceCoordinator = PerpsNonceCoordinator(),
-        freshReadDelayNanoseconds: UInt64 = 1_000_000_000
+        nonceCoordinator: PerpsNonceCoordinator,
+        freshReadDelayNanoseconds: UInt64 = 1_000_000_000,
+        serverClock: PerpsServerClock = .shared,
+        reissueReadOnlyToken: @escaping @Sendable () async -> Bool = { false }
     ) {
         self.api = api
         self.nonceCoordinator = nonceCoordinator
         self.freshReadDelayNanoseconds = freshReadDelayNanoseconds
+        self.serverClock = serverClock
+        self.reissueReadOnlyToken = reissueReadOnlyToken
     }
 
-    func signingKey(privateKeyHex: String, accountIndex: Int64, apiKeyIndex: Int32, chainId: Int32) throws -> PerpsSigningKey {
+    func signingKey(privateKeyHex: String, accountIndex: Int64, chainId: Int32) throws -> PerpsSigningKey {
         try perpsValue(
-            mediator.signingKey(privateKeyHex: privateKeyHex, accountIndex: accountIndex, apiKeyIndex: apiKeyIndex, chainId: chainId)
+            mediator.signingKey(privateKeyHex: privateKeyHex, accountIndex: accountIndex, chainId: chainId)
         )
     }
 
@@ -55,27 +69,60 @@ final class PerpsPlannerHost {
         marketId: Int64,
         scope: PerpsScope,
         environment: String,
-        liveMark: Double?
+        liveMark: Double?,
+        openInitialMarginBps: Int32? = nil
     ) async throws -> PerpsMarketContext {
         let now = PerpsPlannerMapping.nowUnixMs()
-        let screen = try await api.tradingScreen(walletId: walletId, marketId: marketId)
+        // Neither read depends on the other, and this runs on every quote — serial would
+        // put a second round trip in front of every price the user sees.
+        async let screenRead = PerpsAPIError.reissuingReadOnlyToken(reissueReadOnlyToken) {
+            try await api.tradingScreen(walletId: walletId, marketId: marketId)
+        }
+        async let integratorRead = api.integrator(walletId: walletId)
+        let screen = try await screenRead
+        if let serverOffset = serverClock.serverOffsetMs, PerpsServerClock.isDeviceClockSkewed(serverOffsetMs: serverOffset) {
+            Log.perps.w("device clock skew market=\(marketId) serverOffset=\(serverOffset)")
+            throw PerpsTradingError.deviceClockSkew
+        }
         guard let market = screen.market else {
             throw PerpsTradingError.validation("trading screen has no market")
         }
+        let integrator = try await integratorRead
         let rules = try PerpsPlannerMapping.rules(
             market: market,
             environment: environment,
-            receivedAtUnixMs: now
+            receivedAtUnixMs: now,
+            integrator: integrator
         )
-        let resting = try PerpsPlannerMapping.restingOrders(screen.open_orders, rules: rules)
+        var resting = try PerpsPlannerMapping.restingOrders(screen.open_orders, rules: rules)
+        var ordersKnown = PerpsBackendMapping.ordersReadable(screen)
+        if !ordersKnown {
+            let detail = try? await api.getOpenPosition(
+                walletId: walletId,
+                id: PerpsPlannerMapping.tkPositionId(marketId: marketId)
+            )
+            if let detail, detail.auto_close_known == true {
+                resting = try PerpsPlannerMapping.restingOrders(
+                    autoClose: detail.auto_close?.value1,
+                    positionSide: detail.position?.side,
+                    rules: rules
+                )
+                ordersKnown = true
+            }
+        }
         let tradingContext = try PerpsPlannerMapping.context(
             scope: scope,
             marketId: marketId,
             screen: screen,
             rules: rules,
             receivedAtUnixMs: now,
-            restingOrders: resting
+            restingOrders: resting,
+            ordersKnown: ordersKnown,
+            openInitialMarginBps: openInitialMarginBps
         )
+        if !ordersKnown {
+            Log.perps.w("planner context without readable orders market=\(marketId) cancel_enabled=\(screen.flags?.cancel_enabled.map { "\($0)" } ?? "nil") position=\(screen.position == nil ? "none" : "open")")
+        }
         let mark = try PerpsPlannerMapping.markPrice(
             market.mark_price,
             live: liveMark,
@@ -90,8 +137,7 @@ final class PerpsPlannerHost {
             marketSnapshot: nil,
             symbol: market.symbol,
             leverage: screen.position?.value1.leverage.map(Double.init),
-            limitOrders: PerpsBackendMapping.ordersVisible(screen.flags)
-                ? PerpsBackendMapping.limitOrders(screen.open_orders) : [],
+            limitOrders: PerpsBackendMapping.limitOrders(screen.open_orders),
             mark: mark,
             nowUnixMs: now
         )
@@ -104,6 +150,7 @@ final class PerpsPlannerHost {
             let snapshot = try await marketSnapshot(for: intent, context: context, coverageQuote: coverage)
             do {
                 let plan = try prepare(intent: intent, context: context, marketSnapshot: snapshot)
+                Log.perps.i("plan \(intent) → \(plan.review) steps=\(plan.steps.map(\.stepId)) validUntil=\(plan.validUntilUnixMs) coverage=\(coverage)")
                 return PerpsPlannedTrade(
                     intent: intent,
                     context: context.withMarketSnapshot(snapshot),
@@ -115,9 +162,11 @@ final class PerpsPlannerHost {
                 && snapshot?.book?.truncatedAtCoverage == true
                 && coverage <= Int64.max / 2
             {
+                Log.perps.i("plan needs more depth market=\(context.rules.marketId) coverage=\(coverage)→\(coverage * 2)")
                 coverage *= 2
             }
         }
+        Log.perps.w("plan out of depth market=\(context.rules.marketId) coverage=\(coverage)")
         throw PerpsTradingError.insufficientLiquidity
     }
 
@@ -169,13 +218,13 @@ final class PerpsPlannerHost {
         while let step = currentPlan.steps.first(where: { !completedStepIds.contains($0.stepId) }) {
             iterations += 1
             guard iterations <= Self.maxIterations else {
-                throw PerpsTradingError.operationInProgress
+                throw Self.unfinished(applied)
             }
             switch verdict(plan: currentPlan, stepId: step.stepId, context: currentContext, applied: applied) {
             case let .approved(approval):
                 let now = PerpsPlannerMapping.nowUnixMs()
                 let expiry = min(
-                    now + LighterConstants.shared.DefaultExpireTimeMillis,
+                    serverClock.serverNowUnixMs(deviceNowUnixMs: now) + LighterConstants.shared.DefaultExpireTimeMillis,
                     LighterConstants.shared.MaxTimestamp
                 )
                 do {
@@ -202,15 +251,18 @@ final class PerpsPlannerHost {
                 applied.append(prerequisite(for: step, plan: currentPlan, intent: intent, context: currentContext))
                 completedStepIds.insert(step.stepId)
             case .alreadySettled:
+                Log.perps.i("step \(step.stepId) already settled operation=\(currentPlan.operationId)")
                 completedStepIds.insert(step.stepId)
             case .requiresFreshContext:
                 guard freshReads < Self.maxFreshReads else {
-                    throw PerpsTradingError.operationInProgress
+                    throw Self.unfinished(applied)
                 }
                 freshReads += 1
+                Log.perps.i("step \(step.stepId) waits for fresh context operation=\(currentPlan.operationId) read=\(freshReads)")
                 try await Task.sleep(nanoseconds: freshReadDelayNanoseconds)
                 currentContext = try await refresh(context: currentContext)
             case let .requiresPrepare(reason):
+                Log.perps.i("step \(step.stepId) needs a replan operation=\(currentPlan.operationId) reason=\(reason) applied=\(applied.count)")
                 guard applied.isEmpty, Self.replans(on: reason) else {
                     throw PerpsTradingError.stalePreparedTransaction
                 }
@@ -218,9 +270,13 @@ final class PerpsPlannerHost {
                 currentPlan = replanned.plan
                 currentContext = replanned.context
             case .requiresAppliedStep:
-                throw PerpsTradingError.operationInProgress
+                throw Self.unfinished(applied)
             }
         }
+    }
+
+    private static func unfinished(_ applied: [PerpsAppliedPrerequisite]) -> PerpsTradingError {
+        applied.isEmpty ? .stalePreparedTransaction : .operationInProgress
     }
 }
 
@@ -313,13 +369,22 @@ extension PerpsPlannerHost {
             )
         }
         let coverage = coverageQuote ?? need.coverageQuote
+        let notional = PerpsScaled.decimalString(coverage, decimals: context.rules.scale.quoteDecimals)
         let book = try await api.truncatedOrderBook(
             walletId: context.walletId,
             marketId: context.rules.marketId,
             side: PerpsPlannerMapping.bookSide(side),
-            feeRate: PerpsScaled.feeRate(takerPpm: context.rules.takerFeePpm),
-            notional: PerpsScaled.decimalString(coverage, decimals: context.rules.scale.quoteDecimals)
+            feeRate: PerpsScaled.feeRate(takerPpm: PerpsPlannerMapping.effectiveTakerFeePpm(intent: intent, rules: context.rules)),
+            notional: notional
         )
+        let now = PerpsPlannerMapping.nowUnixMs()
+        let bookUpdatedAt = Int64(book.updated_at.timeIntervalSince1970 * 1000)
+        if bookUpdatedAt - now > PerpsPlannerMapping.freshnessPolicy().maxFutureSkewUnixMs {
+            Log.perps.w("device clock skew market=\(context.rules.marketId) bookUpdatedAt=\(bookUpdatedAt) now=\(now)")
+            throw PerpsTradingError.deviceClockSkew
+        }
+        let levels = (side === PerpsSide.short_ ? book.bids : book.asks) ?? []
+        Log.perps.i("book market=\(context.rules.marketId) side=\(PerpsPlannerMapping.bookSide(side)) notional=\(notional) levels=\(levels.count) truncated=\(book.truncated) updatedAt=\(book.updated_at) mark=\(context.mark.map { "\($0.price)@\($0.observedAtUnixMs)" } ?? "nil") top=\(levels.prefix(5).map { "\($0.price)x\($0.size)" })")
         return try PerpsPlannerMapping.marketSnapshot(
             side: side,
             coverageQuote: coverage,
@@ -328,7 +393,7 @@ extension PerpsPlannerHost {
             marketId: context.rules.marketId,
             rules: context.rules,
             environment: context.scope.environment,
-            receivedAtUnixMs: PerpsPlannerMapping.nowUnixMs()
+            receivedAtUnixMs: now
         )
     }
 

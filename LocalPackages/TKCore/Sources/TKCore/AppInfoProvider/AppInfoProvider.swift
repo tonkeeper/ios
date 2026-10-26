@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TKFeatureFlags
+import TKServices
 import UIKit
 
 public struct AppInfoProvider: KeeperCore.AppInfoProvider {

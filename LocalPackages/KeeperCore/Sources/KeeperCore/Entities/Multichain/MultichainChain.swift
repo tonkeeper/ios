@@ -1,6 +1,6 @@
 import ChainKit
 
-public enum MultichainChain: String, Sendable, Hashable, Codable, CaseIterable {
+@frozen public enum MultichainChain: String, Sendable, Hashable, Codable, CaseIterable {
     case ton
     case eth
     case base
@@ -8,17 +8,25 @@ public enum MultichainChain: String, Sendable, Hashable, Codable, CaseIterable {
     case tron
     case arb
     case bsc
+    case sol
+    case polygon
+    case avax
+    case robinhood
 }
 
 public extension MultichainChain {
     static let displayOrder: [MultichainChain] = [
         .ton,
-        .tron,
         .eth,
-        .btc,
-        .base,
         .bsc,
+        .sol,
+        .tron,
         .arb,
+        .robinhood,
+        .btc,
+        .polygon,
+        .base,
+        .avax,
     ]
 
     static func orderedByDisplayOrder(_ chains: [MultichainChain]) -> [MultichainChain] {

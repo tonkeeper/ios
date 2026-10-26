@@ -90,6 +90,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            reason: .backup,
             onCancel: onCancel,
             onInput: { [weak self, wallet, keeperCoreMainAssembly] passcode in
                 guard let self else { return }

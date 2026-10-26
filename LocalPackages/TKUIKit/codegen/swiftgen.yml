@@ -1,16 +1,46 @@
 files:
-  - inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Lottie
+  - inputs:
+      - ${TK_UIKIT_RESOURCES}/Lottie
+      - ${TK_UIKIT_RESOURCES}/NativeLottie/raw
+      - ${TK_UIKIT_RESOURCES}/ComposeLottie/files/lottie
     filter: .+\.json$
     outputs:
       - templatePath: templates/lottie.stencil
         output: ../TKUIKit/Sources/TKUIKit/Generated/TKLottie.swift
-  - inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Fonts
+        params:
+          aliases:
+            lottie_wallet: walletTabItem
+            lottie_trade: tradeTabItem
+            lottie_browser: browserTabItem
+            lottie_collectibles: collectiblesTabItem
+            raffle_confetti_right: confettiRight
+            raffle_confetti_left: confettiLeft
+            favorite_icon: favorite
+            magnifying_glass: magnifyingGlass
+            exclamationmark_circle: exclamationmarkCircle
+            verification_checkmark: verificationCheckmark
+            ic_apps_28_opt: apps
+  - inputs: ${TK_UIKIT_RESOURCES}/Fonts/font
     filter: .+\.ttf$
     outputs:
       - templatePath: templates/fonts.stencil
         output: ../TKUIKit/Sources/TKUIKit/Generated/TKFonts.swift
+        params:
+          aliases:
+            tt_firs_neue_normal: ttfirsneueNm
+            tt_firs_neue_medium: ttfirsneueMd
+            tt_firs_neue_demi_bold: ttfirsneueDmbd
+          postScriptNames:
+            tt_firs_neue_normal: TTFirsNeue-Nm
+            tt_firs_neue_medium: TTFirsNeue-Md
+            tt_firs_neue_demi_bold: TTFirsNeue-DmBd
+  - inputs: ${TK_UIKIT_RESOURCES}/Images/drawable-nodpi
+    filter: .+\.png$
+    outputs:
+      - templatePath: templates/shared-images.stencil
+        output: ../TKUIKit/Sources/TKUIKit/Generated/TKSharedImages.swift
 xcassets:
-  inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Assets.xcassets
+  inputs: ${TK_UIKIT_RESOURCES}/Assets.xcassets
   outputs:
     - templatePath: templates/images.stencil
       output: ../TKUIKit/Sources/TKUIKit/Generated/TKImages.swift

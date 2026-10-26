@@ -105,6 +105,10 @@ struct TonkeeperDeeplinkParser {
             default:
                 throw .unsupportedDeeplink(code: .notSupportedPath, string: string)
             }
+        case "perps":
+            return try .perps(parsePerps(url: url))
+        case "history":
+            return .history
         default:
             throw .unsupportedDeeplink(
                 code: .notSupportedPath,
@@ -429,6 +433,18 @@ struct TonkeeperDeeplinkParser {
             return nil
         }
         return url.pathComponents[1]
+    }
+
+    private func parsePerps(url: URL) throws(DeeplinkParserError) -> Deeplink.Perps {
+        let path = url.pathComponents.dropFirst()
+        guard let section = path.first else {
+            return .home
+        }
+        let marketPath = path.dropFirst()
+        guard section == "market", let marketId = marketPath.first.flatMap({ Int64($0) }) else {
+            throw .invalidParameters
+        }
+        return marketPath.dropFirst().first == "auto-close" ? .autoClose(marketId: marketId) : .market(id: marketId)
     }
 
     private func parseTradeAssetID(url: URL) throws(DeeplinkParserError) -> String {

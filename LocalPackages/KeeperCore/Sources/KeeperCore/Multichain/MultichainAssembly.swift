@@ -1,10 +1,17 @@
 import ChainKit
+import KeeperCoreSensitive
 import TKAppInfo
 import TKKeychain
+import TKLogging
 import UIKit
 
 public final class MultichainAssembly {
-    public private(set) lazy var chainKitService: ChainKitService = {
+    public private(set) lazy var chainKitService: ChainKitService = chainKitServiceImplementation
+
+    /// Signs the documents of a relayed operation: the same keys `chainKitService` sends with.
+    private(set) lazy var relayedOperationSigner: MultichainRelayedOperationSigner = chainKitServiceImplementation
+
+    private lazy var chainKitServiceImplementation: ChainKitServiceImplementation = {
         let assetBalanceProvider = multichainAssetBalanceProvider
         return ChainKitServiceImplementation(
             supportedChains: supportedChains,
@@ -52,6 +59,13 @@ public final class MultichainAssembly {
         await deviceChangeController.handle()
     }
 
+    /// Binds one wallet's addresses to this device, warming its app key first. The enricher, the
+    /// sync controller and the QA chain remover all register a wallet this one way.
+    private lazy var syncWallet: (_ mnemonic: String, _ state: MultichainWalletState) async throws(MultichainServiceError) -> Void = { [walletSynchronizer, walletAuthTokenProvider] mnemonic, state throws(MultichainServiceError) in
+        await walletAuthTokenProvider.warm(walletId: state.walletId, mnemonic: mnemonic)
+        try await walletSynchronizer.sync(mnemonic: mnemonic, state: state)
+    }
+
     public private(set) lazy var walletAddressesEnricher: MultichainWalletEnricher = MultichainWalletEnricherImplementation(
         dependencies: MultichainWalletEnricherDependencies(
             supportedChains: Set(supportedChains),
@@ -64,6 +78,19 @@ public final class MultichainAssembly {
             deriveWallet: { [chainKitService] mnemonic in
                 try chainKitService.makeWalletState(mnemonic: mnemonic)
             },
+            syncWallet: syncWallet,
+            saveWallet: { [walletsStore] wallet, multichain in
+                await walletsStore.setWalletMultichain(wallet: wallet, multichain: multichain)
+            }
+        )
+    )
+
+    public private(set) lazy var walletChainRemover = MultichainWalletChainRemover(
+        dependencies: MultichainWalletChainRemover.Dependencies(
+            getMnemonics: { [mnemonicAccess] wallets, passcode in
+                try await mnemonicAccess.getMnemonics(wallets: wallets, passcode: passcode)
+            },
+            syncWallet: syncWallet,
             saveWallet: { [walletsStore] wallet, multichain in
                 await walletsStore.setWalletMultichain(wallet: wallet, multichain: multichain)
             }
@@ -78,10 +105,7 @@ public final class MultichainAssembly {
             getMnemonics: { [mnemonicAccess] wallets, passcode in
                 try await mnemonicAccess.getMnemonics(wallets: wallets, passcode: passcode)
             },
-            syncWallet: { [walletSynchronizer, walletAuthTokenProvider] mnemonic, state throws(MultichainServiceError) in
-                await walletAuthTokenProvider.warm(walletId: state.walletId, mnemonic: mnemonic)
-                try await walletSynchronizer.sync(mnemonic: mnemonic, state: state)
-            },
+            syncWallet: syncWallet,
             saveWallet: { [walletsStore] wallet, multichain in
                 guard case let .multichain(desired) = multichain else {
                     await walletsStore.setWalletMultichain(wallet: wallet, multichain: multichain)
@@ -134,6 +158,41 @@ public final class MultichainAssembly {
     )
 
     public private(set) lazy var supportedChains: [MultichainChain] = MultichainChain.displayOrder
+
+    public private(set) lazy var newChainBadgeService: NewChainBadgeService = NewChainBadgeServiceImplementation()
+
+    func keepTradingKey(wallet: Wallet, mnemonic: CoreMnemonic) async {
+        guard wallet.kind == .regular, wallet.network == .mainnet, mnemonic.type == .bip39 else { return }
+        do {
+            let cryptoWallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic.mnemonicWords.joined(separator: " "))
+            try await tradingCredentials(wallet: wallet).keepTradingKey(cryptoWallet: cryptoWallet)
+        } catch {
+            Log.perps.w("trading key not kept wallet=\(wallet.id)", error: error)
+        }
+    }
+
+    public func warmMissingTradingKeys(passcode: String) async {
+        let wallets = walletsStore.wallets.filter { wallet in
+            guard wallet.kind == .regular, wallet.network == .mainnet, wallet.multichainWalletState != nil else { return false }
+            return (try? tradingCredentials(wallet: wallet).loadL2PrivateKey()) == nil
+        }
+        guard !wallets.isEmpty else { return }
+        do {
+            let mnemonics = try await mnemonicAccess.getMnemonics(wallets: wallets, passcode: passcode)
+            for wallet in wallets {
+                guard !Task.isCancelled else { return }
+                if let mnemonic = mnemonics[wallet.id] {
+                    await keepTradingKey(wallet: wallet, mnemonic: mnemonic)
+                }
+            }
+        } catch {
+            Log.perps.w("failed to load mnemonics for trading keys", error: error)
+        }
+    }
+
+    private func tradingCredentials(wallet: Wallet) -> LighterCredentialsStore {
+        LighterCredentialsStore(keychainVault: keychainVault, walletId: wallet.id, environment: PerpsEnvironment.storage)
+    }
 
     public private(set) lazy var multichainAssetBalanceProvider: MultichainAssetBalanceProvider = MultichainAssetBalanceProvider(
         balanceService: multichainService,

@@ -28,7 +28,8 @@ public struct Assembly {
             storiesStore: keeperCoreAssembly.storesAssembly.storiesStore,
             walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
             analyticsProvider: coreAssembly.analyticsProvider,
-            configuration: keeperCoreAssembly.configurationAssembly.configuration
+            configuration: keeperCoreAssembly.configurationAssembly.configuration,
+            deeplinkParser: keeperCoreAssembly.deeplinkParser
         )
     }
 

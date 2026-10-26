@@ -1422,6 +1422,72 @@ final class WalletConnectServiceTests: XCTestCase {
         XCTAssertEqual(approveCalls, [])
     }
 
+    func testSolanaGetAccountsAutoRespondsWithTheSessionAccounts() async throws {
+        let context = try await makeActiveSessionContext(
+            sessionAccountAddresses: [.sol: ["9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"]]
+        )
+        let events = await context.service.events()
+        await context.service.start()
+
+        for method in [WalletConnectMethod.solanaGetAccounts, .solanaRequestAccounts] {
+            let request = try makeRequest(
+                topic: "session-topic",
+                id: method.rawValue,
+                method: method.rawValue,
+                paramsJSON: "{}",
+                chain: .sol
+            )
+            let unexpectedEvent = await nextEventAfterEmitting(events) {
+                await context.eventStream.emit(.requestReceived(request, context: nil))
+            }
+
+            XCTAssertNil(unexpectedEvent, method.rawValue)
+        }
+        await waitUntil {
+            await context.network.approveRequestCalls().count == 2
+        }
+        let approveCalls = await context.network.approveRequestCalls()
+        XCTAssertEqual(approveCalls.map(\.requestId), ["solana_getAccounts", "solana_requestAccounts"])
+        for approveCall in approveCalls {
+            guard case let .json(result) = approveCall.result else {
+                return XCTFail("Expected a JSON result, got \(approveCall.result)")
+            }
+            XCTAssertEqual(
+                result.value as? [[String: String]],
+                [["pubkey": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"]]
+            )
+        }
+        let rejectCalls = await context.network.rejectRequestCalls()
+        XCTAssertEqual(rejectCalls, [])
+    }
+
+    func testSolanaGetAccountsIsRejectedWhenTheSessionHasNoSolanaAccount() async throws {
+        let context = try await makeActiveSessionContext()
+        let events = await context.service.events()
+        await context.service.start()
+
+        let request = try makeRequest(
+            topic: "session-topic",
+            method: WalletConnectMethod.solanaGetAccounts.rawValue,
+            paramsJSON: "{}",
+            chain: .sol
+        )
+        let unexpectedEvent = await nextEventAfterEmitting(events) {
+            await context.eventStream.emit(.requestReceived(request, context: nil))
+        }
+
+        XCTAssertNil(unexpectedEvent)
+        await waitUntil {
+            await context.network.rejectRequestCalls().count == 1
+        }
+        let rejectCalls = await context.network.rejectRequestCalls()
+        let rejectCall = try XCTUnwrap(rejectCalls.first)
+        XCTAssertEqual(rejectCall.errorCode, 4100)
+        XCTAssertEqual(rejectCall.errorMessage, "Unauthorized")
+        let approveCalls = await context.network.approveRequestCalls()
+        XCTAssertEqual(approveCalls, [])
+    }
+
     func testWalletSendCallsAtomicRequiredIsAutoRejectedWithAtomicityNotSupported() async throws {
         let context = try await makeActiveSessionContext()
         let events = await context.service.events()
@@ -1851,7 +1917,8 @@ private extension WalletConnectServiceTests {
     }
 
     func makeActiveSessionContext(
-        topic: String = "session-topic"
+        topic: String = "session-topic",
+        sessionAccountAddresses: [WalletConnectChain: [String]] = [:]
     ) async throws -> ServiceContext {
         let store = makeSessionStore()
         try store.save([
@@ -1870,7 +1937,8 @@ private extension WalletConnectServiceTests {
                         .init(address: "0xabc", chainId: "0x1"),
                         .init(address: "0xabc", chainId: "0x2105"),
                     ]),
-                ]
+                ],
+                sessionAccountAddresses: [topic: sessionAccountAddresses]
             ),
             store: store
         )
@@ -2247,6 +2315,7 @@ private final class WalletConnectWalletKitClientMock: WalletConnectWalletKitClie
     private var rejectRequestResults: [Result<Void, WalletConnectResponseError>]
     private var supportedSessionChains: [String: Set<WalletConnectChain>]
     private var walletCapabilitiesScopes: [String: WalletConnectWalletCapabilitiesScope]
+    private var sessionAccountAddresses: [String: [WalletConnectChain: [String]]]
     private var emitChainChangedResults: [Result<Void, WalletConnectResponseError>]
     private let disconnectResult: Result<Void, WalletConnectResponseError>
     private let configureResult: Result<Void, WalletConnectConfigurationError>
@@ -2272,6 +2341,7 @@ private final class WalletConnectWalletKitClientMock: WalletConnectWalletKitClie
         rejectRequestResults: [Result<Void, WalletConnectResponseError>] = [],
         supportedSessionChains: [String: Set<WalletConnectChain>] = [:],
         walletCapabilitiesScopes: [String: WalletConnectWalletCapabilitiesScope] = [:],
+        sessionAccountAddresses: [String: [WalletConnectChain: [String]]] = [:],
         emitChainChangedResults: [Result<Void, WalletConnectResponseError>] = [],
         disconnectResult: Result<Void, WalletConnectResponseError> = .success(()),
         configureResult: Result<Void, WalletConnectConfigurationError> = .success(())
@@ -2286,6 +2356,7 @@ private final class WalletConnectWalletKitClientMock: WalletConnectWalletKitClie
         self.rejectRequestResults = rejectRequestResults
         self.supportedSessionChains = supportedSessionChains
         self.walletCapabilitiesScopes = walletCapabilitiesScopes
+        self.sessionAccountAddresses = sessionAccountAddresses
         self.emitChainChangedResults = emitChainChangedResults
         self.disconnectResult = disconnectResult
         self.configureResult = configureResult
@@ -2450,6 +2521,10 @@ private final class WalletConnectWalletKitClientMock: WalletConnectWalletKitClie
 
     func walletCapabilitiesScope(topic: String) -> WalletConnectWalletCapabilitiesScope? {
         walletCapabilitiesScopes[topic]
+    }
+
+    func sessionAccountAddresses(topic: String, chain: WalletConnectChain) -> [String] {
+        sessionAccountAddresses[topic]?[chain] ?? []
     }
 
     func emitChainChanged(

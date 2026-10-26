@@ -37,6 +37,20 @@ final class TokenPickerV2ChainFilterTests: XCTestCase {
         XCTAssertNil(model.requests.last?.query)
         XCTAssertEqual(model.requests.last?.filter, .chain(.eth))
     }
+
+    func test_walletFilters_followDisplayOrderNotAddressOrder() {
+        let state = MultichainWalletState(
+            walletId: "wallet",
+            addresses: [.ton, .eth, .base, .btc, .tron, .arb, .bsc, .ton].map {
+                MultichainWalletAddress(chain: $0, address: $0.rawValue)
+            }
+        )
+
+        XCTAssertEqual(
+            state.tokenPickerV2Filters,
+            [.all, .chain(.ton), .chain(.eth), .chain(.bsc), .chain(.tron), .chain(.arb), .chain(.btc), .chain(.base)]
+        )
+    }
 }
 
 private extension TokenPickerV2ChainFilterTests {

@@ -1,7 +1,7 @@
 import BigInt
 import Foundation
 
-public enum BatteryState: Equatable {
+@frozen public enum BatteryState: Equatable {
     case fill(percents: CGFloat)
     case empty
     case negative

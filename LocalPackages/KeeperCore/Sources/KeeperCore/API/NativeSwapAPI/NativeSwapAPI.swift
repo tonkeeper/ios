@@ -1,7 +1,7 @@
 import Foundation
 import TKLogging
 
-public enum NativeSwapAPIError: Error, Decodable {
+@frozen public enum NativeSwapAPIError: Error, Decodable {
     case incorrectHost(String)
     case streamingFailed(message: String?)
     case serverError

@@ -1,17 +1,18 @@
 import CoreText
+import TKLogging
 import UIKit
 
 public extension UIFont {
     static func tkBold(size: CGFloat, features: TKFontFeatures) -> UIFont {
-        tkFont(named: tkBoldFontName, size: size, fallbackWeight: .bold, features: features)
+        tkFont(.bold, size: size, features: features)
     }
 
     static func tkMedium(size: CGFloat, features: TKFontFeatures) -> UIFont {
-        tkFont(named: tkMediumFontName, size: size, fallbackWeight: .semibold, features: features)
+        tkFont(.medium, size: size, features: features)
     }
 
     static func tkRegular(size: CGFloat, features: TKFontFeatures) -> UIFont {
-        tkFont(named: tkRegularFontName, size: size, fallbackWeight: .medium, features: features)
+        tkFont(.regular, size: size, features: features)
     }
 
     /// Same font with tabular lining figures (`tnum`+`lnum`), keeping the original family.
@@ -29,17 +30,12 @@ public extension UIFont {
         ])
     }
 
-    private static func tkFont(
-        named name: String,
-        size: CGFloat,
-        fallbackWeight: UIFont.Weight,
-        features: TKFontFeatures
-    ) -> UIFont {
-        guard let font = UIFont(name: name, size: size) else {
-            return .systemFont(ofSize: size, weight: fallbackWeight)
+    private static func tkFont(_ face: TKFontFace, size: CGFloat, features: TKFontFeatures) -> UIFont {
+        guard let font = UIFont(name: face.name, size: size) else {
+            return .systemFont(ofSize: size, weight: face.systemWeight)
         }
         return font
-            .withStandardFallback()
+            .withStandardFallback(face.cascade)
             .applying(features)
     }
 
@@ -50,19 +46,6 @@ public extension UIFont {
         let existing = fontDescriptor.fontAttributes[.featureSettings] as? [[String: Any]] ?? []
         let descriptor = fontDescriptor.addingAttributes([.featureSettings: existing + settings])
         return UIFont(descriptor: descriptor, size: pointSize)
-    }
-
-    private static let tkBoldFontName = registeredFontName(for: .ttfirsneueDmbd)
-    private static let tkMediumFontName = registeredFontName(for: .ttfirsneueMd)
-    private static let tkRegularFontName = registeredFontName(for: .ttfirsneueNm)
-
-    private static func registeredFontName(for file: TKUIKitFontFile) -> String {
-        do {
-            try registerFont(file: file)
-            return file.fontName
-        } catch {
-            fatalError("Failed to register font: \(file.fontName)")
-        }
     }
 }
 
@@ -77,8 +60,22 @@ extension UIFont {
     }
 }
 
-enum FontError: Error {
-    case failedToRegisterFont
+enum FontError: LoggableError {
+    case missingFile
+    case unreadableFile
+    case registrationFailed((any Error)?)
+
+    var logDescription: String {
+        let description = LogDescription(type: FontError.self)
+        switch self {
+        case .missingFile:
+            return description.with("case", "missingFile").text
+        case .unreadableFile:
+            return description.with("case", "unreadableFile").text
+        case let .registrationFailed(error):
+            return description.with("case", "registrationFailed").with("underlying", error: error).text
+        }
+    }
 }
 
 func registerFont(file: TKUIKitFontFile) throws(FontError) {
@@ -86,12 +83,14 @@ func registerFont(file: TKUIKitFontFile) throws(FontError) {
         return
     }
 
+    guard let fontURL = file.url else {
+        throw .missingFile
+    }
     guard
-        let fontURL = file.url,
         let fontDataProvider = CGDataProvider(url: fontURL as CFURL),
         let font = CGFont(fontDataProvider)
     else {
-        throw .failedToRegisterFont
+        throw .unreadableFile
     }
     var registrationError: Unmanaged<CFError>?
     guard CTFontManagerRegisterGraphicsFont(font, &registrationError) else {
@@ -103,27 +102,45 @@ func registerFont(file: TKUIKitFontFile) throws(FontError) {
         {
             return
         }
-        throw .failedToRegisterFont
+        throw .registrationFailed(nsError)
+    }
+}
+
+private struct TKFontFace {
+    static let bold = TKFontFace(file: .ttfirsneueDmbd, systemWeight: .bold)
+    static let medium = TKFontFace(file: .ttfirsneueMd, systemWeight: .semibold)
+    static let regular = TKFontFace(file: .ttfirsneueNm, systemWeight: .medium)
+
+    let name: String
+    let systemWeight: UIFont.Weight
+    /// An explicit cascade replaces the default one, so the face keeps its own default chain and gets
+    /// the system font in front of it for U+2009, the thin space of formatted amounts: TT Firs Neue
+    /// lacks it, and Helvetica, heading the default chain, draws it as a hair space. The system font's
+    /// own chain is not borrowed: its CJK entries are private UI fonts that iOS 18 renders as boxes.
+    let cascade: [UIFontDescriptor]
+
+    init(file: TKUIKitFontFile, systemWeight: UIFont.Weight) {
+        do {
+            try registerFont(file: file)
+        } catch {
+            Log.e("failed to register font", error: error, extraInfo: ["font": file.fontName])
+        }
+        let defaultCascade = UIFont(name: file.fontName, size: UIFont.systemFontSize).flatMap {
+            CTFontCopyDefaultCascadeListForLanguages($0 as CTFont, nil) as? [UIFontDescriptor]
+        } ?? []
+        let systemFont = UIFont.systemFont(ofSize: UIFont.systemFontSize, weight: systemWeight)
+        name = file.fontName
+        self.systemWeight = systemWeight
+        cascade = defaultCascade.isEmpty ? [] : [systemFont.fontDescriptor] + defaultCascade
     }
 }
 
 private extension UIFont {
-    /// A font registered with `CTFontManagerRegisterGraphicsFont` carries no cascade list, so a
-    /// codepoint it lacks is dropped with a zero advance instead of being substituted. TT Firs Neue
-    /// has no U+2009, which is the thin space every formatted amount puts between the currency
-    /// symbol and the number, so those gaps collapsed to nothing. Borrowing the system font's
-    /// cascade restores the standard fallback chain — and keeps emoji and non-Latin scripts
-    /// resolving as before, which hardcoding a single donor font would not.
-    func withStandardFallback() -> UIFont {
-        guard !Self.standardCascadeList.isEmpty else { return self }
+    func withStandardFallback(_ cascade: [UIFontDescriptor]) -> UIFont {
+        guard !cascade.isEmpty else { return self }
         let descriptor = fontDescriptor.addingAttributes(
-            [UIFontDescriptor.AttributeName(rawValue: kCTFontCascadeListAttribute as String): Self.standardCascadeList]
+            [UIFontDescriptor.AttributeName(rawValue: kCTFontCascadeListAttribute as String): cascade]
         )
         return UIFont(descriptor: descriptor, size: pointSize)
     }
-
-    static let standardCascadeList: [UIFontDescriptor] = {
-        let system = UIFont.systemFont(ofSize: UIFont.systemFontSize) as CTFont
-        return CTFontCopyDefaultCascadeListForLanguages(system, nil) as? [UIFontDescriptor] ?? []
-    }()
 }

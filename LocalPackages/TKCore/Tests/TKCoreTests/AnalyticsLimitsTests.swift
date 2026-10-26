@@ -1,6 +1,7 @@
 import Foundation
 @testable import TKCore
 import TKFeatureFlags
+@testable import TKServices
 import XCTest
 
 final class AnalyticsLimitsTests: XCTestCase {

@@ -20,20 +20,14 @@ struct WalletConnectEVMTransactionSigningUtilities {
         let accountAddress = try context.accountAddress(chain: chain)
 
         if let sender = transaction.from, !sender.isEmpty {
-            try context.validateSameAddress(expected: accountAddress, actual: sender)
+            try context.validateSameAddress(expected: accountAddress, actual: sender, chain: chain)
         }
 
-        let account = try chainKitAccount(
-            chain: chain,
-            addressString: accountAddress,
-            cryptoWallet: cryptoWallet
-        )
-        let feeAsset = chainKitChain.toAsset()
+        let account = try context.chainKitAccount(chain: chain, cryptoWallet: cryptoWallet)
         let wcTransaction = try chainKitTransaction(
             account: account,
             chain: chain,
-            payload: transaction,
-            feeAsset: feeAsset
+            payload: transaction
         )
 
         let mediator = context.client.blockchain.getMediator(network: chainKitChain.network.type)
@@ -81,28 +75,10 @@ struct WalletConnectEVMTransactionSigningUtilities {
         }
     }
 
-    func chainKitAccount(
-        chain: WalletConnectChain,
-        addressString: String,
-        cryptoWallet: CryptoWallet
-    ) throws(WalletConnectSigningError) -> ChainKit.Account {
-        let chainKitChain = chain.multichainChain.asChainKitChain
-        guard let address = Address.Companion.shared.from(value: addressString, chain: chainKitChain, type: .default_) else {
-            throw .invalidTransaction(reason: "invalid sender address: \(addressString)")
-        }
-        return ChainKit.Account(
-            address: address,
-            asset: chainKitChain.toAsset(),
-            derivation: DerivationDefaultPath.shared,
-            publicKey: cryptoWallet.getPublicKey(chain: chainKitChain)
-        )
-    }
-
     func chainKitTransaction(
         account: ChainKit.Account,
         chain: WalletConnectChain,
-        payload: WalletConnectEVMTransaction,
-        feeAsset: AssetCoin
+        payload: WalletConnectEVMTransaction
     ) throws(WalletConnectSigningError) -> any ChainKit.Transaction {
         let amount = try bignum(payload.requiredEVMQuantity(.value))
         let data = payload.data.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -120,7 +96,6 @@ struct WalletConnectEVMTransactionSigningUtilities {
             return TransactionTransfer(
                 account: account,
                 amount: amount,
-                energy: feeAsset,
                 isMax: false,
                 to: toAddress,
                 memo: nil,
@@ -139,7 +114,6 @@ struct WalletConnectEVMTransactionSigningUtilities {
             return TransactionCall(
                 account: account,
                 amount: amount,
-                energy: feeAsset,
                 contract: contract,
                 data: data
             )

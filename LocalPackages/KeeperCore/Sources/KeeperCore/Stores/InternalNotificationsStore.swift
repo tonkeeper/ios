@@ -2,7 +2,7 @@ import Foundation
 
 public final class InternalNotificationsStore: Store<InternalNotificationsStore.Event, InternalNotificationsStore.State> {
     public typealias State = Set<NotificationModel>
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateNotifications(notifications: [NotificationModel])
     }
 

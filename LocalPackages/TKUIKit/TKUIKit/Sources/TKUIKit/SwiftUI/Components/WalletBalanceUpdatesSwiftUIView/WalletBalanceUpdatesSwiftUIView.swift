@@ -1,4 +1,3 @@
-import Kingfisher
 import SwiftUI
 
 public struct WalletBalanceUpdatesSwiftUIViewConfig: Hashable {
@@ -86,52 +85,17 @@ private extension WalletBalanceUpdatesSwiftUIView {
             }
         case let .urlImage(url):
             if let url {
-                WalletBalanceUpdatesURLIconView(url: url)
+                TKRemoteImage(
+                    url: url,
+                    downsampleSize: CGSize(width: Layout.iconSide, height: Layout.iconSide),
+                    contentMode: .fit
+                ) {
+                    TKColor.backgroundContentTint
+                } failure: {
+                    TKColor.backgroundContentTint
+                }
             }
         }
-    }
-}
-
-private struct WalletBalanceUpdatesURLIconView: View {
-    @Environment(\.tkPalette) private var palette
-    let url: URL
-    @State private var didFail = false
-
-    var body: some View {
-        Group {
-            if didFail {
-                placeholder
-            } else {
-                KFImage
-                    .url(url)
-                    .setProcessor(
-                        DownsamplingImageProcessor(
-                            size: CGSize(
-                                width: WalletBalanceUpdatesSwiftUIView.Layout.iconSide * UIScreen.main.scale,
-                                height: WalletBalanceUpdatesSwiftUIView.Layout.iconSide * UIScreen.main.scale
-                            )
-                        )
-                    )
-                    .loadDiskFileSynchronously()
-                    .fade(duration: 0)
-                    .placeholder {
-                        placeholder
-                    }
-                    .onSuccess { _ in
-                        didFail = false
-                    }
-                    .onFailure { _ in
-                        didFail = true
-                    }
-                    .cancelOnDisappear(true)
-                    .resizable()
-                    .scaledToFit()
-            }
-        }
-    }
-
-    private var placeholder: some View {
-        palette.background.contentTint
     }
 }
 

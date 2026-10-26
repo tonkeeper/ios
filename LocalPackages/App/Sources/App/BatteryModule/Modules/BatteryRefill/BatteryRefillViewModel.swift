@@ -6,8 +6,8 @@ import TKLogging
 import TKUIKit
 
 protocol BatteryRefillModuleOutput: AnyObject {
-    var didTapSupportedTransactions: (() -> Void)? { get set }
-    var didTapTransactionsSettings: (() -> Void)? { get set }
+    var didTapSupportedTransactions: ((BatteryNetworks) -> Void)? { get set }
+    var didTapTransactionsSettings: ((BatteryNetworks) -> Void)? { get set }
     var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)? { get set }
     var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)? { get set }
     var didFinish: (() -> Void)? { get set }
@@ -18,8 +18,8 @@ protocol BatteryRefillModuleInput: AnyObject {}
 final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefillModuleOutput, BatteryRefillModuleInput {
     // MARK: - BatteryRefillModuleOutput
 
-    var didTapSupportedTransactions: (() -> Void)?
-    var didTapTransactionsSettings: (() -> Void)?
+    var didTapSupportedTransactions: ((BatteryNetworks) -> Void)?
+    var didTapTransactionsSettings: ((BatteryNetworks) -> Void)?
     var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)?
     var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
     var didFinish: (() -> Void)?
@@ -58,6 +58,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
 
     @Published private(set) var header: HeaderState?
     @Published private(set) var showsSettings = false
+    @Published private(set) var networks = BatteryNetworks.tonAndTron
     @Published private(set) var inAppPurchaseRows = [InAppPurchaseRow]()
     @Published private(set) var rechargeMethodRows = [RechargeMethodRow]()
     @Published var showsCloseButton = false
@@ -70,6 +71,12 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
         configuration.flag(\.batteryDisabled, network: wallet.network)
             ? TKLocales.Battery.Refill.Footer.unavailable
             : TKLocales.Battery.Refill.Footer.description
+    }
+
+    var settingsCaption: String {
+        networks.includesEVM
+            ? TKLocales.Battery.Refill.evmCaption
+            : TKLocales.Battery.Refill.Settings.caption
     }
 
     var didTapClose: (() -> Void)?
@@ -93,6 +100,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
     private let configuration: Configuration
     private let amountFormatter: AmountFormatter
     private let promocodeOutput: BatteryPromocodeInputModuleOutput
+    private let relayedEVMChains: @Sendable () async -> Set<MultichainChain>?
 
     // MARK: - Init
 
@@ -104,7 +112,8 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
         tonProofTokenService: TonProofTokenService,
         configuration: Configuration,
         amountFormatter: AmountFormatter,
-        promocodeOutput: BatteryPromocodeInputModuleOutput
+        promocodeOutput: BatteryPromocodeInputModuleOutput,
+        relayedEVMChains: @escaping @Sendable () async -> Set<MultichainChain>?
     ) {
         self.wallet = wallet
         self.inAppPurchaseModel = inAppPurchaseModel
@@ -114,6 +123,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
         self.configuration = configuration
         self.amountFormatter = amountFormatter
         self.promocodeOutput = promocodeOutput
+        self.relayedEVMChains = relayedEVMChains
     }
 
     func viewDidLoad() {
@@ -123,6 +133,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
             self?.updateHeader(state: state)
         }
         updateHeader(state: headerModel.getState())
+        loadNetworks()
 
         updateInAppPurchaseRows(items: inAppPurchaseModel.items)
         inAppPurchaseModel.loadProducts()
@@ -161,7 +172,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
 
     func openSettings() {
         endPromocodeEditing?()
-        didTapTransactionsSettings?()
+        didTapTransactionsSettings?(networks)
     }
 
     func openHistory() {
@@ -171,7 +182,7 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
     }
 
     func openSupportedTransactions() {
-        didTapSupportedTransactions?()
+        didTapSupportedTransactions?(networks)
     }
 
     func close() {
@@ -205,6 +216,15 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
 
     // MARK: - State updates
 
+    private func loadNetworks() {
+        Task { @MainActor [weak self, relayedEVMChains, wallet] in
+            let networks = BatteryNetworks(relayedEVMChains: await relayedEVMChains() ?? [], wallet: wallet)
+            guard let self else { return }
+            self.networks = networks
+            updateHeader(state: headerModel.getState())
+        }
+    }
+
     private func updateHeader(state: BatteryRefillHeaderModel.State) {
         switch state.charge {
         case let .charged(chargesCount, batteryPercent):
@@ -229,7 +249,9 @@ final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefil
             header = HeaderState(
                 batteryState: .emptyTinted,
                 showsBetaTag: state.isBeta,
-                caption: TKLocales.Battery.Refill.emptyCaption,
+                caption: networks.includesEVM
+                    ? TKLocales.Battery.Refill.evmCaption
+                    : TKLocales.Battery.Refill.emptyCaption,
                 warning: nil,
                 showsSupportedTransactionsButton: true
             )

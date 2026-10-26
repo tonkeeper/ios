@@ -62,7 +62,13 @@ private extension PairSignerCoordinator {
         )
 
         module.output.didScanLinkQRCode = { [weak self] publicKey, name in
-            self?.openImportCoordinator(publicKey: publicKey, name: name, isDevice: false)
+            guard let self else { return }
+            coreAssembly.analyticsProvider.log(WalletImportSignerScanned(
+                walletMode: .single,
+                walletSource: .signer,
+                from: analyticsContext.from
+            ))
+            openImportCoordinator(publicKey: publicKey, name: name, isDevice: false)
         }
 
         if router.rootViewController.viewControllers.isEmpty {

@@ -1,5 +1,6 @@
 import Foundation
 import Kingfisher
+import UIKit
 
 public struct VectorImageDataProvider: ImageDataProvider {
     private static let maxByteCount = 1_000_000
@@ -89,5 +90,19 @@ public struct DappIconSource {
 
     public static func isVectorLikely(_ url: URL) -> Bool {
         url.scheme?.lowercased() == "data" || url.pathExtension.lowercased() == "svg"
+    }
+
+    public func loadImage(pixelSize: CGSize) async -> UIImage? {
+        await withCheckedContinuation { continuation in
+            KingfisherManager.shared.retrieveImage(
+                with: source,
+                options: [
+                    .alternativeSources(alternativeSources),
+                    .processor(DownsamplingImageProcessor(size: pixelSize)),
+                ]
+            ) { result in
+                continuation.resume(returning: try? result.get().image)
+            }
+        }
     }
 }

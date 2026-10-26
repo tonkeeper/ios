@@ -3,7 +3,7 @@ import Foundation
 public extension TransactionsManagement {
     typealias txID = String
 
-    enum TransactionState: Codable, Equatable {
+    @frozen enum TransactionState: Codable, Equatable {
         case normal
         case spam
     }

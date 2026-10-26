@@ -1,5 +1,6 @@
 import ChainKit
 @testable import KeeperCore
+import PerpsModels
 import XCTest
 
 /// Auto-close replacement sets new protection before canceling stale legs and
@@ -63,6 +64,34 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
             Self.leg(orderIndex: 102, clientOrderIndex: 4, kind: .stopLoss, price: 60000),
         ])
         XCTAssertEqual(plan, .replace(target: target, stale: .init(takeProfit: 9, stopLoss: 4)))
+    }
+
+    func testRenewalReplacesLegsThatAlreadyMatchAndConfirmsOnFreshIndexes() {
+        let target = Self.autoClose(tp: 68141.70, sl: 64720.16)
+        let resting = [
+            Self.leg(orderIndex: 101, clientOrderIndex: 1, kind: .takeProfit, price: 68141.70),
+            Self.leg(orderIndex: 102, clientOrderIndex: 2, kind: .stopLoss, price: 64720.16),
+        ]
+        XCTAssertEqual(PerpsAutoCloseChangePlanner.plan(target: target, resting: resting), .noChange)
+
+        let plan = PerpsAutoCloseChangePlanner.plan(target: target, resting: resting, renewsExpiry: true)
+
+        XCTAssertEqual(plan, .replace(target: target, stale: .init(takeProfit: 1, stopLoss: 2)))
+        XCTAssertEqual(
+            PerpsAutoCloseChangePlanner.plan(
+                target: Self.autoClose(tp: 70000, sl: 64720.16),
+                resting: resting,
+                renewsExpiry: true
+            ),
+            .noChange,
+            "a renewal must not move a trigger the user changed meanwhile"
+        )
+        let pending = PerpsPendingAutoCloseChange(target: target, restingOrderIndexes: [1, 2])
+        XCTAssertFalse(PerpsAutoCloseChangePlanner.isConfirmed(pending: pending, orders: resting))
+        XCTAssertTrue(PerpsAutoCloseChangePlanner.isConfirmed(pending: pending, orders: [
+            Self.leg(orderIndex: 103, clientOrderIndex: 3, kind: .takeProfit, price: 68141.70),
+            Self.leg(orderIndex: 104, clientOrderIndex: 4, kind: .stopLoss, price: 64720.16),
+        ]))
     }
 
     func testClearingNothingIsNoChange() {
@@ -189,7 +218,7 @@ final class PerpsAutoCloseChangeTests: XCTestCase {
                     )
                 )
             ),
-            .insufficientLiquidity
+            .slippageExceeded
         )
     }
 

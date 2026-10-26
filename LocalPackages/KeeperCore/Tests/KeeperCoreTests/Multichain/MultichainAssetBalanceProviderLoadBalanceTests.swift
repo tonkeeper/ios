@@ -1,10 +1,12 @@
 import BigInt
 @testable import KeeperCore
+import TonSwift
 import XCTest
 
 final class MultichainAssetBalanceProviderLoadBalanceTests: XCTestCase {
     private let state = MultichainWalletState(walletId: "wallet-id", addresses: [])
     private let trxAssetId = "tron/mainnet/coin"
+    private let usdtAssetId = "eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"
 
     /// TK-2638: a wallet holding no TRX is simply missing from the listing, and reporting that as
     /// an unknown balance let the fee picker treat TRX as payable.
@@ -127,6 +129,91 @@ final class MultichainAssetBalanceProviderLoadBalanceTests: XCTestCase {
 
         XCTAssertEqual(balance, 99)
     }
+
+    /// The battery's relayer names a fee token its own way — the address in lowercase, `bnb` for
+    /// BSC, another type label — and an exact lookup took a token the wallet holds for one it does not.
+    func test_assetsNamedInAnotherSpelling_resolveToTheWalletsBalances() async {
+        let ethUSDT = "eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"
+        let bscUSDT = "bnb/mainnet/token/0x55d398326f99059ff775485246999027b3197955"
+        let provider = makeProvider(assets: .listing([
+            makeAsset(assetId: "eth/mainnet/erc20/0xdAC17F958D2ee523a2206206994597C13D831ec7", balance: 7_000_000),
+            makeAsset(assetId: "bsc/mainnet/bep20/0x55d398326f99059fF775485246999027B3197955", balance: 3_000_000),
+        ]))
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [ethUSDT, bscUSDT], wallet: wallet)
+
+        XCTAssertEqual(balances, [ethUSDT: 7_000_000, bscUSDT: 3_000_000])
+    }
+
+    /// The wallet's own entry comes back under the name it was asked for, so a caller can go on with
+    /// the wallet's id for the asset.
+    func test_assetsNamedInAnotherSpelling_resolveToTheWalletsEntries() async {
+        let walletUSDT = makeAsset(assetId: "eth/mainnet/erc20/0xdAC17F958D2ee523a2206206994597C13D831ec7", balance: 7_000_000)
+        let provider = makeProvider(assets: .listing([walletUSDT]))
+
+        let assets = await provider.loadAssets(named: [usdtAssetId], wallet: wallet)
+
+        XCTAssertEqual(assets, [usdtAssetId: walletUSDT])
+    }
+
+    func test_assetsNamedButMissingFromTheListing_haveNoBalance() async {
+        let provider = makeProvider(assets: .listing([makeAsset(assetId: "eth/mainnet/coin", balance: 5)]))
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [usdtAssetId], wallet: wallet)
+
+        XCTAssertEqual(balances, [:])
+    }
+
+    func test_assetsNamedWithoutAListing_haveNoBalance() async {
+        let provider = makeProvider(assets: .failure)
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [usdtAssetId], wallet: wallet)
+
+        XCTAssertEqual(balances, [:])
+    }
+
+    /// A wallet can list thousands of assets: the pages after the one that holds the last asset
+    /// asked for are not read.
+    func test_assetsNamed_stopTheListingOnceAllAreFound() async {
+        let usdcAssetId = "eth/mainnet/erc20/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        let service = MultichainServiceFake(walletAssets: .pages([
+            [makeAsset(assetId: usdtAssetId, balance: 7_000_000)],
+            [makeAsset(assetId: "eth/mainnet/coin", balance: 5)],
+            [makeAsset(assetId: usdcAssetId, balance: 2_000_000)],
+            [makeAsset(assetId: "eth/mainnet/erc20/0x6b175474e89094c44da98b954eedeac495271d0f", balance: 1)],
+        ]))
+        let provider = makeProvider(service: service)
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [usdcAssetId, usdtAssetId], wallet: wallet)
+
+        XCTAssertEqual(balances, [usdtAssetId: 7_000_000, usdcAssetId: 2_000_000])
+        XCTAssertEqual(service.requests.assetIds.count, 3)
+    }
+
+    func test_assetsNamed_keepWhatTheListingFoundBeforeItFailed() async {
+        let usdcAssetId = "eth/mainnet/erc20/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        let provider = makeProvider(script: .init([
+            .pages([
+                [makeAsset(assetId: usdtAssetId, balance: 7_000_000)],
+                [makeAsset(assetId: usdcAssetId, balance: 2_000_000)],
+            ]),
+            .failure,
+        ]))
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [usdcAssetId, usdtAssetId], wallet: wallet)
+
+        XCTAssertEqual(balances, [usdtAssetId: 7_000_000])
+    }
+
+    func test_nothingNamed_readsNothing() async {
+        let service = MultichainServiceFake(walletAssets: .listing([]))
+        let provider = makeProvider(service: service)
+
+        let balances = await provider.loadBalances(ofAssetsNamed: [], wallet: wallet)
+
+        XCTAssertEqual(balances, [:])
+        XCTAssertTrue(service.requests.assetIds.isEmpty)
+    }
 }
 
 private extension MultichainAssetBalanceProviderLoadBalanceTests {
@@ -134,16 +221,35 @@ private extension MultichainAssetBalanceProviderLoadBalanceTests {
         assets: MultichainServiceFake.WalletAssets = .failure,
         script: MultichainServiceFake.WalletAssetsScript? = nil
     ) -> MultichainAssetBalanceProvider {
+        makeProvider(service: MultichainServiceFake(walletAssets: assets, walletAssetsScript: script))
+    }
+
+    func makeProvider(service: MultichainServiceFake) -> MultichainAssetBalanceProvider {
         MultichainAssetBalanceProvider(
-            balanceService: MultichainServiceFake(
-                walletAssets: assets,
-                walletAssetsScript: script
-            ),
+            balanceService: service,
             currencyStore: CurrencyStore(
                 keeperInfoStore: KeeperInfoStore(
                     keeperInfoRepository: LoadBalanceKeeperInfoRepositoryFake()
                 )
             )
+        )
+    }
+
+    var wallet: Wallet {
+        Wallet(
+            id: "wallet-id",
+            identity: .init(
+                network: .mainnet,
+                kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v4R2)
+            ),
+            metaData: .init(
+                label: "Test wallet",
+                tintColor: .defaultColor,
+                icon: .icon(.wallet)
+            ),
+            setupSettings: .init(isSetupFinished: true),
+            batterySettings: BatterySettings(),
+            multichain: .multichain(state)
         )
     }
 
@@ -160,8 +266,7 @@ private extension MultichainAssetBalanceProviderLoadBalanceTests {
             price: MultichainAssetPrice(
                 prices: [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             isHidden: false,
             balance: balance

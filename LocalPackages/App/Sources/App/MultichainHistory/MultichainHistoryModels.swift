@@ -80,6 +80,8 @@ enum MultichainHistoryCategory: Hashable {
 }
 
 extension MultichainHistoryCategory {
+    static let perps = MultichainHistoryCategory.chain(chainFilter: .all, typeFilter: .perps)
+
     var isSpamCategory: Bool {
         typeFilter == .spam
     }
@@ -102,6 +104,7 @@ extension MultichainHistoryCategory {
                 assetId: nil,
                 activityTypeFilter: typeFilter.apiActivityTypeFilter,
                 showPerps: showsPerps && typeFilter.admitsPerps ? true : nil,
+                market: nil,
                 hideDust: hideDust
             )
         case let .asset(assetId, typeFilter):
@@ -113,6 +116,7 @@ extension MultichainHistoryCategory {
                 assetId: assetId,
                 activityTypeFilter: typeFilter.apiActivityTypeFilter,
                 showPerps: showsPerps && typeFilter.admitsPerps ? true : nil,
+                market: nil,
                 hideDust: hideDust
             )
         }

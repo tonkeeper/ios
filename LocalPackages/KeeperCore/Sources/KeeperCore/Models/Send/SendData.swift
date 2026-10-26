@@ -1,14 +1,14 @@
 import BigInt
 import Foundation
 
-public enum SendData {
+@frozen public enum SendData {
     case ton(TonSendData)
     case tron(TronSendData)
     case multichain(MultichainSendData)
 }
 
 public struct TonSendData {
-    public enum Item {
+    @frozen public enum Item {
         case token(TonToken, amount: BigUInt)
         case nft(NFT)
     }
@@ -43,7 +43,7 @@ public struct TonSendData {
 }
 
 public struct TronSendData {
-    public enum Item {
+    @frozen public enum Item {
         case usdt(amount: BigUInt)
         case trx(amount: BigUInt)
 

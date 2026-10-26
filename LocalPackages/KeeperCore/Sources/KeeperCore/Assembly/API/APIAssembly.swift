@@ -68,20 +68,16 @@ public final class APIAssembly {
     lazy var api: API = API(
         hostProvider: tonApiHostProvider,
         urlSession: urlSession,
-        configuration: configurationAssembly.configuration,
-        requestCreationQueue: apiRequestCreationQueue
+        configuration: configurationAssembly.configuration
     )
 
     lazy var testnetAPI: API = API(
         hostProvider: testnetTonApiHostProvider,
         urlSession: urlSession,
-        configuration: configurationAssembly.configuration,
-        requestCreationQueue: apiRequestCreationQueue
+        configuration: configurationAssembly.configuration
     )
 
     public lazy var pushNotificationsAPI: PushNotificationsAPI = PushNotificationsAPI(urlSession: .shared)
-
-    private lazy var apiRequestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
 
     private var tonApiHostProvider: APIHostProvider {
         MainnetAPIHostProvider(configuration: configurationAssembly.configuration)
@@ -135,14 +131,24 @@ public final class APIAssembly {
     }
 
     func swapAPIClient(userAgent: String? = nil) -> SwapAPI.Client {
-        let url = configurationAssembly.configuration.value(\.webSwapsUrl, network: .mainnet)
-            ?? swapAPIURL
         return SwapAPI.Client(
-            serverURL: url,
+            serverURL: swapServerURL,
             transport: apiTransport,
             middlewares: .logged([
                 UserAgentHeaderMiddleware(userAgent: userAgent),
             ])
+        )
+    }
+
+    func deviceSessionSwapAPIClient(deviceAuth: DeviceAuthProviding?, userAgent: String? = nil) -> SwapAPI.Client {
+        var middlewares: [any ClientMiddleware] = [UserAgentHeaderMiddleware(userAgent: userAgent)]
+        if let deviceAuth {
+            middlewares.append(DeviceSessionMiddleware(deviceAuth: deviceAuth))
+        }
+        return SwapAPI.Client(
+            serverURL: swapServerURL,
+            transport: apiTransport,
+            middlewares: .logged(middlewares)
         )
     }
 
@@ -252,6 +258,7 @@ public final class APIAssembly {
                 recovery: recovery
             )
         )
+        middlewares.append(PerpsServerClockMiddleware(clock: .shared))
         return try TKPerpsAPI.Client(
             hostURL: hostURL,
             urlSession: urlSession,
@@ -287,6 +294,10 @@ public final class APIAssembly {
 
     var tonConnectURL: URL {
         URL(string: "https://bridge.tonapi.io")!
+    }
+
+    private var swapServerURL: URL {
+        configurationAssembly.configuration.value(\.webSwapsUrl, network: .mainnet) ?? swapAPIURL
     }
 
     private var swapAPIURL: URL {

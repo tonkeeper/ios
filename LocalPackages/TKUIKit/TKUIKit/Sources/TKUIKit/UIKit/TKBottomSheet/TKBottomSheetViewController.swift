@@ -23,6 +23,8 @@ public final class TKBottomSheetViewController: UIViewController {
     private var needsDeferredContentHeightUpdate = false
     private var isMeasuringSheetLayout = false
     private var needsMeasurementSettlePass = false
+    private var laidOutBoundsSize: CGSize = .zero
+    private var isDragging = false
 
     private lazy var tapGesture = UITapGestureRecognizer(
         target: self,
@@ -34,7 +36,7 @@ public final class TKBottomSheetViewController: UIViewController {
         action: #selector(panGestureHandler(_:))
     )
 
-    private var sheetWidth: CGFloat {
+    private var availableSheetWidth: CGFloat {
         let width = view.bounds.width
         if width > 0, width.isFinite {
             return width
@@ -46,6 +48,20 @@ public final class TKBottomSheetViewController: UIViewController {
         }
 
         return UIScreen.main.bounds.width
+    }
+
+    /// On iPhone in landscape a system page sheet is the portrait width, centered. iPad and portrait
+    /// stay edge to edge.
+    private func resolvedSheetHorizontalPlacement() -> (x: CGFloat, width: CGFloat) {
+        let bounds = view.bounds
+        guard bounds.width > 0, bounds.height > 0, bounds.width.isFinite, bounds.height.isFinite else {
+            return (0, availableSheetWidth)
+        }
+        guard traitCollection.userInterfaceIdiom != .pad, bounds.width > bounds.height else {
+            return (0, bounds.width)
+        }
+        let width = min(bounds.width, bounds.height)
+        return ((bounds.width - width) / 2, width)
     }
 
     private var bottomSpacing: CGFloat {
@@ -85,6 +101,13 @@ public final class TKBottomSheetViewController: UIViewController {
         super.viewDidLayoutSubviews()
 
         dimmingView.frame = view.bounds
+
+        let size = view.bounds.size
+        guard size.width > 0, size.height > 0, size != laidOutBoundsSize else { return }
+        let isFirstLayout = laidOutBoundsSize == .zero
+        laidOutBoundsSize = size
+        guard !isFirstLayout, !isPreparingInitialPresentation, !isDismissing, !isMeasuringSheetLayout else { return }
+        updateSheetLayout(animated: false)
     }
 
     public func present(fromViewController: UIViewController) {
@@ -172,6 +195,9 @@ private extension TKBottomSheetViewController {
         }
         scrollController.didDrag = { [weak self] offset in
             self?.didDrag(offset: offset)
+        }
+        scrollController.didCancelDragging = { [weak self] in
+            self?.didFailedDrag()
         }
     }
 
@@ -270,7 +296,8 @@ private extension TKBottomSheetViewController {
         isMeasuringSheetLayout = true
         defer { isMeasuringSheetLayout = false }
 
-        let width = sheetWidth
+        let placement = resolvedSheetHorizontalPlacement()
+        let width = placement.width
         let headerHeight = measureHeaderHeight(forWidth: width)
         // A non-zero inset (the keyboard) covers the home-indicator inset, so drop the bottom spacing.
         let resolvedBottomSpacing = additionalBottomInset > 0 ? 0 : bottomSpacing
@@ -284,7 +311,7 @@ private extension TKBottomSheetViewController {
         )
         let containerHeight = headerHeight + contentHeight + resolvedBottomSpacing
         let containerFrame = CGRect(
-            x: 0,
+            x: placement.x,
             y: view.bounds.height - additionalBottomInset - containerHeight,
             width: width,
             height: containerHeight
@@ -324,7 +351,20 @@ private extension TKBottomSheetViewController {
 
     private func applyContainerFrame(_ frame: CGRect) {
         containerFrame = frame
-        containerView.frame = frame
+        if !isDragging {
+            containerView.frame = frame
+        }
+        // A sheet sitting on the screen edge hides a bottom radius in the bezel. Once the card is
+        // narrower than the screen that radius reads as a gap, so only the top corners stay rounded
+        // until the keyboard lifts the sheet.
+        containerView.layer.maskedCorners = additionalBottomInset > 0
+            ? [
+                .layerMinXMinYCorner,
+                .layerMaxXMinYCorner,
+                .layerMinXMaxYCorner,
+                .layerMaxXMaxYCorner,
+            ]
+            : [.layerMinXMinYCorner, .layerMaxXMinYCorner]
     }
 
     private func makeHiddenContainerFrame(from containerFrame: CGRect) -> CGRect {
@@ -407,34 +447,6 @@ private extension TKBottomSheetViewController {
         }
     }
 
-    func didDrag(offset: CGFloat) {
-        if offset < 0 {
-            let delta = max(offset, -.maximumDragOffset)
-            containerView.frame.origin.y = containerFrame.origin.y + delta
-            containerView.frame.size.height = containerFrame.size.height - delta
-        } else {
-            containerView.frame.origin.y = containerFrame.origin.y + offset
-        }
-    }
-
-    func didEndDragging(offset: CGFloat) {
-        if offset > 60 {
-            dismiss { [weak self] in
-                self?.didClose?(true)
-            }
-        } else {
-            animateDragging {
-                self.containerView.frame = self.containerFrame
-            }
-        }
-    }
-
-    func didFailedDrag() {
-        animateDragging {
-            self.containerView.frame = self.containerFrame
-        }
-    }
-
     func animateDragging(
         animations: @escaping () -> Void,
         completion: ((Bool) -> Void)? = nil
@@ -448,6 +460,39 @@ private extension TKBottomSheetViewController {
             animations: animations,
             completion: completion
         )
+    }
+}
+
+extension TKBottomSheetViewController {
+    func didDrag(offset: CGFloat) {
+        isDragging = true
+        if offset < 0 {
+            let delta = max(offset, -.maximumDragOffset)
+            containerView.frame.origin.y = containerFrame.origin.y + delta
+            containerView.frame.size.height = containerFrame.size.height - delta
+        } else {
+            containerView.frame.origin.y = containerFrame.origin.y + offset
+        }
+    }
+
+    func didEndDragging(offset: CGFloat) {
+        isDragging = false
+        if offset > 60 {
+            dismiss { [weak self] in
+                self?.didClose?(true)
+            }
+        } else {
+            animateDragging {
+                self.containerView.frame = self.containerFrame
+            }
+        }
+    }
+
+    func didFailedDrag() {
+        isDragging = false
+        animateDragging {
+            self.containerView.frame = self.containerFrame
+        }
     }
 }
 

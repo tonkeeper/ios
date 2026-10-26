@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TradingAssetLinkKind: String, Sendable {
+@frozen public enum TradingAssetLinkKind: String, Sendable {
     case telegram
     case x
     case facebook

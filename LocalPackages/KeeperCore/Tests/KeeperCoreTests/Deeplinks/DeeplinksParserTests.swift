@@ -100,6 +100,14 @@ final class DeeplinksParserTests: XCTestCase {
         XCTAssertEqual(parsedDeeplink, result)
     }
 
+    func testStakingKeeperWalletUniversalLinkParsing() throws {
+        let string = "https://app.keeperwallet.com/staking"
+
+        let parsedDeeplink = try parser.parse(string: string)
+
+        XCTAssertEqual(parsedDeeplink, Deeplink.staking)
+    }
+
     func testSwapTonDeeplinkParsing() throws {
         let string = "ton://swap?ft=TON&tt=FNZ"
         let swapData = Deeplink.SwapData(
@@ -115,6 +123,28 @@ final class DeeplinksParserTests: XCTestCase {
 
     func testSwapTonkeeperDeeplinkParsing() throws {
         let string = "tonkeeper://swap?ft=TON&tt=FNZ"
+        let swapData = Deeplink.SwapData(
+            fromToken: "TON",
+            toToken: "FNZ"
+        )
+        let result = Deeplink.swap(swapData)
+
+        let parsedDeeplink = try parser.parse(string: string)
+
+        XCTAssertEqual(parsedDeeplink, result)
+    }
+
+    func testStakingKeeperDeeplinkParsing() throws {
+        let string = "keeper://staking"
+        let result = Deeplink.staking
+
+        let parsedDeeplink = try parser.parse(string: string)
+
+        XCTAssertEqual(parsedDeeplink, result)
+    }
+
+    func testSwapKeeperDeeplinkParsing() throws {
+        let string = "keeper://swap?ft=TON&tt=FNZ"
         let swapData = Deeplink.SwapData(
             fromToken: "TON",
             toToken: "FNZ"
@@ -452,6 +482,16 @@ final class DeeplinksParserTests: XCTestCase {
         )
     }
 
+    func testWalletConnectKeeperDeeplinkParsing() throws {
+        let uri = "wc:123@2?relay-protocol=irn&symKey=abc"
+        let string = "keeper://wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc"
+        let parsedDeeplink = try parser.parse(string: string)
+        XCTAssertEqual(
+            parsedDeeplink,
+            Deeplink.walletConnect(WalletConnectDeeplink(uri: uri, source: .deeplink))
+        )
+    }
+
     func testWalletConnectTonkeeperDocsFormatDeeplinkParsing() throws {
         let uri = "wc:123@2?relay-protocol=irn&symKey=abc"
         let string = "tonkeeper://wc?uri=wc:123@2?relay-protocol=irn&symKey=abc"
@@ -465,6 +505,16 @@ final class DeeplinksParserTests: XCTestCase {
     func testWalletConnectUniversalLinkParsing() throws {
         let uri = "wc:123@2?relay-protocol=irn&symKey=abc"
         let string = "https://app.tonkeeper.com/wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc"
+        let parsedDeeplink = try parser.parse(string: string)
+        XCTAssertEqual(
+            parsedDeeplink,
+            Deeplink.walletConnect(WalletConnectDeeplink(uri: uri, source: .deeplink))
+        )
+    }
+
+    func testWalletConnectKeeperWalletUniversalLinkParsing() throws {
+        let uri = "wc:123@2?relay-protocol=irn&symKey=abc"
+        let string = "https://app.keeperwallet.com/wc?uri=wc%3A123%402%3Frelay-protocol%3Dirn%26symKey%3Dabc"
         let parsedDeeplink = try parser.parse(string: string)
         XCTAssertEqual(
             parsedDeeplink,
@@ -625,14 +675,46 @@ final class DeeplinksParserTests: XCTestCase {
 
     func testUnsupportedEthereumLinkStaysUnsupported() throws {
         XCTAssertThrowsError(
-            try parser.parse(string: "ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@137")
+            try parser.parse(string: "ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@10")
         ) { error in
             XCTAssertEqual(
                 error as? DeeplinkParserError,
                 .unsupportedDeeplink(
                     code: .invalidPrefix,
-                    string: "ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@137"
+                    string: "ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@10"
                 )
+            )
+        }
+    }
+
+    func testSolanaPayTokenTransferLinkParsing() throws {
+        let recipient = "HLT1cw2FTfgMJ2DNZHQpcr19n5bqrfqBGxEuFSEWgE4r"
+        let mint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+
+        let parsedDeeplink = try parser.parse(string: "solana:\(recipient)?amount=2.5&spl-token=\(mint)")
+
+        XCTAssertEqual(
+            parsedDeeplink,
+            .transfer(
+                .solanaSendTransfer(
+                    Deeplink.SolanaTransferData(
+                        recipient: recipient,
+                        asset: .splToken(mint: mint),
+                        amount: Deeplink.DecimalAmount("2.5")
+                    )
+                )
+            )
+        )
+    }
+
+    func testSolanaPayLinkWithReferenceStaysUnsupported() throws {
+        let link = "solana:HLT1cw2FTfgMJ2DNZHQpcr19n5bqrfqBGxEuFSEWgE4r?amount=1"
+            + "&reference=82ZJ7nbGpixjeDCmEhUcmwXYfvurzAgGdtSMuHnUgyny"
+
+        XCTAssertThrowsError(try parser.parse(string: link)) { error in
+            XCTAssertEqual(
+                error as? DeeplinkParserError,
+                .unsupportedDeeplink(code: .invalidPrefix, string: link)
             )
         }
     }

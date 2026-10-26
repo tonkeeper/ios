@@ -2,7 +2,7 @@
 import Foundation
 
 public struct WalletMigrationPrepareResult: Sendable {
-    public enum FeeMethod: Equatable, Sendable {
+    @frozen public enum FeeMethod: Equatable, Sendable {
         case ton(amountNano: UInt64)
         case battery(charges: Int)
 
@@ -132,7 +132,7 @@ public struct WalletMigrationPrepareResult: Sendable {
 }
 
 public struct WalletMigrationTronPrepareResult {
-    public enum FeeMethod: Equatable {
+    @frozen public enum FeeMethod: Equatable {
         case battery(charges: Int)
         case trx(amountSun: BigUInt)
 

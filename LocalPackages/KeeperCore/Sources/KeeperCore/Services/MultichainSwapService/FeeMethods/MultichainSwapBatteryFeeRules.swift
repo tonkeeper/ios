@@ -7,7 +7,7 @@ enum MultichainSwapBatteryFeeRules {
     /// for it: there must be nothing to approve first, and the wallet must be a mainnet regular one
     /// whose address on that chain is known.
     static func relayedAsset(
-        wallet: Wallet,
+        swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         requiresApproval: Bool,
         isTRXOnlyRegion: Bool
@@ -15,12 +15,11 @@ enum MultichainSwapBatteryFeeRules {
         guard !requiresApproval else {
             return nil
         }
-        guard wallet.kind == .regular, wallet.network.isMainnet else {
+        guard swapWallet.wallet.kind == .regular, swapWallet.wallet.network.isMainnet else {
             return nil
         }
-        guard case let .multichain(state) = wallet.multichain,
-              let asset = MultichainSwapRelayedAsset(sourceAsset),
-              state.address(for: asset.chain) != nil
+        guard let asset = MultichainSwapRelayedAsset(sourceAsset),
+              swapWallet.address(for: asset.chain) != nil
         else {
             return nil
         }
@@ -142,6 +141,23 @@ enum MultichainSwapBatteryFeeRules {
         throw .preparationFailed(
             kind: .unknown,
             reason: "the relayer now asks \(amountNano) nano for swap payload \(payloadId), above the \(tolerated) the confirmed \(confirmedAmountNano) tolerates"
+        )
+    }
+
+    /// A fee priced in a token moves with the gas price and the token's rate the way the GRAM
+    /// instant fee does, so a re-quote gets the same tolerance.
+    static func requireTokenQuote(
+        _ amount: BigUInt,
+        confirmedAmount: BigUInt,
+        payloadId: String
+    ) throws(MultichainSwapExecutionFailure) {
+        let tolerated = confirmedAmount + confirmedAmount * gramRequoteTolerancePercent / 100
+        guard amount > tolerated else {
+            return
+        }
+        throw .preparationFailed(
+            kind: .unknown,
+            reason: "the relayer now asks \(amount) of the token for swap payload \(payloadId), above the \(tolerated) the confirmed \(confirmedAmount) tolerates"
         )
     }
 

@@ -38,14 +38,16 @@ final class MainHistoryCoordinatorFactory {
         wallet: Wallet,
         router: NavigationControllerRouter? = nil,
         presentationStyle: HistoryPresentationStyle,
-        fromViewController: UIViewController?
+        fromViewController: UIViewController?,
+        pendingEventId: String? = nil
     ) -> RouterCoordinator<NavigationControllerRouter> {
         if let multichainState = multichainHistoryState(for: wallet) {
             return makeMultichainCoordinator(
                 wallet: wallet,
                 multichainState: multichainState,
                 router: router ?? Self.makeDefaultRouter(),
-                presentationStyle: presentationStyle
+                presentationStyle: presentationStyle,
+                pendingEventId: pendingEventId
             )
         }
 
@@ -110,7 +112,8 @@ private extension MainHistoryCoordinatorFactory {
         wallet: Wallet,
         multichainState: MultichainWalletState,
         router: NavigationControllerRouter,
-        presentationStyle: HistoryPresentationStyle
+        presentationStyle: HistoryPresentationStyle,
+        pendingEventId: String?
     ) -> RouterCoordinator<NavigationControllerRouter> {
         return MultichainHistoryCoordinator(
             router: router,
@@ -119,6 +122,7 @@ private extension MainHistoryCoordinatorFactory {
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentationStyle: presentationStyle,
+            pendingEventId: pendingEventId,
             didTapAddFunds: { [output] in
                 output.didTapAddFunds(wallet)
             },

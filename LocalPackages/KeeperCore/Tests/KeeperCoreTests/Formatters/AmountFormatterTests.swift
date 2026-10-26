@@ -311,15 +311,15 @@ final class AmountFormatterTests: XCTestCase {
 
     /// The balance header still builds its text from the local fiat-balance rules while every other
     /// `.fiatBalance` render goes through ChainKit, so the two paths have to agree digit for digit.
-    func testBalanceHeaderFullTextMatchesFiatBalanceFormatting() {
+    func testBalanceHeaderFullTextMatchesFiatBalanceFormatting() throws {
         let formatter = makeFormatter(space: " ")
-        let cases: [(String, AmountAccessoryType)] = [
+        let cases: [(String, AmountAccessoryType)] = try [
             ("0", .fiat(Currency.USD)),
             ("0.001", .fiat(Currency.USD)),
             ("0.01", .fiat(Currency.USD)),
             ("2069.879", .fiat(Currency.USD)),
-            ("7362.45", .fiat(Currency.RUB)),
-            ("19999999.99", .fiat(Currency.RUB)),
+            ("7362.45", .fiat(XCTUnwrap(Currency(code: "RUB")))),
+            ("19999999.99", .fiat(XCTUnwrap(Currency(code: "RUB")))),
             ("999999999.999", .fiat(Currency.USD)),
             ("-12.345", .fiat(Currency.USD)),
             ("0", .tokenSymbol("TON")),
@@ -337,12 +337,12 @@ final class AmountFormatterTests: XCTestCase {
         }
     }
 
-    func testBalanceHeaderAmountSplitsFractionAndAccessory() {
+    func testBalanceHeaderAmountSplitsFractionAndAccessory() throws {
         let formatter = makeFormatter(space: " ")
 
-        let rub = formatter.formatBalanceHeaderAmount(
+        let rub = try formatter.formatBalanceHeaderAmount(
             decimal: decimal("7362.45"),
-            accessory: .fiat(Currency.RUB)
+            accessory: .fiat(XCTUnwrap(Currency(code: "RUB")))
         )
         XCTAssertNil(rub.leadingAccessory)
         XCTAssertEqual(rub.trailingAccessory, "₽")
@@ -373,12 +373,12 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(usd.fullText, "$\u{2009}7 362.45")
     }
 
-    func testBalanceHeaderAmountUsesReducedTextSizeForMillionsBeforeCompactThreshold() {
+    func testBalanceHeaderAmountUsesReducedTextSizeForMillionsBeforeCompactThreshold() throws {
         let formatter = makeFormatter(space: " ")
 
-        let amount = formatter.formatBalanceHeaderAmount(
+        let amount = try formatter.formatBalanceHeaderAmount(
             decimal: decimal("8456362.45"),
-            accessory: .fiat(Currency.RUB)
+            accessory: .fiat(XCTUnwrap(Currency(code: "RUB")))
         )
 
         XCTAssertEqual(amount.textSize, .reduced)
@@ -392,12 +392,12 @@ final class AmountFormatterTests: XCTestCase {
         )
     }
 
-    func testBalanceHeaderAmountUsesCompactDisplayWithFullTooltipForTenMillionsAndMore() {
+    func testBalanceHeaderAmountUsesCompactDisplayWithFullTooltipForTenMillionsAndMore() throws {
         let formatter = makeFormatter(space: " ")
 
-        let millions = formatter.formatBalanceHeaderAmount(
+        let millions = try formatter.formatBalanceHeaderAmount(
             decimal: decimal("26666666.45"),
-            accessory: .fiat(Currency.RUB)
+            accessory: .fiat(XCTUnwrap(Currency(code: "RUB")))
         )
         XCTAssertNil(millions.leadingAccessory)
         XCTAssertEqual(millions.trailingAccessory, "₽")
@@ -411,9 +411,9 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(millions.tooltipText, "26 666 666.45\u{2009}₽")
         XCTAssertEqual(millions.textSize, .regular)
 
-        let billions = formatter.formatBalanceHeaderAmount(
+        let billions = try formatter.formatBalanceHeaderAmount(
             decimal: decimal("1250000000"),
-            accessory: .fiat(Currency.RUB)
+            accessory: .fiat(XCTUnwrap(Currency(code: "RUB")))
         )
         XCTAssertEqual(
             billions.numberParts,
@@ -425,12 +425,12 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(billions.tooltipText, "1 250 000 000.00\u{2009}₽")
     }
 
-    func testBalanceHeaderAmountCompactDisplayRoundsDown() {
+    func testBalanceHeaderAmountCompactDisplayRoundsDown() throws {
         let formatter = makeFormatter(space: " ")
 
         XCTAssertEqual(
-            formatter
-                .formatBalanceHeaderAmount(decimal: decimal("19999999.99"), accessory: .fiat(Currency.RUB))
+            try formatter
+                .formatBalanceHeaderAmount(decimal: decimal("19999999.99"), accessory: .fiat(XCTUnwrap(Currency(code: "RUB"))))
                 .numberParts,
             [
                 BalanceHeaderAmountFormat.NumberPart(text: "19.9M", role: .primary),

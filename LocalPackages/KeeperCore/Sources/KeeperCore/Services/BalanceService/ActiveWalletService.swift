@@ -3,7 +3,7 @@ import KeeperCoreComponents
 import TonSwift
 import TonTransport
 
-public enum ActiveWalletTransactionHistory {
+@frozen public enum ActiveWalletTransactionHistory {
     case empty
     case nonEmpty
     case unknown

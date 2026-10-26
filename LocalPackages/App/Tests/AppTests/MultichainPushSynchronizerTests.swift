@@ -85,12 +85,14 @@ final class MultichainPushSynchronizerTests: XCTestCase {
         XCTAssertEqual(context.subscribed.map(\.walletIds), [["a", "b"]])
         XCTAssertEqual(
             context.synced,
-            MultichainPushSyncState(walletIds: ["a", "b"], token: "fcm", deviceId: "device-1")
+            MultichainPushSyncState(walletIds: ["a", "b"], token: "fcm", deviceId: "device-1", locale: "en")
         )
     }
 
-    func test_subscribe_skipsWhenDeviceTokenAndSetAreUnchanged() async {
-        let context = Context(synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1"))
+    func test_subscribe_skipsWhenDeviceTokenSetAndLocaleAreUnchanged() async {
+        let context = Context(
+            synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1", locale: "en")
+        )
         context.desired = ["a"]
 
         _ = await context.synchronizer.schedule(requireAuthorization: false)?.value
@@ -99,7 +101,9 @@ final class MultichainPushSynchronizerTests: XCTestCase {
     }
 
     func test_subscribe_resendsWhenDeviceRotated() async {
-        let context = Context(synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-0"))
+        let context = Context(
+            synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-0", locale: "en")
+        )
         context.desired = ["a"]
 
         _ = await context.synchronizer.schedule(requireAuthorization: false)?.value
@@ -110,13 +114,38 @@ final class MultichainPushSynchronizerTests: XCTestCase {
     }
 
     func test_subscribe_resendsWhenPushTokenRotated() async {
-        let context = Context(synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm-old", deviceId: "device-1"))
+        let context = Context(
+            synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm-old", deviceId: "device-1", locale: "en")
+        )
         context.desired = ["a"]
 
         _ = await context.synchronizer.schedule(requireAuthorization: false)?.value
 
         XCTAssertEqual(context.subscribed.map(\.token), ["fcm"])
         XCTAssertEqual(context.synced.token, "fcm")
+    }
+
+    func test_subscribe_resendsWhenLocaleChanged() async {
+        let context = Context(
+            synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1", locale: "en")
+        )
+        context.desired = ["a"]
+        context.locale = "ru"
+
+        _ = await context.synchronizer.schedule(requireAuthorization: false)?.value
+
+        XCTAssertEqual(context.subscribed.map(\.locale), ["ru"])
+        XCTAssertEqual(context.synced.locale, "ru")
+    }
+
+    func test_subscribe_resendsWhenNoLocaleWasRecorded() async {
+        let context = Context(synced: MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1"))
+        context.desired = ["a"]
+
+        _ = await context.synchronizer.schedule(requireAuthorization: false)?.value
+
+        XCTAssertEqual(context.subscribed.map(\.locale), ["en"])
+        XCTAssertEqual(context.synced.locale, "en")
     }
 
     func test_subscribe_deferredWhenTokenCannotBeResolved() async {
@@ -191,7 +220,7 @@ final class MultichainPushSynchronizerTests: XCTestCase {
         XCTAssertEqual(context.subscribed.map(\.walletIds), [["a", "b"], ["a"]])
         XCTAssertEqual(
             context.synced,
-            MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1")
+            MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1", locale: "en")
         )
     }
 
@@ -283,7 +312,7 @@ final class MultichainPushSynchronizerTests: XCTestCase {
         XCTAssertEqual(context.subscribed.map(\.walletIds), [["a"], ["a", "b"]])
         XCTAssertEqual(
             context.synced,
-            MultichainPushSyncState(walletIds: ["a", "b"], token: "fcm", deviceId: "device-1")
+            MultichainPushSyncState(walletIds: ["a", "b"], token: "fcm", deviceId: "device-1", locale: "en")
         )
         XCTAssertEqual(context.savedCount, 2)
     }
@@ -330,7 +359,7 @@ final class MultichainPushSynchronizerTests: XCTestCase {
         XCTAssertEqual(context.savedCount, 2)
         XCTAssertEqual(
             context.synced,
-            MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1")
+            MultichainPushSyncState(walletIds: ["a"], token: "fcm", deviceId: "device-1", locale: "en")
         )
     }
 
@@ -447,6 +476,7 @@ private enum PushSyncFailure: Error {
 private final class Context: @unchecked Sendable {
     var desired = [String]()
     var token: String? = "fcm"
+    var locale = "en"
     var synced: MultichainPushSyncState
     var deviceIdError: Error?
     var subscribeError: Error?
@@ -463,7 +493,7 @@ private final class Context: @unchecked Sendable {
     private(set) var unsubscribeCount = 0
     private(set) var authorizationCount = 0
     private(set) var savedCount = 0
-    private(set) var subscribed = [(token: String, walletIds: [String])]()
+    private(set) var subscribed = [(token: String, locale: String, walletIds: [String])]()
 
     lazy var synchronizer = MultichainPushSynchronizer(
         dependencies: MultichainPushSynchronizerDependencies(
@@ -486,8 +516,9 @@ private final class Context: @unchecked Sendable {
             },
             resolveToken: { [unowned self] hint in hint ?? token },
             requestAuthorization: { [unowned self] in authorizationCount += 1 },
-            subscribe: { [unowned self] token, walletIds in
-                subscribed.append((token, walletIds))
+            locale: { [unowned self] in locale },
+            subscribe: { [unowned self] token, locale, walletIds in
+                subscribed.append((token, locale, walletIds))
                 didStartSubscribe.open()
                 if let subscribeGate {
                     await subscribeGate.wait()

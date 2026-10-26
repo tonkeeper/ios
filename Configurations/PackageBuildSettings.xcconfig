@@ -1,0 +1,19 @@
+// Build settings for SwiftPM package targets. A project xcconfig never reaches them, so this file is
+// applied to every target through XCODE_XCCONFIG_FILE: `make` exports it, and each Xcode Cloud workflow
+// sets it in its environment to /Volumes/workspace/repository/ios/Configurations/PackageBuildSettings.xcconfig.
+// Without it the build still succeeds, only slower.
+//
+// Under WMO Xcode emits a module in a separate, fast job only when library evolution is on. Without it
+// App waits for KeeperCore's single-threaded SIL optimization (~30 s) instead of its interface (~3 s).
+// KeeperCore's public enums are @frozen so exhaustive switches in other modules stay valid.
+// The shipped app pays a little for it: other modules see KeeperCore's non-frozen public structs as opaque,
+// so a property read is a call and nothing from KeeperCore is inlined into them. A micro-benchmark shaped like
+// the balance list (filter, sort, map and diff 300 items) ran +0.2 ms per pass, within noise once each row
+// formats one amount.
+SWIFT_ENABLE_LIBRARY_EVOLUTION = $(TK_LIBRARY_EVOLUTION_$(TARGET_NAME))
+TK_LIBRARY_EVOLUTION_KeeperCore = YES
+
+// Archive recreates its intermediates, so every archive recompiles every target. The compilation cache in
+// DerivedData/CompilationCache.noindex replays compiles whose inputs are unchanged: across local archives,
+// and on Xcode Cloud once it restores DerivedData between builds with Clean off (as of October 2026 it doesn't).
+COMPILATION_CACHE_ENABLE_CACHING[config=*Release] = YES

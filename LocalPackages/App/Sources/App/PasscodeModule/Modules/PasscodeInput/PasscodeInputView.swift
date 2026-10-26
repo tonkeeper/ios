@@ -21,8 +21,22 @@ final class PasscodeInputView: UIView {
         }
     }
 
+    var reason: String? {
+        didSet {
+            reasonLabel.attributedText = reason?.withTextStyle(
+                .label2,
+                color: .Text.secondary,
+                alignment: .center
+            )
+            reasonLabel.isHidden = reason == nil
+            stackView.setCustomSpacing(reason == nil ? .titleBottomSpace : .reasonTopSpace, after: titleLabel)
+            stackView.setCustomSpacing(.reasonBottomSpace, after: reasonLabel)
+        }
+    }
+
     let passcodeView = PasscodeDotRowView()
     let titleLabel = UILabel()
+    let reasonLabel = UILabel()
     let subtitleLabel = UILabel()
     let topContainer = UIView()
     let stackView = UIStackView()
@@ -190,6 +204,9 @@ private extension PasscodeInputView {
         stackView.alignment = .center
         stackView.spacing = .titleBottomSpace
 
+        reasonLabel.numberOfLines = 0
+        reasonLabel.isHidden = true
+
         subtitleLabel.numberOfLines = 0
         subtitleLabel.isHidden = true
 
@@ -199,6 +216,7 @@ private extension PasscodeInputView {
         topContainer.addSubview(stackView)
         topContainer.addSubview(lockoutStackView)
         stackView.addArrangedSubview(titleLabel)
+        stackView.addArrangedSubview(reasonLabel)
         stackView.addArrangedSubview(passcodeView)
         stackView.addArrangedSubview(subtitleLabel)
 
@@ -235,6 +253,8 @@ private extension PasscodeInputView {
 
             stackView.snp.makeConstraints { make in
                 make.center.equalTo(topContainer)
+                make.left.greaterThanOrEqualTo(topContainer).offset(32)
+                make.right.lessThanOrEqualTo(topContainer).inset(32)
             }
 
             lockoutStackView.snp.makeConstraints { make in
@@ -256,6 +276,8 @@ private extension PasscodeInputView {
 
 private extension CGFloat {
     static let titleBottomSpace: CGFloat = 20
+    static let reasonTopSpace: CGFloat = 1
+    static let reasonBottomSpace: CGFloat = 28
     static let dotsShakeAnimationPositionDiff: CGFloat = 10
     static let lockoutTextSpace: CGFloat = 4
     static let lockoutIconBottomSpace: CGFloat = 16

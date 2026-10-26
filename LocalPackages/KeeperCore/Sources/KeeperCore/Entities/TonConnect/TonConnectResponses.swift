@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public enum TonConnect {
+@frozen public enum TonConnect {
     /// `0xffff` — the fixed prefix every TON Connect signature payload starts with.
     static let signaturePrefix = Data([0xFF, 0xFF])
 }
@@ -14,7 +14,7 @@ public extension TonConnect {
         public let features: [FeatureCompatible]
         public let appVersion: String
 
-        public enum FeatureCompatible: Encodable {
+        @frozen public enum FeatureCompatible: Encodable {
             case feature(Feature)
             case legacy(Feature)
 
@@ -29,15 +29,16 @@ public extension TonConnect {
             }
         }
 
-        public enum SignDataType: String, Encodable {
+        @frozen public enum SignDataType: String, Encodable {
             case text
             case binary
             case cell
         }
 
-        public enum Feature: Encodable {
+        @frozen public enum Feature: Encodable {
             case sendTransaction(maxMessages: Int)
             case signData(types: [SignDataType])
+            case signMessage(maxMessages: Int)
 
             var name: String {
                 switch self {
@@ -45,6 +46,8 @@ public extension TonConnect {
                     return "SendTransaction"
                 case .signData:
                     return "SignData"
+                case .signMessage:
+                    return "SignMessage"
                 }
             }
 
@@ -63,17 +66,24 @@ public extension TonConnect {
                 case let .signData(types):
                     try container.encode(name, forKey: .name)
                     try container.encode(types, forKey: .types)
+                case let .signMessage(maxMessages):
+                    try container.encode(name, forKey: .name)
+                    try container.encode(maxMessages, forKey: .maxMessages)
                 }
             }
         }
 
-        public init(maxMessages: Int, appVersion: String) {
+        public init(maxMessages: Int, appVersion: String, isSignMessageSupported: Bool) {
             self.appVersion = appVersion
-            self.features = [
+            var features = [
                 FeatureCompatible.legacy(.sendTransaction(maxMessages: maxMessages)),
                 FeatureCompatible.feature(.sendTransaction(maxMessages: maxMessages)),
                 FeatureCompatible.feature(.signData(types: [.text, .binary, .cell])),
             ]
+            if isSignMessageSupported {
+                features.append(.feature(.signMessage(maxMessages: maxMessages)))
+            }
+            self.features = features
         }
     }
 
@@ -94,7 +104,7 @@ public extension TonConnect {
             public let message: String
         }
 
-        public enum Error: Int, Encodable, Swift.Error {
+        @frozen public enum Error: Int, Encodable, Swift.Error {
             case unknownError = 0
             case badRequest = 1
             case appManifestNotFound = 2
@@ -108,7 +118,7 @@ public extension TonConnect {
         public let payload: Payload
     }
 
-    enum ConnectItemReply: Encodable {
+    @frozen enum ConnectItemReply: Encodable {
         case tonAddress(TonAddressItemReply)
         case tonProof(TonProofItemReply)
         case tonProofSigned(TonProofItemReplySigned)
@@ -122,7 +132,7 @@ public extension TonConnect {
         public let walletStateInit: TonSwift.StateInit
     }
 
-    enum TonProofItemReplySigned: Encodable {
+    @frozen enum TonProofItemReplySigned: Encodable {
         case success(TonProofItemReplySignedSuccess)
         case error(TonProofItemReplySignedError)
     }
@@ -145,7 +155,7 @@ public extension TonConnect {
             let code: ErrorCode
         }
 
-        public enum ErrorCode: Int, Encodable {
+        @frozen public enum ErrorCode: Int, Encodable {
             case unknownError = 0
             case methodNotSupported = 400
         }
@@ -154,7 +164,7 @@ public extension TonConnect {
         public let error: Error
     }
 
-    enum TonProofItemReply: Encodable {
+    @frozen enum TonProofItemReply: Encodable {
         case success(TonProofItemReplySuccess)
         case error(TonProofItemReplyError)
     }
@@ -178,7 +188,7 @@ public extension TonConnect {
             let code: ErrorCode
         }
 
-        public enum ErrorCode: Int, Encodable {
+        @frozen public enum ErrorCode: Int, Encodable {
             case unknownError = 0
             case methodNotSupported = 400
         }
@@ -298,15 +308,24 @@ public extension TonConnect.TonProofItemReplySignedSuccess {
 }
 
 public extension TonConnect {
-    enum SendResponse {
+    @frozen enum SendResponse {
         case success(SendResponseSuccess)
         case error(SendResponseError)
     }
 
+    struct SignMessageResult: Encodable {
+        public let internalBoc: String
+
+        public init(internalBoc: String) {
+            self.internalBoc = internalBoc
+        }
+    }
+
     struct SendResponseSuccess: Encodable {
-        public enum Result: Encodable {
+        @frozen public enum Result: Encodable {
             case String(String)
             case SignedData(SignedDataResult)
+            case SignedMessage(SignMessageResult)
             case empty
 
             private struct EmptyObject: Encodable {}
@@ -318,6 +337,8 @@ public extension TonConnect {
                 case let .String(a0):
                     try container.encode(a0)
                 case let .SignedData(a0):
+                    try container.encode(a0)
+                case let .SignedMessage(a0):
                     try container.encode(a0)
                 case .empty:
                     try container.encode(EmptyObject())
@@ -338,6 +359,11 @@ public extension TonConnect {
             self.id = id
         }
 
+        public init(result: SignMessageResult, id: String) {
+            self.result = .SignedMessage(result)
+            self.id = id
+        }
+
         public init(id: String) {
             result = .empty
             self.id = id
@@ -348,7 +374,7 @@ public extension TonConnect {
         public let code: ErrorCode
         public let message: String
 
-        public enum ErrorCode: Int, Encodable {
+        @frozen public enum ErrorCode: Int, Encodable {
             case unknownError = 0
         }
     }
@@ -364,7 +390,7 @@ public extension TonConnect {
             }
         }
 
-        public enum ErrorCode: Int, Encodable, Swift.Error {
+        @frozen public enum ErrorCode: Int, Encodable, Swift.Error {
             case unknownError = 0
             case badRequest = 1
             case unknownApp = 10

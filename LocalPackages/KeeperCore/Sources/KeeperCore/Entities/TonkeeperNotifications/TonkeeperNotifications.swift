@@ -1,12 +1,12 @@
 import Foundation
 
 public struct InternalNotification: Decodable, Equatable, Hashable {
-    public enum Mode: String, Codable {
+    @frozen public enum Mode: String, Codable {
         case warning
     }
 
     public struct Action: Decodable, Equatable {
-        public enum ActionType: Codable, Equatable {
+        @frozen public enum ActionType: Codable, Equatable {
             case openLink(URL?)
             case unknown
         }

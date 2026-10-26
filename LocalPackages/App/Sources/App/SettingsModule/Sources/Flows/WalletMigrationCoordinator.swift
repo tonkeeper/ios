@@ -391,6 +391,7 @@ private extension WalletMigrationCoordinator {
                 parentRouter: migrationRouter,
                 mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
                 securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+                reason: .migrateWallet,
                 onCancel: {
                     continuation.resume(throwing: CancellationError())
                 },

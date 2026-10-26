@@ -109,31 +109,20 @@ public struct BalanceViewContent: Hashable {
         }
     }
 
-    public struct BackupButton: Hashable {
-        public var color: TKColor
-
-        public init(color: TKColor) {
-            self.color = color
-        }
-    }
-
     public var balance: Balance
     public var address: BalanceHeaderBalanceStatusViewConfig?
     public var battery: BatterySwiftUIViewConfig?
-    public var backupButton: BackupButton?
     public var amountScope: String?
 
     public init(
         balance: Balance,
         address: BalanceHeaderBalanceStatusViewConfig? = nil,
         battery: BatterySwiftUIViewConfig? = nil,
-        backupButton: BackupButton? = nil,
         amountScope: String? = nil
     ) {
         self.balance = balance
         self.address = address
         self.battery = battery
-        self.backupButton = backupButton
         self.amountScope = amountScope
     }
 }
@@ -149,7 +138,6 @@ public struct BalanceSwiftUIView: View {
     private let addressAction: (() -> Void)?
     private let addressLongPressAction: (() -> Void)?
     private let batteryAction: (() -> Void)?
-    private let backupAction: (() -> Void)?
 
     public init(
         config: BalanceViewConfig,
@@ -157,8 +145,7 @@ public struct BalanceSwiftUIView: View {
         balanceAction: (() -> Void)? = nil,
         addressAction: (() -> Void)? = nil,
         addressLongPressAction: (() -> Void)? = nil,
-        batteryAction: (() -> Void)? = nil,
-        backupAction: (() -> Void)? = nil
+        batteryAction: (() -> Void)? = nil
     ) {
         self.config = config
         self.animatesAmountUpdates = animatesAmountUpdates
@@ -166,7 +153,6 @@ public struct BalanceSwiftUIView: View {
         self.addressAction = addressAction
         self.addressLongPressAction = addressLongPressAction
         self.batteryAction = batteryAction
-        self.backupAction = backupAction
     }
 
     public var body: some View {
@@ -219,11 +205,7 @@ private extension BalanceSwiftUIView {
         HStack(alignment: .top, spacing: 0) {
             balanceActionView(content)
 
-            HStack(alignment: .top, spacing: 10) {
-                batteryContentView(content)
-
-                backupButtonContentView(content)
-            }
+            batteryContentView(content)
         }
     }
 
@@ -270,33 +252,6 @@ private extension BalanceSwiftUIView {
             }
             .padding(.leading, Layout.amountSpacing)
             .accessibilityIdentifier("wallet_battery")
-        }
-    }
-
-    @ViewBuilder
-    func backupButtonContentView(_ content: BalanceViewContent) -> some View {
-        if let backupButton = content.backupButton {
-            button(action: backupAction) {
-                SwiftUI.Image.TKUIKit.Icons.Size12.informationCircle
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(backupButton.color)
-                    .frame(
-                        width: Layout.backupIconSide,
-                        height: Layout.backupIconSide
-                    )
-                    .padding(Layout.backupIconPadding)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: Layout.backupCornerRadius,
-                            style: .continuous
-                        )
-                        .fill(backupButton.color.opacity(Layout.backupBackgroundAlpha))
-                    )
-            }
-            .padding(.trailing, Layout.backupTrailingPadding)
-            .frame(height: Layout.amountHeight)
         }
     }
 
@@ -458,11 +413,6 @@ private extension BalanceSwiftUIView {
             lineHeight: 40
         )
         static let batteryTopPadding: CGFloat = 12
-        static let backupIconSide: CGFloat = 12
-        static let backupIconPadding: CGFloat = 4
-        static let backupCornerRadius: CGFloat = 10
-        static let backupTrailingPadding: CGFloat = 10
-        static let backupBackgroundAlpha: CGFloat = 0.48
         static let secureText = "* * *"
         static let addressHeight: CGFloat = TKTextStyle.body2.lineHeight
         static let addressTopPadding: CGFloat = 4

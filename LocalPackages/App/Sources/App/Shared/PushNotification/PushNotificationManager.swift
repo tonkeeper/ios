@@ -9,9 +9,8 @@ import UserNotifications
 final class PushNotificationManager {
     private let queue = DispatchQueue(label: "PushNotificationManagerQueue", qos: .userInitiated)
     private var notificationsUpdateTask = [Wallet: Task<Void, Never>]()
-    /// v1 mutates one wallet at a time and has no confirmed-state cache, so its requests need a
-    /// tail per wallet — see `SerialRequestQueue`.
-    private let legacySyncQueue = SerialRequestQueue<String>()
+    /// Serializes v1 requests per wallet; cancellation cannot undo an in-flight request.
+    private var legacyLanes = [String: AsyncStream<() async -> Void>.Continuation]()
     /// Wallets whose next store event is this manager writing a rejected toggle back, not the user
     /// asking for anything: reacting to it would send the opposite request.
     private var revertingWallets = Set<Wallet>()
@@ -23,6 +22,8 @@ final class PushNotificationManager {
     /// manager's mutable state it is only reached from `queue`.
     private lazy var multichainPush = makeMultichainPushSynchronizer()
     private var legacyCleanupTask: Task<Void, Never>?
+    /// `.didDeleteAll` arrives after the store is cleared.
+    private var knownWallets = [Wallet]()
     private var legacyCleanupGeneration = 0
 
     private let appSettings: AppSettings
@@ -31,8 +32,8 @@ final class PushNotificationManager {
     private let pushNotificationAPI: PushNotificationsAPI
     private let walletNotificationsStore: WalletNotificationStore
     private let walletsStore: WalletsStore
+    private let notificationsService: NotificationsService
     private let tonConnectAppsStore: TonConnectAppsStore
-    private let tonProofTokenService: TonProofTokenService
     private let multichainAuthService: MultichainAuthService
 
     init(
@@ -42,8 +43,8 @@ final class PushNotificationManager {
         pushNotificationAPI: PushNotificationsAPI,
         walletNotificationsStore: WalletNotificationStore,
         walletsStore: WalletsStore,
+        notificationsService: NotificationsService,
         tonConnectAppsStore: TonConnectAppsStore,
-        tonProofTokenService: TonProofTokenService,
         multichainAuthService: MultichainAuthService
     ) {
         self.appSettings = appSettings
@@ -52,18 +53,24 @@ final class PushNotificationManager {
         self.pushNotificationAPI = pushNotificationAPI
         self.walletNotificationsStore = walletNotificationsStore
         self.walletsStore = walletsStore
+        self.notificationsService = notificationsService
         self.tonConnectAppsStore = tonConnectAppsStore
-        self.tonProofTokenService = tonProofTokenService
         self.multichainAuthService = multichainAuthService
     }
 
     deinit {
         legacyCleanupTask?.cancel()
         notificationsUpdateTask.values.forEach { $0.cancel() }
+        legacyLanes.values.forEach { $0.finish() }
     }
 
     func setup() {
         pushNotificationTokenProvider.setup()
+        queue.async { [weak self] in
+            guard let self else { return }
+            knownWallets = walletsStore.wallets
+        }
+        tonConnectAppsStore.addObserver(self)
         walletNotificationsStore.addObserver(self) { observer, event in
             observer.queue.async {
                 observer.didGetNotificationsStoreEvent(event)
@@ -112,9 +119,17 @@ final class PushNotificationManager {
     }
 
     private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-        if case let .didAddWallets(wallets) = event {
+        switch event {
+        case let .didAddWallets(wallets):
             autoEnableNotificationsIfPermitted(for: wallets)
+        case let .didDeleteWallet(wallet):
+            unsubscribeDapps(ofDeletedWallet: wallet)
+        case .didDeleteAll:
+            knownWallets.forEach(unsubscribeDapps(ofDeletedWallet:))
+        default:
+            break
         }
+        knownWallets = walletsStore.wallets
         guard affectsMultichainPushSet(event) else { return }
         scheduleMultichainSync(requireAuthorization: false)
     }
@@ -173,10 +188,10 @@ final class PushNotificationManager {
         }
     }
 
-    /// Uses the wallet's v1 tail so cleanup cannot overtake an earlier subscribe.
+    /// Uses the wallet's v1 lane so cleanup cannot overtake an earlier subscribe.
     private func cleanupLegacyPush(for wallets: [Wallet]) {
         for wallet in wallets {
-            legacySyncQueue.enqueue(wallet.id) { [weak self] in
+            enqueueLegacy(wallet.id) { [weak self] in
                 _ = await self?.performUnsubscribe(wallet: wallet)
             }
         }
@@ -231,9 +246,11 @@ final class PushNotificationManager {
                     cleanupLegacyPush(for: [current])
                 }
                 applyMultichainIntent(wallet: wallet, isOn: isOn, revertsOnFailure: isUserIntent)
+                enqueueDappSync(wallet: wallet)
                 return
             }
             enqueueLegacySync(wallet: wallet, revertsOnFailure: isUserIntent)
+            enqueueDappSync(wallet: wallet)
         case .didUpdateDappNotificationsIsOn:
             break
         }
@@ -307,9 +324,10 @@ final class PushNotificationManager {
     /// the toggle has already been reported, and a second toast would be noise. The revert itself
     /// is suppressed as a store event, so it cannot schedule this pass on its own.
     private func compensateRevert(wallet: Wallet, isMultichain: Bool) {
+        enqueueDappSync(wallet: wallet)
         guard isMultichain else {
             // v1 keeps no confirmed state to invalidate, so the correction is another pass over the
-            // wallet's tail. It reads the preference when it starts, so a toggle the user made
+            // wallet's lane. It reads the preference when it starts, so a toggle the user made
             // after the revert supersedes it rather than racing it.
             enqueueLegacySync(wallet: wallet)
             return
@@ -318,9 +336,15 @@ final class PushNotificationManager {
     }
 
     private func didUpdateToken(_ token: String?) {
+        let previousToken = appSettings.fcmToken
         appSettings.fcmToken = token
         guard let token else { return }
         reconcilePushSubscriptions(token: token)
+        // Firebase repeats the token on launch; dApps need sync only when it changes.
+        guard token != previousToken else { return }
+        for wallet in walletsStore.wallets {
+            enqueueDappSync(wallet: wallet, token: token)
+        }
     }
 
     private func reconcilePushSubscriptions(token: String) {
@@ -354,13 +378,15 @@ final class PushNotificationManager {
                     MultichainPushSyncState(
                         walletIds: appSettings.multichainPushWalletIds,
                         token: appSettings.multichainPushToken,
-                        deviceId: appSettings.multichainPushDeviceId
+                        deviceId: appSettings.multichainPushDeviceId,
+                        locale: appSettings.multichainPushLocale
                     )
                 },
                 saveState: { [appSettings] state in
                     appSettings.multichainPushToken = state.token
                     appSettings.multichainPushWalletIds = state.walletIds
                     appSettings.multichainPushDeviceId = state.deviceId
+                    appSettings.multichainPushLocale = state.locale
                 },
                 deviceId: { [multichainAuthService] in
                     try await multichainAuthService.deviceId()
@@ -371,10 +397,13 @@ final class PushNotificationManager {
                 requestAuthorization: { [weak self] in
                     await self?.ensureRegistered()
                 },
-                subscribe: { [multichainAuthService] pushToken, walletIds in
+                locale: {
+                    Locale.current.languageCode ?? "en"
+                },
+                subscribe: { [multichainAuthService] pushToken, locale, walletIds in
                     try await multichainAuthService.subscribePush(
                         pushToken: pushToken,
-                        locale: Locale.current.languageCode ?? "en",
+                        locale: locale,
                         walletIds: walletIds
                     )
                 },
@@ -405,7 +434,7 @@ final class PushNotificationManager {
         return current.usesMultichainPush()
     }
 
-    /// Every v1 mutation of a wallet goes through its own serial tail, so a correction and a fresh
+    /// Every v1 mutation of a wallet goes through its own lane, so a correction and a fresh
     /// toggle can never be in flight together. `revertsOnFailure` is the user's own toggle: a
     /// background reconcile must never turn the user's preference off just because the network
     /// was down.
@@ -414,8 +443,76 @@ final class PushNotificationManager {
         token: String? = nil,
         revertsOnFailure: Bool = false
     ) {
-        legacySyncQueue.enqueue(wallet.id) { [weak self] in
+        enqueueLegacy(wallet.id) { [weak self] in
             await self?.runLegacySync(wallet: wallet, token: token, revertsOnFailure: revertsOnFailure)
+        }
+    }
+
+    private func enqueueLegacy(_ walletId: String, _ operation: @escaping () async -> Void) {
+        dispatchPrecondition(condition: .onQueue(queue))
+        if legacyLanes[walletId] == nil {
+            let (operations, lane) = AsyncStream.makeStream(of: (() async -> Void).self)
+            Task {
+                for await operation in operations {
+                    await operation()
+                }
+            }
+            legacyLanes[walletId] = lane
+        }
+        _ = legacyLanes[walletId]?.yield(operation)
+    }
+
+    /// Shares the wallet lane so dApp sync sees the settled wallet toggle.
+    private func enqueueDappSync(wallet: Wallet, token: String? = nil) {
+        enqueueLegacy(wallet.id) { [weak self] in
+            await self?.runDappSync(wallet: wallet, token: token)
+        }
+    }
+
+    private func runDappSync(wallet: Wallet, token: String?) async {
+        guard let current = walletsStore.getWallet(id: wallet.id) else { return }
+        guard let resolvedToken = await resolveToken(token) ?? appSettings.fcmToken else {
+            Log.w("🪵 Push: dApp sync skipped — FCM token unavailable for wallet=\(wallet.id)")
+            return
+        }
+        if await !notificationsService.syncDappNotifications(wallet: current, host: nil, token: resolvedToken) {
+            Log.w("🪵 Push: dApp sync failed for wallet=\(wallet.id)")
+        }
+    }
+
+    /// Deleted wallets retain the TonConnect records needed for unsubscribe.
+    private func unsubscribeDapps(ofDeletedWallet wallet: Wallet) {
+        var manifests = [String: TonConnectManifest]()
+        for app in (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? [] {
+            manifests[app.manifest.host] = app.manifest
+        }
+        guard !manifests.isEmpty else { return }
+        enqueueDappUnsubscribe(wallet: wallet, manifests: Array(manifests.values), resyncsRemaining: false)
+    }
+
+    /// DELETE removes all sessions; restore those still connected.
+    private func enqueueDappUnsubscribe(wallet: Wallet, manifests: [TonConnectManifest], resyncsRemaining: Bool) {
+        enqueueLegacy(wallet.id) { [weak self] in
+            await self?.runDappUnsubscribe(wallet: wallet, manifests: manifests, resyncsRemaining: resyncsRemaining)
+        }
+    }
+
+    private func runDappUnsubscribe(wallet: Wallet, manifests: [TonConnectManifest], resyncsRemaining: Bool) async {
+        guard let token = await resolveToken(nil) ?? appSettings.fcmToken else {
+            Log.w("🪵 Push: dApp unsubscribe skipped — FCM token unavailable for wallet=\(wallet.id)")
+            return
+        }
+        for manifest in manifests {
+            let didUnsubscribe = (try? await notificationsService.unsubscribeDappNotifications(
+                wallet: wallet,
+                manifest: manifest,
+                token: token
+            )) ?? false
+            if !didUnsubscribe {
+                Log.w("🪵 Push: dApp unsubscribe failed for wallet=\(wallet.id) host=\(manifest.host)")
+            }
+            guard resyncsRemaining, let current = walletsStore.getWallet(id: wallet.id) else { continue }
+            _ = await notificationsService.syncDappNotifications(wallet: current, host: manifest.host, token: token)
         }
     }
 
@@ -530,5 +627,14 @@ private extension Wallet {
             return nil
         }
         return state.walletId
+    }
+}
+
+extension PushNotificationManager: TonConnectAppsStoreObserver {
+    func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
+        guard case let .didDisconnect(app, wallet) = event else { return }
+        queue.async { [weak self] in
+            self?.enqueueDappUnsubscribe(wallet: wallet, manifests: [app.manifest], resyncsRemaining: true)
+        }
     }
 }

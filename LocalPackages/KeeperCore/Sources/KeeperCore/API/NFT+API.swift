@@ -10,7 +10,7 @@ extension NFT {
         case size1500 = "1500x1500"
     }
 
-    init(nftItem: TonAPI.NftItem) throws {
+    init(nftItem: TonAPI.Components.Schemas.NftItem) throws {
         let address = try Address.parse(nftItem.address)
         var owner: WalletAccount?
         var name: String?
@@ -25,12 +25,13 @@ extension NFT {
             owner = ownerWalletAccount
         }
 
-        name = nftItem.metadata["name"]?.value as? String
-        imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
-        lottieURL = (nftItem.metadata["lottie"]?.value as? String).flatMap { URL(string: $0) }
-        description = nftItem.metadata["description"]?.value as? String
+        let metadata = nftItem.metadata.additionalProperties.value
+        name = metadata["name"] as? String
+        imageURL = (metadata["image"] as? String).flatMap { URL(string: $0) }
+        lottieURL = (metadata["lottie"] as? String).flatMap { URL(string: $0) }
+        description = metadata["description"] as? String
         let renderType: RenderType? = {
-            if let apiRenderType = nftItem.metadata["render_type"]?.value as? String,
+            if let apiRenderType = metadata["render_type"] as? String,
                let renderType = RenderType(rawValue: apiRenderType)
             {
                 return renderType
@@ -40,13 +41,13 @@ extension NFT {
         }()
 
         var attributes = [Attribute]()
-        if let attributesValue = nftItem.metadata["attributes"]?.value as? [AnyObject] {
+        if let attributesValue = metadata["attributes"] as? [(any Sendable)?] {
             attributes = attributesValue
-                .compactMap { $0 as? [String: AnyObject] }
+                .compactMap { $0 as? [String: (any Sendable)?] }
                 .compactMap { attributeObject -> Attribute? in
                     guard let key = attributeObject["trait_type"] as? String else { return nil }
                     let attributeValue: String
-                    switch attributeObject["value"] {
+                    switch attributeObject["value"] ?? nil {
                     case .none: return nil
                     case let .some(value):
                         switch value {
@@ -54,7 +55,7 @@ extension NFT {
                             attributeValue = stringValue
                         case let intValue as Int:
                             attributeValue = String(intValue)
-                        case let doubleValue as Int:
+                        case let doubleValue as Double:
                             attributeValue = String(doubleValue)
                         default:
                             attributeValue = "-"
@@ -90,23 +91,23 @@ extension NFT {
 
         let trust: Trust = {
             switch nftItem.trust {
-            case ._none: return .none
+            case .none: return .none
             case .blacklist: return .blacklist
             case .graylist: return .graylist
             case .whitelist: return .whitelist
-            case .unknownDefaultOpenApi: return .unknown
+            case .unknown: return .unknown
             }
         }()
 
         var buttons: [Button]?
-        if let metadataButtons = nftItem.metadata["buttons"]?.value as? [AnyObject] {
+        if let metadataButtons = metadata["buttons"] as? [(any Sendable)?] {
             buttons = metadataButtons
-                .compactMap { $0 as? [String: AnyObject] }
-                .compactMap { metaButton -> Button in
-                    let label: String? = metaButton?["label"] as? String
-                    let style: String? = metaButton?["style"] as? String
+                .compactMap { $0 as? [String: (any Sendable)?] }
+                .map { metaButton -> Button in
+                    let label = metaButton["label"] as? String
+                    let style = metaButton["style"] as? String
                     var url: URL?
-                    if let stringURL = metaButton?["uri"] as? String,
+                    if let stringURL = metaButton["uri"] as? String,
                        let resultURL = URL(string: stringURL)
                     {
                         url = resultURL
@@ -132,7 +133,7 @@ extension NFT {
         self.renderType = renderType
     }
 
-    private static func mapPreviews(_ previews: [TonAPI.ImagePreview]?) -> Preview {
+    private static func mapPreviews(_ previews: [TonAPI.Components.Schemas.ImagePreview]?) -> Preview {
         var size5: URL?
         var size100: URL?
         var size500: URL?

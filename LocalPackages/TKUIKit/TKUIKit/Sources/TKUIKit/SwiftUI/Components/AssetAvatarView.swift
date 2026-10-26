@@ -1,4 +1,3 @@
-import Kingfisher
 import SwiftUI
 
 public enum AssetAvatarViewImageSource: Sendable, Equatable {
@@ -210,10 +209,19 @@ struct AssetAvatarContentView: View {
         switch imageSource {
         case let .url(url, _):
             if let url {
-                URLAvatarImageView(
-                    url: url,
-                    size: size
-                )
+                let iconSource = DappIconSource(url: url)
+                TKRemoteImage(
+                    source: iconSource.source,
+                    alternativeSources: iconSource.alternativeSources,
+                    downsampleSize: CGSize(width: size, height: size)
+                ) {
+                    ShimmerSwiftUIView(config: shimmerConfig())
+                } failure: {
+                    Self.imageContentView(
+                        for: .TKUIKit.Icons.Size44.placeholder,
+                        size: size
+                    )
+                }
             } else {
                 Self.imageContentView(
                     for: .TKUIKit.Icons.Size44.placeholder,
@@ -230,52 +238,7 @@ struct AssetAvatarContentView: View {
         }
     }
 
-    private struct URLAvatarImageView: View {
-        let url: URL
-        let size: CGFloat
-
-        @State private var didFail = false
-
-        var body: some View {
-            let iconSource = DappIconSource(url: url)
-            Group {
-                if didFail {
-                    imageContentView(
-                        for: .TKUIKit.Icons.Size44.placeholder,
-                        size: size
-                    )
-                } else {
-                    KFImage
-                        .source(iconSource.source)
-                        .alternativeSources(iconSource.alternativeSources)
-                        .setProcessor(
-                            DownsamplingImageProcessor(
-                                size: CGSize(
-                                    width: size * UIScreen.main.scale,
-                                    height: size * UIScreen.main.scale
-                                )
-                            )
-                        )
-                        .loadDiskFileSynchronously()
-                        .fade(duration: 0)
-                        .placeholder {
-                            ShimmerSwiftUIView(config: shimmerConfig())
-                        }
-                        .onSuccess { _ in
-                            didFail = false
-                        }
-                        .onFailure { _ in
-                            didFail = true
-                        }
-                        .cancelOnDisappear(true)
-                        .resizable()
-                        .scaledToFill()
-                }
-            }
-        }
-    }
-
-    fileprivate static func imageContentView(
+    private static func imageContentView(
         for image: UIImage,
         size: CGFloat
     ) -> some View {

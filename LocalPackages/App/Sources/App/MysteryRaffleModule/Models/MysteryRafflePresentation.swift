@@ -21,12 +21,12 @@ struct MysteryRafflePresentation: Equatable {
     }
 
     var shouldShowMainScreenEntry: Bool {
-        let now = RaffleClock.now
+        let now = Date()
         return !raffle.isMigrationPhase && raffle.startsAt < now && now < raffle.endsAt
     }
 
     var shouldShowTradeBanner: Bool {
-        raffle.banner != nil && RaffleClock.now < raffle.endsAt && !dismissStore.isDismissed(raffleId: raffle.id)
+        raffle.banner != nil && Date() < raffle.endsAt && !dismissStore.isDismissed(raffleId: raffle.id)
     }
 
     func tradeBannerDismissed() {
@@ -34,7 +34,7 @@ struct MysteryRafflePresentation: Equatable {
     }
 
     var shouldShowWalletsListBanner: Bool {
-        raffle.banner != nil && RaffleClock.now < raffle.endsAt && !walletsListDismissStore.isDismissed(raffleId: raffle.id)
+        raffle.banner != nil && Date() < raffle.endsAt && !walletsListDismissStore.isDismissed(raffleId: raffle.id)
     }
 
     func walletsListBannerDismissed() {
@@ -43,7 +43,7 @@ struct MysteryRafflePresentation: Equatable {
 
     var shouldShowSwapPromo: Bool {
         guard let zeroFeeEndsAt = raffle.progress?.zeroFeeEndsAt else { return false }
-        return RaffleClock.now < zeroFeeEndsAt
+        return Date() < zeroFeeEndsAt
     }
 
     var compactTitle: String {

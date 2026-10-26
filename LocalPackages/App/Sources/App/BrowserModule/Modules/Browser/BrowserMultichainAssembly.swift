@@ -33,12 +33,7 @@ struct BrowserMultichainAssembly {
                 return keeperCoreAssembly.storesAssembly.walletConnectSessionsStore(
                     walletConnectService: walletConnectService
                 )
-            },
-            notificationsService: keeperCoreAssembly.servicesAssembly.notificationsService(
-                walletNotificationsStore: keeperCoreAssembly.storesAssembly.walletNotificationStore,
-                tonConnectAppsStore: keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
-            ),
-            pushTokenProvider: PushNotificationTokenProvider()
+            }
         )
 
         let viewModel = BrowserMultichainViewModelImplementation(

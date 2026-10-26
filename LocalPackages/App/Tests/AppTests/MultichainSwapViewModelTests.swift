@@ -192,10 +192,6 @@ final class MultichainSwapViewModelTests: XCTestCase {
                 symbol: "ETH",
                 decimals: 18
             ),
-            catalog: [
-                "ton/mainnet/coin": swapAsset(assetId: "ton/mainnet/coin", symbol: "GRAM", decimals: 9, chainId: "ton/mainnet"),
-                "eth/mainnet/coin": swapAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, chainId: "eth/mainnet"),
-            ],
             slippage: .init(chains: [:]),
             usdFiatRate: nil,
             hasUnavailableInitialSelection: false
@@ -463,10 +459,69 @@ final class MultichainSwapViewModelTests: XCTestCase {
         viewModel.continueSwap()
         XCTAssertEqual(confirmationInput?.userInput.sourceAmount, balance)
         XCTAssertEqual(confirmationInput?.userInput.isMax, true)
+        let maxRequests = await swapService.quoteRequests()
+        XCTAssertEqual(maxRequests.last?.isMax, true)
+        XCTAssertEqual(maxRequests.last?.sourceAmount, balance.description)
     }
 
     @MainActor
-    func test_usdOnlyPricesWithoutFxRateShowOnlyZeroFiatAndKeepFiatInputDisabled() async {
+    func test_applyMaxSend_quotesTheSpendableBalanceAndDropsTheFlagOnceEdited() async {
+        let oneUsdt = BigUInt(1_000_000)
+        let balance = oneUsdt * 3 + 1
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(
+                initialAssets(
+                    sendAssetId: "ton/mainnet/jetton/0:usdt",
+                    sendSymbol: "USDT",
+                    sendDecimals: 6,
+                    sendBalance: balance
+                )
+            )
+        )
+        let swapService = SwapServiceSpy(
+            quoteResult: .success(
+                quote(
+                    sourceAmount: balance.description,
+                    estimatedDestinationAmount: "1"
+                )
+            )
+        )
+        let viewModel = makeViewModel(
+            defaultAssetsService: defaultAssetsService,
+            swapService: swapService
+        )
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+
+        viewModel.applyMaxSend()
+        await waitUntil(timeout: 2) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.validationState == .valid && state.quote.quoteState == .ready
+        }
+
+        let maxRequests = await swapService.quoteRequests()
+        XCTAssertEqual(maxRequests.last?.isMax, true)
+        XCTAssertEqual(maxRequests.last?.sourceAmount, balance.description)
+
+        viewModel.updateSendAmount("1")
+        await waitUntilAsync(timeout: 2) {
+            let requests = await swapService.quoteRequests()
+            return requests.count > maxRequests.count && requests.last?.isMax == nil
+        }
+        let editedRequests = await swapService.quoteRequests()
+        XCTAssertEqual(editedRequests.last?.sourceAmount, oneUsdt.description)
+        XCTAssertNil(editedRequests.last?.isMax)
+    }
+
+    @MainActor
+    func test_usdOnlyPricesWithoutFxRateShowOnlyZeroFiatAndKeepFiatInputDisabled() async throws {
         let oneEth = BigUInt(10).power(18)
         let initialAssets = initialAssets(
             sendBalance: oneEth * 10,
@@ -481,10 +536,10 @@ final class MultichainSwapViewModelTests: XCTestCase {
             result: .success(initialAssets)
         )
         let swapService = SwapServiceSpy(quoteResult: .success(quote))
-        let viewModel = makeViewModel(
+        let viewModel = try makeViewModel(
             defaultAssetsService: defaultAssetsService,
             swapService: swapService,
-            displayCurrency: .EUR
+            displayCurrency: XCTUnwrap(Currency(code: "EUR"))
         )
 
         await waitUntil {
@@ -533,7 +588,7 @@ final class MultichainSwapViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_fxRateConvertsUsdPricesToDisplayCurrency() async {
+    func test_fxRateConvertsUsdPricesToDisplayCurrency() async throws {
         let oneEth = BigUInt(10).power(18)
         let initialAssets = initialAssets(
             sendBalance: oneEth * 10,
@@ -549,10 +604,10 @@ final class MultichainSwapViewModelTests: XCTestCase {
             result: .success(initialAssets)
         )
         let swapService = SwapServiceSpy(quoteResult: .success(quote))
-        let viewModel = makeViewModel(
+        let viewModel = try makeViewModel(
             defaultAssetsService: defaultAssetsService,
             swapService: swapService,
-            displayCurrency: .EUR
+            displayCurrency: XCTUnwrap(Currency(code: "EUR"))
         )
 
         await waitUntil {
@@ -581,13 +636,13 @@ final class MultichainSwapViewModelTests: XCTestCase {
             return XCTFail("Expected loaded state")
         }
         XCTAssertEqual(fiatState.receiveAmountInputMode, .fiat)
-        XCTAssertEqual(fiatState.receiveAmountFiatSymbol, Currency.EUR.symbol)
+        XCTAssertEqual(fiatState.receiveAmountFiatSymbol, Currency(code: "EUR")?.symbol)
         XCTAssertEqual(fiatState.receiveAmount, "2.25")
         XCTAssertEqual(fiatState.receiveCardRateText, "5 TON")
     }
 
     @MainActor
-    func test_quoteDerivedFxRateConvertsUsdPricesWhenWalletRateIsMissing() async {
+    func test_quoteDerivedFxRateConvertsUsdPricesWhenWalletRateIsMissing() async throws {
         let oneEth = BigUInt(10).power(18)
         let initialAssets = initialAssets(
             sendBalance: oneEth * 10,
@@ -604,10 +659,10 @@ final class MultichainSwapViewModelTests: XCTestCase {
             result: .success(initialAssets)
         )
         let swapService = SwapServiceSpy(quoteResult: .success(quote))
-        let viewModel = makeViewModel(
+        let viewModel = try makeViewModel(
             defaultAssetsService: defaultAssetsService,
             swapService: swapService,
-            displayCurrency: .RUB
+            displayCurrency: XCTUnwrap(Currency(code: "RUB"))
         )
 
         await waitUntil {
@@ -770,7 +825,7 @@ final class MultichainSwapViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_toggleReceiveAmountInputModeIsIgnoredWithoutDisplayCurrencyPrice() async {
+    func test_toggleReceiveAmountInputModeIsIgnoredWithoutDisplayCurrencyPrice() async throws {
         let oneEth = BigUInt(10).power(18)
         let defaultAssetsService = DefaultAssetsServiceSpy(
             result: .success(
@@ -780,9 +835,9 @@ final class MultichainSwapViewModelTests: XCTestCase {
                 )
             )
         )
-        let viewModel = makeViewModel(
+        let viewModel = try makeViewModel(
             defaultAssetsService: defaultAssetsService,
-            displayCurrency: .EUR
+            displayCurrency: XCTUnwrap(Currency(code: "EUR"))
         )
 
         await waitUntil {
@@ -802,7 +857,7 @@ final class MultichainSwapViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_toggleReceiveAmountInputModeIsIgnoredWithoutAssetOrRoutePrice() async {
+    func test_toggleReceiveAmountInputModeIsIgnoredWithoutAssetOrRoutePrice() async throws {
         let oneEth = BigUInt(10).power(18)
         let defaultAssetsService = DefaultAssetsServiceSpy(
             result: .success(
@@ -813,9 +868,9 @@ final class MultichainSwapViewModelTests: XCTestCase {
                 )
             )
         )
-        let viewModel = makeViewModel(
+        let viewModel = try makeViewModel(
             defaultAssetsService: defaultAssetsService,
-            displayCurrency: .EUR
+            displayCurrency: XCTUnwrap(Currency(code: "EUR"))
         )
 
         await waitUntil {
@@ -1067,6 +1122,64 @@ final class MultichainSwapViewModelTests: XCTestCase {
         XCTAssertEqual(confirmationInputs.count, 1)
     }
 
+    /// The route can expire while the confirmation covers the screen, and the timer does not
+    /// refresh a failed quote; coming back asks for a new one instead.
+    @MainActor
+    func test_freshQuoteRequestReplacesAnExpiredRoute() async {
+        let oneEth = BigUInt(10).power(18)
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(initialAssets(sendBalance: oneEth * 10))
+        )
+        let swapService = SwapServiceSpy(
+            quoteResults: [
+                .success(
+                    quote(
+                        sourceAmount: oneEth.description,
+                        estimatedDestinationAmount: "5000000000",
+                        expiresIn: 1.2
+                    )
+                ),
+                .success(
+                    quote(
+                        sourceAmount: oneEth.description,
+                        estimatedDestinationAmount: "5000000000"
+                    )
+                ),
+            ],
+            quoteDelayNanoseconds: [0]
+        )
+        let viewModel = makeViewModel(
+            defaultAssetsService: defaultAssetsService,
+            swapService: swapService
+        )
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+        viewModel.updateSendAmount("1")
+        await waitUntil(timeout: 3) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.quote.quoteState == .failed
+        }
+
+        viewModel.requestFreshQuote()
+
+        await waitUntil(timeout: 2) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.quote.quoteState == .ready
+                && state.validationState == .valid
+        }
+        let requests = await swapService.quoteRequests()
+        XCTAssertEqual(requests.count, 2)
+    }
+
     @MainActor
     func test_pairChangeRefreshesQuoteWithoutDebounce() async {
         let oneEth = BigUInt(10).power(18)
@@ -1213,6 +1326,52 @@ final class MultichainSwapViewModelTests: XCTestCase {
         XCTAssertEqual(state.validationState, .insufficientBalance)
         viewModel.continueSwap()
         XCTAssertNil(confirmationInput)
+    }
+
+    /// A max quote whose echoed `source_amount` is a few base units above the balance
+    /// is the balance that was sent, not a larger trade.
+    @MainActor
+    func test_maxQuoteEchoRoundedAboveBalance_confirmsTheSentBalance() async throws {
+        let balance = try XCTUnwrap(BigUInt("4181445029473734404"))
+        let defaultAssetsService = DefaultAssetsServiceSpy(
+            result: .success(initialAssets(sendBalance: balance))
+        )
+        let swapService = SwapServiceSpy(
+            quoteResult: .success(
+                quote(
+                    sourceAmount: (balance + 596).description,
+                    estimatedDestinationAmount: "3976271"
+                )
+            )
+        )
+        var confirmationInput: MultichainSwapConfirmationInput?
+        let viewModel = makeViewModel(
+            defaultAssetsService: defaultAssetsService,
+            swapService: swapService,
+            onContinue: { input in
+                confirmationInput = input
+            }
+        )
+
+        await waitUntil {
+            guard case .loaded = viewModel.state else {
+                return false
+            }
+            return true
+        }
+
+        viewModel.applyMaxSend()
+        await waitUntil(timeout: 2) {
+            guard case let .loaded(state) = viewModel.state else {
+                return false
+            }
+            return state.quote.quoteState == .ready
+                && state.validationState == .valid
+        }
+
+        viewModel.continueSwap()
+        XCTAssertEqual(confirmationInput?.userInput.sourceAmount, balance)
+        XCTAssertEqual(confirmationInput?.userInput.isMax, true)
     }
 
     @MainActor
@@ -2170,11 +2329,11 @@ private extension MultichainSwapViewModelTests {
                 .init(chain: .ton, address: "tonwallet"),
             ]
         )
+        let wallet = makeWallet(multichainState: multichainState)
         return MultichainSwapViewModel(
             amountFormatter: makeAmountFormatter(),
             multichainSwapService: swapService,
-            multichainState: multichainState,
-            wallet: makeWallet(multichainState: multichainState),
+            swapWallet: MultichainSwapWallet(wallet: wallet, registeredState: multichainState),
             defaultAssetsService: defaultAssetsService,
             displayCurrency: displayCurrency,
             onContinue: onContinue,
@@ -2201,6 +2360,9 @@ private extension MultichainSwapViewModelTests {
     }
 
     func initialAssets(
+        sendAssetId: String = "eth/mainnet/coin",
+        sendSymbol: String = "ETH",
+        sendDecimals: Int = 18,
         sendBalance: BigUInt = 100,
         receiveBalance: BigUInt = .zero,
         sendPrice: Double? = nil,
@@ -2210,9 +2372,9 @@ private extension MultichainSwapViewModelTests {
         hasUnavailableInitialSelection: Bool = false
     ) -> MultichainSwapInitialAssets {
         let sendAsset = asset(
-            assetId: "eth/mainnet/coin",
-            symbol: "ETH",
-            decimals: 18,
+            assetId: sendAssetId,
+            symbol: sendSymbol,
+            decimals: sendDecimals,
             balance: sendBalance,
             usdPrice: sendPrice,
             prices: sendPrices
@@ -2227,10 +2389,6 @@ private extension MultichainSwapViewModelTests {
         return MultichainSwapInitialAssets(
             sendAsset: sendAsset,
             receiveAsset: receiveAsset,
-            catalog: [
-                sendAsset.asset.assetId: swapAsset(assetId: sendAsset.asset.assetId, symbol: "ETH", decimals: 18, chainId: "eth/mainnet"),
-                receiveAsset.asset.assetId: swapAsset(assetId: receiveAsset.asset.assetId, symbol: "TON", decimals: 9, chainId: "ton/mainnet"),
-            ],
             slippage: .init(chains: [:]),
             usdFiatRate: usdFiatRate,
             hasUnavailableInitialSelection: hasUnavailableInitialSelection
@@ -2256,8 +2414,7 @@ private extension MultichainSwapViewModelTests {
             price: MultichainAssetPrice(
                 prices: prices ?? usdPrice.map { [Currency.USD.code.lowercased(): $0] } ?? [:],
                 diff24h: [:],
-                diff7d: [:],
-                diff30d: [:]
+                diff7d: [:]
             ),
             balance: balance
         )
@@ -2425,10 +2582,6 @@ private actor SwapServiceSpy: MultichainSwapService {
     }
 
     func listCrossSwapAssets(query _: MultichainSwapAssetsQuery) async throws -> [MultichainSwapAsset] {
-        throw StubError.unimplemented
-    }
-
-    func getCrossSwapAsset(assetId _: String) async throws -> MultichainSwapAsset {
         throw StubError.unimplemented
     }
 

@@ -1,6 +1,5 @@
 import Foundation
 @testable import KeeperCore
-import TonAPI
 import XCTest
 
 final class MigrationPrepareConflictTests: XCTestCase {
@@ -17,12 +16,7 @@ final class MigrationPrepareConflictTests: XCTestCase {
                 "available": 10_000_000,
             ],
         ])
-        let error = ErrorResponse.error(
-            409,
-            data,
-            nil,
-            NSError(domain: "MigrationPrepareConflictTests", code: 409)
-        )
+        let error = TonAPIError(statusCode: 409, body: data, path: nil)
 
         let response = try XCTUnwrap(
             MigrationPrepareResponseBody(insufficientTonError: error)
@@ -33,7 +27,7 @@ final class MigrationPrepareConflictTests: XCTestCase {
         XCTAssertEqual(response.walletVersion, "v5R1")
         XCTAssertTrue(response.transactions.isEmpty)
         XCTAssertTrue(response.isInsufficientTonConflict)
-        XCTAssertEqual(response.details?._required, 250_000_000)
+        XCTAssertEqual(response.details?.required, 250_000_000)
         XCTAssertEqual(response.details?.available, 10_000_000)
     }
 
@@ -46,12 +40,7 @@ final class MigrationPrepareConflictTests: XCTestCase {
             "error": "another conflict",
             "error_code": 50001,
         ])
-        let error = ErrorResponse.error(
-            409,
-            data,
-            nil,
-            NSError(domain: "MigrationPrepareConflictTests", code: 409)
-        )
+        let error = TonAPIError(statusCode: 409, body: data, path: nil)
 
         XCTAssertNil(MigrationPrepareResponseBody(insufficientTonError: error))
     }

@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public struct NFT: Codable, Equatable {
-    public enum RenderType: String, Codable {
+    @frozen public enum RenderType: String, Codable {
         case hidden
         case ticket
     }
@@ -51,7 +51,7 @@ public struct NFT: Codable, Equatable {
         public let value: String
     }
 
-    public enum Trust: String, Equatable, Codable {
+    @frozen public enum Trust: String, Equatable, Codable {
         case none
         case whitelist
         case blacklist

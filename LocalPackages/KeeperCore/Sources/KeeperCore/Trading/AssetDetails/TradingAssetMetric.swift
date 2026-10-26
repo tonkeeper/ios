@@ -1,7 +1,7 @@
 import Foundation
 import TKLocalize
 
-public enum TradingAssetMetric: Equatable, Identifiable, Sendable {
+@frozen public enum TradingAssetMetric: Equatable, Identifiable, Sendable {
     case circulatingSupply(value: String)
     case totalSupply(value: String)
     case marketCap(

@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKPerpsAPI
 
 enum PerpsAccountReadError: Error {
@@ -8,10 +9,16 @@ enum PerpsAccountReadError: Error {
 enum PerpsBackendMapping {
     static func snapshot(
         availableBalance: String,
+        collateral: String? = nil,
+        equity: String?,
+        transferableBalance: String? = nil,
         positions: [Components.Schemas.OpenPosition]?
     ) -> PerpsAccountSnapshot {
         PerpsAccountSnapshot(
             availableBalance: availableBalance,
+            collateral: collateral,
+            equity: equity,
+            transferableBalance: transferableBalance,
             positions: (positions ?? []).compactMap(position)
         )
     }
@@ -46,8 +53,20 @@ enum PerpsBackendMapping {
         return Double(value)
     }
 
-    static func ordersVisible(_ flags: Components.Schemas.TradingFlags?) -> Bool {
-        flags?.cancel_enabled == true
+    /// Whether the order list the screen returned can be trusted. The venue answers with the
+    /// list itself: without a usable read-only token it is absent, and an account that simply
+    /// holds nothing on this market answers with an empty one. `cancel_enabled` is not that
+    /// answer — it is derived from the orders and says only whether there is one to cancel.
+    static func ordersReadable(_ screen: Components.Schemas.TradingScreen) -> Bool {
+        screen.open_orders != nil
+    }
+
+    /// A flag the venue did not send is not a refusal. Deciding otherwise has the client
+    /// answer for the venue, and that answer reaches the user as a statement about where
+    /// they live; the venue refuses on its own when it means to. The screen still gates the
+    /// button, where a person can see what is greyed out and why.
+    static func openEnabled(_ flags: Components.Schemas.TradingFlags?) -> Bool {
+        flags?.open_enabled ?? true
     }
 
     static func tradingFlags(_ flags: Components.Schemas.TradingFlags?) -> PerpsTradingFlags? {
@@ -64,6 +83,16 @@ enum PerpsBackendMapping {
 
     static func limitOrders(_ orders: [Components.Schemas.Order]?) -> [PerpsLimitOrderSummary] {
         (orders ?? []).compactMap(limitOrder)
+    }
+
+    static func portfolioOrders(_ orders: [Components.Schemas.Order]?) -> [PerpsPortfolioOrder] {
+        (orders ?? []).compactMap { order in
+            guard let marketId = order.market_index.map(Int64.init),
+                  let symbol = order.symbol, !symbol.isEmpty,
+                  let summary = restingOrder(order)
+            else { return nil }
+            return PerpsPortfolioOrder(marketId: marketId, symbol: symbol, order: summary)
+        }
     }
 
     static func triggerOrders(_ orders: [Components.Schemas.Order]?) -> [PerpsTriggerOrderSummary] {
@@ -86,21 +115,6 @@ enum PerpsBackendMapping {
             orders.append(order)
         }
         return orders
-    }
-
-    static func activity(_ item: Components.Schemas.ActivityItem) -> PerpsActivityItem? {
-        guard let id = item.id, !id.isEmpty else { return nil }
-        return PerpsActivityItem(
-            id: id,
-            kind: activityKind(item._type),
-            marketId: item.market_index.map(Int64.init),
-            side: item.side.map { tradeSide($0.value1) },
-            baseSize: PerpsMarketMath.optionalDouble(item.size).map(abs),
-            price: PerpsMarketMath.optionalDouble(item.price),
-            usdAmount: PerpsMarketMath.optionalDouble(item.amount),
-            realizedPnl: PerpsMarketMath.optionalDouble(item.realized_pnl),
-            date: item.timestamp ?? Date()
-        )
     }
 
     static func matchingOrder(
@@ -128,7 +142,11 @@ enum PerpsBackendMapping {
 
     static func isCanceled(_ order: Components.Schemas.PositionStateOrder) -> Bool {
         let status = order.status.lowercased()
-        return status == "canceled" || status == "cancelled" || status == "rejected"
+        return status.hasPrefix("canceled") || status == "cancelled" || status == "rejected"
+    }
+
+    static func isSlippageCancel(_ status: String) -> Bool {
+        status.lowercased().hasPrefix("canceled-too-much-slippage")
     }
 
     static func isWorking(_ order: Components.Schemas.PositionStateOrder) -> Bool {
@@ -149,11 +167,16 @@ private extension PerpsBackendMapping {
         guard order._type == .limit else { return nil }
         if let category = order.category, category != .open { return nil }
         if order.reduce_only == true { return nil }
+        return restingOrder(order)
+    }
+
+    static func restingOrder(_ order: Components.Schemas.Order) -> PerpsLimitOrderSummary? {
         guard let orderIndex = order.order_index else { return nil }
         let price = PerpsMarketMath.double(order.price)
         let remaining = max(0, PerpsMarketMath.double(order.base_size) - PerpsMarketMath.double(order.filled_base))
         guard price > 0, remaining > 0 else { return nil }
         return PerpsLimitOrderSummary(
+            id: order.id ?? "",
             orderIndex: orderIndex,
             clientOrderIndex: order.client_order_index ?? 0,
             side: tradeSide(order.side ?? .long),
@@ -203,44 +226,44 @@ private extension PerpsBackendMapping {
             expiresAtSeconds: leg.valid_to ?? 0
         )
     }
-
-    static func activityKind(_ type: Components.Schemas.ActivityType?) -> PerpsActivityItem.Kind {
-        switch type {
-        case .fill, .tp_executed, .sl_executed: .trade
-        case .liquidation: .liquidation
-        case .funding: .funding
-        case .deposit: .deposit
-        case .withdrawal: .withdrawal
-        case .none: .other
-        }
-    }
 }
 
 enum PerpsTkReconcile {
     enum Decision: Equatable {
         case confirmed
+        case partiallyFilled
         case failed(String)
         case notSubmitted
         case pending
     }
 
+    /// A resting order is placed the moment the venue takes its transaction; whether it
+    /// fills is a later question the position answers. Waiting for the venue to also say so
+    /// leaves the screen claiming "placing" for as long as the service has heard nothing —
+    /// which, for an order resting far from the mark, can be its whole life.
     static func open(
         state: Components.Schemas.PositionState,
         isLimit: Bool,
-        expectedBaseSize: Double? = nil
+        expectedBaseSize: Double? = nil,
+        placementAccepted: Bool = false
     ) -> Decision {
-        guard !isLimit, let expectedBaseSize else {
-            return orders(state.orders, confirmWorking: isLimit)
+        if isLimit {
+            let heard = orders(state.orders, confirmWorking: true)
+            guard case .pending = heard, placementAccepted else { return heard }
+            return .confirmed
+        }
+        guard let expectedBaseSize else {
+            return orders(state.orders, confirmWorking: false)
         }
         let filled = state.orders
             .map { PerpsMarketMath.double($0.filled_base) }
             .max() ?? 0
         if let canceled = state.orders.first(where: PerpsBackendMapping.isCanceled) {
-            return .failed(filled > 0 ? "partial_fill" : canceled.status)
+            return filled > 0 ? .partiallyFilled : .failed(canceled.status)
         }
         if filled > 0 {
             let tolerance = max(0.000000001, abs(expectedBaseSize) * 1e-9)
-            return filled + tolerance >= expectedBaseSize ? .confirmed : .failed("partial_fill")
+            return filled + tolerance >= expectedBaseSize ? .confirmed : .partiallyFilled
         }
         return .pending
     }
@@ -266,7 +289,7 @@ enum PerpsTkReconcile {
            filled > 0,
            filled + max(0.000000001, abs(expectedBaseSize) * 1e-9) < expectedBaseSize
         {
-            return .failed("partial_fill")
+            return .partiallyFilled
         }
         if let canceled = state.orders.first(where: PerpsBackendMapping.isCanceled) {
             return .failed(canceled.status)
@@ -274,8 +297,28 @@ enum PerpsTkReconcile {
         return .pending
     }
 
-    static func sizeChange(state: Components.Schemas.PositionState) -> Decision {
-        orders(state.orders, confirmWorking: false)
+    /// What the whole auto-close change came to, from what its own legs say and what
+    /// the venue holds. A leg the venue refused settles it; a leg it has said nothing
+    /// about does not, because a trigger order rests unheard-of until it fires, and
+    /// the resting book answers for the change as a whole — including the legs it was
+    /// meant to replace. `restingMatchesTarget` is nil when nothing could be read, and
+    /// then the only evidence left is legs that confirmed themselves, or a venue that
+    /// took every transaction this change signed.
+    static func autoCloseChange(
+        legs: [Decision],
+        restingMatchesTarget: Bool?,
+        placementAccepted: Bool
+    ) -> Decision {
+        if let refused = legs.first(where: { $0 != .confirmed && $0 != .pending }) {
+            return refused
+        }
+        if let restingMatchesTarget {
+            return restingMatchesTarget ? .confirmed : .pending
+        }
+        if !legs.isEmpty, legs.allSatisfy({ $0 == .confirmed }) {
+            return .confirmed
+        }
+        return placementAccepted ? .confirmed : .pending
     }
 
     static func autoCloseLeg(state: Components.Schemas.PositionState) -> Decision {
@@ -284,10 +327,34 @@ enum PerpsTkReconcile {
 
     static func limitChange(
         change: PerpsPendingLimitOrderChange,
-        ordersVisible: Bool,
-        matching: Components.Schemas.Order?
+        detail: Components.Schemas.OrderDetail
     ) -> Decision {
-        guard ordersVisible else { return .pending }
+        guard let order = detail.order else { return .pending }
+        let isResting = detail.resting ?? false
+        switch change.kind {
+        case .cancel:
+            return isResting ? .pending : .confirmed
+        case .modify:
+            if PerpsLimitOrderChangeSettlement.activeOrderConfirms(
+                change: change,
+                price: PerpsMarketMath.double(order.price)
+            ) {
+                return .confirmed
+            }
+            if PerpsBackendMapping.isRejected(order) {
+                return .failed(order.status?.rawValue ?? "rejected")
+            }
+            return isResting ? .pending : .failed("order_gone")
+        }
+    }
+
+    static func limitChange(
+        change: PerpsPendingLimitOrderChange,
+        ordersReadable: Bool,
+        matching: Components.Schemas.Order?,
+        placementAccepted: Bool
+    ) -> Decision {
+        guard ordersReadable else { return placementAccepted ? .confirmed : .pending }
         if let matching {
             if PerpsLimitOrderChangeSettlement.activeOrderConfirms(
                 change: change,

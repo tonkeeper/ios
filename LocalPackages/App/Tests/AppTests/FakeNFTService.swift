@@ -32,8 +32,6 @@ final class FakeNFTService: NFTService, @unchecked Sendable {
     func saveNFT(nft: NFT, network _: Network) throws {
         nftsByAddress[nft.address] = nft
     }
-
-    func changeSuspiciousState(_: NFT, network _: Network, isScam _: Bool) async throws {}
 }
 
 extension FakeNFTService {

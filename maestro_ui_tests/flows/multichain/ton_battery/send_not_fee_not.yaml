@@ -19,10 +19,14 @@ appId: com.jbig.tonkeeper
 - inputText: "3"
 - tapOn: "Continue"
 
-- tapOn:
-    id: "switch"
+# Pay the fee with the jetton itself: the Fee row opens the method picker, which closes
+# on selection.
+- runFlow: ../../../steps/battery/open_network_fee_picker.yaml
 - tapOn:
     text: "^NOT$"
+- extendedWaitUntil:
+    notVisible: "Choose method"
+    timeout: 10000
 - swipe:
     from:
       id: confirm_swipe

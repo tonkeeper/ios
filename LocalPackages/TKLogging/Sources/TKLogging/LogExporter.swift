@@ -1,116 +1,29 @@
 import Foundation
-import OSLog
 import UIKit
 
 public enum LogExporter {
-    public static func collectText(
-        domain: LogDomain?,
-        lastHours: Double = 2,
-        scope: OSLogStore.Scope = .currentProcessIdentifier,
-        includeHeader: Bool = true,
-        extraInfo: [String: String] = [:]
-    ) throws -> String {
-        let subsystem = domain?.subsystem ?? Log.configuration.defaultSubsystem
-        return try collectText(
-            subsystem: subsystem,
-            category: domain?.category,
-            lastHours: lastHours,
-            scope: scope,
-            includeHeader: includeHeader,
-            extraInfo: extraInfo
-        )
-    }
-
-    private static func collectText(
-        subsystem: String,
-        category: String?,
-        lastHours: Double,
-        scope: OSLogStore.Scope,
-        includeHeader: Bool,
-        extraInfo: [String: String]
-    ) throws -> String {
-        let store = try OSLogStore(scope: scope)
-        let position = store.position(timeIntervalSinceEnd: lastHours * 3600)
-        let predicate: NSPredicate
-        if let category {
-            predicate = NSPredicate(format: "subsystem == %@ AND category == %@", subsystem, category)
-        } else {
-            predicate = NSPredicate(format: "subsystem == %@", subsystem)
-        }
-        let entries = try store.getEntries(at: position, matching: predicate)
-
-        let dateFormatter = ISO8601DateFormatter()
-        var lines: [String] = []
-
-        for case let entry as OSLogEntryLog in entries {
-            lines.append(
-                "[\(dateFormatter.string(from: entry.date))] [\(levelName(entry.level))] [\(entry.category)] \(entry.composedMessage)"
-            )
-        }
-
-        let logsBody = lines.joined(separator: "\n")
-
-        guard includeHeader else {
-            return logsBody
-        }
-
-        let header = headerText(
-            subsystem: subsystem,
-            category: category,
-            lastHours: lastHours,
-            entriesCount: lines.count,
-            extraInfo: extraInfo
-        )
-
-        return logsBody.isEmpty ? header : "\(header)\n\n\(logsBody)"
-    }
-
     @discardableResult
     public static func exportToTemporaryFile(
-        domain: LogDomain?,
-        lastHours: Double = 2,
+        sessionLog: SessionLogBackend?,
         filenamePrefix: String = "logs",
-        scope: OSLogStore.Scope = .currentProcessIdentifier,
-        includeHeader: Bool = true,
         extraInfo: [String: String] = [:]
-    ) throws -> URL {
-        let text = try collectText(
-            domain: domain,
-            lastHours: lastHours,
-            scope: scope,
-            includeHeader: includeHeader,
-            extraInfo: extraInfo
-        )
-        return try saveToTemporaryFile(text: text, filenamePrefix: filenamePrefix)
-    }
-
-    @discardableResult
-    private static func saveToTemporaryFile(
-        text: String,
-        filenamePrefix: String
     ) throws -> URL {
         let filename = "\(filenamePrefix)_\(Int(Date().timeIntervalSince1970)).log"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-        try text.write(to: url, atomically: true, encoding: .utf8)
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        let output = try FileHandle(forWritingTo: url)
+        try output.write(contentsOf: Data("\(headerText(extraInfo: extraInfo))\n\n".utf8))
+        try sessionLog?.writeSessions(to: output)
+        try output.close()
         return url
     }
 
-    private static func headerText(
-        subsystem: String,
-        category: String?,
-        lastHours: Double,
-        entriesCount: Int,
-        extraInfo: [String: String]
-    ) -> String {
-        let formatter = ISO8601DateFormatter()
+    private static func headerText(extraInfo: [String: String]) -> String {
+        let formatter = LogTimestamp.formatter
 
         var lines: [String] = [
             "=== Keeper Log Export ===",
             "Generated at: \(formatter.string(from: Date()))",
-            "Subsystem: \(subsystem)",
-            "Category: \(category ?? "all categories")",
-            "Period: last \(lastHours)h",
-            "Entries count: \(entriesCount)",
             "App version: \(appVersion)",
             "Build number: \(buildNumber)",
             "Build configuration: \(buildConfiguration)",
@@ -133,15 +46,19 @@ public enum LogExporter {
         return lines.joined(separator: "\n")
     }
 
-    private static var appVersion: String {
+    static var environmentDescription: String {
+        "app=\(appVersion) build=\(buildNumber) \(buildConfiguration) os=\(operatingSystemVersion) device=\(deviceDescription) locale=\(Locale.current.identifier) tz=\(TimeZone.current.identifier)"
+    }
+
+    static var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
     }
 
-    private static var buildNumber: String {
+    static var buildNumber: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
     }
 
-    private static var buildConfiguration: String {
+    static var buildConfiguration: String {
         #if DEBUG
             return "Debug"
         #else
@@ -149,11 +66,11 @@ public enum LogExporter {
         #endif
     }
 
-    private static var bundleIdentifier: String {
+    static var bundleIdentifier: String {
         Bundle.main.bundleIdentifier ?? "unknown"
     }
 
-    private static var operatingSystemVersion: String {
+    static var operatingSystemVersion: String {
         #if canImport(UIKit)
             return "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)"
         #elseif os(macOS)
@@ -163,7 +80,7 @@ public enum LogExporter {
         #endif
     }
 
-    private static var deviceDescription: String {
+    static var deviceDescription: String {
         #if canImport(UIKit)
             return UIDevice.current.model
         #elseif os(macOS)
@@ -171,20 +88,5 @@ public enum LogExporter {
         #else
             return "unknown"
         #endif
-    }
-
-    private static func levelName(_ level: OSLogEntryLog.Level) -> String {
-        switch level {
-        case .debug:
-            return "DEBUG"
-        case .info:
-            return "INFO"
-        case .error:
-            return "WARNING"
-        case .fault:
-            return "ERROR"
-        default:
-            return "UNKNOWN"
-        }
     }
 }

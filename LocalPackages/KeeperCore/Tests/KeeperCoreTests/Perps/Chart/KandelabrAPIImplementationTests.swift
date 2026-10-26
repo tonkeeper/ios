@@ -3,77 +3,75 @@ import Foundation
 import XCTest
 
 final class KandelabrAPIImplementationTests: XCTestCase {
-    func testCandlesPostsPublicEndpointWithTickerResolutionAndLimit() async throws {
+    func testCandlesPostsBatchEndpointWithOneRequestPerTicker() async throws {
         let api = makeAPI { request in
             XCTAssertEqual(request.httpMethod, "POST")
-            XCTAssertEqual(request.url?.path, "/kandelabr/public-api/v1/candles")
-            let body = try Self.requestJSON(request)
-            XCTAssertEqual(body["ticker"] as? String, "BTC/USD")
-            XCTAssertEqual(body["resolution"] as? String, "1h")
-            XCTAssertEqual(body["limit"] as? Int ?? (body["limit"] as? NSNumber)?.intValue, 500)
-            XCTAssertNil(body["start_ts"])
-            XCTAssertNil(body["end_ts"])
+            XCTAssertEqual(request.url?.path, "/kandelabr/public-api/v1/candles/batch")
+            let requests = try XCTUnwrap(Self.requestJSON(request)["requests"] as? [[String: Any]])
+            XCTAssertEqual(requests.map { $0["ticker"] as? String }, ["BTC/USD", "BTC/USD/PERP_TRADE"])
+            for body in requests {
+                XCTAssertEqual(body["resolution"] as? String, "1h")
+                XCTAssertEqual(body["limit"] as? Int ?? (body["limit"] as? NSNumber)?.intValue, 500)
+                XCTAssertNil(body["start_ts"])
+                XCTAssertNil(body["end_ts"])
+            }
             return try Self.httpResponse(
                 for: request,
                 statusCode: 200,
-                body: #"{"ticker":"BTC/USD","resolution":"1h","start_ts":1700000000000,"candles":[{"o":"1","h":"2","l":"0.5","c":"1.5","v":"10"}]}"#
+                body: #"{"responses":[{"ticker":"BTC/USD","resolution":"1h","start_ts":1700000000000,"candles":[{"o":"1","h":"2","l":"0.5","c":"1.5","v":"0"}]},{"ticker":"BTC/USD/PERP_TRADE","resolution":"1h","start_ts":1700000000000,"candles":[{"o":"1","h":"2","l":"0.5","c":"1.4","v":"10"}]}]}"#
             )
         }
 
-        let response = try await api.candles(
-            ticker: "BTC/USD",
+        let responses = try await api.candles(
+            tickers: ["BTC/USD", "BTC/USD/PERP_TRADE"],
             resolution: "1h",
             limit: 500,
-            startTs: nil,
             endTs: nil
         )
 
-        XCTAssertEqual(response.ticker, "BTC/USD")
-        XCTAssertEqual(response.resolution, "1h")
-        XCTAssertEqual(response.candles.count, 1)
-        XCTAssertEqual(response.candles.first?.c, "1.5")
+        XCTAssertEqual(responses.map(\.ticker), ["BTC/USD", "BTC/USD/PERP_TRADE"])
+        XCTAssertEqual(responses.first?.candles.first?.c, "1.5")
+        XCTAssertEqual(responses.last?.candles.first?.v, "10")
     }
 
     func testCandlesForwardsEndTsWhenPaging() async throws {
         let api = makeAPI { request in
-            let body = try Self.requestJSON(request)
+            let body = try XCTUnwrap((Self.requestJSON(request)["requests"] as? [[String: Any]])?.first)
             XCTAssertEqual((body["end_ts"] as? NSNumber)?.int64Value, 1_700_000_000_000)
             XCTAssertEqual(body["limit"] as? Int ?? (body["limit"] as? NSNumber)?.intValue, 200)
             return try Self.httpResponse(
                 for: request,
                 statusCode: 200,
-                body: #"{"ticker":"ETH/USD","resolution":"4h","start_ts":1,"candles":[]}"#
+                body: #"{"responses":[{"ticker":"ETH/USD","resolution":"4h","start_ts":1,"candles":[]}]}"#
             )
         }
 
         _ = try await api.candles(
-            ticker: "ETH/USD",
+            tickers: ["ETH/USD"],
             resolution: "4h",
             limit: 200,
-            startTs: nil,
             endTs: 1_700_000_000_000
         )
     }
 
-    func testCandlesMaps404ToNotFound() async {
+    func testCandlesMaps400ToBadRequest() async {
         let api = makeAPI { request in
             try Self.httpResponse(
                 for: request,
-                statusCode: 404,
-                body: #"{"status":"NOT_FOUND","message":"ticker not found"}"#
+                statusCode: 400,
+                body: #"{"status":"INVALID_REQUEST","message":"Unrecognised ticker: NOPE/USD"}"#
             )
         }
 
         do {
             _ = try await api.candles(
-                ticker: "NOPE/USD",
+                tickers: ["NOPE/USD"],
                 resolution: "1m",
                 limit: 1,
-                startTs: nil,
                 endTs: nil
             )
-            XCTFail("expected notFound")
-        } catch KandelabrAPIError.notFound {
+            XCTFail("expected badRequest")
+        } catch KandelabrAPIError.badRequest {
         } catch {
             XCTFail("unexpected error: \(error)")
         }
@@ -87,10 +85,9 @@ final class KandelabrAPIImplementationTests: XCTestCase {
 
         do {
             _ = try await api.candles(
-                ticker: "BTC/USD",
+                tickers: ["BTC/USD"],
                 resolution: "12h",
                 limit: 10,
-                startTs: nil,
                 endTs: nil
             )
             XCTFail("expected badRequest")

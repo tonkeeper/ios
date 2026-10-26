@@ -7,14 +7,18 @@ struct AmountInputAssembly {
     static func module(
         sourceUnit: AmountInputUnit,
         destinationUnit: AmountInputUnit,
-        keeperCoreMainAssembly: KeeperCore.MainAssembly
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        textFieldAccessibilityIdentifier: String? = nil
     ) -> MVVMModule<AmountInputViewController, AmountInputModuleOutput, AmountInputModuleInput> {
-        let viewModel = AmountInputViewModelImplementation(
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+        let viewModel = swiftUIModule(
             sourceUnit: sourceUnit,
-            destinationUnit: destinationUnit
+            destinationUnit: destinationUnit,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
-        let viewController = AmountInputViewController(viewModel: viewModel)
+        let viewController = AmountInputViewController(
+            viewModel: viewModel,
+            textFieldAccessibilityIdentifier: textFieldAccessibilityIdentifier
+        )
         return .init(view: viewController, output: viewModel, input: viewModel)
     }
 

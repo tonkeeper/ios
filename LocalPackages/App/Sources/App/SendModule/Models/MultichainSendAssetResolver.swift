@@ -53,25 +53,12 @@ private extension MultichainSendAssetResolver {
     }
 }
 
-private extension MultichainAssetDetails {
-    init(assetInfo: TradingAssetInfo) {
-        self.init(
-            assetId: assetInfo.assetId,
-            name: assetInfo.title,
-            symbol: assetInfo.symbol,
-            decimals: assetInfo.decimals,
-            image: assetInfo.imageURL?.absoluteString ?? ""
-        )
-    }
-}
-
 private extension MultichainAssetPrice {
     static var empty: MultichainAssetPrice {
         MultichainAssetPrice(
             prices: [:],
             diff24h: [:],
-            diff7d: [:],
-            diff30d: [:]
+            diff7d: [:]
         )
     }
 }

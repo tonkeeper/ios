@@ -13,6 +13,7 @@ protocol RaffleStoryPresenting: AnyObject {
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
+        isClosable: Bool,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
@@ -188,16 +189,6 @@ final class MysteryRaffleStoriesRouter {
         return didPresent
     }
 
-    /// QA: drops the shown-once bookkeeping (app-wide — the repository is shared with the
-    /// regular stories) so the auto-open paths fire again without a reinstall.
-    /// `isAutoOpenRunning` is cleared too: it only unwinds on a reported dismissal, so a run
-    /// whose presentation never reports one would otherwise block auto-open for the session.
-    func resetShownStories() {
-        claimedStoryIds.removeAll()
-        isAutoOpenRunning = false
-        storiesService.resetShownStories()
-    }
-
     @discardableResult
     func present(
         story: MultichainRaffleStory,
@@ -210,6 +201,7 @@ final class MysteryRaffleStoriesRouter {
             story: Stories.Story(story: story),
             fromViewController: viewController,
             fromAnalyticsProperty: source,
+            isClosable: true,
             deeplinkAction: { payload in
                 openDeeplink?(payload)
             },

@@ -1,5 +1,6 @@
 import ChainKit
 import Foundation
+import PerpsModels
 import TKLogging
 
 /// One market read, kept so the figures a screen shows can be recomputed without
@@ -27,11 +28,45 @@ final class PerpsSnapshotReviewer: PerpetualReviewer, @unchecked Sendable {
     func reviewOpen(_ intent: PerpsOpenMarketIntent) -> PerpsOpenOrderReview? {
         guard let margin = PerpsMarketMath.optionalDouble(intent.marginUsd), margin > 0 else { return nil }
         guard let review: PerpetualReview.Open = plan({
-            try intents.open(intent, context: inputs.context, operationId: UUID().uuidString)
+            try intents.open(
+                intent,
+                context: inputs.context,
+                operationId: UUID().uuidString,
+                clientOrderIndices: PerpsPlannerMapping.reviewClientOrderIndices()
+            )
         }) else {
             return nil
         }
         return PerpsPlannerMapping.openReview(review, symbol: inputs.symbol, marginUsd: margin)
+    }
+
+    func minimumOpenMarginUsd(_ intent: PerpsOpenMarketIntent) -> Double? {
+        do {
+            let open = try intents.open(
+                PerpsOpenMarketIntent(
+                    marketId: intent.marketId,
+                    side: intent.side,
+                    marginUsd: intent.marginUsd,
+                    leverage: intent.leverage,
+                    maxSlippage: intent.maxSlippage,
+                    autoClose: nil,
+                    limitPrice: intent.limitPrice
+                ),
+                context: inputs.context,
+                operationId: UUID().uuidString,
+                clientOrderIndices: PerpsPlannerMapping.reviewClientOrderIndices()
+            )
+            guard let open = open as? PerpsTradeIntent.Open else { return nil }
+            return try PerpsPlannerMapping.minimumOpenMarginUsd(
+                open,
+                rules: inputs.context.rules,
+                marketSnapshot: inputs.marketSnapshot,
+                nowUnixMs: PerpsPlannerMapping.nowUnixMs()
+            )
+        } catch {
+            Log.perps.d("open bounds unavailable — \(error)")
+            return nil
+        }
     }
 
     func reviewMarginChange(_ intent: PerpsMarginChangeIntent) -> PerpsMarginChangeReview? {
@@ -68,7 +103,7 @@ final class PerpsSnapshotReviewer: PerpetualReviewer, @unchecked Sendable {
             )
             return plan.review as? T
         } catch {
-            Log.i("🪵 Perps: review unavailable — \(error)")
+            Log.perps.i("review unavailable — \(error)")
             return nil
         }
     }

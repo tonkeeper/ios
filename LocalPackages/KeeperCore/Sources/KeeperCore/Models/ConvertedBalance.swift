@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 import TonSwift
 
-public enum ConvertedBalanceState: Equatable {
+@frozen public enum ConvertedBalanceState: Equatable {
     case current(ConvertedBalance)
     case previous(ConvertedBalance)
 

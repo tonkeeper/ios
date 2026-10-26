@@ -5,7 +5,10 @@ public extension MultichainChain {
         case .base: 8453
         case .arb: 42161
         case .bsc: 56
-        case .ton, .btc, .tron: nil
+        case .polygon: 137
+        case .avax: 43114
+        case .robinhood: 4663
+        case .ton, .btc, .tron, .sol: nil
         }
     }
 

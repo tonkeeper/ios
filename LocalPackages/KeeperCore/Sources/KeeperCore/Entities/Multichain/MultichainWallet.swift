@@ -1,6 +1,6 @@
 import Foundation
 
-public enum MultichainWalletAddressType: String, Hashable, Codable, Sendable {
+@frozen public enum MultichainWalletAddressType: String, Hashable, Codable, Sendable {
     case tonV3R1 = "v3R1"
     case tonV3R2 = "v3R2"
     case tonV4R1 = "v4R1"
@@ -66,7 +66,7 @@ public struct MultichainWalletAddress: Hashable, Codable, Sendable {
     }
 }
 
-public enum MultichainWalletSyncState: String, Hashable, Codable, Sendable {
+@frozen public enum MultichainWalletSyncState: String, Hashable, Codable, Sendable {
     case pending
     case synced
     case failed
@@ -108,7 +108,7 @@ public struct MultichainWalletState: Hashable, Codable, Sendable {
     }
 }
 
-public enum MultichainWallet: Hashable, Sendable, Codable {
+@frozen public enum MultichainWallet: Hashable, Sendable, Codable {
     case multichain(MultichainWalletState)
     case unavailable
 }

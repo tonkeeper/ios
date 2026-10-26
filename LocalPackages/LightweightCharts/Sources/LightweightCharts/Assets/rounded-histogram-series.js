@@ -60,16 +60,19 @@
         const common = columnCommon(barSpacing, pixelRatio);
         const positions = new Map();
         let previous;
-        let minWidth = Math.ceil(barSpacing * pixelRatio);
 
         for (let index = from; index < to; index += 1) {
             const position = calculateColumnPosition(bars[index].x, common, previous);
+            positions.set(index, position);
+            previous = position;
+        }
+
+        let minWidth = Math.ceil(barSpacing * pixelRatio);
+        for (const position of positions.values()) {
             if (position.right < position.left) {
                 position.right = position.left;
             }
             minWidth = Math.min(minWidth, position.right - position.left + 1);
-            positions.set(index, position);
-            previous = position;
         }
 
         if (common.spacing > 0 && minWidth < 4) {

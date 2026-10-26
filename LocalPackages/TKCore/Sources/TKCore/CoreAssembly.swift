@@ -3,6 +3,7 @@ import TKAppInfo
 import TKFeatureFlags
 import TKKeychain
 import TKLogging
+import TKServices
 import UIKit
 
 public final class CoreAssembly {
@@ -141,6 +142,12 @@ public final class CoreAssembly {
     public private(set) lazy var appSettings: AppSettings = AppSettings(
         userDefaults: UserDefaults(suiteName: .appSettingsSuiteName) ?? .standard
     )
+
+    /// Install attribution captured before a wallet exists. TK-3415 reads it and
+    /// calls `consume` only after the backend accepts the payload.
+    public var campaignAttributionStore: CampaignAttributionStore {
+        .shared
+    }
 
     public var formattersAssembly: FormattersAssembly {
         FormattersAssembly()

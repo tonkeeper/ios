@@ -10,40 +10,44 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
     var didRequestDeeplinkHandling: ((String) -> Void)?
     var didRequestOpenMigration: ((@escaping () -> Void) -> Void)?
-    var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)?
-    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)?
     /// Set by hosts that navigate away after a broadcast swap (e.g. to history).
     /// When unset, a successful swap falls back to `didFinish` and just closes the flow.
     var didSwapSuccessfully: (() -> Void)?
 
-    private let wallet: Wallet
-    private let multichainState: MultichainWalletState
+    private let swapWallet: MultichainSwapWallet
     private let nativeSwapContext: NativeSwapContext
-    private let initialSelection: MultichainSwapInitialAssetSelection?
+    private let assetSource: MultichainSwapAssetSource
+    private let raffleStore: RaffleStore?
     private let initiatedBy: InitiatedBy
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let openBattery: (_ onRecharged: @escaping () -> Void) -> Void
+    private let openFeeDeposit: (_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void
 
     private weak var confirmationCoordinator: MultichainSwapConfirmationCoordinator?
     private weak var multichainSwapViewModel: MultichainSwapViewModel?
 
     init(
-        wallet: Wallet,
-        multichainState: MultichainWalletState,
+        swapWallet: MultichainSwapWallet,
         nativeSwapContext: NativeSwapContext,
-        initialSelection: MultichainSwapInitialAssetSelection? = nil,
+        assetSource: MultichainSwapAssetSource,
+        raffleStore: RaffleStore?,
         initiatedBy: InitiatedBy,
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
-        keeperCoreMainAssembly: KeeperCore.MainAssembly
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        openBattery: @escaping (_ onRecharged: @escaping () -> Void) -> Void,
+        openFeeDeposit: @escaping (_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void
     ) {
-        self.wallet = wallet
-        self.multichainState = multichainState
+        self.swapWallet = swapWallet
         self.nativeSwapContext = nativeSwapContext
-        self.initialSelection = initialSelection
+        self.assetSource = assetSource
+        self.raffleStore = raffleStore
         self.initiatedBy = initiatedBy
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.openBattery = openBattery
+        self.openFeeDeposit = openFeeDeposit
         super.init(router: router)
     }
 
@@ -73,26 +77,39 @@ private extension MultichainSwapCoordinator {
     func openSwap() {
         Log.multichainSwap.i(
             "coordinator opening swap",
-            extraInfo: ["addressChainCount": "\(multichainState.addresses.count)"]
+            extraInfo: ["addressChainCount": "\(swapWallet.addresses.count)"]
         )
         router.rootViewController.setNavigationBarHidden(true, animated: false)
         let multichainSwapService = keeperCoreMainAssembly.servicesAssembly.multichainSwapService()
-        let defaultAssetsService = DefaultMultichainSwapDefaultAssetsService(
-            multichainState: multichainState,
-            multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
-            multichainSwapService: multichainSwapService,
-            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-            initialSelection: initialSelection
-        )
+        let defaultAssetsService: MultichainSwapDefaultAssetsService = switch assetSource {
+        case let .walletAssets(multichainState, initialSelection):
+            DefaultMultichainSwapDefaultAssetsService(
+                multichainState: multichainState,
+                multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
+                multichainSwapService: multichainSwapService,
+                assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService(),
+                currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+                initialSelection: initialSelection
+            )
+        case let .legacyPair(sendAssetId, receiveAssetId):
+            LegacyPairMultichainSwapDefaultAssetsService(
+                wallet: swapWallet.wallet,
+                sendAssetId: sendAssetId,
+                receiveAssetId: receiveAssetId,
+                assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService(),
+                convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+                currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+            )
+        }
         let viewModel = MultichainSwapViewModel(
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             multichainSwapService: multichainSwapService,
-            multichainState: multichainState,
-            wallet: wallet,
+            swapWallet: swapWallet,
             defaultAssetsService: defaultAssetsService,
+            isAssetSelectionLocked: assetSource.isAssetSelectionLocked,
             displayCurrency: keeperCoreMainAssembly.storesAssembly.currencyStore.state,
             isSwapKitEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.swapKitEnabled),
-            raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
+            raffleStore: raffleStore,
             analyticsProvider: coreAssembly.analyticsProvider,
             onClose: { [weak self] in
                 guard let self else { return }
@@ -189,12 +206,18 @@ private extension MultichainSwapCoordinator {
             modelSide = .receive(sourceAssetId: swapState.sendAsset.asset.assetId)
         }
 
+        guard case let .walletAssets(multichainState, _) = assetSource else {
+            Log.multichainSwap.w(
+                "token picker requested for a fixed pair",
+                extraInfo: ["side": side.description]
+            )
+            return
+        }
         let model = MultichainSwapTokenPickerModel(
             side: modelSide,
             multichainState: multichainState,
             selectedAsset: selectedAsset,
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
-            multichainSwapService: keeperCoreMainAssembly.servicesAssembly.multichainSwapService(),
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
         )
         Log.multichainSwap.i(
@@ -208,18 +231,13 @@ private extension MultichainSwapCoordinator {
 
         let module = TokenPickerV2Assembly.module(
             title: TKLocales.Multichain.AssetPicker.chooseTitle,
-            wallet: wallet,
+            wallet: swapWallet.wallet,
             model: model,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            waitsForSelectionCompletion: true
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        module.output.didSelectAsset = { [weak self, weak output = module.output] asset in
-            Task { @MainActor [weak self = self, weak output] in
-                guard let self, let output else { return }
-                let shouldClose = await self.selectSwapAsset(asset, for: side)
-                output.finishAssetSelection(shouldClose: shouldClose)
-            }
+        module.output.didSelectAsset = { [weak self] asset in
+            self?.selectSwapAsset(asset, for: side)
         }
 
         module.output.didFinish = { [weak viewController = module.view] in
@@ -239,28 +257,7 @@ private extension MultichainSwapCoordinator {
     func selectSwapAsset(
         _ asset: MultichainAsset,
         for side: MultichainSwapTokenPickSide
-    ) async -> Bool {
-        await replaceAssetValidationToast(with: .loading)
-        do {
-            _ = try await keeperCoreMainAssembly.servicesAssembly.multichainSwapService()
-                .getCrossSwapAsset(assetId: asset.asset.assetId)
-        } catch {
-            let errorToast = ToastPresenter.Configuration(
-                title: TKLocales.MultichainSwap.Screen.Confirm.Error.unsupportedAsset
-            ).withMultichainSwapErrorDuration()
-            await replaceAssetValidationToast(with: errorToast)
-            Log.multichainSwap.w(
-                "token picker selected unsupported asset",
-                error: error,
-                extraInfo: [
-                    "side": side.description,
-                    "asset": asset.asset.assetId,
-                ]
-            )
-            return false
-        }
-
-        await hideAssetValidationToast()
+    ) {
         Log.multichainSwap.i(
             "token picker asset selected",
             extraInfo: [
@@ -274,26 +271,6 @@ private extension MultichainSwapCoordinator {
         case .receive:
             multichainSwapViewModel?.applyReceiveAsset(asset)
         }
-        return true
-    }
-
-    func replaceAssetValidationToast(
-        with configuration: ToastPresenter.Configuration
-    ) async {
-        await withCheckedContinuation { continuation in
-            ToastPresenter.hideToast {
-                ToastPresenter.showToast(configuration: configuration)
-                continuation.resume()
-            }
-        }
-    }
-
-    func hideAssetValidationToast() async {
-        await withCheckedContinuation { continuation in
-            ToastPresenter.hideToast {
-                continuation.resume()
-            }
-        }
     }
 
     func openConfirmation(confirmationInput: MultichainSwapConfirmationInput) {
@@ -304,24 +281,20 @@ private extension MultichainSwapCoordinator {
             ).make(input: confirmationInput)
         )
         let coordinator = MultichainSwapConfirmationCoordinator(
-            wallet: wallet,
+            swapWallet: swapWallet,
             nativeSwapContext: nativeSwapContext,
             initiatedBy: initiatedBy,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             router: router,
             confirmationInput: confirmationInput,
-            rateText: confirmationInput.userInput.rateText
+            rateText: confirmationInput.userInput.rateText,
+            openBattery: openBattery,
+            openFeeDeposit: openFeeDeposit
         )
 
         coordinator.didFinish = { [weak self] in
             self?.removeChild($0)
-        }
-
-        // Left unset when this flow's own host has no battery screen, so the confirmation opens one
-        // itself instead of forwarding into a nil closure that drops the tap.
-        if let didRequestOpenBattery {
-            coordinator.didRequestOpenBattery = didRequestOpenBattery
         }
 
         coordinator.didClose = { [weak self, weak coordinator] in
@@ -347,8 +320,8 @@ private extension MultichainSwapCoordinator {
             self?.removeChild(coordinator)
         }
 
-        if let didRequestFeeDeposit {
-            coordinator.didRequestFeeDeposit = didRequestFeeDeposit
+        coordinator.didFailPreparation = { [weak self, weak coordinator] in
+            self?.removeChild(coordinator)
         }
 
         coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] isInternalPurchasing in

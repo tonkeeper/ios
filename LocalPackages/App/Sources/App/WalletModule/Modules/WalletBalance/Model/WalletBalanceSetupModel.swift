@@ -137,7 +137,7 @@ final class WalletBalanceSetupModel {
     }
 
     func turnOnBiometry(passcode: String) async throws {
-        try mnemonicsAccess.setPasscode(passcode)
+        try await mnemonicsAccess.setBiometryProtectedPasscode(passcode)
         await securityStore.setIsBiometryEnable(true)
     }
 

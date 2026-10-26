@@ -7,6 +7,7 @@ struct MultichainPushSyncState: Equatable {
     var walletIds: [String]?
     var token: String?
     var deviceId: String?
+    var locale: String?
 }
 
 struct MultichainPushSynchronizerDependencies {
@@ -16,7 +17,8 @@ struct MultichainPushSynchronizerDependencies {
     var deviceId: () async throws -> String
     var resolveToken: (_ hint: String?) async -> String?
     var requestAuthorization: () async -> Void
-    var subscribe: (_ pushToken: String, _ walletIds: [String]) async throws -> Void
+    var locale: () -> String
+    var subscribe: (_ pushToken: String, _ locale: String, _ walletIds: [String]) async throws -> Void
     var unsubscribe: () async throws -> Void
 }
 
@@ -131,16 +133,17 @@ private extension MultichainPushSynchronizer {
             return .deferred
         }
         guard isCurrent(generation) else { return .settled }
-        guard !(isSameScope && synced.token == token) else { return .settled }
+        let locale = dependencies.locale()
+        guard !(isSameScope && synced.token == token && synced.locale == locale) else { return .settled }
 
         do {
-            try await dependencies.subscribe(token, walletIds)
+            try await dependencies.subscribe(token, locale, walletIds)
         } catch {
             Log.w("🪵 Push: multichain sync failed", error: error)
             invalidateConfirmedScope(synced)
             return .failed
         }
-        persist(MultichainPushSyncState(walletIds: walletIds, token: token, deviceId: deviceId))
+        persist(MultichainPushSyncState(walletIds: walletIds, token: token, deviceId: deviceId, locale: locale))
         return .settled
     }
 

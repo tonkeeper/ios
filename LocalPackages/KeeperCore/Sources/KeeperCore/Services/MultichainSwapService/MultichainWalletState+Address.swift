@@ -22,8 +22,17 @@ public extension MultichainWalletState {
         for chain: MultichainChain,
         preferredType: MultichainWalletAddressType? = nil
     ) -> MultichainWalletAddress? {
+        addresses.walletAddress(for: chain, preferredType: preferredType)
+    }
+}
+
+public extension Array where Element == MultichainWalletAddress {
+    func walletAddress(
+        for chain: MultichainChain,
+        preferredType: MultichainWalletAddressType? = nil
+    ) -> MultichainWalletAddress? {
         if let preferredType {
-            if let address = addresses.first(where: { $0.chain == chain && $0.type == preferredType }) {
+            if let address = first(where: { $0.chain == chain && $0.type == preferredType }) {
                 return address
             }
             Log.w(
@@ -34,7 +43,7 @@ public extension MultichainWalletState {
                 )
             )
         }
-        return addresses.first { $0.chain == chain }
+        return first { $0.chain == chain }
     }
 }
 

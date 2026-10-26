@@ -9,7 +9,7 @@ final class MultichainFeeEngineResolverTests: XCTestCase {
             .init(chain: .tron, address: "TMultichainTronAddress"),
         ])
 
-        let engine = MultichainFeeEngineResolver().resolve(
+        let engine = resolve(
             asset: makeAsset(assetId: "tron/mainnet/trc20/\(TronSwift.USDT.address.base58)"),
             wallet: wallet
         )
@@ -22,7 +22,7 @@ final class MultichainFeeEngineResolverTests: XCTestCase {
             .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
         ])
 
-        let engine = MultichainFeeEngineResolver().resolve(
+        let engine = resolve(
             asset: makeAsset(assetId: "ton/mainnet/jetton/0:jetton-master"),
             wallet: wallet
         )
@@ -30,12 +30,102 @@ final class MultichainFeeEngineResolverTests: XCTestCase {
         XCTAssertEqual(engine, .tonJetton(master: "0:jetton-master"))
     }
 
+    func testEVMAssetOnARelayedChainUsesTheEVMEngine() {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .eth, address: "0x0eE3CdEE4f010BF6c49aF86E9e67ef2bc80a508b"),
+        ])
+
+        XCTAssertEqual(
+            resolve(
+                asset: makeAsset(assetId: "eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"),
+                wallet: wallet
+            ),
+            .evm(chain: .eth)
+        )
+        XCTAssertEqual(
+            resolve(asset: makeAsset(assetId: "eth/mainnet/coin"), wallet: wallet),
+            .evm(chain: .eth)
+        )
+    }
+
+    func testEVMChainTheRelayerDoesNotServeKeepsChainKitEngine() {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .bsc, address: "0x0eE3CdEE4f010BF6c49aF86E9e67ef2bc80a508b"),
+        ])
+        let asset = makeAsset(assetId: "bsc/mainnet/bep20/0x55d398326f99059ff775485246999027b3197955")
+
+        XCTAssertEqual(resolve(asset: asset, wallet: wallet, relayedEVMChains: [.eth, .arb, .base]), .chainKit)
+        XCTAssertEqual(resolve(asset: asset, wallet: wallet, relayedEVMChains: [.bsc]), .evm(chain: .bsc))
+    }
+
+    func testTheRelayedChainsAreReadWhenAnEVMEngineIsResolved() async {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .eth, address: "0x0eE3CdEE4f010BF6c49aF86E9e67ef2bc80a508b"),
+        ])
+        let asset = makeAsset(assetId: "eth/mainnet/coin")
+        var relayedEVMChains: Set<MultichainChain>? = []
+        let resolver = MultichainFeeEngineResolver(relayedEVMChains: { relayedEVMChains })
+
+        let before = await resolver.resolve(asset: asset, wallet: wallet)
+        relayedEVMChains = [.eth]
+        let after = await resolver.resolve(asset: asset, wallet: wallet)
+
+        XCTAssertEqual(before, .init(engine: .chainKit, isSettled: true))
+        XCTAssertEqual(after, .init(engine: .evm(chain: .eth), isSettled: true))
+    }
+
+    func testAnEVMEngineIsProvisionalWhileTheRelayerConfigIsUnknown() async {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .eth, address: "0x0eE3CdEE4f010BF6c49aF86E9e67ef2bc80a508b"),
+        ])
+        let resolver = MultichainFeeEngineResolver(relayedEVMChains: { nil })
+
+        let resolution = await resolver.resolve(asset: makeAsset(assetId: "eth/mainnet/coin"), wallet: wallet)
+
+        XCTAssertEqual(resolution, .init(engine: .chainKit, isSettled: false))
+    }
+
+    func testATONOrTRONEngineNeverWaitsForTheRelayerConfig() async {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
+            .init(chain: .tron, address: "TMultichainTronAddress"),
+        ])
+        var reads = 0
+        let resolver = MultichainFeeEngineResolver(relayedEVMChains: {
+            reads += 1
+            return nil
+        })
+
+        let jetton = await resolver.resolve(asset: makeAsset(assetId: "ton/mainnet/jetton/0:jetton-master"), wallet: wallet)
+        let usdt = await resolver.resolve(
+            asset: makeAsset(assetId: "tron/mainnet/trc20/\(TronSwift.USDT.address.base58)"),
+            wallet: wallet
+        )
+
+        XCTAssertEqual(jetton, .init(engine: .tonJetton(master: "0:jetton-master"), isSettled: true))
+        XCTAssertEqual(usdt, .init(engine: .tronUSDT(tronAddress: "TMultichainTronAddress"), isSettled: true))
+        XCTAssertEqual(reads, 0)
+    }
+
+    func testEVMAssetWithoutAnAddressKeepsChainKitEngine() {
+        let wallet = makeWallet(addresses: [
+            .init(chain: .ton, address: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
+        ])
+
+        let engine = resolve(
+            asset: makeAsset(assetId: "eth/mainnet/coin"),
+            wallet: wallet
+        )
+
+        XCTAssertEqual(engine, .chainKit)
+    }
+
     func testNonUSDTTRC20KeepsChainKitEngine() {
         let wallet = makeWallet(addresses: [
             .init(chain: .tron, address: "TMultichainTronAddress"),
         ])
 
-        let engine = MultichainFeeEngineResolver().resolve(
+        let engine = resolve(
             asset: makeAsset(assetId: "tron/mainnet/trc20/TNonUSDTContract"),
             wallet: wallet
         )
@@ -45,6 +135,15 @@ final class MultichainFeeEngineResolverTests: XCTestCase {
 }
 
 private extension MultichainFeeEngineResolverTests {
+    func resolve(
+        asset: MultichainAsset,
+        wallet: Wallet,
+        relayedEVMChains: Set<MultichainChain> = [.eth, .arb, .base]
+    ) -> MultichainFeeEngineResolver.Engine {
+        MultichainFeeEngineResolver(relayedEVMChains: { [] })
+            .resolve(asset: asset, wallet: wallet, relayedEVMChains: relayedEVMChains)
+    }
+
     func makeWallet(addresses: [MultichainWalletAddress]) -> Wallet {
         Wallet(
             id: "wallet-id",
@@ -74,7 +173,7 @@ private extension MultichainFeeEngineResolverTests {
                 decimals: 6,
                 image: ""
             ),
-            price: .init(prices: [:], diff24h: [:], diff7d: [:], diff30d: [:]),
+            price: .init(prices: [:], diff24h: [:], diff7d: [:]),
             balance: 0
         )
     }

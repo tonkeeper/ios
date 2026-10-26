@@ -30,8 +30,7 @@ extension MultichainRampCoordinator {
             cryptoCurrency: nil,
             fiatCurrency: currencyCode,
             amount: nil,
-            requestNetwork: wallet.network,
-            walletId: wallet.multichainWalletId
+            requestNetwork: wallet.network
         )
 
         let p2pModule = P2PExpressModule(
@@ -45,7 +44,8 @@ extension MultichainRampCoordinator {
             params: params
         )
 
-        coordinator.didTapOpen = { url, _ in
+        coordinator.didTapOpen = { [weak self] url, _ in
+            self?.logDepositContinueToP2pMarket()
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }

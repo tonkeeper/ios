@@ -16,6 +16,7 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -56,6 +57,7 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
             assetId: nil,
             activityTypeFilter: nil,
             showPerps: nil,
+            market: nil,
             hideDust: nil
         )
 
@@ -138,6 +140,7 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
         assetId _: String?,
         activityTypeFilter _: MultichainActivityTypeFilter?,
         showPerps _: Bool?,
+        market _: Int?,
         hideDust _: Bool?
     ) async throws(MultichainClientAPIError) -> MultichainWalletActivitiesPage {
         await calls.record(.getWalletActivities)
@@ -176,6 +179,7 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
         search _: String?,
         availableOnly _: Bool?,
         showHidden _: Bool?,
+        showAll _: Bool?,
         hideDust _: Bool?,
         limit _: Int?,
         cursor _: String?
@@ -213,7 +217,6 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
         walletId _: String,
         lang _: String?,
         ids _: [String]?,
-        debugNow _: Date?,
         isNewUser _: Bool
     ) async throws(MultichainClientAPIError) -> [MultichainRaffle] {
         throw .connectionError(underlying: nil)
@@ -224,14 +227,6 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
     }
 
     func markRaffleImport(walletId _: String, importedWalletId _: String) async throws(MultichainClientAPIError) {
-        throw .connectionError(underlying: nil)
-    }
-
-    func forcePickRaffleWinners(
-        raffleId _: String,
-        walletId _: String?,
-        prizeId _: String?
-    ) async throws(MultichainClientAPIError) {
         throw .connectionError(underlying: nil)
     }
 

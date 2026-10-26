@@ -1,6 +1,6 @@
 import Foundation
 
-public enum LegacyRecipient: Equatable {
+@frozen public enum LegacyRecipient: Equatable {
     case ton(TonRecipient)
     case tron(TronRecipient)
 

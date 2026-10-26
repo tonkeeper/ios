@@ -4,7 +4,7 @@ import TonSwift
 public final class BalanceStore: Store<BalanceStore.Event, BalanceStore.State> {
     public typealias State = [Wallet: WalletBalanceState]
 
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateBalanceState(wallet: Wallet)
     }
 

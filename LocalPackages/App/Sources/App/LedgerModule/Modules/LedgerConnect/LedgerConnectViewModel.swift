@@ -11,6 +11,8 @@ import UIKit
 
 protocol LedgerConnectModuleOutput: AnyObject {
     var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, _ deviceProductName: String, @escaping (() -> Void)) -> Void)? { get set }
+    var didConnectBluetooth: ((_ deviceProductName: String) -> Void)? { get set }
+    var didOpenTonApp: ((_ deviceProductName: String?) -> Void)? { get set }
     var didCancel: (() -> Void)? { get set }
 }
 
@@ -33,6 +35,8 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     // MARK: - LedgerConnectModuleOutput
 
     var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, _ deviceProductName: String, @escaping (() -> Void)) -> Void)?
+    var didConnectBluetooth: ((_ deviceProductName: String) -> Void)?
+    var didOpenTonApp: ((_ deviceProductName: String?) -> Void)?
     var didCancel: (() -> Void)?
 
     // MARK: - LedgerConnectViewModel
@@ -245,15 +249,23 @@ private extension LedgerConnectViewModelImplementation {
     }
 
     func setConnected(peripheralInfo: PeripheralInfo) {
+        let shouldLog = state == .idle
         let deviceModel = LedgerDevice.getDeviceWith(serviceUUID: peripheralInfo.serviceUUID)
         self.connectedDeviceProductName = deviceModel.productName
         self.connectedDeviceId = peripheralInfo.peripheral.uuid.uuidString
         self.state = .bluetoothConnected
+        if shouldLog {
+            didConnectBluetooth?(deviceModel.productName)
+        }
     }
 
     func setReady(tonTransport: TonTransport) {
+        let shouldLog = state != .appConnected
         self.tonTransport = tonTransport
         self.state = .appConnected
+        if shouldLog {
+            didOpenTonApp?(connectedDeviceProductName)
+        }
     }
 
     func updateModel() {

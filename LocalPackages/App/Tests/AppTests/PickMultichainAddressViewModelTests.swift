@@ -21,7 +21,8 @@ final class PickMultichainAddressViewModelTests: XCTestCase {
         )
 
         let viewModel = PickMultichainAddressViewModelImplementation(
-            addresses: [tonV4Address, tonV5Address, ethAddress]
+            addresses: [tonV4Address, tonV5Address, ethAddress],
+            newChainBadgeService: NewChainBadgeServiceStub(newChains: [])
         )
 
         XCTAssertEqual(viewModel.items.map(\.address), [tonV4Address, tonV5Address, ethAddress])
@@ -38,11 +39,24 @@ final class PickMultichainAddressViewModelTests: XCTestCase {
         )
 
         let viewModel = PickMultichainAddressViewModelImplementation(
-            addresses: [tonAddress]
+            addresses: [tonAddress],
+            newChainBadgeService: NewChainBadgeServiceStub(newChains: [])
         )
 
         XCTAssertEqual(viewModel.items.count, 1)
         XCTAssertNil(viewModel.items.first?.versionTag)
+    }
+
+    func test_newBadgeFollowsService() {
+        let viewModel = PickMultichainAddressViewModelImplementation(
+            addresses: [
+                MultichainWalletAddress(chain: .ton, address: "ton-address", type: .tonV5R1),
+                MultichainWalletAddress(chain: .sol, address: "sol-address"),
+            ],
+            newChainBadgeService: NewChainBadgeServiceStub(newChains: [.sol])
+        )
+
+        XCTAssertEqual(viewModel.items.map(\.isNew), [false, true])
     }
 
     func test_receiveAddressPreviewWalletAddressPreservesType() {
@@ -56,5 +70,13 @@ final class PickMultichainAddressViewModelTests: XCTestCase {
 
         XCTAssertEqual(preview.type, .tonV5R1)
         XCTAssertEqual(preview.walletAddress, walletAddress)
+    }
+}
+
+private struct NewChainBadgeServiceStub: NewChainBadgeService {
+    let newChains: Set<MultichainChain>
+
+    func shouldShowBadge(for chain: MultichainChain) -> Bool {
+        newChains.contains(chain)
     }
 }

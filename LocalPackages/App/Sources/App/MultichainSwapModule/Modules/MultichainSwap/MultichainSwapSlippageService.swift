@@ -40,7 +40,10 @@ struct DefaultMultichainSwapSlippageService: MultichainSwapSlippageService {
         if let defaultBps = sourceSlippageOptions?.defaultBps {
             return defaultBps
         }
-        return route.totalSlippageBps ?? optionsBps.first ?? fallbackBps
+        // Without a config the swap keeps the slippage the swap screen quoted with. The route's
+        // `total_slippage_bps` is the slippage its legs add up to, not a tolerance to ask for, and
+        // SwapKit reports it negative, which the quote endpoint rejects.
+        return fallbackBps
     }
 }
 

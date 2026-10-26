@@ -51,6 +51,25 @@ private extension PairLedgerCoordinator {
             }
         }
 
+        module.output.didConnectBluetooth = { [weak self] deviceProductName in
+            guard let self else { return }
+            coreAssembly.analyticsProvider.log(WalletImportLedgerBluetoothConnected(
+                walletMode: .single,
+                walletSource: .ledger,
+                from: analyticsContext.from,
+                ledgerModel: LedgerModel(deviceProductName: deviceProductName)
+            ))
+        }
+        module.output.didOpenTonApp = { [weak self] deviceProductName in
+            guard let self else { return }
+            coreAssembly.analyticsProvider.log(WalletImportLedgerAppOpened(
+                walletMode: .single,
+                walletSource: .ledger,
+                from: analyticsContext.from,
+                ledgerModel: deviceProductName.map(LedgerModel.init(deviceProductName:))
+            ))
+        }
+
         module.output.didCancel = { [weak self, weak bottomSheetViewController] in
             bottomSheetViewController?.dismiss(completion: {
                 self?.didCancel?()
@@ -126,7 +145,8 @@ private extension PairLedgerCoordinator {
                     self.coreAssembly.analyticsProvider.logWalletImportSuccess(
                         walletMode: .single,
                         walletSource: .ledger,
-                        from: self.analyticsContext.from
+                        from: self.analyticsContext.from,
+                        ledgerModel: LedgerModel(deviceProductName: deviceProductName)
                     )
                     await MainActor.run {
                         guard let navigationController, navigationController.presentingViewController != nil else {
@@ -145,7 +165,8 @@ private extension PairLedgerCoordinator {
                         walletMode: .single,
                         walletSource: .ledger,
                         from: self.analyticsContext.from,
-                        error: error
+                        error: error,
+                        ledgerModel: LedgerModel(deviceProductName: deviceProductName)
                     )
                     await MainActor.run {
                         ToastPresenter.showToast(configuration: .failed)

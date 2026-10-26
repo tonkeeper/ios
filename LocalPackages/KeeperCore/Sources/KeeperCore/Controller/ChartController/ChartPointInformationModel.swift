@@ -2,7 +2,7 @@ import Foundation
 
 public struct ChartPointInformationModel {
     public struct Diff {
-        public enum Direction {
+        @frozen public enum Direction {
             case none
             case up
             case down

@@ -3,7 +3,7 @@ import Foundation
 struct EarnDappMatcher {
     static let earnHostSuffixes: Set<String> = [
         "vaults.fyi",
-        "vaults-tonkeeper-earn-latest-demo.fly.dev",
+        "vaults-tonkeeper-earn-demo.fly.dev",
     ]
 
     private let hostSuffixes: Set<String>

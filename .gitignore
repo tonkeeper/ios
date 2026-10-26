@@ -28,6 +28,7 @@ Keeper/Resources/Firebase/
 
 ## Modules
 LocalPackages/**/Package.resolved
+resources/Package.resolved
 
 ## Build output
 build/
@@ -39,3 +40,12 @@ __pycache__/
 
 ## Locally generated sourcekit-lsp config (machine-specific SDK paths)
 .sourcekit-lsp/
+
+## Maestro QA: local-only material, never pushed (see .agents/skills/tk-qa-verify)
+maestro_ui_tests/flows/local/
+maestro_ui_tests/flows/.suite/
+maestro_ui_tests/mocks/scenarios/
+maestro_ui_tests/mocks/_recorded/
+maestro_ui_tests/secrets/*
+!maestro_ui_tests/secrets/wallets.env.example
+**/.swiftpm/xcode/

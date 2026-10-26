@@ -36,7 +36,6 @@ extension BootConfiguration {
         disableBattery = (try? container.decode(Bool.self, forKey: .disableBattery)) ?? empty.disableBattery
         disableBatterySend = (try? container.decode(Bool.self, forKey: .disableBatterySend)) ?? empty.disableBatterySend
         disableBatteryCryptoRechargeModule = (try? container.decode(Bool.self, forKey: .disableBatteryCryptoRechargeModule)) ?? empty.disableBatteryCryptoRechargeModule
-        scamApiURL = try? container.decodeIfPresent(URL.self, forKey: .scamApiURL)
         flags = (try? container.decode(Flags.self, forKey: .flags)) ?? empty.flags
         stories = try? container.decodeIfPresent([String].self, forKey: .stories)
         reportAmount = try? container.decodeIfPresent(String.self, forKey: .reportAmount)
@@ -52,6 +51,9 @@ extension BootConfiguration {
         multichain = (try? container.decode(Endpoint.self, forKey: .multichain)) ?? empty.multichain
         trading = (try? container.decode(Endpoint.self, forKey: .trading)) ?? empty.trading
         explorers = (try? container.decode([ChainExplorer].self, forKey: .explorers)) ?? empty.explorers
+        earnUrl = try? container.decodeIfPresent(URL.self, forKey: .earnUrl)
+        earnFeaturedVaults = ((try? container.decode([[String: String]].self, forKey: .earnFeaturedVaults)) ?? [])
+            .compactMap { EarnFeaturedVault(network: $0["network"] ?? "", vaultId: $0["vaultId"] ?? "") }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -86,7 +88,6 @@ extension BootConfiguration {
         case disableBattery = "disable_battery"
         case disableBatterySend = "disable_battery_send"
         case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
-        case scamApiURL = "scam_api_url"
         case stories
         case reportAmount
         case stakingEnabledProviders = "enabled_staking"
@@ -101,6 +102,8 @@ extension BootConfiguration {
         case multichain
         case trading
         case explorers
+        case earnUrl = "earn_url"
+        case earnFeaturedVaults = "earn_featured_vaults"
     }
 }
 

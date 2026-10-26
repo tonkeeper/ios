@@ -2,11 +2,11 @@ import Foundation
 import TonSwift
 
 public extension Wallet {
-    enum Error: Swift.Error {
+    @frozen enum Error: Swift.Error {
         case invalidWalletKind
     }
 
-    enum Kind {
+    @frozen enum Kind {
         case regular
         case lockup
         case watchonly
@@ -185,6 +185,10 @@ public extension Wallet {
 
     var isGaslessAvailable: Bool {
         isW5Generation
+    }
+
+    var isTonConnectSignMessageAvailable: Bool {
+        kind == .regular && isW5
     }
 
     var isV4R2: Bool {

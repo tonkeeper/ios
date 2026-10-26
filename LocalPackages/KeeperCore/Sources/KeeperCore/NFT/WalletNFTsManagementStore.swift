@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public final class WalletNFTsManagementStore: Store<WalletNFTsManagementStore.Event, NFTsManagementState> {
-    public enum Event {
+    @frozen public enum Event {
         case didUpdateState(wallet: Wallet)
     }
 

@@ -105,6 +105,36 @@
                ReferencedContainer = "container:LocalPackages/TKUIKit">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "PerpsTests"
+               BuildableName = "PerpsTests"
+               BlueprintName = "PerpsTests"
+               ReferencedContainer = "container:LocalPackages/AppModules/Perps">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "TonTransportTests"
+               BuildableName = "TonTransportTests"
+               BlueprintName = "TonTransportTests"
+               ReferencedContainer = "container:LocalPackages/Ledger">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "MoonPayTests"
+               BuildableName = "MoonPayTests"
+               BlueprintName = "MoonPayTests"
+               ReferencedContainer = "container:LocalPackages/AppModules/MoonPay">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

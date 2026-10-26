@@ -38,4 +38,8 @@ extension HTTPRequest {
             .joined(separator: ",")
         return "\(parts[0])?\(keys)"
     }
+
+    var loggedPathWithValues: String? {
+        path.map { $0.removingPercentEncoding ?? $0 }
+    }
 }

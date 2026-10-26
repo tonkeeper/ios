@@ -46,7 +46,7 @@ final class RampCoordinator: RouterCoordinator<NavigationControllerRouter> {
         self.coreAssembly = coreAssembly
         self.initialDeeplink = initialDeeplink
         self.entrySource = entrySource
-        self.flowContext = DepositFlowContext(source: entrySource, utm: utm)
+        self.flowContext = DepositFlowContext(source: entrySource, utm: utm, walletMode: .single)
         self.depositPendingTracker = depositPendingTracker
 
         super.init(router: router)
@@ -385,7 +385,6 @@ private extension RampCoordinator {
 
     func openP2PExpress(asset: RampAsset, currencyCode: String) {
         logViewP2PIfNeeded(asset: asset)
-        fireDepositViewP2pAlert()
 
         let walletAddress: String
         if asset.isTronNetwork {
@@ -404,8 +403,7 @@ private extension RampCoordinator {
             cryptoCurrency: asset.symbol,
             fiatCurrency: currencyCode,
             amount: nil,
-            requestNetwork: wallet.network,
-            walletId: wallet.multichainWalletId
+            requestNetwork: wallet.network
         )
 
         let p2pModule = P2PExpressModule(
@@ -469,26 +467,13 @@ private extension RampCoordinator {
                 fromViewController: module.view
             )
         }
-        module.output.didTapContinue = { [weak self] context, merchantInfo, widgetURL in
+        module.output.didTapContinue = { [weak self] context, _, widgetURL in
             guard let self, let widgetURL else { return }
 
             let amount = NSDecimalNumber(decimal: context.amount).floatValue
             self.fireDepositClickRampInsertAmountContinue(amount: amount, providerName: context.providerName)
 
-            let shouldSkipWarning = self.coreAssembly.appSettings.isBuySellItemMarkedDoNotShowWarning(merchantInfo.id)
-
-            if shouldSkipWarning {
-                self.openOnRampProviderFlow(url: widgetURL, asset: asset, context: context)
-                return
-            }
-
-            self.openOnRampMerchantWarning(
-                merchantInfo: merchantInfo,
-                asset: asset,
-                context: context,
-                widgetURL: widgetURL,
-                fromViewController: module.view
-            )
+            self.openOnRampProviderFlow(url: widgetURL, asset: asset, context: context)
         }
         navigationController.pushViewController(module.view, animated: true)
     }
@@ -514,34 +499,6 @@ private extension RampCoordinator {
         }
 
         bottomSheetViewController.present(fromViewController: fromViewController)
-    }
-
-    func openOnRampMerchantWarning(
-        merchantInfo: OnRampMerchantInfo,
-        asset: RampAsset,
-        context: RampOnrampContinueContext,
-        widgetURL: URL,
-        fromViewController: UIViewController
-    ) {
-        let popupModule = RampMerchantPopUpAssembly.module(
-            merchantInfo: merchantInfo,
-            actionURL: widgetURL,
-            appSettings: coreAssembly.appSettings,
-            urlOpener: coreAssembly.urlOpener()
-        )
-
-        flowContext.amount = NSDecimalNumber(decimal: context.amount).floatValue
-        flowContext.providerName = context.providerName
-        fireDepositViewRampAlert()
-
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: popupModule.view)
-        bottomSheetViewController.present(fromViewController: fromViewController)
-
-        popupModule.output.didTapOpen = { [weak bottomSheetViewController, weak self] url in
-            bottomSheetViewController?.dismiss {
-                self?.openOnRampProviderFlow(url: url, asset: asset, context: context)
-            }
-        }
     }
 
     func openOnRampProviderFlow(url: URL, asset: RampAsset, context: RampOnrampContinueContext) {

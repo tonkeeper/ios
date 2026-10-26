@@ -33,11 +33,11 @@ public struct RNWalletsStore: Codable {
 }
 
 public struct RNWallet: Codable {
-    public enum Error: Swift.Error {
+    @frozen public enum Error: Swift.Error {
         case failedToCreateWallet
     }
 
-    public enum WalletType: String, Codable {
+    @frozen public enum WalletType: String, Codable {
         case Regular
         case Lockup
         case WatchOnly
@@ -47,12 +47,12 @@ public struct RNWallet: Codable {
         case Keystone
     }
 
-    public enum WalletNetwork: Int, Codable {
+    @frozen public enum WalletNetwork: Int, Codable {
         case mainnet = -239
         case testnet = -3
     }
 
-    public enum RNContractVersion: String, Codable {
+    @frozen public enum RNContractVersion: String, Codable {
         case v5Beta
         case v5R1
         case v4R2

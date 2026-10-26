@@ -25,7 +25,7 @@ public struct RampDeeplinkParameters: Equatable, Sendable {
     }
 }
 
-public enum RampDeeplinkMatching {
+@frozen public enum RampDeeplinkMatching {
     public static func normalizedNetwork(_ value: String) -> String {
         let lower = value.lowercased()
         if lower == "trc-20" { return "trc20" }

@@ -20,6 +20,7 @@ enum OnboardingNotificationsStep {
     static func push(
         router: NavigationControllerRouter,
         animated: Bool = true,
+        onAppear: (() -> Void)? = nil,
         onFinish: @escaping () -> Void
     ) {
         // Resolved before the asynchronous status check, and never asked as the flow's first
@@ -36,7 +37,7 @@ enum OnboardingNotificationsStep {
                 onFinish()
                 return
             }
-            pushScreen(router: router, animated: animated, onFinish: onFinish)
+            pushScreen(router: router, animated: animated, onAppear: onAppear, onFinish: onFinish)
         }
     }
 
@@ -44,6 +45,7 @@ enum OnboardingNotificationsStep {
     private static func pushScreen(
         router: NavigationControllerRouter,
         animated: Bool,
+        onAppear: (() -> Void)?,
         onFinish: @escaping () -> Void
     ) {
         let state = OnboardingInfoScreenState(
@@ -73,6 +75,7 @@ enum OnboardingNotificationsStep {
             onFinish()
         }
 
+        onAppear?()
         router.push(viewController: viewController, animated: animated)
     }
 }

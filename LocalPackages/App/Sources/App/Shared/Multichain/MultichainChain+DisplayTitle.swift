@@ -18,6 +18,14 @@ extension MultichainChain {
             return TKLocales.Receive.Multichain.Networks.Arbitrum.title
         case .tron:
             return TKLocales.Receive.Multichain.Networks.Tron.title
+        case .sol:
+            return TKLocales.Receive.Multichain.Networks.Solana.title
+        case .polygon:
+            return TKLocales.Receive.Multichain.Networks.Polygon.title
+        case .avax:
+            return TKLocales.Receive.Multichain.Networks.Avalanche.title
+        case .robinhood:
+            return TKLocales.Receive.Multichain.Networks.Robinhood.title
         }
     }
 
@@ -37,6 +45,14 @@ extension MultichainChain {
             return TKLocales.Receive.Multichain.Networks.Arbitrum.displayTitle
         case .tron:
             return TKLocales.Receive.Multichain.Networks.Tron.displayTitle
+        case .sol:
+            return TKLocales.Receive.Multichain.Networks.Solana.displayTitle
+        case .polygon:
+            return TKLocales.Receive.Multichain.Networks.Polygon.displayTitle
+        case .avax:
+            return TKLocales.Receive.Multichain.Networks.Avalanche.displayTitle
+        case .robinhood:
+            return TKLocales.Receive.Multichain.Networks.Robinhood.displayTitle
         }
     }
 }

@@ -93,6 +93,7 @@ public enum TKAppPreferences {
         case sendStatsImmediately
         case minimumLogSeverity
         case showTouches
+        case useMoonPaySandbox
     }
 
     public static var sendStatsImmediately: Bool? {
@@ -155,6 +156,21 @@ public enum TKAppPreferences {
                 return
             }
             localFeatureFlagsRepository.setValue(newValue, forKey: DevOverrideFlag.showTouches.rawValue)
+        }
+    }
+
+    public static var useMoonPaySandbox: Bool {
+        get {
+            guard isDevOverridesEnabled else {
+                return false
+            }
+            return localFeatureFlagsRepository.bool(forKey: DevOverrideFlag.useMoonPaySandbox.rawValue)
+        }
+        set {
+            guard isDevOverridesEnabled else {
+                return
+            }
+            localFeatureFlagsRepository.setValue(newValue, forKey: DevOverrideFlag.useMoonPaySandbox.rawValue)
         }
     }
 }
