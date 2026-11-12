@@ -100,6 +100,7 @@ public actor WalletNFTStore {
 
     @discardableResult
     public func loadNFTs() async -> WalletNFTs {
+        guard !Task.isCancelled else { return _state.nfts }
         if let loadingTask {
             return await loadingTask.value ?? _state.nfts
         } else {
@@ -124,7 +125,11 @@ public actor WalletNFTStore {
                 nfts: _state.nfts
             )
 
-            let loadedNFTs = await task.value
+            let loadedNFTs = await withTaskCancellationHandler {
+                await task.value
+            } onCancel: {
+                task.cancel()
+            }
             self.loadingTask = nil
             guard !Task.isCancelled, let loadedNFTs else {
                 _state = State(loadingState: .idle, nfts: _state.nfts)
