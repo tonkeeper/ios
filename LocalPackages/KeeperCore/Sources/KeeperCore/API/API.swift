@@ -359,6 +359,34 @@ extension API {
 // MARK: - NFTs
 
 extension API {
+    func getAllAccountNftItems(
+        address: Address,
+        collectionAddress: Address?,
+        isIndirectOwnership: Bool
+    ) async throws -> [NFT] {
+        let items = try await loadCompleteNFTInventory(identity: { $0.address }) { limit, offset in
+            let response = try await self.perform {
+                try await $0.getAccountNftItems(
+                    path: .init(accountId: address.toRaw()),
+                    query: .init(
+                        collection: collectionAddress?.toRaw(),
+                        limit: limit,
+                        offset: offset,
+                        indirectOwnership: isIndirectOwnership
+                    )
+                ).ok.body.json
+            }
+            return response.nftItems
+        }
+        // A full inventory cannot certify counts after silently dropping malformed items.
+        return try items.map { item in
+            if item.verified, let collection = item.collection {
+                _ = try Address.parse(collection.address)
+            }
+            return try NFT(nftItem: item)
+        }
+    }
+
     func getAccountNftItems(
         address: Address,
         collectionAddress: Address?,

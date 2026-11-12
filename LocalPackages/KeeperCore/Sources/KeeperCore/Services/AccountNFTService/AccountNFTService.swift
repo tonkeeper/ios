@@ -29,22 +29,28 @@ final class AccountNFTServiceImplementation: AccountNFTService {
         offset: Int?,
         isIndirectOwnership: Bool
     ) async throws -> [NFT] {
-        do {
-            let nfts = try await apiProvider.api(wallet.network).getAccountNftItems(
+        let api = apiProvider.api(wallet.network)
+        let nfts: [NFT]
+        if limit == nil, offset == nil {
+            nfts = try await api.getAllAccountNftItems(
+                address: wallet.address,
+                collectionAddress: collectionAddress,
+                isIndirectOwnership: isIndirectOwnership
+            )
+        } else {
+            nfts = try await api.getAccountNftItems(
                 address: wallet.address,
                 collectionAddress: collectionAddress,
                 limit: limit,
                 offset: offset,
                 isIndirectOwnership: isIndirectOwnership
             )
-            for nft in nfts {
-                try? nftRepository.saveNFT(nft, key: nft.address.toRaw())
-            }
-            try? accountNFTRepository.saveNfts(nfts, key: wallet.friendlyAddress.toShort())
-            return nfts
-        } catch {
-            try? accountNFTRepository.saveNfts([], key: wallet.friendlyAddress.toShort())
-            throw error
         }
+        try Task.checkCancellation()
+        for nft in nfts {
+            try? nftRepository.saveNFT(nft, key: nft.address.toRaw())
+        }
+        try? accountNFTRepository.saveNfts(nfts, key: wallet.friendlyAddress.toShort())
+        return nfts
     }
 }

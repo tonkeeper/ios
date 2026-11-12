@@ -5,6 +5,16 @@ import TonAPI
 import XCTest
 
 final class NFTAPIMappingTests: XCTestCase {
+    func testSinglePreviewDoesNotRequireThreeArrayElements() throws {
+        let raw: [String: Any] = [
+            "address": "0:" + String(repeating: "0", count: 64), "index": 0,
+            "verified": true, "metadata": [:], "approved_by": [], "trust": "whitelist",
+            "previews": [["resolution": "100x100", "url": "https://example.org/gift.png"]]
+        ]
+        let item = try JSONDecoder().decode(TonAPI.Components.Schemas.NftItem.self, from: JSONSerialization.data(withJSONObject: raw))
+        let nft = try NFT(nftItem: item)
+        XCTAssertEqual(nft.imageURL?.absoluteString, "https://example.org/gift.png")
+    }
     func testDecodedMetadataPreservesStringIntegerAndFractionalAttributes() throws {
         let metadata = try JSONDecoder().decode(
             OpenAPIObjectContainer.self,

@@ -72,7 +72,7 @@ extension NFT {
         }
 
         if imageURL == nil,
-           let previewURLString = nftItem.previews?[2].url,
+           let previewURLString = nftItem.previews?.dropFirst(2).first?.url ?? nftItem.previews?.first?.url,
            let previewURL = URL(string: previewURLString)
         {
             imageURL = previewURL
