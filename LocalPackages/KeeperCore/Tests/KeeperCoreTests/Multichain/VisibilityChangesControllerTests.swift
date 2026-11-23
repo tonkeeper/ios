@@ -137,14 +137,11 @@ private extension VisibilityChangesControllerTests {
         file: StaticString = #filePath,
         line: UInt = #line
     ) async throws {
-        let probe = VisibilityChangesController(vault: makeVault(), writer: VisibilityChangesWriterMock())
-        for _ in 0 ..< 400 {
-            if !probe.pendingSnapshot(walletId: walletId).hasChanges {
-                return
-            }
-            try await Task.sleep(nanoseconds: 25_000_000)
+        while let send = controller.pendingSend(walletId: walletId) {
+            await send.value
         }
-        XCTFail("pending store was not flushed", file: file, line: line)
+        let probe = VisibilityChangesController(vault: makeVault(), writer: VisibilityChangesWriterMock())
+        XCTAssertFalse(probe.pendingSnapshot(walletId: walletId).hasChanges, "pending store was not flushed", file: file, line: line)
     }
 
     static func makeAsset(assetId: String, isHidden: Bool) -> MultichainAsset {

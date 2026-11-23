@@ -19,15 +19,9 @@ struct PriceImpactView: View {
                 .foregroundStyle(.textPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.top, Layout.titleTopPadding)
-                .padding(.bottom, Layout.subtitleTopPadding)
+                .padding(.bottom, Layout.messageTopPadding)
 
-            Text(presentation.subtitle)
-                .textStyle(.body1)
-                .foregroundStyle(.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, Layout.descriptionTopPadding)
-
-            Text(presentation.description)
+            Text(presentation.message)
                 .textStyle(.body1)
                 .foregroundStyle(.textSecondary)
                 .multilineTextAlignment(.center)
@@ -39,14 +33,7 @@ struct PriceImpactView: View {
                         title: presentation.confirmButtonTitle,
                         size: .large,
                         layoutMode: .fill,
-                        appearance: {
-                            switch presentation.style {
-                            case .warning:
-                                .attention
-                            case .danger:
-                                .destructive
-                            }
-                        }(),
+                        appearance: .primary,
                         action: presentation.didTapConfirm
                     )
                 )
@@ -74,8 +61,7 @@ private extension PriceImpactView {
         static let horizontalPadding: CGFloat = 16
         static let iconSize: CGFloat = 84
         static let titleTopPadding: CGFloat = 13
-        static let subtitleTopPadding: CGFloat = 4
-        static let descriptionTopPadding: CGFloat = 12
+        static let messageTopPadding: CGFloat = 4
         static let buttonsTopPadding: CGFloat = 30
         static let buttonsBottomPadding: CGFloat = 3
         static let buttonsSpacing: CGFloat = 17

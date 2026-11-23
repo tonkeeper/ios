@@ -93,17 +93,20 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
     private let chartController: ChartV2Controller
     private let currencyStore: CurrencyStore
     private let chartFormatter: ChartFormatter
+    private let loadingTransitionMinimumDuration: UInt64
 
     // MARK: - Init
 
     init(
         chartController: ChartV2Controller,
         currencyStore: CurrencyStore,
-        chartFormatter: ChartFormatter
+        chartFormatter: ChartFormatter,
+        loadingTransitionMinimumDuration: UInt64 = 300_000_000
     ) {
         self.chartController = chartController
         self.currencyStore = currencyStore
         self.chartFormatter = chartFormatter
+        self.loadingTransitionMinimumDuration = loadingTransitionMinimumDuration
     }
 }
 
@@ -155,8 +158,8 @@ private extension ChartViewModelImplementation {
             let currency = currencyStore.state
             let period = await state.period
 
-            let minimumVisibility = Task {
-                try? await Task.sleep(nanoseconds: Self.loadingTransitionMinimumDuration)
+            let minimumVisibility = Task { [loadingTransitionMinimumDuration] in
+                try? await Task.sleep(nanoseconds: loadingTransitionMinimumDuration)
             }
 
             var didPresentCachedData = false
@@ -434,8 +437,6 @@ private extension ChartViewModelImplementation {
 extension KeeperCore.Coordinate: TKUIKit.Coordinate {}
 
 private extension ChartViewModelImplementation {
-    static let loadingTransitionMinimumDuration: UInt64 = 300_000_000
-
     struct SkeletonCoordinate: TKUIKit.Coordinate {
         let x: Double
         let y: Double

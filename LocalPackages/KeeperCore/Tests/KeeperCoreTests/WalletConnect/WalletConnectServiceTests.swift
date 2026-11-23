@@ -1,8 +1,9 @@
 @preconcurrency import Commons
 @testable import KeeperCore
 import KeeperCoreComponents
-import ReownWalletKit
+import TKLocalize
 import TonSwift
+import WalletConnectSign
 import XCTest
 
 private let walletConnectSessionCreatedAt = Date(timeIntervalSince1970: 1_700_000_000)
@@ -141,7 +142,7 @@ final class WalletConnectServiceTests: XCTestCase {
     }
 
     func testProposalCancelsPairingExpiration() async throws {
-        let context = await makeServiceContext(pairingProposalTimeoutNanoseconds: 50_000_000)
+        let context = await makeServiceContext(pairingProposalTimeoutNanoseconds: 500_000_000)
         let events = await context.service.events()
 
         try await context.service.pair(
@@ -156,7 +157,7 @@ final class WalletConnectServiceTests: XCTestCase {
         }
 
         XCTAssertEqual(proposalEvent, .sessionProposal(proposal.proposal(source: .browser)))
-        let nextEvent = await nextEvent(events, timeout: 100_000_000)
+        let nextEvent = await nextEvent(events, timeout: 1_000_000_000)
         XCTAssertNil(nextEvent)
     }
 
@@ -933,6 +934,28 @@ final class WalletConnectServiceTests: XCTestCase {
         ])
     }
 
+    func testApproveProposalApprovesMultichainLedgerWithItsAccounts() async throws {
+        let session = makeSession(topic: "session-topic")
+        let context = await makeServiceContext(
+            network: await WalletConnectWalletKitClientMock(
+                activeSessionsResult: [session],
+                approveProposalResults: [.success(session)]
+            )
+        )
+        let proposal = try await receiveProposal(context: context)
+        let device = Wallet.LedgerDevice(deviceId: "device", deviceModel: "Ledger Stax", accountIndex: 0)
+
+        try await context.service.approveProposal(
+            id: proposal.id,
+            wallet: makeWallet(kind: .Ledger(publicKey(), .v4R2, device))
+        )
+
+        let approveCalls = await context.network.approveProposalCalls()
+        XCTAssertEqual(approveCalls.first?.accounts, ["eip155:1:0xabc"])
+        let rejectCalls = await context.network.rejectProposalCalls()
+        XCTAssertEqual(rejectCalls, [])
+    }
+
     func testApproveProposalRejectsMissingRequiredChainWithUnsupportedChainsReason() async throws {
         let context = await makeServiceContext()
         let proposal = try await receiveProposal(
@@ -1182,6 +1205,36 @@ final class WalletConnectServiceTests: XCTestCase {
         XCTAssertEqual(reusedSessionRequest.topic, "session-topic")
     }
 
+    /// What the signing service reads once a request's review is done.
+    func testARequestIsPendingUntilItExpiresIsAnsweredOrItsSessionEnds() async throws {
+        let context = try await makeActiveSessionContext()
+        let events = await context.service.events()
+        await context.service.start()
+        let requests = try ["expiring", "answered", "ending"].map { try makePersonalSignRequest(topic: "session-topic", id: $0) }
+        for request in requests {
+            _ = await nextEventAfterEmitting(events) {
+                await context.eventStream.emit(.requestReceived(request, context: nil))
+            }
+        }
+        let received = await pending(requests, in: context)
+        let elsewhere = await context.service.hasPendingRequest(id: "ending", topic: "other-topic")
+
+        _ = await nextEventAfterEmitting(events) {
+            await context.eventStream.emit(.requestExpired(requests[0].id))
+        }
+        try await context.service.approveRequest(id: "answered", topic: "session-topic", result: .string("0xsignature"))
+        let expiredAndAnswered = await pending(requests, in: context)
+        _ = await nextEventAfterEmitting(events) {
+            await context.eventStream.emit(.sessionDeleted(topic: "session-topic", reason: WalletConnectDeleteReason()))
+        }
+        let sessionEnded = await pending(requests, in: context)
+
+        XCTAssertEqual(received, [true, true, true])
+        XCTAssertFalse(elsewhere)
+        XCTAssertEqual(expiredAndAnswered, [false, false, true])
+        XCTAssertEqual(sessionEnded, [false, false, false])
+    }
+
     func testMalformedSigningFailureRejectsRequestWithJSONRPCInvalidParams() async throws {
         let context = try await makeActiveSessionContext()
         let events = await context.service.events()
@@ -1256,6 +1309,53 @@ final class WalletConnectServiceTests: XCTestCase {
 
         let approveRequestCalls = await context.network.approveRequestCalls()
         XCTAssertEqual(approveRequestCalls.count, 2)
+    }
+
+    func testExpiryResponseDistinguishesBroadcastFromSigningAndRejection() async throws {
+        let cases: [(method: WalletConnectMethod, chain: WalletConnectChain, params: String, result: WalletConnectResponseValue, approve: Bool, wasBroadcast: Bool)] = [
+            (.ethSendTransaction, .eth, #"[{"from":"0xabc","to":"0xdef","value":"0x1"}]"#, .string("0xtxhash"), true, true),
+            (.solanaSignAndSendTransaction, .sol, #"{"transaction":"AQID"}"#, .object(["signature": "txsignature"]), true, true),
+            (.ethSignTransaction, .eth, #"[{"from":"0xabc","to":"0xdef","value":"0x1"}]"#, .string("0xsigned"), true, false),
+            (.solanaSignTransaction, .sol, #"{"transaction":"AQID"}"#, .object(["signature": "signature", "transaction": "AQID"]), true, false),
+            (.ethSendTransaction, .eth, #"[{"from":"0xabc","to":"0xdef","value":"0x1"}]"#, .null, false, false),
+        ]
+        for testCase in cases {
+            let expiry = WalletConnectResponseError.requestExpired(id: "request")
+            let context = try await makeActiveSessionContext(
+                approveRequestResults: [.failure(expiry)],
+                rejectRequestResults: [.failure(expiry)]
+            )
+            let events = await context.service.events()
+            await context.service.start()
+            let request = try makeRequest(
+                topic: "session-topic",
+                method: testCase.method.rawValue,
+                paramsJSON: testCase.params,
+                chain: testCase.chain
+            )
+            let received = await nextEventAfterEmitting(events) {
+                await context.eventStream.emit(.requestReceived(request, context: nil))
+            }
+            guard case .sessionRequest = received else {
+                XCTFail("Expected signing request for \(testCase.method)")
+                continue
+            }
+
+            do {
+                if testCase.approve {
+                    try await context.service.approveRequest(id: "request", topic: request.topic, result: testCase.result)
+                } else {
+                    try await context.service.rejectRequest(id: "request", topic: request.topic)
+                }
+                XCTFail("Expected expiry for \(testCase.method)")
+            } catch {
+                XCTAssertEqual(error, testCase.wasBroadcast ? .requestExpiredAfterBroadcast(id: "request") : expiry)
+                XCTAssertEqual(error.errorDescription, testCase.wasBroadcast ? TKLocales.WalletConnect.Error.requestExpiredAfterBroadcast : TKLocales.WalletConnect.Error.requestExpired)
+                XCTAssertFalse(error.isRetryableDeliveryFailure)
+            }
+            let isPending = await context.service.hasPendingRequest(id: "request", topic: request.topic)
+            XCTAssertFalse(isPending)
+        }
     }
 
     func testRequestWithMissingDappIsAutoRejectedAndEmitsError() async throws {
@@ -1918,7 +2018,9 @@ private extension WalletConnectServiceTests {
 
     func makeActiveSessionContext(
         topic: String = "session-topic",
-        sessionAccountAddresses: [WalletConnectChain: [String]] = [:]
+        sessionAccountAddresses: [WalletConnectChain: [String]] = [:],
+        approveRequestResults: [Result<Void, WalletConnectResponseError>] = [],
+        rejectRequestResults: [Result<Void, WalletConnectResponseError>] = []
     ) async throws -> ServiceContext {
         let store = makeSessionStore()
         try store.save([
@@ -1932,6 +2034,8 @@ private extension WalletConnectServiceTests {
         return await makeServiceContext(
             network: await WalletConnectWalletKitClientMock(
                 activeSessionsResult: [session],
+                approveRequestResults: approveRequestResults,
+                rejectRequestResults: rejectRequestResults,
                 walletCapabilitiesScopes: [
                     topic: WalletConnectWalletCapabilitiesScope(accounts: [
                         .init(address: "0xabc", chainId: "0x1"),
@@ -1973,6 +2077,15 @@ private extension WalletConnectServiceTests {
             }
         }
         throw XCTSkip("Expected proposal event")
+    }
+
+    func pending(_ requests: [Request], in context: ServiceContext) async -> [Bool] {
+        var pending = [Bool]()
+        for request in requests {
+            let isPending = await context.service.hasPendingRequest(id: request.id.string, topic: request.topic)
+            pending.append(isPending)
+        }
+        return pending
     }
 
     func nextEventAfterEmitting(

@@ -70,7 +70,8 @@ enum LegacySendData {
         comment: String?,
         isMaxAmount: Bool,
         recipientDisplayAddress: String? = nil,
-        estimatedDurationSeconds: Int? = nil
+        estimatedDurationSeconds: Int? = nil,
+        recipientExtraId: String? = nil
     ) -> LegacySendData? {
         guard let recipient else { return nil }
         switch (item, recipient) {
@@ -83,7 +84,8 @@ enum LegacySendData {
                     comment: comment,
                     isMaxAmount: isMaxAmount,
                     recipientDisplayAddress: recipientDisplayAddress,
-                    estimatedDurationSeconds: estimatedDurationSeconds
+                    estimatedDurationSeconds: estimatedDurationSeconds,
+                    recipientExtraId: recipientExtraId
                 )
             )
         case let (.tron(item), .tron(recipient)):
@@ -93,7 +95,8 @@ enum LegacySendData {
                     recipient: recipient,
                     item: item,
                     recipientDisplayAddress: recipientDisplayAddress,
-                    estimatedDurationSeconds: estimatedDurationSeconds
+                    estimatedDurationSeconds: estimatedDurationSeconds,
+                    recipientExtraId: recipientExtraId
                 )
             )
         default:

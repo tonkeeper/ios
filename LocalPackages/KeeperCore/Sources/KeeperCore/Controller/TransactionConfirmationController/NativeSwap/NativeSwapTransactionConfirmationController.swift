@@ -9,6 +9,9 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
 
     private var preferredExtraType: TransactionConfirmationModel.ExtraType = .default
     private var availableTypes: [TransactionConfirmationModel.ExtraType] = [.default]
+    /// The fee method the user set through `setPrefferedExtraType`. The emulation tries it first, also after
+    /// one that could not pay fell back to TON.
+    private var pickedExtraType: TransactionConfirmationModel.ExtraType?
 
     private var transferType: TransferType {
         if preferredExtraType == .default {
@@ -39,6 +42,7 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
     private let tonConnectService: TonConnectService
     private let balanceService: BalanceService
     private let settingsRepository: SettingsRepository
+    private let isEmulationEnabled: Bool
 
     init(
         wallet: Wallet,
@@ -49,7 +53,8 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         transferService: TransferService,
         tonConnectService: TonConnectService,
         balanceService: BalanceService,
-        settingsRepository: SettingsRepository
+        settingsRepository: SettingsRepository,
+        isEmulationEnabled: Bool
     ) {
         self.wallet = wallet
         self.confirmation = confirmation
@@ -60,8 +65,11 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         self.tonConnectService = tonConnectService
         self.balanceService = balanceService
         self.settingsRepository = settingsRepository
+        self.isEmulationEnabled = isEmulationEnabled
 
-        setBatteryPrefferedExtraTypeIfNeeded()
+        if !isEmulationEnabled {
+            setBatteryPrefferedExtraTypeIfNeeded()
+        }
     }
 
     public func getModel() -> TransactionConfirmationModel {
@@ -86,27 +94,38 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
     }
 
     public func emulate() async -> Result<Void, TransactionConfirmationError> {
-        var availableTypes: [TransactionConfirmationModel.ExtraType] = [.default]
-
         let isBatteryAvailable = await transferService.isRelayerAvailable(
             wallet: wallet,
             transfer: nativeSwapTransfer()
         )
+        let isBatteryEligible = isBatteryAvailable && fromToken != .ton(.ton)
 
-        if isBatteryAvailable, fromToken != .ton(.ton) {
-            availableTypes.insert(.battery, at: 0)
+        availableTypes = isBatteryEligible ? [.battery, .default] : [.default]
+
+        guard isEmulationEnabled else {
+            return .success(())
         }
-
-        self.availableTypes = availableTypes
-
-        return .success(())
+        return await emulateSwap(isBatteryEligible: isBatteryEligible)
     }
 
     public func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
+        let confirmation = confirmation
+        let fromAddress: String? = switch fromToken {
+        case .ton:
+            wallet.addressToCopy
+        case .tron:
+            wallet.multichainAddress(for: .tron) ?? wallet.tron?.address.base58
+        }
+        let swapDetails = MultichainPendingTransaction.SwapDetails(
+            fromAssetId: fromToken.assetId(network: wallet.network),
+            toAssetId: toToken.assetId(network: wallet.network),
+            fromAddress: fromAddress,
+            fromAmount: (BigUInt(confirmation.bidUnits) ?? fromAmount).description
+        )
         do {
             let broadcastedTransactions = try await transferService.sendTransaction(
                 wallet: wallet,
-                transfer: nativeSwapTransfer(),
+                transfer: .nativeSwap(confirmation),
                 transferType: transferType,
                 signClosure: { [weak self] transferData -> Result<SignedTransactions, TransactionConfirmationError> in
                     guard let self else {
@@ -119,43 +138,11 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
                 .ton(
                     wallet: wallet,
                     signedTransactions: broadcastedTransactions,
-                    activityType: .swap(
-                        MultichainPendingTransaction.SwapDetails(
-                            fromAssetId: fromToken.assetId(network: wallet.network),
-                            toAssetId: toToken.assetId(network: wallet.network)
-                        )
-                    )
+                    activityType: .swap(swapDetails)
                 )
             )
         } catch {
-            switch error {
-            case let .firstOption(transferError):
-                switch transferError {
-                case let .sendFailed(message):
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: message
-                        )
-                    )
-                default:
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: transferError.localizedDescription
-                        )
-                    )
-                }
-            case let .secondOption(transactionError):
-                switch transactionError {
-                case .cancelledByUser:
-                    return .failure(.cancelledByUser)
-                default:
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: transactionError.localizedDescription
-                        )
-                    )
-                }
-            }
+            return .failure(TransactionConfirmationError(sendFailure: error))
         }
     }
 
@@ -163,6 +150,7 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         extraType: TransactionConfirmationModel.ExtraType
     ) {
         preferredExtraType = extraType
+        pickedExtraType = extraType
         var transferSettings = settingsRepository.getTransferSettings(wallet: wallet)
 
         switch extraType {
@@ -182,6 +170,32 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         )
     }
 
+    /// The swap's own messages go through the emulation of the fee method it is about to pay with. A method
+    /// picked here is the swap's alone and stays out of the wallet's transfer settings.
+    private func emulateSwap(isBatteryEligible: Bool) async -> Result<Void, TransactionConfirmationError> {
+        let candidate = FeeMethod.candidate(picked: pickedExtraType, isBatteryEligible: isBatteryEligible)
+        let emulation: TransferEmulationResult
+        do {
+            emulation = try await transferService.emulate(
+                wallet: wallet,
+                transfer: nativeSwapTransfer(),
+                preferredExtraType: candidate
+            )
+            // A newer emulation replaced this one, and the fee method is the newer one's to set.
+            try Task.checkCancellation()
+        } catch {
+            return .failure(.failedToCalculateFee(message: error.analyticsReason))
+        }
+        let feeMethod = FeeMethod(
+            candidate: candidate,
+            emulatedTransferType: emulation.transferType,
+            isBatteryEligible: isBatteryEligible
+        )
+        preferredExtraType = feeMethod.extraType
+        availableTypes = feeMethod.availableTypes
+        return .success(())
+    }
+
     private func setBatteryPrefferedExtraTypeIfNeeded() {
         Task {
             let isBatteryAvailable = await transferService.isRelayerAvailable(
@@ -199,7 +213,9 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         switch fromToken {
         case let .ton(token):
             switch token {
-            case .ton: .ton(getIsMaxAmount())
+            // The funds check skips a transfer of the whole balance, which pays its fee out of the amount. A
+            // swap attaches its gas on top of the amount instead, so the check has to count both.
+            case .ton: .ton(isEmulationEnabled ? false : getIsMaxAmount())
             case let .jetton(jetton): .jetton(jetton.jettonInfo)
             }
         case .tron: .tronUSDT
@@ -289,5 +305,39 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
             return .failure(error)
         }
         return .success(transactions)
+    }
+}
+
+extension NativeSwapTransactionConfirmationController {
+    /// What the swap pays its fee with once an emulation priced it. `TransferService` emulates through the
+    /// battery only when its charges cover the swap and falls back to TON otherwise, so a battery the emulation
+    /// did not go through neither pays nor stays on offer. With TON picked, the battery stays on offer
+    /// wherever the wallet holds charges.
+    struct FeeMethod {
+        let extraType: TransactionConfirmationModel.ExtraType
+        let availableTypes: [TransactionConfirmationModel.ExtraType]
+
+        /// What the swap is emulated with: the user's pick, else the battery where the wallet holds charges,
+        /// else TON.
+        static func candidate(
+            picked: TransactionConfirmationModel.ExtraType?,
+            isBatteryEligible: Bool
+        ) -> TransactionConfirmationModel.ExtraType {
+            picked ?? (isBatteryEligible ? .battery : .default)
+        }
+
+        init(
+            candidate: TransactionConfirmationModel.ExtraType,
+            emulatedTransferType: TransferType,
+            isBatteryEligible: Bool
+        ) {
+            if emulatedTransferType.isBattery {
+                extraType = .battery
+                availableTypes = [.battery, .default]
+            } else {
+                extraType = .default
+                availableTypes = isBatteryEligible && candidate == .default ? [.battery, .default] : [.default]
+            }
+        }
     }
 }

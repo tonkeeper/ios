@@ -34,6 +34,54 @@ public final class ImportWalletKindPreviewLoader {
         self.ratesService = ratesService
     }
 
+    /// Previews for the wallet kind screen when the phrase also holds a Telegram wallet.
+    /// The TON wallet is offered only where the phrase would have been asked about it anyway.
+    public func loadPreviews(
+        words: [String],
+        telegramWallet: ActiveWalletModel,
+        network: Network,
+        currency: Currency
+    ) async -> (telegram: ImportWalletKindPreview, ton: ImportWalletKindPreview?, multichain: ImportWalletKindPreview?) {
+        async let telegramPreview = preview(
+            of: [walletImportController.loadTelegramWallet(telegramWallet, network: network)],
+            legacyTronBalance: nil,
+            currency: currency
+        )
+        guard network == .mainnet else {
+            async let tonPreview = loadPreview(
+                words: words,
+                type: .guessByWords(words),
+                legacyTronBalance: nil,
+                network: network,
+                currency: currency
+            )
+            return await(telegramPreview, tonPreview, nil)
+        }
+        async let multichainPreview = loadMultichainPreview(words: words, network: network, currency: currency)
+        let tonPreview: ImportWalletKindPreview?
+        switch await importedWalletTronResolver.walletKindSelectionReason(words: words, network: network) {
+        case let .ambiguousMnemonic(legacyTronBalance):
+            tonPreview = await loadPreview(
+                words: words,
+                type: .ton,
+                legacyTronBalance: legacyTronBalance,
+                network: network,
+                currency: currency
+            )
+        case let .legacyTronBalance(balance):
+            tonPreview = await loadPreview(
+                words: words,
+                type: .bip39,
+                legacyTronBalance: balance,
+                network: network,
+                currency: currency
+            )
+        case nil:
+            tonPreview = nil
+        }
+        return await(telegramPreview, tonPreview, multichainPreview)
+    }
+
     public func loadPreviewsIfNeeded(
         words: [String],
         network: Network,
@@ -97,7 +145,14 @@ private extension ImportWalletKindPreviewLoader {
             network: network,
             checkHistory: false
         )) ?? []
+        return await preview(of: activeWallets, legacyTronBalance: legacyTronBalance, currency: currency)
+    }
 
+    func preview(
+        of activeWallets: [ActiveWalletModel],
+        legacyTronBalance: TronBalance?,
+        currency: Currency
+    ) async -> ImportWalletKindPreview {
         let rates = try? await ratesService.loadRates(jettons: [], currencies: [currency])
         let tonRate = rates?.ton.first(where: { $0.currency == currency })
         let usdtRate = rates?.usdt.first(where: { $0.currency == currency })

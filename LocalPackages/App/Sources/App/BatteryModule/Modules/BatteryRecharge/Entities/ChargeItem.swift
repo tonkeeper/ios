@@ -13,4 +13,8 @@ struct ChargeItem: AmountInputUnit {
     var symbol: String {
         ""
     }
+
+    var conversionRounding: AmountInputConversionRounding {
+        .wholeUnits
+    }
 }

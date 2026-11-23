@@ -37,7 +37,9 @@ public protocol PerpsSetLimitPriceViewModeling: ObservableObject {
     var amountText: String { get }
     var fieldPrefix: String { get }
     var fieldSuffix: String? { get }
+    var isAmountSigned: Bool { get }
     var warningText: String? { get }
+    var isWarningBlocking: Bool { get }
     var chipText: String { get }
     var quickFills: [PerpsSetLimitPriceQuickFillItem] { get }
     var isSetEnabled: Bool { get }
@@ -116,7 +118,8 @@ public struct PerpsSetLimitPriceView<ViewModel: PerpsSetLimitPriceViewModeling>:
             text: Binding(get: { viewModel.amountText }, set: { viewModel.setAmount($0) }),
             focused: $amountFocused,
             prefix: viewModel.fieldPrefix,
-            suffix: viewModel.fieldSuffix
+            suffix: viewModel.fieldSuffix,
+            allowsSign: viewModel.isAmountSigned
         ) {
             offsetChip
         }
@@ -127,7 +130,7 @@ public struct PerpsSetLimitPriceView<ViewModel: PerpsSetLimitPriceViewModeling>:
         if let warningText = viewModel.warningText {
             Text(warningText)
                 .textStyle(.body2)
-                .foregroundStyle(.accentRed)
+                .foregroundStyle(viewModel.isWarningBlocking ? .accentRed : .accentOrange)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, Layout.inset)

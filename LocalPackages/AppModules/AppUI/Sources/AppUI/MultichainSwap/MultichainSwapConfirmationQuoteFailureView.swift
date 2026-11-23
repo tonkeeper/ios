@@ -2,7 +2,7 @@ import SwiftUI
 import TKLocalize
 import TKUIKit
 
-/// Takes the confirm slider's place once the swap quote fails to refresh: the reason first, then a
+/// Takes the confirm button's place once the swap quote fails to refresh: the reason first, then a
 /// way to ask again, as the Android confirmation does it.
 public struct MultichainSwapConfirmationQuoteFailureView: View {
     private let message: String

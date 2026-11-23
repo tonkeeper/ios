@@ -26,6 +26,7 @@ enum RaffleSymbol {
     case checkmarkCircle // ic-checkmark-circle-28
     case flash // ic-flash-16
     case trayArrowDown // ic-tray-arrow-down-28
+    case dinner
 
     var image: UIImage {
         switch self {
@@ -42,6 +43,7 @@ enum RaffleSymbol {
         case .checkmarkCircle: return .TKUIKit.Icons.Size32.checkmarkCircle
         case .flash: return .TKUIKit.Icons.Size16.flash
         case .trayArrowDown: return .TKUIKit.Icons.Size28.trayArrowDown
+        case .dinner: return .TKUIKit.Icons.Size28.dinner
         }
     }
 }

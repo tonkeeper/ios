@@ -1,4 +1,5 @@
 import SnapKit
+import SwiftUI
 import TKLocalize
 import TKLogging
 import TKUIKit
@@ -10,6 +11,7 @@ open class TKBridgeWebViewController: UIViewController {
         case network(domain: String, code: Int)
         case httpError(status: Int)
         case processTerminated
+        case timeout
     }
 
     public struct Configuration {
@@ -37,19 +39,28 @@ open class TKBridgeWebViewController: UIViewController {
         didSet {
             guard isViewLoaded else { return }
             navigationBar.isHidden = isHeaderHidden
+            updateStandaloneCloseButtonVisibility()
             setupWebViewConstraints()
+        }
+    }
+
+    public var showsCloseButtonWhenHeaderHidden = false {
+        didSet {
+            guard isViewLoaded else { return }
+            updateStandaloneCloseButtonVisibility()
         }
     }
 
     public var didTapCopy: ((URL) -> Void)?
     public var didTapShare: ((URL) -> Void)?
     public var didTapClose: (() -> Void)?
+    public var newWindowHandler: ((URL) -> Bool)?
 
     public var didLoadInitialURLHandler: (() -> Void)?
 
     public var didCommitLoad: ((URL) -> Void)?
     public var didFinishLoad: ((URL) -> Void)?
-    public var didFailLoad: ((LoadFailure) -> Void)?
+    public var didFailLoad: ((_ failure: LoadFailure, _ isPageShown: Bool) -> Void)?
     public var didChangeCanGoBack: ((Bool) -> Void)?
 
     public var currentURL: URL? {
@@ -95,6 +106,8 @@ open class TKBridgeWebViewController: UIViewController {
 
     private let navigationBar = TKUINavigationBar()
     private var initialLoadingIndicator: TKLoaderView?
+    private var initialLoadTimeoutTask: Task<Void, Never>?
+    private static let initialLoadTimeout: UInt64 = 60 * NSEC_PER_SEC
     private static let firstPaintMessageName = "tkBridgeFirstPaint"
     private static let firstPaintScript = """
     (function () {
@@ -129,13 +142,15 @@ open class TKBridgeWebViewController: UIViewController {
         button.configuration = TKPillButton.Configuration(
             leftButton: TKPillButton.Configuration.Button(
                 icon: .TKUIKit.Icons.Size16.ellipses,
-                action: { [weak self] in
-                    self?.menuButtonAction()
+                systemBarIcon: .TKUIKit.Icons.Size28.ellipses,
+                action: { [weak self] sourceView in
+                    self?.menuButtonAction(sourceView: sourceView)
                 }
             ),
             rightButton: TKPillButton.Configuration.Button(
                 icon: .TKUIKit.Icons.Size16.close,
-                action: { [weak self] in
+                systemBarIcon: .TKUIKit.Icons.Size28.xmarkOutline,
+                action: { [weak self] _ in
                     self?.closeButtonAction()
                 }
             )
@@ -143,6 +158,49 @@ open class TKBridgeWebViewController: UIViewController {
 
         return button
     }()
+
+    private lazy var standaloneCloseButton: UIView = {
+        let button = TKUINavigationBar.createCloseButton { [weak self] in
+            self?.closeButtonAction()
+        }
+        button.accessibilityIdentifier = "close"
+        return button
+    }()
+
+    private var loadFailureView: UIView?
+    private var isRetryingLoad = false {
+        didSet { updateStandaloneCloseButtonVisibility() }
+    }
+
+    private var isPageShown = false
+
+    private func makeLoadFailureView() -> UIView {
+        let container = UIView()
+        container.backgroundColor = .Background.page
+        let placeholder = SwiftUIHostingView()
+        placeholder.setContent {
+            PlaceholderView(
+                config: PlaceholderView.Config(
+                    lottieResource: .exclamationmarkCircle,
+                    title: TKLocales.BridgeWeb.LoadFailed.title,
+                    subtitle: TKLocales.BridgeWeb.LoadFailed.subtitle,
+                    button: PlaceholderView.ButtonConfig(
+                        title: TKLocales.Actions.retry,
+                        icon: .TKUIKit.Icons.Size16.refresh,
+                        action: { [weak self] in
+                            self?.retryLoad()
+                        }
+                    )
+                )
+            )
+        }
+        container.addSubview(placeholder)
+        placeholder.snp.makeConstraints { make in
+            make.centerY.equalTo(container)
+            make.left.right.equalTo(container).inset(32)
+        }
+        return container
+    }
 
     // MARK: - KVO
 
@@ -167,7 +225,7 @@ open class TKBridgeWebViewController: UIViewController {
         }
     }
 
-    private var bridgeMessageObservers = [String: [(Any) -> Void]]()
+    private var bridgeMessageObservers = [String: [(Any, URL?) -> Void]]()
 
     // MARK: - Dependencies
 
@@ -230,25 +288,32 @@ open class TKBridgeWebViewController: UIViewController {
 
         view.addSubview(webView)
         if configuration.showsInitialLoadingIndicator {
+            addBridgeMessageObserver(message: Self.firstPaintMessageName) { [weak self] _ in
+                self?.didDrawPage()
+            }
             showInitialLoadingIndicator()
         }
         view.addSubview(navigationBar)
+        view.addSubview(standaloneCloseButton)
 
         navigationBar.isHidden = isHeaderHidden
+        updateStandaloneCloseButtonVisibility()
 
         setupConstraints()
 
         didUpdateUrl()
 
-        navigationBar.leftViews = [backButton]
         rightPillButton.rightButtonAccessibilityIdentifier = "close"
         navigationBar.rightViews = [rightPillButton]
 
-        backButton.isHidden = true
+        // Leaving the button out rather than hiding it, as a system bar item does not follow its button.
         canGoBackObservation = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
-            guard let canGoBack = value.newValue else { return }
-            self?.backButton.isHidden = !canGoBack
-            self?.didChangeCanGoBack?(canGoBack)
+            guard let self, let canGoBack = value.newValue else { return }
+            let leftViews = canGoBack ? [backButton] : []
+            if navigationBar.leftViews != leftViews {
+                navigationBar.leftViews = leftViews
+            }
+            didChangeCanGoBack?(canGoBack)
         }
 
         let urlRequest = URLRequest(url: updateURLWithTonkeeperUTM(url: url))
@@ -268,6 +333,15 @@ open class TKBridgeWebViewController: UIViewController {
     }
 
     public func addBridgeMessageObserver(message: String, observer: @escaping (Any) -> Void) {
+        addBridgeMessageObserver(message: message) { body, _ in
+            observer(body)
+        }
+    }
+
+    public func addBridgeMessageObserver(
+        message: String,
+        observer: @escaping (_ body: Any, _ senderOrigin: URL?) -> Void
+    ) {
         if var messageObservers = bridgeMessageObservers[message] {
             messageObservers.append(observer)
             bridgeMessageObservers[message] = messageObservers
@@ -281,7 +355,17 @@ open class TKBridgeWebViewController: UIViewController {
         navigationBar.snp.makeConstraints { make in
             make.top.left.right.equalTo(self.view)
         }
+        standaloneCloseButton.snp.makeConstraints { make in
+            make.top.equalTo(view.safeAreaLayoutGuide).offset(16)
+            make.right.equalTo(view).inset(16)
+            make.size.equalTo(32)
+        }
         setupWebViewConstraints()
+    }
+
+    private func updateStandaloneCloseButtonVisibility() {
+        let showsCloseButton = showsCloseButtonWhenHeaderHidden || loadFailureView != nil || isRetryingLoad
+        standaloneCloseButton.isHidden = !(isHeaderHidden && showsCloseButton)
     }
 
     private func setupWebViewConstraints() {
@@ -304,12 +388,57 @@ open class TKBridgeWebViewController: UIViewController {
         }
         loaderView.isLoading = true
         initialLoadingIndicator = loaderView
-        addBridgeMessageObserver(message: Self.firstPaintMessageName) { [weak self] _ in
-            self?.hideInitialLoadingIndicator()
+        initialLoadTimeoutTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: Self.initialLoadTimeout)
+            guard !Task.isCancelled, let self else { return }
+            webView.stopLoading()
+            handleLoadFailure(.timeout)
+        }
+    }
+
+    public func showLoadFailurePlaceholder() {
+        hideInitialLoadingIndicator()
+        isPageShown = false
+        guard loadFailureView == nil else { return }
+        let failureView = makeLoadFailureView()
+        view.insertSubview(failureView, aboveSubview: webView)
+        failureView.snp.makeConstraints { make in
+            make.edges.equalTo(webView)
+        }
+        loadFailureView = failureView
+        updateStandaloneCloseButtonVisibility()
+    }
+
+    private func hideLoadFailurePlaceholder() {
+        loadFailureView?.removeFromSuperview()
+        loadFailureView = nil
+        updateStandaloneCloseButtonVisibility()
+    }
+
+    private func retryLoad() {
+        isRetryingLoad = true
+        hideLoadFailurePlaceholder()
+        if configuration.showsInitialLoadingIndicator {
+            showInitialLoadingIndicator()
+        }
+        if webView.url == nil {
+            webView.load(URLRequest(url: updateURLWithTonkeeperUTM(url: initialURL)))
+        } else {
+            webView.reload()
+        }
+    }
+
+    private func didDrawPage() {
+        hideInitialLoadingIndicator()
+        if loadFailureView == nil {
+            isPageShown = true
         }
     }
 
     private func hideInitialLoadingIndicator() {
+        initialLoadTimeoutTask?.cancel()
+        initialLoadTimeoutTask = nil
+        isRetryingLoad = false
         guard let initialLoadingIndicator else { return }
         initialLoadingIndicator.isLoading = false
         initialLoadingIndicator.removeFromSuperview()
@@ -317,6 +446,7 @@ open class TKBridgeWebViewController: UIViewController {
     }
 
     private func backButtonAction() {
+        hideLoadFailurePlaceholder()
         webView.goBack()
     }
 
@@ -330,13 +460,18 @@ open class TKBridgeWebViewController: UIViewController {
         }
     }
 
-    private func menuButtonAction() {
+    private func menuButtonAction(sourceView: UIView) {
         let items = [
             TKPopupMenuItem(
                 title: TKLocales.BridgeWeb.refresh,
                 icon: .TKUIKit.Icons.Size16.refresh,
                 selectionHandler: { [weak self] in
-                    self?.webView.reload()
+                    guard let self else { return }
+                    if loadFailureView != nil {
+                        retryLoad()
+                    } else {
+                        webView.reload()
+                    }
                 }
             ),
             TKPopupMenuItem(
@@ -366,7 +501,7 @@ open class TKBridgeWebViewController: UIViewController {
             ),
         ]
         TKPopupMenuController.show(
-            sourceView: rightPillButton,
+            sourceView: sourceView,
             position: .bottomRight(inset: 8),
             minimumWidth: 0,
             items: items,
@@ -422,7 +557,7 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        hideInitialLoadingIndicator()
+        didDrawPage()
         guard let url = webView.url else { return }
         if !didLoadInitialURL {
             didLoadInitialURL = true
@@ -460,15 +595,23 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
         handleLoadFailure(.processTerminated)
     }
 
+    /// WebKit reports a load it handed over as an error: 102 when the navigation policy took it
+    /// (a deeplink, Telegram, a download), 204 when a media player plays it.
+    private static let handedOverLoadErrorCodes: Set<Int> = [102, 204]
+
     private func handleNavigationError(_ error: Error) {
         let error = error as NSError
         guard error.code != NSURLErrorCancelled else { return }
+        if error.domain == "WebKitErrorDomain", Self.handedOverLoadErrorCodes.contains(error.code) {
+            hideInitialLoadingIndicator()
+            return
+        }
         handleLoadFailure(.network(domain: error.domain, code: error.code))
     }
 
     private func handleLoadFailure(_ failure: LoadFailure) {
         hideInitialLoadingIndicator()
-        didFailLoad?(failure)
+        didFailLoad?(failure, isPageShown)
     }
 
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
@@ -510,7 +653,13 @@ extension TKBridgeWebViewController: WKUIDelegate {
         // A sized window.open is a popup, e.g. Telegram Login: it hands its result back through
         // window.opener, so it gets a web view of its own instead of replacing the opener's page.
         guard windowFeatures.width != nil || windowFeatures.height != nil else {
-            webView.load(navigationAction.request)
+            guard let url = navigationAction.request.url, let newWindowHandler else {
+                webView.load(navigationAction.request)
+                return nil
+            }
+            if navigationPolicy(for: url) == .allow, !newWindowHandler(url) {
+                webView.load(navigationAction.request)
+            }
             return nil
         }
         if let url = navigationAction.request.url, navigationPolicy(for: url) == .cancel {
@@ -571,7 +720,17 @@ extension TKBridgeWebViewController: WKScriptMessageHandler {
             return
         }
         let observers = bridgeMessageObservers[message.name]
-        observers?.forEach { $0(message.body) }
+        let senderOrigin = senderOrigin(of: message)
+        observers?.forEach { $0(message.body, senderOrigin) }
+    }
+
+    private func senderOrigin(of message: WKScriptMessage) -> URL? {
+        let origin = message.frameInfo.securityOrigin
+        var components = URLComponents()
+        components.scheme = origin.protocol
+        components.host = origin.host
+        components.port = origin.port == 0 ? nil : origin.port
+        return components.url
     }
 
     private func isMessageFromTrustedFrame(_ message: WKScriptMessage) -> Bool {

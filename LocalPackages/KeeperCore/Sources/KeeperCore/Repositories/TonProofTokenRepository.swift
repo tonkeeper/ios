@@ -16,6 +16,13 @@ final class TonProofTokenRepository {
         try keychainVault.set(token, query: createKeychainQuery(key: wallet.address.toRaw() + "2"))
     }
 
+    func removeTonProofToken(wallet: Wallet, ifMatching token: String) throws {
+        do {
+            guard try getTonProofToken(wallet: wallet) == token else { return }
+            try keychainVault.delete(createKeychainQuery(key: wallet.address.toRaw() + "2"))
+        } catch TKKeychainError.noItem {}
+    }
+
     private func createKeychainQuery(key: String) -> TKKeychainQuery {
         TKKeychainQuery(
             item: .genericPassword(service: .key, account: key),

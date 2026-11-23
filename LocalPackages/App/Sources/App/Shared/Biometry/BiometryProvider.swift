@@ -30,11 +30,15 @@ final class BiometryProvider {
         case userFallback
         case passcodeNotSet
         case biometryNotAvailable
+        /// Face ID is the only biometry an app asks the user to allow. A declined permission comes
+        /// back as `biometryNotAvailable`, so a Face ID the device can't use reads the same; only
+        /// the app's page in the Settings app allows a declined one again.
+        case faceIDDenied
         case biometryNotEnrolled
         case biometryLockout
         case unknown
 
-        init(nsError: NSError) {
+        init(nsError: NSError, biometryType: LABiometryType) {
             switch nsError {
             case LAError.authenticationFailed:
                 self = .authenticationFailed
@@ -45,7 +49,7 @@ final class BiometryProvider {
             case LAError.passcodeNotSet:
                 self = .passcodeNotSet
             case LAError.biometryNotAvailable:
-                self = .biometryNotAvailable
+                self = biometryType == .faceID ? .faceIDDenied : .biometryNotAvailable
             case LAError.biometryNotEnrolled:
                 self = .biometryNotEnrolled
             case LAError.biometryLockout:
@@ -69,13 +73,20 @@ final class BiometryProvider {
         }
     }
 
+    var isFaceIDDenied: Bool {
+        guard case .failure(.faceIDDenied) = getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) else {
+            return false
+        }
+        return true
+    }
+
     func getBiometryState(policy: LAPolicy) -> Result<BiometryState, Error> {
         var error: NSError?
         guard context.canEvaluatePolicy(policy, error: &error) else {
             guard let error = error else {
                 return .success(.none)
             }
-            return .failure(Error(nsError: error))
+            return .failure(Error(nsError: error, biometryType: context.biometryType))
         }
 
         return .success(BiometryState(type: context.biometryType))

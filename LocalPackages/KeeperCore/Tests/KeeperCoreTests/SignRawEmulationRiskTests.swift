@@ -31,6 +31,12 @@ final class SignRawEmulationRiskTests: XCTestCase {
         XCTAssertNil(risk(ton: 50_000_000, totalEquivalent: nil).totalEquivalent(limitingTonTo: 0, tonRate: tonRate))
     }
 
+    func test_currencyMismatch_doesNotSubtractValueInAnotherCurrency() throws {
+        let rate = try Rates.Rate(currency: XCTUnwrap(Currency(code: "EUR")), rate: 2, diff24h: nil)
+
+        XCTAssertNil(risk(ton: 50_000_000, totalEquivalent: 0.12).totalEquivalent(limitingTonTo: 0, tonRate: rate))
+    }
+
     private func risk(ton: UInt64, totalEquivalent: Double?) -> SignRawEmulation.Risk {
         SignRawEmulation.Risk(
             ton: ton,

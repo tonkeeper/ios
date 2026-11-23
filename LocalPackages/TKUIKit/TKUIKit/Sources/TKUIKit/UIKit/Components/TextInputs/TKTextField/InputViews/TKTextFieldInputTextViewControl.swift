@@ -88,15 +88,12 @@ extension TKTextInputTextViewControl: UITextPasteDelegate {
             item.setDefaultResult()
             return
         }
-        guard let pasteString = UIPasteboard.general.string else {
-            item.setNoResult()
-            return
-        }
-
-        if shouldPaste(pasteString) {
+        Task { @MainActor in
+            guard let pasteString = await UIPasteboard.general.readString(), shouldPaste(pasteString) else {
+                item.setNoResult()
+                return
+            }
             item.setDefaultResult()
-        } else {
-            item.setNoResult()
         }
     }
 }

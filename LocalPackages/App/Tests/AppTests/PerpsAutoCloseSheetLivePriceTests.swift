@@ -3,6 +3,7 @@
 @testable import Perps
 import PerpsModels
 import TKLocalize
+import TKTestSupport
 import XCTest
 
 @MainActor
@@ -20,14 +21,14 @@ final class PerpsAutoCloseSheetLivePriceTests: XCTestCase {
 
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67000")])
-        await waitUntil { viewModel.referencePrice == 67000 }
+        await waitUntil(viewModel) { viewModel.referencePrice == 67000 }
 
         XCTAssertEqual(viewModel.referencePrice, 67000)
         XCTAssertEqual(viewModel.takeProfitWarningText, TKLocales.Perps.OpenPosition.takeProfitMustBeAboveCurrentPrice)
         XCTAssertFalse(viewModel.isApplyEnabled)
     }
 
-    func test_fixedReference_ignoresTheLivePrice() async throws {
+    func test_fixedReference_ignoresTheLivePrice() async {
         let client = FakeMarkPricesClient()
         let store = PerpsMarketsStore.makeForTests(tickers: [1: "BTC/USD"], client: client)
         let interest = store.makePriceInterest()
@@ -37,10 +38,15 @@ final class PerpsAutoCloseSheetLivePriceTests: XCTestCase {
             format: PerpsFormatting.live,
             marketsStore: store
         )
+        let live = PerpsAutoCloseSheetViewModel(
+            context: makeContext(livePriceMarketId: 1),
+            format: PerpsFormatting.live,
+            marketsStore: store
+        )
 
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67000")])
-        try await Task.sleep(nanoseconds: 300_000_000)
+        await waitUntil(live) { live.referencePrice == 67000 }
 
         XCTAssertEqual(viewModel.referencePrice, 66000)
         interest.clear()
@@ -59,12 +65,5 @@ final class PerpsAutoCloseSheetLivePriceTests: XCTestCase {
             draft: nil,
             livePriceMarketId: livePriceMarketId
         )
-    }
-
-    private func waitUntil(timeout: TimeInterval = 2, condition: @escaping () -> Bool) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
     }
 }

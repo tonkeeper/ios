@@ -136,28 +136,6 @@ public struct PerpsPendingL1Step: Sendable, Equatable, Codable {
     public var state: PerpsPendingStepState
     /// Unix seconds after which a TON wallet refuses the signed bytes; absent on EVM.
     public let validUntil: Int64?
-
-    public init(
-        stepId: String,
-        attemptId: String,
-        chainId: Int64,
-        sender: String,
-        nonce: Int64,
-        signedTransaction: String,
-        txHash: String,
-        state: PerpsPendingStepState,
-        validUntil: Int64? = nil
-    ) {
-        self.stepId = stepId
-        self.attemptId = attemptId
-        self.chainId = chainId
-        self.sender = sender
-        self.nonce = nonce
-        self.signedTransaction = signedTransaction
-        self.txHash = txHash
-        self.state = state
-        self.validUntil = validUntil
-    }
 }
 
 struct PerpsDepositTransmission: Sendable, Equatable, Codable {
@@ -175,19 +153,22 @@ public struct PerpsDepositRegistration: Sendable, Equatable, Codable {
     public let amount: String
     public let l1TxHash: String?
     public let executionId: String?
+    public var sourceTxHash: String?
 
     public init(
         operationId: String,
         assetId: String,
         amount: String,
         l1TxHash: String?,
-        executionId: String?
+        executionId: String?,
+        sourceTxHash: String? = nil
     ) {
         self.operationId = operationId
         self.assetId = assetId
         self.amount = amount
         self.l1TxHash = l1TxHash
         self.executionId = executionId
+        self.sourceTxHash = sourceTxHash
     }
 }
 
@@ -210,12 +191,18 @@ public struct PerpsPendingDeposit: Sendable, Equatable, Codable {
     public var gatewayAmountUnits: String?
     public var quoteExpiresAtMillis: Int64?
     var transmission: PerpsDepositTransmission?
+    public var estimatedDurationSeconds: Int?
     public var quoteId: String?
     public var registration: PerpsDepositRegistration?
     public var depositId: String?
+    public var pendingStep: PerpsDepositStatus.Step?
+    public var statusAcknowledged: Bool?
     public var creditedAmount: String?
     public var accountIndex: Int64?
     public var failureReason: String?
+    /// Handed to the battery's relayer instead of broadcast: nothing is left to send, and no
+    /// signed step names its transaction, which may be on chain all the same.
+    public var relayAttempted: Bool?
 
     public init(
         stage: PerpsDepositStage,
@@ -253,6 +240,12 @@ public struct PerpsPendingDeposit: Sendable, Equatable, Codable {
 }
 
 extension PerpsPendingDeposit {
+    var registrationBody: PerpsDepositRegistration? {
+        guard var registration else { return nil }
+        registration.sourceTxHash = registration.executionId == nil || relayAttempted == true ? nil : sourceTxHash
+        return registration
+    }
+
     var requiresResume: Bool {
         if stage == .approvalPending, sourceStep == nil, gatewayStep == nil { return false }
         return switch stage {
@@ -337,6 +330,11 @@ public struct PerpsPendingWithdraw: Sendable, Equatable, Codable {
         case .signed, .sending, .unknown: true
         case .reviewed, .accepted, .awaitingL1, .settled, .unconfirmed, .rejected: false
         }
+    }
+
+    /// Lighter refused it for its nonce or signature, and the user was told it was not sent.
+    public var isRefusedForNonce: Bool {
+        (stage == .unknown || stage == .unconfirmed) && failureReason == PerpsWithdrawService.resignRequiredReason
     }
 
     /// Past its nonce the last attempt can no longer land, but that is no proof it did: trades

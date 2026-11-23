@@ -2,8 +2,7 @@ import SwiftUI
 import TKUIKit
 
 /// Scrolls `text` sideways under a gradient fade, the way the TonConnect connect header tickers its
-/// wallet address. Two copies run back to back and the offset wraps over one copy's width, so the loop
-/// has no seam; the pace is a fixed points-per-second so it does not depend on how long the text is.
+/// wallet address. The pace is a fixed points-per-second so it does not depend on how long the text is.
 struct WalletConnectProposalTickerText: View {
     enum Fade {
         case leading
@@ -16,15 +15,16 @@ struct WalletConnectProposalTickerText: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var textWidth: CGFloat = 0
-    @State private var startDate = Date()
 
     var body: some View {
         Group {
             if scrolls {
-                TimelineView(.animation) { context in
-                    strip
-                        .offset(x: offset(at: context.date))
-                }
+                TKTicker(
+                    text: text,
+                    textStyle: .body2,
+                    color: .textTertiary,
+                    pointsPerSecond: Layout.pointsPerSecond
+                )
             } else {
                 // Sized to the text, not to the window: letting the frame squeeze it would truncate the
                 // address with an ellipsis, and the clip plus gradient already hide the overflow.
@@ -49,16 +49,7 @@ private extension WalletConnectProposalTickerText {
         !reduceMotion && textWidth > width
     }
 
-    var strip: some View {
-        HStack(spacing: 0) {
-            textView
-                .fixedSize()
-            textView
-                .fixedSize()
-        }
-    }
-
-    /// Measured outside the timeline so the text is sized once, not on every animation frame.
+    /// Tells whether the text overflows the window.
     var widthReader: some View {
         textView
             .fixedSize()
@@ -81,15 +72,8 @@ private extension WalletConnectProposalTickerText {
             .lineLimit(1)
     }
 
-    func offset(at date: Date) -> CGFloat {
-        guard textWidth > 0 else { return 0 }
-        let travelled = date.timeIntervalSince(startDate) * Layout.pointsPerSecond
-        let phase = travelled.truncatingRemainder(dividingBy: Double(textWidth))
-        return CGFloat(phase) - textWidth
-    }
-
     enum Layout {
-        static let pointsPerSecond: Double = 25
+        static let pointsPerSecond: CGFloat = 25
     }
 }
 

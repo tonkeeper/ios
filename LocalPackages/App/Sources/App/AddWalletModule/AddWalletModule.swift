@@ -112,7 +112,6 @@ struct AddWalletModule {
                 keeperInfoRepository: dependencies.walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository()
             ),
             multichainAssembly: dependencies.multichainAssembly,
-            configurationAssembly: dependencies.configurationAssembly,
             network: network,
             analyticsContext: analyticsContext,
             customizeWalletModule: {
@@ -224,7 +223,8 @@ struct AddWalletModule {
         publicKey: TonSwift.PublicKey,
         name: String,
         router: NavigationControllerRouter,
-        analyticsContext: WalletFlowAnalyticsContext
+        analyticsContext: WalletFlowAnalyticsContext,
+        pairingEntry: PairingEntry = .deeplink
     ) -> PairSignerDeeplinkCoordinator {
         PairSignerDeeplinkCoordinator(
             publicKey: publicKey,
@@ -234,6 +234,7 @@ struct AddWalletModule {
             coreAssembly: dependencies.coreAssembly,
             router: router,
             analyticsContext: analyticsContext,
+            pairingEntry: pairingEntry,
             publicKeyImportCoordinatorProvider: { router, publicKey, name in
                 self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
             }
@@ -241,14 +242,12 @@ struct AddWalletModule {
     }
 
     func createLedgerImportCoordinator(
-        accounts: [LedgerAccount],
-        activeWalletModels: [ActiveWalletModel],
+        choice: LedgerImportCoordinator.Choice,
         name: String,
         router: NavigationControllerRouter
     ) -> LedgerImportCoordinator {
         LedgerImportCoordinator(
-            ledgerAccounts: accounts,
-            activeWalletModels: activeWalletModels,
+            choice: choice,
             name: name,
             router: router,
             walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
@@ -273,8 +272,9 @@ struct AddWalletModule {
             multichainAssembly: dependencies.multichainAssembly,
             router: router,
             analyticsContext: analyticsContext,
-            ledgerImportCoordinatorProvider: { router, accounts, activeWalletModels, name in
-                self.createLedgerImportCoordinator(accounts: accounts, activeWalletModels: activeWalletModels, name: name, router: router)
+            ledgerNetworkSelectionConfiguration: .client,
+            ledgerImportCoordinatorProvider: { router, choice, name in
+                self.createLedgerImportCoordinator(choice: choice, name: name, router: router)
             }
         )
     }

@@ -10,8 +10,12 @@ struct PerpsTestAmountFormatting: PerpsAmountFormatting {
         "$\(plain(value))"
     }
 
-    func usdExact(_ value: Decimal) -> String {
-        "$\(plain(value))"
+    func usdFixed(_ value: Decimal, fractionDigits: Int) -> String {
+        "$\(fixed(value, fractionDigits: fractionDigits))"
+    }
+
+    func fixed(_ value: Decimal, fractionDigits: Int) -> String {
+        String(format: "%.\(fractionDigits)f", NSDecimalNumber(decimal: value).doubleValue)
     }
 
     func signedPercent(_ value: Decimal) -> String {
@@ -36,5 +40,5 @@ struct PerpsTestAmountFormatting: PerpsAmountFormatting {
 }
 
 extension PerpsFormatting {
-    static let test = PerpsFormatting(amounts: PerpsTestAmountFormatting())
+    static let test = PerpsFormatting(amounts: PerpsTestAmountFormatting(), locale: Locale(identifier: "en_US_POSIX"))
 }

@@ -83,11 +83,17 @@ public struct TronApi {
 
     private var client: HttpApiClient
 
-    public init(urlSession: URLSession, baseApiUrl: URL) {
+    /// `pause` waits out the rate limit and the retry cooldowns.
+    public init(
+        urlSession: URLSession,
+        baseApiUrl: URL,
+        pause: @escaping @Sendable (_ nanoseconds: UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
+    ) {
         client = HttpApiClient(
             urlSession: urlSession,
             baseApiUrl: baseApiUrl,
-            isSuccessStatusCode: (200 ..< 300).contains
+            isSuccessStatusCode: (200 ..< 300).contains,
+            pause: pause
         )
     }
 

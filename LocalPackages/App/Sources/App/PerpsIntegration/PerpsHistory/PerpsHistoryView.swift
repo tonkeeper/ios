@@ -1,8 +1,8 @@
 import AppUI
 import KeeperCore
+import Perps
 import PerpsModels
 import SwiftUI
-import TKLocalize
 import TKUIKit
 
 struct PerpsHistoryView: View {
@@ -12,6 +12,7 @@ struct PerpsHistoryView: View {
     let onOpenTransaction: (URL, String?) -> Void
 
     @State private var selectedActivity: MultichainActivity?
+    @State private var depositId: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,6 +42,10 @@ struct PerpsHistoryView: View {
                 )
             }
         )
+        .refreshesWhileFundingPending(selectedActivity) { [query = viewModel.query] in
+            await query.refresh()
+            return query.state.activities
+        }
         .onReceive(viewModel.query.$state) { state in
             guard let shown = selectedActivity,
                   let current = MultichainHistoryEventTarget.current(of: shown, in: state.activities),
@@ -56,12 +61,21 @@ struct PerpsHistoryView: View {
         .onDisappear {
             viewModel.query.disappeared()
         }
+        .tkBottomSheet(item: $depositId, header: { _, _ in .depositStatusContent }) { id in
+            if let model = viewModel.depositStatus {
+                PerpsDepositStatusDetailsView(model: model, depositId: id) { depositId = nil }
+            }
+        }
     }
 
     private func select(_ activity: MultichainActivity) {
-        if let event = PerpsHistoryEvent(activity: activity) {
+        if let deposit = viewModel.trackedDeposit(matching: activity), let model = viewModel.depositStatus {
+            depositId = deposit.id
+            model.didOpen(deposit.id)
+        } else if let event = viewModel.historyEvents.event(from: activity) {
             onSelectEvent(event)
         } else {
+            viewModel.showsFundingStatus = activity.status == .pending
             selectedActivity = activity
         }
     }

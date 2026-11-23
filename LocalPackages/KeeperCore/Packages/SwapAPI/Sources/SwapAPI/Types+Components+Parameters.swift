@@ -56,22 +56,6 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/CurrencyQuery`.
         public typealias CurrencyQuery = Swift.String
-        /// Trade direction
-        ///
-        /// - Remark: Generated from `#/components/parameters/DirectionQuery`.
-        public typealias DirectionQuery = Components.Schemas.ExchangeDirection
-        /// Fiat currency filter (e.g. EUR, USD)
-        ///
-        /// - Remark: Generated from `#/components/parameters/FiatQuery`.
-        public typealias FiatQuery = Swift.String
-        /// Crypto currency filter (e.g. TON, USDT)
-        ///
-        /// - Remark: Generated from `#/components/parameters/CryptoQuery`.
-        public typealias CryptoQuery = Swift.String
-        /// Crypto network filter (e.g. native, jetton)
-        ///
-        /// - Remark: Generated from `#/components/parameters/NetworkQuery`.
-        public typealias NetworkQuery = Swift.String
         /// SIM card country code (ISO 3166-1 alpha-2)
         ///
         /// - Remark: Generated from `#/components/parameters/SimCountryQuery`.
@@ -92,15 +76,7 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/CrossSwapRouteIDPath`.
         public typealias CrossSwapRouteIDPath = Swift.String
-        /// Signing payload identifier
-        ///
-        /// - Remark: Generated from `#/components/parameters/CrossSwapPayloadIDPath`.
-        public typealias CrossSwapPayloadIDPath = Swift.String
-        /// Execution identifier
-        ///
-        /// - Remark: Generated from `#/components/parameters/CrossSwapExecutionIDPath`.
-        public typealias CrossSwapExecutionIDPath = Swift.String
-        /// Free-text query matched against Symbol and Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
+        /// Matched against the start of Symbol or Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
         ///
         /// - Remark: Generated from `#/components/parameters/AssetSearchQuery`.
         public typealias AssetSearchQuery = Swift.String
@@ -112,10 +88,6 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/AssetSearchLimitQuery`.
         public typealias AssetSearchLimitQuery = Swift.Int
-        /// Internal asset_id, e.g. `ton/mainnet/coin` or `eth/mainnet/erc-20/0x...`
-        ///
-        /// - Remark: Generated from `#/components/parameters/CrossSwapAssetIDQuery`.
-        public typealias CrossSwapAssetIDQuery = Swift.String
         /// Internal chain id, e.g. `eth/mainnet`
         ///
         /// - Remark: Generated from `#/components/parameters/OfframpSourceChainQuery`.
@@ -160,7 +132,7 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/FirebaseUserHeader`.
         public typealias FirebaseUserHeader = Swift.String
-        /// Free-text search over `symbol`. Case-insensitive substring match.
+        /// Search by the start of `symbol` or `name`, case-insensitive; symbol matches rank above name matches.
         ///
         /// - Remark: Generated from `#/components/parameters/SearchQuery`.
         public typealias SearchQuery = Swift.String
@@ -192,9 +164,5 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/WalletIdPath`.
         public typealias WalletIdPath = Swift.String
-        /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
-        ///
-        /// - Remark: Generated from `#/components/parameters/IsNewUserQuery`.
-        public typealias IsNewUserQuery = Swift.Bool
     }
 }

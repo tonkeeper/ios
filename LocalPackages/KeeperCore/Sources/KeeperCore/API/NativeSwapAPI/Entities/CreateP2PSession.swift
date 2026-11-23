@@ -13,7 +13,7 @@ public struct CreateP2PSession: Codable {
     /// Fiat currency code
     public let fiatCurrency: String
     /// Optional exchange amount
-    public let amount: Int64?
+    public let amount: Decimal?
 
     public init(
         wallet: String,
@@ -21,7 +21,7 @@ public struct CreateP2PSession: Codable {
         network: String? = nil,
         cryptoCurrency: String? = nil,
         fiatCurrency: String,
-        amount: Int64?
+        amount: Decimal?
     ) {
         self.wallet = wallet
         self.assetId = assetId

@@ -314,32 +314,6 @@ private extension TradeAssetDetailsHistorySectionViewData {
 
 private extension TradeAssetDetailsMultichainHistorySectionViewData {
     func maskingAmounts() -> TradeAssetDetailsMultichainHistorySectionViewData {
-        TradeAssetDetailsMultichainHistorySectionViewData(
-            items: items.map { item in
-                MultichainHistoryActivityItem(
-                    id: item.id,
-                    activity: item.activity,
-                    title: item.title,
-                    subtitle: item.subtitle,
-                    comment: item.comment,
-                    time: item.time,
-                    icon: item.icon,
-                    primaryAmount: item.primaryAmount?.masked(),
-                    secondaryAmount: item.secondaryAmount?.masked(),
-                    status: item.status,
-                    nft: item.nft
-                )
-            }
-        )
-    }
-}
-
-private extension MultichainHistoryActivityItem.Amount {
-    func masked() -> Self {
-        MultichainHistoryActivityItem.Amount(
-            text: .secureModeValueShort,
-            chainTitle: chainTitle,
-            style: style
-        )
+        TradeAssetDetailsMultichainHistorySectionViewData(items: items.map { $0.maskingAmounts() })
     }
 }

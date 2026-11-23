@@ -1,4 +1,5 @@
 import Foundation
+import KeeperCore
 import TKCore
 import TKLogging
 
@@ -14,7 +15,8 @@ final class RedAnalyticsSessionHolder {
         flow: OpAttempt.Flow,
         operation: OpAttempt.Operation,
         attemptSource: RedAnalyticsAttemptSource? = nil,
-        otherMetadata: RedAnalyticsMetadata? = nil
+        otherMetadata: RedAnalyticsMetadata? = nil,
+        utm: UtmParameters = .empty
     ) {
         guard session == nil else {
             return Log.w("cannot start red session which is already started")
@@ -26,7 +28,8 @@ final class RedAnalyticsSessionHolder {
             operation: operation,
             attemptSource: attemptSource,
             startedAtMs: nowMs(),
-            otherMetadata: metadata
+            otherMetadata: metadata,
+            utm: utm
         )
 
         analytics.log(
@@ -37,7 +40,8 @@ final class RedAnalyticsSessionHolder {
                 attemptSource: attemptSource?.rawValue,
                 startedAtMs: session.startedAtMs,
                 otherMetadata: metadata.asJsonString
-            )
+            ),
+            utm: utm
         )
         self.session = session
     }
@@ -68,7 +72,8 @@ final class RedAnalyticsSessionHolder {
                 errorType: error?.type.rawValue,
                 stage: stage,
                 otherMetadata: metadata.asJsonString
-            )
+            ),
+            utm: session.utm
         )
         self.session = nil
     }

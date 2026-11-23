@@ -26,6 +26,8 @@ final class PerpsChartViewModel: ObservableObject, PerpsChartViewModeling {
     private var pendingLiveSnapshot: PerpsChartSnapshot?
     private var isPaginating = false
     private var reachedHistoryStart = false
+    private var isHoldingLoadedTimeline = false
+    private var isOlderLoadDeferred = false
     private let historyPageSize: Int64 = 200
     private let loadTimeout: TimeInterval
 
@@ -79,6 +81,10 @@ final class PerpsChartViewModel: ObservableObject, PerpsChartViewModeling {
         guard !isPaginating, !reachedHistoryStart,
               !(snapshot?.candles.isEmpty ?? true), let chartWatch
         else { return }
+        guard !isHoldingLoadedTimeline else {
+            isOlderLoadDeferred = true
+            return
+        }
         isPaginating = true
         let generation = watchGeneration
         chartWatch.loadOlder(count: historyPageSize) { [weak self] page in
@@ -123,13 +129,13 @@ final class PerpsChartViewModel: ObservableObject, PerpsChartViewModeling {
         let change = selectedChange
         return PerpsChartCrosshairReadout(
             dateTime: format.candleDateTime(candle.openedAt),
-            openText: format.usd(candle.open),
-            closeText: format.usd(candle.close),
+            openText: format.price(candle.open),
+            closeText: format.price(candle.close),
             percentText: format.signedPercent(change?.percent ?? 0),
             amountText: format.signedUsd(change?.amount ?? 0),
-            volumeText: candle.volume.map { format.usd($0) } ?? "—",
-            highText: format.usd(candle.high),
-            lowText: format.usd(candle.low),
+            volumeText: candle.volume.map { format.usdShort($0) } ?? "—",
+            highText: format.price(candle.high),
+            lowText: format.price(candle.low),
             isPositive: change?.isPositive ?? true
         )
     }
@@ -139,6 +145,10 @@ private extension PerpsChartViewModel {
     func startWatching() {
         stopWatching()
         reachedHistoryStart = false
+        isHoldingLoadedTimeline = snapshot.map {
+            $0.timeframe == timeframe && !$0.isLiveOnly && !$0.candles.isEmpty
+        } ?? false
+        isOlderLoadDeferred = false
         watchGeneration += 1
         let generation = watchGeneration
         awaitingFirstFrame = true
@@ -180,11 +190,31 @@ private extension PerpsChartViewModel {
         awaitingFirstFrame = false
         loadTimeoutTask?.cancel()
         loadTimeoutTask = nil
+        if !result.isLiveOnly {
+            isHoldingLoadedTimeline = false
+        }
         applySnapshot(result)
+        if !isHoldingLoadedTimeline, isOlderLoadDeferred {
+            isOlderLoadDeferred = false
+            loadOlderCandles()
+        }
     }
 
     func applySnapshot(_ result: PerpsChartSnapshot) {
         guard result.timeframe == timeframe else { return }
+        if result.isLiveOnly, isHoldingLoadedTimeline, let snapshot {
+            if let candles = snapshot.candles.replacingTail(with: result.candles) {
+                applySnapshot(PerpsChartSnapshot(
+                    marketId: result.marketId,
+                    timeframe: result.timeframe,
+                    candles: candles,
+                    priceDecimals: result.priceDecimals
+                ))
+            } else {
+                loadingState = .reconnecting
+            }
+            return
+        }
         guard selectedCandle == nil else {
             pendingLiveSnapshot = result
             return
@@ -254,5 +284,12 @@ private extension PerpsChartViewModel {
 private extension [PerpsChartCandle] {
     func hasSameTimeline(as other: Self) -> Bool {
         count == other.count && zip(self, other).allSatisfy { $0.openedAt == $1.openedAt }
+    }
+
+    func replacingTail(with live: Self) -> Self? {
+        guard let liveStart = live.first?.openedAt, let first, let last,
+              first.openedAt < liveStart, liveStart <= last.openedAt
+        else { return nil }
+        return Array(prefix { $0.openedAt < liveStart }) + live
     }
 }

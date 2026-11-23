@@ -21,17 +21,24 @@ final class DepositStakingInputViewModelConfiguration: StakingInputViewModelConf
 
     var maxReserve: BigUInt {
         guard let implementation = stakingPool?.implementation else { return 0 }
-        return implementation.temporaryReserve + StackingPoolInfo.Implementation.networkFeeMargin
+        return implementation.depositMinRemaining
     }
 
     var maxHint: String? {
         guard let implementation = stakingPool?.implementation else { return nil }
-        let reserve = amountFormatter.format(
-            amount: implementation.temporaryReserve,
+        if implementation.keepsWithdrawalFee {
+            return TKLocales.StakingInput.maxWithdrawalFeeHint(formatTon(implementation.depositMinRemaining))
+        }
+        guard implementation.depositExtraFee > 0 else { return nil }
+        return TKLocales.StakingInput.maxHint(formatTon(implementation.depositExtraFee))
+    }
+
+    private func formatTon(_ amount: BigUInt) -> String {
+        amountFormatter.format(
+            amount: amount,
             fractionDigits: TonToken.ton.fractionDigits,
             accessory: .tokenSymbol(TonToken.ton.symbol)
         )
-        return TKLocales.StakingInput.maxHint(reserve)
     }
 
     private var inputAmount: BigUInt = 0

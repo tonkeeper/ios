@@ -32,6 +32,7 @@ final class BrowserMultichainViewController: TKHostingController<BrowserMulticha
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        ScreenRenderTracker.shared.lifecycle(.viewDidLoad, for: .browser, from: self)
         view.backgroundColor = .Background.page
         setupBindings()
         viewModel.viewDidLoad()
@@ -41,7 +42,34 @@ final class BrowserMultichainViewController: TKHostingController<BrowserMulticha
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewWillAppear, for: .browser, from: self)
+        // With dapps disabled the screen has nothing to load; otherwise popular apps load with the view,
+        // so a later appearance shows them without a refresh.
+        if exploreViewModel.hasNothingToLoad {
+            ScreenRenderTracker.shared.contentApplied(.fresh, for: .browser)
+        } else {
+            if exploreViewModel.isShowingPopularApps {
+                ScreenRenderTracker.shared.contentApplied(.cached, for: .browser)
+            }
+            if !exploreViewModel.isLoadingPopularApps {
+                if !exploreViewModel.isShowingPopularApps, let errorKind = exploreViewModel.popularAppsErrorKind {
+                    ScreenRenderTracker.shared.failed(.browser, error: errorKind)
+                } else {
+                    ScreenRenderTracker.shared.finish(.browser)
+                }
+            }
+        }
         navigationController?.setNavigationBarHidden(true, animated: true)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewDidAppear, for: .browser, from: self)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        ScreenRenderTracker.shared.abandon(.browser, by: self)
     }
 
     func scrollToTop() {

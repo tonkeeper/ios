@@ -12,6 +12,23 @@ final class MultichainWalletSyncStatusPollingTests: XCTestCase {
         XCTAssertTrue(tracker.shouldNotify(current: current))
     }
 
+    func test_trackerDoesNotNotifyForInitialStatusThatMatchesThePersistedProgress() {
+        let status = makeStatus(status: .ready, backfill: .complete)
+        var tracker = MultichainWalletSyncStatusPolling.Tracker()
+        tracker.restart(walletIdentifier: "wallet", persistedProgress: observedProgress(of: status))
+
+        XCTAssertFalse(tracker.shouldNotify(current: status))
+    }
+
+    func test_trackerNotifiesForInitialStatusThatDiffersFromThePersistedProgress() {
+        let persisted = makeStatus(status: .ready, backfill: .inProgress)
+        let current = makeStatus(status: .ready, backfill: .complete)
+        var tracker = MultichainWalletSyncStatusPolling.Tracker()
+        tracker.restart(walletIdentifier: "wallet", persistedProgress: observedProgress(of: persisted))
+
+        XCTAssertTrue(tracker.shouldNotify(current: current))
+    }
+
     func test_trackerDoesNotNotifyWhenStatusIsUnchanged() {
         let status = makeStatus(status: .inProgress, backfill: .inProgress)
         var tracker = MultichainWalletSyncStatusPolling.Tracker()
@@ -76,6 +93,13 @@ final class MultichainWalletSyncStatusPollingTests: XCTestCase {
         tracker.restart(walletIdentifier: "second")
 
         XCTAssertTrue(tracker.shouldNotify(current: second))
+    }
+
+    private func observedProgress(of status: MultichainWalletSyncStatus) -> String? {
+        var tracker = MultichainWalletSyncStatusPolling.Tracker()
+        tracker.restart(walletIdentifier: "previous launch")
+        _ = tracker.shouldNotify(current: status)
+        return tracker.observedProgress
     }
 
     private func makeStatus(

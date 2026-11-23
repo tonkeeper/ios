@@ -22,13 +22,31 @@ extension MultichainSwapFeeOption {
         }
     }
 
-    var refundedChargesText: String? {
-        guard case let .batteryCharges(count, excess, _) = cost,
-              let excess, excess > 0, excess < count
-        else {
+    /// Battery holds charges for the whole message and gives the change back, so a swap costs what it
+    /// holds less what comes back, and the change is held only for the time of the swap. A change that
+    /// equals the hold says nothing about either, and the hold stands as the cost.
+    var batteryCharges: (cost: Int, reserve: Int?)? {
+        guard case let .batteryCharges(count, excess, _) = cost else {
             return nil
         }
-        return "\(TKLocales.Common.Numbers.approximate) \(excess) \(TKLocales.Battery.Refill.refunded(count: excess))"
+        guard let excess, excess > 0, excess < count else {
+            return (count, nil)
+        }
+        return (count - excess, excess)
+    }
+
+    /// What a coin or a token pays, summed per asset; `nil` for the battery.
+    var feeAmounts: [MultichainSwapFeeSummary.Amount]? {
+        switch cost {
+        case let .native(fees, _):
+            MultichainSwapFeeSummary.Amount.totals(fees.map { ($0.fee, $0.asset) })
+        case let .gram(amountNano, _):
+            [MultichainSwapFeeSummary.Amount(amount: amountNano, asset: .gram)]
+        case let .token(asset, amount, _):
+            [MultichainSwapFeeSummary.Amount(amount: amount, asset: asset)]
+        case .batteryCharges, .batteryUnpriced:
+            nil
+        }
     }
 
     func feeValueText(amountFormatter: AmountFormatter) -> String {

@@ -10,7 +10,8 @@ struct HttpApiClient {
     init(
         urlSession: URLSession,
         baseApiUrl: URL,
-        isSuccessStatusCode: @escaping (Int) -> Bool
+        isSuccessStatusCode: @escaping (Int) -> Bool,
+        pause: @escaping @Sendable (_ nanoseconds: UInt64) async -> Void
     ) {
         self.urlSession = urlSession
         self.baseApiUrl = baseApiUrl
@@ -19,10 +20,11 @@ struct HttpApiClient {
         // "allowed_rps(1)", and measured spacing of exactly 1000ms still fails
         // while 1200ms is reliably clean, so pace with a margin (1250ms).
         let rateLimiter = RequestRateLimiter(
-            rps: 0.8
+            rps: 0.8,
+            pause: pause
         )
         self.middlewares = [
-            RetrierMiddleware(rateLimitRetryHandler: RequestRetrier()),
+            RetrierMiddleware(rateLimitRetryHandler: RequestRetrier(), pause: pause),
             RateLimiterMiddleware(rateLimiter: rateLimiter),
         ]
     }

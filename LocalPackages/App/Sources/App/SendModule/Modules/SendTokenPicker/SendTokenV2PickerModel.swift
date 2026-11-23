@@ -47,7 +47,7 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         initialChain: MultichainChain? = nil,
         catalogSearching: TradingCatalogSearching? = nil,
         perpsSearching: PerpsMarketsSearching? = nil,
-        initialCategory: TradingAssetCategory = .all
+        initialCategory: PerpsMarketFilter = .all
     ) {
         self.multichainState = multichainState
         self.searchBehavior = searchBehavior
@@ -70,7 +70,7 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
             initialFilter: selection.initialFilter
         )
         if isTradingCatalogEnabled {
-            assetTypes = TradingAssetCategory.allCases.map(TokenPickerV2AssetType.category)
+            assetTypes = PerpsMarketFilter.allCases.map(TokenPickerV2AssetType.category)
                 + (isPerpsCatalogEnabled ? [.perpetuals] : [])
             assetType = .category(initialCategory)
         } else {
@@ -106,7 +106,8 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         initialChain: MultichainChain?
     ) -> (filters: [TokenPickerV2ChainFilter], initialFilter: TokenPickerV2ChainFilter) {
         guard let allowedChains else {
-            return (walletFilters.isEmpty ? [.all] : walletFilters, .all)
+            let filters = walletFilters.isEmpty ? [.all] : walletFilters
+            return (filters, initialFilter(initialChain, in: filters) ?? .all)
         }
         let filters = walletFilters.filter { filter in
             if case let .chain(chain) = filter {
@@ -117,10 +118,16 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         guard let firstFilter = filters.first else {
             return ([.all], .all)
         }
-        let initialFilter = initialChain.flatMap { chain in
+        return (filters, initialFilter(initialChain, in: filters) ?? firstFilter)
+    }
+
+    private static func initialFilter(
+        _ initialChain: MultichainChain?,
+        in filters: [TokenPickerV2ChainFilter]
+    ) -> TokenPickerV2ChainFilter? {
+        initialChain.flatMap { chain in
             filters.contains(.chain(chain)) ? TokenPickerV2ChainFilter.chain(chain) : nil
         }
-        return (filters, initialFilter ?? firstFilter)
     }
 
     func loadAssets(
@@ -205,7 +212,7 @@ private extension SendTokenV2PickerModel {
                 sort: catalogSearchSort,
                 cursor: cursor,
                 pageSize: limit,
-                category: assetType.category
+                filter: assetType.category
             )
         } catch {
             throw mapCatalogError(error)
@@ -224,7 +231,16 @@ private extension SendTokenV2PickerModel {
                 return .perp(market)
             }
         }
-        return TokenPickerLoadResult(items: items, nextCursor: page.nextCursor)
+        let filters = page.chains.map { chains in
+            let chains = Set(chains)
+            return initialState.filters.filter { filter in
+                guard let chain = filter.chain else {
+                    return true
+                }
+                return chains.contains(chain.rawValue)
+            }
+        }
+        return TokenPickerLoadResult(items: items, nextCursor: page.nextCursor, filters: filters)
     }
 
     func loadMultichainCatalogAssets(

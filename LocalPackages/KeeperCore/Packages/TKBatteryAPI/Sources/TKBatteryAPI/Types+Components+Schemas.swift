@@ -48,32 +48,54 @@ extension Components {
             public typealias pending_transactionsPayload = [Components.Schemas.Status.pending_transactionsPayloadPayload]
             /// - Remark: Generated from `#/components/schemas/Status/pending_transactions`.
             public var pending_transactions: Components.Schemas.Status.pending_transactionsPayload
+            /// - Remark: Generated from `#/components/schemas/Status/busy_walletsPayload`.
+            public struct busy_walletsPayloadPayload: Codable, Hashable, Sendable {
+                /// raw address
+                ///
+                /// - Remark: Generated from `#/components/schemas/Status/busy_walletsPayload/address`.
+                public var address: Swift.String
+                /// - Remark: Generated from `#/components/schemas/Status/busy_walletsPayload/since`.
+                public var since: Foundation.Date
+                /// Creates a new `busy_walletsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - address: raw address
+                ///   - since:
+                public init(
+                    address: Swift.String,
+                    since: Foundation.Date
+                ) {
+                    self.address = address
+                    self.since = since
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case address
+                    case since
+                }
+            }
+            /// The user's wallets a message to which /message refuses now (err-gasless-pending-messages): a message of theirs is accepted and has not landed, or a transaction of theirs is still running its trace. A wallet is busy from the moment /message accepts a message. Send the next message to a wallet once it is no longer listed here.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Status/busy_wallets`.
+            public typealias busy_walletsPayload = [Components.Schemas.Status.busy_walletsPayloadPayload]
+            /// The user's wallets a message to which /message refuses now (err-gasless-pending-messages): a message of theirs is accepted and has not landed, or a transaction of theirs is still running its trace. A wallet is busy from the moment /message accepts a message. Send the next message to a wallet once it is no longer listed here.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Status/busy_wallets`.
+            public var busy_wallets: Components.Schemas.Status.busy_walletsPayload
             /// Creates a new `Status`.
             ///
             /// - Parameters:
             ///   - pending_transactions:
-            public init(pending_transactions: Components.Schemas.Status.pending_transactionsPayload) {
+            ///   - busy_wallets: The user's wallets a message to which /message refuses now (err-gasless-pending-messages): a message of theirs is accepted and has not landed, or a transaction of theirs is still running its trace. A wallet is busy from the moment /message accepts a message. Send the next message to a wallet once it is no longer listed here.
+            public init(
+                pending_transactions: Components.Schemas.Status.pending_transactionsPayload,
+                busy_wallets: Components.Schemas.Status.busy_walletsPayload
+            ) {
                 self.pending_transactions = pending_transactions
+                self.busy_wallets = busy_wallets
             }
             public enum CodingKeys: String, CodingKey {
                 case pending_transactions
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/EnterpriseWalletConfig`.
-        public struct EnterpriseWalletConfig: Codable, Hashable, Sendable {
-            /// when building a message to transfer an NFT or Jetton, use this address to send excess funds back to Battery Service.
-            ///
-            /// - Remark: Generated from `#/components/schemas/EnterpriseWalletConfig/excess_account`.
-            public var excess_account: Swift.String
-            /// Creates a new `EnterpriseWalletConfig`.
-            ///
-            /// - Parameters:
-            ///   - excess_account: when building a message to transfer an NFT or Jetton, use this address to send excess funds back to Battery Service.
-            public init(excess_account: Swift.String) {
-                self.excess_account = excess_account
-            }
-            public enum CodingKeys: String, CodingKey {
-                case excess_account
+                case busy_wallets
             }
         }
         /// - Remark: Generated from `#/components/schemas/RelayerSendingEstimation`.
@@ -337,94 +359,6 @@ extension Components {
                 case commission
             }
         }
-        /// - Remark: Generated from `#/components/schemas/GaslessCommissionJettonTransfer`.
-        public struct GaslessCommissionJettonTransfer: Codable, Hashable, Sendable {
-            /// Destination of commission jetton transfer (usually relayer)
-            ///
-            /// - Remark: Generated from `#/components/schemas/GaslessCommissionJettonTransfer/destination`.
-            public var destination: Swift.String
-            /// Commission amount in smallest jetton units (nano-jettons)
-            ///
-            /// - Remark: Generated from `#/components/schemas/GaslessCommissionJettonTransfer/amount`.
-            public var amount: Swift.String
-            /// Creates a new `GaslessCommissionJettonTransfer`.
-            ///
-            /// - Parameters:
-            ///   - destination: Destination of commission jetton transfer (usually relayer)
-            ///   - amount: Commission amount in smallest jetton units (nano-jettons)
-            public init(
-                destination: Swift.String,
-                amount: Swift.String
-            ) {
-                self.destination = destination
-                self.amount = amount
-            }
-            public enum CodingKeys: String, CodingKey {
-                case destination
-                case amount
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/PromoUsed`.
-        public struct PromoUsed: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/PromoUsed/promo_used`.
-            public var promo_used: Swift.Bool
-            /// - Remark: Generated from `#/components/schemas/PromoUsed/bonus_charges`.
-            public var bonus_charges: Swift.String
-            /// - Remark: Generated from `#/components/schemas/PromoUsed/purchasesPayload`.
-            public struct purchasesPayloadPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/PromoUsed/purchasesPayload/charges`.
-                public var charges: Swift.Int
-                /// Creates a new `purchasesPayloadPayload`.
-                ///
-                /// - Parameters:
-                ///   - charges:
-                public init(charges: Swift.Int) {
-                    self.charges = charges
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case charges
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/PromoUsed/purchases`.
-            public typealias purchasesPayload = [Components.Schemas.PromoUsed.purchasesPayloadPayload]
-            /// - Remark: Generated from `#/components/schemas/PromoUsed/purchases`.
-            public var purchases: Components.Schemas.PromoUsed.purchasesPayload?
-            /// Creates a new `PromoUsed`.
-            ///
-            /// - Parameters:
-            ///   - promo_used:
-            ///   - bonus_charges:
-            ///   - purchases:
-            public init(
-                promo_used: Swift.Bool,
-                bonus_charges: Swift.String,
-                purchases: Components.Schemas.PromoUsed.purchasesPayload? = nil
-            ) {
-                self.promo_used = promo_used
-                self.bonus_charges = bonus_charges
-                self.purchases = purchases
-            }
-            public enum CodingKeys: String, CodingKey {
-                case promo_used
-                case bonus_charges
-                case purchases
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/BatteryCharged`.
-        public struct BatteryCharged: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/BatteryCharged/battery_charged`.
-            public var battery_charged: Swift.Bool
-            /// Creates a new `BatteryCharged`.
-            ///
-            /// - Parameters:
-            ///   - battery_charged:
-            public init(battery_charged: Swift.Bool) {
-                self.battery_charged = battery_charged
-            }
-            public enum CodingKeys: String, CodingKey {
-                case battery_charged
-            }
-        }
         /// - Remark: Generated from `#/components/schemas/Balance`.
         public struct Balance: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Balance/balance`.
@@ -469,16 +403,30 @@ extension Components {
         public struct RechargeMethods: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload`.
             public struct methodsPayloadPayload: Codable, Hashable, Sendable {
+                /// the chain the asset is on, as in /gasless/battery/config
+                ///
+                /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/chain`.
+                public var chain: Swift.String
+                /// the asset, as in /gasless/battery/config: "<chain>/coin" for the chain's native coin, "<chain>/jetton/<master, raw>", "<chain>/trc20/<contract>", "<chain>/erc20/<address>"
+                ///
+                /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/asset_id`.
+                public var asset_id: Swift.String
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/image`.
                 public var image: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/jetton_master`.
                 public var jetton_master: Swift.String?
+                /// the least amount accepted, in units of the asset; for the other chains, the least purchase
+                ///
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/min_bootstrap_value`.
                 public var min_bootstrap_value: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/type`.
                 @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
                     case jetton = "jetton"
                     case ton = "ton"
+                    case trc20 = "trc20"
+                    case erc20 = "erc20"
+                    case spl = "spl"
+                    case coin = "coin"
                     case unknown
                     public init(from decoder: any Decoder) throws {
                         self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
@@ -486,8 +434,14 @@ extension Components {
                 }
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/type`.
                 public var _type: Components.Schemas.RechargeMethods.methodsPayloadPayload._typePayload
+                /// TON credited for one unit of the asset, after the markup
+                ///
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/rate`.
                 public var rate: Swift.String
+                /// charges credited for one unit of the asset, after the markup: rate at the price of a charge. Before the network fee of the transfer, which /purchase-battery/estimate takes off.
+                ///
+                /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/charges_rate`.
+                public var charges_rate: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/symbol`.
                 public var symbol: Swift.String
                 /// - Remark: Generated from `#/components/schemas/RechargeMethods/methodsPayload/decimals`.
@@ -499,42 +453,54 @@ extension Components {
                 /// Creates a new `methodsPayloadPayload`.
                 ///
                 /// - Parameters:
+                ///   - chain: the chain the asset is on, as in /gasless/battery/config
+                ///   - asset_id: the asset, as in /gasless/battery/config: "<chain>/coin" for the chain's native coin, "<chain>/jetton/<master, raw>", "<chain>/trc20/<contract>", "<chain>/erc20/<address>"
                 ///   - image:
                 ///   - jetton_master:
-                ///   - min_bootstrap_value:
+                ///   - min_bootstrap_value: the least amount accepted, in units of the asset; for the other chains, the least purchase
                 ///   - _type:
-                ///   - rate:
+                ///   - rate: TON credited for one unit of the asset, after the markup
+                ///   - charges_rate: charges credited for one unit of the asset, after the markup: rate at the price of a charge. Before the network fee of the transfer, which /purchase-battery/estimate takes off.
                 ///   - symbol:
                 ///   - decimals:
                 ///   - support_gasless:
                 ///   - support_recharge:
                 public init(
+                    chain: Swift.String,
+                    asset_id: Swift.String,
                     image: Swift.String? = nil,
                     jetton_master: Swift.String? = nil,
                     min_bootstrap_value: Swift.String? = nil,
                     _type: Components.Schemas.RechargeMethods.methodsPayloadPayload._typePayload,
                     rate: Swift.String,
+                    charges_rate: Swift.String? = nil,
                     symbol: Swift.String,
                     decimals: Swift.Int,
                     support_gasless: Swift.Bool,
                     support_recharge: Swift.Bool
                 ) {
+                    self.chain = chain
+                    self.asset_id = asset_id
                     self.image = image
                     self.jetton_master = jetton_master
                     self.min_bootstrap_value = min_bootstrap_value
                     self._type = _type
                     self.rate = rate
+                    self.charges_rate = charges_rate
                     self.symbol = symbol
                     self.decimals = decimals
                     self.support_gasless = support_gasless
                     self.support_recharge = support_recharge
                 }
                 public enum CodingKeys: String, CodingKey {
+                    case chain
+                    case asset_id
                     case image
                     case jetton_master
                     case min_bootstrap_value
                     case _type = "type"
                     case rate
+                    case charges_rate
                     case symbol
                     case decimals
                     case support_gasless
@@ -554,6 +520,107 @@ extension Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case methods
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NetworkFees`.
+        public struct NetworkFees: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NetworkFees/assets`.
+            public var assets: [Components.Schemas.NetworkFee]
+            /// Creates a new `NetworkFees`.
+            ///
+            /// - Parameters:
+            ///   - assets:
+            public init(assets: [Components.Schemas.NetworkFee]) {
+                self.assets = assets
+            }
+            public enum CodingKeys: String, CodingKey {
+                case assets
+            }
+        }
+        /// A swap is any swap from the asset but a deposit into perps; perps is that deposit (through Relay or fun.xyz) and is absent where perps take no deposits from the chain.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NetworkFee`.
+        public struct NetworkFee: Codable, Hashable, Sendable {
+            /// The asset, as in /gasless/battery/config.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFee/asset_id`.
+            public var asset_id: Swift.String
+            /// The native coin the fee is paid in.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFee/fee_asset_id`.
+            public var fee_asset_id: Swift.String
+            /// Decimals of the native coin.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFee/fee_decimals`.
+            public var fee_decimals: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NetworkFee/swap`.
+            public var swap: Components.Schemas.NetworkFeeAmounts
+            /// - Remark: Generated from `#/components/schemas/NetworkFee/perps`.
+            public var perps: Components.Schemas.NetworkFeeAmounts?
+            /// Creates a new `NetworkFee`.
+            ///
+            /// - Parameters:
+            ///   - asset_id: The asset, as in /gasless/battery/config.
+            ///   - fee_asset_id: The native coin the fee is paid in.
+            ///   - fee_decimals: Decimals of the native coin.
+            ///   - swap:
+            ///   - perps:
+            public init(
+                asset_id: Swift.String,
+                fee_asset_id: Swift.String,
+                fee_decimals: Swift.Int,
+                swap: Components.Schemas.NetworkFeeAmounts,
+                perps: Components.Schemas.NetworkFeeAmounts? = nil
+            ) {
+                self.asset_id = asset_id
+                self.fee_asset_id = fee_asset_id
+                self.fee_decimals = fee_decimals
+                self.swap = swap
+                self.perps = perps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case asset_id
+                case fee_asset_id
+                case fee_decimals
+                case swap
+                case perps
+            }
+        }
+        /// Amounts of the native coin, in its smallest units.
+        ///
+        /// - Remark: Generated from `#/components/schemas/NetworkFeeAmounts`.
+        public struct NetworkFeeAmounts: Codable, Hashable, Sendable {
+            /// What it usually costs.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFeeAmounts/typical`.
+            public var typical: Swift.String
+            /// Covers almost every transaction.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFeeAmounts/high`.
+            public var high: Swift.String
+            /// High with a 30% margin.
+            ///
+            /// - Remark: Generated from `#/components/schemas/NetworkFeeAmounts/safe`.
+            public var safe: Swift.String
+            /// Creates a new `NetworkFeeAmounts`.
+            ///
+            /// - Parameters:
+            ///   - typical: What it usually costs.
+            ///   - high: Covers almost every transaction.
+            ///   - safe: High with a 30% margin.
+            public init(
+                typical: Swift.String,
+                high: Swift.String,
+                safe: Swift.String
+            ) {
+                self.typical = typical
+                self.high = high
+                self.safe = safe
+            }
+            public enum CodingKeys: String, CodingKey {
+                case typical
+                case high
+                case safe
             }
         }
         /// - Remark: Generated from `#/components/schemas/Purchases`.
@@ -579,6 +646,9 @@ extension Components {
                     case crypto = "crypto"
                     case gift = "gift"
                     case on_hyphen_the_hyphen_way_hyphen_gift = "on-the-way-gift"
+                    case grant = "grant"
+                    case migration = "migration"
+                    case migration_hyphen_out = "migration-out"
                     case unknown
                     public init(from decoder: any Decoder) throws {
                         self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
@@ -586,6 +656,14 @@ extension Components {
                 }
                 /// - Remark: Generated from `#/components/schemas/Purchases/purchasesPayload/type`.
                 public var _type: Components.Schemas.Purchases.purchasesPayloadPayload._typePayload
+                /// Set for a migration: the TON wallet the battery was moved from, raw.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Purchases/purchasesPayload/from_address`.
+                public var from_address: Swift.String?
+                /// Set for a migration-out: the wallet id of the wallet the battery was moved to.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Purchases/purchasesPayload/to_wallet_id`.
+                public var to_wallet_id: Swift.String?
                 /// Amount describes the amount paid by the user for this purchase when we know it. For crypto purchases it is always set.
                 ///
                 /// - Remark: Generated from `#/components/schemas/Purchases/purchasesPayload/amount`.
@@ -695,6 +773,8 @@ extension Components {
                 ///   - user_purchase_id:
                 ///   - purchase_id:
                 ///   - _type:
+                ///   - from_address: Set for a migration: the TON wallet the battery was moved from, raw.
+                ///   - to_wallet_id: Set for a migration-out: the wallet id of the wallet the battery was moved to.
                 ///   - amount: Amount describes the amount paid by the user for this purchase when we know it. For crypto purchases it is always set.
                 ///   - charges:
                 ///   - currency: Currency is set when we know it. For crypto purchases it is always set.
@@ -706,6 +786,8 @@ extension Components {
                     user_purchase_id: Swift.Int,
                     purchase_id: Swift.Int,
                     _type: Components.Schemas.Purchases.purchasesPayloadPayload._typePayload,
+                    from_address: Swift.String? = nil,
+                    to_wallet_id: Swift.String? = nil,
                     amount: Swift.String? = nil,
                     charges: Swift.Int,
                     currency: Swift.String? = nil,
@@ -717,6 +799,8 @@ extension Components {
                     self.user_purchase_id = user_purchase_id
                     self.purchase_id = purchase_id
                     self._type = _type
+                    self.from_address = from_address
+                    self.to_wallet_id = to_wallet_id
                     self.amount = amount
                     self.charges = charges
                     self.currency = currency
@@ -729,6 +813,8 @@ extension Components {
                     case user_purchase_id
                     case purchase_id
                     case _type = "type"
+                    case from_address
+                    case to_wallet_id
                     case amount
                     case charges
                     case currency
@@ -855,11 +941,15 @@ extension Components {
                 }
             }
         }
+        /// The battery answers "value" only. "gas" and "eip1559" are the generic payload's network fees, which other services' quotes (tk-perps /funding/quote) put on a payload a client passes on here as it is. The battery ignores the fee of any payload it is sent.
+        ///
         /// - Remark: Generated from `#/components/schemas/GaslessV2Fee`.
         public struct GaslessV2Fee: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/type`.
             @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
                 case value = "value"
+                case gas = "gas"
+                case eip1559 = "eip1559"
                 case unknown
                 public init(from decoder: any Decoder) throws {
                     self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
@@ -871,19 +961,53 @@ extension Components {
             public var asset_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data`.
             public struct dataPayload: Codable, Hashable, Sendable {
-                /// In the asset's smallest units; charges for "battery/mainnet".
+                /// "value": in the asset's smallest units; charges for "battery/mainnet". Always set in what the battery answers.
                 ///
                 /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data/amount`.
-                public var amount: Swift.String
+                public var amount: Swift.String?
+                /// "gas", "eip1559": the gas limit.
+                ///
+                /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data/limit`.
+                public var limit: Swift.String?
+                /// "gas": the gas price, in wei.
+                ///
+                /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data/price`.
+                public var price: Swift.String?
+                /// "eip1559": the max fee per gas, in wei.
+                ///
+                /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data/max_fee_per_gas`.
+                public var max_fee_per_gas: Swift.String?
+                /// "eip1559": the max priority fee per gas, in wei.
+                ///
+                /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data/max_priority_fee_per_gas`.
+                public var max_priority_fee_per_gas: Swift.String?
                 /// Creates a new `dataPayload`.
                 ///
                 /// - Parameters:
-                ///   - amount: In the asset's smallest units; charges for "battery/mainnet".
-                public init(amount: Swift.String) {
+                ///   - amount: "value": in the asset's smallest units; charges for "battery/mainnet". Always set in what the battery answers.
+                ///   - limit: "gas", "eip1559": the gas limit.
+                ///   - price: "gas": the gas price, in wei.
+                ///   - max_fee_per_gas: "eip1559": the max fee per gas, in wei.
+                ///   - max_priority_fee_per_gas: "eip1559": the max priority fee per gas, in wei.
+                public init(
+                    amount: Swift.String? = nil,
+                    limit: Swift.String? = nil,
+                    price: Swift.String? = nil,
+                    max_fee_per_gas: Swift.String? = nil,
+                    max_priority_fee_per_gas: Swift.String? = nil
+                ) {
                     self.amount = amount
+                    self.limit = limit
+                    self.price = price
+                    self.max_fee_per_gas = max_fee_per_gas
+                    self.max_priority_fee_per_gas = max_priority_fee_per_gas
                 }
                 public enum CodingKeys: String, CodingKey {
                     case amount
+                    case limit
+                    case price
+                    case max_fee_per_gas
+                    case max_priority_fee_per_gas
                 }
             }
             /// - Remark: Generated from `#/components/schemas/GaslessV2Fee/data`.
@@ -913,7 +1037,7 @@ extension Components {
         public struct GaslessV2Payload: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/GaslessV2Payload/id`.
             public var id: Swift.String
-            /// main | prebuild | batch | eip7702/authorization | eip7821/hermes/delegate | solana/message
+            /// main | prebuild (TRON, Solana) | batch | eip7702/authorization | eip7821/hermes/delegate. On TRON a main (to: the token's contract, data: the transfer(address,uint256) call, memo: hex, optional) is built into the prebuild to sign. A TON payload to sign says in meta.format how: ext_msg or int_msg
             ///
             /// - Remark: Generated from `#/components/schemas/GaslessV2Payload/type`.
             public var _type: Swift.String
@@ -947,7 +1071,7 @@ extension Components {
             ///
             /// - Parameters:
             ///   - id:
-            ///   - _type: main | prebuild | batch | eip7702/authorization | eip7821/hermes/delegate | solana/message
+            ///   - _type: main | prebuild (TRON, Solana) | batch | eip7702/authorization | eip7821/hermes/delegate. On TRON a main (to: the token's contract, data: the transfer(address,uint256) call, memo: hex, optional) is built into the prebuild to sign. A TON payload to sign says in meta.format how: ext_msg or int_msg
             ///   - chain_id:
             ///   - version:
             ///   - fee:
@@ -1009,7 +1133,7 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/GaslessV2SignedPayload`.
         public struct GaslessV2SignedPayload: Codable, Hashable, Sendable {
-            /// signed | eip7702/authorization/signed | eip7821/hermes/delegate/signed (eip7821/hermes/1/signed is accepted too) | solana/message/signed
+            /// the payload type + /signed: prebuild/signed (TRON, Solana; signed is accepted too) | eip7702/authorization/signed | eip7821/hermes/delegate/signed (eip7821/hermes/1/signed is accepted too); main/signed and batch/signed (TON; signed is accepted too)
             ///
             /// - Remark: Generated from `#/components/schemas/GaslessV2SignedPayload/type`.
             public var _type: Swift.String
@@ -1040,7 +1164,7 @@ extension Components {
             /// Creates a new `GaslessV2SignedPayload`.
             ///
             /// - Parameters:
-            ///   - _type: signed | eip7702/authorization/signed | eip7821/hermes/delegate/signed (eip7821/hermes/1/signed is accepted too) | solana/message/signed
+            ///   - _type: the payload type + /signed: prebuild/signed (TRON, Solana; signed is accepted too) | eip7702/authorization/signed | eip7821/hermes/delegate/signed (eip7821/hermes/1/signed is accepted too); main/signed and batch/signed (TON; signed is accepted too)
             ///   - chain_id:
             ///   - payload_id:
             ///   - meta:
@@ -1097,10 +1221,6 @@ extension Components {
             public var decimals: Swift.Int
             /// - Remark: Generated from `#/components/schemas/GaslessV2Asset/image`.
             public var image: Swift.String?
-            /// null for battery, which is not chain-scoped
-            ///
-            /// - Remark: Generated from `#/components/schemas/GaslessV2Asset/chain`.
-            public var chain: Swift.String?
             /// Creates a new `GaslessV2Asset`.
             ///
             /// - Parameters:
@@ -1109,21 +1229,18 @@ extension Components {
             ///   - symbol:
             ///   - decimals:
             ///   - image:
-            ///   - chain: null for battery, which is not chain-scoped
             public init(
                 id: Swift.String,
                 name: Swift.String,
                 symbol: Swift.String,
                 decimals: Swift.Int,
-                image: Swift.String? = nil,
-                chain: Swift.String? = nil
+                image: Swift.String? = nil
             ) {
                 self.id = id
                 self.name = name
                 self.symbol = symbol
                 self.decimals = decimals
                 self.image = image
-                self.chain = chain
             }
             public enum CodingKeys: String, CodingKey {
                 case id
@@ -1131,12 +1248,11 @@ extension Components {
                 case symbol
                 case decimals
                 case image
-                case chain
             }
         }
         /// - Remark: Generated from `#/components/schemas/GaslessV2ErrorBody`.
         public struct GaslessV2ErrorBody: Codable, Hashable, Sendable {
-            /// unsupported_chain | unsupported_asset | unsupported_payload | insufficient_funds | emulation_failed | emulation_expired | payload_mismatch | invalid_signature | broadcast_failed | operation_not_found | already_sent | bad_request | unauthorized | not_implemented | internal_error
+            /// unsupported_chain | unsupported_asset | unsupported_payload | insufficient_funds | emulation_failed | route_not_sponsorable | emulation_expired | payload_mismatch | invalid_signature | broadcast_failed | operation_not_found | already_sent | bad_request | unauthorized | not_implemented | internal_error. route_not_sponsorable: the payload calls a contract that only accepts transactions the wallet sends and pays for itself (it checks tx.origin), so neither the battery nor a gasless fee can pay for it; the client should ask for another route or offer to pay in the native coin.
             ///
             /// - Remark: Generated from `#/components/schemas/GaslessV2ErrorBody/code`.
             public var code: Swift.String
@@ -1165,7 +1281,7 @@ extension Components {
             /// Creates a new `GaslessV2ErrorBody`.
             ///
             /// - Parameters:
-            ///   - code: unsupported_chain | unsupported_asset | unsupported_payload | insufficient_funds | emulation_failed | emulation_expired | payload_mismatch | invalid_signature | broadcast_failed | operation_not_found | already_sent | bad_request | unauthorized | not_implemented | internal_error
+            ///   - code: unsupported_chain | unsupported_asset | unsupported_payload | insufficient_funds | emulation_failed | route_not_sponsorable | emulation_expired | payload_mismatch | invalid_signature | broadcast_failed | operation_not_found | already_sent | bad_request | unauthorized | not_implemented | internal_error. route_not_sponsorable: the payload calls a contract that only accepts transactions the wallet sends and pays for itself (it checks tx.origin), so neither the battery nor a gasless fee can pay for it; the client should ask for another route or offer to pay in the native coin.
             ///   - message:
             ///   - details:
             public init(
@@ -1187,6 +1303,8 @@ extension Components {
         public struct GaslessV2Chain: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/GaslessV2Chain/chain_id`.
             public var chain_id: Swift.String
+            /// The payload types /gasless/estimate and /gasless/emulate take on this chain.
+            ///
             /// - Remark: Generated from `#/components/schemas/GaslessV2Chain/payload_types`.
             public var payload_types: [Swift.String]
             /// - Remark: Generated from `#/components/schemas/GaslessV2Chain/assets`.
@@ -1195,7 +1313,7 @@ extension Components {
             ///
             /// - Parameters:
             ///   - chain_id:
-            ///   - payload_types:
+            ///   - payload_types: The payload types /gasless/estimate and /gasless/emulate take on this chain.
             ///   - assets:
             public init(
                 chain_id: Swift.String,
@@ -1268,6 +1386,10 @@ extension Components {
             public var chain_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/GaslessV2EstimateRequest/sender_address`.
             public var sender_address: Swift.String
+            /// TON only: the wallet's public key, hex. Needed only while the wallet is not deployed yet; a deployed wallet's key is read from the chain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GaslessV2EstimateRequest/sender_public_key`.
+            public var sender_public_key: Swift.String?
             /// - Remark: Generated from `#/components/schemas/GaslessV2EstimateRequest/payload`.
             public var payload: Components.Schemas.GaslessV2Payload
             /// Creates a new `GaslessV2EstimateRequest`.
@@ -1275,19 +1397,23 @@ extension Components {
             /// - Parameters:
             ///   - chain_id:
             ///   - sender_address:
+            ///   - sender_public_key: TON only: the wallet's public key, hex. Needed only while the wallet is not deployed yet; a deployed wallet's key is read from the chain.
             ///   - payload:
             public init(
                 chain_id: Swift.String,
                 sender_address: Swift.String,
+                sender_public_key: Swift.String? = nil,
                 payload: Components.Schemas.GaslessV2Payload
             ) {
                 self.chain_id = chain_id
                 self.sender_address = sender_address
+                self.sender_public_key = sender_public_key
                 self.payload = payload
             }
             public enum CodingKeys: String, CodingKey {
                 case chain_id
                 case sender_address
+                case sender_public_key
                 case payload
             }
         }
@@ -1338,6 +1464,10 @@ extension Components {
             public var chain_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/GaslessV2EmulateRequest/sender_address`.
             public var sender_address: Swift.String
+            /// TON only: the wallet's public key, hex. Needed only while the wallet is not deployed yet; a deployed wallet's key is read from the chain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GaslessV2EmulateRequest/sender_public_key`.
+            public var sender_public_key: Swift.String?
             /// The operation type, echoed back in operation.type.
             ///
             /// - Remark: Generated from `#/components/schemas/GaslessV2EmulateRequest/type`.
@@ -1351,18 +1481,21 @@ extension Components {
             /// - Parameters:
             ///   - chain_id:
             ///   - sender_address:
+            ///   - sender_public_key: TON only: the wallet's public key, hex. Needed only while the wallet is not deployed yet; a deployed wallet's key is read from the chain.
             ///   - _type: The operation type, echoed back in operation.type.
             ///   - gasless_asset:
             ///   - payloads:
             public init(
                 chain_id: Swift.String,
                 sender_address: Swift.String,
+                sender_public_key: Swift.String? = nil,
                 _type: Swift.String,
                 gasless_asset: Swift.String,
                 payloads: [Components.Schemas.GaslessV2Payload]
             ) {
                 self.chain_id = chain_id
                 self.sender_address = sender_address
+                self.sender_public_key = sender_public_key
                 self._type = _type
                 self.gasless_asset = gasless_asset
                 self.payloads = payloads
@@ -1370,6 +1503,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case chain_id
                 case sender_address
+                case sender_public_key
                 case _type = "type"
                 case gasless_asset
                 case payloads
@@ -1497,69 +1631,37 @@ extension Components {
                 case tx_hash
             }
         }
-        /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment`.
-        public struct TonPurchaseReassignment: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/purchase_id`.
-            public var purchase_id: Swift.Int64
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/target_account_id`.
-            public var target_account_id: Swift.String
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/from_user_id`.
-            public var from_user_id: Swift.Int64
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/to_user_id`.
-            public var to_user_id: Swift.Int64
-            /// What the purchase added, in the units of the balance.
+        /// - Remark: Generated from `#/components/schemas/BatteryMigration`.
+        public struct BatteryMigration: Codable, Hashable, Sendable {
+            /// The balance moved, in the units of the balance (TON).
             ///
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/balance_increase`.
-            public var balance_increase: Swift.String
-            /// The public-key user's balance after the move.
+            /// - Remark: Generated from `#/components/schemas/BatteryMigration/moved`.
+            public var moved: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BatteryMigration/moved_charges`.
+            public var moved_charges: Swift.Int64
+            /// The wallet-id user's balance after the migration, in TON.
             ///
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/from_balance`.
-            public var from_balance: Swift.String
-            /// The wallet-id user's balance after the move.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/to_balance`.
-            public var to_balance: Swift.String
-            /// - Remark: Generated from `#/components/schemas/TonPurchaseReassignment/dry_run`.
-            public var dry_run: Swift.Bool
-            /// Creates a new `TonPurchaseReassignment`.
+            /// - Remark: Generated from `#/components/schemas/BatteryMigration/balance`.
+            public var balance: Swift.String
+            /// Creates a new `BatteryMigration`.
             ///
             /// - Parameters:
-            ///   - purchase_id:
-            ///   - target_account_id:
-            ///   - from_user_id:
-            ///   - to_user_id:
-            ///   - balance_increase: What the purchase added, in the units of the balance.
-            ///   - from_balance: The public-key user's balance after the move.
-            ///   - to_balance: The wallet-id user's balance after the move.
-            ///   - dry_run:
+            ///   - moved: The balance moved, in the units of the balance (TON).
+            ///   - moved_charges:
+            ///   - balance: The wallet-id user's balance after the migration, in TON.
             public init(
-                purchase_id: Swift.Int64,
-                target_account_id: Swift.String,
-                from_user_id: Swift.Int64,
-                to_user_id: Swift.Int64,
-                balance_increase: Swift.String,
-                from_balance: Swift.String,
-                to_balance: Swift.String,
-                dry_run: Swift.Bool
+                moved: Swift.String,
+                moved_charges: Swift.Int64,
+                balance: Swift.String
             ) {
-                self.purchase_id = purchase_id
-                self.target_account_id = target_account_id
-                self.from_user_id = from_user_id
-                self.to_user_id = to_user_id
-                self.balance_increase = balance_increase
-                self.from_balance = from_balance
-                self.to_balance = to_balance
-                self.dry_run = dry_run
+                self.moved = moved
+                self.moved_charges = moved_charges
+                self.balance = balance
             }
             public enum CodingKeys: String, CodingKey {
-                case purchase_id
-                case target_account_id
-                case from_user_id
-                case to_user_id
-                case balance_increase
-                case from_balance
-                case to_balance
-                case dry_run
+                case moved
+                case moved_charges
+                case balance
             }
         }
         /// - Remark: Generated from `#/components/schemas/EstimateResponse`.
@@ -2500,6 +2602,227 @@ extension Components {
                 case fee_native_wei
             }
         }
+        /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest`.
+        public struct PurchaseBatteryEmulateRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest/chain_id`.
+            public var chain_id: Swift.String
+            /// the account the payment is sent from, on chain_id
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest/sender_address`.
+            public var sender_address: Swift.String
+            /// the asset paid in, as /recharge-methods lists it
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest/asset_id`.
+            public var asset_id: Swift.String
+            /// in the asset's smallest units
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest/amount`.
+            public var amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateRequest/promo`.
+            public var promo: Swift.String?
+            /// Creates a new `PurchaseBatteryEmulateRequest`.
+            ///
+            /// - Parameters:
+            ///   - chain_id:
+            ///   - sender_address: the account the payment is sent from, on chain_id
+            ///   - asset_id: the asset paid in, as /recharge-methods lists it
+            ///   - amount: in the asset's smallest units
+            ///   - promo:
+            public init(
+                chain_id: Swift.String,
+                sender_address: Swift.String,
+                asset_id: Swift.String,
+                amount: Swift.String,
+                promo: Swift.String? = nil
+            ) {
+                self.chain_id = chain_id
+                self.sender_address = sender_address
+                self.asset_id = asset_id
+                self.amount = amount
+                self.promo = promo
+            }
+            public enum CodingKeys: String, CodingKey {
+                case chain_id
+                case sender_address
+                case asset_id
+                case amount
+                case promo
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse`.
+        public struct PurchaseBatteryEstimateResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/chain_id`.
+            public var chain_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/sender_address`.
+            public var sender_address: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/created_at`.
+            public var created_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/asset_id`.
+            public var asset_id: Swift.String
+            /// in the asset's smallest units
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/amount`.
+            public var amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/fee`.
+            public var fee: Components.Schemas.GaslessV2Fee
+            /// what the purchase adds before the fee
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/gross_charges`.
+            public var gross_charges: Swift.Int64
+            /// what the balance grows by, gross_charges less the fee
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/charges`.
+            public var charges: Swift.Int64
+            /// the purchases wallet the payment goes to
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/funds_receiver`.
+            public var funds_receiver: Swift.String
+            /// the promo's bonus, when a valid promo was given
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEstimateResponse/promo_bonus_percent`.
+            public var promo_bonus_percent: Swift.String?
+            /// Creates a new `PurchaseBatteryEstimateResponse`.
+            ///
+            /// - Parameters:
+            ///   - chain_id:
+            ///   - sender_address:
+            ///   - created_at:
+            ///   - asset_id:
+            ///   - amount: in the asset's smallest units
+            ///   - fee:
+            ///   - gross_charges: what the purchase adds before the fee
+            ///   - charges: what the balance grows by, gross_charges less the fee
+            ///   - funds_receiver: the purchases wallet the payment goes to
+            ///   - promo_bonus_percent: the promo's bonus, when a valid promo was given
+            public init(
+                chain_id: Swift.String,
+                sender_address: Swift.String,
+                created_at: Foundation.Date,
+                asset_id: Swift.String,
+                amount: Swift.String,
+                fee: Components.Schemas.GaslessV2Fee,
+                gross_charges: Swift.Int64,
+                charges: Swift.Int64,
+                funds_receiver: Swift.String,
+                promo_bonus_percent: Swift.String? = nil
+            ) {
+                self.chain_id = chain_id
+                self.sender_address = sender_address
+                self.created_at = created_at
+                self.asset_id = asset_id
+                self.amount = amount
+                self.fee = fee
+                self.gross_charges = gross_charges
+                self.charges = charges
+                self.funds_receiver = funds_receiver
+                self.promo_bonus_percent = promo_bonus_percent
+            }
+            public enum CodingKeys: String, CodingKey {
+                case chain_id
+                case sender_address
+                case created_at
+                case asset_id
+                case amount
+                case fee
+                case gross_charges
+                case charges
+                case funds_receiver
+                case promo_bonus_percent
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse`.
+        public struct PurchaseBatteryEmulateResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/chain_id`.
+            public var chain_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/sender_address`.
+            public var sender_address: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/created_at`.
+            public var created_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/expires_at`.
+            public var expires_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/asset_id`.
+            public var asset_id: Swift.String
+            /// in the asset's smallest units
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/amount`.
+            public var amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/fee`.
+            public var fee: Components.Schemas.GaslessV2Fee
+            /// what the purchase adds before the fee
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/gross_charges`.
+            public var gross_charges: Swift.Int64
+            /// what the balance grows by, gross_charges less the fee
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/charges`.
+            public var charges: Swift.Int64
+            /// the purchases wallet the payment goes to
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/funds_receiver`.
+            public var funds_receiver: Swift.String
+            /// the promo's bonus, when a valid promo was given
+            ///
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/promo_bonus_percent`.
+            public var promo_bonus_percent: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PurchaseBatteryEmulateResponse/operation`.
+            public var operation: Components.Schemas.GaslessV2Operation
+            /// Creates a new `PurchaseBatteryEmulateResponse`.
+            ///
+            /// - Parameters:
+            ///   - chain_id:
+            ///   - sender_address:
+            ///   - created_at:
+            ///   - expires_at:
+            ///   - asset_id:
+            ///   - amount: in the asset's smallest units
+            ///   - fee:
+            ///   - gross_charges: what the purchase adds before the fee
+            ///   - charges: what the balance grows by, gross_charges less the fee
+            ///   - funds_receiver: the purchases wallet the payment goes to
+            ///   - promo_bonus_percent: the promo's bonus, when a valid promo was given
+            ///   - operation:
+            public init(
+                chain_id: Swift.String,
+                sender_address: Swift.String,
+                created_at: Foundation.Date,
+                expires_at: Foundation.Date,
+                asset_id: Swift.String,
+                amount: Swift.String,
+                fee: Components.Schemas.GaslessV2Fee,
+                gross_charges: Swift.Int64,
+                charges: Swift.Int64,
+                funds_receiver: Swift.String,
+                promo_bonus_percent: Swift.String? = nil,
+                operation: Components.Schemas.GaslessV2Operation
+            ) {
+                self.chain_id = chain_id
+                self.sender_address = sender_address
+                self.created_at = created_at
+                self.expires_at = expires_at
+                self.asset_id = asset_id
+                self.amount = amount
+                self.fee = fee
+                self.gross_charges = gross_charges
+                self.charges = charges
+                self.funds_receiver = funds_receiver
+                self.promo_bonus_percent = promo_bonus_percent
+                self.operation = operation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case chain_id
+                case sender_address
+                case created_at
+                case expires_at
+                case asset_id
+                case amount
+                case fee
+                case gross_charges
+                case charges
+                case funds_receiver
+                case promo_bonus_percent
+                case operation
+            }
+        }
         /// Echoes the signed artifacts matching the quote's path: gasless direct sends combined, gasless delegate sends fee and user, battery sends user.
         ///
         /// - Remark: Generated from `#/components/schemas/EvmSendRequest`.
@@ -2969,41 +3292,6 @@ extension Components {
                 case transactions
             }
         }
-        /// - Remark: Generated from `#/components/schemas/TronAvailableTransfers`.
-        public struct TronAvailableTransfers: Codable, Hashable, Sendable {
-            /// Number of available free TRON transfers
-            ///
-            /// - Remark: Generated from `#/components/schemas/TronAvailableTransfers/available_transfers`.
-            public var available_transfers: Swift.Int
-            /// Availability type. 'inactive' if source is telegram.
-            ///
-            /// - Remark: Generated from `#/components/schemas/TronAvailableTransfers/type`.
-            public var _type: Swift.String
-            /// Unix timestamp of next free transfers reset date (either next month after last reset or next charge date, whichever is closer)
-            ///
-            /// - Remark: Generated from `#/components/schemas/TronAvailableTransfers/next_reset_date`.
-            public var next_reset_date: Swift.Int64?
-            /// Creates a new `TronAvailableTransfers`.
-            ///
-            /// - Parameters:
-            ///   - available_transfers: Number of available free TRON transfers
-            ///   - _type: Availability type. 'inactive' if source is telegram.
-            ///   - next_reset_date: Unix timestamp of next free transfers reset date (either next month after last reset or next charge date, whichever is closer)
-            public init(
-                available_transfers: Swift.Int,
-                _type: Swift.String,
-                next_reset_date: Swift.Int64? = nil
-            ) {
-                self.available_transfers = available_transfers
-                self._type = _type
-                self.next_reset_date = next_reset_date
-            }
-            public enum CodingKeys: String, CodingKey {
-                case available_transfers
-                case _type = "type"
-                case next_reset_date
-            }
-        }
         /// - Remark: Generated from `#/components/schemas/AndroidBatteryPurchaseStatus`.
         public struct AndroidBatteryPurchaseStatus: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/AndroidBatteryPurchaseStatus/purchasesPayload`.
@@ -3090,8 +3378,6 @@ extension Components {
                 case purchases
             }
         }
-        /// - Remark: Generated from `#/components/schemas/appStoreResponse`.
-        public typealias appStoreResponse = OpenAPIRuntime.OpenAPIObjectContainer
         /// - Remark: Generated from `#/components/schemas/iOSBatteryPurchaseStatus`.
         public struct iOSBatteryPurchaseStatus: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/iOSBatteryPurchaseStatus/transactionsPayload`.
@@ -3170,148 +3456,6 @@ extension Components {
                 self.transactions = transactions
             }
             public enum CodingKeys: String, CodingKey {
-                case transactions
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus`.
-        public struct promoCodeBatteryPurchaseStatus: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/balance_change`.
-            public var balance_change: Swift.String
-            /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/success`.
-            public var success: Swift.Bool
-            /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/error`.
-            public struct errorPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/error/msg`.
-                public var msg: Swift.String
-                /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/error/code`.
-                @frozen public enum codePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case promo_hyphen_code_hyphen_not_hyphen_found = "promo-code-not-found"
-                    case promo_hyphen_exceeded_hyphen_attempts = "promo-exceeded-attempts"
-                    case temporary_hyphen_error = "temporary-error"
-                    case unknown
-                    public init(from decoder: any Decoder) throws {
-                        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/error/code`.
-                public var code: Components.Schemas.promoCodeBatteryPurchaseStatus.errorPayload.codePayload
-                /// Creates a new `errorPayload`.
-                ///
-                /// - Parameters:
-                ///   - msg:
-                ///   - code:
-                public init(
-                    msg: Swift.String,
-                    code: Components.Schemas.promoCodeBatteryPurchaseStatus.errorPayload.codePayload
-                ) {
-                    self.msg = msg
-                    self.code = code
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case msg
-                    case code
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/promoCodeBatteryPurchaseStatus/error`.
-            public var error: Components.Schemas.promoCodeBatteryPurchaseStatus.errorPayload?
-            /// Creates a new `promoCodeBatteryPurchaseStatus`.
-            ///
-            /// - Parameters:
-            ///   - balance_change:
-            ///   - success:
-            ///   - error:
-            public init(
-                balance_change: Swift.String,
-                success: Swift.Bool,
-                error: Components.Schemas.promoCodeBatteryPurchaseStatus.errorPayload? = nil
-            ) {
-                self.balance_change = balance_change
-                self.success = success
-                self.error = error
-            }
-            public enum CodingKeys: String, CodingKey {
-                case balance_change
-                case success
-                case error
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/Transactions`.
-        public struct Transactions: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/Transactions/total_transactions`.
-            public var total_transactions: Swift.Int
-            /// if set, then there are more transactions to be loaded. Use this value as offset parameter in the next request.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Transactions/next_offset`.
-            public var next_offset: Swift.Int?
-            /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload`.
-            public struct transactionsPayloadPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload/id`.
-                public var id: Swift.String
-                /// represents the amount of money paid by the user for this transaction.
-                ///
-                /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload/paid_amount`.
-                public var paid_amount: Swift.String
-                /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload/status`.
-                @frozen public enum statusPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                    case pending = "pending"
-                    case completed = "completed"
-                    case failed = "failed"
-                    case unknown
-                    public init(from decoder: any Decoder) throws {
-                        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload/status`.
-                public var status: Components.Schemas.Transactions.transactionsPayloadPayload.statusPayload
-                /// - Remark: Generated from `#/components/schemas/Transactions/transactionsPayload/created_at`.
-                public var created_at: Swift.String
-                /// Creates a new `transactionsPayloadPayload`.
-                ///
-                /// - Parameters:
-                ///   - id:
-                ///   - paid_amount: represents the amount of money paid by the user for this transaction.
-                ///   - status:
-                ///   - created_at:
-                public init(
-                    id: Swift.String,
-                    paid_amount: Swift.String,
-                    status: Components.Schemas.Transactions.transactionsPayloadPayload.statusPayload,
-                    created_at: Swift.String
-                ) {
-                    self.id = id
-                    self.paid_amount = paid_amount
-                    self.status = status
-                    self.created_at = created_at
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case id
-                    case paid_amount
-                    case status
-                    case created_at
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/Transactions/transactions`.
-            public typealias transactionsPayload = [Components.Schemas.Transactions.transactionsPayloadPayload]
-            /// - Remark: Generated from `#/components/schemas/Transactions/transactions`.
-            public var transactions: Components.Schemas.Transactions.transactionsPayload
-            /// Creates a new `Transactions`.
-            ///
-            /// - Parameters:
-            ///   - total_transactions:
-            ///   - next_offset: if set, then there are more transactions to be loaded. Use this value as offset parameter in the next request.
-            ///   - transactions:
-            public init(
-                total_transactions: Swift.Int,
-                next_offset: Swift.Int? = nil,
-                transactions: Components.Schemas.Transactions.transactionsPayload
-            ) {
-                self.total_transactions = total_transactions
-                self.next_offset = next_offset
-                self.transactions = transactions
-            }
-            public enum CodingKeys: String, CodingKey {
-                case total_transactions
-                case next_offset
                 case transactions
             }
         }

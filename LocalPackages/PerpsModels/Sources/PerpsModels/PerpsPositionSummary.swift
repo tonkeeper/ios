@@ -17,6 +17,7 @@ public struct PerpsPositionSummary: Equatable, Sendable {
     public let realizedPnlUsd: Double
     public let fundingPaidUsd: Double?
     public let liquidationDistancePercent: Double?
+    public let markPrice: Double?
 
     public var effectiveLeverage: Double? {
         if let leverage, leverage > 0 { return leverage }
@@ -50,7 +51,8 @@ public struct PerpsPositionSummary: Equatable, Sendable {
         unrealizedPnlUsd: Double,
         realizedPnlUsd: Double,
         fundingPaidUsd: Double?,
-        liquidationDistancePercent: Double? = nil
+        liquidationDistancePercent: Double? = nil,
+        markPrice: Double? = nil
     ) {
         self.positionId = positionId
         self.marketId = marketId
@@ -68,5 +70,6 @@ public struct PerpsPositionSummary: Equatable, Sendable {
         self.realizedPnlUsd = realizedPnlUsd
         self.fundingPaidUsd = fundingPaidUsd
         self.liquidationDistancePercent = liquidationDistancePercent
+        self.markPrice = markPrice
     }
 }

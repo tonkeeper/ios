@@ -37,10 +37,6 @@ enum HermesMarkPricesCodec {
         )
     }
 
-    static func event(from data: Data) -> HermesMarkPricesEvent {
-        frame(from: data).event
-    }
-
     static func frame(from data: Data) -> HermesMarkPricesFrame {
         let envelope: HermesInboundEnvelope<InboundPayload>
         do {

@@ -199,6 +199,65 @@ final class CampaignAttributionDecodingTests: XCTestCase {
         XCTAssertNil(CampaignAttributionDecoding.appLink(nil))
     }
 
+    func test_loyaltyOneLinkIsHandledAsTheReferralAppLink() {
+        XCTAssertEqual(
+            CampaignAttributionDecoding.appLink(
+                "https://keeper.onelink.me/Dd63?pid=af_app_invites&c=resistance_referral&deep_link_value=loyalty&deep_link_sub1=Ab-9_x"
+            ),
+            "tonkeeper://loyalty?referral_code=Ab-9_x"
+        )
+        XCTAssertEqual(
+            CampaignAttributionDecoding.appLink("https://keeper.onelink.me/Dd63?deep_link_value=Loyalty"),
+            "tonkeeper://loyalty"
+        )
+        XCTAssertEqual(
+            CampaignAttributionDecoding.appLink("https://keeper.onelink.me/Dd63?deep_link_value=loyalty&deep_link_sub1=a%26b"),
+            "tonkeeper://loyalty?referral_code=a%26b"
+        )
+    }
+
+    func test_oneLinkWithoutTheLoyaltyValueIsLeftToTheSDK() {
+        XCTAssertNil(CampaignAttributionDecoding.appLink("https://keeper.onelink.me/Dd63?deep_link_value=swap&deep_link_sub1=Ab9"))
+        XCTAssertNil(CampaignAttributionDecoding.appLink("https://keeper.onelink.me/Dd63/short"))
+    }
+
+    func test_appsFlyerRoutesADeferredOrShortLinkButNotAFullOneLink() {
+        XCTAssertEqual(
+            CampaignAttributionDecoding.appsFlyerDestination(
+                isDeferred: true,
+                clickedLink: nil,
+                deepLinkValue: "loyalty",
+                referralCode: "Ab9"
+            ),
+            "tonkeeper://loyalty?referral_code=Ab9"
+        )
+        XCTAssertEqual(
+            CampaignAttributionDecoding.appsFlyerDestination(
+                isDeferred: false,
+                clickedLink: "https://keeper.onelink.me/Dd63/x7k2",
+                deepLinkValue: "loyalty",
+                referralCode: "Ab9"
+            ),
+            "tonkeeper://loyalty?referral_code=Ab9"
+        )
+        XCTAssertNil(
+            CampaignAttributionDecoding.appsFlyerDestination(
+                isDeferred: false,
+                clickedLink: "https://keeper.onelink.me/Dd63?deep_link_value=loyalty&deep_link_sub1=Ab9",
+                deepLinkValue: "loyalty",
+                referralCode: "Ab9"
+            )
+        )
+        XCTAssertNil(
+            CampaignAttributionDecoding.appsFlyerDestination(
+                isDeferred: true,
+                clickedLink: nil,
+                deepLinkValue: "swap",
+                referralCode: "Ab9"
+            )
+        )
+    }
+
     func test_placeholderCredentialsStayDisabled() {
         XCTAssertNil(CampaignAttributionCredentials.configured("REPLACE_WITH_BRANCH_KEY_LIVE"))
         XCTAssertNil(CampaignAttributionCredentials.configured("  "))

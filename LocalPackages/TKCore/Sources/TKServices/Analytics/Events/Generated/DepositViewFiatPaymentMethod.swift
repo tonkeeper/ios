@@ -10,13 +10,14 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User sees the \&quot;Payment method\&quot; screen listing fiat payment options (Apple Pay, Debit Card, PayPal, Revolut Pay, Venmo, Volt, P2P Market)  */
+/** User sees the \&quot;Payment method\&quot; screen listing fiat payment options (Apple Pay, Debit Card, PayPal, Revolut Pay, Venmo, Volt, P2P Market). On \&quot;Buy crypto\&quot;: the payment method picker opened.  */
 public struct DepositViewFiatPaymentMethod: Codable, JSONEncodable, Hashable {
 
     public static let availableOptionsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     public var eventName: String = "deposit_view_fiat_payment_method"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Fiat currency the user is paying with (ISO code, e.g. USD, EUR)  */
@@ -24,10 +25,11 @@ public struct DepositViewFiatPaymentMethod: Codable, JSONEncodable, Hashable {
     /** Slugs of the options shown to the user on this screen. Use standard identifier slugs from the backend response.  */
     public var availableOptions: Set<String>
 
-    public init(eventName: String = "deposit_view_fiat_payment_method", from: RampSource, addFundsOption: AddFundsOption, buyAsset: String, sellAsset: String, availableOptions: Set<String>) {
+    public init(eventName: String = "deposit_view_fiat_payment_method", from: RampSource, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, buyAsset: String, sellAsset: String, availableOptions: Set<String>) {
         self.eventName = eventName
         self.from = from
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.buyAsset = buyAsset
         self.sellAsset = sellAsset
         self.availableOptions = availableOptions
@@ -37,6 +39,7 @@ public struct DepositViewFiatPaymentMethod: Codable, JSONEncodable, Hashable {
         case eventName
         case from
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case buyAsset = "buy_asset"
         case sellAsset = "sell_asset"
         case availableOptions = "available_options"
@@ -49,6 +52,7 @@ public struct DepositViewFiatPaymentMethod: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(buyAsset, forKey: .buyAsset)
         try container.encode(sellAsset, forKey: .sellAsset)
         try container.encode(availableOptions, forKey: .availableOptions)

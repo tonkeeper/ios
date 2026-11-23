@@ -11,6 +11,11 @@ final class HintViewController: UIViewController {
     private let dismissControl = TargetActionDismissControl()
     private let contentLayoutTracker = HintContentLayoutTracker()
     private var contentViewController: UIViewController?
+    private lazy var tapThroughRecognizer: UITapGestureRecognizer = {
+        let recognizer = UITapGestureRecognizer(target: self, action: #selector(didTapThroughHint(_:)))
+        recognizer.delegate = self
+        return recognizer
+    }()
 
     private var hintResolvedPayload: (
         position: HintPosition,
@@ -38,14 +43,7 @@ final class HintViewController: UIViewController {
 
         dismissControl.addTarget(self, action: #selector(didTapDismissControl(_:)), for: .touchUpInside)
         dismissControl.didTapTargetActionView = { [weak self] view in
-            guard let self else { return }
-            if let control = view as? UIControl {
-                control.sendActions(for: .touchUpInside)
-                control.sendActions(for: .primaryActionTriggered)
-                didTapTargetActionView?()
-                return
-            }
-            didTapTargetActionView?()
+            self?.performTargetAction(of: view)
         }
     }
 
@@ -61,8 +59,10 @@ final class HintViewController: UIViewController {
         targetActionViews: [UIView],
         contentViewControllerProvider: @escaping (HintPosition.Direction?) -> UIViewController
     ) {
+        hintView.sourceView = sourceView
         hintView.targetActionViews = targetActionViews
         dismissControl.targetActionViews = targetActionViews
+        sourceWindow.addGestureRecognizer(tapThroughRecognizer)
 
         let contentViewControllerToResolvePosition = contentViewControllerProvider(nil)
 
@@ -74,33 +74,35 @@ final class HintViewController: UIViewController {
         )
 
         let contentViewController = contentViewControllerProvider(resolvedPosition.direction)
-        self.contentViewController = contentViewController
-
-        addChild(contentViewController)
-        view.insertSubview(contentViewController.view, aboveSubview: dismissControl)
-        contentViewController.didMove(toParent: self)
-        contentViewController.view.translatesAutoresizingMaskIntoConstraints = false
-        contentViewController.view.accessibilityIdentifier = "tooltip"
-        let tapGestureRecognizer = UITapGestureRecognizer(
-            target: self,
-            action: #selector(didTapContentView(_:))
-        )
-        contentViewController.view.addGestureRecognizer(tapGestureRecognizer)
         contentViewController.view.alpha = 0
-
-        contentLayoutTracker.install(
-            contentViewController: contentViewController,
-            in: view,
+        installContent(
+            contentViewController,
             sourceView: sourceView,
             sourceWindow: sourceWindow,
             configuration: configuration,
-            resolvedPosition: resolvedPosition,
-            initialFrame: contentFrame
+            position: resolvedPosition,
+            frame: contentFrame
         )
-        view.layoutIfNeeded()
 
-        hintResolvedPayload = (resolvedPosition, configuration.animationStyle)
-        contentViewController.view.layoutIfNeeded()
+        contentLayoutTracker.onPositionFlip = { [weak self, weak sourceView, weak sourceWindow] position, frame in
+            guard
+                let self,
+                let sourceView,
+                let sourceWindow,
+                let previousContentViewController = self.contentViewController
+            else {
+                return
+            }
+            removeContent(previousContentViewController)
+            installContent(
+                contentViewControllerProvider(position.direction),
+                sourceView: sourceView,
+                sourceWindow: sourceWindow,
+                configuration: configuration,
+                position: position,
+                frame: frame
+            )
+        }
 
         let animator: HintAnimator
         switch configuration.animationStyle {
@@ -112,6 +114,7 @@ final class HintViewController: UIViewController {
 
     func hideHint(completion: @escaping () -> Void) {
         contentLayoutTracker.reset()
+        tapThroughRecognizer.view?.removeGestureRecognizer(tapThroughRecognizer)
         guard let contentViewController else {
             clearTargetActionViews()
             completion()
@@ -127,10 +130,7 @@ final class HintViewController: UIViewController {
             view: contentViewController.view,
             for: hintResolvedPayload?.position
         ) {
-            contentViewController.willMove(toParent: nil)
-            contentViewController.view.removeFromSuperview()
-            contentViewController.removeFromParent()
-            self.contentViewController = nil
+            self.removeContent(contentViewController)
             self.hintResolvedPayload = nil
             self.clearTargetActionViews()
             completion()
@@ -139,10 +139,10 @@ final class HintViewController: UIViewController {
 
     func removeHint() {
         contentLayoutTracker.reset()
-        contentViewController?.willMove(toParent: nil)
-        contentViewController?.view.removeFromSuperview()
-        contentViewController?.removeFromParent()
-        contentViewController = nil
+        tapThroughRecognizer.view?.removeGestureRecognizer(tapThroughRecognizer)
+        if let contentViewController {
+            removeContent(contentViewController)
+        }
         hintResolvedPayload = nil
         clearTargetActionViews()
     }
@@ -156,20 +156,109 @@ final class HintViewController: UIViewController {
     private func didTapContentView(_ sender: UITapGestureRecognizer) {
         didTapHintContent?()
     }
+
+    @objc
+    private func didTapThroughHint(_ recognizer: UITapGestureRecognizer) {
+        if let targetActionView = dismissControl.targetActionView(at: recognizer.location(in: dismissControl)) {
+            performTargetAction(of: targetActionView)
+        } else {
+            didTapToDismiss?()
+        }
+    }
+}
+
+extension HintViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard hintView.letsScrollThrough, let contentView = contentViewController?.view else {
+            return false
+        }
+        return !contentView.bounds.contains(touch.location(in: contentView))
+    }
+
+    /// The views under a hint that lets scrolls through wait for its tap to fail, so a tap still only closes it.
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        hintView.letsScrollThrough
+    }
 }
 
 private extension HintViewController {
+    func installContent(
+        _ contentViewController: UIViewController,
+        sourceView: UIView,
+        sourceWindow: UIWindow,
+        configuration: HintConfiguration,
+        position: HintPosition,
+        frame: CGRect
+    ) {
+        self.contentViewController = contentViewController
+
+        addChild(contentViewController)
+        view.insertSubview(contentViewController.view, aboveSubview: dismissControl)
+        contentViewController.didMove(toParent: self)
+        contentViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        contentViewController.view.accessibilityIdentifier = "tooltip"
+        let tapGestureRecognizer = UITapGestureRecognizer(
+            target: self,
+            action: #selector(didTapContentView(_:))
+        )
+        contentViewController.view.addGestureRecognizer(tapGestureRecognizer)
+
+        contentLayoutTracker.install(
+            contentViewController: contentViewController,
+            in: view,
+            sourceView: sourceView,
+            sourceWindow: sourceWindow,
+            configuration: configuration,
+            resolvedPosition: position,
+            initialFrame: frame
+        )
+        view.layoutIfNeeded()
+
+        hintResolvedPayload = (position, configuration.animationStyle)
+        contentViewController.view.layoutIfNeeded()
+    }
+
+    func removeContent(_ contentViewController: UIViewController) {
+        contentViewController.willMove(toParent: nil)
+        contentViewController.view.removeFromSuperview()
+        contentViewController.removeFromParent()
+        if self.contentViewController === contentViewController {
+            self.contentViewController = nil
+        }
+    }
+
     func clearTargetActionViews() {
         hintView.targetActionViews = []
         dismissControl.targetActionViews = []
+    }
+
+    func performTargetAction(of view: UIView) {
+        if let control = view as? UIControl {
+            control.sendActions(for: .touchUpInside)
+            control.sendActions(for: .primaryActionTriggered)
+        }
+        didTapTargetActionView?()
     }
 }
 
 private final class HintContainerView: UIView {
     var targetActionViews = [UIView]()
+    weak var sourceView: UIView?
+    /// Turns on for good once a touch comes while the source is cut off by its scroll view: from then on only
+    /// the hint itself takes touches, so the user can scroll to the source.
+    private(set) var letsScrollThrough = false
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hitView = super.hitTest(point, with: event)
+        if !letsScrollThrough, let sourceView, let window, sourceView.hintAnchor(in: window).isClipped {
+            letsScrollThrough = true
+        }
+        if letsScrollThrough, hitView === self || hitView is TargetActionDismissControl {
+            return nil
+        }
         guard hitView === self, shouldBypassForTargetActionView(point) else {
             return hitView
         }
@@ -177,17 +266,7 @@ private final class HintContainerView: UIView {
     }
 
     private func shouldBypassForTargetActionView(_ point: CGPoint) -> Bool {
-        targetActionViews.contains { view in
-            guard
-                view.window === window,
-                !view.isHidden,
-                view.alpha > 0.01
-            else {
-                return false
-            }
-
-            return view.convert(view.bounds, to: self).contains(point)
-        }
+        targetActionViews.contains { isTappableTargetActionView($0, at: point) }
     }
 }
 
@@ -208,17 +287,24 @@ private final class TargetActionDismissControl: UIControl {
         super.touchesEnded(touches, with: event)
     }
 
-    private func targetActionView(at point: CGPoint) -> UIView? {
-        targetActionViews.first { view in
-            guard
-                view.window === window,
-                !view.isHidden,
-                view.alpha > 0.01
-            else {
-                return false
-            }
+    func targetActionView(at point: CGPoint) -> UIView? {
+        targetActionViews.first { isTappableTargetActionView($0, at: point) }
+    }
+}
 
-            return view.convert(view.bounds, to: self).contains(point)
+private extension UIView {
+    /// Only the visible part counts: a target scrolled under a bar must not turn a tap on that bar into its action.
+    func isTappableTargetActionView(_ view: UIView, at point: CGPoint) -> Bool {
+        guard
+            let window,
+            view.window === window,
+            !view.isHidden,
+            view.alpha > 0.01,
+            let visibleFrame = view.hintVisibleFrame(in: window)
+        else {
+            return false
         }
+
+        return convert(visibleFrame, from: window).contains(point)
     }
 }

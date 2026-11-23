@@ -1,4 +1,3 @@
-import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -8,8 +7,10 @@ public protocol PerpsAssetPageViewModeling: ObservableObject {
     var state: PerpsAssetPageState { get }
     var tradeToast: PerpsAssetPageTradeToast? { get }
     var chartMarkers: [PerpsChartPositionMarker] { get }
+    var showsLoyaltyBanner: Bool { get }
     var onBack: (() -> Void)? { get }
 
+    func onWillAppear()
     func onAppear()
     func onDisappear()
     func perpetualInfo()
@@ -27,11 +28,15 @@ public protocol PerpsAssetPageViewModeling: ObservableObject {
     func cancelLimitOrder(_ orderIndex: Int64)
     func seeAllHistory()
     func selectHistory(_ id: String)
+    func openLoyalty()
+    func dismissLoyaltyBanner()
 }
 
 public struct PerpsAssetPageView<ViewModel: PerpsAssetPageViewModeling, ChartViewModel: PerpsChartViewModeling>: View {
     @ObservedObject private var viewModel: ViewModel
-    @ObservedObject private var chartViewModel: ChartViewModel
+    /// Not observed: only the market section and the chart read it, so a candle tick or a
+    /// crosshair move must not re-evaluate the whole page.
+    private let chartViewModel: ChartViewModel
     @State private var safeAreaBottom: CGFloat = 0
     @State private var showSizeInToken = false
 
@@ -75,26 +80,26 @@ public struct PerpsAssetPageView<ViewModel: PerpsAssetPageViewModeling, ChartVie
                 )
             }
 
-            if let toast = viewModel.tradeToast {
-                VStack {
+            VStack {
+                if let toast = viewModel.tradeToast {
                     PerpsAssetTradeToast(toast: toast)
                         .transition(.move(edge: .top).combined(with: .opacity))
-                    Spacer()
                 }
-                .padding(.horizontal, 56)
-                .padding(.top, 8)
-                .zIndex(1)
+                Spacer()
             }
+            .padding(.horizontal, 56)
+            .padding(.top, 8)
+            .zIndex(1)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.tradeToast)
         }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.tradeToast)
         .onPreferenceChange(BottomSafeAreaKey.self) { safeAreaBottom = $0 }
     }
 
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
-        case .loading:
-            PerpsAssetLoadingView()
+        case let .loading(hasPosition):
+            PerpsAssetLoadingView(hasPosition: hasPosition, chartViewModel: chartViewModel)
         case .failed:
             PerpsAssetFailedView(
                 title: TKLocales.Perps.Asset.failedTitle,
@@ -107,6 +112,7 @@ public struct PerpsAssetPageView<ViewModel: PerpsAssetPageViewModeling, ChartVie
                 ready: ready,
                 chartViewModel: chartViewModel,
                 chartMarkers: viewModel.chartMarkers,
+                showsLoyaltyBanner: viewModel.showsLoyaltyBanner,
                 safeAreaBottom: safeAreaBottom,
                 showSizeInToken: $showSizeInToken,
                 onShare: { viewModel.share() },
@@ -115,7 +121,9 @@ public struct PerpsAssetPageView<ViewModel: PerpsAssetPageViewModeling, ChartVie
                 onLimitOrder: { viewModel.limitOrder($0) },
                 onSeeAllHistory: { viewModel.seeAllHistory() },
                 onSelectHistory: { viewModel.selectHistory($0) },
-                onRiskDisclosure: { viewModel.riskDisclosure() }
+                onRiskDisclosure: { viewModel.riskDisclosure() },
+                onOpenLoyalty: { viewModel.openLoyalty() },
+                onDismissLoyaltyBanner: { viewModel.dismissLoyaltyBanner() }
             )
         }
     }

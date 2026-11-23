@@ -13,6 +13,7 @@
     case networkError
     case badResponse
     case providerUnavailable
+    case walletScreened
     case bitcoinError
     case memPoolConflict
     case utxoError
@@ -50,6 +51,8 @@ extension MultichainSwapExecutionErrorKind: CustomStringConvertible {
             return "badResponse"
         case .providerUnavailable:
             return "providerUnavailable"
+        case .walletScreened:
+            return "walletScreened"
         case .bitcoinError:
             return "bitcoinError"
         case .memPoolConflict:

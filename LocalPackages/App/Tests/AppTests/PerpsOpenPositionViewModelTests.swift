@@ -5,6 +5,7 @@ import Combine
 @testable import Perps
 import PerpsModels
 import TKLocalize
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -15,7 +16,8 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         service: FakePerpsTradingService = FakePerpsTradingService(),
         status: PerpsAccountStatus = .account(accountIndex: 1),
         balance: String = "712.56",
-        marketsStore: PerpsMarketsStore = .makeForTests()
+        marketsStore: PerpsMarketsStore = .makeForTests(),
+        rememberedLeverage: Double? = nil
     ) -> PerpsOpenPositionViewModel {
         let reader = AccountReadingSpy()
         reader.statusResult = status
@@ -27,7 +29,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
             service: service,
             accountStore: store,
             marketsStore: marketsStore,
-            initialLeverage: 10,
+            rememberedLeverage: { _ in rememberedLeverage },
             format: PerpsFormatting.live
         )
     }
@@ -74,6 +76,64 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.balanceText, PerpsFormatting.live.usd(712.56))
     }
 
+    func test_load_keepsTheRememberedLeverage_withinTheMarketBounds() async {
+        let remembered = makeViewModel(rememberedLeverage: 10)
+        remembered.onAppear()
+        await waitUntil(remembered) { remembered.viewState == .ready && accountIsReady(remembered) }
+        XCTAssertEqual(remembered.leverage, 10)
+
+        let aboveMax = makeViewModel(rememberedLeverage: 50)
+        aboveMax.onAppear()
+        await waitUntil(aboveMax) { aboveMax.viewState == .ready && accountIsReady(aboveMax) }
+        XCTAssertEqual(aboveMax.leverage, 40)
+    }
+
+    func test_rememberedLeverage_arrivesWithALateAccount_unlessTheUserTouchedIt() async {
+        func makeUnresolved() -> (PerpsOpenPositionViewModel, AccountReadingSpy, PerpsAccountStore) {
+            let reader = AccountReadingSpy()
+            reader.statusResult = .unavailable(reason: "offline")
+            reader.portfolioResult = PerpsAccountSnapshot(availableBalance: "100")
+            let store = PerpsAccountStore(service: reader, wallet: .openPositionTest())
+            let viewModel = PerpsOpenPositionViewModel(
+                marketId: 1,
+                side: .long,
+                service: FakePerpsTradingService(),
+                accountStore: store,
+                marketsStore: PerpsMarketsStore.makeForTests(),
+                rememberedLeverage: { $0 == 1 ? 10 : nil },
+                format: PerpsFormatting.live
+            )
+            return (viewModel, reader, store)
+        }
+
+        let (untouched, untouchedReader, untouchedStore) = makeUnresolved()
+        untouched.onAppear()
+        await waitUntil(untouched) { untouched.viewState == .ready }
+        XCTAssertEqual(untouched.leverage, 27)
+        untouchedReader.statusResult = .account(accountIndex: 1)
+        untouchedStore.refresh()
+        await waitUntil(untouched) { accountIsReady(untouched) }
+        XCTAssertEqual(untouched.leverage, 10)
+
+        let (picked, pickedReader, pickedStore) = makeUnresolved()
+        picked.onAppear()
+        await waitUntil(picked) { picked.viewState == .ready }
+        picked.applyLeverage(15)
+        pickedReader.statusResult = .account(accountIndex: 1)
+        pickedStore.refresh()
+        await waitUntil(picked) { accountIsReady(picked) }
+        XCTAssertEqual(picked.leverage, 15)
+
+        let (sheetOpen, sheetOpenReader, sheetOpenStore) = makeUnresolved()
+        sheetOpen.onAppear()
+        await waitUntil(sheetOpen) { sheetOpen.viewState == .ready }
+        sheetOpen.openLeverage()
+        sheetOpenReader.statusResult = .account(accountIndex: 1)
+        sheetOpenStore.refresh()
+        await waitUntil(sheetOpen) { accountIsReady(sheetOpen) }
+        XCTAssertEqual(sheetOpen.leverage, 27)
+    }
+
     func test_marketLoadFailure_invokesOnLoadFailed_andStaysLoading() async {
         let service = FakePerpsTradingService()
         service.failsMarketLoad = true
@@ -93,7 +153,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.viewState == .ready && viewModel.account == .needsDeposit(balance: nil) }
         viewModel.setAmount("20")
-        XCTAssertTrue(viewModel.canDeposit)
+        XCTAssertEqual(viewModel.account, .needsDeposit(balance: nil))
         XCTAssertEqual(viewModel.balanceErrorText, TKLocales.Perps.OpenPosition.insufficientFunds)
         XCTAssertFalse(viewModel.isReviewEnabled)
     }
@@ -130,7 +190,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
             service: FakePerpsTradingService(),
             accountStore: store,
             marketsStore: PerpsMarketsStore.makeForTests(),
-            initialLeverage: 10,
+            rememberedLeverage: { _ in nil },
             format: PerpsFormatting.live
         )
 
@@ -249,7 +309,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
 
-        viewModel.balanceRow?.onMax()
+        viewModel.balanceRow?.onMax?()
 
         XCTAssertEqual(viewModel.amountText, "10.07")
         XCTAssertNil(viewModel.balanceRow?.errorText)
@@ -274,22 +334,6 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertEqual(received?.intent.leverage, 27)
         XCTAssertEqual(received?.review.entryPrice, 66541.70)
         XCTAssertEqual(service.previewedIntents.first?.marginUsd, "20")
-        XCTAssertTrue(service.preparedIntents.isEmpty)
-    }
-
-    func test_review_doesNotPrepareASignedTrade() async {
-        let service = FakePerpsTradingService()
-        let viewModel = makeViewModel(service: service)
-        viewModel.onAppear()
-        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
-        viewModel.setAmount("20")
-
-        let reviewed = XCTestExpectation(description: "review emitted")
-        viewModel.onReview = { _ in reviewed.fulfill() }
-        viewModel.review()
-
-        await fulfillment(of: [reviewed], timeout: 5)
-        XCTAssertTrue(service.preparedIntents.isEmpty)
     }
 
     func test_review_activatesTheAccountBeforePreviewing() async {
@@ -486,8 +530,8 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         viewModel.applyLimitPrice(65000)
         XCTAssertEqual(viewModel.orderType, .limit)
         viewModel.applyOrderType(.market)
-        XCTAssertNil(viewModel.limitPrice)
-        XCTAssertEqual(viewModel.headerPriceText, PerpsFormatting.live.usd(66141.70))
+        XCTAssertNil(viewModel.state.limitPrice)
+        XCTAssertEqual(viewModel.headerPriceText, PerpsFormatting.live.price(66141.70))
 
         let reviewed = XCTestExpectation(description: "review emitted")
         var received: PerpsConfirmContext?
@@ -548,8 +592,40 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state.autoCloseWarningText,
-            "The Stop Loss value must be above the liquidation price (\(PerpsFormatting.live.usd(65500)))."
+            "Liquidation comes first at \(PerpsFormatting.live.price(65500)). Set stop loss above it."
         )
+
+        // A reload for the same terms keeps the warning.
+        viewModel.setAmount("20")
+        XCTAssertNotNil(viewModel.state.autoCloseWarningText)
+
+        service.reviewer.openReview = Self.openReview(liquidationPrice: 64000)
+        viewModel.applyLeverage(10)
+        XCTAssertNil(viewModel.state.autoCloseWarningText)
+    }
+
+    func test_leverageDrop_checksAStopLossTypedAsROIAgainstTheNewLiquidation() async throws {
+        let service = FakePerpsTradingService()
+        service.reviewer.openReview = Self.openReview(liquidationPrice: 64000)
+        let viewModel = makeViewModel(service: service)
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        let entry = viewModel.effectivePrice
+        viewModel.applyLeverage(10)
+        // −10% at 10x is a 1% move, inside the 64000 liquidation.
+        viewModel.applyAutoClose(
+            PerpsAutoClose(takeProfit: nil, stopLoss: PerpsAutoCloseTrigger(triggerPrice: entry * 0.99)),
+            roiInput: PerpsAutoCloseROIInput(stopLoss: PerpsAutoCloseROI(sign: .minus, text: "10"))
+        )
+        XCTAssertNotNil(viewModel.autoClose?.stopLoss)
+
+        // At 2x the same −10% is a 5% move: past the old liquidation, inside the new one.
+        service.reviewer.openReview = Self.openReview(liquidationPrice: entry * 0.8)
+        viewModel.applyLeverage(2)
+        await waitUntil(viewModel) { viewModel.state.liquidationPrice == entry * 0.8 }
+
+        XCTAssertEqual(try XCTUnwrap(viewModel.autoClose?.stopLoss?.triggerPrice), entry * 0.95, accuracy: 0.01)
+        XCTAssertNil(viewModel.state.autoCloseWarningText)
     }
 
     func test_leverageSheet_reloadsAStaleRead_andShowsItsLiquidation() async throws {
@@ -576,7 +652,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         service.reviewer.openReview = Self.openReview(liquidationPrice: 63000)
         await waitUntil(viewModel) { sheet.liquidationText != nil }
 
-        XCTAssertEqual(sheet.liquidationText, PerpsFormatting.live.usd(63000))
+        XCTAssertEqual(sheet.liquidationText, PerpsFormatting.live.price(63000))
         XCTAssertEqual(service.reviewerLoads, 2)
     }
 
@@ -599,7 +675,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         )
         service.reviewer.openReview = Self.openReview(liquidationPrice: 63000)
         var spins = 0
-        while sheet.liquidationText != PerpsFormatting.live.usd(63000), spins < 100_000 {
+        while sheet.liquidationText != PerpsFormatting.live.price(63000), spins < 100_000 {
             spins += 1
             await Task.yield()
         }
@@ -607,7 +683,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
             await Task.yield()
         }
 
-        XCTAssertEqual(sheet.liquidationText, PerpsFormatting.live.usd(63000))
+        XCTAssertEqual(sheet.liquidationText, PerpsFormatting.live.price(63000))
         XCTAssertEqual(service.reviewerLoads, 2)
     }
 
@@ -621,9 +697,9 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
 
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67500")])
-        await waitUntil(viewModel) { viewModel.headerPriceText == PerpsFormatting.live.usd(67500) }
+        await waitUntil(viewModel) { viewModel.headerPriceText == PerpsFormatting.live.price(67500) }
 
-        XCTAssertEqual(viewModel.headerPriceText, PerpsFormatting.live.usd(67500))
+        XCTAssertEqual(viewModel.headerPriceText, PerpsFormatting.live.price(67500))
         XCTAssertEqual(viewModel.state.autoClose?.takeProfit?.triggerPrice, 67000)
         XCTAssertNil(viewModel.state.autoCloseWarningText)
         var sheet: PerpsAutoCloseSheetContext?
@@ -730,8 +806,28 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(viewModel.autoClose?.stopLoss?.triggerPrice), 65810.99, accuracy: 1e-6)
         XCTAssertEqual(
             viewModel.autoCloseSummary,
-            "\(PerpsFormatting.live.usd(70000)) TP · \(PerpsFormatting.live.signedPercent(-27)) SL"
+            "\(PerpsFormatting.live.price(70000)) TP · \(PerpsFormatting.live.signedPercent(-27)) SL"
         )
+    }
+
+    func testConfirmationPreservesOnlyTheROIThatWasTypedAsAPercent() async throws {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.setAmount("100")
+        viewModel.applyAutoClose(
+            .init(takeProfit: .init(triggerPrice: 70000), stopLoss: .init(triggerPrice: 65000)),
+            roiInput: .init(stopLoss: .init(sign: .minus, text: "10"))
+        )
+        let reviewed = expectation(description: "confirmation emitted")
+        var received: PerpsConfirmContext?
+        viewModel.onReview = { received = $0; reviewed.fulfill() }
+        viewModel.review()
+        await fulfillment(of: [reviewed], timeout: 5)
+        let confirmation = try XCTUnwrap(received)
+        XCTAssertNil(confirmation.intent.takeProfitROIPercent)
+        XCTAssertEqual(confirmation.intent.stopLossROIPercent, -10)
+        XCTAssertEqual(confirmation.intent.autoClose?.takeProfit?.triggerPrice, 70000)
     }
 
     // MARK: - Size in the asset
@@ -760,7 +856,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         XCTAssertEqual(service.previewedIntents.first?.leverage, 10)
     }
 
-    func test_toggle_convertsTheAmountBetweenMarginAndAssetSize() async {
+    func test_toggle_convertsTheAmountToTheAssetSize_andBackToWhatWasTyped() async {
         let viewModel = makeViewModel()
         viewModel.onAppear()
         await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
@@ -773,10 +869,55 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
 
         viewModel.toggleSizeMode()
         XCTAssertEqual(viewModel.sizeMode, .usd)
-        XCTAssertEqual(viewModel.amountText, "99.94")
+        XCTAssertEqual(viewModel.amountText, "100")
         XCTAssertEqual(viewModel.amountPrefix, "$")
         XCTAssertNil(viewModel.amountSuffix)
         XCTAssertEqual(viewModel.sizeTitle, TKLocales.Perps.OpenPosition.size)
+
+        viewModel.toggleSizeMode()
+        XCTAssertEqual(viewModel.amountText, "0.01511")
+    }
+
+    func test_toggle_afterALeverageChange_convertsTheSizeAgain() async {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.applyLeverage(10)
+        viewModel.setAmount("100")
+        viewModel.toggleSizeMode()
+
+        viewModel.applyLeverage(20)
+        viewModel.toggleSizeMode()
+
+        XCTAssertEqual(viewModel.amountText, "49.97")
+    }
+
+    func test_toggle_afterAnEdit_convertsTheEditedSize() async {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.applyLeverage(10)
+        viewModel.setAmount("100")
+        viewModel.toggleSizeMode()
+
+        viewModel.setAmount("0.02")
+        viewModel.toggleSizeMode()
+
+        XCTAssertEqual(viewModel.amountText, "132.28")
+    }
+
+    func test_toggle_aMarginBelowOneSizeStep_showsZeroAndTheMinimumMargin() async {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.applyLeverage(10)
+        viewModel.setAmount("0.05")
+
+        viewModel.toggleSizeMode()
+
+        XCTAssertEqual(viewModel.amountText, "0")
+        XCTAssertEqual(viewModel.balanceErrorText, TKLocales.Perps.OpenPosition.minimumMargin(PerpsFormatting.live.usd(1)))
+        XCTAssertFalse(viewModel.isReviewEnabled)
     }
 
     func test_tokenMode_onAWholeUnitMarket_dropsTheFraction() async {
@@ -815,8 +956,61 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
         viewModel.setMax()
 
         XCTAssertEqual(viewModel.amountText, "0.10773")
-        XCTAssertLessThanOrEqual(viewModel.marginUsd, 712.56)
+        XCTAssertEqual(viewModel.marginUsd, 712.56, accuracy: 1e-6)
         XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func test_tokenMode_max_keepsTheBalanceAsMargin_whileThePriceRises() async {
+        let client = FakeMarkPricesClient()
+        let viewModel = makeViewModel(marketsStore: .makeForTests(tickers: [1: "BTC/USD"], client: client))
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        await waitForTickers(client, toEqual: ["BTC/USD"])
+        viewModel.applyLeverage(10)
+        viewModel.toggleSizeMode()
+        viewModel.setMax()
+
+        await client.emit([("BTC/USD", "67500")])
+        await waitUntil(viewModel) { viewModel.effectivePrice == 67500 }
+
+        XCTAssertEqual(viewModel.amountText, "0.10556")
+        XCTAssertEqual(viewModel.marginUsd, 712.56, accuracy: 1e-6)
+        XCTAssertNil(viewModel.balanceErrorText)
+        XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func test_tokenMode_max_resizesWithTheLeverage_andAnEditDropsIt() async {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.applyLeverage(10)
+        viewModel.toggleSizeMode()
+        viewModel.setMax()
+
+        viewModel.applyLeverage(5)
+        XCTAssertEqual(viewModel.amountText, "0.05386")
+        XCTAssertEqual(viewModel.marginUsd, 712.56, accuracy: 1e-6)
+        XCTAssertNil(viewModel.balanceErrorText)
+
+        viewModel.setAmount("0.2")
+        XCTAssertEqual(viewModel.marginUsd, 0.2 * 66141.70 / 5, accuracy: 1e-6)
+        XCTAssertEqual(viewModel.balanceErrorText, TKLocales.Perps.OpenPosition.insufficientFunds)
+    }
+
+    func test_max_inDollars_staysTheMarginInTheAsset() async {
+        let viewModel = makeViewModel()
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.viewState == .ready && accountIsReady(viewModel) }
+        viewModel.applyLeverage(10)
+        viewModel.setMax()
+
+        viewModel.toggleSizeMode()
+        viewModel.applyLeverage(5)
+
+        XCTAssertEqual(viewModel.amountText, "0.05386")
+        XCTAssertEqual(viewModel.marginUsd, 712.56, accuracy: 1e-6)
+        viewModel.toggleSizeMode()
+        XCTAssertEqual(viewModel.amountText, "712.56")
     }
 
     func test_tokenMode_livePriceTickDuringReview_keepsTheReviewedDraft() async {
@@ -847,7 +1041,7 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
             break
         }
         await client.emit([("BTC/USD", "67500")])
-        await waitUntil(viewModel) { viewModel.headerPriceText == PerpsFormatting.live.usd(67500) }
+        await waitUntil(viewModel) { viewModel.headerPriceText == PerpsFormatting.live.price(67500) }
         releaseContinuation.yield()
 
         await fulfillment(of: [reviewed], timeout: 5)
@@ -864,26 +1058,12 @@ final class PerpsOpenPositionViewModelTests: XCTestCase {
             notionalUsd: 1000,
             baseSize: 0.015,
             estimatedFeeUsd: 0.4,
+            feeRatePercent: 0.095,
             liquidationUnavailableReason: nil
         )
     }
 
     // MARK: - Helpers
-
-    private func waitUntil(
-        _ viewModel: PerpsOpenPositionViewModel,
-        timeout: TimeInterval = 5,
-        _ condition: @escaping () -> Bool
-    ) async {
-        let fulfilled = XCTestExpectation(description: "view model condition")
-        fulfilled.assertForOverFulfill = false
-        let cancellable = viewModel.objectWillChange
-            .receive(on: DispatchQueue.main)
-            .sink { _ in if condition() { fulfilled.fulfill() } }
-        if condition() { fulfilled.fulfill() }
-        await fulfillment(of: [fulfilled], timeout: timeout)
-        cancellable.cancel()
-    }
 }
 
 /// Match the `.ready` case without comparing the parsed balance — `Decimal → Double` isn't

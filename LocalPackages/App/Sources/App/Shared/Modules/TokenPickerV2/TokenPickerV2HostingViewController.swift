@@ -5,6 +5,15 @@ import UIKit
 final class TokenPickerV2HostingViewController: TKHostingController<TokenPickerV2Screen> {
     private let viewModel: TokenPickerV2ViewModelImplementation
     private let presentation: TokenPickerV2Presentation
+    /// Pushed under liquid glass, the header is the system bar: the content keeps clear of it, and the
+    /// bar stays shown through the push instead of coming back once it ends.
+    private var usesSystemBar: Bool {
+        Self.usesSystemBar(presentation)
+    }
+
+    private static func usesSystemBar(_ presentation: TokenPickerV2Presentation) -> Bool {
+        TKLiquidGlass.isEnabled && !presentation.configuresSheet
+    }
 
     init(
         viewModel: TokenPickerV2ViewModelImplementation,
@@ -15,7 +24,7 @@ final class TokenPickerV2HostingViewController: TKHostingController<TokenPickerV
         self.presentation = presentation
         super.init(content: TokenPickerV2Screen(
             viewModel: viewModel,
-            ignoresSafeArea: ignoresSafeArea
+            ignoresSafeArea: ignoresSafeArea && !Self.usesSystemBar(presentation)
         ))
         if presentation.configuresSheet {
             configurePresentation()
@@ -31,14 +40,15 @@ final class TokenPickerV2HostingViewController: TKHostingController<TokenPickerV
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        presentationController?.delegate = self
+        tkPresentationController?.delegate = self
         viewModel.viewDidLoad()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        viewModel.appeared()
 
-        if !presentation.configuresSheet {
+        if !presentation.configuresSheet, !usesSystemBar {
             navigationController?.setNavigationBarHidden(true, animated: animated)
         }
     }

@@ -1,5 +1,9 @@
 import Foundation
 
+public protocol PerpsChanges: Sendable {
+    func next(orAfter interval: TimeInterval) async
+}
+
 public protocol PerpsTradingService: AnyObject, Sendable {
     func openMarketContext(marketId: Int64, side: PerpsTradeSide) async -> PerpsOpenMarketContext?
 
@@ -7,13 +11,24 @@ public protocol PerpsTradingService: AnyObject, Sendable {
         _ intent: PerpsOpenMarketIntent
     ) async -> Result<PerpsOpenOrderReview, PerpsTradingError>
 
-    func prepareOpenMarket(
-        _ intent: PerpsOpenMarketIntent
-    ) async -> Result<PerpsPreparedTradingAction, PerpsTradingError>
+    /// The open the confirm screen already reviewed, ready for `submit`. It plans nothing:
+    /// `submit` plans inside the account's lane, right before signing.
+    func openSubmission(
+        _ intent: PerpsOpenMarketIntent,
+        review: PerpsOpenOrderReview
+    ) -> PerpsPreparedTradingAction
 
     func submit(_ prepared: PerpsPreparedTradingAction, passcodeProvider: () async -> String?) async -> PerpsSubmitResult
 
+    /// The user started to confirm on this market: the account read the submit plans on can
+    /// start now instead of after the swipe.
+    func warmSubmit(marketId: Int64)
+
+    func dropWarmSubmit(marketId: Int64)
+
     func reconcile(_ pending: PerpsPendingTradingAction) async -> PerpsReconcileResult
+
+    func changes(marketId: Int64) async -> any PerpsChanges
 
     func previewClose(
         _ intent: PerpsCloseIntent
@@ -67,4 +82,21 @@ public protocol PerpsTradingService: AnyObject, Sendable {
     func loadReviewer(for intent: PerpsMarginChangeIntent) async -> Result<any PerpetualReviewer, PerpsTradingError>
 
     func marginChangeLimits(marketId: Int64) async -> Result<PerpsMarginChangeLimits, PerpsTradingError>
+
+    func sizeChangeLimits(marketId: Int64) async -> Result<PerpsSizeChangeLimits, PerpsTradingError>
+
+    func reportWait(_ wait: PerpsTradeWait, milliseconds: Int64)
+}
+
+public enum PerpsTradeWait: Equatable, Sendable {
+    case positionOpen
+    case positionClose
+}
+
+public extension PerpsTradingService {
+    func warmSubmit(marketId _: Int64) {}
+
+    func dropWarmSubmit(marketId _: Int64) {}
+
+    func reportWait(_: PerpsTradeWait, milliseconds _: Int64) {}
 }

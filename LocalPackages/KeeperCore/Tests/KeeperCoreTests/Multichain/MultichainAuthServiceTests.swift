@@ -274,6 +274,14 @@ private final class MultichainAuthClientAPIFake: MultichainAuthClientAPI, @unche
     ) async throws(MultichainClientAPIError) {}
 
     func unsubscribeWalletPush(deviceJWT _: String) async throws(MultichainClientAPIError) {}
+    func registerLiveActivity(
+        _: MultichainLiveActivityRegistration,
+        deviceJWT _: String
+    ) async throws(MultichainClientAPIError) -> MultichainLiveActivityRegistrationResult {
+        .registered
+    }
+
+    func unregisterLiveActivity(activityId _: String, deviceJWT _: String) async throws(MultichainClientAPIError) {}
 }
 
 private actor RegisterGate {

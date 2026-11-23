@@ -219,7 +219,7 @@ struct RaffleHeroArt: View {
 
     var body: some View {
         if let imageURL {
-            TKRemoteImage(source: RaffleKingfisherSource.source(imageURL), contentMode: .fit) {
+            TKRemoteImage(url: imageURL, contentMode: .fit) {
                 glyph.frame(height: Self.placeholderHeight)
             } failure: {
                 glyph.frame(height: Self.placeholderHeight)
@@ -572,7 +572,7 @@ private struct RaffleBenefitCardView: View {
         .background(.backgroundContent)
         .overlay(alignment: .trailing) {
             if let imageURL = card.imageURL {
-                TKRemoteImage(source: RaffleKingfisherSource.source(imageURL)) {
+                TKRemoteImage(url: imageURL) {
                     Color.clear
                 } failure: {
                     Color.clear

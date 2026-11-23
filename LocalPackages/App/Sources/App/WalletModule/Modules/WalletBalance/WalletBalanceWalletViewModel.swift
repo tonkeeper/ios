@@ -103,6 +103,10 @@ final class WalletBalanceWalletViewModel {
         await setupModel.turnOnNotifications()
     }
 
+    func openSettingsIfBiometryDenied() -> Bool {
+        setupModel.openSettingsIfBiometryDenied()
+    }
+
     func turnOnBiometry(passcode: String) async throws {
         try await setupModel.turnOnBiometry(passcode: passcode)
     }

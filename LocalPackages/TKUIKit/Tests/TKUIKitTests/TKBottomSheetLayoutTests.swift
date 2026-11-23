@@ -6,9 +6,11 @@ import XCTest
 final class TKBottomSheetLayoutTests: XCTestCase {
     private var window: UIWindow!
     private var rootViewController: UIViewController!
+    private var presentationFinished: XCTestExpectation?
 
     override func setUp() {
         super.setUp()
+        UIView.setAnimationsEnabled(false)
         window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         rootViewController = UIViewController()
         window.rootViewController = rootViewController
@@ -21,6 +23,7 @@ final class TKBottomSheetLayoutTests: XCTestCase {
         window.isHidden = true
         window = nil
         rootViewController = nil
+        UIView.setAnimationsEnabled(true)
         super.tearDown()
     }
 
@@ -215,10 +218,115 @@ final class TKBottomSheetLayoutTests: XCTestCase {
         XCTAssertEqual(sheet.containerView.frame.minY, restingFrame.minY + 40, accuracy: 0.5)
         XCTAssertEqual(sheet.containerView.frame.height, restingFrame.height, accuracy: 0.5)
 
-        sheet.didEndDragging(offset: 40)
+        sheet.didEndDragging(offset: 40, velocity: 0)
 
         XCTAssertEqual(sheet.containerView.frame.height, restingFrame.height + 60, accuracy: 0.5)
         XCTAssertEqual(sheet.containerView.frame.maxY, restingFrame.maxY, accuracy: 0.5)
+    }
+
+    func testShortFlingDownClosesTheSheet() {
+        let contentViewController = stubContent()
+        let (sheet, navigationController) = startSheetInNavigationController(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+        let closed = expectation(description: "sheet closed")
+        sheet.didClose = { _ in closed.fulfill() }
+
+        sheet.didDrag(offset: 30)
+        sheet.didEndDragging(offset: 30, velocity: 800)
+
+        wait(for: [closed], timeout: 5)
+        withExtendedLifetime(navigationController) {}
+    }
+
+    /// A close tapped again while the sheet slides out must not start a second dismissal, and a sheet
+    /// that is no longer presented still reports that it is gone.
+    func testDismissRequestedTwiceCompletesOnce() {
+        let contentViewController = stubContent()
+        let (sheet, navigationController) = startSheetInNavigationController(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+        let completed = expectation(description: "dismissal completed")
+        completed.assertForOverFulfill = true
+        var dismissals = 0
+        sheet.willDismiss = { dismissals += 1 }
+
+        UIView.setAnimationsEnabled(true)
+        sheet.dismiss { completed.fulfill() }
+        sheet.dismiss { completed.fulfill() }
+        XCTAssertTrue(sheet.isDismissing)
+        XCTAssertEqual(dismissals, 1, "the second request starts no slide-out of its own")
+
+        wait(for: [completed], timeout: 5)
+        XCTAssertFalse(sheet.isDismissing)
+        withExtendedLifetime(navigationController) {}
+    }
+
+    /// Signer, Keystone and TonConnect close handlers dismiss the sheet again from the first
+    /// dismissal's completion and resume their continuation only in the second one.
+    func testDismissRequestedFromACompletionStillCompletes() {
+        let contentViewController = stubContent()
+        let (sheet, navigationController) = startSheetInNavigationController(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+        let nestedDismissCompleted = expectation(description: "nested dismissal completed")
+
+        sheet.dismiss {
+            sheet.dismiss { nestedDismissCompleted.fulfill() }
+        }
+
+        wait(for: [nestedDismissCompleted], timeout: 5)
+        withExtendedLifetime(navigationController) {}
+    }
+
+    /// Ledger pairing keeps its sheet across a network wait and closes it afterwards. A sheet the user
+    /// closed meanwhile is gone with its navigation controller, and that late close must open nothing.
+    func testDismissOfASheetClosedMeanwhileCompletesNothing() {
+        let contentViewController = stubContent()
+        let sheet = autoreleasepool {
+            let (sheet, navigationController) = startSheetInNavigationController(contentViewController)
+            waitForPresentationToFinish(contentViewController)
+            navigationController.willMove(toParent: nil)
+            navigationController.view.removeFromSuperview()
+            navigationController.removeFromParent()
+            return sheet
+        }
+        XCTAssertNil(sheet.navigationController)
+        var isCompleted = false
+        let dismissed = expectation(description: "dismissal finished")
+        sheet.didDismiss = { dismissed.fulfill() }
+
+        sheet.dismiss { isCompleted = true }
+
+        wait(for: [dismissed], timeout: 5)
+        XCTAssertFalse(isCompleted)
+    }
+
+    /// The swap's pricing details hold the sheet while a swap is being sent: a close would lose its outcome.
+    func testModalSheetStaysForTheUsersCloseAndGoesOnceReleased() {
+        let contentViewController = stubContent()
+        let (sheet, navigationController) = startSheetInNavigationController(contentViewController)
+        waitForPresentationToFinish(contentViewController)
+        let restingFrame = sheet.containerView.frame
+        var closes = 0
+        let closed = expectation(description: "sheet closed")
+        sheet.didClose = { _ in
+            closes += 1
+            closed.fulfill()
+        }
+        sheet.isModalInPresentation = true
+
+        sheet.closeByUser()
+        sheet.didDrag(offset: 120)
+        sheet.didEndDragging(offset: 120, velocity: 800)
+
+        XCTAssertFalse(sheet.isDismissing)
+        XCTAssertEqual(sheet.containerView.frame.minY, restingFrame.minY, accuracy: 0.5)
+        XCTAssertEqual(closes, 0)
+
+        sheet.isModalInPresentation = false
+        sheet.closeByUser()
+
+        wait(for: [closed], timeout: 5)
+        XCTAssertEqual(closes, 1)
+        withExtendedLifetime(navigationController) {}
     }
 }
 
@@ -264,14 +372,40 @@ private extension TKBottomSheetLayoutTests {
         rootViewController.view.addSubview(sheet.view)
         sheet.didMove(toParent: rootViewController)
         sheet.view.layoutIfNeeded()
+        expectPresentation(of: sheet)
         sheet.startPresentation()
         return sheet
     }
 
-    /// The sheet defers height updates until the entry animation completes, and the animated frame is
-    /// already at its final model value, so wait out the animation and then prove updates land.
+    /// `present(fromViewController:)` wraps the sheet in a navigation controller, which the close goes
+    /// through; the controller is a child here because presentation never completes in this bundle.
+    func startSheetInNavigationController(
+        _ contentViewController: TKBottomSheetContentViewController
+    ) -> (TKBottomSheetViewController, UINavigationController) {
+        let sheet = TKBottomSheetViewController(contentViewController: contentViewController)
+        let navigationController = UINavigationController(rootViewController: sheet)
+        navigationController.setNavigationBarHidden(true, animated: false)
+        rootViewController.addChild(navigationController)
+        navigationController.view.frame = rootViewController.view.bounds
+        rootViewController.view.addSubview(navigationController.view)
+        navigationController.didMove(toParent: rootViewController)
+        navigationController.view.layoutIfNeeded()
+        expectPresentation(of: sheet)
+        sheet.startPresentation()
+        return (sheet, navigationController)
+    }
+
+    func expectPresentation(of sheet: TKBottomSheetViewController) {
+        let finished = XCTestExpectation(description: "presentation finished")
+        sheet.didPresent = { finished.fulfill() }
+        presentationFinished = finished
+    }
+
+    /// The sheet defers height updates until the entry animation completes, so prove that updates land.
     func waitForPresentationToFinish(_ contentViewController: StubContentViewController) {
-        RunLoop.current.run(until: Date().addingTimeInterval(1))
+        if let presentationFinished {
+            wait(for: [presentationFinished], timeout: 5)
+        }
 
         let measurementsBefore = contentViewController.measurementCount
         contentViewController.didUpdateHeight?()

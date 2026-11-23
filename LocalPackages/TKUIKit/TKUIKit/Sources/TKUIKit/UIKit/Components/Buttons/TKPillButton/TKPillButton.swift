@@ -4,10 +4,15 @@ public final class TKPillButton: UIView {
     public struct Configuration {
         public struct Button {
             public let icon: UIImage
-            public let action: () -> Void
+            /// The icon the button gets as its own item in a system navigation bar; without it the pill
+            /// stays one custom view there.
+            public let systemBarIcon: UIImage?
+            /// Handed the view a popup anchors to: the pill, or the bar item it became.
+            public let action: (_ sourceView: UIView) -> Void
 
-            public init(icon: UIImage, action: @escaping () -> Void) {
+            public init(icon: UIImage, systemBarIcon: UIImage? = nil, action: @escaping (_ sourceView: UIView) -> Void) {
                 self.icon = icon
+                self.systemBarIcon = systemBarIcon
                 self.action = action
             }
         }
@@ -22,8 +27,8 @@ public final class TKPillButton: UIView {
 
         public static var `default`: Configuration {
             Configuration(
-                leftButton: Button(icon: .TKUIKit.Icons.Size16.ellipses, action: {}),
-                rightButton: Button(icon: .TKUIKit.Icons.Size16.close, action: {})
+                leftButton: Button(icon: .TKUIKit.Icons.Size16.ellipses, action: { _ in }),
+                rightButton: Button(icon: .TKUIKit.Icons.Size16.close, action: { _ in })
             )
         }
     }
@@ -39,6 +44,21 @@ public final class TKPillButton: UIView {
             rightButton.accessibilityIdentifier = rightButtonAccessibilityIdentifier
             rightButton.isAccessibilityElement = (rightButtonAccessibilityIdentifier != nil)
         }
+    }
+
+    /// Both halves as system bar items, left first, when each has a `systemBarIcon`.
+    var systemBarItems: [TKUINavigationBar.SystemBarItem]? {
+        let left = configuration.leftButton
+        let right = configuration.rightButton
+        guard let leftIcon = left.systemBarIcon, let rightIcon = right.systemBarIcon else { return nil }
+        return [
+            TKUINavigationBar.SystemBarItem(image: leftIcon, action: left.action),
+            TKUINavigationBar.SystemBarItem(
+                image: rightIcon,
+                accessibilityIdentifier: rightButtonAccessibilityIdentifier,
+                action: right.action
+            ),
+        ]
     }
 
     private let leftButton = TKButton()
@@ -104,7 +124,10 @@ public final class TKPillButton: UIView {
                     .normal: 1,
                     .highlighted: 0.44,
                 ],
-                action: configuration.action
+                action: { [weak self] in
+                    guard let self else { return }
+                    configuration.action(self)
+                }
             )
         }
 

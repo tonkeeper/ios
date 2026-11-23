@@ -1,5 +1,5 @@
+@testable import TKAppInfo
 @testable import TKCore
-@testable import TKServices
 import XCTest
 
 final class StorefrontCountryCodeCacheTests: XCTestCase {

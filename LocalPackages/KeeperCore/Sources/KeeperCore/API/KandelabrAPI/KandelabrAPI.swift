@@ -14,13 +14,16 @@ protocol KandelabrAPI: Sendable {
 struct KandelabrAPIImplementation: @unchecked Sendable {
     private let hostProvider: APIHostProvider
     private let urlSession: URLSession
+    private let deviceAuth: DeviceAuthProviding
 
     init(
         hostProvider: APIHostProvider,
-        urlSession: URLSession
+        urlSession: URLSession,
+        deviceAuth: DeviceAuthProviding
     ) {
         self.hostProvider = hostProvider
         self.urlSession = urlSession
+        self.deviceAuth = deviceAuth
     }
 }
 
@@ -36,7 +39,7 @@ extension KandelabrAPIImplementation: KandelabrAPI {
         }
         let client: Client
         do {
-            client = try await Client(hostProvider: hostProvider, urlSession: urlSession)
+            client = try await Client(hostProvider: hostProvider, urlSession: urlSession, deviceAuth: deviceAuth)
         } catch {
             throw .badURL
         }

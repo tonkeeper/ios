@@ -138,7 +138,8 @@ public struct BalanceHeaderAmountFormat: Hashable {
 /// - Values greater than or equal to 1: Up to 2 fraction digits
 ///
 /// Fiat balance rules:
-/// - Uses 2 decimals for fiat currencies and 8 decimals for token currencies
+/// - Uses 2 decimals for fiat currencies; token currencies use 0 for zero and values from 1000,
+///   2 from 1, otherwise leading zeros + 3 (max 8), mirroring Android's `CurrencyFormat.getScale`
 /// - Positive values smaller than the display precision: "< 0.01" or "< 0.00000001"
 ///
 /// Exact value: Shows all fraction digits with optional trailing zero trimming.
@@ -150,6 +151,7 @@ public class AmountFormatter: Foundation.Formatter {
         static let compactMinimumFractionDigits = 8
         static let fiatFractionDigits = 2
         static let fiatBalanceTokenFractionDigits = 8
+        static let balanceTokenFractionDigitsAboveOne = 2
         static let percentFractionDigits = 2
         static let groupingSeparator = " "
         static let balanceReducedTextMinimum = "1000000"
@@ -169,27 +171,7 @@ public class AmountFormatter: Foundation.Formatter {
 
     public struct Configuration {
         public static var defaultLocale: Locale {
-            makeLocale(
-                preferredLocalizations: Bundle.main.preferredLocalizations,
-                developmentLocalization: Bundle.main.developmentLocalization,
-                fallback: .current
-            )
-        }
-
-        static func makeLocale(
-            preferredLocalizations: [String],
-            developmentLocalization: String?,
-            fallback: Locale
-        ) -> Locale {
-            let identifier = preferredLocalizations.first {
-                !$0.isEmpty && $0 != "Base"
-            } ?? developmentLocalization
-
-            guard let identifier, !identifier.isEmpty else {
-                return fallback
-            }
-
-            return Locale(identifier: identifier)
+            .current
         }
 
         public var locale: Locale
@@ -366,7 +348,8 @@ public class AmountFormatter: Foundation.Formatter {
     private func chainKitSpec(
         for style: AmountDisplayStyle,
         accessory: AmountAccessoryType,
-        fractionDigits: Int
+        integer: String,
+        fraction: String
     ) -> any ScaleSpec {
         switch style {
         case .compact:
@@ -376,11 +359,11 @@ public class AmountFormatter: Foundation.Formatter {
                 ScaleSpecExact.shared
             } else {
                 // BigDecimal normalizes trailing zeros, so retain the input scale explicitly.
-                ScaleSpecFixed(scale: Int32(fractionDigits), rounding: .towardsZero)
+                ScaleSpecFixed(scale: Int32(fraction.count), rounding: .towardsZero)
             }
         case .fiatBalance:
             ScaleSpecFixed(
-                scale: Int32(fiatBalanceFractionDigits(for: accessory)),
+                scale: Int32(balanceFractionDigits(integer: integer, fraction: fraction, accessory: accessory)),
                 rounding: .towardsZero
             )
         case .regular, .percent:
@@ -449,7 +432,7 @@ public class AmountFormatter: Foundation.Formatter {
             currency: FiatCurrency(symbol: symbol),
             sign: config.signPolicy.chainKitSignMode,
             approximate: false,
-            spec: chainKitSpec(for: style, accessory: accessory, fractionDigits: fraction.count),
+            spec: chainKitSpec(for: style, accessory: accessory, integer: integer, fraction: fraction),
             isShorten: style == .compact,
             trimTrailingZeros: style == .fiatBalance ? false : config.trimTrailingZeros,
             options: chainKitOptions(symbol: symbol, placement: placement)
@@ -467,7 +450,7 @@ public class AmountFormatter: Foundation.Formatter {
         let fiatBalanceParts = applyFiatBalanceRules(
             integer: integer,
             fraction: fraction,
-            fractionDigits: fiatBalanceFractionDigits(for: accessory)
+            fractionDigits: balanceFractionDigits(integer: integer, fraction: fraction, accessory: accessory)
         )
         let fullText = buildFormattedString(
             integer: fiatBalanceParts.integer,
@@ -663,6 +646,25 @@ public class AmountFormatter: Foundation.Formatter {
             isLessThanMinimum: false,
             isZero: false
         )
+    }
+
+    /// Token balances follow Android's `CurrencyFormat.getScale`: none from 1000, two from 1,
+    /// otherwise the leading zeros plus three, capped at the token's 8 digits.
+    private func balanceFractionDigits(
+        integer: String,
+        fraction: String,
+        accessory: AmountAccessoryType
+    ) -> Int {
+        let digits = fiatBalanceFractionDigits(for: accessory)
+        guard digits > Constants.fiatFractionDigits else { return digits }
+
+        let integer = normalizedInteger(integer)
+        if integer != "0" {
+            return integer.count >= 4 ? 0 : Constants.balanceTokenFractionDigitsAboveOne
+        }
+        let leadingZeros = fraction.prefix(while: { $0 == "0" }).count
+        guard leadingZeros < fraction.count else { return 0 }
+        return min(leadingZeros + 3, digits)
     }
 
     private func fiatBalanceFractionDigits(for accessory: AmountAccessoryType) -> Int {

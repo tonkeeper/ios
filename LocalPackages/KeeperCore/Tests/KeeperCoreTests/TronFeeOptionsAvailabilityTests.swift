@@ -1,4 +1,5 @@
 @testable import KeeperCore
+import TonSwift
 import TronSwift
 import XCTest
 
@@ -29,6 +30,27 @@ final class TronFeeOptionsAvailabilityTests: XCTestCase {
         XCTAssertTrue(isTRXOption(types.first))
     }
 
+    func test_aLedger_isNotOfferedTheTonFee() {
+        let estimate = TronTransferFeeEstimate(
+            energy: 64000,
+            bandwidth: 345,
+            requiredBatteryCharges: 40,
+            requiredTRXSun: 13_000_000,
+            destinationActivationSun: 0,
+            requiredTONAmountNano: 1_500_000_000,
+            tonFeeAddress: "UQBattery"
+        )
+        let ledger = wallet(kind: .Ledger(
+            TonSwift.PublicKey(data: Data(repeating: 1, count: 32)),
+            .v4R2,
+            Wallet.LedgerDevice(deviceId: UUID().uuidString, deviceModel: "Flex", accountIndex: 0)
+        ))
+        let regular = wallet(kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v4R2))
+
+        XCTAssertFalse(TronUSDTFeeOptionsResolver.isTONBillingAvailable(estimate: estimate, wallet: ledger))
+        XCTAssertTrue(TronUSDTFeeOptionsResolver.isTONBillingAvailable(estimate: estimate, wallet: regular))
+    }
+
     func test_trxOnlyRegion_offersTrxAlone() {
         let types = TronUSDTFeeOptionsResolver.availableTypes(
             isTRXOnlyRegion: true,
@@ -42,6 +64,16 @@ final class TronFeeOptionsAvailabilityTests: XCTestCase {
 }
 
 private extension TronFeeOptionsAvailabilityTests {
+    func wallet(kind: WalletKind) -> Wallet {
+        Wallet(
+            id: "wallet-id",
+            identity: .init(network: .mainnet, kind: kind),
+            metaData: .init(label: "Test wallet", tintColor: .defaultColor, icon: .icon(.wallet)),
+            setupSettings: .init(isSetupFinished: true),
+            batterySettings: .init()
+        )
+    }
+
     func availableTypes(
         isTONBillingAvailable: Bool,
         requiresSelfPaidTRX: Bool

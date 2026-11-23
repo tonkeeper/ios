@@ -28,6 +28,9 @@ enum ReceiveLegacyToken: Equatable, Hashable {
     case tron(TronToken)
 }
 
+/// Shows a receive address on the hardware wallet that holds it; `nil` when it cannot be shown there.
+typealias ReceiveAddressVerifier = (ReceiveAddressPreview) -> ((UIViewController) async -> Void)?
+
 struct ReceiveAddressPreview {
     struct Asset {
         enum Icon {
@@ -158,7 +161,8 @@ struct ReceiveModule {
             router: router,
             addresses: .single(address),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-            didCopyAddress: copyAddressHandler(wallet: wallet)
+            didCopyAddress: copyAddressHandler(wallet: wallet),
+            verifier: addressVerifier(wallet: wallet)
         )
     }
 
@@ -171,7 +175,8 @@ struct ReceiveModule {
             router: router,
             addresses: .multi(addresses),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-            didCopyAddress: copyAddressHandler(wallet: wallet)
+            didCopyAddress: copyAddressHandler(wallet: wallet),
+            verifier: addressVerifier(wallet: wallet)
         )
     }
 }
@@ -242,6 +247,27 @@ private extension ReceiveModule {
         { address in
             Task { @MainActor in
                 Pasteboard.copy(value: address, toast: wallet.copyToastConfiguration())
+            }
+        }
+    }
+
+    func addressVerifier(wallet: Wallet) -> ReceiveAddressVerifier {
+        guard case let .Ledger(tonPublicKey, _, device) = wallet.identity.kind,
+              let peripheralID = UUID(uuidString: device.deviceId)
+        else {
+            return { _ in nil }
+        }
+        let transport = dependencies.coreAssembly.ledgerAssembly.transport
+        return { address in
+            guard let steps = LedgerSteps.verifyAddress(address.walletAddress, tonPublicKey: tonPublicKey, account: Int(device.accountIndex)) else {
+                return nil
+            }
+            return { viewController in
+                do {
+                    try await steps.perform(peripheralID: peripheralID, transport: transport, from: viewController)
+                } catch {
+                    Log.i("Ledger address check did not finish", error: error)
+                }
             }
         }
     }

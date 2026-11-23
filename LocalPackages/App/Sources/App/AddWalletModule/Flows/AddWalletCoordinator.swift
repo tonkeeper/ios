@@ -100,7 +100,7 @@ private extension AddWalletCoordinator {
             self?.didCancel?()
         }
 
-        router.rootViewController.topPresentedViewController().present(module.view, animated: true)
+        router.rootViewController.topPresentedViewController().present(module.view.tkLiquidGlassModal(), animated: true)
     }
 
     func handleSelectedOption(_ option: AddWalletOption) {
@@ -133,15 +133,8 @@ private extension AddWalletCoordinator {
         case .importWatchOnly:
             walletSource = .watchonly
             walletMode = .single
-        case .signer:
-            walletSource = .signer
-            walletMode = .single
-        case .keystone:
-            walletSource = .keystone
-            walletMode = .single
-        case .ledger:
-            walletSource = .ledger
-            walletMode = .single
+        case .signer, .keystone, .ledger:
+            return
         }
 
         analyticsProvider.logWalletImportStarted(
@@ -217,7 +210,11 @@ private extension AddWalletCoordinator {
         addChild(coordinator)
         coordinator.start()
 
-        self.router.present(navigationController, onDismiss: { [weak self] in
+        self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+            if let coordinator {
+                coordinator.cancelImport()
+                self?.removeChild(coordinator)
+            }
             self?.didCancel?()
         })
     }
@@ -268,22 +265,25 @@ private extension AddWalletCoordinator {
 
         coordinator.didCancel = { [weak self, weak coordinator] in
             self?.removeChild(coordinator)
-            self?.router.dismiss(animated: true, completion: {
+            WalletImportPairingNavigation.dismiss(navigationController) {
                 self?.didCancel?()
-            })
+            }
         }
 
         coordinator.didPaired = { [weak self, weak coordinator] in
-            router.dismiss(animated: true) {
+            WalletImportPairingNavigation.dismiss(navigationController) {
                 self?.didAddWallets?()
             }
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }
 
-        self.router.present(navigationController, onDismiss: { [weak self] in
+        navigationController.didDismiss = { [weak self, weak coordinator] in
+            guard coordinator?.cancelPairing() == true else { return }
+            self?.removeChild(coordinator)
             self?.didCancel?()
-        })
+        }
+        self.router.present(navigationController)
     }
 
     func openPairSigner() {
@@ -296,7 +296,7 @@ private extension AddWalletCoordinator {
         )
 
         coordinator.didCancel = { [weak self, weak coordinator] in
-            router.dismiss(animated: true) {
+            WalletImportPairingNavigation.dismiss(navigationController) {
                 self?.didCancel?()
             }
             self?.pairSignerCoordinator = nil
@@ -305,7 +305,7 @@ private extension AddWalletCoordinator {
         }
 
         coordinator.didPaired = { [weak self, weak coordinator] in
-            router.dismiss(animated: true) {
+            WalletImportPairingNavigation.dismiss(navigationController) {
                 self?.didAddWallets?()
             }
             self?.pairSignerCoordinator = nil
@@ -318,9 +318,13 @@ private extension AddWalletCoordinator {
         addChild(coordinator)
         coordinator.start()
 
-        self.router.present(navigationController, onDismiss: { [weak self] in
+        navigationController.didDismiss = { [weak self, weak coordinator] in
+            guard coordinator?.cancelPairing() == true else { return }
+            self?.removeChild(coordinator)
+            self?.pairSignerCoordinator = nil
             self?.didCancel?()
-        })
+        }
+        self.router.present(navigationController)
     }
 
     func openPairLedger() {

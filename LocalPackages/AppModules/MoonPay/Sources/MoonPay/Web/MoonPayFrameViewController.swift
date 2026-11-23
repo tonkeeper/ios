@@ -6,7 +6,8 @@ import WebKit
 /// script, answers the handshake, and hands decoded events to `didReceiveEvent`.
 ///
 /// Present co-branded frames (`connect`, `widget`, `add-card`, `challenge`) full screen; embed
-/// headless ones (`check-connection`, `buy`, `apple-pay`) as a child view controller.
+/// headless ones (`check-connection`, `buy`) as a hidden child view controller, and `apple-pay`
+/// visibly in the host screen with `embedInline()`.
 @MainActor
 public final class MoonPayFrameViewController: UIViewController {
     public let moonPayFrame: MoonPayFrame
@@ -62,6 +63,14 @@ public final class MoonPayFrameViewController: UIViewController {
         load()
     }
 
+    /// Clears the backdrop and turns off scrolling, for a frame that sits inside a host screen
+    /// instead of covering it, such as the Apple Pay button.
+    public func embedInline() {
+        loadViewIfNeeded()
+        view.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+    }
+
     public func send(_ command: MoonPayFrameCommand) {
         let script: String
         do {
@@ -111,12 +120,34 @@ public final class MoonPayFrameViewController: UIViewController {
         return webView
     }
 
-    private func presentAlert(_ alert: UIAlertController, otherwise fallback: () -> Void) {
+    private func presentAlert(_ alert: UIAlertController, otherwise fallback: @escaping () -> Void) {
         guard viewIfLoaded?.window != nil else {
             fallback()
             return
         }
-        present(alert, animated: true)
+        // A present during another transition is refused, and the page would wait on the alert
+        // forever, as when test-mode Apple Pay confirms while the status screen slides in.
+        // A transition that cannot take a completion any more has ended, so the alert goes now.
+        let queued = topPresenter.transitionCoordinator?.animate(alongsideTransition: nil) { [weak self] _ in
+            guard let self, viewIfLoaded?.window != nil else {
+                fallback()
+                return
+            }
+            topPresenter.present(alert, animated: true)
+        } ?? false
+        if !queued {
+            topPresenter.present(alert, animated: true)
+        }
+    }
+
+    /// An inline frame stays under the screens its host presents over it, and a controller that
+    /// is already presenting ignores another present.
+    private var topPresenter: UIViewController {
+        var presenter: UIViewController = self
+        while let presented = presenter.presentedViewController, !presented.isBeingDismissed {
+            presenter = presented
+        }
+        return presenter
     }
 }
 

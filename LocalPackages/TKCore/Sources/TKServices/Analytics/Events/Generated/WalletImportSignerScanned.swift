@@ -42,3 +42,5 @@ public struct WalletImportSignerScanned: Codable, JSONEncodable, Hashable {
         try container.encode(from, forKey: .from)
     }
 }
+
+

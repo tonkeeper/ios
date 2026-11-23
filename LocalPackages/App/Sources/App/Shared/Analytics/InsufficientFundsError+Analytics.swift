@@ -19,16 +19,18 @@ extension InsufficientFundsError: AnalyticsError {
         }
     }
 
+    /// Past a confirmation failure's 1–4 and a transfer error's 1–6: `send_failed` reports a shortage beside both
+    /// and `swap_failed` beside the first, with no error type to tell them apart.
     var code: Int {
         switch self {
         case .unknownJetton:
-            1
+            7
         case .blockchainFee:
-            2
+            8
         case .insufficientFunds:
-            3
+            9
         case .tronFee:
-            4
+            10
         }
     }
 }

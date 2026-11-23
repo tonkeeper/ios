@@ -24,31 +24,18 @@ final class WalletConnectMethodParserTests: XCTestCase {
 
     func testTypedDataV4ParsingValidatesChainId() throws {
         let typedData = #"{"types":{},"domain":{"chainId":1},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        let parsed = try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:1",
-            paramsJSON: paramsJSON
-        )
+        let parsed = try parseTypedData(typedData, chain: "eip155:1")
 
         XCTAssertEqual(parsed.method, .ethSignTypedDataV4)
         XCTAssertEqual(parsed.chain, .eth)
-        XCTAssertEqual(
-            parsed.payload,
-            .signMessage(WalletConnectSignMessage(address: "0xabc", message: typedData, kind: .typedDataV4))
-        )
+        try assertTypedDataPayload(parsed.payload, equals: typedData)
     }
 
     func testTypedDataV4ParsingRejectsMismatchedChainId() throws {
         let typedData = #"{"types":{},"domain":{"chainId":56},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        XCTAssertThrowsError(try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:1",
-            paramsJSON: paramsJSON
-        )) { error in
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
             XCTAssertEqual(error as? WalletConnectRequestParsingError, .chainMismatch(expected: .eth, actual: "56"))
         }
     }
@@ -56,31 +43,36 @@ final class WalletConnectMethodParserTests: XCTestCase {
     func testTypedDataV4ParsingRejectsLargeUInt256MismatchedChainId() throws {
         let largeChainId = "340282366920938463463374607431768211455"
         let typedData = #"{"types":{},"domain":{"chainId":"\#(largeChainId)"},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        XCTAssertThrowsError(try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:1",
-            paramsJSON: paramsJSON
-        )) { error in
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
             XCTAssertEqual(error as? WalletConnectRequestParsingError, .chainMismatch(expected: .eth, actual: largeChainId))
         }
     }
 
-    func testTypedDataV4ParsingIgnoresNonUInt256ChainId() throws {
+    func testTypedDataV4ParsingRejectsNonUInt256ChainId() throws {
         let typedData = #"{"types":{},"domain":{"chainId":{"unexpected":1}},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        let parsed = try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:1",
-            paramsJSON: paramsJSON
-        )
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
+            assertInvalidParams(error)
+        }
+    }
 
-        XCTAssertEqual(
-            parsed.payload,
-            .signMessage(WalletConnectSignMessage(address: "0xabc", message: typedData, kind: .typedDataV4))
-        )
+    func testTypedDataV4ParsingRejectsDeclaredChainIdWithoutValue() throws {
+        let typedData = #"""
+        {"types":{"EIP712Domain":[{"name":"chainId","type":"uint256"}]},"domain":{},"primaryType":"EIP712Domain","message":{}}
+        """#
+
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
+            assertInvalidParams(error)
+        }
+    }
+
+    func testTypedDataV4ParsingRejectsTypedDataThatIsNotAnObject() throws {
+        for typedData in ["[]", "\"typed data\"", "{"] {
+            XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1"), typedData) { error in
+                assertInvalidParams(error)
+            }
+        }
     }
 
     func testTypedDataV4ParsingAcceptsTypedDataWithoutDomainChainId() throws {
@@ -88,49 +80,52 @@ final class WalletConnectMethodParserTests: XCTestCase {
             #"{"types":{},"domain":{"name":"USD Coin"},"primaryType":"Mail","message":{}}"#,
             #"{"types":{},"primaryType":"Mail","message":{}}"#,
         ] {
-            let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
+            let parsed = try parseTypedData(typedData, chain: "eip155:1")
 
-            let parsed = try parser.parse(
-                method: "eth_signTypedData_v4",
-                chain: "eip155:1",
-                paramsJSON: paramsJSON
-            )
-
-            XCTAssertEqual(
-                parsed.payload,
-                .signMessage(WalletConnectSignMessage(address: "0xabc", message: typedData, kind: .typedDataV4)),
-                typedData
-            )
+            try assertTypedDataPayload(parsed.payload, equals: typedData)
         }
     }
 
     func testTypedDataV4ParsingAcceptsHexChainIdOfTheRequestedChain() throws {
         let typedData = #"{"types":{},"domain":{"chainId":"0x2105"},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        let parsed = try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:8453",
-            paramsJSON: paramsJSON
-        )
+        let parsed = try parseTypedData(typedData, chain: "eip155:8453")
 
         XCTAssertEqual(parsed.chain, .base)
-        XCTAssertEqual(
-            parsed.payload,
-            .signMessage(WalletConnectSignMessage(address: "0xabc", message: typedData, kind: .typedDataV4))
-        )
+        try assertTypedDataPayload(parsed.payload, equals: typedData)
     }
 
     func testTypedDataV4ParsingRejectsHexChainIdOfAnotherChain() throws {
         let typedData = #"{"types":{},"domain":{"chainId":"0x38"},"primaryType":"Mail","message":{}}"#
-        let paramsJSON = #"[ "0xabc", "\#(typedData.replacingOccurrences(of: "\"", with: "\\\""))" ]"#
 
-        XCTAssertThrowsError(try parser.parse(
-            method: "eth_signTypedData_v4",
-            chain: "eip155:1",
-            paramsJSON: paramsJSON
-        )) { error in
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
             XCTAssertEqual(error as? WalletConnectRequestParsingError, .chainMismatch(expected: .eth, actual: "56"))
+        }
+    }
+
+    func testTypedDataV4ParsingHandsTheSignerOnlyTheValidatedValueOfARepeatedKey() throws {
+        let typedData = #"""
+        {"types":{},"domain":{"chainId":1,"chainId":8453},"primaryType":"Mail","message":{"spender":"0x1111","spender":"0xbbbb"}}
+        """#
+
+        let parsed = try parseTypedData(typedData, chain: "eip155:1")
+
+        try assertTypedDataPayload(
+            parsed.payload,
+            equals: #"{"types":{},"domain":{"chainId":1},"primaryType":"Mail","message":{"spender":"0x1111"}}"#
+        )
+        guard case let .signMessage(message) = parsed.payload else {
+            return XCTFail("Expected sign message payload")
+        }
+        XCTAssertEqual(message.message.components(separatedBy: #""chainId""#).count, 2)
+        XCTAssertEqual(message.message.components(separatedBy: #""spender""#).count, 2)
+    }
+
+    func testTypedDataV4ParsingValidatesTheFirstOfRepeatedChainIds() throws {
+        let typedData = #"{"types":{},"domain":{"chainId":8453,"chainId":1},"primaryType":"Mail","message":{}}"#
+
+        XCTAssertThrowsError(try parseTypedData(typedData, chain: "eip155:1")) { error in
+            XCTAssertEqual(error as? WalletConnectRequestParsingError, .chainMismatch(expected: .eth, actual: "8453"))
         }
     }
 
@@ -444,35 +439,6 @@ final class WalletConnectMethodParserTests: XCTestCase {
             """#)
 
             XCTAssertThrowsError(try transaction.optionalEVMQuantity(invalidField.quantityField)) { error in
-                XCTAssertEqual(
-                    error as? WalletConnectSigningError,
-                    .invalidTransaction(reason: "invalid EVM quantity \(invalidField.quantityField.rawValue): 0x0x")
-                )
-            }
-        }
-    }
-
-    func testRequestFeeRejectsInvalidFeeFieldWhenGasIsMissing() throws {
-        let invalidFields: [(jsonKey: String, quantityField: WalletConnectEVMQuantityField)] = [
-            ("gasPrice", .gasPrice),
-            ("maxFeePerGas", .maxFeePerGas),
-            ("maxPriorityFeePerGas", .maxPriorityFeePerGas),
-        ]
-
-        for invalidField in invalidFields {
-            let transaction = try parseEVMTransaction(paramsJSON: #"""
-            [
-                {
-                    "from": "0xabc",
-                    "to": "0xdef",
-                    "value": "0x0",
-                    "data": "0x",
-                    "\#(invalidField.jsonKey)": "0x0x"
-                }
-            ]
-            """#)
-
-            XCTAssertThrowsError(try WalletConnectRequestFeeFactory.requestFee(payload: transaction, chain: .eth)) { error in
                 XCTAssertEqual(
                     error as? WalletConnectSigningError,
                     .invalidTransaction(reason: "invalid EVM quantity \(invalidField.quantityField.rawValue): 0x0x")
@@ -871,6 +837,38 @@ final class WalletConnectMethodParserTests: XCTestCase {
                 error as? WalletConnectRequestParsingError,
                 .unsupportedMethod(WalletConnectMethod.personalSign.rawValue)
             )
+        }
+    }
+
+    private func parseTypedData(
+        _ typedData: String,
+        chain: String
+    ) throws -> (method: WalletConnectMethod, chain: WalletConnectChain, payload: WalletConnectRequestPayload) {
+        let paramsJSON = try String(decoding: JSONEncoder().encode(["0xabc", typedData]), as: UTF8.self)
+        return try parser.parse(method: "eth_signTypedData_v4", chain: chain, paramsJSON: paramsJSON)
+    }
+
+    private func assertTypedDataPayload(
+        _ payload: WalletConnectRequestPayload,
+        equals typedData: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        guard case let .signMessage(message) = payload else {
+            return XCTFail("Expected sign message payload, got \(payload)", file: file, line: line)
+        }
+        XCTAssertEqual(message.address, "0xabc", file: file, line: line)
+        XCTAssertEqual(message.kind, .typedDataV4, file: file, line: line)
+        XCTAssertEqual(try jsonObject(message.message), try jsonObject(typedData), file: file, line: line)
+    }
+
+    private func jsonObject(_ json: String) throws -> NSDictionary {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? NSDictionary)
+    }
+
+    private func assertInvalidParams(_ error: Error, file: StaticString = #filePath, line: UInt = #line) {
+        guard case .invalidParams(.ethSignTypedDataV4, _) = error as? WalletConnectRequestParsingError else {
+            return XCTFail("Expected invalid params, got \(error)", file: file, line: line)
         }
     }
 

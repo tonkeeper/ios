@@ -1,27 +1,36 @@
-import BigInt
 import Foundation
 import KeeperCore
-import TKLocalize
 import TKLogging
 
 @MainActor
 final class MultichainSwapQuoteViewModel {
     var onSnapshotChange: ((MultichainSwapQuoteSnapshot) -> Void)?
     var onProviderErrorMessage: ((String) -> Void)?
+    var isSuspended = false {
+        didSet {
+            activePairViewModel?.isSuspended = isSuspended
+        }
+    }
 
     private let multichainSwapService: MultichainSwapService
-    private let amountFormatter: AmountFormatter
     private let requestedAggregators: [String]
-    private var activePairViewModel: MultichainSwapQuotePairViewModel?
+    private let debounce: MultichainSwapQuotePairViewModel.Wait?
+    private let routeExpiryWait: MultichainSwapQuotePairViewModel.Wait?
+    private let now: () -> Date
+    private(set) var activePairViewModel: MultichainSwapQuotePairViewModel?
 
     init(
         multichainSwapService: MultichainSwapService,
-        amountFormatter: AmountFormatter,
-        requestedAggregators: [String]
+        requestedAggregators: [String],
+        debounce: MultichainSwapQuotePairViewModel.Wait? = nil,
+        routeExpiryWait: MultichainSwapQuotePairViewModel.Wait? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
         self.multichainSwapService = multichainSwapService
-        self.amountFormatter = amountFormatter
         self.requestedAggregators = requestedAggregators
+        self.debounce = debounce
+        self.routeExpiryWait = routeExpiryWait
+        self.now = now
     }
 
     func reset() {
@@ -42,9 +51,12 @@ final class MultichainSwapQuoteViewModel {
         let pairViewModel = MultichainSwapQuotePairViewModel(
             context: context,
             multichainSwapService: multichainSwapService,
-            amountFormatter: amountFormatter,
-            requestedAggregators: requestedAggregators
+            requestedAggregators: requestedAggregators,
+            debounce: debounce,
+            routeExpiryWait: routeExpiryWait,
+            now: now
         )
+        pairViewModel.isSuspended = isSuspended
         pairViewModel.onSnapshotChange = { [weak self, weak pairViewModel] snapshot in
             guard let self, let pairViewModel, self.activePairViewModel === pairViewModel else {
                 return
@@ -61,19 +73,19 @@ final class MultichainSwapQuoteViewModel {
         onSnapshotChange?(pairViewModel.snapshot)
     }
 
-    func updateSourceAmount(_ sourceAmount: BigUInt?, isMax: Bool, debounce: Bool) {
+    func updateAmount(_ amount: MultichainSwapQuoteAmount?, isMax: Bool, debounce: Bool) {
         guard let activePairViewModel else {
             onSnapshotChange?(.initial())
             return
         }
-        activePairViewModel.updateSourceAmount(sourceAmount, isMax: isMax, debounce: debounce)
+        activePairViewModel.updateAmount(amount, isMax: isMax, debounce: debounce)
     }
 
     func notifyCircularProgressCompleted() {
         activePairViewModel?.notifyCircularProgressCompleted()
     }
 
-    func toggleRateDisplayDirection() {
-        activePairViewModel?.toggleRateDisplayDirection()
+    func adopt(quote: MultichainSwapQuote, route: MultichainSwapRoute) {
+        activePairViewModel?.adopt(quote: quote, route: route)
     }
 }

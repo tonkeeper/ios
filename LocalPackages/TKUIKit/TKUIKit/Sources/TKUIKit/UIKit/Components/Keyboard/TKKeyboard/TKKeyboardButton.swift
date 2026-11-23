@@ -28,6 +28,12 @@ public final class TKKeyboardButton: UIControl, ConfigurableView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override public func accessibilityActivate() -> Bool {
+        sendActions(for: .touchDown)
+        sendActions(for: .touchUpInside)
+        return true
+    }
+
     override public func layoutSubviews() {
         super.layoutSubviews()
         highlightView.layer.cornerRadius = bounds.height / 2
@@ -116,7 +122,7 @@ private extension TKKeyboardButton {
         let transform: CGAffineTransform
 
         if isHighlighted {
-            backgroundColor = .Button.secondaryBackgroundHighlighted
+            backgroundColor = .Background.contentTint
             transform = .identity
         } else {
             backgroundColor = .clear

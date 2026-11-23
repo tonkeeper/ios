@@ -55,6 +55,7 @@ public final class PerpsAssetPageViewController<
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        viewModel.onWillAppear()
         // Gate swipe-to-back so it doesn't fire when the swipe starts on the chart
         // (which pans the candles). The app installs a full-width pan-to-pop on
         // the nav view in addition to the system edge gesture, so we intercept

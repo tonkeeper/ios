@@ -32,19 +32,22 @@ public enum PerpsAmountFocusState: Equatable {
 public struct PerpsAmountFormBalanceRow {
     let balanceText: String?
     var errorText: String?
-    let onMax: () -> Void
+    let onMax: (() -> Void)?
     let onDeposit: (() -> Void)?
+    let onRetry: (() -> Void)?
 
     public init(
         balanceText: String?,
         errorText: String? = nil,
-        onMax: @escaping () -> Void,
-        onDeposit: (() -> Void)? = nil
+        onMax: (() -> Void)?,
+        onDeposit: (() -> Void)? = nil,
+        onRetry: (() -> Void)? = nil
     ) {
         self.balanceText = balanceText
         self.errorText = errorText
         self.onMax = onMax
         self.onDeposit = onDeposit
+        self.onRetry = onRetry
     }
 }
 
@@ -146,7 +149,6 @@ struct PerpsAmountFormView<ViewModel: PerpsAmountFormViewModel>: View {
             }
         }
         .background(.backgroundPage)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onChange(of: viewModel.amountFocusState) { state in
             guard state.isActive else {
                 amountFocused = false
@@ -259,12 +261,14 @@ struct PerpsAmountFormView<ViewModel: PerpsAmountFormViewModel>: View {
     @ViewBuilder private var balanceRow: some View {
         if let balanceRow = viewModel.balanceRow {
             HStack {
-                ButtonView(config: .init(
-                    title: TKLocales.Perps.OpenPosition.max,
-                    size: .small,
-                    appearance: .secondary,
-                    action: balanceRow.onMax
-                ))
+                if let onMax = balanceRow.onMax {
+                    ButtonView(config: .init(
+                        title: TKLocales.Perps.OpenPosition.max,
+                        size: .small,
+                        appearance: .secondary,
+                        action: onMax
+                    ))
+                }
                 Spacer()
                 HStack(spacing: 4) {
                     if let errorText = balanceRow.errorText {
@@ -277,20 +281,31 @@ struct PerpsAmountFormView<ViewModel: PerpsAmountFormViewModel>: View {
                             .foregroundStyle(.textSecondary)
                     }
                     if let onDeposit = balanceRow.onDeposit {
-                        if balanceRow.errorText != nil || balanceRow.balanceText != nil {
-                            Text("·")
-                                .textStyle(.body2)
-                                .foregroundStyle(.textSecondary)
-                        }
-                        Button(action: onDeposit) {
-                            Text(TKLocales.Perps.OpenPosition.deposit)
-                                .textStyle(.body2)
-                                .foregroundStyle(.textAccent)
-                        }
+                        balanceLink(TKLocales.Perps.OpenPosition.deposit, in: balanceRow, action: onDeposit)
+                    }
+                    if let onRetry = balanceRow.onRetry {
+                        balanceLink(TKLocales.Perps.Asset.retry, in: balanceRow, action: onRetry)
                     }
                 }
             }
             .padding(.horizontal, Layout.inset)
+        }
+    }
+
+    @ViewBuilder private func balanceLink(
+        _ title: String,
+        in balanceRow: PerpsAmountFormBalanceRow,
+        action: @escaping () -> Void
+    ) -> some View {
+        if balanceRow.errorText != nil || balanceRow.balanceText != nil {
+            Text("·")
+                .textStyle(.body2)
+                .foregroundStyle(.textSecondary)
+        }
+        Button(action: action) {
+            Text(title)
+                .textStyle(.body2)
+                .foregroundStyle(.textAccent)
         }
     }
 
@@ -380,12 +395,17 @@ private enum Layout {
 /// and on returning from a pushed screen.
 public final class PerpsAmountFormViewController<ViewModel: PerpsAmountFormLifecycle, Content: View>: UIViewController {
     private let viewModel: ViewModel
-    private let hostingController: TKHostingController<Content>
+    private let keyboard: PerpsKeyboardOverlap
+    /// The overlap of the latest keyboard frame; the content may still be on its way there.
+    private var keyboardTarget: CGFloat = 0
+    private let hostingController: TKHostingController<PerpsKeyboardAvoidingView<Content>>
     private var hasAppearedBefore = false
 
     init(viewModel: ViewModel, content: Content) {
+        let keyboard = PerpsKeyboardOverlap()
         self.viewModel = viewModel
-        self.hostingController = TKHostingController(content: content)
+        self.keyboard = keyboard
+        self.hostingController = TKHostingController(content: PerpsKeyboardAvoidingView(keyboard: keyboard, content: content))
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -408,8 +428,44 @@ public final class PerpsAmountFormViewController<ViewModel: PerpsAmountFormLifec
             hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
             hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillChangeFrame),
+            name: UIResponder.keyboardWillChangeFrameNotification,
+            object: nil
+        )
+    }
+
+    /// SwiftUI draws the final layout at once inside a frame that UIKit animates, so the Review button
+    /// jumped ahead of the keyboard. The content moves by itself instead, on the keyboard's own curve.
+    @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+        guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        var overlap: CGFloat = 0
+        // A floating keyboard, or none under a full-screen frame, does not reach the screen's bottom and covers nothing.
+        if let screen = view.window?.screen, frame.maxY >= screen.bounds.maxY {
+            let keyboardTop = view.convert(frame, from: screen.coordinateSpace).minY
+            overlap = max(0, view.bounds.maxY - keyboardTop - view.safeAreaInsets.bottom)
+        }
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0
+        let isAppearing = overlap > keyboard.height
+        keyboardTarget = overlap
+        let apply = { [weak self] in
+            guard let self, keyboard.height != keyboardTarget else { return }
+            withAnimation(duration > 0 ? PerpsKeyboardOverlap.animation : nil) {
+                self.keyboard.height = self.keyboardTarget
+            }
+            // Starts the animation in this frame, together with the keyboard's.
+            hostingController.view.setNeedsLayout()
+            hostingController.view.layoutIfNeeded()
+        }
+        // An appearing keyboard lays out its keys first and starts moving only when this run loop pass commits.
+        if isAppearing {
+            DispatchQueue.main.async(execute: apply)
+        } else {
+            apply()
+        }
     }
 
     override public func viewWillAppear(_ animated: Bool) {
@@ -458,4 +514,38 @@ extension PerpsAmountFormViewController where ViewModel: PerpsFundingAmountViewM
     convenience init(fundingViewModel viewModel: ViewModel) {
         self.init(viewModel: viewModel, content: PerpsFundingAmountView(viewModel: viewModel))
     }
+}
+
+@MainActor
+final class PerpsKeyboardOverlap: ObservableObject {
+    /// The keyboard's curve is a critically damped spring of this response.
+    static var animation: Animation {
+        .spring(response: 0.2, dampingFraction: 1)
+    }
+
+    @Published var height: CGFloat = 0
+}
+
+private struct PerpsKeyboardAvoidingView<Content: View>: View {
+    @ObservedObject var keyboard: PerpsKeyboardOverlap
+    let content: Content
+
+    var body: some View {
+        content
+            .environment(\.perpsKeyboardShown, keyboard.height > 0)
+            .padding(.bottom, keyboard.height)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+}
+
+extension EnvironmentValues {
+    /// Whether the keyboard covers the bottom of an amount screen, changed in the keyboard's animation.
+    var perpsKeyboardShown: Bool {
+        get { self[PerpsKeyboardShownKey.self] }
+        set { self[PerpsKeyboardShownKey.self] = newValue }
+    }
+}
+
+private struct PerpsKeyboardShownKey: EnvironmentKey {
+    static let defaultValue = false
 }

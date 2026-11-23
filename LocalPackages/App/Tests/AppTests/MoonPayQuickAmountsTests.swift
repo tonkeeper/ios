@@ -1,4 +1,5 @@
 @testable import App
+@testable import KeeperCore
 import XCTest
 
 @MainActor
@@ -28,5 +29,12 @@ final class MoonPayQuickAmountsTests: XCTestCase {
             XCTAssertEqual(amounts, amounts.sorted(), "minimum \(minimum)")
             XCTAssertEqual(Set(amounts).count, 3, "minimum \(minimum)")
         }
+    }
+
+    func test_quickOptionTitle_groupsThousandsWithANoBreakSpace() {
+        let usd = RemoteCurrency(code: "USD", name: "USD", image: "", type: "fiat", symbol: "$")
+        XCTAssertEqual(MoonPayRampViewModel.quickOptionTitle(500, currency: usd), "$500")
+        XCTAssertEqual(MoonPayRampViewModel.quickOptionTitle(1000, currency: usd), "$1\u{00A0}000")
+        XCTAssertEqual(MoonPayRampViewModel.quickOptionTitle(2_000_000, currency: usd), "$2\u{00A0}000\u{00A0}000")
     }
 }

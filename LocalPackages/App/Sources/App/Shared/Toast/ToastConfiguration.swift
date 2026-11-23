@@ -15,11 +15,12 @@ public extension ToastPresenter.Configuration {
         )
     }
 
-    static func warning(text: String) -> ToastPresenter.Configuration {
+    static func warning(text: String, feedback: Feedback = .neutral) -> ToastPresenter.Configuration {
         ToastPresenter.Configuration(
             title: text,
             icon: .TKUIKit.Icons.Size16.exclamationmarkTriangle,
-            iconTintColor: .Accent.orange
+            iconTintColor: .Accent.orange,
+            feedback: feedback
         )
     }
 
@@ -41,7 +42,7 @@ public extension ToastPresenter.Configuration {
     }
 
     static var failed: ToastPresenter.Configuration {
-        .defaultConfiguration(text: TKLocales.Toast.failed)
+        ToastPresenter.Configuration(title: TKLocales.Toast.failed, feedback: .failure)
     }
 
     func withPlacement(_ placement: Placement) -> ToastPresenter.Configuration {

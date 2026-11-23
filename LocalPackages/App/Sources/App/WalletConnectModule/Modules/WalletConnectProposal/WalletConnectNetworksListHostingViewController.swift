@@ -18,7 +18,7 @@ final class WalletConnectNetworksListHostingViewController: TKHostingController<
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        presentationController?.delegate = self
+        tkPresentationController?.delegate = self
     }
 }
 

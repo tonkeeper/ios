@@ -28,12 +28,27 @@ struct WalletConnectRequestAssembly {
         WalletConnectRequestModuleOutput,
         Void
     > {
+        let amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let signingService = keeperCoreMainAssembly.walletConnectAssembly.walletConnectSigningService
+        let feeQuote = feeQuote(
+            request: request,
+            wallet: wallet,
+            signingService: signingService,
+            balanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
+            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+            amountFormatter: amountFormatter
+        )
         let content = makeContent(
             request: request,
             wallet: wallet,
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+            amountFormatter: amountFormatter,
+            feeRow: feeQuote?.row(.loading)
         )
-        let viewModel = WalletConnectRequestViewModel(content: content)
+        let viewModel = WalletConnectRequestViewModel(
+            content: content,
+            feeQuote: feeQuote,
+            review: { await signingService.review(wallet: wallet, request: request) }
+        )
         let viewController = WalletConnectRequestHostingViewController(
             requestId: request.id,
             topic: request.topic,
@@ -47,7 +62,8 @@ private extension WalletConnectRequestAssembly {
     static func makeContent(
         request: WalletConnectSessionRequest,
         wallet: Wallet,
-        amountFormatter: AmountFormatter
+        amountFormatter: AmountFormatter,
+        feeRow: WalletConnectRequestInfoRow?
     ) -> WalletConnectRequestContent {
         let chain = request.chain
         let dappHost = dappHost(for: request.dapp)
@@ -87,10 +103,7 @@ private extension WalletConnectRequestAssembly {
             requestSummary.row,
         ]
 
-        if let feeRow = feeRow(
-            request: request,
-            amountFormatter: amountFormatter
-        ) {
+        if let feeRow {
             rows.append(feeRow)
         }
 
@@ -256,45 +269,109 @@ private extension WalletConnectRequestAssembly {
         }
     }
 
-    static func feeRow(
+    static func feeQuote(
         request: WalletConnectSessionRequest,
+        wallet: Wallet,
+        signingService: WalletConnectSigningService,
+        balanceProvider: MultichainAssetBalanceProvider,
+        currencyStore: CurrencyStore,
         amountFormatter: AmountFormatter
-    ) -> WalletConnectRequestInfoRow? {
-        guard case let .evmTransaction(transaction, _) = request.payload,
-              let gasLimit = transaction.gas.flatMap(bigUInt(hexOrDecimal:)),
-              gasLimit > 0
-        else {
+    ) -> WalletConnectRequestFeeQuote? {
+        guard case .evmTransaction = request.payload else {
             return nil
         }
-
-        let gasPrice = transaction.gasPrice.flatMap(bigUInt(hexOrDecimal:))
-        let maxFeePerGas = transaction.maxFeePerGas.flatMap(bigUInt(hexOrDecimal:))
-        let price = request.chain.supportsEip1559Fees
-            ? maxFeePerGas ?? gasPrice
-            : gasPrice
-        guard let price, price > 0 else {
-            return nil
-        }
-
-        let amount = gasLimit * price
-        let formatted = amountFormatter.format(
-            amount: amount,
-            fractionDigits: request.chain.nativeTokenFractionDigits,
-            accessory: .tokenSymbol(request.chain.nativeTokenSymbol),
-            style: .compact
+        let feeAssetId = AssetId.coin(chain: request.chain.multichainChain, network: wallet.network)
+        return WalletConnectRequestFeeQuote(
+            load: {
+                try await signingService.quoteEVMFee(wallet: wallet, request: request)
+            },
+            row: { display in
+                feeRow(
+                    display,
+                    chain: request.chain,
+                    feeAsset: balanceProvider.cachedAsset(for: feeAssetId, wallet: wallet),
+                    currency: currencyStore.state,
+                    amountFormatter: amountFormatter
+                )
+            },
+            loadFiatPrice: {
+                _ = await balanceProvider.loadAsset(for: feeAssetId, wallet: wallet, includingHidden: true)
+            }
         )
+    }
+}
+
+extension WalletConnectRequestAssembly {
+    static func feeRow(
+        _ display: WalletConnectRequestFeeQuote.Display,
+        chain: WalletConnectChain,
+        feeAsset: MultichainAsset?,
+        currency: Currency,
+        amountFormatter: AmountFormatter
+    ) -> WalletConnectRequestInfoRow {
+        let value: String = switch display {
+        case .loading:
+            TKLocales.MultichainSwap.Screen.Confirm.Value.calculating
+        case let .loaded(fee):
+            TKLocales.WalletConnect.Request.Rows.approximateValue(
+                amountFormatter.format(
+                    amount: fee.amount,
+                    fractionDigits: chain.nativeTokenFractionDigits,
+                    accessory: .tokenSymbol(chain.nativeTokenSymbol),
+                    style: .compact
+                )
+            )
+        case .unavailable:
+            TKLocales.TransactionConfirmation.feeUnavailable
+        }
+        let fiatValue: String? = switch display {
+        case let .loaded(fee):
+            fiatAmount(
+                fee.amount,
+                fractionDigits: chain.nativeTokenFractionDigits,
+                asset: feeAsset,
+                currency: currency,
+                amountFormatter: amountFormatter
+            )
+        case .loading, .unavailable:
+            nil
+        }
 
         return WalletConnectRequestInfoRow(
             id: .fee,
             title: TKLocales.WalletConnect.Request.Rows.networkFee,
-            value: attributed(TKLocales.WalletConnect.Request.Rows.approximateValue(formatted)),
-            subtitle: TKLocales.WalletConnect.Request.Rows.providedByDapp,
+            value: attributed(value),
+            subtitle: fiatValue,
             valueIcon: nil,
             trailingIcon: nil,
             trailingIconColor: .accentBlue
         )
     }
 
+    static func fiatAmount(
+        _ amount: BigUInt,
+        fractionDigits: Int,
+        asset: MultichainAsset?,
+        currency: Currency,
+        amountFormatter: AmountFormatter
+    ) -> String? {
+        let prices = asset?.price.prices ?? [:]
+        guard let price = prices[currency.code] ?? prices[currency.code.lowercased()] ?? prices[currency.code.uppercased()],
+              price.isFinite,
+              price > 0,
+              let units = Decimal(string: amount.description, locale: Locale(identifier: "en_US_POSIX"))
+        else {
+            return nil
+        }
+        return amountFormatter.format(
+            decimal: units / pow(Decimal(10), fractionDigits) * Decimal(price),
+            accessory: .fiat(currency),
+            style: .compact
+        )
+    }
+}
+
+extension WalletConnectRequestAssembly {
     static func detailItems(for request: WalletConnectSessionRequest) -> [WalletConnectRequestDetailItem] {
         switch request.payload {
         case let .signMessage(message):
@@ -365,7 +442,9 @@ private extension WalletConnectRequestAssembly {
             return []
         }
     }
+}
 
+private extension WalletConnectRequestAssembly {
     static func solanaMessageText(_ base58Message: String) -> String {
         let bytes = base58Message.decodeBase58
         guard !bytes.isEmpty, let text = String(data: bytes, encoding: .utf8) else {
@@ -408,10 +487,6 @@ private extension WalletConnectRequestAssembly {
                 ("to", transaction.to),
                 ("value", transaction.value),
                 ("data", transaction.data),
-                ("gas", transaction.gas),
-                ("gasPrice", transaction.gasPrice),
-                ("maxFeePerGas", transaction.maxFeePerGas),
-                ("maxPriorityFeePerGas", transaction.maxPriorityFeePerGas),
                 ("nonce", transaction.nonce),
             ].compactMap { field in
                 let (key, value) = field

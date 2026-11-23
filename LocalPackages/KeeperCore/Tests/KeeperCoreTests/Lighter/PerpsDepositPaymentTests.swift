@@ -53,7 +53,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
 
-        let outcome = try await service.pay(review: await review(service), passcode: "0000")
+        let outcome = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let events = await delivery.session.events
@@ -71,8 +71,8 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let review = try await review(service)
-        _ = try await service.pay(review: review, passcode: "0000")
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
         let signatures = await delivery.session.signatures
         XCTAssertEqual(signatures, ["p_approve", "p_gateway"])
         let stored = try await journal().allFunding()
@@ -104,7 +104,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
             }
         )
         let reviewed = try await review(service)
-        let payment = Task { try await service.pay(review: reviewed, passcode: "0000") }
+        let payment = Task { try await service.pay(review: reviewed, passcode: "0000", consent: .refuse) }
         await gate.waitUntilEntered()
         let events = await delivery.session.events
         XCTAssertTrue(events.isEmpty)
@@ -119,14 +119,14 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         let api = FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote(withApproval: false)))
         let refused = makeService(api: api, delivery: delivery, ensureBinding: { _ in throw PerpsTradingError.validation("binding failed") })
-        try await assertThrowsAsync(await refused.pay(review: review(refused), passcode: "0000"))
+        try await assertThrowsAsync(await refused.pay(review: review(refused), passcode: "0000", consent: .refuse))
         let events = await delivery.session.events
         XCTAssertTrue(events.isEmpty)
         let pending = try await journal().allFunding()
         XCTAssertTrue(pending.isEmpty)
 
         let retried = makeService(api: api, delivery: delivery)
-        let outcome = try await retried.pay(review: review(retried), passcode: "0000")
+        let outcome = try await retried.pay(review: review(retried), passcode: "0000", consent: .refuse)
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
     }
 
@@ -135,7 +135,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let review = try await review(service)
-        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000", consent: .refuse))
         let events = await delivery.session.events
         XCTAssertTrue(events.isEmpty)
     }
@@ -146,7 +146,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let review = try await review(service)
 
-        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000", consent: .refuse))
 
         let stored = try await journal().allFunding()
         XCTAssertTrue(stored.isEmpty)
@@ -156,7 +156,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         await delivery.session.failSend(ChainKitOperationError.broadcastFailed(payloadId: "p_gateway", sent: ["0xp_approvehash"], reason: "timeout"))
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
-        let outcome = try await service.pay(review: await review(service), passcode: "0000")
+        let outcome = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let stored = try await journal().funding(operationId: "op-1")
         XCTAssertEqual(stored?.deposit?.registration?.l1TxHash, StubDepositSigningSession.hash(of: "p_gateway"))
@@ -173,7 +173,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let review = try await review(service)
 
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("paid")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .insufficientNetworkFee(symbol: "ETH"))
@@ -185,7 +185,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         XCTAssertEqual(stored?.deposit?.transmission?.steps.last?.broadcastAttempted, false)
 
         await delivery.session.failSend(nil)
-        let outcome = try await service.pay(review: review, passcode: "0000")
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let signatures = await delivery.session.signatures
@@ -207,7 +207,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         await delivery.session.expireAfterApproval()
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
-        try await assertThrowsAsync(await service.pay(review: await review(service), passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: await review(service), passcode: "0000", consent: .refuse))
         let stored = try await journal().funding(operationId: "op-1")
         XCTAssertEqual(stored?.deposit?.stage, .failed)
         XCTAssertEqual(stored?.deposit?.transmission?.steps.map(\.payloadId), ["p_approve"])
@@ -220,14 +220,14 @@ final class PerpsDepositPaymentTests: XCTestCase {
         await delivery.session.failSend(ChainKitOperationError.broadcastFailed(payloadId: "p_approve", sent: [], reason: "timeout"))
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let quoted = try await review(service)
-        try await assertThrowsAsync(await service.pay(review: quoted, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: quoted, passcode: "0000", consent: .refuse))
         let stored = try await journal().funding(operationId: "op-1")
         XCTAssertEqual(stored?.deposit?.stage, .sourcePending)
-        try await assertThrowsAsync(await service.pay(review: quoted, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: quoted, passcode: "0000", consent: .refuse))
         await delivery.session.failSend(nil)
         let pendingReview = try await service.pendingReview()
         let resumed = try XCTUnwrap(pendingReview)
-        _ = try await service.pay(review: resumed, passcode: "0000")
+        _ = try await service.pay(review: resumed, passcode: "0000", consent: .refuse)
         let signatures = await delivery.session.signatures
         XCTAssertEqual(signatures, ["p_approve", "p_gateway"])
     }
@@ -245,7 +245,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         let service = makeService(api: api, delivery: delivery)
 
-        let outcome = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000")
+        let outcome = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let events = await session.events
@@ -255,11 +255,38 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let posted = await api.openDepositRequests
         XCTAssertEqual(posted.map(\.execution_id), ["exec-1"])
         XCTAssertEqual(posted.map(\.l1_tx_hash), [nil])
+        XCTAssertEqual(posted.map(\.source_tx_hash), [nil], "the swap is not signed when the deposit is recorded")
         let stored = try await journal().funding(operationId: "op-1")
         let deposit = try XCTUnwrap(stored?.deposit)
         XCTAssertEqual(deposit.stage, .registeredPending)
         XCTAssertEqual(deposit.depositId, "deposit")
         XCTAssertEqual(deposit.sourceTxHash, StubDepositSigningSession.hash(of: "p_relay"))
+        XCTAssertEqual(deposit.registrationBody?.sourceTxHash, deposit.sourceTxHash, "left for recovery to name")
+    }
+
+    /// Lighter's bridge tops an existing account up from USDC on Ethereum with one transfer, tracked like a fill.
+    func testABridgeTopUpFromUSDCOnEthereumIsTrackedByItsExecution() async throws {
+        let delivery = StubDepositDelivery()
+        let api = FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "deposit", status: .pending)),
+            quoteDeposit: .success(PaymentFixture.bridgeQuote())
+        )
+        let service = makeService(api: api, delivery: delivery)
+
+        let outcome = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
+
+        XCTAssertEqual(outcome, .registered(operationId: "op-1"))
+        let broadcasts = await delivery.session.broadcasts
+        XCTAssertEqual(broadcasts, ["p_bridge"])
+        let posted = await api.openDepositRequests
+        XCTAssertEqual(posted.map(\.execution_id), ["funxyz_1"])
+        XCTAssertEqual(posted.map(\.l1_tx_hash), [nil])
+        XCTAssertEqual(posted.map(\.source_tx_hash), [StubDepositSigningSession.hash(of: "p_bridge")], "the one transfer is signed before the record")
+        let stored = try await journal().funding(operationId: "op-1")
+        let deposit = try XCTUnwrap(stored?.deposit)
+        XCTAssertEqual(deposit.route, .crosschainSwap)
+        XCTAssertEqual(deposit.executionId, "funxyz_1")
+        XCTAssertTrue(deposit.skipsConversion)
     }
 
     /// The gateway call is named by its hash, known once it is signed: the record goes between
@@ -268,7 +295,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let delivery = StubDepositDelivery()
         let session = delivery.session
         let api = FundingStubAPI(
-            openDeposit: .success(.init(deposit_id: "deposit", status: .pending)),
+            openDeposit: .success(.init(deposit_id: "deposit", status: .pending, pending_step: .sending)),
             quoteDeposit: .success(PaymentFixture.directQuote()),
             onOpen: { _ in
                 let broadcasts = await session.broadcasts
@@ -277,7 +304,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         let service = makeService(api: api, delivery: delivery)
 
-        let outcome = try await service.pay(review: await review(service), passcode: "0000")
+        let outcome = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let broadcasts = await session.broadcasts
@@ -286,6 +313,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         XCTAssertEqual(posted.map(\.l1_tx_hash), [StubDepositSigningSession.hash(of: "p_gateway")])
         let stored = try await journal().funding(operationId: "op-1")
         XCTAssertEqual(stored?.deposit?.stage, .registeredPending)
+        XCTAssertEqual(stored?.deposit?.pendingStep, .sending)
     }
 
     /// Another deposit is creating the account: the backend asks that this one never go out.
@@ -298,7 +326,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
 
         do {
-            _ = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000")
+            _ = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000", consent: .refuse)
             XCTFail("expected the payment to be refused")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .accountCreationPending)
@@ -320,7 +348,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
 
         do {
-            _ = try await service.pay(review: await review(service), passcode: "0000")
+            _ = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
             XCTFail("expected the payment to be refused")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .accountCreationPending)
@@ -343,7 +371,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         let service = makeService(api: api, delivery: delivery)
         do {
-            _ = try await service.pay(review: await review(service), passcode: "0000")
+            _ = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
             XCTFail("an unbound deposit must wait for binding")
         } catch {
             XCTAssertTrue((error as? PerpsAPIError)?.isAddressNotBound == true)
@@ -362,7 +390,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
             bound.fulfill()
         })
 
-        let outcome = try await retry.pay(review: resumed, passcode: "0000")
+        let outcome = try await retry.pay(review: resumed, passcode: "0000", consent: .refuse)
 
         await fulfillment(of: [bound], timeout: 1)
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
@@ -385,7 +413,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
 
         do {
-            _ = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000")
+            _ = try await service.pay(review: await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25"), passcode: "0000", consent: .refuse)
             XCTFail("expected the payment to be refused")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .failed)
@@ -408,7 +436,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
         let review = try await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25")
 
-        let payment = Task { try await service.pay(review: review, passcode: "0000") }
+        let payment = Task { try await service.pay(review: review, passcode: "0000", consent: .refuse) }
         let result = await payment.result
 
         guard case let .failure(error) = result else { return XCTFail("expected the payment to be cancelled") }
@@ -435,7 +463,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let review = try XCTUnwrap(pendingReview)
 
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("expected the payment to be refused")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .accountCreationPending)
@@ -469,7 +497,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         XCTAssertEqual(review.networkFeeSymbol, "GRAM")
 
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         let senders = await delivery.session.senders
         XCTAssertEqual(senders, [PaymentFixture.tonSender])
@@ -482,7 +510,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         clock.advance(by: 120)
 
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("expected an expired quote")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .quoteExpired)
@@ -496,6 +524,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
             ("insufficient_balance", nil, .insufficientBalance),
             ("amount_too_low", "2.53", .belowMinimum(usd: "2.53")),
             ("amount_too_low", nil, .belowMinimum(usd: "1")),
+            ("invalid_sender_address", nil, .addressBlocked),
         ]
         for (reason, minUsdAmount, message) in cases {
             let refusal = PerpsAPIFailure(
@@ -517,13 +546,69 @@ final class PerpsDepositPaymentTests: XCTestCase {
         }
     }
 
+    func testTheMinimumProbePassesOnlyABlockedSender() async throws {
+        let cases: [(reason: String, minUsdAmount: String?, blocks: Bool, minimumUsd: String?)] = [
+            ("invalid_sender_address", nil, true, nil),
+            ("amount_too_low", "2.53", false, "2.53"),
+            ("insufficient_balance", nil, false, nil),
+        ]
+        for (reason, minUsdAmount, blocks, minimumUsd) in cases {
+            let refusal = PerpsAPIFailure(
+                httpStatus: 400,
+                code: "validation_error",
+                message: nil,
+                retryable: false,
+                reason: reason,
+                minUsdAmount: minUsdAmount
+            )
+            let service = makeService(api: FundingStubAPI(quoteDeposit: .failure(.badStatus(refusal))))
+
+            do {
+                let minimum = try await service.minimum(
+                    sourceAsset: PerpsFundingAsset(assetId: "tron/mainnet/coin", symbol: "TRX", decimals: 6),
+                    usdPrice: 0.25,
+                    senderAddress: "sender",
+                    beneficiary: "beneficiary"
+                )
+                XCTAssertFalse(blocks, reason)
+                XCTAssertEqual(minimum?.usd, minimumUsd, reason)
+            } catch {
+                XCTAssertTrue(blocks, reason)
+                XCTAssertEqual(PerpsDepositService.message(for: error), .addressBlocked, reason)
+            }
+        }
+    }
+
+    func testARegionRefusalIsNamedByTheMinimumProbeAndTheQuote() async throws {
+        let refusal = PerpsAPIFailure(httpStatus: 400, code: "region_restricted", message: nil, retryable: false, reason: nil)
+        let service = makeService(api: FundingStubAPI(quoteDeposit: .failure(.badStatus(refusal))))
+
+        do {
+            _ = try await service.minimum(
+                sourceAsset: PerpsFundingAsset(assetId: "tron/mainnet/coin", symbol: "TRX", decimals: 6),
+                usdPrice: 0.25,
+                senderAddress: "sender",
+                beneficiary: "beneficiary"
+            )
+            XCTFail("the probe kept the region refusal to itself")
+        } catch {
+            XCTAssertEqual(PerpsDepositService.message(for: error), .regionRestricted)
+        }
+        do {
+            _ = try await review(service)
+            XCTFail("expected the quote to be refused")
+        } catch {
+            XCTAssertEqual(PerpsDepositService.message(for: error), .regionRestricted)
+        }
+    }
+
     func testAQuoteThatExpiresDuringTheUnlockIsNotSent() async throws {
         let delivery = StubDepositDelivery()
         delivery.onOpenSession = { [clock] in clock.advance(by: 120) }
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let review = try await review(service)
 
-        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000", consent: .refuse))
 
         let events = await delivery.session.events
         XCTAssertTrue(events.isEmpty)
@@ -536,10 +621,10 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery)
         let review = try await review(service)
 
-        let first = Task { try await service.pay(review: review, passcode: "0000") }
+        let first = Task { try await service.pay(review: review, passcode: "0000", consent: .refuse) }
         await gate.waitUntilEntered()
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("expected the second payment to be refused")
         } catch {
             XCTAssertEqual(error as? PerpsDepositServiceError, .paymentInProgress)
@@ -556,17 +641,17 @@ final class PerpsDepositPaymentTests: XCTestCase {
     func testEveryAttemptReleasesItsRecoveryHoldBeforeItReturns() async throws {
         let delivery = StubDepositDelivery()
         await delivery.session.failSend(ChainKitOperationError.broadcastFailed(payloadId: "p_approve", sent: [], reason: "timeout"))
-        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: FundingStubAPI(), delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: FundingStubAPI(), submitLanes: PerpsSubmitLanes(api: FundingStubAPI()), delivery: delivery, sleep: { _ in })
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote())), delivery: delivery, recovery: recovery)
 
-        try await assertThrowsAsync(await service.pay(review: await review(service), passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: await review(service), passcode: "0000", consent: .refuse))
         var held = await recovery.heldDeposits
         XCTAssertTrue(held.isEmpty)
 
         await delivery.session.failSend(nil)
         let pendingReview = try await service.pendingReview()
         let resumed = try XCTUnwrap(pendingReview)
-        _ = try await service.pay(review: resumed, passcode: "0000")
+        _ = try await service.pay(review: resumed, passcode: "0000", consent: .refuse)
         held = await recovery.heldDeposits
         XCTAssertTrue(held.isEmpty)
     }
@@ -579,7 +664,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         delivery.onBroadcast = { await gate.wait() }
         _ = try await journal().saveFundingIfAbsent(sentPayment())
         let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "deposit", status: .credited)))
-        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: api, delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery, sleep: { _ in })
         let service = makeService(api: api, delivery: delivery, recovery: recovery)
         let pendingReview = try await service.pendingReview()
         let review = try XCTUnwrap(pendingReview)
@@ -589,7 +674,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         await recovery.setEnabled(true, for: observerId)
         await gate.waitUntilEntered()
 
-        let payment = Task { try await service.pay(review: review, passcode: "0000") }
+        let payment = Task { try await service.pay(review: review, passcode: "0000", consent: .refuse) }
         while await recovery.heldDeposits.isEmpty {
             await Task.yield()
         }
@@ -619,7 +704,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         _ = try await journal().saveFundingIfAbsent(sentPayment(registration: registration))
         let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "deposit", status: .credited)))
-        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: api, delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "multichain-wallet", walletIdentity: "wallet", environment: "mainnet", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery, sleep: { _ in })
         let service = makeService(api: api, delivery: delivery, recovery: recovery)
         let pendingReview = try await service.pendingReview()
         let review = try XCTUnwrap(pendingReview)
@@ -629,7 +714,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         await recovery.setEnabled(true, for: observerId)
         await gate.waitUntilEntered()
 
-        let payment = Task { try await service.pay(review: review, passcode: "0000") }
+        let payment = Task { try await service.pay(review: review, passcode: "0000", consent: .refuse) }
         while await recovery.heldDeposits.isEmpty {
             await Task.yield()
         }
@@ -652,7 +737,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         )
         let service = makeService(api: api)
 
-        _ = try await service.pay(review: await review(service), passcode: "0000")
+        _ = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
 
         let stored = try await journal().funding(operationId: "op-1")
         XCTAssertEqual(stored?.deposit?.stage, .registeredPending)
@@ -665,7 +750,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
     func testAnUnreachableBackendLeavesTheRegistrationToRecovery() async throws {
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.directQuote(withApproval: false))))
 
-        let outcome = try await service.pay(review: await review(service), passcode: "0000")
+        let outcome = try await service.pay(review: await review(service), passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let stored = try await journal().funding(operationId: "op-1")
@@ -688,7 +773,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let pending = try XCTUnwrap(pendingReview)
         XCTAssertTrue(pending.resumesPayment)
 
-        let outcome = try await service.pay(review: pending, passcode: "0000")
+        let outcome = try await service.pay(review: pending, passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let stored = try await journal().funding(operationId: "op-1")
@@ -726,7 +811,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
             for amount in ["0", "25000001", (BigUInt(2).power(256) - 1).description] {
                 await assertRefused(
                     PaymentFixture.approvedRelayQuote(approvalAmountUnits: amount, folded: folded),
-                    .approvalAmountMismatch(payloadId: folded ? "p_batch" : "p_approve", amount: amount)
+                    PerpsDepositQuoteError.unexpectedChainPayment("approve")
                 )
             }
         }
@@ -739,7 +824,11 @@ final class PerpsDepositPaymentTests: XCTestCase {
             sender: TronFixture.sender,
             payloads: [
                 .tron("p_approve", to: TronFixture.usdt, data: TronFixture.approve(amountUnits: "91244984")),
-                .tron("p_relay", to: TronFixture.router, data: "deadbeef"),
+                .tron("p_relay", to: TronFixture.router, data: RelayFixture.tronData(RelayFixture.depositErc20(
+                    depositor: RelayFixture.tronSenderHex,
+                    token: PerpsDepositCalldata.normalizedAddress(TronFixture.usdt),
+                    amountUnits: "91244984"
+                ))),
             ]
         )
 
@@ -801,7 +890,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let service = makeService(api: FundingStubAPI(quoteDeposit: .success(PaymentFixture.foldedQuote())), delivery: delivery)
 
         let review = try await review(service)
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         let events = await delivery.session.events
         XCTAssertEqual(events, ["send:p_batch"])
@@ -837,6 +926,30 @@ final class PerpsDepositPaymentTests: XCTestCase {
         }
     }
 
+    /// USDC on Ethereum is the one source the client reads whole: tracked, it is the bridge's transfer and nothing else.
+    func testABridgeTopUpThatIsNotOneTransferIsRefused() async throws {
+        var gatewayCall = PaymentFixture.directQuote()
+        gatewayCall.provider = "funxyz"
+        gatewayCall.tracking = .init(execution_id: "funxyz_1", status_url: "/funding/status/funxyz_1")
+        var shortTransfer = PaymentFixture.bridgeQuote()
+        shortTransfer.input.amount = "2600000"
+        shortTransfer.output.amount = "2600000"
+        shortTransfer.output.min_amount = "2600000"
+        let refusals: [(Components.Schemas.DepositQuote, String, Error)] = [
+            (gatewayCall, "2.5", PerpsDepositQuoteError.unexpectedPayloads(["p_approve", "p_gateway"])),
+            (shortTransfer, "2.6", PerpsDepositCalldataError.unsafeBridgeTransfer(payloadId: "p_bridge")),
+        ]
+        for (quote, amount, expected) in refusals {
+            let service = makeService(api: FundingStubAPI(quoteDeposit: .success(quote)))
+            do {
+                _ = try await review(service, amount: amount)
+                XCTFail("expected the quote to be refused")
+            } catch {
+                XCTAssertEqual("\(error)", "\(expected)")
+            }
+        }
+    }
+
     /// An aggregator's payment is opaque, so the approval in front of it is what bounds it: to
     /// the call it precedes, for the amount quoted.
     func testACrosschainApprovalForAnotherSpenderThanItPaysIsRefused() async throws {
@@ -850,7 +963,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
 
         let quote = try await quote(quoted(spender: PaymentFixture.relayRouter))
         XCTAssertEqual(quote.payloads.map(\.kind), [.approval, .main])
-        await assertRefused(quoted(spender: other), .approvalSpenderMismatch(payloadId: "p_approve", spender: other))
+        await assertRefused(quoted(spender: other), PerpsDepositQuoteError.unexpectedChainPayment("approve"))
     }
 
     func testACrosschainFoldedDepositApprovingAnotherSpenderThanItPaysIsRefused() async {
@@ -866,7 +979,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
             authorization: HermesBatchFixture.authorization()
         )])
 
-        await assertRefused(folded, .approvalSpenderMismatch(payloadId: "p_batch", spender: other))
+        await assertRefused(folded, PerpsDepositQuoteError.unexpectedChainPayment("approve"))
     }
 
     /// The calldata names the spender by its 20 bytes, the payload by its base58 address.
@@ -878,17 +991,21 @@ final class PerpsDepositPaymentTests: XCTestCase {
                 sender: TronFixture.sender,
                 payloads: [
                     .tron("p_approve", to: TronFixture.usdt, data: TronFixture.approve(spenderHex: spenderHex, amountUnits: "25000000")),
-                    .tron("p_pay", to: TronFixture.router, data: "deadbeef"),
+                    .tron("p_pay", to: TronFixture.router, data: RelayFixture.tronData(RelayFixture.depositErc20(
+                        depositor: RelayFixture.tronSenderHex,
+                        token: PerpsDepositCalldata.normalizedAddress(TronFixture.usdt),
+                        amountUnits: "25000000"
+                    ))),
                 ]
             )
         }
         let other = String(repeating: "0", count: 38) + "aa"
 
         _ = try await quote(quoted(spenderHex: TronFixture.routerHex))
-        await assertRefused(quoted(spenderHex: other), .approvalSpenderMismatch(payloadId: "p_approve", spender: "0x" + other))
+        await assertRefused(quoted(spenderHex: other), PerpsDepositQuoteError.unexpectedChainPayment("approve"))
     }
 
-    func testABitcoinDepositIsBoundByItsOutputsAlone() async throws {
+    func testABitcoinDepositIsRelaysPrebuiltPsbt() async throws {
         let quote = try await quote(PaymentFixture.crosschainQuote(
             asset: "btc/mainnet/coin",
             amount: BtcFixture.deposited,
@@ -897,6 +1014,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         ))
 
         XCTAssertEqual(quote.payloads.map(\.kind), [.prebuilt])
+        XCTAssertEqual(quote.relayPaymentUnits.map(String.init), BtcFixture.deposited)
     }
 
     func testAJournalThatCannotRecordTheDepositRefusesItBeforeTheUnlock() async throws {
@@ -906,7 +1024,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         try Self.setAside(journalAt: directoryURL)
 
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("expected the payment to be refused")
         } catch {
             XCTAssertEqual(error as? PerpsPendingJournalError, .fundingSetAside)
@@ -926,7 +1044,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
         let directoryURL = try XCTUnwrap(directoryURL)
         delivery.onOpenSession = { try? Self.setAside(journalAt: directoryURL) }
 
-        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000"))
+        try await assertThrowsAsync(await service.pay(review: review, passcode: "0000", consent: .refuse))
         let signatures = await delivery.session.signatures
         XCTAssertTrue(signatures.isEmpty)
         let posted = await api.openDepositRequests
@@ -953,6 +1071,20 @@ final class PerpsDepositPaymentTests: XCTestCase {
             XCTFail("expected the quote to be refused", file: file, line: line)
         } catch {
             XCTAssertEqual(error as? PerpsDepositCalldataError, expected, file: file, line: line)
+        }
+    }
+
+    private func assertRefused(
+        _ quoted: Components.Schemas.DepositQuote,
+        _ expected: PerpsDepositQuoteError,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        do {
+            _ = try await quote(quoted)
+            XCTFail("expected the quote to be refused", file: file, line: line)
+        } catch {
+            XCTAssertEqual(error as? PerpsDepositQuoteError, expected, file: file, line: line)
         }
     }
 
@@ -1020,8 +1152,10 @@ final class PerpsDepositPaymentTests: XCTestCase {
             journal: journal(),
             api: api,
             delivery: delivery,
+            gate: OperationGate { [] },
             recovery: recovery,
             keyRegistration: { KeyRegistrationFixture.registration },
+            securityConfig: { KeyRegistrationFixture.security },
             ensureBinding: ensureBinding,
             now: { [clock] in clock.now },
             makeOperationId: { operationId }
@@ -1029,7 +1163,7 @@ final class PerpsDepositPaymentTests: XCTestCase {
     }
 }
 
-private final class PaymentClock: @unchecked Sendable {
+final class PaymentClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date
 
@@ -1049,6 +1183,8 @@ private final class PaymentClock: @unchecked Sendable {
 final class StubDepositDelivery: PerpsDepositDelivery {
     let session = StubDepositSigningSession()
     private(set) var pricedOperations = [PerpsDepositOperation]()
+    /// The asset of each account a review asked for, the chain's coin by its chain.
+    private(set) var accountRequests = [String]()
     private(set) var openedSessionCount = 0
     var feeUnits: BigUInt? = 42_000_000_000_000
     var openSessionFailure: Error?
@@ -1058,6 +1194,39 @@ final class StubDepositDelivery: PerpsDepositDelivery {
     func networkFeeUnits(of operation: PerpsDepositOperation, on _: MultichainChain) async -> BigUInt? {
         pricedOperations.append(operation)
         return feeUnits
+    }
+
+    var walletFeeUnits = [String: BigUInt]()
+    var bandwidthFeeUnits: BigUInt? = 0
+    private(set) var walletPricedOperations = [PerpsDepositOperation]()
+    private(set) var bandwidthRequests = 0
+
+    func walletNetworkFeeUnits(of operation: PerpsDepositOperation, on _: MultichainChain) async -> [String: BigUInt] {
+        walletPricedOperations.append(operation)
+        return walletFeeUnits
+    }
+
+    func tronBandwidthFeeUnits() async -> BigUInt? {
+        bandwidthRequests += 1
+        return bandwidthFeeUnits
+    }
+
+    var walletBytePrice: BigUInt? = 5
+    private(set) var bytePriceRequests = [String]()
+
+    func bitcoinBytePrice(paying units: BigUInt, from sender: String) async -> BigUInt? {
+        bytePriceRequests.append("\(units) from \(sender)")
+        return walletBytePrice
+    }
+
+    func account(of asset: PerpsFundingAsset?, on chain: MultichainChain, sender: String) throws -> ChainKit.Account {
+        accountRequests.append(asset?.assetId ?? "\(chain.rawValue) coin")
+        let address = MultichainWalletAddress(chain: chain, address: sender)
+        guard let asset else { return try ChainKitOperationSender.account(of: address, asset: nil) }
+        return try ChainKitOperationSender.account(
+            of: address,
+            holding: MultichainAssetDetails(assetId: asset.assetId, name: asset.symbol, symbol: asset.symbol, decimals: asset.decimals, image: "")
+        )
     }
 
     func broadcastLegacy(_: PerpsPendingL1Step, on _: MultichainChain, expiresAt _: Date?) async throws {}
@@ -1152,7 +1321,7 @@ actor StubDepositSigningSession: PerpsDepositSigningSession {
             step.broadcastAttempted = true
             broadcasts.append(id)
             try await persist(step)
-            if let sendFailure, let chainError = sendFailure as? ChainKitOperationError, case let .broadcastFailed(payloadId, _, _) = chainError, payloadId == id { throw sendFailure }
+            if let sendFailure, let chainError = sendFailure as? ChainKitOperationError, case let .broadcastFailed(payloadId, _, _, _) = chainError, payloadId == id { throw sendFailure }
             if let sendFailure, let chainError = sendFailure as? ChainKitOperationError, case let .insufficientFunds(payloadId) = chainError, payloadId == id {
                 step.broadcastAttempted = false
                 try await persist(step)
@@ -1184,8 +1353,9 @@ actor StubDepositSigningSession: PerpsDepositSigningSession {
 enum PaymentFixture {
     static let sender = "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"
     static let tonSender = "UQARERERERERERERERERERERERERERERERERERERERERERbvW"
-    static let gateway = PerpsDepositCalldata.gatewayAddress
-    static let relayRouter = "0x00000000000000000000000000000000000000ef"
+    static let gateway = "0x3b4d794a66304f130a4db8f2551b0070dfcf5ca7"
+    static let relayRouter = "0x0729e2a4716d9f7dd17858d5d504426d228697f7"
+    static let relayDepository = "0x4cd00e387622c35bddb9b4c962c136462338bc31"
     static let usdt = "0xdac17f958d2ee523a2206206994597c13d831ec7"
     static let usdtAsset = "eth/mainnet/erc20/\(usdt)"
     static let ethAsset = PerpsFundingAsset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18)
@@ -1262,6 +1432,20 @@ enum PaymentFixture {
             tracking: nil,
             preview: false
         )
+    }
+
+    /// A USDC `transfer` of the default 2.5 USDC to Lighter's deposit address.
+    static func bridgeQuote() -> Components.Schemas.DepositQuote {
+        var quote = directQuote(withApproval: false)
+        quote.provider = "funxyz"
+        quote.operation = .transfer([.evm(
+            "p_bridge",
+            to: PerpsFundingAssetId.usdcEthereum.replacingOccurrences(of: "eth/mainnet/erc20/", with: ""),
+            data: "0xa9059cbb" + String(repeating: "0", count: 24) + String(repeating: "b", count: 40)
+                + String(repeating: "0", count: 58) + "2625a0"
+        )])
+        quote.tracking = .init(execution_id: "funxyz_1", status_url: "/funding/status/funxyz_1")
+        return quote
     }
 
     static func relayQuote() -> Components.Schemas.DepositQuote {

@@ -29,10 +29,11 @@ final class LegacySendTokenCoordinator: RouterCoordinator<NavigationControllerRo
     var didSendSuccessfully: ((RouterCoordinator<NavigationControllerRouter>?) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
     var didRequestRefill: ((Token, _ onRefill: @escaping () -> Void) -> Void)?
-    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)?
+    var didRequestOpenBattery: ((BatteryAnalyticsSource, @escaping () -> Void) -> Void)?
     var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+    private let passcodeHandoff = TronTransferPasscodeHandoff()
     private lazy var feePickerCoordinator = NetworkFeePickerCoordinator(
         router: router
     )
@@ -145,13 +146,16 @@ private extension LegacySendTokenCoordinator {
         }
 
         module.output.didTapScan = { [weak self] in
-            self?.openScan(completion: { deeplink in
+            self?.openScan(completion: { scanned in
                 Task { [weak self] in
-                    guard let self, case let .transfer(.sendTransfer(data)) = deeplink else {
+                    guard let self else { return }
+                    guard case let .transfer(.sendTransfer(data)) = scanned.deeplink else {
+                        scanned.rejectUnsupported()
                         return
                     }
                     if case .withdraw = sendInput {
                         module.input.setRecipient(string: data.recipient)
+                        scanned.accept()
                         return
                     }
                     do {
@@ -169,8 +173,10 @@ private extension LegacySendTokenCoordinator {
                             module.input.updateWithToken(.tron(.usdt(amount: data.amount ?? 0)))
                             module.input.setComment(comment: data.comment)
                         }
+                        scanned.accept()
                     } catch {
                         ToastPresenter.showToast(configuration: .init(title: TKLocales.Send.invalidAddress))
+                        scanned.rejectUnsupported()
                     }
                 }
             })
@@ -237,7 +243,7 @@ private extension LegacySendTokenCoordinator {
         bottomSheetViewController.present(fromViewController: sourceViewController)
     }
 
-    func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
+    func openScan(completion: @escaping (ScannedDeeplink) -> Void) {
         let scannerAssembly = keeperCoreMainAssembly.scannerAssembly()
         let scanModule = ScannerModule(
             dependencies: ScannerModule.Dependencies(
@@ -250,15 +256,16 @@ private extension LegacySendTokenCoordinator {
                 title: TKLocales.Scanner.title,
                 subtitle: nil,
                 isFlashlightVisible: true
-            )
+            ),
+            analytics: .scanEvents(openUtm: .empty)
         )
 
         let navigationController = TKNavigationController(rootViewController: scanModule.view)
         navigationController.configureTransparentAppearance()
 
-        scanModule.output.didScanDeeplink = { [weak self] deeplink in
+        scanModule.output.didScanDeeplink = { [weak self] scanned in
             self?.router.dismiss(completion: {
-                completion(deeplink)
+                completion(scanned)
             })
         }
 
@@ -465,7 +472,8 @@ private extension LegacySendTokenCoordinator {
                     wallet: wallet,
                     txID: txId,
                     keeperCoreMainAssembly: keeperCoreMainAssembly,
-                    coreAssembly: coreAssembly
+                    coreAssembly: coreAssembly,
+                    passcodeHandoff: self.passcodeHandoff
                 )
                 return try await coordinator
                     .handleSign(parentCoordinator: self)
@@ -481,6 +489,10 @@ private extension LegacySendTokenCoordinator {
             case let .ton(ton): ton.estimatedDurationSeconds
             case let .tron(tron): tron.estimatedDurationSeconds
             }
+            let recipientExtraId: String? = switch sendData {
+            case let .ton(ton): ton.recipientExtraId
+            case let .tron(tron): tron.recipientExtraId
+            }
             return WithdrawDisplayInfo(
                 fromSymbol: sourceAsset.symbol,
                 fromImageUrl: sourceAsset.image,
@@ -491,7 +503,8 @@ private extension LegacySendTokenCoordinator {
                 networkName: exchangeTo.networkName,
                 networkType: exchangeTo.network,
                 estimatedDurationSeconds: estimatedDurationSeconds,
-                withdrawalFeeUsd: exchangeTo.fee
+                withdrawalFeeUsd: exchangeTo.fee,
+                recipientExtraId: recipientExtraId
             )
         }()
 
@@ -520,7 +533,8 @@ private extension LegacySendTokenCoordinator {
                 wallet: wallet,
                 transferData: walletTransfer,
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
-                coreAssembly: coreAssembly
+                coreAssembly: coreAssembly,
+                passcodeHandoff: self.passcodeHandoff
             )
 
             self.walletTransferSignCoordinator = coordinator
@@ -627,7 +641,7 @@ private extension LegacySendTokenCoordinator {
             sendRedSession?.finish(
                 outcome: .fail,
                 error: error,
-                stage: "send"
+                stage: error.transactionConfirmationStage
             )
             sendRedSession = nil
             self.logSendFailed(model: model, error: error, context: analyticsContext)
@@ -917,9 +931,9 @@ extension SendAnalyticsSource {
 
     var utm: UtmParameters {
         switch self {
-        case let .deepLink(utm):
+        case let .deepLink(utm), let .qrCode(utm):
             return utm
-        case .walletScreen, .jettonScreen, .tonconnectLocal, .tonconnectRemote, .qrCode:
+        case .walletScreen, .jettonScreen, .tonconnectLocal, .tonconnectRemote:
             return .empty
         }
     }

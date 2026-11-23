@@ -42,7 +42,7 @@ public struct PerpsMarketRowView: View {
                     .foregroundStyle(.textPrimary)
                 Text(market.changeText)
                     .textStyle(.body2)
-                    .foregroundStyle(market.isChangePositive ? TKColor.accentGreen : TKColor.accentRed)
+                    .foregroundStyle(market.isChangePositive.map { $0 ? TKColor.accentGreen : TKColor.accentRed } ?? .textSecondary)
             }
         }
         .padding(.horizontal, Layout.cardPadding)

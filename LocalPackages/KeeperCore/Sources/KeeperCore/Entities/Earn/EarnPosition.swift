@@ -6,8 +6,9 @@ public struct EarnPosition: Codable, Equatable, Sendable {
     public let protocolName: String
     public let assetSymbol: String
     public let assetIconURL: URL?
-    public let balanceUsd: Decimal
-    public let earnedUsd: Decimal?
+    public let balanceFiat: [String: Decimal]
+    /// Zero in every currency also when the backend could not tell the earnings.
+    public let earnedFiat: [String: Decimal]
 
     public init(
         network: String,
@@ -15,15 +16,15 @@ public struct EarnPosition: Codable, Equatable, Sendable {
         protocolName: String,
         assetSymbol: String,
         assetIconURL: URL?,
-        balanceUsd: Decimal,
-        earnedUsd: Decimal?
+        balanceFiat: [String: Decimal],
+        earnedFiat: [String: Decimal]
     ) {
         self.network = network
         self.vaultId = vaultId
         self.protocolName = protocolName
         self.assetSymbol = assetSymbol
         self.assetIconURL = assetIconURL
-        self.balanceUsd = balanceUsd
-        self.earnedUsd = earnedUsd
+        self.balanceFiat = balanceFiat
+        self.earnedFiat = earnedFiat
     }
 }

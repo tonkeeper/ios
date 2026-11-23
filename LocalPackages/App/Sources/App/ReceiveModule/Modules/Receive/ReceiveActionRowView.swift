@@ -5,6 +5,7 @@ import TKUIKit
 struct ReceiveActionRowView: View {
     let onCopy: () -> Void
     let onShare: () -> Void
+    var onVerify: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -14,6 +15,15 @@ struct ReceiveActionRowView: View {
                 style: .compact,
                 action: onCopy
             )
+
+            if let onVerify {
+                ReceiveActionButton(
+                    title: TKLocales.Receive.verify,
+                    icon: .TKUIKit.Icons.Size16.checkmarkCircle,
+                    style: .compact,
+                    action: onVerify
+                )
+            }
 
             ReceiveActionButton(
                 title: nil,

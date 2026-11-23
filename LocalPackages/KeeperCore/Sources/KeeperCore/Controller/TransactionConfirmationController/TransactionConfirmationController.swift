@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import OperationReviewModels
 import TonSwift
 import TronSwift
 
@@ -82,11 +83,14 @@ public struct TransactionConfirmationModel {
         public let type: ExtraType
         public let value: ExtraValue
         public let isInsufficient: Bool
+        /// A method that could not be priced or offered cannot be made payable by adding funds.
+        public let isAvailable: Bool
 
-        public init(type: ExtraType, value: ExtraValue, isInsufficient: Bool = false) {
+        public init(type: ExtraType, value: ExtraValue, isInsufficient: Bool = false, isAvailable: Bool = true) {
             self.type = type
             self.value = value
             self.isInsufficient = isInsufficient
+            self.isAvailable = isAvailable
         }
     }
 
@@ -130,9 +134,13 @@ public struct TransactionConfirmationModel {
     public let extraState: ExtraState
     public let extraOptions: [ExtraOption]
     public let comment: String?
+    /// Whether the comment goes encrypted to the recipient's key.
+    public let isCommentEncrypted: Bool
     public let availableExtraTypes: [ExtraType]
     public let isMax: Bool
     public let totalFee: BigInt
+    /// What the checks found in what the confirmation will sign, where it is known before the swipe.
+    public let review: OperationReview?
 
     /// A legacy TRON account's feed carries USDT transfers only, so a TRX transfer sent from one
     /// never shows up in a history screen.
@@ -152,9 +160,11 @@ public struct TransactionConfirmationModel {
         extraState: ExtraState,
         extraOptions: [ExtraOption] = [],
         comment: String? = nil,
+        isCommentEncrypted: Bool = false,
         availableExtraTypes: [ExtraType],
         isMax: Bool = false,
-        totalFee: BigInt
+        totalFee: BigInt,
+        review: OperationReview? = nil
     ) {
         self.wallet = wallet
         self.recipient = recipient
@@ -164,15 +174,19 @@ public struct TransactionConfirmationModel {
         self.extraState = extraState
         self.extraOptions = extraOptions
         self.comment = comment
+        self.isCommentEncrypted = isCommentEncrypted
         self.availableExtraTypes = availableExtraTypes
         self.isMax = isMax
         self.totalFee = totalFee
+        self.review = review
     }
 }
 
 @frozen public enum TransactionConfirmationError: Swift.Error {
-    case failedToCalculateFee
-    case failedToSendTransaction(message: String? = nil)
+    case failedToCalculateFee(message: String? = nil)
+    /// `message` is the reason analytics reads, the same in every device language. `localizedMessage` is what the
+    /// user reads instead of the generic text, for a failure that has a text of its own.
+    case failedToSendTransaction(message: String? = nil, localizedMessage: String? = nil)
     case multichainTransactionFailure(MultichainTransactionFailure)
     case failedToSign(message: String? = nil)
     case cancelledByUser
@@ -192,6 +206,8 @@ public protocol TransactionConfirmationController: AnyObject {
     func setLoading()
     func emulate() async -> Result<Void, TransactionConfirmationError>
     func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError>
+    /// Sends under the confirm attempt's `consent`, which answers what a review asks before the signature.
+    func sendTransaction(consent: OperationConsent) async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError>
 
     func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType)
     func prepareFeeOptions() async
@@ -200,9 +216,19 @@ public protocol TransactionConfirmationController: AnyObject {
 public extension TransactionConfirmationController {
     func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {}
     func prepareFeeOptions() async {}
+
+    /// A controller no gate stands in front of sends as it always has.
+    func sendTransaction(consent _: OperationConsent) async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
+        await sendTransaction()
+    }
 }
 
 public extension TransactionConfirmationModel {
+    var isSelectedFeeUnavailable: Bool {
+        guard case let .extra(extra) = extraState else { return false }
+        return extraOptions.first { $0.type == extra.value.extraType }?.isAvailable == false
+    }
+
     var isMaxAmountUsed: Bool {
         isMax
     }

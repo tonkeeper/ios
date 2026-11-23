@@ -1,5 +1,6 @@
 import BigInt
 @testable import KeeperCore
+import OperationReviewModels
 import XCTest
 
 final class MultichainSendConfirmationTests: XCTestCase {
@@ -98,6 +99,25 @@ final class MultichainSendConfirmationTests: XCTestCase {
             ),
             79
         )
+    }
+
+    /// The swipe asks about what will be signed: the relayer's operation for a relayed fee, the
+    /// transfer ChainKit priced for the coin.
+    func test_theSwipeAsksAboutTheOperationTheSelectedFeeSigns() {
+        let transfer = OperationReview(id: "transfer", findings: [])
+        let relayed = OperationReview(id: "relayed", findings: [])
+        let emulation = MultichainTransactionEmulationResult(fee: 21, asset: feeAsset, review: transfer)
+        let quote = EVMGaslessFeeEngine.Quote(
+            call: EVMGaslessCall(kind: .transfer, chainId: "eth/mainnet", sender: "0x0", to: "0x1", value: 1, data: EVMGaslessCall.emptyData),
+            options: [],
+            review: relayed
+        )
+        let battery = EVMGaslessFeeOption(payer: .battery(charges: 1), relayerAssetId: "battery/mainnet")
+        let coin = EVMGaslessFeeOption(payer: .native(feeAsset, fee: 21), relayerAssetId: nil)
+
+        XCTAssertEqual(MultichainTransactionConfirmationController.review(emulation: emulation, quote: quote, selectedEVMFee: battery), relayed)
+        XCTAssertEqual(MultichainTransactionConfirmationController.review(emulation: emulation, quote: quote, selectedEVMFee: coin), transfer)
+        XCTAssertEqual(MultichainTransactionConfirmationController.review(emulation: emulation, quote: nil, selectedEVMFee: nil), transfer)
     }
 
     private var maxEmulation: MultichainTransactionEmulationResult {

@@ -178,7 +178,7 @@ public struct MultichainAssetBalanceProvider {
     /// miss, keyed by the names asked for. The wallet's listing of their chain is read a page at a
     /// time, and only until every one of them turns up: a wallet can list thousands of assets. An
     /// asset the listing does not reach, or cannot be read for, is missing from the answer.
-    func loadAssets(named assetIds: [String], wallet: Wallet) async -> [String: MultichainAsset] {
+    public func loadAssets(named assetIds: [String], wallet: Wallet) async -> [String: MultichainAsset] {
         guard case let .multichain(state) = wallet.multichain else {
             return [:]
         }

@@ -8,7 +8,7 @@ public struct PerpsMarketRowItem: Identifiable, Equatable {
     let volumeText: String
     let priceText: String
     let changeText: String
-    let isChangePositive: Bool
+    let isChangePositive: Bool?
 
     public init(
         id: Int64,
@@ -18,7 +18,7 @@ public struct PerpsMarketRowItem: Identifiable, Equatable {
         volumeText: String,
         priceText: String,
         changeText: String,
-        isChangePositive: Bool
+        isChangePositive: Bool?
     ) {
         self.id = id
         self.symbol = symbol

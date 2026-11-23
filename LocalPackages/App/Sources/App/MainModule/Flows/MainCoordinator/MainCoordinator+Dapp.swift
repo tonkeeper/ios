@@ -22,9 +22,14 @@ extension MainCoordinator {
         openDapp(request, isSilentConnect: isSilentConnect)
     }
 
-    func openEarnDapp(url: URL, analyticsFrom: DappOpenSource, on navigationController: UINavigationController?) {
+    func openEarnDapp(
+        url: URL,
+        analyticsFrom: DappOpenSource,
+        utm: UtmParameters = .empty,
+        on navigationController: UINavigationController?
+    ) {
         let dapp = makeDapp(title: nil, url: url)
-        let request = dappBrowserAnalyticsController.directOpenRequest(source: analyticsFrom, dapp: dapp)
+        let request = dappBrowserAnalyticsController.directOpenRequest(source: analyticsFrom, dapp: dapp, utm: utm)
         let hostNavigationController = (navigationController ?? router.rootViewController.navigationController)?
             .tabBarHostNavigationController
         openDapp(request, presentation: hostNavigationController.map(DappPresentation.push) ?? .modal)
@@ -87,8 +92,17 @@ private extension MainCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        coordinator.didHandleDeeplink = { [weak self] deeplink, utm in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink(utm: utm))
+        coordinator.didHandleDeeplink = { [weak self] deeplink, utm, presentingViewController in
+            _ = self?.handleTonkeeperDeeplink(
+                deeplink,
+                fromStories: false,
+                sendSource: .deepLink(utm: utm),
+                origin: DeeplinkOrigin(dappURL: request.dapp.url),
+                presentingViewController: presentingViewController
+            )
+        }
+        coordinator.didRequestOpenDapp = { [weak self] url in
+            self?.openDapp(title: nil, url: url, analyticsFrom: .dapp)
         }
         coordinator.didFinish = { [weak self] finished in
             self?.removeChild(finished)

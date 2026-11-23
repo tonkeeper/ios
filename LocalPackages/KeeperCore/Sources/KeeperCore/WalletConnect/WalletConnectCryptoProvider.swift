@@ -1,6 +1,6 @@
 import CryptoSwift
 import Foundation
-import ReownWalletKit
+import WalletConnectSign
 
 struct WalletConnectCryptoProvider: CryptoProvider {
     enum Error: Swift.Error {

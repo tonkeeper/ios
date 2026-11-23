@@ -282,6 +282,30 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     }
 
     private func createProcessItem() -> TKPopUp.Item {
+        if TKLiquidGlass.isEnabled, !configurationAssembly.configuration.isConfirmButtonInsteadSlider {
+            let isWarning: Bool
+            switch state.emulationState {
+            case .emulating:
+                confirmSliderView.isEnabled = false
+                isWarning = false
+            case .success:
+                confirmSliderView.isEnabled = true
+                isWarning = false
+            case .fail:
+                confirmSliderView.isEnabled = true
+                isWarning = true
+            }
+            confirmSliderView.appearance = isWarning ? .warning : .standard
+            confirmSliderView.process = TKActionBarProcess(processState)
+            return TKPopUp.Component.GroupComponent(
+                padding: .zero,
+                items: [
+                    TKPopUp.Component.ConfirmSlider(sliderView: confirmSliderView),
+                    createRiskItem(),
+                ]
+            )
+        }
+
         var items = [TKPopUp.Item]()
         if configurationAssembly.configuration.isConfirmButtonInsteadSlider {
             items.append(createButtonsItem())
@@ -293,18 +317,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
 
         return TKPopUp.Component.Process(
             items: items,
-            state: {
-                switch state.confirmationState {
-                case .idle:
-                    return .idle
-                case .process:
-                    return .process
-                case .success:
-                    return .success
-                case .failed:
-                    return .failed
-                }
-            }(),
+            state: processState,
             successTitle: {
                 switch mode {
                 case .sendTransaction:
@@ -316,6 +329,24 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
             errorTitle: TKLocales.Result.failure
         )
     }
+
+    private var processState: TKProcessContainerView.State {
+        switch state.confirmationState {
+        case .idle: .idle
+        case .process: .process
+        case .success: .success
+        case .failed: .failed
+        }
+    }
+
+    private lazy var confirmSliderView: TKConfirmSliderView = {
+        let view = TKConfirmSliderView()
+        view.handleAccessibilityIdentifier = "confirm_swipe"
+        view.didConfirm = { [weak self] in
+            self?.confirmTransaction()
+        }
+        return view
+    }()
 
     private func createButtonsItem() -> TKPopUp.Item {
         let isEnable: Bool
@@ -439,9 +470,9 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     }
 
     private func createRiskItem() -> TKPopUp.Item {
-        let failedItem: () -> TKPopUp.Item = {
+        let statusItem: (String) -> TKPopUp.Item = { text in
             TKPopUp.Component.LabelComponent(
-                text: TKLocales.State.failed.withTextStyle(
+                text: text.withTextStyle(
                     .body2,
                     color: .Text.secondary,
                     alignment: .center,
@@ -467,7 +498,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         case .emulating:
             return loadingItem()
         case let .success(model, _, _):
-            guard let risk = model.risk else { return failedItem() }
+            guard let risk = model.risk else { return statusItem(TKLocales.ConfirmSend.Risk.unavailable) }
             return SignRawRiskView.Model(
                 bottomSpace: 0,
                 title: risk.title,
@@ -480,7 +511,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
                 }
             )
         case .fail:
-            return failedItem()
+            return statusItem(TKLocales.State.failed)
         }
     }
 

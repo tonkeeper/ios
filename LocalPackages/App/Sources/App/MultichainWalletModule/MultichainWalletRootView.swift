@@ -21,6 +21,8 @@ private struct MultichainWalletContentView: View {
     @Environment(\.tkPalette) private var palette
 
     @State private var settledWalletId: String?
+    /// The launch frame builds only what the screen shows; the rest joins in the next frame.
+    @State private var showsBelowTheFold = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -44,21 +46,32 @@ private struct MultichainWalletContentView: View {
                 )
                 .id(viewModel.homeBannersViewModel.wallet.id)
 
-                if !showsSkeleton,
-                   let raffle = rootViewModel.rafflePresentation,
-                   raffle.shouldShowMainScreenEntry
-                {
-                    RaffleEntryPointView(
-                        title: raffle.compactTitle,
-                        ticketsText: raffle.ticketsText,
-                        action: rootViewModel.tapRaffle
-                    )
+                if !showsSkeleton, rootViewModel.loyaltyRow != nil || !rootViewModel.raffleEntries.isEmpty {
+                    VStack(spacing: 8) {
+                        if let loyaltyRow = rootViewModel.loyaltyRow {
+                            RaffleEntryPointView(
+                                title: loyaltyRow.isJoined ? TKLocales.Loyalty.resistance : TKLocales.Loyalty.joinResistance,
+                                titleTag: loyaltyRow.isJoined
+                                    ? nil
+                                    : .accentTag(text: TKLocales.Common.new, accent: .accentBlue),
+                                badgeText: loyaltyRow.ohmsText,
+                                badgeColor: .accentOrange,
+                                action: rootViewModel.tapLoyalty
+                            ) {
+                                SwiftUI.Image.TKUIKit.Icons.Size28.ohms
+                            }
+                        }
+                        if !rootViewModel.raffleEntries.isEmpty {
+                            RaffleEntryPointsView(
+                                entries: rootViewModel.raffleEntries,
+                                onOpen: rootViewModel.tapRaffle(id:),
+                                onAppear: rootViewModel.raffleBannerDidAppear(id:)
+                            )
+                        }
+                    }
                     .padding(.top, 8)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
-                    .onAppear {
-                        rootViewModel.raffleBannerDidAppear()
-                    }
                 }
 
                 if case let .visible(items, isSkippable) = finishSetup {
@@ -85,46 +98,34 @@ private struct MultichainWalletContentView: View {
 
                 WalletBalanceMultichainAssetsListView(
                     viewModel: viewModel.assetsListViewModel,
-                    showsSkeleton: showsSkeleton
+                    showsSkeleton: showsSkeleton,
+                    rowLimit: showsBelowTheFold ? nil : Layout.firstFrameRowCount
                 )
                 .padding(.horizontal, 16)
 
                 if !showsSkeleton {
-                    MultichainWalletEarnPortfolioSection(viewModel: viewModel.earnPortfolioViewModel)
+                    MultichainWalletEarnPositionsViewEvents(viewModel: viewModel.earnPortfolioViewModel)
                         .id(viewModel.wallet.id)
                 }
 
-                if let perpsSectionViewModel = viewModel.perpsSectionViewModel, !showsSkeleton {
-                    MultichainWalletPerpsSection(
-                        placement: .belowAssets,
-                        viewModel: perpsSectionViewModel
-                    )
-                }
-
-                if !showsSkeleton {
-                    MultichainWalletEarnFeaturedSection(
-                        walletId: viewModel.wallet.id,
-                        portfolioViewModel: viewModel.earnPortfolioViewModel,
-                        cards: rootViewModel.earnCards,
-                        onOpenCatalog: rootViewModel.tapEarnCatalog,
-                        onSelectCard: rootViewModel.tapEarnCard,
-                        onAppear: rootViewModel.earnFeaturedDidAppear(walletId:),
-                        onDisappear: rootViewModel.earnFeaturedDidDisappear(walletId:)
-                    )
-                    .id(viewModel.wallet.id)
-                }
-
-                if !showsSkeleton {
-                    MultichainWalletCollectiblesSection(viewModel: viewModel.collectiblesViewModel)
+                if showsBelowTheFold {
+                    belowTheFoldSections
                 }
             }
             .padding(.bottom, 16)
             .animation(finishSetupAnimation, value: finishSetup)
         }
+        .onAppear {
+            guard !showsBelowTheFold else { return }
+            AfterFrameCommits.run(after: 1) {
+                showsBelowTheFold = true
+            }
+        }
         .onChange(of: settlingWalletId) { settlingWalletId in
             settledWalletId = settlingWalletId
         }
         .tkImmediateButtonPresses()
+        .softTopScrollEdge()
         .refreshable {
             await Task {
                 await MinimumRefreshDurationBehavior.perform {
@@ -136,6 +137,49 @@ private struct MultichainWalletContentView: View {
             palette.background.page
                 .ignoresSafeArea()
         )
+    }
+
+    @ViewBuilder
+    private var belowTheFoldSections: some View {
+        LazyVStack(spacing: 0) {
+            if !showsSkeleton {
+                MultichainWalletEarnPortfolioSection(viewModel: viewModel.earnPortfolioViewModel)
+                    .id(viewModel.wallet.id)
+            }
+
+            if let perpsSectionViewModel = viewModel.perpsSectionViewModel, !showsSkeleton {
+                MultichainWalletPerpsSection(
+                    placement: .belowAssets,
+                    viewModel: perpsSectionViewModel,
+                    onResolveTitleAnchor: rootViewModel.setPerpsTooltipAnchor
+                )
+            }
+        }
+
+        if !showsSkeleton {
+            MultichainWalletEarnFeaturedSection(
+                walletId: viewModel.wallet.id,
+                portfolioViewModel: viewModel.earnPortfolioViewModel,
+                cards: rootViewModel.earnCards,
+                onOpenCatalog: rootViewModel.tapEarnCatalog,
+                onSelectCard: rootViewModel.tapEarnCard,
+                onAppear: rootViewModel.earnFeaturedDidAppear(walletId:),
+                onDisappear: rootViewModel.earnFeaturedDidDisappear(walletId:),
+                onResolveTitleAnchor: rootViewModel.setEarnTooltipAnchor,
+                onResolveSectionAnchor: rootViewModel.setEarnSectionAnchor
+            )
+            .id(viewModel.wallet.id)
+        }
+
+        if !showsSkeleton, let predictionsSectionViewModel = viewModel.predictionsSectionViewModel {
+            MultichainWalletPredictionsSection(viewModel: predictionsSectionViewModel)
+        }
+
+        LazyVStack(spacing: 0) {
+            if !showsSkeleton {
+                MultichainWalletCollectiblesSection(viewModel: viewModel.collectiblesViewModel)
+            }
+        }
     }
 
     private var iconButtonsConfig: MultichainWalletIconButtonsSection.Config {
@@ -173,6 +217,7 @@ private struct MultichainWalletContentView: View {
 private extension MultichainWalletContentView {
     enum Layout {
         static let sectionAnimation: Animation = WalletBalanceHomeBannersLayout.animation
+        static let firstFrameRowCount = 5
     }
 }
 
@@ -246,21 +291,35 @@ private struct MultichainWalletEarnPortfolioSection: View {
 
     var body: some View {
         switch viewModel.state {
-        case .noEVMAccount, .loading, .empty:
+        case .disabled, .loading, .empty:
             EmptyView()
         case let .positions(state):
             EarnPortfolioSectionView(
                 state: state,
                 onOpenCatalog: viewModel.openCatalog,
                 onSelectRow: { viewModel.selectRow(id: $0.id) },
-                onRetry: viewModel.reload
+                onRetry: viewModel.reload,
+                onSelectLimit: viewModel.selectLimit
             )
             .padding(.top, 16)
-            .onAppear(perform: viewModel.positionsDidAppear)
-            .onDisappear(perform: viewModel.positionsDidDisappear)
         case .unavailable:
             EarnPortfolioUnavailableSectionView(onRetry: viewModel.reload)
                 .padding(.top, 16)
+        }
+    }
+}
+
+/// The Earn positions section is built lazily, so its view events come from here:
+/// a lazy container fires `onAppear` only when a section scrolls near the screen.
+private struct MultichainWalletEarnPositionsViewEvents: View {
+    @ObservedObject var viewModel: WalletBalanceEarnPortfolioViewModel
+
+    var body: some View {
+        if case .positions = viewModel.state {
+            Color.clear
+                .frame(height: 0)
+                .onAppear(perform: viewModel.positionsDidAppear)
+                .onDisappear(perform: viewModel.positionsDidDisappear)
         }
     }
 }
@@ -273,17 +332,36 @@ private struct MultichainWalletEarnFeaturedSection: View {
     let onSelectCard: (EarnCardViewData) -> Void
     let onAppear: (String) -> Void
     let onDisappear: (String) -> Void
+    let onResolveTitleAnchor: (UIView) -> Void
+    let onResolveSectionAnchor: (UIView) -> Void
 
     var body: some View {
         if case .empty = portfolioViewModel.state, !cards.isEmpty {
             EarnCardsSectionView(
                 cards: cards,
                 onOpenCatalog: onOpenCatalog,
-                onSelectCard: onSelectCard
+                onSelectCard: onSelectCard,
+                onResolveTitleAnchor: onResolveTitleAnchor
             )
+            .background(AnchorViewResolver(onResolveView: onResolveSectionAnchor))
             .padding(.top, 16)
             .onAppear { onAppear(walletId) }
             .onDisappear { onDisappear(walletId) }
+        }
+    }
+}
+
+private struct MultichainWalletPredictionsSection: View {
+    @ObservedObject var viewModel: MultichainWalletPredictionsSectionViewModel
+
+    var body: some View {
+        if let state = viewModel.state {
+            PredictionsSectionView(
+                state: state,
+                onOpenPredictions: viewModel.openPredictions,
+                onSelectCard: viewModel.openMarket,
+                onSelectOutcome: viewModel.selectOutcome
+            )
         }
     }
 }
@@ -429,8 +507,21 @@ private struct MultichainWalletFinishSetupSection: View {
             case .none:
                 TKLocales.FinishSetup.biometryUnavailable
             }
+        case .failure(.faceIDDenied):
+            TKLocales.FinishSetup.setupBiometry(TKLocales.SettingsListSecurityConfigurator.faceId)
         case .failure:
             TKLocales.FinishSetup.biometryUnavailable
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func softTopScrollEdge() -> some View {
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self
         }
     }
 }

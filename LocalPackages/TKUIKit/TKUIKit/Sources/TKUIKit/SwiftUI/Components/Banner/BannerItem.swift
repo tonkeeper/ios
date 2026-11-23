@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 
 public struct BannerItem {
     public var id: String
@@ -6,6 +6,7 @@ public struct BannerItem {
     public var description: String
     public var actionTitle: String
     public var imageURL: URL?
+    public var image: UIImage?
     public var action: (() -> Void)?
 
     public init(
@@ -14,6 +15,7 @@ public struct BannerItem {
         description: String = "",
         actionTitle: String,
         imageURL: URL? = nil,
+        image: UIImage? = nil,
         action: (() -> Void)? = nil
     ) {
         self.id = id
@@ -21,6 +23,7 @@ public struct BannerItem {
         self.description = description
         self.actionTitle = actionTitle
         self.imageURL = imageURL
+        self.image = image
         self.action = action
     }
 }

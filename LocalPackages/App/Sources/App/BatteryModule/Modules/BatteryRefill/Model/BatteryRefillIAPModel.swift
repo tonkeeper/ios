@@ -9,7 +9,9 @@ final class BatteryRefillIAPModel: NSObject {
 
     enum Event {
         case didUpdateItems(items: [BatteryIAPItem])
-        case didPerformTransaction
+        /// `purchase` is nil for a transaction this screen did not queue: a restore, or an
+        /// unfinished payment StoreKit redelivers from an earlier screen.
+        case didPerformTransaction(purchase: BatteryAnalyticsPurchase?)
         case didFailTransaction(error: Error?)
     }
 
@@ -58,6 +60,7 @@ final class BatteryRefillIAPModel: NSObject {
     }
 
     private var isLoadingPurchasesAvailability = false
+    private var queuedProductIdentifiers = Set<String>()
 
     private var state: State = .loading {
         didSet {
@@ -132,30 +135,34 @@ final class BatteryRefillIAPModel: NSObject {
         }
     }
 
-    func startProcessing(identifier: String) {
+    @discardableResult
+    func startProcessing(identifier: String) -> Bool {
         logger.i("Start processing purchase for product id=\(identifier)")
         guard purchasesAvailability == .allowed else {
             logger.w("Purchase rejected: packs are \(String(describing: purchasesAvailability))")
-            return
+            return false
         }
         guard SKPaymentQueue.canMakePayments(),
-              let product = products.first(where: { $0.productIdentifier == identifier }) else { return }
+              let product = products.first(where: { $0.productIdentifier == identifier }) else { return false }
         logger.d("Found product in loaded list, proceeding to add payment")
         let payment = SKPayment(product: product)
         SKPaymentQueue.default().add(payment)
+        queuedProductIdentifiers.insert(identifier)
         logger.i("Payment added to queue for id=\(identifier)")
+        return true
     }
 
     private func makePurchase(
         transaction: SKPaymentTransaction,
-        completion: @escaping (_ success: Bool) -> Void
+        completion: @escaping (_ success: Bool, _ promocode: String?) -> Void
     ) {
         logger.i("Handling purchased/restored transaction id=\(transaction.transactionIdentifier ?? "nil")")
         guard let id = transaction.transactionIdentifier else {
             logger.e("Missing transaction id; cannot make purchase")
-            completion(false)
+            completion(false, nil)
             return
         }
+        let promocode = promocode
         Task { @MainActor in
             do {
                 logger.i("Calling batteryService.makePurchase")
@@ -171,18 +178,18 @@ final class BatteryRefillIAPModel: NSObject {
                         Task { [balanceLoader, wallet] in
                             await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
                         }
-                        completion(true)
+                        completion(true, promocode)
                     } else {
                         logger.w("Transaction confirmation failed. Msg: \(String(describing: transactionResult.error?.msg)), code: \(String(describing: transactionResult.error?.code.rawValue))")
-                        completion(false)
+                        completion(false, nil)
                     }
                 } else {
                     logger.w("Can't find info about passed transaction in response")
-                    completion(false)
+                    completion(false, nil)
                 }
             } catch {
                 logger.e("batteryService.makePurchase failed: \(String(describing: error))")
-                completion(false)
+                completion(false, nil)
             }
         }
     }
@@ -425,11 +432,17 @@ extension BatteryRefillIAPModel: SKPaymentTransactionObserver {
                 state = .processing
             case .purchased:
                 logger.i("Transaction purchased")
-                makePurchase(transaction: transaction) { [weak self] success in
+                makePurchase(transaction: transaction) { [weak self] success, promocode in
                     if success {
                         SKPaymentQueue.default().finishTransaction(transaction)
-                        self?.state = .idle
-                        self?.eventHandler?(.didPerformTransaction)
+                        guard let self else { return }
+                        state = .idle
+                        let productIdentifier = transaction.payment.productIdentifier
+                        let isQueuedHere = queuedProductIdentifiers.remove(productIdentifier) != nil
+                        let purchase = isQueuedHere
+                            ? BatteryIAPPack(rawValue: productIdentifier).map { BatteryAnalyticsPurchase.fiat(pack: $0, promocode: promocode) }
+                            : nil
+                        eventHandler?(.didPerformTransaction(purchase: purchase))
                     } else {
                         self?.state = .idle
                         self?.eventHandler?(.didFailTransaction(error: nil))
@@ -437,16 +450,17 @@ extension BatteryRefillIAPModel: SKPaymentTransactionObserver {
                 }
             case .failed:
                 logger.e("Transaction failed")
+                queuedProductIdentifiers.remove(transaction.payment.productIdentifier)
                 SKPaymentQueue.default().finishTransaction(transaction)
                 state = .idle
                 eventHandler?(.didFailTransaction(error: transaction.error))
             case .restored:
                 logger.i("Transaction restored")
-                makePurchase(transaction: transaction) { [weak self] success in
+                makePurchase(transaction: transaction) { [weak self] success, _ in
                     if success {
                         SKPaymentQueue.default().finishTransaction(transaction)
                         self?.state = .idle
-                        self?.eventHandler?(.didPerformTransaction)
+                        self?.eventHandler?(.didPerformTransaction(purchase: nil))
                     } else {
                         self?.state = .idle
                         self?.eventHandler?(.didFailTransaction(error: nil))

@@ -3,6 +3,7 @@ import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKLogging
+import UIKit
 
 @MainActor
 final class PerpsViewModel: ObservableObject, PerpsRootViewModeling {
@@ -11,12 +12,15 @@ final class PerpsViewModel: ObservableObject, PerpsRootViewModeling {
     typealias MarketsState = PerpsRootMarketsState
 
     @Published private(set) var accountState: AccountState = .resolving
+    @Published private(set) var loadingPositionsCount = 0
     @Published private(set) var marketsState: MarketsState = .loading
     @Published private(set) var sort: PerpsMarketsSort = .volume
-    @Published private(set) var fundingToast: PerpsAssetPageTradeToast?
+    @Published private(set) var isRegionRestricted: Bool
+    let depositStatus: PerpsDepositStatusViewModel?
+    let withdrawStatus: PerpsWithdrawStatusViewModel?
 
     var zeroBalanceText: String {
-        format.usd(0)
+        format.balance(0)
     }
 
     var onBack: (() -> Void)?
@@ -25,45 +29,81 @@ final class PerpsViewModel: ObservableObject, PerpsRootViewModeling {
     var onHistory: (() -> Void)?
     var onDeposit: (() -> Void)?
     var onWithdraw: (() -> Void)?
-    var onOpenFunding: ((Set<String>) -> Void)?
+    var onRegionRestrictionInfo: (() -> Void)?
     var onSelectMarket: ((Int64) -> Void)?
 
     private let marketsStore: any PerpsMarketsStoring
     private let priceInterest: any PerpsPriceInteresting
     private let accountStore: any PerpsAccountStoring
+    private let access: () -> PerpsAccess
+    private let reloadAccess: () async -> PerpsAccess
+    private var accessReload: Task<Void, Never>?
+    private var foregroundObserver: NSObjectProtocol?
 
     private var visibleMarketIds: Set<Int64> = []
     private var lastMarketId: Int64?
     private var hasNextPage = false
     private var itemCache: [Int64: (summary: PerpsMarketSummary, item: MarketItem)] = [:]
+    private var isVisible = true
+    private var isSubscribed = false
     private var iconURLsByMarketId: [Int64: URL] = [:]
     private var requestedIconMarketIds: Set<Int64> = []
     private var lastLoggedAccountLabel: String?
-    private var watchedOperations: Set<String> = []
-    private var confirmedToastTask: Task<Void, Never>?
-    private var fundingToastTransactions: Set<String> = []
 
     private let format: PerpsFormatting
 
     init(
         marketsStore: any PerpsMarketsStoring,
         accountStore: any PerpsAccountStoring,
+        access: @escaping () -> PerpsAccess,
+        reloadAccess: @escaping () async -> PerpsAccess,
         format: PerpsFormatting
     ) {
         self.format = format
         self.marketsStore = marketsStore
         priceInterest = marketsStore.makePriceInterest()
         self.accountStore = accountStore
+        self.access = access
+        self.reloadAccess = reloadAccess
+        isRegionRestricted = access() == .restricted
+        depositStatus = PerpsDepositStatusViewModel(accountStore: accountStore, format: format)
+        withdrawStatus = PerpsWithdrawStatusViewModel(accountStore: accountStore)
         if case let .loaded(markets) = marketsStore.getState() {
             sort = markets.sort
         }
         observeStores()
         applyAccount(accountStore.currentWalletState())
-        applyFunding(accountStore.fundingActivity())
         applyMarkets(marketsStore.getState())
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isVisible else { return }
+                self.refreshAccess()
+            }
+        }
+    }
+
+    deinit {
+        accessReload?.cancel()
+        foregroundObserver.map(NotificationCenter.default.removeObserver)
+    }
+
+    func onWillAppear() {
+        isVisible = true
+        isRegionRestricted = access() == .restricted
+        refreshAccess()
+        depositStatus?.isVisible = true
+        applyMarkets(marketsStore.getState())
+        applyAccount(accountStore.currentWalletState())
     }
 
     func onAppear() {
+        isVisible = true
+        guard !isSubscribed else { return }
+        isSubscribed = true
         marketsStore.setSort(sort)
         marketsStore.subscribe()
         requestedIconMarketIds.removeAll()
@@ -71,16 +111,34 @@ final class PerpsViewModel: ObservableObject, PerpsRootViewModeling {
         accountStore.resolveIfNeeded()
         // The balance card only moves on a full portfolio read, and the store stays resolved
         // for as long as any perps screen holds it.
-        if case .active = accountStore.currentWalletState() { accountStore.refresh() }
+        if case .active = accountStore.currentWalletState() { accountStore.refreshOnAppear() }
         applyMarkets(marketsStore.getState())
         applyAccount(accountStore.currentWalletState())
         pushVisibleInterest()
     }
 
     func onDisappear() {
+        isVisible = false
+        depositStatus?.isVisible = false
+        depositStatus?.didInteract()
+        guard isSubscribed else { return }
+        isSubscribed = false
         marketsStore.unsubscribe()
         accountStore.unsubscribePositions()
         priceInterest.clear()
+    }
+
+    func accessDidChange() {
+        isRegionRestricted = access() == .restricted
+    }
+
+    private func refreshAccess() {
+        accessReload?.cancel()
+        accessReload = Task { [weak self, reloadAccess] in
+            _ = await reloadAccess()
+            guard !Task.isCancelled else { return }
+            self?.accessDidChange()
+        }
     }
 
     func setSort(_ sort: PerpsMarketsSort) {
@@ -105,6 +163,21 @@ final class PerpsViewModel: ObservableObject, PerpsRootViewModeling {
         guard visibleMarketIds.remove(id) != nil else { return }
         pushVisibleInterest()
     }
+
+    /// Until the positions load, the screen holds the room of as many as the wallet had last time.
+    static func positionsPlaceholderCount(for state: PerpsWalletAccountState, remembered: Int?) -> Int {
+        switch state {
+        case .unresolved, .resolving:
+            break
+        case let .active(account) where !account.positionsLoaded && account.hasReadOnlyToken:
+            break
+        default:
+            return 0
+        }
+        return min(remembered ?? 0, maxPositionsPlaceholderCount)
+    }
+
+    private static let maxPositionsPlaceholderCount = 3
 }
 
 private extension PerpsViewModel {
@@ -115,17 +188,22 @@ private extension PerpsViewModel {
         // wallet-gated accessor so a stale resolve can't surface another
         // wallet's balance.
         marketsStore.addChangeObserver(self) { observer in
-            Task { @MainActor in observer.applyMarkets(observer.marketsStore.getState()) }
+            Task { @MainActor in
+                guard observer.isVisible else { return }
+                observer.applyMarkets(observer.marketsStore.getState())
+            }
         }
         accountStore.addChangeObserver(self) { observer in
             Task { @MainActor in
-                observer.applyAccount(observer.accountStore.currentWalletState())
-                observer.applyFunding(observer.accountStore.fundingActivity())
+                if observer.isVisible {
+                    observer.applyAccount(observer.accountStore.currentWalletState())
+                }
             }
         }
     }
 
     func pushVisibleInterest() {
+        guard isSubscribed else { return }
         priceInterest.set(marketIds: visibleMarketIds)
     }
 
@@ -138,9 +216,7 @@ private extension PerpsViewModel {
         case let .loaded(markets):
             let items = markets.items.map(marketItem(for:))
             let marketIds = Set(items.map(\.id))
-            mergeIconURLs(markets.items.lazy.compactMap { market in
-                market.iconURL.map { (market.marketId, $0) }
-            })
+            mergeIcons(markets.items.lazy.map { ($0.marketId, $0.iconURL) })
             itemCache = itemCache.filter { marketIds.contains($0.key) }
             let previousVisibleMarketIds = visibleMarketIds
             visibleMarketIds.formIntersection(marketIds)
@@ -153,7 +229,7 @@ private extension PerpsViewModel {
         case .failed:
             hasNextPage = false
             lastMarketId = nil
-            marketsState = .failed("Failed to load markets")
+            marketsState = .failed(TKLocales.Perps.Error.marketsLoadFailed)
         }
     }
 
@@ -167,7 +243,15 @@ private extension PerpsViewModel {
     }
 
     func applyAccount(_ state: PerpsWalletAccountState) {
-        accountState = viewAccountState(state)
+        let newState = viewAccountState(state)
+        if accountState != newState {
+            accountState = newState
+        }
+        rememberPositions(of: newState, from: state)
+        let placeholderCount = Self.positionsPlaceholderCount(for: state, remembered: accountStore.rememberedPositionsCount)
+        if loadingPositionsCount != placeholderCount {
+            loadingPositionsCount = placeholderCount
+        }
         logAccount(accountState)
         requestMissingIcons(for: state)
     }
@@ -185,6 +269,15 @@ private extension PerpsViewModel {
         Log.perps.i("Home: account → \(label)")
     }
 
+    private func rememberPositions(of viewState: AccountState, from state: PerpsWalletAccountState) {
+        switch state {
+        case let .active(account) where account.positionsLoaded:
+            accountStore.rememberPositionsCount(viewState.portfolio?.positions.count ?? 0)
+        default:
+            break
+        }
+    }
+
     func viewAccountState(_ state: PerpsWalletAccountState) -> AccountState {
         switch state {
         case .unresolved, .resolving:
@@ -194,7 +287,7 @@ private extension PerpsViewModel {
         case let .active(account):
             return .active(.init(
                 accountIndex: account.accountIndex,
-                balanceText: format.usd(account.availableBalance),
+                balanceText: format.balance(account.availableBalance),
                 positions: PerpsPositionRowMapping.rows(from: account.positions, format: format) { iconURLsByMarketId[$0] },
                 positionsTotal: PerpsPositionRowMapping.total(positions: account.positions, format: format),
                 limitOrders: account.openOrders
@@ -211,16 +304,27 @@ private extension PerpsViewModel {
             marketId: item.marketId,
             symbol: item.symbol,
             iconURL: iconURLsByMarketId[item.marketId],
+            leverageText: item.leverage.map { format.leverage($0).uppercased() },
             sideText: (order.side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short).uppercased(),
             isLong: order.side == .long,
-            valueText: format.usd(order.remainingBaseAmount * order.limitPrice),
-            limitText: TKLocales.Perps.limitOrderSubtitle(format.usd(order.limitPrice))
+            valueText: item.marginUsd.map { format.balance($0) } ?? "—",
+            limitText: TKLocales.Perps.limitOrderSubtitle(format.price(order.limitPrice)),
+            autoCloseText: autoCloseText(order.autoCloseLegs)
         )
     }
 
-    func mergeIconURLs(_ icons: some Sequence<(Int64, URL)>) {
+    func autoCloseText(_ legs: [PerpsTriggerOrderSummary]) -> String? {
+        guard let autoClose = PerpsAutoClose(triggerOrders: legs) else { return nil }
+        let parts = [
+            autoClose.takeProfit.map { "\(TKLocales.Perps.OpenPosition.tp) \(format.price($0.triggerPrice))" },
+            autoClose.stopLoss.map { "\(TKLocales.Perps.OpenPosition.sl) \(format.price($0.triggerPrice))" },
+        ].compactMap { $0 }
+        return parts.joined(separator: " · ")
+    }
+
+    func mergeIcons(_ entries: some Sequence<(Int64, URL?)>) {
         var didChange = false
-        for (marketId, iconURL) in icons where iconURLsByMarketId[marketId] != iconURL {
+        for case let (marketId, iconURL?) in entries where iconURLsByMarketId[marketId] != iconURL {
             iconURLsByMarketId[marketId] = iconURL
             didChange = true
         }
@@ -238,47 +342,9 @@ private extension PerpsViewModel {
         for marketId in missing {
             Task { [weak self] in
                 guard let self else { return }
-                guard let iconURL = await marketsStore.snapshot(marketId: marketId)?.iconURL else { return }
-                mergeIconURLs([(marketId, iconURL)])
+                guard let snapshot = await marketsStore.snapshot(marketId: marketId) else { return }
+                mergeIcons([(marketId, snapshot.iconURL)])
             }
         }
-    }
-}
-
-extension PerpsViewModel {
-    /// Only an operation seen on its way is announced as arrived: one completed before this
-    /// screen watched it has nothing left to say.
-    func applyFunding(_ activity: PerpsFundingActivity) {
-        let arrived = watchedOperations.intersection(activity.completed)
-        watchedOperations = activity.inFlight.union(activity.pending)
-        if !activity.inFlight.isEmpty {
-            confirmedToastTask?.cancel()
-            confirmedToastTask = nil
-            fundingToast = .progress(TKLocales.Perps.Toast.depositSending)
-            fundingToastTransactions = transactions(of: activity.inFlight, in: activity)
-        } else if !arrived.isEmpty {
-            fundingToast = .success(TKLocales.Perps.Toast.depositConfirmed)
-            fundingToastTransactions = transactions(of: arrived, in: activity)
-            confirmedToastTask?.cancel()
-            confirmedToastTask = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: 3_000_000_000)
-                guard !Task.isCancelled else { return }
-                self?.fundingToast = nil
-                self?.fundingToastTransactions = []
-                self?.confirmedToastTask = nil
-            }
-        } else if confirmedToastTask == nil {
-            fundingToast = nil
-            fundingToastTransactions = []
-        }
-    }
-
-    func openFundingToast() {
-        guard fundingToast != nil else { return }
-        onOpenFunding?(fundingToastTransactions)
-    }
-
-    private func transactions(of operations: Set<String>, in activity: PerpsFundingActivity) -> Set<String> {
-        operations.reduce(into: []) { $0.formUnion(activity.transactions[$1] ?? []) }
     }
 }

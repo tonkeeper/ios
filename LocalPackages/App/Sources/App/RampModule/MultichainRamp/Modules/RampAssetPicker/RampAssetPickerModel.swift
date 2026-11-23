@@ -12,6 +12,9 @@ final class RampAssetPickerModel: TokenPickerV2Model {
 
     private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
 
+    /// The assets of the unfiltered list's first page, each time it loads: what the picker offers.
+    var onListLoaded: (([String]) -> Void)?
+
     var showsCatalogSortControl: Bool {
         false
     }
@@ -83,6 +86,9 @@ final class RampAssetPickerModel: TokenPickerV2Model {
                 return multichainAsset
             }
 
+            if cursor == nil, normalizedQuery(query) == nil, filter == .all {
+                onListLoaded?(assets.map(\.asset.assetId))
+            }
             return TokenPickerLoadResult(
                 assets: assets,
                 nextCursor: configuration.nextCursor

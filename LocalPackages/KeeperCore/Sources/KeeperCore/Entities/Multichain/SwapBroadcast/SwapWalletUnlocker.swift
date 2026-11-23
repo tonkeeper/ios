@@ -25,6 +25,8 @@ struct SwapWalletUnlocker {
             throw .internal(reason: "failed to read mnemonic during multichain swap due to error: \(error.logDescription)")
         }
         switch swapWallet.keys {
+        case .device:
+            throw .internal(reason: "a hardware wallet has no mnemonic to sign a swap with")
         case .legacy:
             return try SwapSigningWallet(
                 legacyMnemonic: coreMnemonic,

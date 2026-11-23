@@ -1,6 +1,5 @@
 @preconcurrency import BigInt
 import Foundation
-import TKLogging
 
 struct WalletConnectEthSignTypedDataV4Parser: WalletConnectMethodPayloadParser {
     private let utilities = WalletConnectMethodParsingUtilities()
@@ -14,27 +13,39 @@ struct WalletConnectEthSignTypedDataV4Parser: WalletConnectMethodPayloadParser {
             throw .invalidParams(method: method, reason: "eth_signTypedData_v4 requires address and typed data")
         }
 
-        try validateDomainChain(of: params[1], against: chain)
-
-        return .signMessage(
+        return try .signMessage(
             WalletConnectSignMessage(
                 address: params[0],
-                message: params[1],
+                message: canonicalTypedData(params[1], chain: chain),
                 kind: .typedDataV4
             )
         )
     }
 
-    func validateDomainChain(
-        of typedData: String,
-        against chain: WalletConnectChain
-    ) throws(WalletConnectRequestParsingError) {
-        if let domainChainId = try parseTypedDataDomainChainId(typedData),
-           let expectedChainId = chain.eip155ChainId,
-           domainChainId != BigUInt(expectedChainId)
-        {
-            throw .chainMismatch(expected: chain, actual: domainChainId.description)
+    /// The typed data re-serialized from the object that is validated here and shown to the user.
+    /// Foundation keeps the first of repeated keys and wallet-core the last, so signing the dApp's
+    /// own string would sign values the wallet never checked or displayed.
+    func canonicalTypedData(
+        _ typedData: String,
+        chain: WalletConnectChain
+    ) throws(WalletConnectRequestParsingError) -> String {
+        let data = try utilities.data(
+            from: typedData,
+            method: method,
+            utf8FailureReason: "typed data is not utf8"
+        )
+        guard let document = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              JSONSerialization.isValidJSONObject(document),
+              let canonical = try? JSONSerialization.data(
+                  withJSONObject: document,
+                  options: [.sortedKeys, .withoutEscapingSlashes]
+              )
+        else {
+            throw .invalidParams(method: method, reason: "typed data is not a JSON object")
         }
+
+        try validateDomainChain(of: canonical, against: chain)
+        return String(decoding: canonical, as: UTF8.self)
     }
 }
 
@@ -43,60 +54,50 @@ private extension WalletConnectEthSignTypedDataV4Parser {
         .ethSignTypedDataV4
     }
 
-    func parseTypedDataDomainChainId(
-        _ typedData: String
-    ) throws(WalletConnectRequestParsingError) -> BigUInt? {
-        let data = try utilities.data(
-            from: typedData,
-            method: method,
-            utf8FailureReason: "typed data is not utf8"
-        )
-
-        struct TypedData: Decodable {
-            struct Domain: Decodable {
-                var chainId: WalletConnectUInt256Value?
-
-                init(from decoder: Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
-                    self.chainId = try? container.decodeIfPresent(WalletConnectUInt256Value.self, forKey: .chainId)
-                }
-
-                private enum CodingKeys: CodingKey {
-                    case chainId
-                }
-            }
-
-            var domain: Domain?
-
-            init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                do {
-                    self.domain = try container.decodeIfPresent(Domain.self, forKey: .domain)
-                } catch {
-                    self.domain = nil
-                }
-            }
-
-            private enum CodingKeys: CodingKey {
-                case domain
-            }
-        }
-
-        let typedData: TypedData
+    func validateDomainChain(
+        of typedData: Data,
+        against chain: WalletConnectChain
+    ) throws(WalletConnectRequestParsingError) {
+        let header: TypedDataHeader
         do {
-            typedData = try JSONDecoder().decode(TypedData.self, from: data)
+            header = try JSONDecoder().decode(TypedDataHeader.self, from: typedData)
         } catch {
-            Log.w(
-                "WalletConnect: failed to decode typed data domain",
-                error: error,
-                extraInfo: ["method": method.rawValue]
-            )
-            return nil
+            throw .invalidParams(method: method, reason: "typed data domain is malformed: \(error.logDescription)")
         }
 
-        guard let chainId = typedData.domain?.chainId?.value else {
-            return nil
+        guard let domainChainId = header.domain?.chainId?.value else {
+            if header.declaresDomainChainId {
+                throw .invalidParams(method: method, reason: "typed data domain declares chainId without a value")
+            }
+            return
         }
-        return chainId
+        if let expectedChainId = chain.eip155ChainId, domainChainId != BigUInt(expectedChainId) {
+            throw .chainMismatch(expected: chain, actual: domainChainId.description)
+        }
+    }
+
+    struct TypedDataHeader: Decodable {
+        struct Field: Decodable {
+            var name: String
+        }
+
+        struct Types: Decodable {
+            var domain: [Field]?
+
+            private enum CodingKeys: String, CodingKey {
+                case domain = "EIP712Domain"
+            }
+        }
+
+        struct Domain: Decodable {
+            var chainId: WalletConnectUInt256Value?
+        }
+
+        var types: Types?
+        var domain: Domain?
+
+        var declaresDomainChainId: Bool {
+            types?.domain?.contains { $0.name == "chainId" } == true
+        }
     }
 }

@@ -31,6 +31,8 @@ final class PerpsSearchViewModel: ObservableObject, PerpsSearchViewModeling {
     private var markets: [PerpsMarketSummary] = []
     private var nextCursor: String?
     private var visibleMarketIds: Set<Int64> = []
+    private var itemCache: [Int64: (summary: PerpsMarketSummary, item: PerpsMarketRowItem)] = [:]
+    private var isVisible = true
 
     private let format: PerpsFormatting
 
@@ -57,6 +59,14 @@ final class PerpsSearchViewModel: ObservableObject, PerpsSearchViewModeling {
     func onDisappear() {
         cancelRequests()
         priceInterest.clear()
+    }
+
+    func setVisible(_ isVisible: Bool) {
+        guard isVisible != self.isVisible else { return }
+        self.isVisible = isVisible
+        if isVisible {
+            applyLivePrices()
+        }
     }
 
     func requestSearchFocus() {
@@ -126,6 +136,7 @@ private extension PerpsSearchViewModel {
         let sort = sort
         let filter = filter
         markets = []
+        itemCache.removeAll()
         nextCursor = nil
         visibleMarketIds.removeAll()
         priceInterest.clear()
@@ -197,17 +208,14 @@ private extension PerpsSearchViewModel {
     }
 
     func applyLivePrices() {
-        guard case let .loaded(_, isLoadingNextPage) = marketsState else { return }
+        guard isVisible, case let .loaded(_, isLoadingNextPage) = marketsState else { return }
         publishLoaded(isLoadingNextPage: isLoadingNextPage)
     }
 
     func publishLoaded(isLoadingNextPage: Bool) {
         let state = marketsStore.getState()
         let items = markets.map { market in
-            PerpsMarketRowMapping.item(
-                from: market.overlayingLivePrice(state.price(marketId: market.marketId)),
-                format: format
-            )
+            marketItem(for: market.overlayingLivePrice(state.price(marketId: market.marketId)))
         }
         if case let .loaded(current, currentIsLoading) = marketsState,
            current == items, currentIsLoading == isLoadingNextPage
@@ -215,5 +223,14 @@ private extension PerpsSearchViewModel {
             return
         }
         marketsState = .loaded(items: items, isLoadingNextPage: isLoadingNextPage)
+    }
+
+    func marketItem(for summary: PerpsMarketSummary) -> PerpsMarketRowItem {
+        if let cached = itemCache[summary.marketId], cached.summary == summary {
+            return cached.item
+        }
+        let item = PerpsMarketRowMapping.item(from: summary, format: format)
+        itemCache[summary.marketId] = (summary, item)
+        return item
     }
 }

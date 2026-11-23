@@ -132,6 +132,12 @@ extension MultichainPendingTransaction.ActivityType {
             "from_asset_id": details.fromAssetId,
             "to_asset_id": details.toAssetId,
         ]
+        if let fromAddress = details.fromAddress {
+            values["from_address"] = fromAddress
+        }
+        if let fromAmount = details.fromAmount {
+            values["from_amount"] = fromAmount
+        }
         if let quote = details.quote {
             values["aggregator"] = quote.aggregator
             values["route_id"] = quote.routeId
@@ -214,7 +220,10 @@ extension MultichainAssetDetails {
             verification: MultichainAssetVerification(api: api.verification),
             capabilities: Set(
                 (api.capabilities?.capabilities ?? []).compactMap { MultichainAssetCapability(rawValue: $0) }
-            )
+            ),
+            swapAggregators: api.capabilities?.details?.swap?.aggregators.map {
+                Set($0.compactMap(MultichainSwapAggregator.init(rawValue:)))
+            }
         )
     }
 }
@@ -388,6 +397,7 @@ extension MultichainActivity {
         }
         let activityType = MultichainActivityType(rawValue: api.activity_type) ?? .unknown
         let feeType = MultichainActivityFeeType(api: api.fee?._type ?? api.fee_type)
+        let explorerLink = Self.explorerLink(api)
         self.init(
             activityType: activityType,
             status: status,
@@ -397,8 +407,10 @@ extension MultichainActivity {
             toChain: toChain,
             walletAddress: api.wallet_address,
             direction: direction,
-            fromAddress: api.from_address,
-            toAddress: api.to_address,
+            fromAddress: api.from?.address ?? api.from_address,
+            toAddress: api.to?.address ?? api.to_address,
+            fromName: api.from?.name,
+            toName: api.to?.name,
             outToken: api.out_token.map { MultichainAssetDetails(api: $0) },
             outAmount: api.out_amount,
             outAmountUsd: api.out_amount_usd,
@@ -410,10 +422,13 @@ extension MultichainActivity {
             feeAmountUsd: api.fee_amount_usd,
             protocolName: api._protocol,
             txIds: api.tx_ids,
-            explorerURL: api.explorer_url.flatMap(URL.init(string:)),
+            explorerURL: explorerLink?.url,
+            explorerTxId: explorerLink?.txId,
+            explorerLinks: api.explorer_urls?.compactMap(MultichainActivityExplorerLink.init(api:)) ?? [],
             isRead: api.is_read,
             isSpam: api.is_spam ?? false,
             comment: api.meta?.comment,
+            encryptedComment: api.meta?.encryptedComment(sentBy: api.from?.address ?? api.from_address),
             tronResource: api.meta?.tronResource,
             feeType: feeType,
             batteryCharges: feeType == .battery
@@ -421,6 +436,17 @@ extension MultichainActivity {
                 : nil,
             perps: api.meta?.perps
         )
+    }
+
+    /// The primary tx's link, or the first one the backend has when the primary chain has no
+    /// explorer, as a Lighter withdrawal paid out on Ethereum.
+    private static func explorerLink(_ api: MultichainAPI.Components.Schemas.Activity) -> (url: URL, txId: String?)? {
+        if let url = api.explorer_url.flatMap(URL.init(string:)) {
+            return (url, nil)
+        }
+        return api.explorer_urls?.lazy.compactMap { link in
+            URL(string: link.url).map { (url: $0, txId: Optional(link.tx_id)) }
+        }.first
     }
 
     private static func chargesCount(_ amount: String?) -> Int? {
@@ -434,6 +460,17 @@ extension MultichainActivity {
             return nil
         }
         return Int(exactly: value)
+    }
+}
+
+extension MultichainActivityExplorerLink {
+    init?(api: MultichainAPI.Components.Schemas.ActivityExplorerLink) {
+        guard let chain = MultichainChain(rawValue: api.chain.rawValue),
+              let url = URL(string: api.url)
+        else {
+            return nil
+        }
+        self.init(transactionId: api.tx_id, chain: chain, url: url)
     }
 }
 
@@ -468,6 +505,21 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
         return value as? String
     }
 
+    /// `{encryption_type, cipher_text}` of a comment only its sender and recipient read, which the
+    /// decryption takes with the address that sent it.
+    func encryptedComment(sentBy sender: String?) -> MultichainActivityEncryptedComment? {
+        guard let value = additionalProperties.value["encrypted_comment"],
+              let payload = value as? [String: (any Sendable)?],
+              let cipherText = payload["cipher_text"].flatMap({ $0 as? String }),
+              !cipherText.isEmpty,
+              let sender,
+              !sender.isEmpty
+        else {
+            return nil
+        }
+        return MultichainActivityEncryptedComment(cipherText: cipherText, senderAddress: sender)
+    }
+
     var perps: MultichainActivityPerpsMeta? {
         guard let value = additionalProperties.value["perps"],
               let payload = value as? [String: (any Sendable)?]
@@ -489,8 +541,18 @@ private extension MultichainAPI.Components.Schemas.Activity.metaPayload {
             sizeUsd: Self.doubleValue(payload["size_usd"] ?? nil),
             marginUsd: Self.doubleValue(payload["margin_usd"] ?? nil),
             resultPercent: Self.doubleValue(payload["result_pct"] ?? nil),
-            fundingUsd: Self.doubleValue(payload["funding_usd"] ?? nil)
+            fundingUsd: Self.doubleValue(payload["funding_usd"] ?? nil),
+            loyaltyReward: Self.ohmsReward(payload["reward"] ?? nil)
         )
+    }
+
+    static func ohmsReward(_ value: (any Sendable)?) -> String? {
+        guard let reward = value as? [String: (any Sendable)?],
+              reward["asset"].flatMap({ $0 as? String }) == "OHM"
+        else {
+            return nil
+        }
+        return reward["amount"].flatMap { $0 as? String }?.positiveOhms
     }
 
     var tronResource: MultichainTronResource? {

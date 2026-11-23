@@ -10,19 +10,21 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User was sent to the external Wallet P2P flow */
+/** User was sent to the external Wallet P2P flow. &#x60;add_funds_option&#x60; is the option the user came through: P2P picked as a payment method of \&quot;Buy with fiat\&quot; or on \&quot;Buy crypto\&quot; is &#x60;buy_with_fiat&#x60; on iOS and Android. Android versions before TK-5448 sent &#x60;buy_with_p2p_market&#x60; from the Add Funds payment method list; web still sends it there.  */
 public struct DepositContinueToP2pMarket: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "deposit_continue_to_p2p_market"
     public var from: RampSource
     public var walletMode: WalletMode
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
 
-    public init(eventName: String = "deposit_continue_to_p2p_market", from: RampSource, walletMode: WalletMode, addFundsOption: AddFundsOption) {
+    public init(eventName: String = "deposit_continue_to_p2p_market", from: RampSource, walletMode: WalletMode, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil) {
         self.eventName = eventName
         self.from = from
         self.walletMode = walletMode
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -30,6 +32,7 @@ public struct DepositContinueToP2pMarket: Codable, JSONEncodable, Hashable {
         case from
         case walletMode = "wallet_mode"
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
     }
 
     // Encodable protocol methods
@@ -40,6 +43,7 @@ public struct DepositContinueToP2pMarket: Codable, JSONEncodable, Hashable {
         try container.encode(from, forKey: .from)
         try container.encode(walletMode, forKey: .walletMode)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
     }
 }
 

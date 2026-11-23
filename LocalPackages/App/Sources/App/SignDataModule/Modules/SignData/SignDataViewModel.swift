@@ -89,7 +89,20 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
         self.resultHandler = resultHandler
     }
 
+    private lazy var confirmSliderView: TKConfirmSliderView = {
+        let view = TKConfirmSliderView()
+        view.handleAccessibilityIdentifier = "confirm_swipe"
+        view.didConfirm = { [weak self] in
+            self?.confirmSign()
+        }
+        return view
+    }()
+
     private func createSliderItem() -> TKPopUp.Item {
+        if TKLiquidGlass.isEnabled {
+            confirmSliderView.process = TKActionBarProcess(processState)
+            return TKPopUp.Component.ConfirmSlider(sliderView: confirmSliderView)
+        }
         let sliderItem = TKPopUp.Component.Slider(
             title: TKLocales.SignData.Slider.title.withTextStyle(.label1, color: .Text.tertiary, alignment: .center),
             isEnable: true,
@@ -107,21 +120,19 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
                     ]
                 ),
             ],
-            state: {
-                switch confirmationState {
-                case .idle:
-                    return .idle
-                case .process:
-                    return .process
-                case .success:
-                    return .success
-                case .failed:
-                    return .failed
-                }
-            }(),
+            state: processState,
             successTitle: TKLocales.Result.success,
             errorTitle: TKLocales.Result.failure
         )
+    }
+
+    private var processState: TKProcessContainerView.State {
+        switch confirmationState {
+        case .idle: .idle
+        case .process: .process
+        case .success: .success
+        case .failed: .failed
+        }
     }
 
     private func updateConfiguration() {

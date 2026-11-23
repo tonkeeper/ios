@@ -2,7 +2,7 @@ import Foundation
 
 public extension Wallet {
     func walletConnectAddress(for chain: WalletConnectChain) -> String? {
-        guard case let .multichain(state) = multichain else {
+        guard isMultichainDappsAvailable, case let .multichain(state) = multichain else {
             return nil
         }
         return state.address(

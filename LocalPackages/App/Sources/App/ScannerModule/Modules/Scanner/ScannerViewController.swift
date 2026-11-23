@@ -6,6 +6,7 @@ import TKUIKit
 import UIKit
 
 final class ScannerViewController: GenericViewViewController<ScannerView> {
+    private var permissionViewController: UIViewController?
     private let viewModel: ScannerViewModel
 
     // MARK: - Init
@@ -26,6 +27,10 @@ final class ScannerViewController: GenericViewViewController<ScannerView> {
         super.viewDidLoad()
         setup()
         setupBindings()
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(applicationDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification, object: nil
+        )
         viewModel.viewDidLoad()
     }
 
@@ -43,6 +48,11 @@ final class ScannerViewController: GenericViewViewController<ScannerView> {
 // MARK: - Private
 
 private extension ScannerViewController {
+    @objc
+    func applicationDidBecomeActive() {
+        viewModel.applicationDidBecomeActive()
+    }
+
     func setup() {
         customView.flashlightButton.didToggle = { [weak self] isToggled in
             self?.viewModel.didTapFlashlightButton(isToggled: isToggled)
@@ -78,13 +88,20 @@ private extension ScannerViewController {
             guard let self = self else { return }
             switch state {
             case .permissionDenied:
+                guard permissionViewController == nil else { return }
                 let viewController = TKHostingController(content: NoCameraPermissionView(buttonHandler: { [weak self] in
                     self?.viewModel.didTapSettingsButton()
                 }))
+                permissionViewController = viewController
                 addChild(viewController)
                 customView.setCameraPermissionDeniedView(viewController.view)
                 viewController.didMove(toParent: self)
             case let .video(layer):
+                permissionViewController?.willMove(toParent: nil)
+                permissionViewController?.view.removeFromSuperview()
+                permissionViewController?.removeFromParent()
+                permissionViewController = nil
+                customView.cameraPermissionViewContainer.isHidden = true
                 customView.setVideoPreviewLayer(layer)
             }
         }

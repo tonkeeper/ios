@@ -26,6 +26,7 @@ actor WalletBalanceLoaderImplementation {
     private let balanceService: BalanceService
     private let stackingService: StakingService
     private let accountNFTService: AccountNFTService
+    private let earnPortfolioLoader: EarnPortfolioLoader
 
     private var run: Run?
     private var lastRunId: UInt64 = 0
@@ -38,7 +39,8 @@ actor WalletBalanceLoaderImplementation {
         walletNFTSStore: WalletNFTStore,
         balanceService: BalanceService,
         stackingService: StakingService,
-        accountNFTService: AccountNFTService
+        accountNFTService: AccountNFTService,
+        earnPortfolioLoader: EarnPortfolioLoader
     ) {
         self.walletId = walletId
         self.walletsStore = walletsStore
@@ -48,6 +50,7 @@ actor WalletBalanceLoaderImplementation {
         self.balanceService = balanceService
         self.stackingService = stackingService
         self.accountNFTService = accountNFTService
+        self.earnPortfolioLoader = earnPortfolioLoader
     }
 }
 
@@ -102,8 +105,8 @@ extension WalletBalanceLoaderImplementation {
         run = nil
     }
 
-    /// The three loads share a run but not a verdict: only the balance answers for what the caller
-    /// asked, while the pools and the NFTs are along for the same trip.
+    /// The loads share a run but not a verdict: only the balance answers for what the caller asked,
+    /// while the pools, the NFTs and the Earn positions are along for the same trip.
     private nonisolated func load(
         currency: Currency,
         includingTransferFees: Bool
@@ -118,9 +121,10 @@ extension WalletBalanceLoaderImplementation {
         )
         async let stakingPools: Void = loadStakingPools(wallet: wallet)
         async let nfts: Void = loadNFTs()
+        async let earnPortfolio: Void = earnPortfolioLoader.loadPortfolio(wallet: wallet, currency: currency)
 
         let result = await balance
-        _ = await(stakingPools, nfts)
+        _ = await(stakingPools, nfts, earnPortfolio)
         return result
     }
 

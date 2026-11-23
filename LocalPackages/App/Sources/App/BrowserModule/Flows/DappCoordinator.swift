@@ -11,7 +11,7 @@ import UIKit
 
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
-    var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
+    var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters, _ presentingViewController: UIViewController?) -> Void)?
 
     let dapp: Dapp
     private let analyticsSession: DappOpenAnalyticsSession
@@ -19,11 +19,13 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     let coreAssembly: TKCore.CoreAssembly
     let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let explorerURLMatcher: BlockchainExplorerURLMatcher
+    private let earnDappMatcher: EarnDappMatcher
     private let presentation: DappPresentation
     private weak var dappViewController: DappViewController?
     private let earnSession: EarnDappSession?
 
     var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
+    var didRequestOpenDapp: ((URL) -> Void)?
 
     init(
         router: ViewControllerRouter,
@@ -43,7 +45,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         self.explorerURLMatcher = BlockchainExplorerURLMatcher(
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration
         )
-        self.earnSession = EarnDappMatcher().matches(url: dapp.url)
+        let earnDappMatcher = EarnDappMatcher(earnURL: keeperCoreMainAssembly.configurationAssembly.configuration.earnUrl)
+        self.earnDappMatcher = earnDappMatcher
+        self.earnSession = earnDappMatcher.matches(url: dapp.url)
             ? EarnDappSession(
                 analyticsProvider: coreAssembly.analyticsProvider,
                 openSession: analyticsSession,
@@ -67,7 +71,11 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             dapp: dapp,
             analyticsSession: analyticsSession,
             deeplinkHandler: { deeplink, utm in
-                self.didHandleDeeplink?(deeplink, utm)
+                self.didHandleDeeplink?(
+                    deeplink,
+                    utm,
+                    KeeperDappBridge.isTrusted(url: self.dapp.url) ? self.dappViewController : nil
+                )
             },
             deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
             messageHandler: messageHandler,
@@ -75,22 +83,24 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             isSignMessageSupported: keeperCoreMainAssembly.tonConnectAssembly.isSignMessageEnabled
                 && wallet?.isTonConnectSignMessageAvailable == true,
             explorerURLMatcher: explorerURLMatcher,
+            earnDappMatcher: earnDappMatcher,
             earnFeaturedVaultsRepository: keeperCoreMainAssembly.repositoriesAssembly.earnFeaturedVaultsRepository(
                 isEarnEnabled: configuration.featureEnabled(.earnEnabled),
-                isAppStoreEnvironment: UIApplication.shared.isAppStoreEnvironment,
                 configuration: configuration
             ),
+            authorizationService: keeperCoreMainAssembly.batteryAssembly.batteryWebAuthorizationService(),
+            loyaltyReferralCodeRepository: keeperCoreMainAssembly.repositoriesAssembly.loyaltyReferralCodeRepository(),
             userAgent: coreAssembly.appInfoProvider.userAgent
         )
         dappViewController = module.view
 
-        var manifestUrl: URL?
+        var connectedManifest: (host: String, url: URL)?
         messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
             guard let self, let moduleView else {
                 completion(.error(.unknownError))
                 return
             }
-            manifestUrl = payload.manifestUrl
+            connectedManifest = moduleView.currentURL?.host.map { (host: $0, url: payload.manifestUrl) }
 
             let connector = BridgeTonConnectConnectCoordinatorConnector(
                 tonConnectAppsStore: self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
@@ -124,8 +134,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             }
         }
 
-        messageHandler.reconnect = { [weak self] dapp, completion in
+        messageHandler.reconnect = { [weak self, weak moduleView = module.view] _, completion in
             guard let self,
+                  let appUrl = moduleView?.currentURL,
                   let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
             else {
                 completion(.error(.unknownError))
@@ -134,30 +145,36 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
             let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
                 wallet: wallet,
-                appUrl: dapp.url,
+                appUrl: appUrl,
                 keeperVersion: InfoProvider.appVersion()
             )
             completion(result)
         }
 
         messageHandler.disconnect = {
-            [weak self] dapp in
+            [weak self, weak moduleView = module.view] _ in
             guard let self,
+                  let appUrl = moduleView?.currentURL,
                   let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
-            try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnectBridge(wallet: wallet, appUrl: dapp.url)
+            try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnectBridge(wallet: wallet, appUrl: appUrl)
         }
 
         weak let moduleView = module.view
         messageHandler.sendTransaction = {
             [weak self] _, request, completion in
-            guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            guard let self,
+                  let moduleView,
+                  let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                  let dappHost = moduleView.currentURL?.host,
+                  !dappHost.isEmpty
+            else {
                 completion(.error(.unknownError))
                 return
             }
-            let appId = manifestUrl?.host ?? dapp.url.host
+            let appId = connectedManifest.flatMap { $0.host == dappHost ? $0.url.host : nil } ?? dappHost
             self.openSend(
                 wallet: wallet,
-                dapp: dapp,
+                dappHost: dappHost,
                 appRequest: request,
                 appId: appId,
                 fromViewController: moduleView,
@@ -167,14 +184,20 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
         messageHandler.signMessage = {
             [weak self] _, request, completion in
-            guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            guard let self,
+                  let moduleView,
+                  let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                  let dappHost = moduleView.currentURL?.host,
+                  !dappHost.isEmpty
+            else {
                 completion(.error(.unknownError))
                 return
             }
-            let appId = manifestUrl?.host ?? dapp.url.host
+            let appId = connectedManifest.flatMap { $0.host == dappHost ? $0.url.host : nil } ?? dappHost
             self.handleSignMessage(
                 wallet: wallet,
                 dapp: dapp,
+                dappHost: dappHost,
                 appRequest: request,
                 appId: appId,
                 fromViewController: moduleView,
@@ -212,22 +235,25 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                     iconURL: dapp.icon?.absoluteString
                 ),
                 walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                sign: { [weak self, signingService = keeperCoreMainAssembly.walletConnectAssembly.walletConnectSigningService] wallet, request throws(WalletConnectSigningError) in
-                    try await signingService.sign(
-                        passcodeProvider: { [weak self] in
-                            guard let self else { return nil }
-                            return await PasscodeInputCoordinator.getPasscode(
-                                parentCoordinator: self,
-                                parentRouter: self.router,
-                                mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
-                                securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
-                                analyticsProvider: self.coreAssembly.analyticsProvider,
-                                reason: .dappRequest
-                            )
-                        },
-                        wallet: wallet,
-                        request: request
+                sign: { [weak self, coreAssembly, signingService = keeperCoreMainAssembly.walletConnectAssembly.walletConnectSigningService] wallet, request throws(WalletConnectSigningError) in
+                    let device = LedgerDeviceSigner.signer(
+                        for: wallet,
+                        unavailableTitle: TKLocales.LedgerSteps.dappsUnavailable,
+                        coreAssembly: coreAssembly,
+                        presenter: { [weak self] in self?.dappViewController }
                     )
+                    let signer: MultichainTransferSigner = device.map { .device($0) } ?? .mnemonic(passcodeProvider: { [weak self] in
+                        guard let self else { return nil }
+                        return await PasscodeInputCoordinator.getPasscode(
+                            parentCoordinator: self,
+                            parentRouter: self.router,
+                            mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
+                            securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
+                            analyticsProvider: self.coreAssembly.analyticsProvider,
+                            reason: .dappRequest
+                        )
+                    })
+                    return try await signingService.signWithoutAsking(signer: signer, wallet: wallet, request: request)
                 }
             )
             provider.onEvent = { [weak moduleInput = module.input] event in
@@ -236,8 +262,11 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             provider.onSigning = { event in
                 earnSession.logSigning(event)
             }
-            provider.onTransactionSent = { wallet, chain, transaction in
+            provider.onTransactionSent = { [portfolioDirtyFlags = keeperCoreMainAssembly.earnAssembly.portfolioDirtyFlags] wallet, chain, transaction in
                 earnSession.logTransactionSent(wallet: wallet, chain: chain, transaction: transaction)
+                Task {
+                    await portfolioDirtyFlags.markDirty(wallet: wallet)
+                }
             }
             messageHandler.ethRequest = { [weak self] request, completion in
                 provider.handle(request, pageURL: self?.dappViewController?.currentURL, completion: completion)
@@ -262,11 +291,34 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         module.output.didRequestClose = { [weak self] in
             self?.closeDappModule(exitMethod: .closeButton)
         }
+        if let didRequestOpenDapp {
+            module.output.didRequestOpenDapp = { [weak self] url in
+                guard let self, dappViewController?.presentedViewController == nil else { return }
+                didRequestOpenDapp(url)
+            }
+        }
+
+        if KeeperDappBridge.isTrusted(url: dapp.url), let wallet {
+            keeperCoreMainAssembly.storesAssembly.walletsStore.addObserver(self) { observer, event in
+                guard KeeperDappBridge.endsSession(of: wallet, on: event) else { return }
+                Task { @MainActor in
+                    observer.closeDappModule()
+                }
+            }
+        }
 
         switch presentation {
         case .modal:
-            module.view.modalPresentationStyle = .fullScreen
-            router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
+            module.view.modalPresentationStyle = KeeperDappBridge.opensInSheet(url: dapp.url) ? .pageSheet : .fullScreen
+            module.view.didDismiss = { [weak self] in
+                guard let self else { return }
+                earnSession?.close(via: .other)
+                didFinish?(self)
+            }
+            router.rootViewController.modalPresentationSourceViewController().present(
+                modalViewController(for: module.view),
+                animated: true
+            )
         case let .push(navigationController):
             module.view.didPop = { [weak self] byGesture in
                 guard let self else { return }
@@ -277,11 +329,21 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
     }
 
+    /// Under liquid glass the page header lives in a navigation controller's system bar, so a dapp shown
+    /// on its own goes into one that takes over its presentation and leaves the orientation to it.
+    private func modalViewController(for dappViewController: DappViewController) -> UIViewController {
+        guard TKLiquidGlass.isEnabled else { return dappViewController }
+        let navigationController = TKNavigationController(rootViewController: dappViewController)
+        navigationController.forwardsSupportedInterfaceOrientations = true
+        navigationController.modalPresentationStyle = dappViewController.modalPresentationStyle
+        return navigationController
+    }
+
     private func closeDappModule(exitMethod: EarnExitMethod = .other, completion: (() -> Void)? = nil) {
         earnSession?.close(via: exitMethod)
         switch presentation {
         case .modal:
-            dappViewController?.dismiss(animated: true, completion: completion)
+            (dappViewController?.presentingViewController ?? dappViewController)?.dismiss(animated: true, completion: completion)
         case .push:
             guard let dappViewController,
                   let navigationController = dappViewController.navigationController,
@@ -468,9 +530,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     private func openSend(
         wallet: Wallet,
-        dapp: Dapp,
+        dappHost: String,
         appRequest: TonConnect.SendTransactionRequest,
-        appId: String?,
+        appId: String,
         fromViewController: UIViewController,
         completion: @escaping (TonConnectAppsStore.SendResult) -> Void
     ) {
@@ -496,13 +558,13 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             sendFrom: .tonconnectLocal,
             appId: appId,
             initiatedBy: .tonconnectLocal,
-            dappUrl: dapp.url.host,
+            dappUrl: dappHost,
             redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
                 operation: .confirmTransaction,
                 attemptSource: .tonconnectLocal,
                 staticMetadata: [
-                    .dappHost: appId ?? dapp.url.host,
+                    .dappHost: appId,
                 ]
             ),
             coreAssembly: coreAssembly,
@@ -531,8 +593,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     private func handleSignMessage(
         wallet: Wallet,
         dapp: Dapp,
+        dappHost: String,
         appRequest: TonConnect.SignMessageRequest,
-        appId: String?,
+        appId: String,
         fromViewController: UIViewController,
         completion: @escaping (TonConnectAppsStore.SendResult) -> Void
     ) {
@@ -558,6 +621,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             openSignMessage(
                 wallet: wallet,
                 dapp: dapp,
+                dappHost: dappHost,
                 appRequest: appRequest,
                 appId: appId,
                 fromViewController: fromViewController,
@@ -569,8 +633,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     private func openSignMessage(
         wallet: Wallet,
         dapp: Dapp,
+        dappHost: String,
         appRequest: TonConnect.SignMessageRequest,
-        appId: String?,
+        appId: String,
         fromViewController: UIViewController,
         completion: @escaping (TonConnectAppsStore.SendResult) -> Void
     ) {
@@ -583,7 +648,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             windowScene: windowScene,
             windowLevel: .signRaw,
             wallet: wallet,
-            mode: .signMessage(appName: signMessageAppName(wallet: wallet, dapp: dapp)),
+            mode: .signMessage(appName: signMessageAppName(wallet: wallet, dapp: dapp, host: dappHost)),
             transferProvider: {
                 .signRaw(appRequest.params, forceRelayer: false)
             },
@@ -594,13 +659,13 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             sendFrom: .tonconnectLocal,
             appId: appId,
             initiatedBy: .tonconnectLocal,
-            dappUrl: dapp.url.host,
+            dappUrl: dappHost,
             redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
                 operation: .confirmTransaction,
                 attemptSource: .tonconnectLocal,
                 staticMetadata: [
-                    .dappHost: appId ?? dapp.url.host,
+                    .dappHost: appId,
                 ]
             ),
             coreAssembly: coreAssembly,
@@ -619,19 +684,20 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         )
     }
 
-    private func signMessageAppName(wallet: Wallet, dapp: Dapp) -> String {
+    private func signMessageAppName(wallet: Wallet, dapp: Dapp, host: String) -> String {
         let connectedApp: TonConnectApp?
         do {
             connectedApp = try keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
                 .connectedApps(forWallet: wallet).apps
-                .first { $0.manifest.url.host == dapp.url.host && $0.connectionType == .bridge }
+                .first { $0.manifest.url.host == host && $0.connectionType == .bridge }
         } catch {
             Log.w("failed to load connected apps for sign message due to error: \(error)")
             connectedApp = nil
         }
-        return [connectedApp?.manifest.name, dapp.name, dapp.url.host]
+        let openedDappName = host == dapp.url.host ? dapp.name : nil
+        return [connectedApp?.manifest.name, openedDappName]
             .compactMap { $0 }
-            .first { !$0.isEmpty } ?? dapp.url.absoluteString
+            .first { !$0.isEmpty } ?? host
     }
 
     @MainActor

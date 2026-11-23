@@ -57,7 +57,7 @@ final class StakingBalanceDetailsRewardsView: TKView, ConfigurableView {
 
         titleStackView.snp.makeConstraints { make in
             make.top.left.right.equalTo(self)
-            make.height.equalTo(56)
+            make.height.equalTo(48)
         }
 
         cardsStackView.snp.makeConstraints { make in

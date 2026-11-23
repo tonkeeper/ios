@@ -29,21 +29,12 @@ let package = Package(
         // graph as frameworks, and a framework links only what its own manifest declares — so
         // every dependency below has to be spelled out even where static linking used to
         // supply it for free.
-        .library(name: "KeeperCore", type: .dynamic, targets: ["KeeperCore"]),
-        // `App` and `Stories` import these directly, so they need to be products rather than
-        // internal targets reached only through `KeeperCore`.
-        .library(name: "KeeperCoreComponents", targets: ["KeeperCoreComponents"]),
-        .library(name: "KeeperCoreSensitive", targets: ["KeeperCoreSensitive"]),
+        .library(name: "KeeperCore", type: .dynamic, targets: ["KeeperCore", "KeeperCoreComponents", "KeeperCoreSensitive"]),
     ],
     dependencies: [
-        .package(path: "../TKLocalize"),
-        .package(path: "../TKKeychain"),
+        .package(path: "../TKBase"),
         .package(path: "../Ledger"),
-        .package(path: "../TKLogging"),
         .package(path: "../TronSwift"),
-        .package(path: "../TKFeatureFlags"),
-        .package(path: "../TKAppInfo"),
-        .package(path: "../PerpsModels"),
         .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.1")),
         // Imported directly by the targets below; previously satisfied transitively because
         // everything ended up statically linked into the app binary. Versions mirror what
@@ -60,9 +51,8 @@ let package = Package(
         .package(url: "https://github.com/tonkeeper/PunycodeSwift", exact: "3.0.1"),
         .package(url: "https://github.com/tonkeeper/ton-swift", exact: "1.0.37"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.13.0"),
-        .package(url: "https://github.com/tonkeeper/chainkit-publishing", exact: "26.10.8"),
-        .package(url: "https://github.com/reown-com/reown-swift.git", exact: "2.2.9"),
-        .package(url: "https://github.com/Flight-School/AnyCodable", .upToNextMajor(from: "0.6.1")),
+        .package(url: "https://github.com/tonkeeper/chainkit-publishing", exact: "26.11.7"),
+        .package(url: "https://github.com/reown-com/reown-swift.git", exact: "2.4.0"),
         .package(url: "https://github.com/centrifugal/centrifuge-swift", exact: "0.9.0"),
     ],
     targets: [
@@ -71,8 +61,7 @@ let package = Package(
             dependencies: [
                 .product(name: "TonSwift", package: "ton-swift"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
-                .product(name: "TKKeychain", package: "TKKeychain"),
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
                 .product(name: "TweetNacl", package: "tweetnacl-swiftwrap"),
             ],
 
@@ -94,7 +83,7 @@ let package = Package(
             name: "KeeperCoreSensitive",
             dependencies: [
                 .product(name: "TonSwift", package: "ton-swift"),
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
                 .product(name: "Sodium", package: "swift-sodium"),
                 .target(name: "KeeperCoreComponents"),
             ],
@@ -107,8 +96,8 @@ let package = Package(
             name: "KeeperCore",
             dependencies: [
                 .product(name: "URKit", package: "URKit"),
-                .product(name: "TKLocalize", package: "TKLocalize"),
-                .product(name: "TKKeychain", package: "TKKeychain"),
+                .product(name: "TKBase", package: "TKBase"),
+                .product(name: "LedgerKit", package: "Ledger"),
                 .product(name: "TonTransport", package: "Ledger"),
                 .product(name: "TonSwift", package: "ton-swift"),
                 .target(name: "TonAPI"),
@@ -116,7 +105,6 @@ let package = Package(
                 .target(name: "TonStreamingAPIV2"),
                 .product(name: "TronSwift", package: "TronSwift"),
                 .product(name: "TronSwiftAPI", package: "TronSwift"),
-                .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
                 .product(name: "Punycode", package: "PunycodeSwift"),
                 .product(name: "ChainKit", package: "chainkit-publishing"),
                 // The `ChainKit` product already carries WalletCore via `ChainKitSupport`, which
@@ -127,20 +115,18 @@ let package = Package(
                 // line. `ChainKit` is a `.binaryTarget` and so cannot declare it itself.
                 .product(name: "WalletCore", package: "chainkit-publishing"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
-                .product(name: "ReownWalletKit", package: "reown-swift"),
+                .product(name: "WalletConnect", package: "reown-swift"),
                 .product(name: "ReownRouter", package: "reown-swift"),
-                .product(name: "AnyCodable", package: "AnyCodable"),
                 .target(name: "TonConnectAPI"),
                 .target(name: "SwapAPI"),
                 .target(name: "MultichainAPI"),
                 .target(name: "TKTradingAPI"),
                 .target(name: "TKPerpsAPI"),
                 .target(name: "TKKandelabrAPI"),
+                .target(name: "TKEarnAPI"),
+                .target(name: "TKTonstakersAPI"),
                 .target(name: "TKTonkeeperAPI"),
                 .target(name: "KeeperCoreComponents"),
-                .product(name: "TKLogging", package: "TKLogging"),
-                .product(name: "TKAppInfo", package: "TKAppInfo"),
-                .product(name: "PerpsModels", package: "PerpsModels"),
                 .product(name: "TKCryptoKit", package: "TronSwift"),
                 .product(name: "BigInt", package: "BigInt"),
                 .product(name: "Sodium", package: "swift-sodium"),
@@ -168,9 +154,10 @@ let package = Package(
                 "MultichainAPI",
                 "SwapAPI",
                 "TKKandelabrAPI",
+                "TKEarnAPI",
                 "TKPerpsAPI",
-                .product(name: "AnyCodable", package: "AnyCodable"),
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
+                .product(name: "TKTestSupport", package: "TKBase"),
             ]
         ),
         .target(
@@ -187,7 +174,7 @@ let package = Package(
         .target(
             name: "TonStreamingAPIV2",
             dependencies: [
-                .product(name: "AnyCodable", package: "AnyCodable"),
+                .product(name: "TKBase", package: "TKBase"),
                 .target(name: "EventSource"),
                 .target(name: "StreamURLSessionTransport"),
             ],
@@ -221,7 +208,7 @@ let package = Package(
 
             swiftSettings: [
                 .treatAllWarnings(as: .error),
-            ]
+            ] + unusedImportAccessAsWarning
         ),
         .target(
             name: "SwapAPI",
@@ -269,7 +256,7 @@ let package = Package(
 
             swiftSettings: [
                 .treatAllWarnings(as: .error),
-            ]
+            ] + unusedImportAccessAsWarning
         ),
         .target(
             name: "TKBatteryAPI",
@@ -311,7 +298,37 @@ let package = Package(
 
             swiftSettings: [
                 .treatAllWarnings(as: .error),
-            ]
+            ] + unusedImportAccessAsWarning
+        ),
+        .target(
+            name: "TKEarnAPI",
+            dependencies: [
+                .product(
+                    name: "OpenAPIRuntime",
+                    package: "swift-openapi-runtime"
+                ),
+            ],
+            path: "Packages/TKEarnAPI",
+            sources: ["Sources"],
+
+            swiftSettings: [
+                .treatAllWarnings(as: .error),
+            ] + unusedImportAccessAsWarning
+        ),
+        .target(
+            name: "TKTonstakersAPI",
+            dependencies: [
+                .product(
+                    name: "OpenAPIRuntime",
+                    package: "swift-openapi-runtime"
+                ),
+            ],
+            path: "Packages/TKTonstakersAPI",
+            sources: ["Sources"],
+
+            swiftSettings: [
+                .treatAllWarnings(as: .error),
+            ] + unusedImportAccessAsWarning
         ),
         .testTarget(
             name: "WalletCoreTests",

@@ -18,6 +18,7 @@ private final class PerpsSearchPreviewViewModel: PerpsSearchViewModeling {
 
     func onAppear() {}
     func onDisappear() {}
+    func setVisible(_: Bool) {}
     func requestSearchFocus() {}
     func updateSearchText(_ value: String) {
         searchText = value
@@ -39,7 +40,7 @@ private let previewResults = [
         id: 1,
         symbol: "BTC",
         iconURL: nil,
-        leverageText: "40X",
+        leverageText: "40⨯",
         volumeText: "$1.24B VOL",
         priceText: "$67,104.20",
         changeText: "+3.84%",
@@ -49,7 +50,7 @@ private let previewResults = [
         id: 2,
         symbol: "ETH",
         iconURL: nil,
-        leverageText: "25X",
+        leverageText: "25⨯",
         volumeText: "$684.1M VOL",
         priceText: "$3,481.09",
         changeText: "−1.12%",
@@ -80,5 +81,10 @@ private let previewResults = [
 
 #Preview("Commodities") {
     PerpsSearchView(viewModel: PerpsSearchPreviewViewModel(searchText: "", marketsState: .empty, filter: .commodities))
+        .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Skeleton") {
+    PerpsSearchView(viewModel: PerpsSearchPreviewViewModel(searchText: "GRA", marketsState: .loading))
         .tkPreviewTheme(.deepBlue)
 }

@@ -7,4 +7,6 @@ public enum TooltipID: Hashable {
     case tradeFavorite
     case addMultichainWalletMain
     case addMultichainWalletWalletsList
+    case earnSection
+    case perpsSection
 }

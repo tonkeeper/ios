@@ -11,16 +11,6 @@ public import struct Foundation.Date
 #endif
 /// A type that performs HTTP operations defined by the OpenAPI document.
 public protocol APIProtocol: Sendable {
-    /// Get a payload for further token receipt
-    ///
-    /// - Remark: HTTP `GET /tonconnect/payload`.
-    /// - Remark: Generated from `#/paths//tonconnect/payload/get(getTonConnectPayload)`.
-    func getTonConnectPayload(_ input: Operations.getTonConnectPayload.Input) async throws -> Operations.getTonConnectPayload.Output
-    /// Account verification and token issuance
-    ///
-    /// - Remark: HTTP `POST /tonconnect/proof`.
-    /// - Remark: Generated from `#/paths//tonconnect/proof/post(tonConnectProof)`.
-    func tonConnectProof(_ input: Operations.tonConnectProof.Input) async throws -> Operations.tonConnectProof.Output
     /// This method returns information about the current status of Battery Service.
     ///
     /// - Remark: HTTP `GET /status`.
@@ -41,7 +31,7 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /gasless/emulate`.
     /// - Remark: Generated from `#/paths//gasless/emulate/post(gaslessEmulate)`.
     func gaslessEmulate(_ input: Operations.gaslessEmulate.Input) async throws -> Operations.gaslessEmulate.Output
-    /// Takes the signed payloads of an emulated operation, checks them against it one to one, and broadcasts.
+    /// Takes the signed payloads of an emulated operation, checks them against it one to one, and broadcasts. A battery purchase from /purchase-battery/emulate is sent here as well: the balance grows once its transfer succeeds on chain.
     ///
     /// - Remark: HTTP `POST /gasless/send`.
     /// - Remark: Generated from `#/paths//gasless/send/post(gaslessSend)`.
@@ -51,19 +41,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /config`.
     /// - Remark: Generated from `#/paths//config/get(getConfig)`.
     func getConfig(_ input: Operations.getConfig.Input) async throws -> Operations.getConfig.Output
-    /// - Remark: HTTP `GET /promo-used`.
-    /// - Remark: Generated from `#/paths//promo-used/get(getPromoUsed)`.
-    func getPromoUsed(_ input: Operations.getPromoUsed.Input) async throws -> Operations.getPromoUsed.Output
-    /// This method returns information about a user's balance.
+    /// What a swap and a perps deposit of an asset cost when the wallet pays the gas itself in the chain's native coin, for the native coin of every chain /gasless/battery/config serves and every asset it lists on its own chain (not battery charges, nor TON listed under TRON as a way to pay), and for BTC. It is the fee spent, not the balance a transaction needs up front (an EVM gas limit at the max fee, TON attached to a jetton transfer, rent for a new Solana token account). The gas an operation takes is fixed, from our users' transactions; on EVM chains it is priced at the network's current gas price, on Bitcoin at the fee rate our users' wallets pay now.
     ///
-    /// - Remark: HTTP `GET /battery-charged`.
-    /// - Remark: Generated from `#/paths//battery-charged/get(getBatteryCharged)`.
-    func getBatteryCharged(_ input: Operations.getBatteryCharged.Input) async throws -> Operations.getBatteryCharged.Output
+    /// - Remark: HTTP `GET /network-fees`.
+    /// - Remark: Generated from `#/paths//network-fees/get(getNetworkFees)`.
+    func getNetworkFees(_ input: Operations.getNetworkFees.Input) async throws -> Operations.getNetworkFees.Output
     /// This method returns information about a user's balance.
     ///
     /// - Remark: HTTP `GET /balance`.
     /// - Remark: Generated from `#/paths//balance/get(getBalance)`.
     func getBalance(_ input: Operations.getBalance.Input) async throws -> Operations.getBalance.Output
+    /// Moves the battery of a TON wallet's old public-key user -- the one X-TonConnect-Auth signs for -- to the new wallet-id user. Only a positive balance moves; a negative one stays with the old user, as does its purchase history. One-way and once: a second request answers 409. The new user's purchases show it as one "migration" of the charges moved, from `from_address`: the TON wallet migrated, which has to be one of the old key's wallets. `proof` shows the old key agrees to this destination: a hex ed25519 signature, by the old wallet's key, over LP("keeper.battery.migrate.v1") | LP(X-Wallet-ID) | LP(old public key), where LP(x) is one length byte followed by x and the public key is its 32 raw bytes.
+    ///
+    /// - Remark: HTTP `POST /wallet/migrate`.
+    /// - Remark: Generated from `#/paths//wallet/migrate/post(migrateBattery)`.
+    func migrateBattery(_ input: Operations.migrateBattery.Input) async throws -> Operations.migrateBattery.Output
     /// Emulate sending message to blockchain
     ///
     /// - Remark: HTTP `POST /wallet/emulate`.
@@ -100,34 +92,39 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v0/tron/transactions`.
     /// - Remark: Generated from `#/paths//v0/tron/transactions/get(getTronTransactions)`.
     func getTronTransactions(_ input: Operations.getTronTransactions.Input) async throws -> Operations.getTronTransactions.Output
-    /// Get number of available TRON free transfers for Pro users
-    ///
-    /// - Remark: HTTP `GET /v0/tron/available-transfers`.
-    /// - Remark: Generated from `#/paths//v0/tron/available-transfers/get(getTronAvailableTransfers)`.
-    func getTronAvailableTransfers(_ input: Operations.getTronAvailableTransfers.Input) async throws -> Operations.getTronAvailableTransfers.Output
-    /// receive callback from itrx.io
-    ///
-    /// - Remark: HTTP `POST /v0/tron/itrx-io-callback`.
-    /// - Remark: Generated from `#/paths//v0/tron/itrx-io-callback/post(itrxIoCallback)`.
-    func itrxIoCallback(_ input: Operations.itrxIoCallback.Input) async throws -> Operations.itrxIoCallback.Output
     /// verify an in-app purchase
     ///
     /// - Remark: HTTP `POST /purchase-battery/android`.
     /// - Remark: Generated from `#/paths//purchase-battery/android/post(androidBatteryPurchase)`.
     func androidBatteryPurchase(_ input: Operations.androidBatteryPurchase.Input) async throws -> Operations.androidBatteryPurchase.Output
-    /// - Remark: HTTP `POST /purchase-battery/ios/app-store-notification`.
-    /// - Remark: Generated from `#/paths//purchase-battery/ios/app-store-notification/post(appStoreNotification)`.
-    func appStoreNotification(_ input: Operations.appStoreNotification.Input) async throws -> Operations.appStoreNotification.Output
     /// verify an in-app purchase
     ///
     /// - Remark: HTTP `POST /purchase-battery/ios`.
     /// - Remark: Generated from `#/paths//purchase-battery/ios/post(iosBatteryPurchase)`.
     func iosBatteryPurchase(_ input: Operations.iosBatteryPurchase.Input) async throws -> Operations.iosBatteryPurchase.Output
-    /// charge battery with promo code
+    /// What /purchase-battery/emulate would answer, without building or keeping the operation: the
+    /// same checks and the same figures -- the network fee and the charges the purchase adds -- for
+    /// a client to show while the amount is typed in. Nothing is to be signed or sent from it.
     ///
-    /// - Remark: HTTP `POST /purchase-battery/promo-code`.
-    /// - Remark: Generated from `#/paths//purchase-battery/promo-code/post(promoCodeBatteryPurchase)`.
-    func promoCodeBatteryPurchase(_ input: Operations.promoCodeBatteryPurchase.Input) async throws -> Operations.promoCodeBatteryPurchase.Output
+    ///
+    /// - Remark: HTTP `POST /purchase-battery/estimate`.
+    /// - Remark: Generated from `#/paths//purchase-battery/estimate/post(purchaseBatteryEstimate)`.
+    func purchaseBatteryEstimate(_ input: Operations.purchaseBatteryEstimate.Input) async throws -> Operations.purchaseBatteryEstimate.Output
+    /// Quote a battery purchase paid in crypto on a chain other than TON, and build the operation to
+    /// sign, in the shape of /gasless/emulate (docs/generic payload). `asset_id` is one of
+    /// /recharge-methods?multichain=true outside TON, on `chain_id`. The operation is a USDT TRC-20
+    /// transfer as a "prebuild" payload on TRON, a sponsored batch as an "eip7821/hermes/delegate"
+    /// payload on an EVM chain (after an "eip7702/authorization" one for an account never
+    /// delegated), and a "prebuild" payload on Solana. The battery pays the transfer's network fee
+    /// -- TRON energy and bandwidth, EVM gas, the Solana fee -- and `fee` is what it takes off the
+    /// purchase, in charges: `charges` is what the balance grows by; /purchase-battery/estimate gives
+    /// the same figures without building anything. Sign the operation as any other
+    /// and send it to /gasless/send before `expires_at`; it checks the signatures against it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /purchase-battery/emulate`.
+    /// - Remark: Generated from `#/paths//purchase-battery/emulate/post(purchaseBatteryEmulate)`.
+    func purchaseBatteryEmulate(_ input: Operations.purchaseBatteryEmulate.Input) async throws -> Operations.purchaseBatteryEmulate.Output
     /// - Remark: HTTP `GET /purchase-battery/verify-purchase-promo`.
     /// - Remark: Generated from `#/paths//purchase-battery/verify-purchase-promo/get(verifyPurchasePromo)`.
     func verifyPurchasePromo(_ input: Operations.verifyPurchasePromo.Input) async throws -> Operations.verifyPurchasePromo.Output
@@ -136,140 +133,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /recharge-methods`.
     /// - Remark: Generated from `#/paths//recharge-methods/get(getRechargeMethods)`.
     func getRechargeMethods(_ input: Operations.getRechargeMethods.Input) async throws -> Operations.getRechargeMethods.Output
-    /// - Remark: HTTP `POST /request-refund`.
-    /// - Remark: Generated from `#/paths//request-refund/post(requestRefund)`.
-    func requestRefund(_ input: Operations.requestRefund.Input) async throws -> Operations.requestRefund.Output
     /// This method returns a list of purchases made by a specific user.
     ///
     /// - Remark: HTTP `GET /purchases`.
     /// - Remark: Generated from `#/paths//purchases/get(getPurchases)`.
     func getPurchases(_ input: Operations.getPurchases.Input) async throws -> Operations.getPurchases.Output
-    /// This method returns a list of transactions made by a specific user.
-    ///
-    /// - Remark: HTTP `GET /transactions`.
-    /// - Remark: Generated from `#/paths//transactions/get(getTransactions)`.
-    func getTransactions(_ input: Operations.getTransactions.Input) async throws -> Operations.getTransactions.Output
     /// - Remark: HTTP `POST /gasless/estimate-cost/{jetton_master}`.
     /// - Remark: Generated from `#/paths//gasless/estimate-cost/{jetton_master}/post(estimateGaslessCost)`.
     func estimateGaslessCost(_ input: Operations.estimateGaslessCost.Input) async throws -> Operations.estimateGaslessCost.Output
-    /// Estimate gasless commission for a jetton transfer by its parameters
-    ///
-    /// - Remark: HTTP `POST /gasless/estimate/jetton-transfer`.
-    /// - Remark: Generated from `#/paths//gasless/estimate/jetton-transfer/post(EstimateGaslessJettonTransfer)`.
-    func EstimateGaslessJettonTransfer(_ input: Operations.EstimateGaslessJettonTransfer.Input) async throws -> Operations.EstimateGaslessJettonTransfer.Output
-    /// - Remark: HTTP `POST /restricted/promo-campaign`.
-    /// - Remark: Generated from `#/paths//restricted/promo-campaign/post(createPromoCampaign)`.
-    func createPromoCampaign(_ input: Operations.createPromoCampaign.Input) async throws -> Operations.createPromoCampaign.Output
-    /// - Remark: HTTP `POST /restricted/promo-campaign-by-user`.
-    /// - Remark: Generated from `#/paths//restricted/promo-campaign-by-user/post(createPromoCampaignByUser)`.
-    func createPromoCampaignByUser(_ input: Operations.createPromoCampaignByUser.Input) async throws -> Operations.createPromoCampaignByUser.Output
-    /// - Remark: HTTP `POST /restricted/apply-promo`.
-    /// - Remark: Generated from `#/paths//restricted/apply-promo/post(applyPromo)`.
-    func applyPromo(_ input: Operations.applyPromo.Input) async throws -> Operations.applyPromo.Output
-    /// - Remark: HTTP `POST /restricted/create-custom-refund`.
-    /// - Remark: Generated from `#/paths//restricted/create-custom-refund/post(createCustomRefund)`.
-    func createCustomRefund(_ input: Operations.createCustomRefund.Input) async throws -> Operations.createCustomRefund.Output
-    /// - Remark: HTTP `POST /restricted/battery-transfer`.
-    /// - Remark: Generated from `#/paths//restricted/battery-transfer/post(batteryTransfer)`.
-    func batteryTransfer(_ input: Operations.batteryTransfer.Input) async throws -> Operations.batteryTransfer.Output
-    /// - Remark: HTTP `POST /restricted/battery-swap-ton-to-usdt`.
-    /// - Remark: Generated from `#/paths//restricted/battery-swap-ton-to-usdt/post(batterySwapTonToUsdt)`.
-    func batterySwapTonToUsdt(_ input: Operations.batterySwapTonToUsdt.Input) async throws -> Operations.batterySwapTonToUsdt.Output
-    /// - Remark: HTTP `POST /restricted/battery-nft-transfer`.
-    /// - Remark: Generated from `#/paths//restricted/battery-nft-transfer/post(batteryNftTransfer)`.
-    func batteryNftTransfer(_ input: Operations.batteryNftTransfer.Input) async throws -> Operations.batteryNftTransfer.Output
-    /// - Remark: HTTP `POST /restricted/okx-deposit`.
-    /// - Remark: Generated from `#/paths//restricted/okx-deposit/post(replenishOKXBalance)`.
-    func replenishOKXBalance(_ input: Operations.replenishOKXBalance.Input) async throws -> Operations.replenishOKXBalance.Output
-    /// - Remark: HTTP `POST /restricted/relayer-to-battery`.
-    /// - Remark: Generated from `#/paths//restricted/relayer-to-battery/post(relayerToBattery)`.
-    func relayerToBattery(_ input: Operations.relayerToBattery.Input) async throws -> Operations.relayerToBattery.Output
-    /// Swaps TON from the main relayer into the native coin of an EVM chain through Changelly, paid
-    /// out to the EVM relay wallet. Without confirm it only quotes; with confirm it creates the swap
-    /// and sends the TON. The relayer keeps at least 2000 TON.
-    ///
-    ///
-    /// - Remark: HTTP `POST /restricted/evm-relay-topup`.
-    /// - Remark: Generated from `#/paths//restricted/evm-relay-topup/post(evmRelayTopup)`.
-    func evmRelayTopup(_ input: Operations.evmRelayTopup.Input) async throws -> Operations.evmRelayTopup.Output
-    /// - Remark: HTTP `POST /restricted/migrate-old-battery`.
-    /// - Remark: Generated from `#/paths//restricted/migrate-old-battery/post(migrateOldBattery)`.
-    func migrateOldBattery(_ input: Operations.migrateOldBattery.Input) async throws -> Operations.migrateOldBattery.Output
-    /// - Remark: HTTP `POST /restricted/migrate-relayer`.
-    /// - Remark: Generated from `#/paths//restricted/migrate-relayer/post(migrateRelayer)`.
-    func migrateRelayer(_ input: Operations.migrateRelayer.Input) async throws -> Operations.migrateRelayer.Output
-    /// - Remark: HTTP `POST /restricted/omniston-swap`.
-    /// - Remark: Generated from `#/paths//restricted/omniston-swap/post(omnistonSwap)`.
-    func omnistonSwap(_ input: Operations.omnistonSwap.Input) async throws -> Operations.omnistonSwap.Output
-    /// - Remark: HTTP `POST /restricted/users/{user_id}/reset-balance`.
-    /// - Remark: Generated from `#/paths//restricted/users/{user_id}/reset-balance/post(resetUserBalance)`.
-    func resetUserBalance(_ input: Operations.resetUserBalance.Input) async throws -> Operations.resetUserBalance.Output
-    /// Moves a TON purchase that was claimed by the wallet's public-key user over to the same wallet's wallet-id user: the purchase row, its user_purchase_id, and the balance it added. Everything is checked and applied in one transaction; dry_run checks and reports without changing anything.
-    ///
-    /// - Remark: HTTP `POST /restricted/ton-purchases/{purchase_id}/reassign`.
-    /// - Remark: Generated from `#/paths//restricted/ton-purchases/{purchase_id}/reassign/post(reassignTonPurchase)`.
-    func reassignTonPurchase(_ input: Operations.reassignTonPurchase.Input) async throws -> Operations.reassignTonPurchase.Output
-    /// - Remark: HTTP `POST /restricted/purchases/{purchase_id}/extend-refund-period`.
-    /// - Remark: Generated from `#/paths//restricted/purchases/{purchase_id}/extend-refund-period/post(extendRefundPeriod)`.
-    func extendRefundPeriod(_ input: Operations.extendRefundPeriod.Input) async throws -> Operations.extendRefundPeriod.Output
-    /// - Remark: HTTP `POST /restricted/users/{user_id}/increase-balance`.
-    /// - Remark: Generated from `#/paths//restricted/users/{user_id}/increase-balance/post(increaseUserBalance)`.
-    func increaseUserBalance(_ input: Operations.increaseUserBalance.Input) async throws -> Operations.increaseUserBalance.Output
-    /// Records TON that left the cold wallet but is still the users' money -- moved somewhere the
-    /// on-chain balance does not see. Its amount is added to the cold wallet's balance in the
-    /// assets accounting (battery.invisible_user_liabilities). One record per transaction.
-    ///
-    ///
-    /// - Remark: HTTP `POST /restricted/invisible-user-liabilities`.
-    /// - Remark: Generated from `#/paths//restricted/invisible-user-liabilities/post(addInvisibleUserLiability)`.
-    func addInvisibleUserLiability(_ input: Operations.addInvisibleUserLiability.Input) async throws -> Operations.addInvisibleUserLiability.Output
-    /// - Remark: HTTP `GET /jetton-metadata/{name}.json`.
-    /// - Remark: Generated from `#/paths//jetton-metadata/{name}.json/get(getJettonMetadata)`.
-    func getJettonMetadata(_ input: Operations.getJettonMetadata.Input) async throws -> Operations.getJettonMetadata.Output
-    /// - Remark: HTTP `GET /enterprise/wallets/{wallet_id}/config`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/config/get(enterpriseGetWalletConfig)`.
-    func enterpriseGetWalletConfig(_ input: Operations.enterpriseGetWalletConfig.Input) async throws -> Operations.enterpriseGetWalletConfig.Output
-    /// - Remark: HTTP `POST /enterprise/wallets/{wallet_id}/estimate`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/estimate/post(enterpriseEstimate)`.
-    func enterpriseEstimate(_ input: Operations.enterpriseEstimate.Input) async throws -> Operations.enterpriseEstimate.Output
-    /// - Remark: HTTP `POST /enterprise/wallets/{wallet_id}/send`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/send/post(enterpriseSend)`.
-    func enterpriseSend(_ input: Operations.enterpriseSend.Input) async throws -> Operations.enterpriseSend.Output
-    /// - Remark: HTTP `GET /enterprise/messages/{msg_id}`.
-    /// - Remark: Generated from `#/paths//enterprise/messages/{msg_id}/get(enterpriseGetMessage)`.
-    func enterpriseGetMessage(_ input: Operations.enterpriseGetMessage.Input) async throws -> Operations.enterpriseGetMessage.Output
-    /// - Remark: HTTP `GET /enterprise/status`.
-    /// - Remark: Generated from `#/paths//enterprise/status/get(enterpriseGetStatus)`.
-    func enterpriseGetStatus(_ input: Operations.enterpriseGetStatus.Input) async throws -> Operations.enterpriseGetStatus.Output
-    /// Return how many battery charges a transaction consumed. Public: it exposes only the charge cost of a transaction the caller already knows the hash of.
-    ///
-    /// - Remark: HTTP `GET /transaction`.
-    /// - Remark: Generated from `#/paths//transaction/get(getTransaction)`.
-    func getTransaction(_ input: Operations.getTransaction.Input) async throws -> Operations.getTransaction.Output
 }
 
 /// Convenience overloads for operation inputs.
 extension APIProtocol {
-    /// Get a payload for further token receipt
-    ///
-    /// - Remark: HTTP `GET /tonconnect/payload`.
-    /// - Remark: Generated from `#/paths//tonconnect/payload/get(getTonConnectPayload)`.
-    public func getTonConnectPayload(headers: Operations.getTonConnectPayload.Input.Headers = .init()) async throws -> Operations.getTonConnectPayload.Output {
-        try await getTonConnectPayload(Operations.getTonConnectPayload.Input(headers: headers))
-    }
-    /// Account verification and token issuance
-    ///
-    /// - Remark: HTTP `POST /tonconnect/proof`.
-    /// - Remark: Generated from `#/paths//tonconnect/proof/post(tonConnectProof)`.
-    public func tonConnectProof(
-        headers: Operations.tonConnectProof.Input.Headers = .init(),
-        body: Components.RequestBodies.TonConnectProof
-    ) async throws -> Operations.tonConnectProof.Output {
-        try await tonConnectProof(Operations.tonConnectProof.Input(
-            headers: headers,
-            body: body
-        ))
-    }
     /// This method returns information about the current status of Battery Service.
     ///
     /// - Remark: HTTP `GET /status`.
@@ -310,7 +185,7 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Takes the signed payloads of an emulated operation, checks them against it one to one, and broadcasts.
+    /// Takes the signed payloads of an emulated operation, checks them against it one to one, and broadcasts. A battery purchase from /purchase-battery/emulate is sent here as well: the balance grows once its transfer succeeds on chain.
     ///
     /// - Remark: HTTP `POST /gasless/send`.
     /// - Remark: Generated from `#/paths//gasless/send/post(gaslessSend)`.
@@ -330,29 +205,12 @@ extension APIProtocol {
     public func getConfig(headers: Operations.getConfig.Input.Headers = .init()) async throws -> Operations.getConfig.Output {
         try await getConfig(Operations.getConfig.Input(headers: headers))
     }
-    /// - Remark: HTTP `GET /promo-used`.
-    /// - Remark: Generated from `#/paths//promo-used/get(getPromoUsed)`.
-    public func getPromoUsed(
-        query: Operations.getPromoUsed.Input.Query,
-        headers: Operations.getPromoUsed.Input.Headers = .init()
-    ) async throws -> Operations.getPromoUsed.Output {
-        try await getPromoUsed(Operations.getPromoUsed.Input(
-            query: query,
-            headers: headers
-        ))
-    }
-    /// This method returns information about a user's balance.
+    /// What a swap and a perps deposit of an asset cost when the wallet pays the gas itself in the chain's native coin, for the native coin of every chain /gasless/battery/config serves and every asset it lists on its own chain (not battery charges, nor TON listed under TRON as a way to pay), and for BTC. It is the fee spent, not the balance a transaction needs up front (an EVM gas limit at the max fee, TON attached to a jetton transfer, rent for a new Solana token account). The gas an operation takes is fixed, from our users' transactions; on EVM chains it is priced at the network's current gas price, on Bitcoin at the fee rate our users' wallets pay now.
     ///
-    /// - Remark: HTTP `GET /battery-charged`.
-    /// - Remark: Generated from `#/paths//battery-charged/get(getBatteryCharged)`.
-    public func getBatteryCharged(
-        query: Operations.getBatteryCharged.Input.Query,
-        headers: Operations.getBatteryCharged.Input.Headers = .init()
-    ) async throws -> Operations.getBatteryCharged.Output {
-        try await getBatteryCharged(Operations.getBatteryCharged.Input(
-            query: query,
-            headers: headers
-        ))
+    /// - Remark: HTTP `GET /network-fees`.
+    /// - Remark: Generated from `#/paths//network-fees/get(getNetworkFees)`.
+    public func getNetworkFees(headers: Operations.getNetworkFees.Input.Headers = .init()) async throws -> Operations.getNetworkFees.Output {
+        try await getNetworkFees(Operations.getNetworkFees.Input(headers: headers))
     }
     /// This method returns information about a user's balance.
     ///
@@ -365,6 +223,19 @@ extension APIProtocol {
         try await getBalance(Operations.getBalance.Input(
             query: query,
             headers: headers
+        ))
+    }
+    /// Moves the battery of a TON wallet's old public-key user -- the one X-TonConnect-Auth signs for -- to the new wallet-id user. Only a positive balance moves; a negative one stays with the old user, as does its purchase history. One-way and once: a second request answers 409. The new user's purchases show it as one "migration" of the charges moved, from `from_address`: the TON wallet migrated, which has to be one of the old key's wallets. `proof` shows the old key agrees to this destination: a hex ed25519 signature, by the old wallet's key, over LP("keeper.battery.migrate.v1") | LP(X-Wallet-ID) | LP(old public key), where LP(x) is one length byte followed by x and the public key is its 32 raw bytes.
+    ///
+    /// - Remark: HTTP `POST /wallet/migrate`.
+    /// - Remark: Generated from `#/paths//wallet/migrate/post(migrateBattery)`.
+    public func migrateBattery(
+        headers: Operations.migrateBattery.Input.Headers = .init(),
+        body: Operations.migrateBattery.Input.Body
+    ) async throws -> Operations.migrateBattery.Output {
+        try await migrateBattery(Operations.migrateBattery.Input(
+            headers: headers,
+            body: body
         ))
     }
     /// Emulate sending message to blockchain
@@ -465,26 +336,6 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Get number of available TRON free transfers for Pro users
-    ///
-    /// - Remark: HTTP `GET /v0/tron/available-transfers`.
-    /// - Remark: Generated from `#/paths//v0/tron/available-transfers/get(getTronAvailableTransfers)`.
-    public func getTronAvailableTransfers(headers: Operations.getTronAvailableTransfers.Input.Headers) async throws -> Operations.getTronAvailableTransfers.Output {
-        try await getTronAvailableTransfers(Operations.getTronAvailableTransfers.Input(headers: headers))
-    }
-    /// receive callback from itrx.io
-    ///
-    /// - Remark: HTTP `POST /v0/tron/itrx-io-callback`.
-    /// - Remark: Generated from `#/paths//v0/tron/itrx-io-callback/post(itrxIoCallback)`.
-    public func itrxIoCallback(
-        headers: Operations.itrxIoCallback.Input.Headers,
-        body: Operations.itrxIoCallback.Input.Body
-    ) async throws -> Operations.itrxIoCallback.Output {
-        try await itrxIoCallback(Operations.itrxIoCallback.Input(
-            headers: headers,
-            body: body
-        ))
-    }
     /// verify an in-app purchase
     ///
     /// - Remark: HTTP `POST /purchase-battery/android`.
@@ -494,17 +345,6 @@ extension APIProtocol {
         body: Components.RequestBodies.AndroidBatteryPurchase
     ) async throws -> Operations.androidBatteryPurchase.Output {
         try await androidBatteryPurchase(Operations.androidBatteryPurchase.Input(
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /purchase-battery/ios/app-store-notification`.
-    /// - Remark: Generated from `#/paths//purchase-battery/ios/app-store-notification/post(appStoreNotification)`.
-    public func appStoreNotification(
-        headers: Operations.appStoreNotification.Input.Headers = .init(),
-        body: Components.RequestBodies.appStoreNotification
-    ) async throws -> Operations.appStoreNotification.Output {
-        try await appStoreNotification(Operations.appStoreNotification.Input(
             headers: headers,
             body: body
         ))
@@ -522,15 +362,41 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// charge battery with promo code
+    /// What /purchase-battery/emulate would answer, without building or keeping the operation: the
+    /// same checks and the same figures -- the network fee and the charges the purchase adds -- for
+    /// a client to show while the amount is typed in. Nothing is to be signed or sent from it.
     ///
-    /// - Remark: HTTP `POST /purchase-battery/promo-code`.
-    /// - Remark: Generated from `#/paths//purchase-battery/promo-code/post(promoCodeBatteryPurchase)`.
-    public func promoCodeBatteryPurchase(
-        headers: Operations.promoCodeBatteryPurchase.Input.Headers = .init(),
-        body: Components.RequestBodies.promoCodeBatteryPurchase
-    ) async throws -> Operations.promoCodeBatteryPurchase.Output {
-        try await promoCodeBatteryPurchase(Operations.promoCodeBatteryPurchase.Input(
+    ///
+    /// - Remark: HTTP `POST /purchase-battery/estimate`.
+    /// - Remark: Generated from `#/paths//purchase-battery/estimate/post(purchaseBatteryEstimate)`.
+    public func purchaseBatteryEstimate(
+        headers: Operations.purchaseBatteryEstimate.Input.Headers = .init(),
+        body: Operations.purchaseBatteryEstimate.Input.Body
+    ) async throws -> Operations.purchaseBatteryEstimate.Output {
+        try await purchaseBatteryEstimate(Operations.purchaseBatteryEstimate.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Quote a battery purchase paid in crypto on a chain other than TON, and build the operation to
+    /// sign, in the shape of /gasless/emulate (docs/generic payload). `asset_id` is one of
+    /// /recharge-methods?multichain=true outside TON, on `chain_id`. The operation is a USDT TRC-20
+    /// transfer as a "prebuild" payload on TRON, a sponsored batch as an "eip7821/hermes/delegate"
+    /// payload on an EVM chain (after an "eip7702/authorization" one for an account never
+    /// delegated), and a "prebuild" payload on Solana. The battery pays the transfer's network fee
+    /// -- TRON energy and bandwidth, EVM gas, the Solana fee -- and `fee` is what it takes off the
+    /// purchase, in charges: `charges` is what the balance grows by; /purchase-battery/estimate gives
+    /// the same figures without building anything. Sign the operation as any other
+    /// and send it to /gasless/send before `expires_at`; it checks the signatures against it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /purchase-battery/emulate`.
+    /// - Remark: Generated from `#/paths//purchase-battery/emulate/post(purchaseBatteryEmulate)`.
+    public func purchaseBatteryEmulate(
+        headers: Operations.purchaseBatteryEmulate.Input.Headers = .init(),
+        body: Operations.purchaseBatteryEmulate.Input.Body
+    ) async throws -> Operations.purchaseBatteryEmulate.Output {
+        try await purchaseBatteryEmulate(Operations.purchaseBatteryEmulate.Input(
             headers: headers,
             body: body
         ))
@@ -559,17 +425,6 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// - Remark: HTTP `POST /request-refund`.
-    /// - Remark: Generated from `#/paths//request-refund/post(requestRefund)`.
-    public func requestRefund(
-        headers: Operations.requestRefund.Input.Headers = .init(),
-        body: Components.RequestBodies.requestRefund
-    ) async throws -> Operations.requestRefund.Output {
-        try await requestRefund(Operations.requestRefund.Input(
-            headers: headers,
-            body: body
-        ))
-    }
     /// This method returns a list of purchases made by a specific user.
     ///
     /// - Remark: HTTP `GET /purchases`.
@@ -579,19 +434,6 @@ extension APIProtocol {
         headers: Operations.getPurchases.Input.Headers = .init()
     ) async throws -> Operations.getPurchases.Output {
         try await getPurchases(Operations.getPurchases.Input(
-            query: query,
-            headers: headers
-        ))
-    }
-    /// This method returns a list of transactions made by a specific user.
-    ///
-    /// - Remark: HTTP `GET /transactions`.
-    /// - Remark: Generated from `#/paths//transactions/get(getTransactions)`.
-    public func getTransactions(
-        query: Operations.getTransactions.Input.Query = .init(),
-        headers: Operations.getTransactions.Input.Headers = .init()
-    ) async throws -> Operations.getTransactions.Output {
-        try await getTransactions(Operations.getTransactions.Input(
             query: query,
             headers: headers
         ))
@@ -609,348 +451,6 @@ extension APIProtocol {
             query: query,
             headers: headers,
             body: body
-        ))
-    }
-    /// Estimate gasless commission for a jetton transfer by its parameters
-    ///
-    /// - Remark: HTTP `POST /gasless/estimate/jetton-transfer`.
-    /// - Remark: Generated from `#/paths//gasless/estimate/jetton-transfer/post(EstimateGaslessJettonTransfer)`.
-    public func EstimateGaslessJettonTransfer(
-        headers: Operations.EstimateGaslessJettonTransfer.Input.Headers = .init(),
-        body: Components.RequestBodies.gaslessEstimateJettonTransfer
-    ) async throws -> Operations.EstimateGaslessJettonTransfer.Output {
-        try await EstimateGaslessJettonTransfer(Operations.EstimateGaslessJettonTransfer.Input(
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/promo-campaign`.
-    /// - Remark: Generated from `#/paths//restricted/promo-campaign/post(createPromoCampaign)`.
-    public func createPromoCampaign(
-        query: Operations.createPromoCampaign.Input.Query,
-        headers: Operations.createPromoCampaign.Input.Headers = .init(),
-        body: Operations.createPromoCampaign.Input.Body
-    ) async throws -> Operations.createPromoCampaign.Output {
-        try await createPromoCampaign(Operations.createPromoCampaign.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/promo-campaign-by-user`.
-    /// - Remark: Generated from `#/paths//restricted/promo-campaign-by-user/post(createPromoCampaignByUser)`.
-    public func createPromoCampaignByUser(
-        query: Operations.createPromoCampaignByUser.Input.Query,
-        headers: Operations.createPromoCampaignByUser.Input.Headers = .init(),
-        body: Operations.createPromoCampaignByUser.Input.Body
-    ) async throws -> Operations.createPromoCampaignByUser.Output {
-        try await createPromoCampaignByUser(Operations.createPromoCampaignByUser.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/apply-promo`.
-    /// - Remark: Generated from `#/paths//restricted/apply-promo/post(applyPromo)`.
-    public func applyPromo(
-        query: Operations.applyPromo.Input.Query,
-        headers: Operations.applyPromo.Input.Headers = .init(),
-        body: Operations.applyPromo.Input.Body
-    ) async throws -> Operations.applyPromo.Output {
-        try await applyPromo(Operations.applyPromo.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/create-custom-refund`.
-    /// - Remark: Generated from `#/paths//restricted/create-custom-refund/post(createCustomRefund)`.
-    public func createCustomRefund(
-        query: Operations.createCustomRefund.Input.Query,
-        headers: Operations.createCustomRefund.Input.Headers = .init(),
-        body: Components.RequestBodies.customRefund
-    ) async throws -> Operations.createCustomRefund.Output {
-        try await createCustomRefund(Operations.createCustomRefund.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/battery-transfer`.
-    /// - Remark: Generated from `#/paths//restricted/battery-transfer/post(batteryTransfer)`.
-    public func batteryTransfer(
-        query: Operations.batteryTransfer.Input.Query,
-        headers: Operations.batteryTransfer.Input.Headers = .init(),
-        body: Operations.batteryTransfer.Input.Body
-    ) async throws -> Operations.batteryTransfer.Output {
-        try await batteryTransfer(Operations.batteryTransfer.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/battery-swap-ton-to-usdt`.
-    /// - Remark: Generated from `#/paths//restricted/battery-swap-ton-to-usdt/post(batterySwapTonToUsdt)`.
-    public func batterySwapTonToUsdt(
-        query: Operations.batterySwapTonToUsdt.Input.Query,
-        headers: Operations.batterySwapTonToUsdt.Input.Headers = .init(),
-        body: Operations.batterySwapTonToUsdt.Input.Body
-    ) async throws -> Operations.batterySwapTonToUsdt.Output {
-        try await batterySwapTonToUsdt(Operations.batterySwapTonToUsdt.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/battery-nft-transfer`.
-    /// - Remark: Generated from `#/paths//restricted/battery-nft-transfer/post(batteryNftTransfer)`.
-    public func batteryNftTransfer(
-        query: Operations.batteryNftTransfer.Input.Query,
-        headers: Operations.batteryNftTransfer.Input.Headers = .init(),
-        body: Operations.batteryNftTransfer.Input.Body
-    ) async throws -> Operations.batteryNftTransfer.Output {
-        try await batteryNftTransfer(Operations.batteryNftTransfer.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/okx-deposit`.
-    /// - Remark: Generated from `#/paths//restricted/okx-deposit/post(replenishOKXBalance)`.
-    public func replenishOKXBalance(
-        query: Operations.replenishOKXBalance.Input.Query,
-        headers: Operations.replenishOKXBalance.Input.Headers = .init(),
-        body: Operations.replenishOKXBalance.Input.Body
-    ) async throws -> Operations.replenishOKXBalance.Output {
-        try await replenishOKXBalance(Operations.replenishOKXBalance.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/relayer-to-battery`.
-    /// - Remark: Generated from `#/paths//restricted/relayer-to-battery/post(relayerToBattery)`.
-    public func relayerToBattery(
-        query: Operations.relayerToBattery.Input.Query,
-        headers: Operations.relayerToBattery.Input.Headers = .init(),
-        body: Operations.relayerToBattery.Input.Body
-    ) async throws -> Operations.relayerToBattery.Output {
-        try await relayerToBattery(Operations.relayerToBattery.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Swaps TON from the main relayer into the native coin of an EVM chain through Changelly, paid
-    /// out to the EVM relay wallet. Without confirm it only quotes; with confirm it creates the swap
-    /// and sends the TON. The relayer keeps at least 2000 TON.
-    ///
-    ///
-    /// - Remark: HTTP `POST /restricted/evm-relay-topup`.
-    /// - Remark: Generated from `#/paths//restricted/evm-relay-topup/post(evmRelayTopup)`.
-    public func evmRelayTopup(
-        query: Operations.evmRelayTopup.Input.Query,
-        headers: Operations.evmRelayTopup.Input.Headers = .init(),
-        body: Operations.evmRelayTopup.Input.Body
-    ) async throws -> Operations.evmRelayTopup.Output {
-        try await evmRelayTopup(Operations.evmRelayTopup.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/migrate-old-battery`.
-    /// - Remark: Generated from `#/paths//restricted/migrate-old-battery/post(migrateOldBattery)`.
-    public func migrateOldBattery(
-        query: Operations.migrateOldBattery.Input.Query,
-        headers: Operations.migrateOldBattery.Input.Headers = .init(),
-        body: Operations.migrateOldBattery.Input.Body
-    ) async throws -> Operations.migrateOldBattery.Output {
-        try await migrateOldBattery(Operations.migrateOldBattery.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/migrate-relayer`.
-    /// - Remark: Generated from `#/paths//restricted/migrate-relayer/post(migrateRelayer)`.
-    public func migrateRelayer(
-        query: Operations.migrateRelayer.Input.Query,
-        headers: Operations.migrateRelayer.Input.Headers = .init(),
-        body: Operations.migrateRelayer.Input.Body
-    ) async throws -> Operations.migrateRelayer.Output {
-        try await migrateRelayer(Operations.migrateRelayer.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/omniston-swap`.
-    /// - Remark: Generated from `#/paths//restricted/omniston-swap/post(omnistonSwap)`.
-    public func omnistonSwap(
-        query: Operations.omnistonSwap.Input.Query,
-        headers: Operations.omnistonSwap.Input.Headers = .init()
-    ) async throws -> Operations.omnistonSwap.Output {
-        try await omnistonSwap(Operations.omnistonSwap.Input(
-            query: query,
-            headers: headers
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/users/{user_id}/reset-balance`.
-    /// - Remark: Generated from `#/paths//restricted/users/{user_id}/reset-balance/post(resetUserBalance)`.
-    public func resetUserBalance(
-        path: Operations.resetUserBalance.Input.Path,
-        query: Operations.resetUserBalance.Input.Query,
-        headers: Operations.resetUserBalance.Input.Headers = .init(),
-        body: Components.RequestBodies.resetUserBalance
-    ) async throws -> Operations.resetUserBalance.Output {
-        try await resetUserBalance(Operations.resetUserBalance.Input(
-            path: path,
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Moves a TON purchase that was claimed by the wallet's public-key user over to the same wallet's wallet-id user: the purchase row, its user_purchase_id, and the balance it added. Everything is checked and applied in one transaction; dry_run checks and reports without changing anything.
-    ///
-    /// - Remark: HTTP `POST /restricted/ton-purchases/{purchase_id}/reassign`.
-    /// - Remark: Generated from `#/paths//restricted/ton-purchases/{purchase_id}/reassign/post(reassignTonPurchase)`.
-    public func reassignTonPurchase(
-        path: Operations.reassignTonPurchase.Input.Path,
-        query: Operations.reassignTonPurchase.Input.Query,
-        headers: Operations.reassignTonPurchase.Input.Headers = .init(),
-        body: Operations.reassignTonPurchase.Input.Body
-    ) async throws -> Operations.reassignTonPurchase.Output {
-        try await reassignTonPurchase(Operations.reassignTonPurchase.Input(
-            path: path,
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/purchases/{purchase_id}/extend-refund-period`.
-    /// - Remark: Generated from `#/paths//restricted/purchases/{purchase_id}/extend-refund-period/post(extendRefundPeriod)`.
-    public func extendRefundPeriod(
-        path: Operations.extendRefundPeriod.Input.Path,
-        query: Operations.extendRefundPeriod.Input.Query,
-        headers: Operations.extendRefundPeriod.Input.Headers = .init()
-    ) async throws -> Operations.extendRefundPeriod.Output {
-        try await extendRefundPeriod(Operations.extendRefundPeriod.Input(
-            path: path,
-            query: query,
-            headers: headers
-        ))
-    }
-    /// - Remark: HTTP `POST /restricted/users/{user_id}/increase-balance`.
-    /// - Remark: Generated from `#/paths//restricted/users/{user_id}/increase-balance/post(increaseUserBalance)`.
-    public func increaseUserBalance(
-        path: Operations.increaseUserBalance.Input.Path,
-        query: Operations.increaseUserBalance.Input.Query,
-        headers: Operations.increaseUserBalance.Input.Headers = .init(),
-        body: Operations.increaseUserBalance.Input.Body
-    ) async throws -> Operations.increaseUserBalance.Output {
-        try await increaseUserBalance(Operations.increaseUserBalance.Input(
-            path: path,
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Records TON that left the cold wallet but is still the users' money -- moved somewhere the
-    /// on-chain balance does not see. Its amount is added to the cold wallet's balance in the
-    /// assets accounting (battery.invisible_user_liabilities). One record per transaction.
-    ///
-    ///
-    /// - Remark: HTTP `POST /restricted/invisible-user-liabilities`.
-    /// - Remark: Generated from `#/paths//restricted/invisible-user-liabilities/post(addInvisibleUserLiability)`.
-    public func addInvisibleUserLiability(
-        query: Operations.addInvisibleUserLiability.Input.Query,
-        headers: Operations.addInvisibleUserLiability.Input.Headers = .init(),
-        body: Operations.addInvisibleUserLiability.Input.Body
-    ) async throws -> Operations.addInvisibleUserLiability.Output {
-        try await addInvisibleUserLiability(Operations.addInvisibleUserLiability.Input(
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `GET /jetton-metadata/{name}.json`.
-    /// - Remark: Generated from `#/paths//jetton-metadata/{name}.json/get(getJettonMetadata)`.
-    public func getJettonMetadata(
-        path: Operations.getJettonMetadata.Input.Path,
-        headers: Operations.getJettonMetadata.Input.Headers = .init()
-    ) async throws -> Operations.getJettonMetadata.Output {
-        try await getJettonMetadata(Operations.getJettonMetadata.Input(
-            path: path,
-            headers: headers
-        ))
-    }
-    /// - Remark: HTTP `GET /enterprise/wallets/{wallet_id}/config`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/config/get(enterpriseGetWalletConfig)`.
-    public func enterpriseGetWalletConfig(
-        path: Operations.enterpriseGetWalletConfig.Input.Path,
-        headers: Operations.enterpriseGetWalletConfig.Input.Headers
-    ) async throws -> Operations.enterpriseGetWalletConfig.Output {
-        try await enterpriseGetWalletConfig(Operations.enterpriseGetWalletConfig.Input(
-            path: path,
-            headers: headers
-        ))
-    }
-    /// - Remark: HTTP `POST /enterprise/wallets/{wallet_id}/estimate`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/estimate/post(enterpriseEstimate)`.
-    public func enterpriseEstimate(
-        path: Operations.enterpriseEstimate.Input.Path,
-        query: Operations.enterpriseEstimate.Input.Query = .init(),
-        headers: Operations.enterpriseEstimate.Input.Headers,
-        body: Components.RequestBodies.EnterpriseSendingBoc
-    ) async throws -> Operations.enterpriseEstimate.Output {
-        try await enterpriseEstimate(Operations.enterpriseEstimate.Input(
-            path: path,
-            query: query,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `POST /enterprise/wallets/{wallet_id}/send`.
-    /// - Remark: Generated from `#/paths//enterprise/wallets/{wallet_id}/send/post(enterpriseSend)`.
-    public func enterpriseSend(
-        path: Operations.enterpriseSend.Input.Path,
-        headers: Operations.enterpriseSend.Input.Headers,
-        body: Components.RequestBodies.EnterpriseSendingBoc
-    ) async throws -> Operations.enterpriseSend.Output {
-        try await enterpriseSend(Operations.enterpriseSend.Input(
-            path: path,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// - Remark: HTTP `GET /enterprise/messages/{msg_id}`.
-    /// - Remark: Generated from `#/paths//enterprise/messages/{msg_id}/get(enterpriseGetMessage)`.
-    public func enterpriseGetMessage(
-        path: Operations.enterpriseGetMessage.Input.Path,
-        headers: Operations.enterpriseGetMessage.Input.Headers
-    ) async throws -> Operations.enterpriseGetMessage.Output {
-        try await enterpriseGetMessage(Operations.enterpriseGetMessage.Input(
-            path: path,
-            headers: headers
-        ))
-    }
-    /// - Remark: HTTP `GET /enterprise/status`.
-    /// - Remark: Generated from `#/paths//enterprise/status/get(enterpriseGetStatus)`.
-    public func enterpriseGetStatus(headers: Operations.enterpriseGetStatus.Input.Headers) async throws -> Operations.enterpriseGetStatus.Output {
-        try await enterpriseGetStatus(Operations.enterpriseGetStatus.Input(headers: headers))
-    }
-    /// Return how many battery charges a transaction consumed. Public: it exposes only the charge cost of a transaction the caller already knows the hash of.
-    ///
-    /// - Remark: HTTP `GET /transaction`.
-    /// - Remark: Generated from `#/paths//transaction/get(getTransaction)`.
-    public func getTransaction(
-        query: Operations.getTransaction.Input.Query,
-        headers: Operations.getTransaction.Input.Headers = .init()
-    ) async throws -> Operations.getTransaction.Output {
-        try await getTransaction(Operations.getTransaction.Input(
-            query: query,
-            headers: headers
         ))
     }
 }

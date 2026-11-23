@@ -1,8 +1,18 @@
 @testable import Perps
 import PerpsModels
+import TKTestSupport
 import XCTest
 
 final class PerpsFundingAmountInputTests: XCTestCase {
+    func testLeadingDecimalSeparatorGetsAZero() {
+        for text in [",3", ".3"] {
+            var input = PerpsFundingAmountInput(tokenDecimals: 6, unit: .token)
+            input.setText(text)
+            XCTAssertEqual(input.text, "0.3")
+            XCTAssertEqual(input.tokenAmount, Decimal(string: "0.3"))
+        }
+    }
+
     func testDollarEntryRoundsTokenAmountDown() {
         var input = PerpsFundingAmountInput(tokenDecimals: 6, unit: .usd, usdPrice: Decimal(string: "0.9998"))
         input.setText("10")
@@ -35,6 +45,20 @@ final class PerpsFundingAmountInputTests: XCTestCase {
         XCTAssertEqual(input.text, "3906.123456")
     }
 
+    func testMaxOfAnEighteenDecimalToken_showsNoMoreDigitsThanTyping() throws {
+        var input = PerpsFundingAmountInput(tokenDecimals: 18, unit: .token, usdPrice: Decimal(string: "0.998"))
+        try input.setMax(XCTUnwrap(Decimal(string: "21.133150354286632287")))
+        XCTAssertEqual(input.text, "21.13315035")
+
+        input.setMaxUsd(10)
+        XCTAssertEqual(input.text, "10.02004008")
+
+        input.toggleUnit()
+        input.setText("10")
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "10.02004008")
+    }
+
     func testToggleCarriesEntryOver() {
         var input = PerpsFundingAmountInput(tokenDecimals: 6, unit: .token, usdPrice: 2)
         input.setText("1.5")
@@ -46,6 +70,101 @@ final class PerpsFundingAmountInputTests: XCTestCase {
         input.toggleUnit()
         XCTAssertEqual(input.unit, .token)
         XCTAssertEqual(input.text, "1.5")
+    }
+
+    func testTokenEntrySurvivesRepeatedToggles() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+
+        for _ in 0 ..< 3 {
+            input.toggleUnit()
+            XCTAssertEqual(input.text, "1.49")
+            input.toggleUnit()
+            XCTAssertEqual(input.text, "0.3")
+        }
+        XCTAssertEqual(input.tokenAmount, Decimal(string: "0.3"))
+    }
+
+    func testDollarEntrySurvivesRepeatedToggles() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .usd, usdPrice: Decimal(string: "4.99"))
+        input.setText("1.5")
+
+        for _ in 0 ..< 3 {
+            input.toggleUnit()
+            XCTAssertEqual(input.text, "0.3006012")
+            input.toggleUnit()
+            XCTAssertEqual(input.text, "1.5")
+        }
+    }
+
+    func testEditAfterToggleConvertsAfresh() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+        input.toggleUnit()
+
+        input.setText("2")
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "0.4008016")
+    }
+
+    func testRetypingTheSameTextKeepsTheEntry() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+        input.toggleUnit()
+
+        input.setText("1.49")
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "0.3")
+    }
+
+    func testMaxAfterToggleConvertsAfresh() throws {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+        input.toggleUnit()
+
+        try input.setMax(XCTUnwrap(Decimal(string: "1")))
+        XCTAssertEqual(input.text, "4.99")
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "1")
+
+        input.toggleUnit()
+        input.setMaxUsd(2)
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "0.4008016")
+    }
+
+    func testPriceUpdateConvertsAfresh() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: 5)
+        input.setText("1")
+        input.toggleUnit()
+        input.toggleUnit()
+
+        input.setUsdPrice(10)
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "10")
+        XCTAssertEqual(input.tokenAmount, 1)
+    }
+
+    func testSamePriceRefreshKeepsTheEntry() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+        input.toggleUnit()
+
+        input.setUsdPrice(Decimal(string: "4.99"))
+        input.toggleUnit()
+        XCTAssertEqual(input.text, "0.3")
+    }
+
+    func testLosingThePriceForgetsTheEntry() {
+        var input = PerpsFundingAmountInput(tokenDecimals: 9, unit: .token, usdPrice: Decimal(string: "4.99"))
+        input.setText("0.3")
+        input.toggleUnit()
+
+        input.setUsdPrice(nil)
+        input.setUsdPrice(Decimal(string: "4.99"))
+        input.toggleUnit()
+        XCTAssertEqual(input.unit, .usd)
+        XCTAssertEqual(input.text, "")
     }
 
     func testNoPriceKeepsTokenAndRefusesToggle() {
@@ -83,16 +202,231 @@ final class PerpsFundingAmountInputTests: XCTestCase {
 
 @MainActor
 final class PerpsFundingAmountViewModelTests: XCTestCase {
-    func testWithdrawalDisplaysDestinationIconWhileAmountStaysInUSDC() async throws {
+    func testBalanceMaxAndReviewDoNotWaitForDestinationIcon() async {
+        let icons = HeldLoads<URL?>()
+        let viewModel = makeIconViewModel(icons)
+        viewModel.onAppear()
+        await icons.waitFor(1)
+        await waitUntil(viewModel) { !viewModel.isBalanceLoading }
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertTrue(viewModel.isMaxEnabled)
+        XCTAssertEqual(viewModel.balance?.amount, "5")
+        viewModel.setMax()
+        XCTAssertEqual(viewModel.amountText, "5")
+        XCTAssertTrue(viewModel.isReviewEnabled)
+        XCTAssertNil(viewModel.asset.iconURL)
+        let icon = URL(string: "https://example.com/usdc.png")
+        icons.resolve(icon)
+        await waitUntil(viewModel) { viewModel.asset.iconURL == icon }
+        XCTAssertEqual(viewModel.asset.iconURL, icon)
+        XCTAssertEqual(viewModel.balance?.amount, "5")
+        XCTAssertEqual(viewModel.amountText, "5")
+        viewModel.onDisappear()
+    }
+
+    func testLateIconFromPreviousDestinationCannotReplaceThePickedIcon() async {
+        let icons = HeldLoads<URL?>()
+        let viewModel = makeIconViewModel(icons)
+        viewModel.onAppear()
+        await icons.waitFor(1)
+        let pickedIcon = URL(string: "https://example.com/picked.png")
+        let firstLoad = viewModel.loadTask
+        viewModel.assetDidChange(balance: .init(amount: "5", usdPrice: 1, iconURL: pickedIcon))
+        await icons.waitFor(2)
+        icons.resolve(URL(string: "https://example.com/old.png"))
+        await awaitEnd(of: firstLoad)
+        XCTAssertEqual(viewModel.asset.iconURL, pickedIcon)
+        icons.resolve(nil)
+        await awaitEnd(of: viewModel.loadTask)
+        XCTAssertEqual(viewModel.asset.iconURL, pickedIcon)
+        viewModel.onDisappear()
+    }
+
+    func testIconCompletionAfterDisappearanceDoesNotUpdateTheScreen() async {
+        let icons = HeldLoads<URL?>()
+        let viewModel = makeIconViewModel(icons)
+        viewModel.onAppear()
+        await icons.waitFor(1)
+        let load = viewModel.loadTask
+        viewModel.onDisappear()
+        icons.resolve(URL(string: "https://example.com/usdc.png"))
+        await load?.value
+        XCTAssertNil(viewModel.asset.iconURL)
+    }
+
+    private func makeIconViewModel(_ icons: HeldLoads<URL?>) -> PerpsFundingAmountViewModel<Void> {
+        PerpsFundingAmountViewModel(
+            config: PerpsFundingAmountConfig(
+                title: "", asset: { Self.usdc }, initialUnit: .usd, allowsUnitSwitching: false,
+                fixedUsdPrice: 1, loadIcon: { await icons.next() },
+                loadBalance: { .init(amount: "5", usdPrice: 1, iconURL: nil) },
+                loadLimit: nil, requiresLimit: true, review: { _ in }, errorText: { _ in nil }
+            ),
+            format: .test
+        )
+    }
+
+    func testLocalizedAmountSurvivesMaxEditingAndReview() async {
+        var reviewedAmount: String?
+        let viewModel = PerpsFundingAmountViewModel<Void>(
+            config: PerpsFundingAmountConfig(
+                title: "",
+                asset: { .init(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, network: .ethereum) },
+                initialUnit: .usd,
+                fixedUsdPrice: 1,
+                loadBalance: { .init(amount: "4.289", usdPrice: 1, iconURL: nil) },
+                loadLimit: nil,
+                review: { reviewedAmount = $0 },
+                errorText: { _ in nil }
+            ),
+            format: PerpsFormatting(amounts: PerpsTestAmountFormatting(), locale: Locale(identifier: "ru_RU"))
+        )
+        await load(viewModel)
+        viewModel.setMax()
+        XCTAssertEqual(viewModel.amountText, "4,28")
+        viewModel.setAmount("0,0058")
+        XCTAssertEqual(viewModel.amountText, "0,00")
+        viewModel.toggleUnit()
+        viewModel.setAmount("0,0058")
+        XCTAssertEqual(viewModel.amountText, "0,0058")
+        viewModel.review()
+        await viewModel.reviewTask?.value
+        XCTAssertEqual(reviewedAmount, "0.0058")
+        XCTAssertEqual(viewModel.amountText, "0,0058")
+        viewModel.onDisappear()
+    }
+
+    func testHugeTokenEntryKeepsEveryDigitInDollars() async {
+        let viewModel = makeViewModel(balance: "2.16", limit: nil)
+        await load(viewModel)
+
+        viewModel.setAmount("555555555555555555555555555555")
+
+        XCTAssertEqual(viewModel.counterpartText, "$555555555555555555555555555555")
+    }
+
+    func testUSDSwitcherHasALoadingPlaceholderAndIgnoresTaps() async {
+        let balances = HeldLoads<PerpsFundingBalance?>()
+        let viewModel = makeHeldBalanceViewModel(balances)
+
+        XCTAssertEqual(viewModel.counterpartText, PerpsFormatting.test.usd(0))
+        XCTAssertFalse(viewModel.canToggleUnit)
+        viewModel.toggleUnit()
+        XCTAssertEqual(viewModel.amountPrefix, "")
+
+        viewModel.onAppear()
+        await balances.waitFor(1)
+        balances.resolve(.init(amount: "3", usdPrice: 1, iconURL: nil))
+        await waitUntil(viewModel) { !viewModel.isBalanceLoading }
+
+        XCTAssertTrue(viewModel.canToggleUnit)
+        viewModel.toggleUnit()
+        XCTAssertEqual(viewModel.amountPrefix, "$")
+    }
+
+    func testAvailableIsHiddenWhileBalanceLoadsAndShowsKnownZero() async {
+        let balances = HeldLoads<PerpsFundingBalance?>()
+        let viewModel = makeHeldBalanceViewModel(balances)
+
+        XCTAssertTrue(viewModel.isBalanceLoading)
+        XCTAssertNil(viewModel.availableText)
+        XCTAssertFalse(viewModel.isAssetLoading)
+        XCTAssertEqual(viewModel.amountSuffix, "USDC")
+        XCTAssertEqual(viewModel.asset.network, .ethereum)
+        viewModel.onAppear()
+        await balances.waitFor(1)
+        XCTAssertTrue(viewModel.isBalanceLoading)
+
+        balances.resolve(.init(amount: "0", usdPrice: 1, iconURL: nil))
+        await waitUntil(viewModel) { !viewModel.isBalanceLoading }
+
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertEqual(viewModel.availableText, PerpsFormatting.test.tokenCompact(0, symbol: "USDC"))
+        XCTAssertFalse(viewModel.isMaxEnabled)
+    }
+
+    func testAvailableDoesNotWaitForTheMaxFeeReserve() async {
+        let limits = HeldLoads<String?>()
+        let viewModel = makeHeldLimitViewModel(limits)
+        viewModel.onAppear()
+        await limits.waitFor(1)
+        await waitUntil(viewModel) { viewModel.balance != nil }
+
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertEqual(viewModel.availableText, PerpsFormatting.test.tokenCompact(1, symbol: "ETH"))
+        XCTAssertNil(viewModel.limit)
+
+        limits.resolve("0.99")
+        await waitUntil(viewModel) { viewModel.limit != nil }
+        XCTAssertEqual(viewModel.limit, Decimal(string: "0.99"))
+    }
+
+    func testUnknownBalanceStopsShimmerWithoutWaitingForTheMaxFeeReserve() async {
+        let limits = HeldLoads<String?>()
+        let viewModel = makeHeldLimitViewModel(limits, balance: nil)
+        viewModel.onAppear()
+        await limits.waitFor(1)
+        await waitUntil(viewModel) { !viewModel.isBalanceLoading }
+
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertNil(viewModel.availableText)
+        XCTAssertFalse(viewModel.isMaxEnabled)
+        limits.resolve(nil)
+    }
+
+    func testOldBalanceLoadCannotStopNewLoadingState() async {
+        let balances = HeldLoads<PerpsFundingBalance?>()
+        let viewModel = makeHeldBalanceViewModel(balances)
+        viewModel.onAppear()
+        await balances.waitFor(1)
+
+        let firstLoad = viewModel.loadTask
+        viewModel.assetDidChange(balance: nil)
+        await balances.waitFor(2)
+        balances.resolve(.init(amount: "10", usdPrice: 1, iconURL: nil))
+        await firstLoad?.value
+        XCTAssertTrue(viewModel.isBalanceLoading)
+        XCTAssertNil(viewModel.availableText)
+
+        balances.resolve(.init(amount: "2", usdPrice: 1, iconURL: nil))
+        await waitUntil(viewModel) { !viewModel.isBalanceLoading }
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertEqual(viewModel.availableText, PerpsFormatting.test.tokenCompact(2, symbol: "USDC"))
+    }
+
+    func testWithdrawalCannotReviewWhenTheDestinationBalanceIsUnavailable() async {
+        let viewModel = PerpsFundingAmountViewModel<Void>(
+            config: PerpsFundingAmountConfig(
+                title: "",
+                asset: { .init(assetId: "lighter/mainnet/usdc", symbol: "USDC", decimals: 6, network: .ethereum) },
+                initialUnit: .usd,
+                fixedUsdPrice: 1,
+                loadBalance: { nil },
+                loadLimit: nil,
+                requiresLimit: true,
+                review: { _ in XCTFail("an unavailable destination must not be reviewed") },
+                errorText: { _ in nil }
+            ),
+            format: .test
+        )
+        viewModel.setAmount("1")
+        XCTAssertFalse(viewModel.isReviewEnabled)
+        await load(viewModel)
+        XCTAssertFalse(viewModel.isReviewEnabled)
+        viewModel.review()
+    }
+
+    func testWithdrawalDisplaysDestinationIconWhileAmountStaysInUSD() async throws {
         let iconURL = try XCTUnwrap(URL(string: "https://example.com/btc.png"))
         let viewModel = PerpsFundingAmountViewModel<Void>(
             config: PerpsFundingAmountConfig(
                 title: "",
                 asset: { .init(assetId: "lighter/mainnet/usdc", symbol: "USDC", decimals: 6, network: .ethereum) },
-                displayAsset: { balance in
+                displayAsset: { balance, _ in
                     .init(assetId: "btc/mainnet/coin", symbol: "BTC", network: .bitcoin, iconURL: balance?.iconURL, balanceText: nil)
                 },
                 initialUnit: .usd,
+                allowsUnitSwitching: false,
                 fixedUsdPrice: 1,
                 loadBalance: { .init(amount: "10", usdPrice: 1, iconURL: iconURL) },
                 loadLimit: nil,
@@ -111,8 +445,94 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.asset.symbol, "BTC")
         XCTAssertEqual(viewModel.asset.network, .bitcoin)
         XCTAssertNil(viewModel.asset.balanceText)
-        XCTAssertEqual(viewModel.amountSuffix, "USDC")
+        XCTAssertEqual(viewModel.amountPrefix, "$")
+        XCTAssertNil(viewModel.amountSuffix)
+        XCTAssertNil(viewModel.counterpartText)
+        XCTAssertFalse(viewModel.canToggleUnit)
         XCTAssertEqual(viewModel.amountText, "2")
+    }
+
+    func testWithdrawalTogglesIntoTheDestinationTokenAndStillReviewsDollars() async throws {
+        var reviewed: String?
+        let viewModel = makeWithdrawViewModel { reviewed = $0 }
+        await load(viewModel)
+
+        XCTAssertTrue(viewModel.canToggleUnit)
+        viewModel.setAmount("100")
+        XCTAssertEqual(viewModel.counterpartText, try PerpsFormatting.test.tokenCompact(XCTUnwrap(Decimal(string: "0.002")), symbol: "BTC"))
+
+        viewModel.toggleUnit()
+        XCTAssertEqual(viewModel.amountSuffix, "BTC")
+        XCTAssertEqual(viewModel.amountText, PerpsFormatting.test.input("0.002"))
+        XCTAssertEqual(viewModel.counterpartText, PerpsFormatting.test.usd(100))
+
+        let done = expectation(description: "reviewed")
+        viewModel.onReviewed = { _ in done.fulfill() }
+        viewModel.review()
+        await fulfillment(of: [done], timeout: 1)
+        XCTAssertEqual(reviewed, "100")
+    }
+
+    func testWithdrawalLimitsAndMaxStayInDollarsWhileTypedInTheToken() async throws {
+        var reviewed: String?
+        let viewModel = makeWithdrawViewModel { reviewed = $0 }
+        await load(viewModel)
+        viewModel.toggleUnit()
+
+        viewModel.setAmount("0.03")
+        XCTAssertFalse(viewModel.isReviewEnabled, "0.03 BTC is $1500, over the $1000 balance")
+        XCTAssertEqual(viewModel.availableText, try PerpsFormatting.test.tokenCompact(XCTUnwrap(Decimal(string: "0.02")), symbol: "BTC"))
+
+        viewModel.setMax()
+        XCTAssertEqual(viewModel.amountText, PerpsFormatting.test.input("0.02"))
+        XCTAssertTrue(viewModel.isReviewEnabled)
+        let done = expectation(description: "reviewed")
+        viewModel.onReviewed = { _ in done.fulfill() }
+        viewModel.review()
+        await fulfillment(of: [done], timeout: 1)
+        XCTAssertEqual(reviewed, "1000")
+    }
+
+    func testWithdrawalWithoutADestinationPriceStaysInDollars() async {
+        let viewModel = makeWithdrawViewModel(destinationPrice: nil) { _ in }
+        await load(viewModel)
+
+        XCTAssertFalse(viewModel.canToggleUnit)
+        XCTAssertNil(viewModel.counterpartText)
+        viewModel.setAmount("100")
+        XCTAssertEqual(viewModel.amountPrefix, "$")
+        XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func testPickingAnotherDestinationKeepsTheDollarsAndRepricesThem() async {
+        let viewModel = makeWithdrawViewModel { _ in }
+        await load(viewModel)
+        viewModel.setAmount("100")
+
+        let ton = PerpsDepositSourceOption(
+            source: .init(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, network: .ton),
+            balance: .init(amount: "3", usdPrice: 2, iconURL: nil)
+        )
+        viewModel.assetDidChange(balance: viewModel.balance, destination: ton)
+
+        XCTAssertEqual(viewModel.amountText, "100")
+        XCTAssertEqual(viewModel.counterpartText, PerpsFormatting.test.tokenCompact(50, symbol: "TON"))
+    }
+
+    func testPickingAnUnpricedDestinationAfterATokenEntryFallsBackToDollars() async {
+        let viewModel = makeWithdrawViewModel { _ in }
+        await load(viewModel)
+        viewModel.toggleUnit()
+        viewModel.setAmount("0.001")
+
+        let unpriced = PerpsDepositSourceOption(
+            source: .init(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, network: .ton),
+            balance: .init(amount: "3", usdPrice: nil, iconURL: nil)
+        )
+        viewModel.assetDidChange(balance: viewModel.balance, destination: unpriced)
+
+        XCTAssertEqual(viewModel.amountPrefix, "$")
+        XCTAssertFalse(viewModel.isReviewEnabled)
     }
 
     func testReviewRefusedOverLimitAndSaysWhy() async {
@@ -142,9 +562,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         )
         viewModel.setAmount("3.49")
         viewModel.onAppear()
-        for _ in 0 ..< 100 where viewModel.warningText == nil {
-            await Task.yield()
-        }
+        await waitUntil(viewModel) { viewModel.warningText != nil }
 
         XCTAssertEqual(viewModel.warningText, "minimum")
         XCTAssertFalse(viewModel.isReviewEnabled)
@@ -155,6 +573,18 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
 
         viewModel.setAmount("")
         XCTAssertNil(viewModel.warningText)
+    }
+
+    func testHiddenBalancesMaskAvailableAndTheAssetBalance() async {
+        let viewModel = makeViewModel(
+            balance: "10",
+            limit: nil,
+            format: PerpsFormatting(amounts: PerpsTestAmountFormatting()) { "* * *" }
+        )
+        await load(viewModel)
+
+        XCTAssertEqual(viewModel.availableText, "* * *")
+        XCTAssertEqual(viewModel.asset.balanceText, "* * *")
     }
 
     func testLimitOverridesWalletBalance() async {
@@ -226,7 +656,8 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
 
         XCTAssertTrue(viewModel.isReviewEnabled)
         XCTAssertFalse(viewModel.isMaxEnabled)
-        XCTAssertEqual(viewModel.availableText, PerpsFundingText.missing)
+        XCTAssertNil(viewModel.availableText)
+        XCTAssertFalse(viewModel.isBalanceLoading)
     }
 
     func testReviewSendsTokenAmountFromDollarEntry() async {
@@ -273,9 +704,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
             pendingNotice: "Finish the pending payment"
         )
         viewModel.onAppear()
-        for _ in 0 ..< 100 where !viewModel.isReviewEnabled {
-            await Task.yield()
-        }
+        await waitUntil(viewModel) { viewModel.isReviewEnabled }
 
         XCTAssertTrue(viewModel.isReviewEnabled)
         XCTAssertEqual(viewModel.warningText, "Finish the pending payment")
@@ -306,9 +735,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
             pendingNotice: "Finish the pending payment"
         )
         viewModel.onAppear()
-        for _ in 0 ..< 100 where viewModel.warningText == nil {
-            await Task.yield()
-        }
+        await waitUntil(viewModel) { viewModel.warningText != nil }
 
         XCTAssertEqual(viewModel.asset.assetId, "ton/mainnet/coin")
         XCTAssertEqual(viewModel.amountSuffix, "TON")
@@ -319,9 +746,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
     func testReviewCompletionAfterLeavingTheFormIsIgnored() async {
         var release: CheckedContinuation<Void, Never>?
         let started = expectation(description: "review started")
-        let finished = expectation(description: "review finished")
-        let reviewed = expectation(description: "reviewed")
-        reviewed.isInverted = true
+        var didReview = false
         let viewModel = PerpsFundingAmountViewModel<String>(
             config: PerpsFundingAmountConfig(
                 title: "",
@@ -335,21 +760,22 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
                         release = continuation
                         started.fulfill()
                     }
-                    finished.fulfill()
                     return "late"
                 },
                 errorText: { _ in nil }
             ),
             format: .test
         )
-        viewModel.onReviewed = { _ in reviewed.fulfill() }
+        viewModel.onReviewed = { _ in didReview = true }
         viewModel.setAmount("1")
         viewModel.review()
-        await fulfillment(of: [started], timeout: 1)
+        await fulfillment(of: [started], timeout: 5)
+        let review = viewModel.reviewTask
 
         viewModel.onDisappear()
         release?.resume()
-        await fulfillment(of: [finished, reviewed], timeout: 1)
+        await review?.value
+        XCTAssertFalse(didReview)
         XCTAssertFalse(viewModel.isReviewInFlight)
     }
 
@@ -440,23 +866,23 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
 
         source = PerpsDepositSource(assetId: "btc/mainnet/coin", symbol: "BTC", decimals: 8, network: .bitcoin)
         let listed = PerpsFundingBalance(amount: "0.5", usdPrice: 60000, iconURL: URL(string: "https://example.com/btc.png"))
+        let firstLoad = viewModel.loadTask
         viewModel.assetDidChange(balance: listed)
 
         XCTAssertEqual(viewModel.asset.iconURL, listed.iconURL)
-        XCTAssertNotEqual(viewModel.availableText, PerpsFundingText.missing)
+        XCTAssertNotNil(viewModel.availableText)
+        XCTAssertFalse(viewModel.isBalanceLoading)
         XCTAssertEqual(viewModel.amountSuffix, "BTC")
         XCTAssertEqual(viewModel.amountText, "")
 
         await loads.waitFor(2)
         loads.resolve(.init(amount: "10", usdPrice: 1, iconURL: nil))
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await firstLoad?.value
         XCTAssertEqual(viewModel.balance, listed)
 
         let loaded = PerpsFundingBalance(amount: "0.6", usdPrice: 60000, iconURL: listed.iconURL)
         loads.resolve(loaded)
-        for _ in 0 ..< 200 where viewModel.balance != loaded {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(viewModel) { viewModel.balance == loaded }
         XCTAssertEqual(viewModel.balance, loaded)
     }
 
@@ -472,9 +898,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.amountText, "")
 
         limits.resolve("0.99")
-        for _ in 0 ..< 200 where viewModel.isMaxPending {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(viewModel) { !viewModel.isMaxPending }
         XCTAssertFalse(viewModel.isMaxPending)
         XCTAssertEqual(viewModel.amountText, "0.99")
     }
@@ -489,29 +913,52 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isMaxPending)
 
         limits.resolve("0.99")
-        for _ in 0 ..< 200 where viewModel.limit == nil {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(viewModel) { viewModel.limit != nil }
         XCTAssertEqual(viewModel.amountText, "0.1")
     }
 
     func testDepositStartsFromTheLargestHoldingOnceListed() async {
         let preferred = HeldLoads<PerpsDepositSourceOption?>()
         let (viewModel, source) = makePreferringViewModel(preferred)
+        XCTAssertTrue(viewModel.isAssetLoading)
+        XCTAssertNil(viewModel.amountSuffix)
+        XCTAssertEqual(viewModel.counterpartText, PerpsFormatting.test.usd(0))
         viewModel.onAppear()
         await preferred.waitFor(1)
-        XCTAssertEqual(viewModel.amountSuffix, "USDC")
+        await waitUntil(viewModel) { viewModel.balance != nil }
+        XCTAssertNotNil(viewModel.balance)
+        XCTAssertTrue(viewModel.isBalanceLoading)
+        XCTAssertNil(viewModel.amountSuffix)
+        XCTAssertNil(viewModel.availableText)
+        XCTAssertFalse(viewModel.canToggleUnit)
 
         preferred.resolve(Self.tonOption)
-        for _ in 0 ..< 200 where viewModel.amountSuffix != "TON" {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(viewModel) { viewModel.amountSuffix == "TON" }
         XCTAssertEqual(source.value.assetId, "ton/mainnet/coin")
+        XCTAssertFalse(viewModel.isAssetLoading)
+        XCTAssertEqual(viewModel.asset.network, .ton)
         XCTAssertEqual(viewModel.asset.iconURL, Self.tonOption.balance?.iconURL)
         XCTAssertEqual(viewModel.balance, Self.tonOption.balance)
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitEnd(of: viewModel.loadTask)
         XCTAssertEqual(preferred.waitingCount, 0)
+    }
+
+    func testNoPreferredHoldingRevealsTheDefaultAsset() async {
+        let preferred = HeldLoads<PerpsDepositSourceOption?>()
+        let (viewModel, source) = makePreferringViewModel(preferred)
+        viewModel.onAppear()
+        await preferred.waitFor(1)
+        XCTAssertTrue(viewModel.isAssetLoading)
+
+        preferred.resolve(nil)
+        await waitUntil(viewModel) { !viewModel.isAssetLoading }
+
+        XCTAssertFalse(viewModel.isAssetLoading)
+        XCTAssertFalse(viewModel.isBalanceLoading)
+        XCTAssertEqual(source.value.assetId, Self.usdc.assetId)
+        XCTAssertEqual(viewModel.amountSuffix, "USDC")
+        XCTAssertNotNil(viewModel.availableText)
     }
 
     func testDepositKeepsItsAssetOnceTheUserHasStartedTyping() async {
@@ -520,13 +967,31 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         viewModel.onAppear()
         await preferred.waitFor(1)
         viewModel.setAmount("5")
+        XCTAssertFalse(viewModel.isAssetLoading)
 
         preferred.resolve(Self.tonOption)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitEnd(of: viewModel.loadTask)
 
         XCTAssertEqual(source.value.assetId, Self.usdc.assetId)
         XCTAssertEqual(viewModel.amountText, "5")
         XCTAssertEqual(viewModel.amountSuffix, "USDC")
+    }
+
+    func testClearingTheTypedAmountKeepsTheAssetShown() async {
+        let preferred = HeldLoads<PerpsDepositSourceOption?>()
+        let (viewModel, source) = makePreferringViewModel(preferred)
+        viewModel.onAppear()
+        await preferred.waitFor(1)
+        viewModel.setAmount("5")
+        viewModel.setAmount("")
+        XCTAssertFalse(viewModel.isAssetLoading)
+        XCTAssertEqual(viewModel.amountSuffix, "USDC")
+
+        preferred.resolve(Self.tonOption)
+        await awaitEnd(of: viewModel.loadTask)
+
+        XCTAssertEqual(source.value.assetId, Self.usdc.assetId)
+        XCTAssertFalse(viewModel.isAssetLoading)
     }
 
     func testAnAssetPickedWhileTheHoldingsLoadIsNotReplaced() async {
@@ -535,10 +1000,12 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         viewModel.onAppear()
         await preferred.waitFor(1)
 
+        let holdingsLoad = viewModel.loadTask
         source.value = PerpsDepositSource(assetId: "btc/mainnet/coin", symbol: "BTC", decimals: 8, network: .bitcoin)
         viewModel.assetDidChange(balance: nil)
         preferred.resolve(Self.tonOption)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitEnd(of: holdingsLoad)
+        await awaitEnd(of: viewModel.loadTask)
 
         XCTAssertEqual(source.value.assetId, "btc/mainnet/coin")
         XCTAssertEqual(viewModel.amountSuffix, "BTC")
@@ -553,7 +1020,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
 
         viewModel.chooseAsset()
         preferred.resolve(Self.tonOption)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await awaitEnd(of: viewModel.loadTask)
 
         XCTAssertEqual(source.value.assetId, Self.usdc.assetId)
         XCTAssertEqual(viewModel.amountSuffix, "USDC")
@@ -566,9 +1033,7 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         await preferred.waitFor(1)
         viewModel.setAmount("1")
 
-        for _ in 0 ..< 200 where viewModel.warningText == nil {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(viewModel) { viewModel.warningText != nil }
         XCTAssertEqual(viewModel.warningText, "minimum")
         XCTAssertFalse(viewModel.isReviewEnabled)
         preferred.resolve(nil)
@@ -578,13 +1043,32 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         let preferred = HeldLoads<PerpsDepositSourceOption?>()
         let (viewModel, source) = makePreferringViewModel(preferred, pending: "pending")
         viewModel.onAppear()
-        for _ in 0 ..< 100 where viewModel.warningText == nil {
-            await Task.yield()
-        }
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await waitUntil(viewModel) { viewModel.warningText != nil }
+        await awaitEnd(of: viewModel.loadTask)
 
         XCTAssertEqual(preferred.waitingCount, 0)
         XCTAssertEqual(source.value.assetId, Self.usdc.assetId)
+    }
+
+    func testFundingAssetsAreSortedByDollarValueWithStableEmptyHoldings() {
+        func option(_ id: String, _ amount: String, _ price: Decimal?) -> PerpsDepositSourceOption {
+            .init(
+                source: .init(assetId: id, symbol: id, decimals: 8, network: .ethereum),
+                balance: .init(amount: amount, usdPrice: price, iconURL: nil)
+            )
+        }
+        let options = [
+            option("USDC", "2", 1),
+            option("unknown", "100", nil),
+            option("TON", "1", 3),
+            option("BTC", "0.0001", 60000),
+            option("empty", "0", 1),
+            option("invalid", "1", .nan),
+        ]
+
+        XCTAssertEqual(options.sortedByHoldingValue.map(\.source.assetId), ["BTC", "TON", "USDC", "unknown", "empty", "invalid"])
+        XCTAssertEqual(options.sortedByHoldingValue.first, options.largestHolding)
+        XCTAssertEqual([options[0], option("tied", "1", 2)].sortedByHoldingValue.map(\.source.assetId), ["USDC", "tied"])
     }
 
     func testLargestHoldingIsTheMostDollarsHeld() {
@@ -638,14 +1122,34 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         return (viewModel, source)
     }
 
-    private func makeHeldLimitViewModel(_ limits: HeldLoads<String?>) -> PerpsFundingAmountViewModel<Void> {
+    private func makeHeldBalanceViewModel(_ balances: HeldLoads<PerpsFundingBalance?>) -> PerpsFundingAmountViewModel<Void> {
+        PerpsFundingAmountViewModel<Void>(
+            config: PerpsFundingAmountConfig(
+                title: "",
+                asset: { Self.usdc },
+                initialUnit: .token,
+                fixedUsdPrice: nil,
+                loadBalance: { await balances.next() },
+                loadLimit: nil,
+                limitIsMaxOnly: true,
+                review: { _ in },
+                errorText: { _ in nil }
+            ),
+            format: .test
+        )
+    }
+
+    private func makeHeldLimitViewModel(
+        _ limits: HeldLoads<String?>,
+        balance: PerpsFundingBalance? = .init(amount: "1", usdPrice: 2000, iconURL: nil)
+    ) -> PerpsFundingAmountViewModel<Void> {
         PerpsFundingAmountViewModel<Void>(
             config: PerpsFundingAmountConfig(
                 title: "",
                 asset: { .init(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18, network: .ethereum) },
                 initialUnit: .token,
                 fixedUsdPrice: nil,
-                loadBalance: { .init(amount: "1", usdPrice: 2000, iconURL: nil) },
+                loadBalance: { balance },
                 loadLimit: { await limits.next() },
                 limitIsMaxOnly: true,
                 review: { _ in },
@@ -675,7 +1179,11 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
         )
     }
 
-    private func makeViewModel(balance: String?, limit: String?) -> PerpsFundingAmountViewModel<Void> {
+    private func makeViewModel(
+        balance: String?,
+        limit: String?,
+        format: PerpsFormatting = .test
+    ) -> PerpsFundingAmountViewModel<Void> {
         PerpsFundingAmountViewModel<Void>(
             config: PerpsFundingAmountConfig(
                 title: "",
@@ -687,15 +1195,49 @@ final class PerpsFundingAmountViewModelTests: XCTestCase {
                 review: { _ in },
                 errorText: { _ in nil }
             ),
+            format: format
+        )
+    }
+
+    private func makeWithdrawViewModel(
+        destinationPrice: Decimal? = 50000,
+        review: @escaping (String) -> Void
+    ) -> PerpsFundingAmountViewModel<String> {
+        let destination = PerpsDepositSourceOption(
+            source: .init(assetId: "btc/mainnet/coin", symbol: "BTC", decimals: 8, network: .bitcoin),
+            balance: .init(amount: "0.5", usdPrice: destinationPrice, iconURL: nil)
+        )
+        return PerpsFundingAmountViewModel<String>(
+            config: PerpsFundingAmountConfig(
+                title: "",
+                asset: { .init(assetId: "lighter/mainnet/usdc", symbol: "USDC", decimals: 6, network: .ethereum) },
+                loadDestination: { destination },
+                initialUnit: .usd,
+                fixedUsdPrice: 1,
+                loadBalance: { .init(amount: "1000", usdPrice: 1, iconURL: nil) },
+                loadLimit: nil,
+                review: { amount in
+                    review(amount)
+                    return amount
+                },
+                errorText: { _ in nil }
+            ),
             format: .test
         )
     }
 
     private func load(_ viewModel: PerpsFundingAmountViewModel<some Any>) async {
         viewModel.onAppear()
-        for _ in 0 ..< 100 where viewModel.limit == nil && viewModel.balance == nil {
-            await Task.yield()
+        await viewModel.loadTask?.value
+    }
+
+    private func awaitEnd(of load: Task<Void, Never>?) async {
+        let ended = expectation(description: "the load ends without another held call")
+        Task {
+            await load?.value
+            ended.fulfill()
         }
+        await fulfillment(of: [ended], timeout: 5)
     }
 }
 
@@ -711,9 +1253,13 @@ private final class Box<Value> {
 @MainActor
 private final class HeldLoads<Value: Sendable> {
     private var waiting: [CheckedContinuation<Value, Never>] = []
+    private let changes = TestSignal()
 
     func next() async -> Value {
-        await withCheckedContinuation { waiting.append($0) }
+        await withCheckedContinuation {
+            waiting.append($0)
+            changes.send()
+        }
     }
 
     var waitingCount: Int {
@@ -721,9 +1267,7 @@ private final class HeldLoads<Value: Sendable> {
     }
 
     func waitFor(_ count: Int) async {
-        for _ in 0 ..< 200 where waiting.count < count {
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        await waitUntil(changes) { self.waiting.count >= count }
     }
 
     func resolve(_ value: Value) {

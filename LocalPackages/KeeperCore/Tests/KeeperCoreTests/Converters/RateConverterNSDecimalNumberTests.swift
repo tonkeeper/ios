@@ -5,6 +5,12 @@ import XCTest
 final class RateConverterNSDecimalNumberTests: XCTestCase {
     private let converter = RateConverter()
 
+    func testConvertingChargesBackToTokensWithAnUnavailableRateDoesNotDivideByZero() {
+        for rate in [NSDecimalNumber.zero, .notANumber, NSDecimalNumber(value: -1)] {
+            XCTAssertEqual(converter.convertFromCurrency(amount: 100, amountFractionLength: 0, rate: rate, targetFractionLength: 9), 0)
+        }
+    }
+
     func test_convert_preservesSmallCryptoAmountAcrossFiatScale() throws {
         // $30.00 (2 decimals) → BTC at $100,000/BTC → 0.0003 BTC (8 decimals)
         let sourceAmount = BigUInt(3000)
@@ -69,5 +75,40 @@ final class RateConverterNSDecimalNumberTests: XCTestCase {
         )
 
         XCTAssertEqual(converted, BigUInt(5_000_000_000))
+    }
+
+    func test_convert_roundsToNearestByDefault() {
+        let converted = converter.convert(
+            amount: BigUInt(7),
+            amountFractionLength: 1,
+            rate: NSDecimalNumber(value: 1),
+            targetFractionLength: 0
+        )
+
+        XCTAssertEqual(converted, BigUInt(1))
+    }
+
+    func test_convert_roundsDownWhenAsked() {
+        let converted = converter.convert(
+            amount: BigUInt(19),
+            amountFractionLength: 1,
+            rate: NSDecimalNumber(value: 1),
+            targetFractionLength: 0,
+            roundingMode: .down
+        )
+
+        XCTAssertEqual(converted, BigUInt(1))
+    }
+
+    func test_convertFromCurrency_roundsUpWhenAsked() {
+        let converted = converter.convertFromCurrency(
+            amount: BigUInt(1),
+            amountFractionLength: 0,
+            rate: NSDecimalNumber(value: 3),
+            targetFractionLength: 2,
+            roundingMode: .up
+        )
+
+        XCTAssertEqual(converted, BigUInt(34))
     }
 }

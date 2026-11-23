@@ -1,25 +1,20 @@
 import SwiftUI
+import TKLocalize
 import WidgetKit
 
+@available(iOS 17.0, *)
 struct RateChartWidget: Widget {
-    let kind: String = "RateChartWidget"
-
-    var supportedFamilies: [WidgetFamily] {
-        return [.systemSmall, .systemMedium]
-    }
-
     var body: some WidgetConfiguration {
-        IntentConfiguration(
-            kind: kind,
-            intent: RateWidgetIntent.self,
+        AppIntentConfiguration(
+            kind: WalletWidgetLink.Widget.rateChart.kind,
+            intent: RateWidgetConfigurationIntent.self,
             provider: RateWidgetTimelineProvider()
         ) { entry in
-            RateChartWidgetView(entry: entry)
-                .widgetBackground(backgroundView: Color(UIColor.Background.page))
+            RateWidgetEntryView(entry: entry, widget: .rateChart)
         }
-        .configurationDisplayName("Rate with chart")
-        .description("")
-        .supportedFamilies(supportedFamilies)
-        .contentMarginsDisabledIfAvailable()
+        .configurationDisplayName(TKLocales.Widget.RateChart.title)
+        .description(TKLocales.Widget.RateChart.description)
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        .contentMarginsDisabled()
     }
 }

@@ -51,6 +51,19 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(listCrossSwapAssetsRequestCount, 0)
     }
 
+    func test_catalogAssetKeepsTheAggregatorsThatQuoteIt() {
+        let catalogAsset = MultichainSwapAsset(
+            assetId: "eth/mainnet/coin",
+            symbol: "ETH",
+            name: "ETH",
+            decimals: 18,
+            chainFamily: "EVM",
+            supportedAggregators: ["swapsxyz", "swapkit", "relay"]
+        )
+
+        XCTAssertEqual(catalogAsset.multichainAsset(walletAsset: nil).asset.swapAggregators, [.swapsXyz, .swapKit])
+    }
+
     func test_loadIgnoresDuplicateAssetIdsKeepingFirstValues() async throws {
         let walletAsset = asset(
             assetId: "ton/mainnet/coin",
@@ -740,7 +753,8 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
                         symbol: "TON",
                         title: "Toncoin",
                         decimals: 9,
-                        imageURL: URL(string: "https://cdn.example/ton.png")
+                        imageURL: URL(string: "https://cdn.example/ton.png"),
+                        swapAggregators: [.swapsXyz, .omniston]
                     )
                 ),
                 tronUsdtAssetId: .success(
@@ -749,7 +763,8 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
                         symbol: "USDT",
                         title: "Tether USD",
                         decimals: 6,
-                        imageURL: URL(string: "https://cdn.example/usdt.png")
+                        imageURL: URL(string: "https://cdn.example/usdt.png"),
+                        swapAggregators: [.swapsXyz]
                     )
                 ),
             ]
@@ -770,11 +785,13 @@ final class MultichainSwapDefaultAssetsServiceTests: XCTestCase {
         XCTAssertEqual(result.sendAsset.asset.image, "https://cdn.example/ton.png")
         XCTAssertEqual(result.sendAsset.balance, 2_000_000_000)
         XCTAssertEqual(result.sendAsset.price.prices["usd"], 2.5)
+        XCTAssertEqual(result.sendAsset.asset.swapAggregators, [.swapsXyz, .omniston])
         XCTAssertEqual(result.receiveAsset.asset.assetId, tronUsdtAssetId)
         XCTAssertEqual(result.receiveAsset.asset.name, "Tether USD")
         XCTAssertEqual(result.receiveAsset.asset.image, "https://cdn.example/usdt.png")
         XCTAssertEqual(result.receiveAsset.balance, 1_500_000)
         XCTAssertEqual(result.receiveAsset.price.prices["usd"], 1)
+        XCTAssertEqual(result.receiveAsset.asset.swapAggregators, [.swapsXyz])
         XCTAssertNil(result.usdFiatRate)
     }
 
@@ -976,7 +993,8 @@ private extension DefaultAssetsTradingAssetDetailsServiceSpy {
         symbol: String? = nil,
         title: String? = nil,
         decimals: Int = 9,
-        imageURL: URL? = nil
+        imageURL: URL? = nil,
+        swapAggregators: Set<MultichainSwapAggregator>? = nil
     ) -> TradingAssetDetails {
         TradingAssetDetails(
             id: assetId,
@@ -1000,7 +1018,8 @@ private extension DefaultAssetsTradingAssetDetailsServiceSpy {
             tradingActivity: nil,
             links: [],
             primaryActionTitle: "",
-            infoSource: TradingAssetInfoSource(displayedName: "test", url: nil)
+            infoSource: TradingAssetInfoSource(displayedName: "test", url: nil),
+            swapAggregators: swapAggregators
         )
     }
 }
@@ -1072,6 +1091,10 @@ private actor DefaultAssetsMultichainServiceSpy: MultichainService {
 
     func getWalletChallenge() async throws(MultichainServiceError) -> MultichainWalletChallenge {
         throw .apiError(message: "Unimplemented")
+    }
+
+    func getWalletAssetIncludingUnheld(state _: MultichainWalletState, assetId _: String, currencies _: [String]) async throws(MultichainServiceError) -> MultichainAsset? {
+        nil
     }
 
     func saveWalletAssetsFilters(walletId _: String, changes _: [MultichainAssetFilterChange]) async throws(MultichainServiceError) {
@@ -1197,6 +1220,13 @@ private actor DefaultAssetsSwapServiceSpy: MultichainSwapService {
             return nil
         }
         return assets.first { $0.assetId == assetId }
+    }
+
+    func createCrossSwapQuoteV3(
+        request _: MultichainSwapQuoteRequest,
+        walletId _: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
+        throw .unknown(statusCode: -1)
     }
 
     func prepareCrossSwapRoute(

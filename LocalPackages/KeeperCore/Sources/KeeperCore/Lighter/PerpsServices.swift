@@ -2,9 +2,11 @@ import Foundation
 import PerpsModels
 
 public struct PerpsPositionsWatch: Sendable {
+    public let followsCadence: Bool
     private let onCancel: @Sendable () -> Void
 
-    public init(onCancel: @escaping @Sendable () -> Void) {
+    public init(followsCadence: Bool = true, onCancel: @escaping @Sendable () -> Void) {
+        self.followsCadence = followsCadence
         self.onCancel = onCancel
     }
 
@@ -16,7 +18,10 @@ public struct PerpsPositionsWatch: Sendable {
 /// The store runs one watch at the fastest cadence its subscribers asked for.
 extension PerpsPositionsCadence {
     var pollInterval: TimeInterval {
-        10
+        switch self {
+        case .live: 2
+        case .ambient: 10
+        }
     }
 }
 
@@ -27,6 +32,7 @@ public struct PerpsAccountSnapshot: Sendable, Equatable {
     public let transferableBalance: String?
     public let positions: [PerpsPositionSummary]
     public let openOrders: [PerpsPortfolioOrder]
+    public let requestedAt: TimeInterval?
 
     public init(
         availableBalance: String,
@@ -34,7 +40,8 @@ public struct PerpsAccountSnapshot: Sendable, Equatable {
         equity: String? = nil,
         transferableBalance: String? = nil,
         positions: [PerpsPositionSummary] = [],
-        openOrders: [PerpsPortfolioOrder] = []
+        openOrders: [PerpsPortfolioOrder] = [],
+        requestedAt: TimeInterval? = nil
     ) {
         self.availableBalance = availableBalance
         self.collateral = collateral ?? availableBalance
@@ -42,38 +49,28 @@ public struct PerpsAccountSnapshot: Sendable, Equatable {
         self.transferableBalance = transferableBalance
         self.positions = positions
         self.openOrders = openOrders
+        self.requestedAt = requestedAt
     }
 }
 
 @frozen public enum PerpsWatchFocus: Sendable, Equatable {
     case idle
-    case positions
-    case orders([String])
-    case positionsAndOrders([String])
-}
-
-public struct PerpsOrderProgress: Sendable, Equatable {
-    public let id: String
-    public let isResting: Bool
-    public let filledBaseAmount: Double
-
-    public init(id: String, isResting: Bool, filledBaseAmount: Double) {
-        self.id = id
-        self.isResting = isResting
-        self.filledBaseAmount = filledBaseAmount
-    }
+    case portfolio
 }
 
 @frozen public enum PerpsAccountTick: Sendable {
-    case positions([PerpsPositionSummary], openOrders: [PerpsPortfolioOrder]? = nil)
-    case orders([PerpsOrderProgress])
-    case positionsAndOrders([PerpsPositionSummary], [PerpsOrderProgress], openOrders: [PerpsPortfolioOrder]? = nil)
+    case portfolio(PerpsAccountSnapshot)
+    case positions([PerpsPositionSummary], requestedAt: TimeInterval? = nil)
+    case marks([Int64: Double])
 }
 
 protocol PerpsAccountReading: AnyObject {
     func status(wallet: Wallet) async -> PerpsAccountStatus
 
     func portfolio(wallet: Wallet) async throws -> PerpsAccountSnapshot?
+
+    /// Reads after this never share one that started before it.
+    func invalidateSharedReads()
 
     func watchPositions(
         wallet: Wallet,
@@ -84,4 +81,9 @@ protocol PerpsAccountReading: AnyObject {
     ) -> PerpsPositionsWatch
 
     func tradingSnapshot(wallet: Wallet, marketId: Int64, positionId: String?) async throws -> PerpsTradingSnapshot
+}
+
+extension PerpsAccountReading {
+    /// A reader that shares no reads has nothing to drop.
+    func invalidateSharedReads() {}
 }

@@ -20,14 +20,24 @@ public struct MnemonicsVault {
 
     private let keychainVault: TKKeychainVault
     private let seedProvider: () -> String
+    let encryption: MnemonicsEncryptionParams
     private let logger = LogDomain.mnemonicStorage
 
     public init(
         keychainVault: TKKeychainVault,
         seedProvider: @escaping () -> String
     ) {
+        self.init(keychainVault: keychainVault, seedProvider: seedProvider, encryption: .production)
+    }
+
+    init(
+        keychainVault: TKKeychainVault,
+        seedProvider: @escaping () -> String,
+        encryption: MnemonicsEncryptionParams
+    ) {
         self.keychainVault = keychainVault
         self.seedProvider = seedProvider
+        self.encryption = encryption
     }
 
     public func hasMnemonics() -> Bool {
@@ -37,6 +47,22 @@ public struct MnemonicsVault {
         } catch {
             return false
         }
+    }
+
+    /// Whether the vault holds at least one mnemonic. Unlike `hasMnemonics()`, the
+    /// emptied map that `deleteMnemonic` leaves behind does not count; telling it
+    /// apart needs no password. A box of any other size counts, a corrupt one too.
+    public func holdsMnemonics() -> Bool {
+        let encryptedMnemonics: EncryptedMnemonics
+        do {
+            encryptedMnemonics = try loadEncryptedMnemonics()
+        } catch {
+            return false
+        }
+        guard let box = Data(strictHex: encryptedMnemonics.ct) else {
+            return true
+        }
+        return box.count != .emptyMnemonicsBoxSize
     }
 
     public func addMnemonic(
@@ -288,18 +314,18 @@ private extension MnemonicsVault {
         let ct = try await ScryptHashBox.encrypt(
             data: data,
             salt: salt,
-            N: MnemonicsEncryptionParams.N,
-            r: MnemonicsEncryptionParams.r,
-            p: MnemonicsEncryptionParams.p,
+            N: encryption.N,
+            r: encryption.r,
+            p: encryption.p,
             password: password,
             dkLen: MnemonicsEncryptionParams.passwordKeyLength
         )
 
         return EncryptedMnemonics(
             kind: "encrypted-scrypt-tweetnacl",
-            N: MnemonicsEncryptionParams.N,
-            r: MnemonicsEncryptionParams.r,
-            p: MnemonicsEncryptionParams.p,
+            N: encryption.N,
+            r: encryption.r,
+            p: encryption.p,
             salt: salt.toHexString(),
             ct: ct
         )
@@ -363,4 +389,6 @@ private extension String {
 
 private extension Int {
     static let chunksSize = 2048
+    /// The secretbox of an emptied map: the 16-byte MAC plus the two bytes of `{}`.
+    static let emptyMnemonicsBoxSize = 18
 }

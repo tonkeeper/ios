@@ -312,7 +312,10 @@ private extension EthenaStakingDetailsViewModelImplementation {
                             image: .TKUIKit.Icons.Size28.minusOutline,
                             title: .unstakeTitle
                         ),
-                        isEnabled: wallet.isStakeEnable,
+                        isEnabled: wallet.isStakeEnable && !isStakeDust(
+                            amount: ethenaBalance?.stakedUsde?.amount ?? 0,
+                            fractionDigits: ethenaBalance?.stakedUsde?.fractionalDigits ?? USDe.fractionDigits
+                        ),
                         action: { [weak self] in
                             self?.didOpenDapp?(widthdrawUrl, method.name)
                         }

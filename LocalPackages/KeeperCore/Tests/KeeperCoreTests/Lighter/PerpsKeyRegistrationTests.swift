@@ -2,6 +2,7 @@ import BigInt
 import ChainKit
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKPerpsAPI
 import XCTest
 
@@ -78,7 +79,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let other = "0x00000000000000000000000000000000000000aa"
         let otherKey = try XCTUnwrap(PerpsKeyRegistration(apiKeyIndex: 3, publicKey: "0x" + String(repeating: "1", count: 80)))
         let registrationCall = Components.Schemas.HermesExecuteCall(
-            target: PerpsDepositCalldata.gatewayAddress,
+            target: KeyRegistrationFixture.changePubKeyContract,
             value: "0",
             data: KeyRegistrationFixture.registration.calldata
         )
@@ -108,7 +109,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
             (
                 "another key",
                 KeyRegistrationFixture.previewQuote(typedData: KeyRegistrationFixture.typedData(calls: [.init(
-                    target: PerpsDepositCalldata.gatewayAddress,
+                    target: KeyRegistrationFixture.changePubKeyContract,
                     value: "0",
                     data: otherKey.calldata
                 )])),
@@ -118,6 +119,15 @@ final class PerpsKeyRegistrationTests: XCTestCase {
                 "another target",
                 KeyRegistrationFixture.previewQuote(typedData: KeyRegistrationFixture.typedData(calls: [.init(
                     target: other,
+                    value: "0",
+                    data: KeyRegistrationFixture.registration.calldata
+                )])),
+                .malformedKeyRegistration("execute call")
+            ),
+            (
+                "the deposit gateway",
+                KeyRegistrationFixture.previewQuote(typedData: KeyRegistrationFixture.typedData(calls: [.init(
+                    target: PaymentFixture.gateway,
                     value: "0",
                     data: KeyRegistrationFixture.registration.calldata
                 )])),
@@ -169,6 +179,75 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         }
     }
 
+    func testAPreviewIsReadAgainstTheContractsTheBackendSignedNotTheBuiltInOnes() throws {
+        let delegate = "0xd1c44e466b70002ac54fb727ed7cbe8f92c782f1"
+        let changePubKey = "0x00000000000000000000000000000000000000cc"
+        let security = PerpsSecurityConfig(version: 3, hermesDelegate: delegate, hermesDelegateChains: ["eth"], changePubKeyContract: changePubKey)
+        let signedCall = Components.Schemas.HermesExecuteCall(target: changePubKey, value: "0", data: KeyRegistrationFixture.registration.calldata)
+        let signedDocument = KeyRegistrationFixture.typedData(salt: KeyRegistrationFixture.salt(delegate), calls: [signedCall])
+
+        XCTAssertNoThrow(try readPreview(KeyRegistrationFixture.previewQuote(delegate: delegate, typedData: signedDocument), security: security))
+        XCTAssertNoThrow(try readPreview(KeyRegistrationFixture.ethereumPreviewQuote(typedData: signedDocument), security: security))
+        let builtIn: [(String, Components.Schemas.DepositQuote, PerpsDepositQuoteError)] = [
+            ("the built-in delegate", KeyRegistrationFixture.previewQuote(typedData: signedDocument), .malformedKeyRegistration("authorization")),
+            (
+                "the built-in salt",
+                KeyRegistrationFixture.ethereumPreviewQuote(typedData: KeyRegistrationFixture.typedData(calls: [signedCall])),
+                .malformedKeyRegistration("execute domain")
+            ),
+            (
+                "the built-in changePubKey contract",
+                KeyRegistrationFixture.ethereumPreviewQuote(typedData: KeyRegistrationFixture.typedData(salt: KeyRegistrationFixture.salt(delegate))),
+                .malformedKeyRegistration("execute call")
+            ),
+        ]
+        for (name, quote, expected) in builtIn {
+            XCTAssertThrowsError(try readPreview(quote, security: security), name) {
+                XCTAssertEqual($0 as? PerpsDepositQuoteError, expected, name)
+            }
+        }
+    }
+
+    func testNoPreviewIsReadWhereTheSignedDelegateDoesNotRunOnEthereum() {
+        let security = PerpsSecurityConfig(
+            version: 2,
+            hermesDelegate: PerpsDepositCalldata.hermesDelegate,
+            hermesDelegateChains: ["bsc", "arb"],
+            changePubKeyContract: KeyRegistrationFixture.changePubKeyContract
+        )
+
+        for quote in [KeyRegistrationFixture.previewQuote(), KeyRegistrationFixture.ethereumPreviewQuote()] {
+            XCTAssertThrowsError(try readPreview(quote, security: security)) {
+                XCTAssertEqual($0 as? PerpsDepositQuoteError, .malformedKeyRegistration("hermes_delegate.chains"))
+            }
+        }
+    }
+
+    func testAPreviewWhoseDocumentComesAsTextIsRead() throws {
+        let text = try String(decoding: JSONEncoder().encode(KeyRegistrationFixture.typedData()), as: UTF8.self)
+
+        XCTAssertNoThrow(try readPreview(KeyRegistrationFixture.previewQuote(payloads: [
+            KeyRegistrationFixture.authorizationPayload(),
+            KeyRegistrationFixture.executePayload(text: text),
+        ])))
+    }
+
+    /// ChainKit signs the document from its text and keeps the last of a repeated key, where this
+    /// check would keep the first: the call checked would not be the call signed.
+    func testAPreviewWhoseDocumentRepeatsAKeyIsRefusedBeforeItIsRead() throws {
+        let checked = try String(decoding: JSONEncoder().encode(KeyRegistrationFixture.typedData()), as: UTF8.self)
+        let signed = KeyRegistrationFixture.typedData(calls: [.init(target: "0x00000000000000000000000000000000000000aa", value: "0", data: "0x")])
+        let message = try String(decoding: JSONEncoder().encode(signed.message), as: UTF8.self)
+        let text = String(checked.dropLast()) + #","message":"# + message + "}"
+
+        XCTAssertThrowsError(try readPreview(KeyRegistrationFixture.previewQuote(payloads: [
+            KeyRegistrationFixture.authorizationPayload(),
+            KeyRegistrationFixture.executePayload(text: text),
+        ]))) {
+            XCTAssertEqual($0 as? PerpsDepositQuoteError, .malformedKeyRegistration("execute document keys"))
+        }
+    }
+
     // MARK: - Signatures
 
     /// The signed payloads go back as ChainKit wrote them, fields this client does not read
@@ -207,6 +286,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
                 destination_address: owner
             ),
             registration: KeyRegistrationFixture.registration,
+            security: KeyRegistrationFixture.security,
             now: KeyRegistrationFixture.now
         )
         let chain = MultichainChain.eth.asChainKitChain
@@ -217,7 +297,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
             publicKey: nil
         )
         let client = CryptoKitClient(netModule: ModuleNetModule(netConfig: ModuleNetConfig(
-            isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil
+            isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil, nodeManifestHost: nil
         )))
         let wallet = try CryptoWallet.Companion.shared.fromMnemonic(
             mnemonic_: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
@@ -267,6 +347,24 @@ final class PerpsKeyRegistrationTests: XCTestCase {
 
     // MARK: - Deposit
 
+    func testDepositReviewUsesTheEstimateOfTheQuoteBeingConfirmed() async throws {
+        var plain = Self.uninitialized(KeyRegistrationFixture.bscRelayQuote())
+        plain.estimated_duration_seconds = 60
+        plain.fees = [.init(_type: "provider", amount_usd: "0.5")]
+        var preview = KeyRegistrationFixture.previewQuote()
+        preview.estimated_duration_seconds = 181
+        preview.fees = [.init(_type: "destination_gas", amount_usd: "1.25")]
+        let service = makeService(api: Self.api(plain: plain, registering: preview))
+
+        let registering = try await review(service)
+        XCTAssertEqual(registering.estimatedDurationSeconds, 181)
+        XCTAssertEqual(registering.providerFees, PerpsDepositProviderFees(destinationGasUsd: 1.25, providerUsd: 0))
+
+        let regular = try await review(service, registeringKey: false)
+        XCTAssertEqual(regular.estimatedDurationSeconds, 60)
+        XCTAssertEqual(regular.providerFees, PerpsDepositProviderFees(destinationGasUsd: 0, providerUsd: 0.5))
+    }
+
     func testAFirstDepositSignsTheRegistrationAndSendsTheQuoteSignedFor() async throws {
         let delivery = StubDepositDelivery()
         let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote(outputUnits: "2490000"))
@@ -278,7 +376,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         XCTAssertEqual(review.creditedAmount, "2.49")
         XCTAssertEqual(review.networkFee, "0.000042")
 
-        let outcome = try await service.pay(review: review, passcode: "0000")
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let events = await delivery.session.events
@@ -296,6 +394,114 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         ])
     }
 
+    func testWithoutChecksARegistrationBuildsNothingToReview() async throws {
+        let delivery = StubDepositDelivery()
+        let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote(outputUnits: "2490000"))
+        let service = makeService(api: api, delivery: delivery)
+
+        let review = try await review(service)
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
+
+        XCTAssertNil(review.review)
+        XCTAssertEqual(delivery.accountRequests, [])
+    }
+
+    /// The documents are what confirming a first deposit signs first: the preview reads them, and
+    /// they are cleared before they are signed.
+    func testTheDocumentsOfARegistrationAreAskedAboutBeforeTheyAreSigned() async throws {
+        let delivery = StubDepositDelivery()
+        let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote())
+        let service = makeService(api: api, delivery: delivery, checks: [WarningCheck()])
+        let review = try await review(service)
+        let user = ConsentingUser(answering: false)
+
+        do {
+            _ = try await service.pay(review: review, passcode: "0000", consent: user.attempt())
+            XCTFail("signed what the user refused")
+        } catch {
+            XCTAssertEqual(PerpsDepositService.message(for: error), .canceled)
+        }
+
+        let documents = try XCTUnwrap(review.review)
+        let asked = await user.asked
+        XCTAssertEqual(asked, [documents])
+        XCTAssertEqual(delivery.accountRequests, ["eth coin", "eth coin"], "the Ethereum account that signs them")
+        let events = await delivery.session.events
+        XCTAssertEqual(events, [])
+        let requests = await api.quoteDepositRequests
+        XCTAssertEqual(requests.count, 2, "no quote asked for with signatures")
+    }
+
+    /// Two operations, asked about apart: the documents on the swipe, and the payment quoted for
+    /// them once they are signed.
+    func testARegistrationAcceptedOnTheSwipeIsAskedAboutOnlyForThePaymentQuotedAfterIt() async throws {
+        let delivery = StubDepositDelivery()
+        let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote(outputUnits: "2490000"))
+        let service = makeService(api: api, delivery: delivery, checks: [WarningCheck()])
+        let review = try await review(service)
+        let user = ConsentingUser(answering: true)
+        let consent = user.attempt()
+        let documents = try XCTUnwrap(review.review)
+
+        let accepted = await consent(documents)
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: consent)
+
+        XCTAssertTrue(accepted)
+        XCTAssertEqual(outcome, .registered(operationId: "op-1"))
+        let asked = await user.asked
+        XCTAssertEqual(asked.count, 2)
+        XCTAssertEqual(asked.first, documents)
+        XCTAssertNotEqual(asked.last?.id, documents.id)
+        XCTAssertEqual(delivery.accountRequests, ["eth coin", "eth coin", KeyRegistrationFixture.bscAsset.assetId])
+        let events = await delivery.session.events
+        XCTAssertEqual(events, ["sign:p_auth,p_execute", "send:p_approve,p_relay"])
+    }
+
+    /// Read from the accounts that sign them, both held to the source and amount typed: the documents
+    /// from the Ethereum account they register, the payment quoted after them from the address that
+    /// spends.
+    func testARegistrationIsReadFromTheAccountsThatSignItAndHeldToWhatTheUserTyped() async throws {
+        let other = "0x00000000000000000000000000000000000000aa"
+        var plain = Self.uninitialized(KeyRegistrationFixture.bscRelayQuote())
+        plain.input.address = other
+        let check = WarningCheck()
+        let service = makeService(api: Self.api(plain: plain, registering: KeyRegistrationFixture.previewQuote(base: plain)), checks: [check])
+        let review = try await review(service, sender: other)
+
+        _ = try await service.pay(review: review, passcode: "0000", consent: ConsentingUser(answering: true).attempt())
+
+        let intent = OperationIntent.wallet(
+            spending: [.init(assetId: KeyRegistrationFixture.bscAsset.assetId, symbol: "USDT", decimals: 18, amount: 25 * BigUInt(10).power(18))],
+            to: nil
+        )
+        let documents = WarningCheck.Read(address: PaymentFixture.sender, assetId: ChainEthereumMainnet.shared.toAsset().id, intent: intent)
+        let reads = await check.reads.all
+        XCTAssertEqual(reads, [documents, documents, .init(address: other, assetId: KeyRegistrationFixture.bscAsset.assetId, intent: intent)])
+    }
+
+    /// The user may read the documents past their preview: nothing is then signed, and no quote is
+    /// asked for with signatures.
+    func testDocumentsReadPastTheirPreviewAreNotSigned() async throws {
+        let clock = PaymentClock(KeyRegistrationFixture.now)
+        let delivery = StubDepositDelivery()
+        let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote())
+        let service = makeService(api: api, delivery: delivery, checks: [WarningCheck()], clock: clock)
+        let review = try await review(service)
+        let user = ConsentingUser(answering: true) { clock.advance(by: 61) }
+
+        do {
+            _ = try await service.pay(review: review, passcode: "0000", consent: user.attempt())
+            XCTFail("signed the documents of a lapsed preview")
+        } catch {
+            XCTAssertEqual(PerpsDepositService.message(for: error), .quoteExpired)
+        }
+
+        let events = await delivery.session.events
+        XCTAssertEqual(events, [])
+        let requests = await api.quoteDepositRequests
+        XCTAssertEqual(requests.count, 2, "no quote asked for with signatures")
+    }
+
     func testAKeyRegisteredWhileThePreviewIsOpenStillSignsAndNamesTheKey() async throws {
         let delivery = StubDepositDelivery()
         let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote())
@@ -306,7 +512,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
             api_keys: [.init(api_key_index: 3, public_key: KeyRegistrationFixture.publicKey.uppercased())]
         )))
 
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         let requests = await api.quoteDepositRequests
         XCTAssertEqual(requests.last?.change_pub_key, KeyRegistrationFixture.registration.request())
@@ -322,7 +528,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let review = try await review(service)
         await api.setAccountResult(.failure(.transport(underlying: nil)))
 
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
         let events = await delivery.session.events
         XCTAssertEqual(events, ["sign:p_auth,p_execute", "send:p_approve,p_relay"])
         let requests = await api.quoteDepositRequests
@@ -336,7 +542,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
         let reviewed = try await review(service)
 
-        let payment = Task { try await service.pay(review: reviewed, passcode: "0000") }
+        let payment = Task { try await service.pay(review: reviewed, passcode: "0000", consent: .refuse) }
         guard case let .failure(error) = await payment.result else { return XCTFail("paid after cancellation") }
 
         XCTAssertTrue(error is CancellationError)
@@ -355,13 +561,13 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let review = try await review(service)
 
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("paid")
         } catch {
             XCTAssertEqual(PerpsDepositService.message(for: error), .insufficientNetworkFee(symbol: "BNB"))
         }
         await delivery.session.failSend(nil)
-        let outcome = try await service.pay(review: review, passcode: "0000")
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         XCTAssertEqual(outcome, .registered(operationId: "op-1"))
         let signatures = await delivery.session.signatures
@@ -376,11 +582,11 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let service = makeService(api: api, delivery: delivery)
 
         do {
-            _ = try await service.pay(review: review(service), passcode: "0000")
+            _ = try await service.pay(review: review(service), passcode: "0000", consent: .refuse)
             XCTFail("expected the repriced quote to be refused")
         } catch {
             XCTAssertEqual(error as? PerpsDepositServiceError, .registrationRepriced(quoted: "2500000", previewed: "2530000"))
-            XCTAssertEqual(PerpsDepositService.message(for: error), .quoteExpired)
+            XCTAssertEqual(PerpsDepositService.message(for: error), .quoteChanged)
         }
         let events = await delivery.session.events
         XCTAssertEqual(events, ["sign:p_auth,p_execute"])
@@ -397,7 +603,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let reviewed = try await review(service)
 
         do {
-            _ = try await service.pay(review: reviewed, passcode: "0000")
+            _ = try await service.pay(review: reviewed, passcode: "0000", consent: .refuse)
             XCTFail("sent another preview")
         } catch {
             XCTAssertEqual(error as? PerpsDepositQuoteError, .unexpectedPreview(true))
@@ -428,6 +634,25 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         }
     }
 
+    func testOnlyTheQuoteThatAskedLighterSaysTheDepositCreatesTheAccount() async throws {
+        var preview = KeyRegistrationFixture.previewQuote()
+        preview.account_uninitialized = true
+        var plain = KeyRegistrationFixture.bscRelayQuote()
+        plain.account_uninitialized = nil
+        let registering = try await review(makeService(api: Self.api(plain: plain, registering: preview)))
+        guard case .registering = registering.payment else { return XCTFail("\(registering.payment)") }
+        XCTAssertTrue(registering.createsAccount)
+
+        let cases: [(uninitialized: Bool?, createsAccount: Bool)] = [(true, true), (false, false), (nil, false)]
+        for (uninitialized, createsAccount) in cases {
+            var quote = KeyRegistrationFixture.bscRelayQuote()
+            quote.account_uninitialized = uninitialized
+            let quoted = try await review(makeService(api: FundingStubAPI(quoteDeposit: .success(quote))))
+            guard case .quoted = quoted.payment else { return XCTFail("\(quoted.payment)") }
+            XCTAssertEqual(quoted.createsAccount, createsAccount, "account_uninitialized=\(String(describing: uninitialized))")
+        }
+    }
+
     func testAKeyTheBackendAlreadyHoldsIsNamedAndTheDepositIsUsedAsIs() async throws {
         let api = FundingStubAPI(quoteDeposit: .success(KeyRegistrationFixture.bscRelayQuote()))
         let service = makeService(api: api)
@@ -451,6 +676,23 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let requests = await api.quoteDepositRequests
         XCTAssertEqual(requests.count, 1)
         XCTAssertNil(requests.first?.change_pub_key)
+    }
+
+    func testWithoutAVerifiedSecurityConfigAPreviewIsRefusedAndNothingIsSigned() async throws {
+        let api = Self.api(plain: Self.uninitialized(KeyRegistrationFixture.bscRelayQuote()), registering: KeyRegistrationFixture.previewQuote())
+        let delivery = StubDepositDelivery()
+
+        do {
+            _ = try await review(makeService(api: api, delivery: delivery, securityConfig: nil))
+            XCTFail("read a preview without a verified perps_security block")
+        } catch {
+            XCTAssertEqual(error as? PerpsDepositQuoteError, .malformedKeyRegistration("perps_security"))
+        }
+        let requests = await api.quoteDepositRequests
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(delivery.openedSessionCount, 0)
+        let events = await delivery.session.events
+        XCTAssertTrue(events.isEmpty)
     }
 
     func testAReviewWithoutAKeptKeyDoesNotQuoteOrUnlock() async throws {
@@ -553,7 +795,12 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let plain = Self.uninitialized(PaymentFixture.approvedRelayQuote())
         let preview = KeyRegistrationFixture.ethereumPreviewQuote()
         let delegated = PaymentFixture.crosschainQuote(asset: PaymentFixture.usdtAsset, amount: "25000000", payloads: [
-            .evm("p_relay", to: PaymentFixture.relayRouter, data: "0xdeadbeef", authorization: HermesBatchFixture.authorization()),
+            .evm(
+                "p_relay",
+                to: PaymentFixture.relayDepository,
+                data: RelayFixture.depositErc20(token: PaymentFixture.usdt, amountUnits: "25000000"),
+                authorization: HermesBatchFixture.authorization()
+            ),
         ])
         let api = FundingStubAPI(
             openDeposit: .success(.init(deposit_id: "deposit", status: .pending)),
@@ -572,7 +819,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         delivery.feeUnits = 84_000_000_000_000
         let pendingJournal = journal()
         let feeChecked = expectation(description: "final fee checked before payment")
-        let outcome = try await service.pay(review: review, passcode: "0000") { fee in
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: .refuse) { fee in
             XCTAssertEqual(fee, "0.000084")
             let events = await delivery.session.events
             XCTAssertEqual(events, ["sign:p_execute"])
@@ -594,10 +841,47 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         XCTAssertEqual(requests.last?.operation?.payloads.count, 1)
     }
 
+    func testTheSignedQuoteIsReadAgainstTheBlockThePreviewWasReadAgainst() async throws {
+        let delivery = StubDepositDelivery()
+        let plain = Self.uninitialized(PaymentFixture.approvedRelayQuote())
+        let preview = KeyRegistrationFixture.ethereumPreviewQuote()
+        let delegated = PaymentFixture.crosschainQuote(asset: PaymentFixture.usdtAsset, amount: "25000000", payloads: [
+            .evm(
+                "p_relay",
+                to: PaymentFixture.relayDepository,
+                data: RelayFixture.depositErc20(token: PaymentFixture.usdt, amountUnits: "25000000"),
+                authorization: HermesBatchFixture.authorization()
+            ),
+        ])
+        let api = FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "deposit", status: .pending)),
+            quoteDepositHandler: { request in
+                guard request.change_pub_key != nil else { return plain }
+                return request.operation == nil ? preview : delegated
+            }
+        )
+        let served = ServedSecurityConfig(KeyRegistrationFixture.security)
+        let service = makeService(api: api, delivery: delivery, served: served)
+        let review = try await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25")
+        served.serve(nil)
+        delivery.feeUnits = 84_000_000_000_000
+
+        let outcome = try await service.pay(review: review, passcode: "0000", consent: .refuse)
+
+        XCTAssertEqual(outcome, .registered(operationId: "op-1"))
+        let events = await delivery.session.events
+        XCTAssertEqual(events, ["sign:p_execute", "send:p_relay"])
+    }
+
     func testAnEthereumRegistrationIsNotSentWhenItsFeeCannotBePaid() async throws {
         let delivery = StubDepositDelivery()
         let delegated = PaymentFixture.crosschainQuote(asset: PaymentFixture.usdtAsset, amount: "25000000", payloads: [
-            .evm("p_relay", to: PaymentFixture.relayRouter, data: "0xdeadbeef", authorization: HermesBatchFixture.authorization()),
+            .evm(
+                "p_relay",
+                to: PaymentFixture.relayDepository,
+                data: RelayFixture.depositErc20(token: PaymentFixture.usdt, amountUnits: "25000000"),
+                authorization: HermesBatchFixture.authorization()
+            ),
         ])
         let plain = Self.uninitialized(PaymentFixture.approvedRelayQuote())
         let api = FundingStubAPI(quoteDepositHandler: { request in
@@ -608,14 +892,14 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         let review = try await review(service, asset: PaymentFixture.usdtFundingAsset, amount: "25")
         delivery.feeUnits = nil
         do {
-            _ = try await service.pay(review: review, passcode: "0000")
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
             XCTFail("an unpriced registration payment must not be sent")
         } catch {
             guard case ChainKitOperationError.feeUnavailable = error else { return XCTFail("\(error)") }
         }
         delivery.feeUnits = 84_000_000_000_000
         do {
-            _ = try await service.pay(review: review, passcode: "0000") { fee in
+            _ = try await service.pay(review: review, passcode: "0000", consent: .refuse) { fee in
                 XCTAssertEqual(fee, "0.000084")
                 throw ChainKitOperationError.insufficientFunds(payloadId: "p_relay")
             }
@@ -675,7 +959,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         guard case let .quoted(quote) = review.payment else { return XCTFail("\(review.payment)") }
         XCTAssertEqual(quote.registration, KeyRegistrationFixture.registration)
         XCTAssertEqual(quote.payloads.map(\.payloadId), ["p_batch"])
-        _ = try await service.pay(review: review, passcode: "0000")
+        _ = try await service.pay(review: review, passcode: "0000", consent: .refuse)
 
         let events = await delivery.session.events
         XCTAssertEqual(events, ["send:p_batch"])
@@ -717,9 +1001,79 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         XCTAssertEqual(requests.count, 1)
     }
 
+    func testADirectBatchRegistersTheKeyOnlyWithTheContractTheBackendSigned() async throws {
+        let changePubKey = "0x00000000000000000000000000000000000000cc"
+        let signed = PerpsSecurityConfig(
+            version: 3,
+            hermesDelegate: PerpsDepositCalldata.hermesDelegate,
+            hermesDelegateChains: ["eth"],
+            changePubKeyContract: changePubKey,
+            lighterGateway: PaymentFixture.gateway
+        )
+        let plain = Self.uninitialized(PaymentFixture.directQuote())
+
+        let review = try await review(
+            makeService(api: Self.api(plain: plain, registering: Self.directBatch(registering: KeyRegistrationFixture.registration, into: changePubKey)), securityConfig: signed),
+            asset: PerpsDepositService.targetAsset,
+            amount: "2.5"
+        )
+        guard case let .quoted(quote) = review.payment else { return XCTFail("\(review.payment)") }
+        XCTAssertEqual(quote.registration, KeyRegistrationFixture.registration)
+        do {
+            _ = try await self.review(
+                makeService(api: Self.api(plain: plain, registering: Self.directBatch(registering: KeyRegistrationFixture.registration)), securityConfig: signed),
+                asset: PerpsDepositService.targetAsset,
+                amount: "2.5"
+            )
+            XCTFail("accepted changePubKey into the built-in contract")
+        } catch {
+            XCTAssertEqual(error as? PerpsDepositCalldataError, .unsafeKeyRegistration(payloadId: "p_batch"))
+        }
+    }
+
+    func testWithoutAVerifiedSecurityConfigADirectBatchRegisteringTheKeyIsNotSent() async throws {
+        let cases: [(Components.Schemas.EIP7702AuthorizationTemplate?, PerpsDepositQuoteError)] = [
+            (nil, .unexpectedChainPayment("lighter gateway")),
+            (HermesBatchFixture.authorization(), .malformedPayload(payloadId: "p_batch")),
+        ]
+        for (authorization, expected) in cases {
+            let delivery = StubDepositDelivery()
+            let api = Self.api(
+                plain: Self.uninitialized(PaymentFixture.directQuote()),
+                registering: Self.directBatch(registering: KeyRegistrationFixture.registration, authorization: authorization)
+            )
+
+            do {
+                _ = try await review(makeService(api: api, delivery: delivery, securityConfig: nil), asset: PerpsDepositService.targetAsset, amount: "2.5")
+                XCTFail("read a key registration without a verified perps_security block")
+            } catch {
+                XCTAssertEqual(error as? PerpsDepositQuoteError, expected)
+            }
+            XCTAssertEqual(delivery.openedSessionCount, 0)
+        }
+    }
+
+    func testADirectBatchRegisteringTheKeyIntoTheGatewayIsRejected() async throws {
+        let api = Self.api(
+            plain: PaymentFixture.directQuote(),
+            registering: Self.directBatch(registering: KeyRegistrationFixture.registration, into: PaymentFixture.gateway)
+        )
+        let service = makeService(api: api)
+
+        do {
+            _ = try await review(service, asset: PerpsDepositService.targetAsset, amount: "2.5")
+            XCTFail("accepted changePubKey into the deposit gateway")
+        } catch {
+            XCTAssertEqual(error as? PerpsDepositCalldataError, .unsafeKeyRegistration(payloadId: "p_batch"))
+        }
+    }
+
     // MARK: - Helpers
 
-    private func readPreview(_ quote: Components.Schemas.DepositQuote) throws -> PerpsKeyRegistrationPreview {
+    private func readPreview(
+        _ quote: Components.Schemas.DepositQuote,
+        security: PerpsSecurityConfig = KeyRegistrationFixture.security
+    ) throws -> PerpsKeyRegistrationPreview {
         try PerpsDepositQuoteReader.readPreview(
             quote,
             request: .init(
@@ -730,6 +1084,7 @@ final class PerpsKeyRegistrationTests: XCTestCase {
                 change_pub_key: KeyRegistrationFixture.registration.request()
             ),
             registration: KeyRegistrationFixture.registration,
+            security: security,
             now: KeyRegistrationFixture.now
         )
     }
@@ -741,7 +1096,11 @@ final class PerpsKeyRegistrationTests: XCTestCase {
     }
 
     /// The direct deposit folded into one self-call with `changePubKey` after it.
-    private static func directBatch(registering registration: PerpsKeyRegistration) -> Components.Schemas.DepositQuote {
+    private static func directBatch(
+        registering registration: PerpsKeyRegistration,
+        into target: String = KeyRegistrationFixture.changePubKeyContract,
+        authorization: Components.Schemas.EIP7702AuthorizationTemplate? = HermesBatchFixture.authorization()
+    ) -> Components.Schemas.DepositQuote {
         var quote = PaymentFixture.foldedQuote()
         let token = PerpsFundingAssetId.usdcEthereum.replacingOccurrences(of: "eth/mainnet/erc20/", with: "")
         quote.operation = .transfer([.evm(
@@ -750,10 +1109,10 @@ final class PerpsKeyRegistrationTests: XCTestCase {
             data: HermesBatchFixture.execute([
                 (token, HermesBatchFixture.approve(spender: PaymentFixture.gateway, amountUnits: "2500000")),
                 (PaymentFixture.gateway, PaymentFixture.depositCalldata(amountUnits: "2500000")),
-                (PaymentFixture.gateway, registration.calldata),
+                (target, registration.calldata),
             ]),
             gas: "260000",
-            authorization: HermesBatchFixture.authorization()
+            authorization: authorization
         )])
         return quote
     }
@@ -787,12 +1146,13 @@ final class PerpsKeyRegistrationTests: XCTestCase {
         _ service: PerpsDepositService,
         asset: PerpsFundingAsset = KeyRegistrationFixture.bscAsset,
         amount: String = "25",
+        sender: String = PaymentFixture.sender,
         registeringKey: Bool = true
     ) async throws -> PerpsDepositReview {
         try await service.review(
             sourceAsset: asset,
             amount: amount,
-            senderAddress: PaymentFixture.sender,
+            senderAddress: sender,
             beneficiary: PaymentFixture.sender,
             registeringKey: registeringKey
         )
@@ -805,20 +1165,44 @@ final class PerpsKeyRegistrationTests: XCTestCase {
     private func makeService(
         api: FundingStubAPI,
         delivery: StubDepositDelivery = StubDepositDelivery(),
-        keyRegistration: PerpsKeyRegistration? = KeyRegistrationFixture.registration
+        keyRegistration: PerpsKeyRegistration? = KeyRegistrationFixture.registration,
+        securityConfig: PerpsSecurityConfig? = KeyRegistrationFixture.security,
+        served: ServedSecurityConfig? = nil,
+        checks: [any OperationCheck] = [],
+        clock: PaymentClock = PaymentClock(KeyRegistrationFixture.now)
     ) -> PerpsDepositService {
-        PerpsDepositService(
+        let served = served ?? ServedSecurityConfig(securityConfig)
+        return PerpsDepositService(
             walletId: "multichain-wallet",
             walletIdentity: "wallet",
             environment: "mainnet",
             journal: journal(),
             api: api,
             delivery: delivery,
+            gate: OperationGate { checks },
             recovery: nil,
             keyRegistration: { keyRegistration },
-            now: { KeyRegistrationFixture.now },
+            securityConfig: { served.config },
+            now: { clock.now },
             makeOperationId: { "op-1" }
         )
+    }
+}
+
+final class ServedSecurityConfig: @unchecked Sendable {
+    private let lock = NSLock()
+    private var current: PerpsSecurityConfig?
+
+    init(_ config: PerpsSecurityConfig?) {
+        current = config
+    }
+
+    var config: PerpsSecurityConfig? {
+        lock.withLock { current }
+    }
+
+    func serve(_ config: PerpsSecurityConfig?) {
+        lock.withLock { current = config }
     }
 }
 
@@ -830,6 +1214,28 @@ enum KeyRegistrationFixture {
     static let r = "0x" + String(repeating: "a", count: 64)
     static let s = "0x" + String(repeating: "b", count: 64)
     static let signature = "0x" + String(repeating: "c", count: 128) + "1b"
+    static let changePubKeyContract = "0x183ef7195d443a3da7ec1d7003baca1ff490757d"
+    static let relayRouters: [String: PerpsRelayRouter] = [
+        PaymentFixture.relayRouter: .erc20Router,
+        RelayFixture.approvalProxy: .approvalProxy,
+        RelayFixture.receiver: .relayReceiver,
+    ]
+    static let security = PerpsSecurityConfig(
+        version: 2,
+        hermesDelegate: PerpsDepositCalldata.hermesDelegate,
+        hermesDelegateChains: ["eth", "bsc", "arb", "base", "polygon", "robinhood"],
+        changePubKeyContract: KeyRegistrationFixture.changePubKeyContract,
+        relayTonDepositories: [TonDepositFixture.depository],
+        lighterGateway: PaymentFixture.gateway,
+        relayEVMDepositories: Dictionary(uniqueKeysWithValues: ["eth", "bsc", "arb", "base", "polygon", "avax", "robinhood"].map { ($0, [PaymentFixture.relayDepository]) }),
+        relayRouters: Dictionary(uniqueKeysWithValues: ["eth", "bsc", "arb", "base", "polygon", "avax", "robinhood"].map { ($0, relayRouters) }),
+        relayTronDepositories: [TronFixture.router],
+        relayBitcoinDepositories: [BitcoinPsbtFixture.depository]
+    )
+
+    static func salt(_ delegate: String) -> String {
+        "0x" + String(repeating: "0", count: 24) + delegate.dropFirst(2)
+    }
 
     static let executeTypes: [String: [Components.Schemas.EIP712TypeField]] = [
         "Execute": [
@@ -854,9 +1260,9 @@ enum KeyRegistrationFixture {
 
     static func typedData(
         owner: String = PaymentFixture.sender,
-        salt: String = "0x" + String(repeating: "0", count: 24) + PerpsDepositCalldata.hermesDelegate.dropFirst(2),
+        salt: String = KeyRegistrationFixture.salt(PerpsDepositCalldata.hermesDelegate),
         mode: String = PerpsDepositQuoteReader.signedBatchMode,
-        calls: [Components.Schemas.HermesExecuteCall] = [.init(target: PerpsDepositCalldata.gatewayAddress, value: "0", data: KeyRegistrationFixture.registration.calldata)],
+        calls: [Components.Schemas.HermesExecuteCall] = [.init(target: KeyRegistrationFixture.changePubKeyContract, value: "0", data: KeyRegistrationFixture.registration.calldata)],
         types: [String: [Components.Schemas.EIP712TypeField]] = KeyRegistrationFixture.executeTypes,
         deadline: Int64 = 1_700_000_600
     ) -> Components.Schemas.HermesExecuteTypedData {
@@ -905,6 +1311,11 @@ enum KeyRegistrationFixture {
         .payload("p_execute", type: "eip7821/hermes/delegate", chain: "eth/mainnet", meta: Components.Schemas.PayloadMetaHermesDelegate(data: typedData))
     }
 
+    /// The document as a JSON string, which ChainKit reads as readily as an object.
+    static func executePayload(text: String) -> Components.Schemas.QuotePayload {
+        .payload("p_execute", type: "eip7821/hermes/delegate", chain: "eth/mainnet", meta: ["data": text])
+    }
+
     /// The aggregator's answer to a registration asked without signatures.
     static func previewQuote(
         base: Components.Schemas.DepositQuote = KeyRegistrationFixture.bscRelayQuote(),
@@ -928,10 +1339,13 @@ enum KeyRegistrationFixture {
     }
 
     /// The same answer for an aggregator route paid from Ethereum: `Execute` alone.
-    static func ethereumPreviewQuote(sender: String = PaymentFixture.sender) -> Components.Schemas.DepositQuote {
+    static func ethereumPreviewQuote(
+        sender: String = PaymentFixture.sender,
+        typedData: Components.Schemas.HermesExecuteTypedData = KeyRegistrationFixture.typedData()
+    ) -> Components.Schemas.DepositQuote {
         previewQuote(
             base: PaymentFixture.crosschainQuote(asset: PaymentFixture.usdtAsset, amount: "25000000", sender: sender, payloads: []),
-            payloads: [executePayload(typedData())]
+            payloads: [executePayload(typedData)]
         )
     }
 

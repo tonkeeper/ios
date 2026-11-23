@@ -1,21 +1,24 @@
 import Foundation
 
+/// Only the site of the Earn page keys/all names (`earnUrl`), subdomains included, gets the native bridge
+/// and the wallet's EVM provider.
 struct EarnDappMatcher {
-    static let earnHostSuffixes: Set<String> = [
-        "vaults.fyi",
-        "vaults-tonkeeper-earn-demo.fly.dev",
-    ]
+    private let earnURL: URL
 
-    private let hostSuffixes: Set<String>
-
-    init(hostSuffixes: Set<String> = EarnDappMatcher.earnHostSuffixes) {
-        self.hostSuffixes = hostSuffixes
+    init(earnURL: URL) {
+        self.earnURL = earnURL
     }
 
     func matches(url: URL) -> Bool {
-        guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else {
+        guard url.scheme?.lowercased() == "https",
+              earnURL.scheme?.lowercased() == "https",
+              let host = url.host?.lowercased(),
+              let earnHost = earnURL.host?.lowercased(),
+              !earnHost.isEmpty,
+              (url.port ?? 443) == (earnURL.port ?? 443)
+        else {
             return false
         }
-        return hostSuffixes.contains { host == $0 || host.hasSuffix(".\($0)") }
+        return host == earnHost || host.hasSuffix(".\(earnHost)")
     }
 }

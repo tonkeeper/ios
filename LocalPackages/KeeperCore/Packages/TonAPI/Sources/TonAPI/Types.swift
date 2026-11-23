@@ -26,11 +26,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v2/blockchain/message`.
     /// - Remark: Generated from `#/paths//v2/blockchain/message/post(sendBlockchainMessage)`.
     func sendBlockchainMessage(_ input: Operations.SendBlockchainMessage.Input) async throws -> Operations.SendBlockchainMessage.Output
+    /// Get blockchain config
+    ///
+    /// - Remark: HTTP `GET /v2/blockchain/config`.
+    /// - Remark: Generated from `#/paths//v2/blockchain/config/get(getBlockchainConfig)`.
+    func getBlockchainConfig(_ input: Operations.GetBlockchainConfig.Input) async throws -> Operations.GetBlockchainConfig.Output
     /// Get migratable assets value (TON balance, jettons with prices, NFT count) for several wallets at once.
     ///
     /// - Remark: HTTP `POST /v2/migration/wallets`.
     /// - Remark: Generated from `#/paths//v2/migration/wallets/post(getMigrationWallets)`.
     func getMigrationWallets(_ input: Operations.GetMigrationWallets.Input) async throws -> Operations.GetMigrationWallets.Output
+    /// Prepare ordered signable transactions that migrate every asset from `from` to `to`.
+    ///
+    /// - Remark: HTTP `POST /v2/migration/prepare`.
+    /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)`.
+    func prepareMigration(_ input: Operations.PrepareMigration.Input) async throws -> Operations.PrepareMigration.Output
     /// Get human-friendly information about an account without low-level details.
     ///
     /// - Remark: HTTP `GET /v2/accounts/{account_id}`.
@@ -41,6 +51,11 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/accounts/{account_id}/jettons`.
     /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/get(getAccountJettonsBalances)`.
     func getAccountJettonsBalances(_ input: Operations.GetAccountJettonsBalances.Input) async throws -> Operations.GetAccountJettonsBalances.Output
+    /// Get Jetton balance by owner address
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/jettons/{jetton_id}`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/{jetton_id}/get(getAccountJettonBalance)`.
+    func getAccountJettonBalance(_ input: Operations.GetAccountJettonBalance.Input) async throws -> Operations.GetAccountJettonBalance.Output
     /// Please use `getJettonAccountHistoryByID`` instead
     ///
     /// - Remark: HTTP `GET /v2/accounts/{account_id}/jettons/{jetton_id}/history`.
@@ -62,6 +77,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/accounts/{account_id}/events/{event_id}`.
     /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/events/{event_id}/get(getAccountEvent)`.
     func getAccountEvent(_ input: Operations.GetAccountEvent.Input) async throws -> Operations.GetAccountEvent.Output
+    /// Get expiring account .ton dns
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/dns/expiring`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/dns/expiring/get(getAccountDnsExpiring)`.
+    func getAccountDnsExpiring(_ input: Operations.GetAccountDnsExpiring.Input) async throws -> Operations.GetAccountDnsExpiring.Output
+    /// Get public key by account id
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/publickey`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/publickey/get(getAccountPublicKey)`.
+    func getAccountPublicKey(_ input: Operations.GetAccountPublicKey.Input) async throws -> Operations.GetAccountPublicKey.Output
     /// Get full information about domain name
     ///
     /// - Remark: HTTP `GET /v2/dns/{domain_name}`.
@@ -77,6 +102,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v2/nfts/_bulk`.
     /// - Remark: Generated from `#/paths//v2/nfts/_bulk/post(getNftItemsByAddresses)`.
     func getNftItemsByAddresses(_ input: Operations.GetNftItemsByAddresses.Input) async throws -> Operations.GetNftItemsByAddresses.Output
+    /// Get NFT item by its address
+    ///
+    /// - Remark: HTTP `GET /v2/nfts/{account_id}`.
+    /// - Remark: Generated from `#/paths//v2/nfts/{account_id}/get(getNftItemByAddress)`.
+    func getNftItemByAddress(_ input: Operations.GetNftItemByAddress.Input) async throws -> Operations.GetNftItemByAddress.Output
+    /// Get an event either by event ID or a hash of any transaction in a trace. An event is built on top of a trace which is a series of transactions caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on top of actions because actions can be changed at any time.
+    ///
+    /// - Remark: HTTP `GET /v2/events/{event_id}`.
+    /// - Remark: Generated from `#/paths//v2/events/{event_id}/get(getEvent)`.
+    func getEvent(_ input: Operations.GetEvent.Input) async throws -> Operations.GetEvent.Output
     /// Get jetton metadata by jetton master address
     ///
     /// - Remark: HTTP `GET /v2/jettons/{account_id}`.
@@ -127,6 +162,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/gasless/config`.
     /// - Remark: Generated from `#/paths//v2/gasless/config/get(gaslessConfig)`.
     func gaslessConfig(_ input: Operations.GaslessConfig.Input) async throws -> Operations.GaslessConfig.Output
+    /// Get wallets by public key
+    ///
+    /// - Remark: HTTP `GET /v2/pubkeys/{public_key}/wallets`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/{public_key}/wallets/get(getWalletsByPublicKey)`.
+    func getWalletsByPublicKey(_ input: Operations.GetWalletsByPublicKey.Input) async throws -> Operations.GetWalletsByPublicKey.Output
+    /// Get wallets by a list of public keys
+    ///
+    /// - Remark: HTTP `POST /v2/pubkeys/wallets/_bulk`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/wallets/_bulk/post(getWalletsByPublicKeyBulk)`.
+    func getWalletsByPublicKeyBulk(_ input: Operations.GetWalletsByPublicKeyBulk.Input) async throws -> Operations.GetWalletsByPublicKeyBulk.Output
     /// Get raw time
     ///
     /// - Remark: HTTP `GET /v2/liteserver/get_time`.
@@ -176,6 +221,13 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// Get blockchain config
+    ///
+    /// - Remark: HTTP `GET /v2/blockchain/config`.
+    /// - Remark: Generated from `#/paths//v2/blockchain/config/get(getBlockchainConfig)`.
+    public func getBlockchainConfig(headers: Operations.GetBlockchainConfig.Input.Headers = .init()) async throws -> Operations.GetBlockchainConfig.Output {
+        try await getBlockchainConfig(Operations.GetBlockchainConfig.Input(headers: headers))
+    }
     /// Get migratable assets value (TON balance, jettons with prices, NFT count) for several wallets at once.
     ///
     /// - Remark: HTTP `POST /v2/migration/wallets`.
@@ -187,6 +239,19 @@ extension APIProtocol {
     ) async throws -> Operations.GetMigrationWallets.Output {
         try await getMigrationWallets(Operations.GetMigrationWallets.Input(
             query: query,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Prepare ordered signable transactions that migrate every asset from `from` to `to`.
+    ///
+    /// - Remark: HTTP `POST /v2/migration/prepare`.
+    /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)`.
+    public func prepareMigration(
+        headers: Operations.PrepareMigration.Input.Headers = .init(),
+        body: Operations.PrepareMigration.Input.Body
+    ) async throws -> Operations.PrepareMigration.Output {
+        try await prepareMigration(Operations.PrepareMigration.Input(
             headers: headers,
             body: body
         ))
@@ -214,6 +279,21 @@ extension APIProtocol {
         headers: Operations.GetAccountJettonsBalances.Input.Headers = .init()
     ) async throws -> Operations.GetAccountJettonsBalances.Output {
         try await getAccountJettonsBalances(Operations.GetAccountJettonsBalances.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Get Jetton balance by owner address
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/jettons/{jetton_id}`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/{jetton_id}/get(getAccountJettonBalance)`.
+    public func getAccountJettonBalance(
+        path: Operations.GetAccountJettonBalance.Input.Path,
+        query: Operations.GetAccountJettonBalance.Input.Query = .init(),
+        headers: Operations.GetAccountJettonBalance.Input.Headers = .init()
+    ) async throws -> Operations.GetAccountJettonBalance.Output {
+        try await getAccountJettonBalance(Operations.GetAccountJettonBalance.Input(
             path: path,
             query: query,
             headers: headers
@@ -280,6 +360,34 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Get expiring account .ton dns
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/dns/expiring`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/dns/expiring/get(getAccountDnsExpiring)`.
+    public func getAccountDnsExpiring(
+        path: Operations.GetAccountDnsExpiring.Input.Path,
+        query: Operations.GetAccountDnsExpiring.Input.Query = .init(),
+        headers: Operations.GetAccountDnsExpiring.Input.Headers = .init()
+    ) async throws -> Operations.GetAccountDnsExpiring.Output {
+        try await getAccountDnsExpiring(Operations.GetAccountDnsExpiring.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Get public key by account id
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/publickey`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/publickey/get(getAccountPublicKey)`.
+    public func getAccountPublicKey(
+        path: Operations.GetAccountPublicKey.Input.Path,
+        headers: Operations.GetAccountPublicKey.Input.Headers = .init()
+    ) async throws -> Operations.GetAccountPublicKey.Output {
+        try await getAccountPublicKey(Operations.GetAccountPublicKey.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// Get full information about domain name
     ///
     /// - Remark: HTTP `GET /v2/dns/{domain_name}`.
@@ -319,6 +427,32 @@ extension APIProtocol {
         try await getNftItemsByAddresses(Operations.GetNftItemsByAddresses.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Get NFT item by its address
+    ///
+    /// - Remark: HTTP `GET /v2/nfts/{account_id}`.
+    /// - Remark: Generated from `#/paths//v2/nfts/{account_id}/get(getNftItemByAddress)`.
+    public func getNftItemByAddress(
+        path: Operations.GetNftItemByAddress.Input.Path,
+        headers: Operations.GetNftItemByAddress.Input.Headers = .init()
+    ) async throws -> Operations.GetNftItemByAddress.Output {
+        try await getNftItemByAddress(Operations.GetNftItemByAddress.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Get an event either by event ID or a hash of any transaction in a trace. An event is built on top of a trace which is a series of transactions caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on top of actions because actions can be changed at any time.
+    ///
+    /// - Remark: HTTP `GET /v2/events/{event_id}`.
+    /// - Remark: Generated from `#/paths//v2/events/{event_id}/get(getEvent)`.
+    public func getEvent(
+        path: Operations.GetEvent.Input.Path,
+        headers: Operations.GetEvent.Input.Headers = .init()
+    ) async throws -> Operations.GetEvent.Output {
+        try await getEvent(Operations.GetEvent.Input(
+            path: path,
+            headers: headers
         ))
     }
     /// Get jetton metadata by jetton master address
@@ -438,6 +572,32 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//v2/gasless/config/get(gaslessConfig)`.
     public func gaslessConfig(headers: Operations.GaslessConfig.Input.Headers = .init()) async throws -> Operations.GaslessConfig.Output {
         try await gaslessConfig(Operations.GaslessConfig.Input(headers: headers))
+    }
+    /// Get wallets by public key
+    ///
+    /// - Remark: HTTP `GET /v2/pubkeys/{public_key}/wallets`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/{public_key}/wallets/get(getWalletsByPublicKey)`.
+    public func getWalletsByPublicKey(
+        path: Operations.GetWalletsByPublicKey.Input.Path,
+        headers: Operations.GetWalletsByPublicKey.Input.Headers = .init()
+    ) async throws -> Operations.GetWalletsByPublicKey.Output {
+        try await getWalletsByPublicKey(Operations.GetWalletsByPublicKey.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Get wallets by a list of public keys
+    ///
+    /// - Remark: HTTP `POST /v2/pubkeys/wallets/_bulk`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/wallets/_bulk/post(getWalletsByPublicKeyBulk)`.
+    public func getWalletsByPublicKeyBulk(
+        headers: Operations.GetWalletsByPublicKeyBulk.Input.Headers = .init(),
+        body: Components.RequestBodies.PublicKeys? = nil
+    ) async throws -> Operations.GetWalletsByPublicKeyBulk.Output {
+        try await getWalletsByPublicKeyBulk(Operations.GetWalletsByPublicKeyBulk.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// Get raw time
     ///

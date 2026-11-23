@@ -355,7 +355,7 @@ private struct SkeletonPulseModifier: ViewModifier {
     let isEnabled: Bool
 
     func body(content: Content) -> some View {
-        TimelineView(.animation(minimumInterval: Layout.frameInterval)) { context in
+        TimelineView(.animation(minimumInterval: Layout.frameInterval, paused: !isEnabled)) { context in
             content.opacity(
                 isEnabled
                     ? opacity(for: context.date)

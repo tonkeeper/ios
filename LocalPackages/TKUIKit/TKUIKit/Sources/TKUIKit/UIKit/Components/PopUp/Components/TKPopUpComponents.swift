@@ -468,6 +468,33 @@ public extension TKPopUp.Component {
 }
 
 public extension TKPopUp.Component {
+    struct ConfirmSlider: TKPopUp.Item {
+        public func getView() -> UIView {
+            let container = UIView()
+            container.addSubview(sliderView)
+            sliderView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                sliderView.topAnchor.constraint(equalTo: container.topAnchor, constant: Self.insets.top),
+                sliderView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: Self.insets.left),
+                sliderView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -Self.insets.right),
+                sliderView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -Self.insets.bottom),
+            ])
+            return container
+        }
+
+        private let sliderView: TKConfirmSliderView
+        public var bottomSpace: CGFloat
+
+        public init(sliderView: TKConfirmSliderView, bottomSpace: CGFloat = 0) {
+            self.sliderView = sliderView
+            self.bottomSpace = bottomSpace
+        }
+
+        private static let insets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    }
+}
+
+public extension TKPopUp.Component {
     struct WarningBanner: TKPopUp.Item {
         public func getView() -> UIView {
             let banner = TKWarningBannerView()

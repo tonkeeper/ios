@@ -27,6 +27,7 @@ actor PerpsChartSession {
     private let hermes: HermesCandleStreaming
     private let marketsRepository: PerpsMarketsReading
     private let snapshotBars: Int32
+    private let now: @Sendable () -> Date
     private let onUpdate: @Sendable (PerpsChartSnapshot) -> Void
     private let onReconnecting: @Sendable () -> Void
     private let onFailed: @Sendable () -> Void
@@ -37,10 +38,14 @@ actor PerpsChartSession {
     private var liveWatch: HermesCandleWatch?
     private var liveFeedRejected = false
     private var phase = Phase.idle
+    /// The candle period the initial history was requested in, while the live feed's first
+    /// subscription is still to come: until a candle closes, that history is all the feed missed.
+    private var unsubscribedHistoryPeriod: Int64?
     private var nextRefreshID = 0
     private var ticker: String?
     private var priceDecimals = PerpsChartService.defaultPriceDecimals
     private var timeline: PerpsChartTimeline
+    private var isLiveOnly = true
 
     init(
         marketId: Int64,
@@ -49,6 +54,7 @@ actor PerpsChartSession {
         hermes: HermesCandleStreaming,
         marketsRepository: PerpsMarketsReading,
         snapshotBars: Int32,
+        now: @escaping @Sendable () -> Date,
         onUpdate: @escaping @Sendable (PerpsChartSnapshot) -> Void,
         onReconnecting: @escaping @Sendable () -> Void,
         onFailed: @escaping @Sendable () -> Void
@@ -59,6 +65,7 @@ actor PerpsChartSession {
         self.hermes = hermes
         self.marketsRepository = marketsRepository
         self.snapshotBars = snapshotBars
+        self.now = now
         self.onUpdate = onUpdate
         self.onReconnecting = onReconnecting
         self.onFailed = onFailed
@@ -151,9 +158,14 @@ actor PerpsChartSession {
         )
         liveWatch = watch
 
+        let requestedPeriod = currentPeriod()
         let history = await historySource.latest(ticker: market.ticker, count: snapshotBars)
         guard case .loadingInitialHistory = phase, !Task.isCancelled else { return }
-        finishInitialHistory(history)
+        finishInitialHistory(history, requestedPeriod: requestedPeriod)
+    }
+
+    private func currentPeriod() -> Int64 {
+        Int64(now().timeIntervalSince1970 * 1000) / timeframe.wireStepMilliseconds
     }
 
     private func forwardReconnecting() {
@@ -166,7 +178,13 @@ actor PerpsChartSession {
         case let .loadingInitialHistory(subscriptionCount):
             phase = .loadingInitialHistory(subscriptionCount: subscriptionCount + 1)
         case .ready:
-            scheduleRefresh()
+            // A live candle carries its whole period, so only a candle that closed since the
+            // history was requested can be missing from it.
+            let historyPeriod = unsubscribedHistoryPeriod
+            unsubscribedHistoryPeriod = nil
+            if historyPeriod != currentPeriod() {
+                scheduleRefresh()
+            }
         case .idle, .finished:
             break
         }
@@ -195,7 +213,7 @@ actor PerpsChartSession {
         }
     }
 
-    private func finishInitialHistory(_ result: PerpsChartHistorySource.FetchResult) {
+    private func finishInitialHistory(_ result: PerpsChartHistorySource.FetchResult, requestedPeriod: Int64) {
         guard case let .loadingInitialHistory(subscriptionCount) = phase else { return }
         switch result {
         case .rejected:
@@ -219,12 +237,14 @@ actor PerpsChartSession {
                 return
             }
             let liveTimestamps = timeline.candleTimestamps
-            merge(historyBatch, preserving: liveTimestamps, publish: false)
+            mergeHistory(historyBatch, preserving: liveTimestamps, publish: false)
             phase = .ready
             bootstrapTask = nil
             publishSnapshot()
             if subscriptionCount > 1 {
                 scheduleRefresh()
+            } else if subscriptionCount == 0 {
+                unsubscribedHistoryPeriod = requestedPeriod
             }
         }
     }
@@ -238,7 +258,7 @@ actor PerpsChartSession {
         else { return }
         refresh = nil
         if case let .response(history) = history, let historyBatch = mappedBatch(history) {
-            merge(historyBatch, preserving: activeRefresh.protectedTimestamps)
+            mergeHistory(historyBatch, preserving: activeRefresh.protectedTimestamps)
         }
     }
 
@@ -278,7 +298,7 @@ actor PerpsChartSession {
             return .failed
         case let .response(batch):
             guard let incoming = mappedBatch(batch) else { return .noMore }
-            return merge(incoming) ? .loaded : .noMore
+            return mergeHistory(incoming) ? .loaded : .noMore
         }
     }
 
@@ -305,12 +325,23 @@ actor PerpsChartSession {
         return grew
     }
 
+    @discardableResult
+    private func mergeHistory(
+        _ incoming: PerpsChartCandleMapper.Batch,
+        preserving protectedTimestamps: Set<Int64> = [],
+        publish: Bool = true
+    ) -> Bool {
+        isLiveOnly = false
+        return merge(incoming, preserving: protectedTimestamps, publish: publish)
+    }
+
     private func publishSnapshot() {
         onUpdate(PerpsChartSnapshot(
             marketId: marketId,
             timeframe: timeframe,
             candles: timeline.publishedCandles,
-            priceDecimals: priceDecimals
+            priceDecimals: priceDecimals,
+            isLiveOnly: isLiveOnly
         ))
     }
 }

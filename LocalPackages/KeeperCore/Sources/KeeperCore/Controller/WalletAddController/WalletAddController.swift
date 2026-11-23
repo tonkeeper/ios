@@ -11,13 +11,15 @@ public final class WalletAddController {
     private let mnemonicAccess: MnemonicAccess
     private let importedWalletTronResolver: ImportedWalletTronResolver
     private let multichainAssembly: MultichainAssembly
+    private let watchOnlyContractVersionResolver: WatchOnlyContractVersionResolver
 
     init(
         walletsStore: WalletsStore,
         tonProofTokenService: TonProofTokenService,
         mnemonicAccess: MnemonicAccess,
         tronBalanceService: TronBalanceService,
-        multichainAssembly: MultichainAssembly
+        multichainAssembly: MultichainAssembly,
+        watchOnlyContractVersionResolver: WatchOnlyContractVersionResolver
     ) {
         self.walletsStore = walletsStore
         self.tonProofTokenService = tonProofTokenService
@@ -26,6 +28,7 @@ public final class WalletAddController {
             tronBalanceService: tronBalanceService
         )
         self.multichainAssembly = multichainAssembly
+        self.watchOnlyContractVersionResolver = watchOnlyContractVersionResolver
     }
 
     public func createWallet(
@@ -141,14 +144,16 @@ public final class WalletAddController {
                 kind: .Regular(keyPair.publicKey, revision)
             )
 
+            // A Telegram wallet stays a TON-only wallet: no TRON address and no multichain enrichment.
+            let isWalletTg = revision == .walletTg
             return Wallet(
                 id: UUID().uuidString,
                 identity: walletIdentity,
                 metaData: revisionMetaData,
                 setupSettings: WalletSetupSettings(backupDate: Date()),
                 batterySettings: BatterySettings(),
-                tron: tronResolution.tron,
-                multichain: tronResolution.multichain
+                tron: isWalletTg ? nil : tronResolution.tron,
+                multichain: isWalletTg ? .unavailable : tronResolution.multichain
             )
         }
 
@@ -216,9 +221,23 @@ public final class WalletAddController {
         resolvableAddress: ResolvableAddress,
         metaData: WalletMetaData
     ) async throws {
+        let network = Network.mainnet
+        let address: TonSwift.Address
+        switch resolvableAddress {
+        case let .Resolved(resolved):
+            address = resolved
+        case let .Domain(_, resolved):
+            address = resolved
+        }
+        let contractVersion = await watchOnlyContractVersionResolver.contractVersion(
+            address: address,
+            network: network
+        )
+        // The lookup suspends, so the flow may have been closed by now.
+        try Task.checkCancellation()
         let wallet = Wallet(
             id: UUID().uuidString,
-            identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
+            identity: WalletIdentity(network: network, kind: .Watchonly(resolvableAddress, contractVersion)),
             metaData: metaData,
             setupSettings: WalletSetupSettings(),
             batterySettings: BatterySettings()
@@ -299,15 +318,19 @@ public final class WalletAddController {
         await walletsStore.addWallets(wallets)
     }
 
+    /// An account found in `multichainAccounts` becomes a multichain wallet, registered right away
+    /// with the app key its proof yields; the others stay TON-only.
     public func importLedgerWallets(
         accounts: [LedgerAccount],
+        multichainAccounts: [AccountPath: LedgerMultichainAccount] = [:],
+        chains: [MultichainChain] = MultichainChain.displayOrder,
         deviceId: String,
         deviceProductName: String,
         metaData: WalletMetaData
     ) async throws {
         let addPostfix = accounts.count > 1
 
-        let wallets = accounts.enumerated().map { index, account in
+        let imports = try accounts.enumerated().map { index, account in
             let label = addPostfix ? "\(metaData.label) \(index + 1)" : metaData.label
             let accountMetaData = WalletMetaData(
                 label: label,
@@ -322,15 +345,31 @@ public final class WalletAddController {
                 kind: .Ledger(account.publicKey, .v4R2, device)
             )
 
-            return Wallet(
+            let multichain = try multichainAccounts[account.path].map {
+                try $0.wallet(tonPublicKey: account.publicKey.data, chains: chains)
+            }
+
+            let wallet = Wallet(
                 id: UUID().uuidString,
                 identity: identity,
                 metaData: accountMetaData,
                 setupSettings: WalletSetupSettings(backupDate: Date()),
-                batterySettings: BatterySettings()
+                batterySettings: BatterySettings(),
+                multichain: multichain.map { .multichain($0.state) }
+            )
+            return (wallet: wallet, multichain: multichain)
+        }
+        for case let (_, multichain?) in imports {
+            await multichainAssembly.walletAuthTokenProvider.persistLedgerKeys(
+                seed: multichain.seed,
+                appKey: multichain.appPrivateKey,
+                walletId: multichain.state.walletId
             )
         }
-        await walletsStore.addWallets(wallets)
+        await walletsStore.addWallets(imports.map(\.wallet))
+        if imports.contains(where: { $0.multichain != nil }) {
+            await multichainAssembly.walletSyncController.reconcileBindings()
+        }
     }
 }
 

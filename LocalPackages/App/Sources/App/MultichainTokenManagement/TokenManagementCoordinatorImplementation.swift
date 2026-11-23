@@ -33,7 +33,7 @@ final class TokenManagementCoordinatorImplementation<V: UIViewController>: Route
         }
         presentedViewController = module.view
         router.rootViewController.topPresentedViewController().present(
-            module.view,
+            module.view.tkLiquidGlassModal(),
             animated: true
         )
     }

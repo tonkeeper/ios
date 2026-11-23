@@ -52,6 +52,7 @@ public struct PerpsAutoCloseSheetView<ViewModel: PerpsAutoCloseSheetViewModeling
     private var stopLossSection: some View {
         section(
             title: TKLocales.Perps.OpenPosition.stopLossWhen,
+            caption: viewModel.stopLossLiquidationText,
             percentField: .stopLossPercent,
             priceField: .stopLossPrice,
             percentPlaceholder: TKLocales.Perps.OpenPosition.lossPercent,
@@ -68,6 +69,7 @@ public struct PerpsAutoCloseSheetView<ViewModel: PerpsAutoCloseSheetViewModeling
 
     private func section(
         title: String,
+        caption: String? = nil,
         percentField: Field,
         priceField: Field,
         percentPlaceholder: String,
@@ -81,29 +83,33 @@ public struct PerpsAutoCloseSheetView<ViewModel: PerpsAutoCloseSheetViewModeling
         onPreset: @escaping (Double) -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: Layout.fieldSpacing) {
-            Text(title)
-                .textStyle(.label1)
-                .foregroundStyle(.textPrimary)
+            VStack(alignment: .leading, spacing: Layout.captionSpacing) {
+                Text(title)
+                    .textStyle(.label1)
+                    .foregroundStyle(.textPrimary)
+                if let caption {
+                    Text(caption)
+                        .textStyle(.body2)
+                        .foregroundStyle(.textSecondary)
+                }
+            }
             HStack(spacing: Layout.fieldGap) {
                 inputField(field: percentField, placeholder: percentPlaceholder, rawText: percentText, prefix: glyph(percentSign), suffix: "%")
                 inputField(field: priceField, placeholder: TKLocales.Perps.OpenPosition.priceField, rawText: priceText, prefix: "$", suffix: nil)
             }
-            if let warningText {
-                warningLabel(warningText)
-            }
             HStack(spacing: Layout.presetSpacing) {
                 ForEach(presets, id: \.self) { percent in
                     presetTab(
-                        title: "\(glyph(presetSign)) \(Int(percent)) %",
+                        title: "\(glyph(presetSign))\(Int(percent))%",
                         isSelected: percentSign == presetSign && isPresetSelected(percent, percentText.wrappedValue),
                         action: { onPreset(percent) }
                     )
                 }
             }
             .padding(.top, Layout.presetsTopPadding)
-            Text(expectedText)
+            Text(warningText ?? expectedText)
                 .textStyle(.body2)
-                .foregroundStyle(.textSecondary)
+                .foregroundStyle(warningText == nil ? TKColor.textSecondary : TKColor.accentRed)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, Layout.expectedTopPadding)
@@ -124,15 +130,17 @@ public struct PerpsAutoCloseSheetView<ViewModel: PerpsAutoCloseSheetViewModeling
             if hasValue {
                 fieldText(prefix)
             }
-            TextField(placeholder, text: Binding(
-                get: { shownText },
-                set: { if isEditing { rawText.wrappedValue = $0 } }
-            ))
-            .keyboardType(.decimalPad)
+            TKNumPadTextField(
+                placeholder,
+                text: Binding(
+                    get: { shownText },
+                    set: { if isEditing { rawText.wrappedValue = $0 } }
+                ),
+                font: TKTextStyle.body1.font
+            )
             .focused($focusedField, equals: field)
             .textStyle(.body1)
-            .foregroundStyle(.textPrimary)
-            .widthHugging(hasValue ? shownText : placeholder, style: .body1)
+            .widthHugging(hasValue ? TKNumPadTextField.displayText(shownText) : placeholder, style: .body1)
             if hasValue, let suffix {
                 fieldText(suffix)
             }
@@ -216,6 +224,7 @@ private enum Layout {
     static let contentTopPadding: CGFloat = 14
     static let sectionSpacing: CGFloat = 16
     static let fieldSpacing: CGFloat = 10
+    static let captionSpacing: CGFloat = 2
     static let fieldGap: CGFloat = 8
     static let adornmentSpacing: CGFloat = 4
     static let cornerRadius: CGFloat = 16

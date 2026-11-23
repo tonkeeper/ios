@@ -795,6 +795,10 @@ final class WalletBalanceViewModelImplementation:
                         let walletViewModel = self.walletViewModel
                         do {
                             if isOn {
+                                guard !walletViewModel.openSettingsIfBiometryDenied() else {
+                                    walletViewModel.republishContent()
+                                    return
+                                }
                                 guard let passcode = await didRequirePasscode?() else {
                                     walletViewModel.republishContent()
                                     return

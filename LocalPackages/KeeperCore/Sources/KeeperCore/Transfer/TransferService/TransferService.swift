@@ -15,7 +15,8 @@ import TonSwift
     case noExcessesAddress
     case noJettonWalletAddress
     case sendFailed(
-        message: String?
+        message: String?,
+        refusal: RelayerRefusal? = nil
     )
 }
 
@@ -112,7 +113,7 @@ public struct TransferService {
                 excessAddress = try address()
             } catch {
                 throw .failedToCreateTransferData(
-                    message: "battery transfer: failed to get excess address due to error: \(error.localizedDescription)"
+                    message: "battery transfer: failed to get excess address due to error: \(error.analyticsReason)"
                 )
             }
             return .battery(excessAddress: excessAddress)
@@ -138,25 +139,81 @@ public struct TransferService {
     public func sendTransaction<SignError: Error>(
         wallet: Wallet,
         transfer: Transfer,
-        transferType rawTransferType: TransferType,
+        transferType: TransferType,
         signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
     ) async throws(SomeOf<TransferError, SignError>) -> SignedTransactions {
-        let transferType: TransferType
+        let prepared: PreparedTransfer
         do {
-            // TODO: kinda bullshit, should do something with this
-            transferType = try await adjustExcessAddressIfNeeded(
-                wallet: wallet,
-                transferType: rawTransferType
-            )
+            prepared = try await prepare(wallet: wallet, transfer: transfer, transferType: transferType)
         } catch {
             throw .certain(error)
         }
-        return try await doSendTransaction(
+        let signedTransactions: SignedTransactions
+        do {
+            signedTransactions = try await signClosure(prepared.transferData).get()
+        } catch {
+            throw .certain(error)
+        }
+        do {
+            return try await broadcast(signedTransactions, wallet: wallet, prepared: prepared)
+        } catch {
+            throw .certain(error)
+        }
+    }
+
+    /// A transfer `sendTransaction` signs, as it stands before any key is asked for.
+    struct PreparedTransfer {
+        let transferData: TransferData
+        fileprivate let route: BroadcastRoute
+        fileprivate let transferType: TransferType
+    }
+
+    /// The half of `sendTransaction` before the signature.
+    func prepare(
+        wallet: Wallet,
+        transfer: Transfer,
+        transferType rawTransferType: TransferType
+    ) async throws(TransferError) -> PreparedTransfer {
+        // TODO: kinda bullshit, should do something with this
+        let transferType = try await adjustExcessAddressIfNeeded(
             wallet: wallet,
-            transfer: transfer,
-            transferType: transferType,
-            signClosure: signClosure
+            transferType: rawTransferType
         )
+        return try await PreparedTransfer(
+            transferData: prepareTransferData(
+                wallet: wallet,
+                transfer: transfer,
+                transferType: transferType
+            ),
+            route: Self.broadcastRoute(transfer: transfer, transferType: transferType),
+            transferType: transferType
+        )
+    }
+
+    /// The half after it: what `prepared` was signed into goes out the way it was prepared for.
+    @discardableResult
+    func broadcast(
+        _ signedTransactions: SignedTransactions,
+        wallet: Wallet,
+        prepared: PreparedTransfer
+    ) async throws(TransferError) -> SignedTransactions {
+        if signedTransactions.isEmpty {
+            throw .nothingToSend
+        }
+        let relayerMessageHashes = try await broadcast(
+            signedTransactions,
+            wallet: wallet,
+            route: prepared.route,
+            transferType: prepared.transferType
+        )
+        // The relayer's message carries only a signed internal one; for an external one it is a top-up.
+        guard prepared.transferData.messageType == .int else {
+            return signedTransactions
+        }
+        if relayerMessageHashes.count < signedTransactions.count {
+            Log.w("battery relay named no message hash: the transfer is recorded by its signed message's hash")
+        }
+        return signedTransactions.carried(byRelayerMessages: relayerMessageHashes)
     }
 
     public func signMessage<SignError: Error>(
@@ -213,52 +270,9 @@ public struct TransferService {
             return try SignedInternalMessage.boc(fromExternalBoc: externalBoc, wallet: wallet)
         } catch {
             throw .certain(
-                .failedToCreateTransferData(message: "failed to wrap signed message due to error: \(error.localizedDescription)")
+                .failedToCreateTransferData(message: "failed to wrap signed message due to error: \(error.analyticsReason)")
             )
         }
-    }
-
-    @discardableResult
-    private func doSendTransaction<SignError: Error>(
-        wallet: Wallet,
-        transfer: Transfer,
-        transferType: TransferType,
-        signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
-    ) async throws(SomeOf<TransferError, SignError>) -> SignedTransactions {
-        let transferData: TransferData
-        do {
-            transferData = try await prepareTransferData(
-                wallet: wallet,
-                transfer: transfer,
-                transferType: transferType
-            )
-        } catch {
-            throw .certain(error)
-        }
-        let signedTransactions: SignedTransactions
-        do {
-            signedTransactions = try await signClosure(transferData).get()
-        } catch {
-            throw .certain(error)
-        }
-
-        if signedTransactions.isEmpty {
-            throw .certain(.nothingToSend)
-        }
-
-        let route = Self.broadcastRoute(transfer: transfer, transferType: transferType)
-        do {
-            try await broadcast(
-                signedTransactions,
-                wallet: wallet,
-                route: route,
-                transferType: transferType
-            )
-        } catch {
-            throw .certain(error)
-        }
-
-        return signedTransactions
     }
 
     static let signMessageMaxTTL: UInt64 = 600
@@ -282,7 +296,7 @@ public struct TransferService {
         do {
             seqno = try await sendService.loadSeqno(wallet: wallet)
         } catch {
-            throw .failedToCreateTransferData(message: "failed to get seqno due to error: \(error.localizedDescription)")
+            throw .failedToCreateTransferData(message: "failed to get seqno due to error: \(error.analyticsReason)")
         }
         return try await createTransferData(
             wallet: wallet,
@@ -315,24 +329,26 @@ public struct TransferService {
         wallet: Wallet,
         route: BroadcastRoute,
         transferType: TransferType
-    ) async throws(TransferError) {
+    ) async throws(TransferError) -> [String: String] {
         switch route {
         case .tonAPI:
             try await broadcastThroughTonAPI(signedTransactions, wallet: wallet, transferType: transferType)
+            return [:]
         case .batteryRelay:
             do {
-                try await broadcastThroughBattery(signedTransactions, wallet: wallet)
+                return try await broadcastThroughBattery(signedTransactions, wallet: wallet)
             } catch {
-                throw .sendFailed(message: error.localizedDescription)
+                throw .broadcastFailure(error, count: signedTransactions.count, transferType: transferType)
             }
         case .batteryTransport:
             do {
-                try await broadcastThroughBattery(signedTransactions, wallet: wallet)
-            } catch is BatteryAuthorizationError {
+                return try await broadcastThroughBattery(signedTransactions, wallet: wallet)
+            } catch is BatteryAuthorizationError where !Task.isCancelled {
                 Log.w("battery transport: no battery authorization, broadcasting through TONAPI")
                 try await broadcastThroughTonAPI(signedTransactions, wallet: wallet, transferType: transferType)
+                return [:]
             } catch {
-                throw .sendFailed(message: error.localizedDescription)
+                throw .broadcastFailure(error, count: signedTransactions.count, transferType: transferType)
             }
         }
     }
@@ -349,24 +365,23 @@ public struct TransferService {
                 try await sendService.sendTransactions(batch: signedTransactions.bocs, wallet: wallet)
             }
         } catch {
-            let kind = signedTransactions.count == 1 ? "single" : "batch"
-            throw .sendFailed(
-                message: "failed to \(kind) \(transferType.analyticsName) send due to error: \(error.localizedDescription)"
-            )
+            throw .broadcastFailure(error, count: signedTransactions.count, transferType: transferType)
         }
     }
 
     private func broadcastThroughBattery(
         _ signedTransactions: SignedTransactions,
         wallet: Wallet
-    ) async throws {
+    ) async throws -> [String: String] {
+        var relayerMessageHashes = [String: String]()
         for boc in signedTransactions {
-            try await batteryService.sendTransaction(
+            relayerMessageHashes[boc] = try await batteryService.sendTransaction(
                 wallet: wallet,
                 boc: boc,
                 proof: signedTransactions.batterySendProof(for: boc)
             )
         }
+        return relayerMessageHashes
     }
 
     public func emulate(
@@ -559,8 +574,8 @@ public struct TransferService {
         return true
     }
 
-    /// Whether the wallet's settings let the battery pay for this kind of transfer at all, ignoring
-    /// how many charges are left. Listing a fee option is this question; preselecting one is
+    /// Whether the battery pays for this kind of transfer at all, ignoring how many charges are left.
+    /// The stored per-type switches no longer apply: the app has no screen to change them. Listing a fee option is this question; preselecting one is
     /// `isRelayerAvailable`, which also demands a balance.
     static func isRelayerEnabled(
         wallet: Wallet,
@@ -569,14 +584,11 @@ public struct TransferService {
         switch transfer {
         case .ton, .renewDNS:
             return false
-        case .jetton:
-            return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable
-        case .nft:
-            return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable
-        case .stonfiSwap, .nativeSwap, .multichainSwap:
-            return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable
+        case .jetton, .nft, .stonfiSwap, .nativeSwap, .multichainSwap:
+            return wallet.isBatteryEnable
         case let .signRaw(_, isForceRelayer, _):
-            return isForceRelayer
+            // The Battery relayer does not accept WalletTg requests, even when a dApp asks for it.
+            return isForceRelayer && !wallet.isWalletTg
         }
     }
 
@@ -837,7 +849,7 @@ public struct TransferService {
                     ]
                 } catch {
                     throw .failedToCreateTransferData(
-                        message: "failed to build gasless custom payload due to error: \(error.localizedDescription)"
+                        message: "failed to build gasless custom payload due to error: \(error.analyticsReason)"
                     )
                 }
             }
@@ -868,7 +880,7 @@ public struct TransferService {
                     commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
                 } catch {
                     throw .failedToCreateTransferData(
-                        message: "failed to build nft comment cell due to error: \(error.localizedDescription)"
+                        message: "failed to build nft comment cell due to error: \(error.analyticsReason)"
                     )
                 }
             }
@@ -907,7 +919,7 @@ public struct TransferService {
                 )
             } catch {
                 throw .failedToCreateTransferData(
-                    message: "failed to build swap transfer data due to error: \(error.localizedDescription)"
+                    message: "failed to build swap transfer data due to error: \(error.analyticsReason)"
                 )
             }
             return transferData
@@ -934,7 +946,7 @@ public struct TransferService {
                 )
             } catch {
                 throw .failedToCreateTransferData(
-                    message: "failed to build tonconnect request transfer data due to error: \(error.localizedDescription)"
+                    message: "failed to build tonconnect request transfer data due to error: \(error.analyticsReason)"
                 )
             }
             return transferData
@@ -1096,7 +1108,7 @@ public struct TransferService {
             payloadCells = try Cell.fromBoc(src: payloadData)
         } catch {
             throw TransferError.failedToCreateTransferData(
-                message: "native swap payload is not a valid cell: \(error.localizedDescription)"
+                message: "native swap payload is not a valid cell: \(error.analyticsReason)"
             )
         }
         guard payloadCells.count == 1, let payloadCell = payloadCells.first else {
@@ -1111,7 +1123,7 @@ public struct TransferService {
             return try rebuildedPayload.toBoc().base64EncodedString()
         } catch {
             throw TransferError.failedToCreateTransferData(
-                message: "failed to rebuild native swap payload: \(error.localizedDescription)"
+                message: "failed to rebuild native swap payload: \(error.analyticsReason)"
             )
         }
     }

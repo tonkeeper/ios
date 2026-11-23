@@ -58,6 +58,14 @@ actor PendingTransactionsServiceImplementation: PendingTransactionsService {
     }
 
     func report(_ transaction: MultichainPendingTransaction) async {
+        if case let .swap(details) = transaction.activityType,
+           details.fromAddress == nil || details.fromAmount == nil
+        {
+            var info = Self.logInfo(transaction)
+            info["fromAddressMissing"] = String(details.fromAddress == nil)
+            info["fromAmountMissing"] = String(details.fromAmount == nil)
+            Log.multichain.w("pending swap report has missing source details", extraInfo: info)
+        }
         Task { @MainActor in
             NotificationCenter.default.post(name: .multichainTransactionBroadcast, object: transaction)
         }

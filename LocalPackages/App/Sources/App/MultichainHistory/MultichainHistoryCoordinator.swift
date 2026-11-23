@@ -7,15 +7,17 @@ import UIKit
 final class MultichainHistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private let didTapAddFunds: () -> Void
     private let onOpenTransaction: (URL, String?) -> Void
+    private let onOpenLoyalty: () -> Void
     private let wallet: Wallet
     private let multichainState: MultichainWalletState
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
-    private let presentationStyle: HistoryPresentationStyle
+    private let closeAction: (() -> Void)?
     private let pendingEventId: String?
     private lazy var perpsHistoryDetails = PerpsHistoryDetailsPresenter(
         marketsStore: keeperCoreMainAssembly.perpsAssembly.marketsStore,
-        format: .live
+        format: .live(appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore),
+        onOpenLoyalty: onOpenLoyalty
     )
 
     init(
@@ -24,35 +26,46 @@ final class MultichainHistoryCoordinator: RouterCoordinator<NavigationController
         multichainState: MultichainWalletState,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
-        presentationStyle: HistoryPresentationStyle,
+        closeAction: (() -> Void)?,
         pendingEventId: String? = nil,
         didTapAddFunds: @escaping () -> Void,
-        onOpenTransaction: @escaping (URL, String?) -> Void
+        onOpenTransaction: @escaping (URL, String?) -> Void,
+        onOpenLoyalty: @escaping () -> Void
     ) {
         self.wallet = wallet
         self.multichainState = multichainState
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
-        self.presentationStyle = presentationStyle
+        self.closeAction = closeAction
         self.pendingEventId = pendingEventId
         self.didTapAddFunds = didTapAddFunds
         self.onOpenTransaction = onOpenTransaction
+        self.onOpenLoyalty = onOpenLoyalty
         super.init(router: router)
     }
 
     override func start() {
-        openHistory()
+        start(animated: true)
+    }
+}
+
+extension MultichainHistoryCoordinator: HistoryStarting {
+    func start(animated: Bool) {
+        openHistory(animated: animated)
     }
 }
 
 private extension MultichainHistoryCoordinator {
-    func openHistory() {
+    func openHistory(animated: Bool) {
         let appSettingsStore = keeperCoreMainAssembly.storesAssembly.appSettingsStore
+        let isPerpsEnabled = keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.perpsEnabled)
+        let perpsScope = isPerpsEnabled && wallet.hasMultichainMnemonic
+            ? keeperCoreMainAssembly.perpsAssembly.walletScope(for: wallet)
+            : nil
         let viewModel = MultichainHistoryViewModelImplementation(
             multichainState: multichainState,
             hidesDustTransactions: appSettingsStore.getState().hidesDustTransactions,
-            isPerpsEnabled: keeperCoreMainAssembly.configurationAssembly.configuration
-                .featureEnabled(.perpsEnabled),
+            isPerpsEnabled: isPerpsEnabled,
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
             realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager,
             reachabilityTracker: coreAssembly.reachabilityTracker,
@@ -62,19 +75,32 @@ private extension MultichainHistoryCoordinator {
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
                 network: wallet.network
             ),
+            encryptedComments: MultichainEncryptedComments(
+                wallet: wallet,
+                coordinator: self,
+                presenter: router.rootViewController,
+                keeperCoreAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            ),
+            appSettingsStore: appSettingsStore,
+            walletName: wallet.emojiLabel,
             onAddFunds: didTapAddFunds,
-            pendingEventId: pendingEventId
+            pendingEventId: pendingEventId,
+            walletScope: perpsScope,
+            accountStore: perpsScope?.accountStore,
+            format: .live(appSettingsStore: appSettingsStore),
+            perpsHistoryEvents: keeperCoreMainAssembly.perpsAssembly.historyEvents(for: wallet)
         )
         viewModel.persistHistoryFilters(to: appSettingsStore)
         let viewController = MultichainHistoryViewController(
             viewModel: viewModel,
-            onClose: presentationStyle.closeAction,
+            onClose: closeAction,
             onOpenTransaction: onOpenTransaction,
             onSelectPerpsEvent: { [weak self] event in
                 guard let self else { return }
                 perpsHistoryDetails.present(event, from: router.rootViewController.topPresentedViewController())
             }
         )
-        router.push(viewController: viewController, animated: true)
+        router.push(viewController: viewController, animated: animated)
     }
 }

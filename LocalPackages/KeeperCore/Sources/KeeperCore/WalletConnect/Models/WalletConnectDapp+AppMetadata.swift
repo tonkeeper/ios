@@ -1,4 +1,4 @@
-import ReownWalletKit
+import WalletConnectSign
 
 extension WalletConnectDapp {
     init(metadata: AppMetadata) {

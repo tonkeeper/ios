@@ -1,0 +1,8 @@
+generate:
+  - types
+  - client
+# The spec covers all of Tonstakers; generate only what the app calls.
+filter:
+  operations:
+    - tasks_get_rewards
+    - tasks_get_upcoming_rewards

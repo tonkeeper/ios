@@ -26,13 +26,17 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
     private var emptyViewProvider: ((HistoryList.Filter) -> EmptyState?)?
 
     private let viewModel: HistoryListViewModel
+    /// The view model owns the session: it reports the stages, and there can be several history screens.
+    private let screenRenderID: ScreenRenderID?
 
     init(
         viewModel: HistoryListViewModel,
-        emptyViewProvider: ((HistoryList.Filter) -> EmptyState?)?
+        emptyViewProvider: ((HistoryList.Filter) -> EmptyState?)?,
+        screenRenderID: ScreenRenderID? = nil
     ) {
         self.viewModel = viewModel
         self.emptyViewProvider = emptyViewProvider
+        self.screenRenderID = screenRenderID
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -43,6 +47,7 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        screenRenderID.map { ScreenRenderTracker.shared.lifecycle(.viewDidLoad, for: $0, from: viewModel) }
 
         setup()
         setupBindings()
@@ -50,13 +55,20 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
         viewModel.viewDidLoad()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        screenRenderID.map { ScreenRenderTracker.shared.lifecycle(.viewWillAppear, for: $0, from: viewModel) }
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        screenRenderID.map { ScreenRenderTracker.shared.lifecycle(.viewDidAppear, for: $0, from: viewModel) }
         subscribeAppStateNotifications()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        screenRenderID.map { ScreenRenderTracker.shared.abandon($0, by: viewModel) }
         unsubscribeAppStateNotifications()
     }
 

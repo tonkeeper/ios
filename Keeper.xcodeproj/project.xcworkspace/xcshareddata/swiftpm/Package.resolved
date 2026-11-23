@@ -1,5 +1,5 @@
 {
-  "originHash" : "124665721250ea02bd13303c32a8fe86ccb5b15bc2014b624f3ce0c46b78cf29",
+  "originHash" : "f348e802fbd508e95255e7b9604cbd27c1cbf3bb9023edc4686cb5915633d626",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
         "version" : "1.2024072200.0"
-      }
-    },
-    {
-      "identity" : "anycodable",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Flight-School/AnyCodable",
-      "state" : {
-        "revision" : "862808b2070cd908cb04f9aafe7de83d35f81b05",
-        "version" : "0.6.7"
       }
     },
     {
@@ -38,12 +29,12 @@
       }
     },
     {
-      "identity" : "aptabase-swift",
+      "identity" : "appsflyerframework",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/aptabase/aptabase-swift.git",
+      "location" : "https://github.com/AppsFlyerSDK/AppsFlyerFramework",
       "state" : {
-        "revision" : "cfd67fac2a228d448d9d2ac92ffc71589cc3ef00",
-        "version" : "0.3.11"
+        "revision" : "d7f4901b047a2749fea36de0e98b82c422b5c9d0",
+        "version" : "7.0.4"
       }
     },
     {
@@ -96,17 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/chainkit-publishing",
       "state" : {
-        "revision" : "f5e43098397b95d1b9c3cb30cb799a591955b430",
-        "version" : "26.10.8"
-      }
-    },
-    {
-      "identity" : "cocoalumberjack",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
-      "state" : {
-        "revision" : "c5f2ed4d219866117e135cf648180dc7b66739d3",
-        "version" : "3.9.1"
+        "revision" : "b015d302989bc3c893d5970e6247e9e6d0e5f1f3",
+        "version" : "26.11.7"
       }
     },
     {
@@ -181,15 +163,6 @@
       }
     },
     {
-      "identity" : "hw-transport-ios-ble",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/hw-transport-ios-ble",
-      "state" : {
-        "revision" : "cd0860cc94226da93cc078f45d9d6331f5cf26b5",
-        "version" : "2.0.0"
-      }
-    },
-    {
       "identity" : "interop-ios-for-google-sdks",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/interop-ios-for-google-sdks.git",
@@ -235,11 +208,11 @@
       }
     },
     {
-      "identity" : "lottie-spm",
+      "identity" : "lottie-ios",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/airbnb/lottie-spm.git",
+      "location" : "https://github.com/airbnb/lottie-ios",
       "state" : {
-        "revision" : "69faaefa7721fba9e434a52c16adf4329c9084db",
+        "revision" : "0cb03fd7564d27345bcd96144b811e56212949c6",
         "version" : "4.6.0"
       }
     },
@@ -284,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/reown-com/reown-swift.git",
       "state" : {
-        "revision" : "9b4fed39b09e9d202888d04da41e0daf50777ea1",
-        "version" : "2.2.9"
+        "revision" : "1286a56685266804f3ceae93e394f45eb4473dfb",
+        "version" : "2.4.0"
       }
     },
     {
@@ -298,29 +271,12 @@
       }
     },
     {
-      "identity" : "svgkit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SVGKit/SVGKit.git",
-      "state" : {
-        "revision" : "9b573a08e7698149de1a0ed576f22f68f5a0e30b"
-      }
-    },
-    {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
         "revision" : "bff4b6903cdc99dda49649dd52f46c11cfd3ed50",
         "version" : "1.8.0"
-      }
-    },
-    {
-      "identity" : "swift-log",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-log",
-      "state" : {
-        "revision" : "9c6fb14227f55d8f711ce3847dc2f419fb0ecacb",
-        "version" : "1.15.1"
       }
     },
     {
@@ -374,6 +330,15 @@
       "state" : {
         "revision" : "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
         "version" : "0.9.1"
+      }
+    },
+    {
+      "identity" : "swiftdraw",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swhitty/SwiftDraw",
+      "state" : {
+        "revision" : "82699f4bdf2f075793cfa0d392eb27c59b41a3fe",
+        "version" : "0.29.0"
       }
     },
     {
@@ -435,8 +400,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/reown-com/yttrium",
       "state" : {
-        "revision" : "083e30289e343b80f8b171fcadcabb71dd967bf2",
-        "version" : "0.10.52"
+        "revision" : "e3dd9f5b53e520c1794802ec93ab84775123fdf9",
+        "version" : "0.10.59"
       }
     }
   ],

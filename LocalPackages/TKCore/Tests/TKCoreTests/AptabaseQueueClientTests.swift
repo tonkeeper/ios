@@ -240,7 +240,6 @@ private extension AptabaseQueueClientTests {
         let service = AptabaseQueuedService(
             client: parts.client,
             sequence: AnalyticsEventSequence(installId: "install", userDefaults: userDefaults),
-            cohortSource: .remote,
             currentDate: { referenceDate }
         )
         return Subject(service: service, client: parts.client, store: parts.store, session: parts.session)

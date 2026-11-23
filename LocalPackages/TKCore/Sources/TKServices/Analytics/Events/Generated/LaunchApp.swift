@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Sent every time the user opens the app. */
+/** Sent every time the user opens the app. Besides the properties below, it carries one off-schema &#x60;ff_&lt;remote key&gt;&#x60; field per remote feature flag that is on, e.g. &#x60;ff_ios_live_activities_enabled&#x60; (&#x60;\&quot;true\&quot;&#x60; on iOS, &#x60;true&#x60; on Android); a flag that is off sends no field. No other event carries the flags: split devices into a flag&#39;s cohorts here, on app versions that ship the feature, and join other events by device.  */
 public struct LaunchApp: Codable, JSONEncodable, Hashable {
 
     public enum Theme: String, Codable, CaseIterable {
@@ -32,6 +32,11 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
         case notRequested = "not_requested"
         case unsupported = "unsupported"
     }
+    public enum LiveActivities: String, Codable, CaseIterable {
+        case enabled = "enabled"
+        case disabled = "disabled"
+        case unsupported = "unsupported"
+    }
     public var eventName: String = "launch_app"
     /** The app theme selected by the user at launch. */
     public var theme: Theme?
@@ -41,13 +46,22 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
     public var walletsCount: Int?
     /** Push opt-in status at launch, read before anything can prompt for it: `granted` — a notification can be delivered, `denied` — refused or switched off, `not_requested` — the user has not been asked yet, `unsupported` — the surface cannot receive push at all.  */
     public var pushPermission: PushPermission?
+    /** Number of wallets that get no push although the system allows it: with `push_permission = granted`, the wallets whose Push notifications toggle in the app's Settings → Notifications is off at launch; 0 otherwise (on Android also for `unsupported`). The toggle is per wallet: 3 wallets with one toggle off and push allowed send `wallets_count = 3`, `push_mismatch_wallets_count = 1`. A wallet whose toggle was never set counts as off, and so does a wallet push cannot be turned on for (on Android a testnet wallet or a multichain wallet without a TON account). Sent by iOS and Android; app versions released before it send no value: missing means unknown, not 0. The event repeats on every launch, so count devices by their latest `launch_app`.  */
+    public var pushMismatchWalletsCount: Int?
+    /** iOS only. Whether the app may show Live Activities, read at launch: `enabled` — allowed, `disabled` — the user switched Live Activities off for the app in Settings, `unsupported` — the device or the iOS version cannot show them. Reports the system setting only; whether the feature itself is on is the `ff_ios_live_activities_enabled` field, present only when the flag is on.  */
+    public var liveActivities: LiveActivities?
+    /** iOS only. The app's widgets placed on the Home Screen and the Lock Screen at launch, one `<widget>:<family>` item per placed widget (values of `WidgetKind` and `WidgetFamily`); duplicates are meaningful: two identical widgets are two items. Empty when none is placed; absent when the system did not report them in time.  */
+    public var widgets: [String]?
 
-    public init(eventName: String = "launch_app", theme: Theme? = nil, appIcon: AppIcon? = nil, walletsCount: Int? = nil, pushPermission: PushPermission? = nil) {
+    public init(eventName: String = "launch_app", theme: Theme? = nil, appIcon: AppIcon? = nil, walletsCount: Int? = nil, pushPermission: PushPermission? = nil, pushMismatchWalletsCount: Int? = nil, liveActivities: LiveActivities? = nil, widgets: [String]? = nil) {
         self.eventName = eventName
         self.theme = theme
         self.appIcon = appIcon
         self.walletsCount = walletsCount
         self.pushPermission = pushPermission
+        self.pushMismatchWalletsCount = pushMismatchWalletsCount
+        self.liveActivities = liveActivities
+        self.widgets = widgets
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -56,6 +70,9 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
         case appIcon = "app_icon"
         case walletsCount = "wallets_count"
         case pushPermission = "push_permission"
+        case pushMismatchWalletsCount = "push_mismatch_wallets_count"
+        case liveActivities = "live_activities"
+        case widgets
     }
 
     // Encodable protocol methods
@@ -67,6 +84,9 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(appIcon, forKey: .appIcon)
         try container.encodeIfPresent(walletsCount, forKey: .walletsCount)
         try container.encodeIfPresent(pushPermission, forKey: .pushPermission)
+        try container.encodeIfPresent(pushMismatchWalletsCount, forKey: .pushMismatchWalletsCount)
+        try container.encodeIfPresent(liveActivities, forKey: .liveActivities)
+        try container.encodeIfPresent(widgets, forKey: .widgets)
     }
 }
 

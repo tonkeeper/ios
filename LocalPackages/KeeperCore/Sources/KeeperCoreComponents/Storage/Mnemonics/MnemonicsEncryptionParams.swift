@@ -1,8 +1,10 @@
 import Foundation
 
-enum MnemonicsEncryptionParams {
-    static let N = 16384
-    static let r = 8
-    static let p = 1
+struct MnemonicsEncryptionParams: Equatable {
+    static let production = MnemonicsEncryptionParams(N: 16384, r: 8, p: 1)
     static let passwordKeyLength = 32
+
+    let N: Int
+    let r: Int
+    let p: Int
 }

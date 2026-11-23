@@ -10,6 +10,7 @@ public final class WidgetAssembly {
     private let walletsUpdateAssembly: WalletsUpdateAssembly
     private let apiAssembly: APIAssembly
     private let loadersAssembly: LoadersAssembly
+    private let tradingAssembly: TradingAssembly
 
     init(
         repositoriesAssembly: RepositoriesAssembly,
@@ -19,7 +20,8 @@ public final class WidgetAssembly {
         formattersAssembly: FormattersAssembly,
         walletsUpdateAssembly: WalletsUpdateAssembly,
         apiAssembly: APIAssembly,
-        loadersAssembly: LoadersAssembly
+        loadersAssembly: LoadersAssembly,
+        tradingAssembly: TradingAssembly
     ) {
         self.repositoriesAssembly = repositoriesAssembly
         self.coreAssembly = coreAssembly
@@ -29,6 +31,7 @@ public final class WidgetAssembly {
         self.walletsUpdateAssembly = walletsUpdateAssembly
         self.apiAssembly = apiAssembly
         self.loadersAssembly = loadersAssembly
+        self.tradingAssembly = tradingAssembly
     }
 
     public var walletsService: WalletsService {
@@ -37,15 +40,6 @@ public final class WidgetAssembly {
 
     public func currenciesService() -> CurrenciesService {
         servicesAssembly.currenciesService()
-    }
-
-    public func balanceWidgetController() -> BalanceWidgetController {
-        BalanceWidgetController(
-            walletService: servicesAssembly.walletsService(),
-            balanceService: servicesAssembly.balanceService(),
-            ratesService: servicesAssembly.ratesService(),
-            amountFormatter: formattersAssembly.amountFormatter
-        )
     }
 
     public func chartV2Controller(token: Token) -> ChartV2Controller {
@@ -59,6 +53,24 @@ public final class WidgetAssembly {
             asset: ChartAsset(token: token, wallet: wallet),
             network: wallet.network
         )
+    }
+
+    /// A trading catalog asset's chart, which needs no wallet.
+    public func chartV2Controller(assetId: String) -> ChartV2Controller {
+        chartV2Controller(asset: .multichain(assetId: assetId), network: .mainnet)
+    }
+
+    /// The app's currency, from the keeper info the app shares with its extensions.
+    public var currency: Currency {
+        (try? repositoriesAssembly.keeperInfoRepository().getKeeperInfo().currency) ?? .defaultCurrency
+    }
+
+    /// Prices and 24-hour changes from the trading catalog, in the app's currency, for up to 10 assets: the
+    /// backend rejects more in one request. Assets the catalog does not know are left out.
+    public func marketItems(assetIDs: [String]) async throws -> [TradingMarketItem] {
+        let requestContext = await tradingAssembly.requestContextProvider.makeRequestContext()
+        return try await tradingAssembly.api.getAssets(requestContext: requestContext, ids: assetIDs).items
+            .map(TradingMarketItem.init(item:))
     }
 
     private func chartV2Controller(

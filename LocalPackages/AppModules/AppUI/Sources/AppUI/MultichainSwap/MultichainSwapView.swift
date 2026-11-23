@@ -22,23 +22,28 @@ public struct MultichainSwapView: View {
             headerView
             content
         }
+        // Closed while a swap is on its way, the screen would take the swap's outcome along.
+        .disabled(state.isSwapping)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(
-            TKColor.backgroundPage
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    focusedAmountField = nil
-                }
-        )
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .background(.backgroundPage)
+        // The scroll view and the header take the taps that land on them, so only the container sees a
+        // tap that no control claims, and that tap closes the keyboard.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            focusedAmountField = nil
+        }
         .task {
-            focusSendFieldIfLoaded()
+            focus(state.focusField, isLoaded: state.isLoaded)
         }
-        .onChange(of: state.isLoaded) { _ in
-            focusSendFieldIfLoaded()
+        // This `onChange` runs with the values captured before the change, so `state` there is the
+        // old one; the new value comes in as the parameter. A screen that has just loaded has nothing
+        // entered but the send amount.
+        .onChange(of: state.isLoaded) { isLoaded in
+            focus(.send, isLoaded: isLoaded)
         }
-        .onChange(of: state.focusRequestID) { _ in
-            focusSendFieldIfLoaded()
+        // The field comes with the request: a token pick can move it in the same update.
+        .onChange(of: FocusRequest(id: state.focusRequestID, field: state.focusField)) { request in
+            focus(request.field, isLoaded: state.isLoaded)
         }
     }
 }
@@ -141,22 +146,37 @@ private extension MultichainSwapView {
 
     func loadedContent(_ loadedState: MultichainSwapViewState.Loaded) -> some View {
         VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                sendCard(loadedState.sendCard)
-                receiveCard(loadedState.receiveCard)
-            }
-            .overlay(alignment: .center, content: {
-                swapDirectionButton
-            })
-            .padding(.horizontal, 16)
+            // On short screens the keyboard leaves less room than the cards need, and the action bar
+            // has to stay above it.
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    VStack(spacing: 8) {
+                        sendCard(loadedState.sendCard)
+                        receiveCard(loadedState.receiveCard)
+                    }
+                    .overlay(alignment: .center, content: {
+                        swapDirectionButton
+                    })
+                    .padding(.horizontal, 16)
 
-            rateRow(loadedState.quote)
-                .padding(.horizontal, 16)
-            Spacer()
-            continueButton(action: actions.continueSwap)
-                .disabled(!loadedState.canContinue)
-                .accessibilityIdentifier("swap_continue")
-                .padding(16)
+                    quoteRow(
+                        loadedState.quote,
+                        canContinue: loadedState.continueButton.isEnabled && state.sendFailure == nil
+                    )
+                    .padding(.horizontal, 16)
+                }
+            }
+            .tkImmediateButtonPresses()
+            ZStack {
+                if let sendFailure = state.sendFailure {
+                    sendFailureBar(sendFailure)
+                        .transition(.opacity)
+                } else {
+                    actionBar(loadedState.continueButton)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: Layout.sendFailureFadeDuration), value: state.sendFailure)
         }
     }
 
@@ -171,7 +191,8 @@ private extension MultichainSwapView {
                     amountPrefix: card.amountPrefix,
                     amountState: card.amountState,
                     showsQuoteShimmer: card.showsQuoteShimmer,
-                    insufficientBalance: card.insufficientBalanceText,
+                    quoteUnavailableText: card.quoteUnavailableText,
+                    exceedsBalance: card.exceedsBalance,
                     balanceText: card.balanceText,
                     rateText: card.rateText,
                     maximumFractionDigits: card.maximumFractionDigits,
@@ -181,13 +202,12 @@ private extension MultichainSwapView {
                     tokenAvatarSource: card.token.avatarSource,
                     tokenSymbol: card.token.symbol,
                     network: card.token.network,
-                    maxTitle: TKLocales.Common.Numbers.max,
                     onTapCard: {
                         focusedAmountField = .send
                     },
-                    onTapMax: actions.applyMaxSend,
                     onTapRateText: actions.toggleSendAmountInputMode,
-                    onTapToken: actions.requestPickSendToken
+                    onTapToken: actions.requestPickSendToken,
+                    numPadPresets: sendPercentPresets
                 )
             )
         )
@@ -199,7 +219,7 @@ private extension MultichainSwapView {
                 MultichainSwapAmountCardContent(
                     amount: Binding(
                         get: { card.amount },
-                        set: { _ in }
+                        set: actions.updateReceiveAmount
                     ),
                     amountPrefix: card.amountPrefix,
                     amountState: card.amountState,
@@ -208,6 +228,13 @@ private extension MultichainSwapView {
                     balanceText: card.balanceText,
                     rateText: card.rateText,
                     showsRateToggleIcon: false,
+                    priceImpact: card.priceImpact.map { priceImpact in
+                        MultichainSwapAmountCardContent.PriceImpact(
+                            text: priceImpact.text,
+                            color: priceImpact.severity.color,
+                            onTap: actions.openPriceImpactInfo
+                        )
+                    },
                     maximumFractionDigits: card.maximumFractionDigits,
                     decimalSeparator: card.decimalSeparator,
                     field: .receive,
@@ -215,8 +242,9 @@ private extension MultichainSwapView {
                     tokenAvatarSource: card.token.avatarSource,
                     tokenSymbol: card.token.symbol,
                     network: card.token.network,
-                    onTapCard: {},
-                    onTapMax: {},
+                    onTapCard: {
+                        focusedAmountField = .receive
+                    },
                     onTapRateText: actions.toggleReceiveAmountInputMode,
                     onTapToken: actions.requestPickReceiveToken
                 )
@@ -244,46 +272,83 @@ private extension MultichainSwapView {
         .buttonStyle(SwapDirectionButtonStyle())
     }
 
-    func rateRow(_ quote: MultichainSwapViewState.Quote) -> some View {
-        HStack(spacing: 6) {
+    func quoteRow(_ quote: MultichainSwapViewState.Quote, canContinue: Bool) -> some View {
+        Group {
             switch quote.mode {
-            case .idle:
-                EmptyView()
-            case .loading:
-                rateRowText(quote.rateText, color: .textSecondary)
-                CircularLoader(mode: .indeterminate, preset: .xSmall)
-                    .padding(.leading, 2)
-                    .frame(height: 24)
-            case .failed:
-                rateRowText(quote.rateText, color: .accentRed, lineLimit: nil)
-            case .ready:
-                CircularLoader(
-                    preset: .xSmall,
-                    duration: quote.refreshDuration,
-                    onComplete: actions.notifyQuoteRefreshCompleted,
-                    restartToken: quote.progressRestartToken
-                )
-                .padding(.trailing, 2)
-                .frame(height: 24)
-                HStack(spacing: 4) {
-                    rateRowText(quote.rateText, color: .textSecondary)
-                    Button(action: actions.toggleRateDisplayDirection) {
-                        SwiftUI.Image.TKUIKit.Icons.Size16.swap
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .foregroundStyle(.iconTertiary)
-                    }
-                    .buttonStyle(TKTapAnimationButtonStyle())
-                    .frame(height: 24)
+            case .hidden:
+                Color.clear
+            case let .batteryPromo(text):
+                batteryPromoButton(text)
+            // One branch for both: the loader keeps turning when only the text changes.
+            case .loading, .estimatingFee:
+                HStack(spacing: Layout.quoteLoaderSpacing) {
+                    CircularLoader(mode: .indeterminate, preset: .xSmall)
+                    rateRowText(
+                        quote.mode == .loading
+                            ? TKLocales.NativeSwap.Quote.Rate.updating
+                            : TKLocales.MultichainSwap.Screen.Swap.NetworkFee.estimating,
+                        color: .textSecondary
+                    )
                 }
-            case .expired:
-                rateRowText(quote.rateText, color: .textSecondary)
+            case let .failed(message):
+                quoteAlert(message, color: .accentRed)
+            case let .fee(fee):
+                feeButton(fee, canContinue: canContinue)
             }
         }
-        .padding(.top, 12)
+        .frame(minHeight: Layout.quoteRowHeight)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
+    }
+
+    func feeButton(_ fee: MultichainSwapViewState.Quote.Fee, canContinue: Bool) -> some View {
+        Button(action: actions.openPricingDetails) {
+            HStack(spacing: Layout.feeRowSpacing) {
+                if let icon = fee.icon {
+                    icon.image
+                        .renderingMode(.template)
+                        .foregroundStyle(fee.isShortage ? TKColor.accentRed : TKColor.iconTertiary)
+                }
+                rateRowText(fee.text, color: fee.isShortage ? .accentRed : .textSecondary)
+                // A swap that cannot go opens no pricing details, so its row offers none.
+                if canContinue {
+                    SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight
+                        .renderingMode(.template)
+                        .foregroundStyle(.iconTertiary)
+                }
+            }
+            .frame(height: Layout.quoteRowHeight)
+        }
+        .buttonStyle(TKTapAnimationButtonStyle())
+        .disabled(!canContinue)
+        .accessibilityIdentifier("swap_network_fee")
+    }
+
+    func batteryPromoButton(_ text: String) -> some View {
+        Button(action: actions.openBatteryPromo) {
+            HStack(spacing: Layout.feeRowSpacing) {
+                MultichainSwapViewState.Quote.Fee.Icon.battery.image
+                    .renderingMode(.template)
+                rateRowText(text, color: .accentBlue)
+                SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight
+                    .renderingMode(.template)
+            }
+            .foregroundStyle(.accentBlue)
+            .frame(height: Layout.quoteRowHeight)
+        }
+        .buttonStyle(TKTapAnimationButtonStyle())
+        .accessibilityIdentifier("swap_battery_promo")
+    }
+
+    /// The mark stays on the first line when the text wraps.
+    func quoteAlert(_ text: String, color: TKColor) -> some View {
+        HStack(alignment: .top, spacing: Layout.quoteAlertIconSpacing) {
+            SwiftUI.Image.TKUIKit.Icons.Size16.exclamationMarkCircle
+                .renderingMode(.template)
+                .foregroundStyle(color)
+                .padding(.top, Layout.quoteAlertIconTopPadding)
+            rateRowText(text, color: color, lineLimit: nil)
+        }
     }
 
     func rateRowText(_ text: String, color: TKColor, lineLimit: Int? = 1) -> some View {
@@ -324,33 +389,106 @@ private extension MultichainSwapView {
             .padding(.horizontal, 16)
 
             Spacer()
-            continueButton(action: {})
+            ButtonView(config: continueButtonConfig(.blocked(TKLocales.WalletButtons.swap)))
                 .disabled(true)
+                .padding(16)
+        }
+    }
+
+    var sendPercentPresets: [TKNumPadPreset] {
+        Layout.sendPercentPresets.map { percent in
+            TKNumPadPreset(title: percent == 100 ? TKLocales.Common.Numbers.max : "\(percent)%") {
+                actions.applySendPercent(percent)
+            }
+        }
+    }
+
+    func actionBar(_ continueButton: MultichainSwapViewState.ContinueButton) -> some View {
+        VStack(spacing: 0) {
+            if !TKNumPadView.isEnabled {
+                HStack(spacing: 8) {
+                    ForEach(sendPercentPresets, id: \.title) { preset in
+                        ButtonView(
+                            config: .init(
+                                title: preset.title,
+                                size: .small,
+                                layoutMode: .fill,
+                                appearance: .secondary,
+                                action: preset.action
+                            )
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+            }
+
+            ButtonView(config: continueButtonConfig(continueButton))
+                .disabled(!continueButton.isEnabled)
                 .accessibilityIdentifier("swap_continue")
                 .padding(16)
         }
     }
 
-    func continueButton(action: @escaping () -> Void) -> some View {
-        ButtonView(
-            config: .init(
-                title: TKLocales.Actions.continueAction,
+    func continueButtonConfig(_ continueButton: MultichainSwapViewState.ContinueButton) -> ButtonView.Config {
+        switch continueButton {
+        case .swap:
+            ButtonView.Config(
+                title: TKLocales.WalletButtons.swap,
+                size: .large,
+                layoutMode: .fill,
+                appearance: state.isSwapping ? .secondary : .primary,
+                showsLoader: state.isSwapping,
+                action: actions.continueSwap
+            )
+        case let .blocked(title):
+            ButtonView.Config(
+                title: title,
+                size: .large,
+                layoutMode: .fill,
+                appearance: .secondary,
+                action: actions.continueSwap
+            )
+        case .feeUnpaid:
+            ButtonView.Config(
+                title: TKLocales.WalletButtons.swap,
+                size: .large,
+                layoutMode: .fill,
+                appearance: .secondary,
+                showsLoader: state.isSwapping,
+                action: actions.continueSwap
+            )
+        case .topUpBattery:
+            ButtonView.Config(
+                title: TKLocales.MultichainSwap.Screen.Confirm.topUpBattery,
                 size: .large,
                 layoutMode: .fill,
                 appearance: .primary,
-                action: action
+                action: actions.topUpBattery
             )
-        )
+        }
     }
 
-    func focusSendFieldIfLoaded() {
-        guard state.isLoaded else {
+    func sendFailureBar(_ title: String) -> some View {
+        TKResultSwiftUIView(state: .failure, title: title)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .frame(height: Layout.sendFailureHeight)
+    }
+
+    /// Asked on the next run loop: the field may come into existence in the same update.
+    func focus(_ field: MultichainSwapAmountField, isLoaded: Bool) {
+        guard isLoaded else {
             return
         }
-        focusedAmountField = .send
         DispatchQueue.main.async {
-            focusedAmountField = .send
+            focusedAmountField = field
         }
+    }
+
+    struct FocusRequest: Equatable {
+        let id: Int
+        let field: MultichainSwapAmountField
     }
 
     enum Layout {
@@ -360,6 +498,25 @@ private extension MultichainSwapView {
         static let headerIconTopPadding: CGFloat = 16
         static let errorHorizontalInset: CGFloat = 32
         static let errorTopPadding: CGFloat = 32
+        static let sendPercentPresets = [25, 50, 75, 100]
+        static let quoteRowHeight: CGFloat = 24
+        static let quoteLoaderSpacing: CGFloat = 4
+        static let feeRowSpacing: CGFloat = 4
+        static let quoteAlertIconSpacing: CGFloat = 6
+        static let quoteAlertIconTopPadding: CGFloat = 2
+        static let sendFailureHeight: CGFloat = 88
+        static let sendFailureFadeDuration: TimeInterval = 0.3
+    }
+}
+
+private extension MultichainSwapViewState.Quote.Fee.Icon {
+    var image: SwiftUI.Image {
+        switch self {
+        case .battery:
+            .TKUIKit.Icons.Size16.battery
+        case .exclamationMark:
+            .TKUIKit.Icons.Size16.exclamationMarkCircle
+        }
     }
 }
 

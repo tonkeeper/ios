@@ -7,6 +7,7 @@ import KeeperResources
 import UIKit
 
 enum TKUIKitGeneratedImageAsset: CaseIterable {
+    case artworkBannersLoyalty
     case artworkBannersMultichain
     case artworkBrandKeeperAppIcon
     case artworkBrandKeeperLogoFull
@@ -17,6 +18,9 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case artworkLedgerDeviceWindowReady
     case artworkLedgerDeviceWindowReview
     case artworkOnboardingCover
+    case artworkPaymentcardsMastercard
+    case artworkPaymentcardsVisa
+    case artworkProvidersMoonpay
     case artworkQrRectangleMask
     case artworkStoriesGasless
     case artworkStoriesMessages
@@ -33,7 +37,9 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize128Notification
     case iconsSize128Textbook
     case iconsSize16ArrowDown
+    case iconsSize16ArrowUp
     case iconsSize16BatteryFlash
+    case iconsSize16Battery
     case iconsSize16Block
     case iconsSize16ChartCandle
     case iconsSize16ChartLine
@@ -41,6 +47,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize16ChevronDown
     case iconsSize16ChevronLeft
     case iconsSize16ChevronRight
+    case iconsSize16Clock
+    case iconsSize16CloseBold
     case iconsSize16CloseSmall
     case iconsSize16Close
     case iconsSize16Copy
@@ -65,11 +73,13 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize16Globe
     case iconsSize16InformationCircle
     case iconsSize16Instagram
+    case iconsSize16Keeper
     case iconsSize16LinkSmall
     case iconsSize16MagnifyingGlass
     case iconsSize16Minus
     case iconsSize16Plus
     case iconsSize16QrCode
+    case iconsSize16Question
     case iconsSize16Refresh
     case iconsSize16ShareArrow
     case iconsSize16Share
@@ -80,6 +90,7 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize16Swap
     case iconsSize16Switch
     case iconsSize16Telegram
+    case iconsSize16TrayArrowDown
     case iconsSize16TrayArrowUp
     case iconsSize16Twitter
     case iconsSize16VerificationBlueTint
@@ -142,11 +153,15 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize28Arrowup
     case iconsSize28Battery
     case iconsSize28Bell
+    case iconsSize28CheckmarkCircle
+    case iconsSize28ChevronDown
+    case iconsSize28ChevronLeft
     case iconsSize28ClockOutline
     case iconsSize28Clock
     case iconsSize28ConnectedApps
     case iconsSize28CopyOutline
     case iconsSize28CreditCard
+    case iconsSize28Dinner
     case iconsSize28Doc
     case iconsSize28DonemarkOutline
     case iconsSize28Donemark
@@ -176,8 +191,11 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize28MinusOutline
     case iconsSize28Money
     case iconsSize28Notification
+    case iconsSize28Ohms
     case iconsSize28OpenLock
     case iconsSize28PencilOutline
+    case iconsSize28PercentOutline
+    case iconsSize28PerpsService
     case iconsSize28Perps
     case iconsSize28Pin
     case iconsSize28PlusCircle
@@ -186,9 +204,11 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize28QrCodeAlternate
     case iconsSize28QrCode
     case iconsSize28QrViewFinderThin
+    case iconsSize28QrViewFinder
     case iconsSize28Question
     case iconsSize28Renew
     case iconsSize28Reorder
+    case iconsSize28ReturnArrow
     case iconsSize28Return
     case iconsSize28Rocket
     case iconsSize28SaleBadge
@@ -210,10 +230,12 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize28TrayArrowUp
     case iconsSize28Usd
     case iconsSize28Wallet
+    case iconsSize28XmarkOutline
     case iconsSize28Xmark
     case iconsSize32CheckmarkCircle
     case iconsSize32ExclamationmarkCircle
     case iconsSize32SaleBadge
+    case iconsSize32XmarkCircle
     case iconsSize34BatteryBody
     case iconsSize36Delete
     case iconsSize36Faceid
@@ -254,12 +276,15 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
     case iconsSize84Camera
     case iconsSize84ExclamationmarkCircle
     case iconsSize84ExclamationmarkTriangle
+    case iconsSize84Globe
     case iconsSize96CurrencyUsdt
     case iconsSize96TonIcon
     case texturesTextSpoiler
 
     var resourceName: String {
         switch self {
+        case .artworkBannersLoyalty:
+            return "Artwork/Banners/loyalty"
         case .artworkBannersMultichain:
             return "Artwork/Banners/multichain"
         case .artworkBrandKeeperAppIcon:
@@ -280,6 +305,12 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Artwork/Ledger/device-window-review"
         case .artworkOnboardingCover:
             return "Artwork/Onboarding/cover"
+        case .artworkPaymentcardsMastercard:
+            return "Artwork/PaymentCards/mastercard"
+        case .artworkPaymentcardsVisa:
+            return "Artwork/PaymentCards/visa"
+        case .artworkProvidersMoonpay:
+            return "Artwork/Providers/moonpay"
         case .artworkQrRectangleMask:
             return "Artwork/QR/rectangle-mask"
         case .artworkStoriesGasless:
@@ -312,8 +343,12 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size128/textbook"
         case .iconsSize16ArrowDown:
             return "Icons/Size16/arrow-down"
+        case .iconsSize16ArrowUp:
+            return "Icons/Size16/arrow-up"
         case .iconsSize16BatteryFlash:
             return "Icons/Size16/battery-flash"
+        case .iconsSize16Battery:
+            return "Icons/Size16/battery"
         case .iconsSize16Block:
             return "Icons/Size16/block"
         case .iconsSize16ChartCandle:
@@ -328,6 +363,10 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size16/chevron-left"
         case .iconsSize16ChevronRight:
             return "Icons/Size16/chevron-right"
+        case .iconsSize16Clock:
+            return "Icons/Size16/clock"
+        case .iconsSize16CloseBold:
+            return "Icons/Size16/close-bold"
         case .iconsSize16CloseSmall:
             return "Icons/Size16/close-small"
         case .iconsSize16Close:
@@ -376,6 +415,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size16/information-circle"
         case .iconsSize16Instagram:
             return "Icons/Size16/instagram"
+        case .iconsSize16Keeper:
+            return "Icons/Size16/keeper"
         case .iconsSize16LinkSmall:
             return "Icons/Size16/link-small"
         case .iconsSize16MagnifyingGlass:
@@ -386,6 +427,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size16/plus"
         case .iconsSize16QrCode:
             return "Icons/Size16/qr-code"
+        case .iconsSize16Question:
+            return "Icons/Size16/question"
         case .iconsSize16Refresh:
             return "Icons/Size16/refresh"
         case .iconsSize16ShareArrow:
@@ -406,6 +449,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size16/switch"
         case .iconsSize16Telegram:
             return "Icons/Size16/telegram"
+        case .iconsSize16TrayArrowDown:
+            return "Icons/Size16/tray-arrow-down"
         case .iconsSize16TrayArrowUp:
             return "Icons/Size16/tray-arrow-up"
         case .iconsSize16Twitter:
@@ -530,6 +575,12 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/battery"
         case .iconsSize28Bell:
             return "Icons/Size28/bell"
+        case .iconsSize28CheckmarkCircle:
+            return "Icons/Size28/checkmark-circle"
+        case .iconsSize28ChevronDown:
+            return "Icons/Size28/chevron-down"
+        case .iconsSize28ChevronLeft:
+            return "Icons/Size28/chevron-left"
         case .iconsSize28ClockOutline:
             return "Icons/Size28/clock-outline"
         case .iconsSize28Clock:
@@ -540,6 +591,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/copy-outline"
         case .iconsSize28CreditCard:
             return "Icons/Size28/credit-card"
+        case .iconsSize28Dinner:
+            return "Icons/Size28/dinner"
         case .iconsSize28Doc:
             return "Icons/Size28/doc"
         case .iconsSize28DonemarkOutline:
@@ -598,10 +651,16 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/money"
         case .iconsSize28Notification:
             return "Icons/Size28/notification"
+        case .iconsSize28Ohms:
+            return "Icons/Size28/ohms"
         case .iconsSize28OpenLock:
             return "Icons/Size28/open-lock"
         case .iconsSize28PencilOutline:
             return "Icons/Size28/pencil-outline"
+        case .iconsSize28PercentOutline:
+            return "Icons/Size28/percent-outline"
+        case .iconsSize28PerpsService:
+            return "Icons/Size28/perps-service"
         case .iconsSize28Perps:
             return "Icons/Size28/perps"
         case .iconsSize28Pin:
@@ -618,12 +677,16 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/qr-code"
         case .iconsSize28QrViewFinderThin:
             return "Icons/Size28/qr-view-finder-thin"
+        case .iconsSize28QrViewFinder:
+            return "Icons/Size28/qr-view-finder"
         case .iconsSize28Question:
             return "Icons/Size28/question"
         case .iconsSize28Renew:
             return "Icons/Size28/renew"
         case .iconsSize28Reorder:
             return "Icons/Size28/reorder"
+        case .iconsSize28ReturnArrow:
+            return "Icons/Size28/return-arrow"
         case .iconsSize28Return:
             return "Icons/Size28/return"
         case .iconsSize28Rocket:
@@ -666,6 +729,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size28/usd"
         case .iconsSize28Wallet:
             return "Icons/Size28/wallet"
+        case .iconsSize28XmarkOutline:
+            return "Icons/Size28/xmark-outline"
         case .iconsSize28Xmark:
             return "Icons/Size28/xmark"
         case .iconsSize32CheckmarkCircle:
@@ -674,6 +739,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size32/exclamationmark-circle"
         case .iconsSize32SaleBadge:
             return "Icons/Size32/sale-badge"
+        case .iconsSize32XmarkCircle:
+            return "Icons/Size32/xmark-circle"
         case .iconsSize34BatteryBody:
             return "Icons/Size34/battery-body"
         case .iconsSize36Delete:
@@ -754,6 +821,8 @@ enum TKUIKitGeneratedImageAsset: CaseIterable {
             return "Icons/Size84/exclamationmark-circle"
         case .iconsSize84ExclamationmarkTriangle:
             return "Icons/Size84/exclamationmark-triangle"
+        case .iconsSize84Globe:
+            return "Icons/Size84/globe"
         case .iconsSize96CurrencyUsdt:
             return "Icons/Size96/currency-usdt"
         case .iconsSize96TonIcon:
@@ -780,6 +849,9 @@ public extension UIImage {
     enum TKUIKit {
         public enum Artwork {
           public enum Banners {
+            public static var loyalty: UIImage {
+                .from(asset: .artworkBannersLoyalty)
+            }
             public static var multichain: UIImage {
                 .from(asset: .artworkBannersMultichain)
             }
@@ -817,6 +889,19 @@ public extension UIImage {
           public enum Onboarding {
             public static var cover: UIImage {
                 .from(asset: .artworkOnboardingCover)
+            }
+          }
+          public enum PaymentCards {
+            public static var mastercard: UIImage {
+                .from(asset: .artworkPaymentcardsMastercard)
+            }
+            public static var visa: UIImage {
+                .from(asset: .artworkPaymentcardsVisa)
+            }
+          }
+          public enum Providers {
+            public static var moonpay: UIImage {
+                .from(asset: .artworkProvidersMoonpay)
             }
           }
           public enum QR {
@@ -880,8 +965,14 @@ public extension UIImage {
             public static var arrowDown: UIImage {
                 .from(asset: .iconsSize16ArrowDown)
             }
+            public static var arrowUp: UIImage {
+                .from(asset: .iconsSize16ArrowUp)
+            }
             public static var batteryFlash: UIImage {
                 .from(asset: .iconsSize16BatteryFlash)
+            }
+            public static var battery: UIImage {
+                .from(asset: .iconsSize16Battery)
             }
             public static var block: UIImage {
                 .from(asset: .iconsSize16Block)
@@ -903,6 +994,12 @@ public extension UIImage {
             }
             public static var chevronRight: UIImage {
                 .from(asset: .iconsSize16ChevronRight)
+            }
+            public static var clock: UIImage {
+                .from(asset: .iconsSize16Clock)
+            }
+            public static var closeBold: UIImage {
+                .from(asset: .iconsSize16CloseBold)
             }
             public static var closeSmall: UIImage {
                 .from(asset: .iconsSize16CloseSmall)
@@ -976,6 +1073,9 @@ public extension UIImage {
             public static var instagram: UIImage {
                 .from(asset: .iconsSize16Instagram)
             }
+            public static var keeper: UIImage {
+                .from(asset: .iconsSize16Keeper)
+            }
             public static var linkSmall: UIImage {
                 .from(asset: .iconsSize16LinkSmall)
             }
@@ -990,6 +1090,9 @@ public extension UIImage {
             }
             public static var qrCode: UIImage {
                 .from(asset: .iconsSize16QrCode)
+            }
+            public static var question: UIImage {
+                .from(asset: .iconsSize16Question)
             }
             public static var refresh: UIImage {
                 .from(asset: .iconsSize16Refresh)
@@ -1020,6 +1123,9 @@ public extension UIImage {
             }
             public static var telegram: UIImage {
                 .from(asset: .iconsSize16Telegram)
+            }
+            public static var trayArrowDown: UIImage {
+                .from(asset: .iconsSize16TrayArrowDown)
             }
             public static var trayArrowUp: UIImage {
                 .from(asset: .iconsSize16TrayArrowUp)
@@ -1213,6 +1319,15 @@ public extension UIImage {
             public static var bell: UIImage {
                 .from(asset: .iconsSize28Bell)
             }
+            public static var checkmarkCircle: UIImage {
+                .from(asset: .iconsSize28CheckmarkCircle)
+            }
+            public static var chevronDown: UIImage {
+                .from(asset: .iconsSize28ChevronDown)
+            }
+            public static var chevronLeft: UIImage {
+                .from(asset: .iconsSize28ChevronLeft)
+            }
             public static var clockOutline: UIImage {
                 .from(asset: .iconsSize28ClockOutline)
             }
@@ -1227,6 +1342,9 @@ public extension UIImage {
             }
             public static var creditCard: UIImage {
                 .from(asset: .iconsSize28CreditCard)
+            }
+            public static var dinner: UIImage {
+                .from(asset: .iconsSize28Dinner)
             }
             public static var doc: UIImage {
                 .from(asset: .iconsSize28Doc)
@@ -1315,11 +1433,20 @@ public extension UIImage {
             public static var notification: UIImage {
                 .from(asset: .iconsSize28Notification)
             }
+            public static var ohms: UIImage {
+                .from(asset: .iconsSize28Ohms)
+            }
             public static var openLock: UIImage {
                 .from(asset: .iconsSize28OpenLock)
             }
             public static var pencilOutline: UIImage {
                 .from(asset: .iconsSize28PencilOutline)
+            }
+            public static var percentOutline: UIImage {
+                .from(asset: .iconsSize28PercentOutline)
+            }
+            public static var perpsService: UIImage {
+                .from(asset: .iconsSize28PerpsService)
             }
             public static var perps: UIImage {
                 .from(asset: .iconsSize28Perps)
@@ -1345,6 +1472,9 @@ public extension UIImage {
             public static var qrViewFinderThin: UIImage {
                 .from(asset: .iconsSize28QrViewFinderThin)
             }
+            public static var qrViewFinder: UIImage {
+                .from(asset: .iconsSize28QrViewFinder)
+            }
             public static var question: UIImage {
                 .from(asset: .iconsSize28Question)
             }
@@ -1353,6 +1483,9 @@ public extension UIImage {
             }
             public static var reorder: UIImage {
                 .from(asset: .iconsSize28Reorder)
+            }
+            public static var returnArrow: UIImage {
+                .from(asset: .iconsSize28ReturnArrow)
             }
             public static var `return`: UIImage {
                 .from(asset: .iconsSize28Return)
@@ -1417,6 +1550,9 @@ public extension UIImage {
             public static var wallet: UIImage {
                 .from(asset: .iconsSize28Wallet)
             }
+            public static var xmarkOutline: UIImage {
+                .from(asset: .iconsSize28XmarkOutline)
+            }
             public static var xmark: UIImage {
                 .from(asset: .iconsSize28Xmark)
             }
@@ -1430,6 +1566,9 @@ public extension UIImage {
             }
             public static var saleBadge: UIImage {
                 .from(asset: .iconsSize32SaleBadge)
+            }
+            public static var xmarkCircle: UIImage {
+                .from(asset: .iconsSize32XmarkCircle)
             }
           }
           public enum Size34 {
@@ -1567,6 +1706,9 @@ public extension UIImage {
             public static var exclamationmarkTriangle: UIImage {
                 .from(asset: .iconsSize84ExclamationmarkTriangle)
             }
+            public static var globe: UIImage {
+                .from(asset: .iconsSize84Globe)
+            }
           }
           public enum Size96 {
             public static var currencyUsdt: UIImage {
@@ -1589,6 +1731,9 @@ public extension SwiftUI.Image {
     enum TKUIKit {
         public enum Artwork {
           public enum Banners {
+            public static var loyalty: SwiftUI.Image {
+                .from(asset: .artworkBannersLoyalty)
+            }
             public static var multichain: SwiftUI.Image {
                 .from(asset: .artworkBannersMultichain)
             }
@@ -1626,6 +1771,19 @@ public extension SwiftUI.Image {
           public enum Onboarding {
             public static var cover: SwiftUI.Image {
                 .from(asset: .artworkOnboardingCover)
+            }
+          }
+          public enum PaymentCards {
+            public static var mastercard: SwiftUI.Image {
+                .from(asset: .artworkPaymentcardsMastercard)
+            }
+            public static var visa: SwiftUI.Image {
+                .from(asset: .artworkPaymentcardsVisa)
+            }
+          }
+          public enum Providers {
+            public static var moonpay: SwiftUI.Image {
+                .from(asset: .artworkProvidersMoonpay)
             }
           }
           public enum QR {
@@ -1689,8 +1847,14 @@ public extension SwiftUI.Image {
             public static var arrowDown: SwiftUI.Image {
                 .from(asset: .iconsSize16ArrowDown)
             }
+            public static var arrowUp: SwiftUI.Image {
+                .from(asset: .iconsSize16ArrowUp)
+            }
             public static var batteryFlash: SwiftUI.Image {
                 .from(asset: .iconsSize16BatteryFlash)
+            }
+            public static var battery: SwiftUI.Image {
+                .from(asset: .iconsSize16Battery)
             }
             public static var block: SwiftUI.Image {
                 .from(asset: .iconsSize16Block)
@@ -1712,6 +1876,12 @@ public extension SwiftUI.Image {
             }
             public static var chevronRight: SwiftUI.Image {
                 .from(asset: .iconsSize16ChevronRight)
+            }
+            public static var clock: SwiftUI.Image {
+                .from(asset: .iconsSize16Clock)
+            }
+            public static var closeBold: SwiftUI.Image {
+                .from(asset: .iconsSize16CloseBold)
             }
             public static var closeSmall: SwiftUI.Image {
                 .from(asset: .iconsSize16CloseSmall)
@@ -1785,6 +1955,9 @@ public extension SwiftUI.Image {
             public static var instagram: SwiftUI.Image {
                 .from(asset: .iconsSize16Instagram)
             }
+            public static var keeper: SwiftUI.Image {
+                .from(asset: .iconsSize16Keeper)
+            }
             public static var linkSmall: SwiftUI.Image {
                 .from(asset: .iconsSize16LinkSmall)
             }
@@ -1799,6 +1972,9 @@ public extension SwiftUI.Image {
             }
             public static var qrCode: SwiftUI.Image {
                 .from(asset: .iconsSize16QrCode)
+            }
+            public static var question: SwiftUI.Image {
+                .from(asset: .iconsSize16Question)
             }
             public static var refresh: SwiftUI.Image {
                 .from(asset: .iconsSize16Refresh)
@@ -1829,6 +2005,9 @@ public extension SwiftUI.Image {
             }
             public static var telegram: SwiftUI.Image {
                 .from(asset: .iconsSize16Telegram)
+            }
+            public static var trayArrowDown: SwiftUI.Image {
+                .from(asset: .iconsSize16TrayArrowDown)
             }
             public static var trayArrowUp: SwiftUI.Image {
                 .from(asset: .iconsSize16TrayArrowUp)
@@ -2022,6 +2201,15 @@ public extension SwiftUI.Image {
             public static var bell: SwiftUI.Image {
                 .from(asset: .iconsSize28Bell)
             }
+            public static var checkmarkCircle: SwiftUI.Image {
+                .from(asset: .iconsSize28CheckmarkCircle)
+            }
+            public static var chevronDown: SwiftUI.Image {
+                .from(asset: .iconsSize28ChevronDown)
+            }
+            public static var chevronLeft: SwiftUI.Image {
+                .from(asset: .iconsSize28ChevronLeft)
+            }
             public static var clockOutline: SwiftUI.Image {
                 .from(asset: .iconsSize28ClockOutline)
             }
@@ -2036,6 +2224,9 @@ public extension SwiftUI.Image {
             }
             public static var creditCard: SwiftUI.Image {
                 .from(asset: .iconsSize28CreditCard)
+            }
+            public static var dinner: SwiftUI.Image {
+                .from(asset: .iconsSize28Dinner)
             }
             public static var doc: SwiftUI.Image {
                 .from(asset: .iconsSize28Doc)
@@ -2124,11 +2315,20 @@ public extension SwiftUI.Image {
             public static var notification: SwiftUI.Image {
                 .from(asset: .iconsSize28Notification)
             }
+            public static var ohms: SwiftUI.Image {
+                .from(asset: .iconsSize28Ohms)
+            }
             public static var openLock: SwiftUI.Image {
                 .from(asset: .iconsSize28OpenLock)
             }
             public static var pencilOutline: SwiftUI.Image {
                 .from(asset: .iconsSize28PencilOutline)
+            }
+            public static var percentOutline: SwiftUI.Image {
+                .from(asset: .iconsSize28PercentOutline)
+            }
+            public static var perpsService: SwiftUI.Image {
+                .from(asset: .iconsSize28PerpsService)
             }
             public static var perps: SwiftUI.Image {
                 .from(asset: .iconsSize28Perps)
@@ -2154,6 +2354,9 @@ public extension SwiftUI.Image {
             public static var qrViewFinderThin: SwiftUI.Image {
                 .from(asset: .iconsSize28QrViewFinderThin)
             }
+            public static var qrViewFinder: SwiftUI.Image {
+                .from(asset: .iconsSize28QrViewFinder)
+            }
             public static var question: SwiftUI.Image {
                 .from(asset: .iconsSize28Question)
             }
@@ -2162,6 +2365,9 @@ public extension SwiftUI.Image {
             }
             public static var reorder: SwiftUI.Image {
                 .from(asset: .iconsSize28Reorder)
+            }
+            public static var returnArrow: SwiftUI.Image {
+                .from(asset: .iconsSize28ReturnArrow)
             }
             public static var `return`: SwiftUI.Image {
                 .from(asset: .iconsSize28Return)
@@ -2226,6 +2432,9 @@ public extension SwiftUI.Image {
             public static var wallet: SwiftUI.Image {
                 .from(asset: .iconsSize28Wallet)
             }
+            public static var xmarkOutline: SwiftUI.Image {
+                .from(asset: .iconsSize28XmarkOutline)
+            }
             public static var xmark: SwiftUI.Image {
                 .from(asset: .iconsSize28Xmark)
             }
@@ -2239,6 +2448,9 @@ public extension SwiftUI.Image {
             }
             public static var saleBadge: SwiftUI.Image {
                 .from(asset: .iconsSize32SaleBadge)
+            }
+            public static var xmarkCircle: SwiftUI.Image {
+                .from(asset: .iconsSize32XmarkCircle)
             }
           }
           public enum Size34 {
@@ -2375,6 +2587,9 @@ public extension SwiftUI.Image {
             }
             public static var exclamationmarkTriangle: SwiftUI.Image {
                 .from(asset: .iconsSize84ExclamationmarkTriangle)
+            }
+            public static var globe: SwiftUI.Image {
+                .from(asset: .iconsSize84Globe)
             }
           }
           public enum Size96 {

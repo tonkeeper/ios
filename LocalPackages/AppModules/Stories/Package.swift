@@ -20,15 +20,13 @@ let package = Package(
     dependencies: [
         .package(path: "../../KeeperCore"),
         .package(path: "../../TKUIKit"),
-        .package(path: "../../TKFeatureFlags"),
+        .package(path: "../../TKBase"),
         .package(path: "../../TKCore"),
-        .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1")),
     ],
     targets: [
         .target(
             name: "TKStories",
             dependencies: [
-                .product(name: "SnapKit-Dynamic", package: "SnapKit"),
                 .product(name: "TKUIKit", package: "TKUIKit"),
             ],
             swiftSettings: [
@@ -41,9 +39,8 @@ let package = Package(
                 .target(name: "TKStories"),
                 .product(name: "TKUIKit", package: "TKUIKit"),
                 .product(name: "TKCore", package: "TKCore"),
-                .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
+                .product(name: "TKBase", package: "TKBase"),
                 .product(name: "KeeperCore", package: "KeeperCore"),
-                .product(name: "KeeperCoreComponents", package: "KeeperCore"),
             ],
 
             swiftSettings: [

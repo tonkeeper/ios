@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 import KeeperCore
 import TKCore
+import TKLocalize
 import TKUIKit
 
 enum HomeBannersViewState {
@@ -40,6 +41,7 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
 
     var onOpenDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
     var onOpenLink: ((URL) -> Void)?
+    var onOpenLoyalty: (() -> Void)?
     var onSectionVisibilityChanged: ((_ isVisible: Bool) -> Void)?
     var onSectionHeightChanged: ((_ height: CGFloat) -> Void)?
 
@@ -51,6 +53,7 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
 
     private let homeBannersStore: HomeBannersStore
     private let homeBannersLoader: HomeBannersLoader
+    private let loyaltyStore: LoyaltyStore?
     private let deeplinkParser: DeeplinkParser
     private let analyticsProvider: AnalyticsProvider
 
@@ -62,15 +65,18 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         walletsStore: WalletsStore,
         homeBannersStore: HomeBannersStore,
         homeBannersLoader: HomeBannersLoader,
+        loyaltyStore: LoyaltyStore? = nil,
         deeplinkParser: DeeplinkParser,
         analyticsProvider: AnalyticsProvider
     ) {
         self.wallet = wallet
         self.homeBannersStore = homeBannersStore
         self.homeBannersLoader = homeBannersLoader
+        self.loyaltyStore = loyaltyStore
         self.deeplinkParser = deeplinkParser
         self.analyticsProvider = analyticsProvider
-        let cachedCount = homeBannersStore.visibleBanners(for: wallet).count
+        let showsLoyaltyBanner = loyaltyStore?.entry(for: wallet).showsBanner == true
+        let cachedCount = homeBannersStore.visibleBanners(for: wallet).count + (showsLoyaltyBanner ? 1 : 0)
         sectionHeight = WalletBalanceHomeBannersLayout.height(remainingCount: cachedCount)
         isSectionVisible = cachedCount > 0
 
@@ -88,6 +94,12 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         walletsStore.addObserver(self) { observer, event in
             Task { @MainActor in
                 observer.didGetWalletsStoreEvent(event)
+            }
+        }
+
+        loyaltyStore?.addObserver(self) { observer, _ in
+            Task { @MainActor in
+                observer.refreshBannerItems()
             }
         }
     }
@@ -143,7 +155,11 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
     }
 
     func dismissBanner(_ item: BannerItem, remainingCount: Int) {
-        homeBannersStore.dismissBanner(id: item.id, walletId: wallet.id)
+        if item.id == Self.loyaltyBannerId {
+            loyaltyStore?.hideBanner(wallet: wallet)
+        } else {
+            homeBannersStore.dismissBanner(id: item.id, walletId: wallet.id)
+        }
         updateSectionHeight(remainingCount: remainingCount)
         updateSectionVisibility(isVisible: remainingCount > 0)
     }
@@ -155,12 +171,12 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
 
     func handleBannerShown(id: String) {
         guard shownBannerIDs.insert(id).inserted else { return }
-        analyticsProvider.log(BannerView(bannerId: id))
+        analyticsProvider.log(BannerView(bannerId: id, walletMode: WalletMode(wallet: wallet), from: .home))
     }
 
     private func handleBannerClick(id: String, action: BannerActionType) {
         guard clickedBannerIDs.insert(id).inserted else { return }
-        analyticsProvider.log(BannerClick(bannerId: id, action: action))
+        analyticsProvider.log(BannerClick(bannerId: id, action: action, walletMode: WalletMode(wallet: wallet), from: .home))
     }
 
     private static func actionType(for deeplink: Deeplink?) -> BannerActionType {
@@ -172,7 +188,7 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         case .staking, .pool: return .staking
         case .transfer: return .send
         case .trading, .tradeAsset: return .trade
-        case .dapp, .browser: return .dapp
+        case .dapp, .multichainDapp, .browser, .loyalty, .earn: return .dapp
         default: return .other
         }
     }
@@ -186,16 +202,34 @@ final class WalletBalanceHomeBannersViewModel: ObservableObject {
         case .idle:
             return
         case let .loading(data, task):
-            guard data != nil else { return }
-            setState(.loading(data: visibleBannerItems(), task: task))
+            let items = visibleBannerItems()
+            guard data != nil || !items.isEmpty else { return }
+            setState(.loading(data: items, task: task))
         case .loaded:
             setState(.loaded(visibleBannerItems()))
         }
     }
 
     private func visibleBannerItems() -> [BannerItem] {
-        Array(homeBannersStore.visibleBanners(for: wallet).compactMap(mapBannerItem).reversed())
+        let banners = Array(homeBannersStore.visibleBanners(for: wallet).compactMap(mapBannerItem).reversed())
+        guard loyaltyStore?.entry(for: wallet).showsBanner == true else { return banners }
+        return banners + [loyaltyBannerItem()]
     }
+
+    private func loyaltyBannerItem() -> BannerItem {
+        BannerItem(
+            id: Self.loyaltyBannerId,
+            title: TKLocales.Loyalty.Banner.title,
+            actionTitle: TKLocales.Loyalty.Banner.action,
+            image: .TKUIKit.Artwork.Banners.loyalty,
+            action: { [weak self] in
+                self?.handleBannerClick(id: Self.loyaltyBannerId, action: .dapp)
+                self?.onOpenLoyalty?()
+            }
+        )
+    }
+
+    private static let loyaltyBannerId = "loyalty"
 
     private func setState(_ state: HomeBannersViewState) {
         self.state = state

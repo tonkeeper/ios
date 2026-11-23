@@ -1,5 +1,7 @@
 import Foundation
+import PerpsModels
 import TKFeatureFlags
+import TKLogging
 
 public final class ConfigurationAssembly {
     private let bootConfigurationAPIAssembly: BootConfigurationAPIAssembly
@@ -27,7 +29,8 @@ public final class ConfigurationAssembly {
             let configuration = Configuration(
                 bootConfigurationService: bootConfigurationService(),
                 featureFlags: featureFlags,
-                tkAppSettings: tkAppSettings
+                tkAppSettings: tkAppSettings,
+                perpsAccessOverride: StaticFlagOverrides.shared?.perpsAccessOverride
             )
             _configuration = configuration
             return configuration
@@ -45,5 +48,16 @@ public final class ConfigurationAssembly {
         BootConfigurationRepositoryImplementation(
             fileSystemVault: coreAssembly.fileSystemVault()
         )
+    }
+}
+
+private extension StaticFlagOverrides {
+    var perpsAccessOverride: PerpsAccess? {
+        guard let perpsAccess else { return nil }
+        guard let access = PerpsAccess(rawValue: perpsAccess) else {
+            Log.w("StaticFlagOverrides: perpsAccess must be one of available, restricted, hidden, got \"\(perpsAccess)\"; ignored")
+            return nil
+        }
+        return access
     }
 }

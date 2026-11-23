@@ -4,49 +4,45 @@ import TKUIKit
 
 struct PerpsRiskDisclosureSheetView: View {
     let keeperTermsURL: URL?
-    let onOK: () -> Void
 
     var body: some View {
-        VStack(spacing: Layout.spacing) {
-            VStack(alignment: .leading, spacing: Layout.linksSpacing) {
-                Text(TKLocales.Perps.RiskDisclosure.text)
-                    .textStyle(.body2)
-                    .foregroundStyle(.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: Layout.spacing) {
-                    link(TKLocales.Perps.RiskDisclosure.lighterTerms, url: Self.lighterTermsURL)
-                    if let keeperTermsURL {
-                        link(TKLocales.Perps.RiskDisclosure.keeperTerms, url: keeperTermsURL)
-                    }
-                }
-            }
-            .padding(Layout.inset)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .asCellsGroup(config: .init(horizontalPadding: 0))
-            ButtonView(config: .init(
-                title: TKLocales.Actions.ok,
-                size: .large,
-                layoutMode: .fill,
-                appearance: .primary,
-                action: onOK
-            ))
+        VStack(alignment: .leading, spacing: Layout.spacing) {
+            Text(TKLocales.Perps.RiskDisclosure.text)
+                .textStyle(.body1)
+                .foregroundStyle(.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(links)
+                .textStyle(.body1)
+                .foregroundStyle(.textPrimary)
+                .tint(.textAccent)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(Layout.inset)
+        .padding(Layout.spacing)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .asCellsGroup(config: .init(horizontalPadding: 0))
+        .padding(Layout.spacing)
     }
 
-    private func link(_ title: String, url: URL) -> some View {
-        Link(destination: url) {
-            Text(title)
-                .textStyle(.body2)
-                .foregroundStyle(.textAccent)
+    private var links: AttributedString {
+        var line = link(TKLocales.Perps.RiskDisclosure.lighterTerms, url: PerpsTermsURL.lighter)
+        if let keeperTermsURL {
+            line += AttributedString(" · ")
+            line += link(TKLocales.Perps.RiskDisclosure.keeperTerms, url: keeperTermsURL)
         }
+        return line
     }
 
-    private static let lighterTermsURL = URL(string: "https://lighter.xyz/terms")!
+    private func link(_ title: String, url: URL) -> AttributedString {
+        var text = AttributedString(title)
+        text.link = url
+        return text
+    }
+}
+
+public enum PerpsTermsURL {
+    public static let lighter = URL(string: "https://www.keeperwallet.com/terms/lighter")!
 }
 
 private enum Layout {
-    static let inset: CGFloat = 16
     static let spacing: CGFloat = 16
-    static let linksSpacing: CGFloat = 12
 }

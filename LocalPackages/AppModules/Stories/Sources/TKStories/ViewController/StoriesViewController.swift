@@ -5,6 +5,7 @@ public final class StoriesViewController: UIViewController {
     public var didOpen: (() -> Void)?
     public var didOpenPage: ((_ pageNumber: Int) -> Void)?
     public var didComplete: (() -> Void)?
+    public var didTapClose: (() -> Void)?
 
     public var storiesPresentationController: StoriesPresentationController? {
         presentationController as? StoriesPresentationController
@@ -12,12 +13,6 @@ public final class StoriesViewController: UIViewController {
 
     override public var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
-    }
-
-    override public var isModalInPresentation: Bool {
-        didSet {
-            closeButton.isHidden = isModalInPresentation
-        }
     }
 
     private let bar = ProgressBarView()
@@ -40,6 +35,10 @@ public final class StoriesViewController: UIViewController {
     private let pageContainerView = UIView()
     private weak var activePageViewController: StoriesPageViewController?
 
+    public var activePageIndex: Int {
+        _activePage
+    }
+
     private var activePage: Int {
         get {
             _activePage
@@ -47,16 +46,22 @@ public final class StoriesViewController: UIViewController {
         set {
             _activePage = newValue
             openActivePage()
-            startTimer()
-            updateActivePageBar()
-            didOpenPage?(activePage)
+            updatePlayback()
         }
+    }
+
+    private enum PauseReason {
+        case hidden
+        case background
+        case hold
+        case closing
     }
 
     private var _activePage = 0
     private var initialPage: Int?
-    private var didStart = false
     private var timer: ResumableTimer?
+    private var pauseReasons: Set<PauseReason> = [.hidden]
+    private var isPlaying = false
 
     private lazy var longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
     private let trasitionManager = StoriesModalTransitionManager()
@@ -104,37 +109,26 @@ public final class StoriesViewController: UIViewController {
 
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if didStart {
-            bar.resume()
-            timer?.resume()
-        } else {
-            didStart = true
-            updateActivePageBar()
-            startTimer()
-        }
         if isFirstAppear {
             didOpen?()
             isFirstAppear = false
         }
+        resumePlayback(.hidden)
     }
 
     override public func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        timer?.pause()
-        bar.pause()
+        pausePlayback(.hidden)
     }
 
     @objc
     func didEnterBackground() {
-        bar.pause()
-        timer?.pause()
+        pausePlayback(.background)
     }
 
     @objc
     func didBecomeActive() {
-        guard presentedViewController == nil else { return }
-        bar.resume()
-        timer?.resume()
+        resumePlayback(.background)
     }
 
     private func setup() {
@@ -143,7 +137,7 @@ public final class StoriesViewController: UIViewController {
         _activePage = min(initialPage ?? 0, models.count - 1)
 
         closeButton.configuration.action = { [weak self] in
-            self?.dismiss(animated: true)
+            self?.close()
         }
 
         view.backgroundColor = .Background.page
@@ -171,6 +165,15 @@ public final class StoriesViewController: UIViewController {
         initialPage = index
     }
 
+    func close() {
+        guard let didTapClose else {
+            dismiss(animated: true)
+            return
+        }
+        pausePlayback(.closing)
+        didTapClose()
+    }
+
     private func setupGestures() {
         let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tapGestureRecognizer.delegate = self
@@ -181,26 +184,63 @@ public final class StoriesViewController: UIViewController {
         self.view.addGestureRecognizer(longPressGesture)
     }
 
-    private func startTimer() {
-        timer = ResumableTimer(interval: pageDuration, callback: { [weak self] in
-            self?.activateNextPage()
-        })
-        timer?.start()
+    private func pausePlayback(_ reason: PauseReason) {
+        pauseReasons.insert(reason)
+        updatePlayback()
     }
 
-    private func updateActivePageBar() {
-        bar.setActivePage(index: _activePage)
+    private func resumePlayback(_ reason: PauseReason) {
+        pauseReasons.remove(reason)
+        updatePlayback()
+    }
+
+    /// The page timer and its progress bar start only once the page shows its content, and hold
+    /// while any pause reason is active. A page counts as opened when its timer first starts, so
+    /// a page closed while still loading is not marked watched.
+    private func updatePlayback() {
+        let shouldPlay = pauseReasons.isEmpty && activePageViewController?.isReady == true
+        guard shouldPlay != isPlaying else { return }
+        isPlaying = shouldPlay
+        guard shouldPlay else {
+            bar.pause()
+            timer?.pause()
+            return
+        }
+        if let timer {
+            bar.resume()
+            timer.resume()
+        } else {
+            bar.setActivePage(index: _activePage, isRunning: true)
+            let timer = ResumableTimer(interval: pageDuration, callback: { [weak self] in
+                self?.activateNextPage()
+            })
+            timer.start()
+            self.timer = timer
+            didOpenPage?(_activePage)
+        }
     }
 
     private func openActivePage() {
-        pageContainerView.removeSubviews()
+        timer = nil
+        isPlaying = false
+        bar.setActivePage(index: _activePage, isRunning: false)
+
+        if let activePageViewController {
+            activePageViewController.willMove(toParent: nil)
+            activePageViewController.view.removeFromSuperview()
+            activePageViewController.removeFromParent()
+        }
         guard !models.isEmpty, models.count > _activePage else { return }
         let pageViewController = StoriesPageViewController(model: models[_activePage])
+        pageViewController.didBecomeReady = { [weak self, weak pageViewController] in
+            guard let self, pageViewController === activePageViewController else { return }
+            updatePlayback()
+        }
+        activePageViewController = pageViewController
 
         addChild(pageViewController)
         pageContainerView.addSubview(pageViewController.view)
         pageViewController.didMove(toParent: self)
-        activePageViewController = pageViewController
 
         pageViewController.view.snp.makeConstraints { make in
             make.edges.equalTo(pageContainerView)
@@ -245,12 +285,10 @@ public final class StoriesViewController: UIViewController {
     private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
         switch gesture.state {
         case .began:
-            bar.pause()
-            timer?.pause()
+            pausePlayback(.hold)
             updateBarVisibility(false, delay: 0.2, animationDuration: 0.2)
         case .cancelled, .ended, .failed:
-            bar.resume()
-            timer?.resume()
+            resumePlayback(.hold)
             updateBarVisibility(true, delay: 0, animationDuration: 0.2)
         default: break
         }

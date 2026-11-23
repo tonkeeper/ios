@@ -442,7 +442,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
             fractionDigits: amountTextFieldFormatter.maximumFractionDigits
         )
 
-        sendInput = text
+        sendInput = unformatted
         model.fromAmount.UIAmount = fromAmount
 
         guard !text.isEmpty, fromAmount > 0 else {
@@ -471,7 +471,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
             fractionDigits: amountTextFieldFormatter.maximumFractionDigits
         )
 
-        receiveInput = text
+        receiveInput = unformatted
         model.toAmount.UIAmount = toAmount
 
         guard !text.isEmpty, toAmount > 0 else {

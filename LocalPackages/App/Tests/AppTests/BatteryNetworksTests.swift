@@ -10,7 +10,17 @@ final class BatteryNetworksTests: XCTestCase {
 
         let networks = BatteryNetworks(relayedEVMChains: [.eth, .base, .arb], wallet: wallet)
 
-        XCTAssertEqual(networks.evmChains, [.eth, .base])
+        XCTAssertEqual(networks.relayedChains, [.eth, .base])
+    }
+
+    func test_solanaIsNamedApartFromTheEVMChains() {
+        let wallet = makeWallet(chains: [.ton, .sol])
+
+        let networks = BatteryNetworks(relayedEVMChains: [.eth, .sol], wallet: wallet)
+
+        XCTAssertEqual(networks.relayedChains, [.sol])
+        XCTAssertTrue(networks.includesSolana)
+        XCTAssertFalse(networks.includesEVM)
     }
 
     func test_aTonOnlyWalletGetsNoEVMChains() {
@@ -19,7 +29,6 @@ final class BatteryNetworksTests: XCTestCase {
         let networks = BatteryNetworks(relayedEVMChains: [.eth, .base], wallet: wallet)
 
         XCTAssertFalse(networks.includesEVM)
-        XCTAssertNil(networks.caption)
     }
 
     func test_aTestnetWalletGetsNoEVMChains() {

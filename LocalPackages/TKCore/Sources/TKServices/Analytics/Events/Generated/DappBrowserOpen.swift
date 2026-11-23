@@ -18,13 +18,15 @@ public struct DappBrowserOpen: Codable, JSONEncodable, Hashable {
         case history = "history"
         case deepLink = "deep_link"
         case story = "story"
+        case connectedApps = "connected_apps"
+        case other = "other"
     }
     public enum ModelType: String, Codable, CaseIterable {
         case explore = "explore"
         case connected = "connected"
     }
     public var eventName: String = "dapp_browser_open"
-    /** Source from which the dapp browser was opened */
+    /** Source from which the dapp browser was opened. - wallet: the Browser tab in the bottom bar - history: a browser link the app opened from history - deep_link: a browser link from outside the app (a deep link, a   push, a scanned QR code), whatever its from query parameter says;   the campaign behind such a link travels in utm_* - story: a browser link opened from a story - connected_apps: the \"Explore apps\" button on the empty Connected   apps screen in Settings - other: a browser link the app opened itself whose from query   parameter has no value of its own in this list  */
     public var from: From
     /** Which tab is opened at the top (explore or connected dapps) */
     public var type: ModelType

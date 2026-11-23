@@ -6,7 +6,8 @@ final class MultichainSwapProviderErrorMessageTests: XCTestCase {
     func test_errorCode_parsesEverySchemaCode() {
         let schemaCodes: [SwapAPI.Components.Schemas.CrossSwapProviderErrorCode] = [
             .no_route, .asset_not_supported, .min_amount_not_met,
-            .country_blocked, .provider_unavailable, .provider_error,
+            .country_blocked, .wallet_screened, .insufficient_balance,
+            .provider_unavailable, .provider_error,
         ]
 
         for schemaCode in schemaCodes {
@@ -66,8 +67,25 @@ final class MultichainSwapProviderErrorMessageTests: XCTestCase {
         XCTAssertEqual(message, userMessage(for: .minAmountNotMet))
     }
 
+    func test_isWalletScreened_onlyForTheWalletScreenedCode() {
+        for code in MultichainSwapProviderErrorCode.allCases {
+            XCTAssertEqual(makeError(code: code.rawValue).isWalletScreened, code == .walletScreened)
+        }
+    }
+
+    func test_userMessage_prefersTheWalletScreeningOverEveryOtherCode() {
+        for code in MultichainSwapProviderErrorCode.allCases where code != .walletScreened {
+            let message = MultichainSwapProviderErrorMessage.userMessage(for: [
+                makeError(aggregator: "swapkit", code: code.rawValue),
+                makeError(aggregator: "swapsxyz", code: "wallet_screened"),
+            ])
+
+            XCTAssertEqual(message, userMessage(for: .walletScreened), "\(code)")
+        }
+    }
+
     func test_userMessage_prefersABlockedRegionOverEveryOtherCode() {
-        for code in MultichainSwapProviderErrorCode.allCases where code != .countryBlocked {
+        for code in MultichainSwapProviderErrorCode.allCases where code != .countryBlocked && code != .walletScreened {
             let message = MultichainSwapProviderErrorMessage.userMessage(for: [
                 makeError(aggregator: "swapkit", code: code.rawValue),
                 makeError(aggregator: "swapsxyz", code: "country_blocked"),

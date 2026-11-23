@@ -20,4 +20,12 @@ extension MultichainSwapQuote {
             providerErrors: api.provider_errors?.map { MultichainSwapProviderError(api: $0) }
         )
     }
+
+    init(api: SwapAPI.Components.Schemas.CrossSwapQuoteV3) {
+        self.init(
+            quoteId: api.quote_id,
+            routes: api.routes.map { MultichainSwapRoute(api: $0) },
+            providerErrors: api.provider_errors?.map { MultichainSwapProviderError(api: $0) }
+        )
+    }
 }

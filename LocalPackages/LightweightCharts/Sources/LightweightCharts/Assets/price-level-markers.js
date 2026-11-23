@@ -198,19 +198,13 @@
         }
         let floor = minY + above.length * step;
         for (const item of inRange) {
-            if (item.tagY >= floor) {
-                break;
-            }
-            item.tagY = floor;
-            floor += step;
+            item.tagY = Math.max(item.tagY, floor);
+            floor = item.tagY + step;
         }
         let ceiling = maxY - below.length * step;
         for (const item of [...inRange].reverse()) {
-            if (item.tagY <= ceiling) {
-                break;
-            }
-            item.tagY = ceiling;
-            ceiling -= step;
+            item.tagY = Math.min(item.tagY, ceiling);
+            ceiling = item.tagY - step;
         }
     }
 

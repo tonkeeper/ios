@@ -19,8 +19,15 @@ final class PerpsServerClock: @unchecked Sendable {
         lock.withLock { offsetMs = offset }
     }
 
-    func serverNowUnixMs(deviceNowUnixMs: Int64 = PerpsPlannerMapping.nowUnixMs()) -> Int64 {
-        deviceNowUnixMs + (serverOffsetMs ?? 0)
+    /// Past `maxDeviceSkewMs` the `Date` header is not taken for the venue's time.
+    func trustedServerNowUnixMs(deviceNowUnixMs: Int64) -> Int64? {
+        let offset = serverOffsetMs ?? 0
+        guard !Self.isDeviceClockSkewed(serverOffsetMs: offset) else { return nil }
+        return deviceNowUnixMs + offset
+    }
+
+    func signingNowUnixMs(deviceNowUnixMs: Int64 = PerpsPlannerMapping.nowUnixMs()) -> Int64 {
+        trustedServerNowUnixMs(deviceNowUnixMs: deviceNowUnixMs) ?? deviceNowUnixMs
     }
 
     static func isDeviceClockSkewed(serverOffsetMs: Int64) -> Bool {

@@ -128,7 +128,6 @@ final class RampLimitsEvaluatorTests: XCTestCase {
     ) -> RampLimitsEvaluator {
         RampLimitsEvaluator(
             fractionalDigits: 2,
-            currencyCode: "USD",
             providers: providers,
             merchantIds: merchantIds,
             quotes: quotes

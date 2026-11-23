@@ -11,7 +11,7 @@ enum SendAnalyticsSource {
     case deepLink(utm: UtmParameters)
     case tonconnectLocal(appId: String)
     case tonconnectRemote
-    case qrCode
+    case qrCode(utm: UtmParameters)
 }
 
 @MainActor

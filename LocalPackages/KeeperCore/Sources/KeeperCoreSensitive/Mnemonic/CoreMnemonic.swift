@@ -5,7 +5,7 @@ import TonSwift
 
 public typealias CoreMnemonicIdentifier = String
 
-public struct CoreMnemonic: Equatable, Codable {
+public struct CoreMnemonic: Equatable, Codable, Sendable {
     public let mnemonicWords: [String]
     public let type: DerivationType
 

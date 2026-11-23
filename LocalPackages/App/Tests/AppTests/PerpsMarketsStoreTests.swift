@@ -1,4 +1,3 @@
-@testable import App
 @testable import KeeperCore
 @testable import Perps
 import PerpsModels

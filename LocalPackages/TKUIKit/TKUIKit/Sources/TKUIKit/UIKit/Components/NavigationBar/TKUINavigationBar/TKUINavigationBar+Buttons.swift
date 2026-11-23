@@ -1,6 +1,14 @@
 import UIKit
 
 public extension TKUINavigationBar {
+    /// A factory button as a system bar item: the image it gets there and its action, which is handed
+    /// the view a popup anchors to.
+    struct SystemBarItem {
+        var image: UIImage
+        var accessibilityIdentifier: String?
+        var action: (UIView) -> Void
+    }
+
     static func createBackButton(action: @escaping () -> Void) -> TKUIHeaderIconButton {
         let button = TKUIHeaderIconButton()
         button.configure(
@@ -10,6 +18,7 @@ public extension TKUINavigationBar {
         )
 
         button.addTapAction(action)
+        button.systemBarItem = SystemBarItem(image: .TKUIKit.Icons.Size28.chevronLeft) { _ in action() }
 
         button.tapAreaInsets = UIEdgeInsets(
             top: -10,
@@ -29,6 +38,7 @@ public extension TKUINavigationBar {
         )
 
         button.addTapAction(action)
+        button.systemBarItem = SystemBarItem(image: .TKUIKit.Icons.Size28.chevronDown) { _ in action() }
 
         button.tapAreaInsets = UIEdgeInsets(
             top: -10,
@@ -48,6 +58,7 @@ public extension TKUINavigationBar {
         )
 
         button.addTapAction(action)
+        button.systemBarItem = SystemBarItem(image: .TKUIKit.Icons.Size28.xmarkOutline) { _ in action() }
 
         button.tapAreaInsets = UIEdgeInsets(
             top: -10,
@@ -70,6 +81,7 @@ public extension TKUINavigationBar {
             guard let button else { return }
             action(button)
         }
+        button.systemBarItem = SystemBarItem(image: .TKUIKit.Icons.Size28.ellipses, action: action)
 
         button.tapAreaInsets = UIEdgeInsets(
             top: -10,
@@ -92,6 +104,7 @@ public extension TKUINavigationBar {
             guard let button else { return }
             action(button)
         }
+        button.systemBarItem = SystemBarItem(image: icon, action: action)
 
         button.tapAreaInsets = UIEdgeInsets(
             top: -10,

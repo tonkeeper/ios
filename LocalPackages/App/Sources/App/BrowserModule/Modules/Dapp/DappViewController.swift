@@ -17,10 +17,11 @@ final class DappViewController: UIViewController, TKEdgeSwipeBackOnly {
     }
 
     var didPop: ((_ byGesture: Bool) -> Void)?
+    var didDismiss: (() -> Void)?
 
     private var headerFallbackWorkItem: DispatchWorkItem?
     private var wasNavigationBarHidden: Bool?
-    private var isHeaderForcedVisible = false
+    private var isHeaderForced = false
     private var isDisappearingByGesture = false
 
     private var isSwipeBackEnabled: Bool {
@@ -56,10 +57,14 @@ final class DappViewController: UIViewController, TKEdgeSwipeBackOnly {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if wasNavigationBarHidden == nil {
-            wasNavigationBarHidden = navigationController?.isNavigationBarHidden
+        // Under liquid glass the page header is the stack's system bar, which the header shows, hides and
+        // hands back to the stack.
+        if !TKLiquidGlass.isEnabled {
+            if wasNavigationBarHidden == nil {
+                wasNavigationBarHidden = navigationController?.isNavigationBarHidden
+            }
+            navigationController?.setNavigationBarHidden(true, animated: animated)
         }
-        navigationController?.setNavigationBarHidden(true, animated: animated)
         navigationController?.interactivePopGestureRecognizer?.isEnabled = isSwipeBackEnabled
     }
 
@@ -69,6 +74,13 @@ final class DappViewController: UIViewController, TKEdgeSwipeBackOnly {
         navigationController?.interactivePopGestureRecognizer?.isEnabled = true
         if let wasNavigationBarHidden {
             navigationController?.setNavigationBarHidden(wasNavigationBarHidden, animated: animated)
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isBeingDismissed || navigationController?.isBeingDismissed == true {
+            didDismiss?()
         }
     }
 
@@ -87,18 +99,14 @@ final class DappViewController: UIViewController, TKEdgeSwipeBackOnly {
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         if viewModel.isLandscapeEnable {
-            return .allButUpsideDown
+            return UIInterfaceOrientationMask.tkDefault.union(.allButUpsideDown)
         } else {
-            return .portrait
+            return .tkDefault
         }
     }
 
     override var shouldAutorotate: Bool {
-        viewModel.isLandscapeEnable
-    }
-
-    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
-        TKPopupMenuController.dismiss()
+        viewModel.isLandscapeEnable || UIInterfaceOrientationMask.tkDefault != .portrait
     }
 }
 
@@ -127,13 +135,34 @@ private extension DappViewController {
 
     func forceHeaderVisible() {
         cancelHeaderFallback()
-        isHeaderForcedVisible = true
+        isHeaderForced = true
         bridgeWebViewController?.isHeaderHidden = false
     }
 
+    func endHeaderFallback(for url: URL) {
+        cancelHeaderFallback()
+        isHeaderForced = false
+        applyHeaderVisibility(for: url)
+    }
+
     func applyHeaderVisibility(for url: URL) {
-        guard !isHeaderForcedVisible else { return }
+        guard !isHeaderForced else { return }
         bridgeWebViewController?.isHeaderHidden = viewModel.isNativeHeaderHidden(for: url)
+    }
+
+    func injectKeeperBridgeResponse(_ js: String, containsCredentials: Bool) async {
+        guard let bridgeWebViewController else { return }
+        guard !containsCredentials || KeeperDappBridge.isTrusted(url: bridgeWebViewController.currentURL) else {
+            Log.w("keeper dapp bridge: response rejected: untrusted page", extraInfo: [
+                "host": bridgeWebViewController.currentURL?.host ?? "",
+            ])
+            return
+        }
+        do {
+            try await bridgeWebViewController.evaulateJavaScript(js)
+        } catch {
+            Log.e("keeper dapp bridge: failed to evaluate js", error: error)
+        }
     }
 
     func setupBinding() {
@@ -183,7 +212,8 @@ private extension DappViewController {
                 }
             )
             bridgeWebViewController.isHeaderHidden = viewModel.isNativeHeaderHidden(for: url)
-            if bridgeWebViewController.isHeaderHidden {
+            bridgeWebViewController.showsCloseButtonWhenHeaderHidden = viewModel.isKeeperBridgeEnabled
+            if bridgeWebViewController.isHeaderHidden, !viewModel.isKeeperBridgeEnabled {
                 scheduleHeaderFallback()
             }
             bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
@@ -194,13 +224,16 @@ private extension DappViewController {
                 self?.applyHeaderVisibility(for: url)
             }
             bridgeWebViewController.didFinishLoad = { [weak self] url in
-                guard let self else { return }
-                cancelHeaderFallback()
-                applyHeaderVisibility(for: url)
+                self?.endHeaderFallback(for: url)
             }
-            bridgeWebViewController.didFailLoad = { [weak self] failure in
-                self?.forceHeaderVisible()
-                self?.viewModel.didFailLoad(failure)
+            bridgeWebViewController.didFailLoad = { [weak self, weak bridgeWebViewController] failure, isPageShown in
+                guard let self, let bridgeWebViewController else { return }
+                let pageURL = bridgeWebViewController.currentURL ?? url
+                endHeaderFallback(for: pageURL)
+                if viewModel.showsLoadFailurePlaceholder(for: failure, at: pageURL, isPageShown: isPageShown) {
+                    bridgeWebViewController.showLoadFailurePlaceholder()
+                }
+                viewModel.didFailLoad(failure)
             }
             bridgeWebViewController.didChangeCanGoBack = { [weak self] _ in
                 guard let self, navigationController?.topViewController === self else { return }
@@ -216,6 +249,14 @@ private extension DappViewController {
             bridgeWebViewController.addBridgeMessageObserver(message: "dapp", observer: { [weak self] body in
                 self?.viewModel.didReceiveMessage(body: body)
             })
+            if viewModel.isKeeperBridgeEnabled {
+                bridgeWebViewController.addBridgeMessageObserver(
+                    message: KeeperDappBridge.messageHandlerName,
+                    observer: { [weak self] body, senderOrigin in
+                        self?.viewModel.didReceiveKeeperBridgeMessage(body: body, senderOrigin: senderOrigin)
+                    }
+                )
+            }
             bridgeWebViewController.didTapCopy = { [weak self] url in
                 self?.viewModel.copyDappURL(url: url)
             }
@@ -226,6 +267,10 @@ private extension DappViewController {
 
             bridgeWebViewController.didTapClose = { [weak self] in
                 self?.viewModel.didTapClose()
+            }
+
+            bridgeWebViewController.newWindowHandler = { [weak self] url in
+                self?.viewModel.didRequestNewWindow(url: url) ?? false
             }
 
             self.bridgeWebViewController = bridgeWebViewController
@@ -247,9 +292,18 @@ private extension DappViewController {
             }
         }
 
+        viewModel.keeperBridgeInjectHandler = { [weak self] js, containsCredentials in
+            await self?.injectKeeperBridgeResponse(js, containsCredentials: containsCredentials)
+        }
+
+        viewModel.didChangeCloseButtonVisibility = { [weak self] isVisible in
+            self?.bridgeWebViewController?.showsCloseButtonWhenHeaderHidden = isVisible
+        }
+
         viewModel.didUpdateIsLandscapeEnable = { [weak self] in
             if #available(iOS 16.0, *) {
-                self?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                // Under liquid glass a modal dapp sits in a navigation controller that asks it.
+                (self?.navigationController ?? self)?.setNeedsUpdateOfSupportedInterfaceOrientations()
             } else {
                 UIViewController.attemptRotationToDeviceOrientation()
             }
@@ -262,6 +316,16 @@ private extension DappViewController {
             )
             self?.present(
                 activityViewController,
+                animated: true
+            )
+        }
+
+        viewModel.didRequestShareText = { [weak self] text in
+            guard let self, viewIfLoaded?.window != nil, presentedViewController == nil, !isBeingDismissed,
+                  navigationController?.isBeingDismissed != true
+            else { return }
+            present(
+                UIActivityViewController(activityItems: [text], applicationActivities: nil),
                 animated: true
             )
         }

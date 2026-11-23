@@ -1,6 +1,7 @@
 import Foundation
+import PerpsModels
 
-public struct BootConfigurations: Codable {
+public struct BootConfigurations: Codable, Equatable {
     @usableFromInline
     let mainnet: BootConfiguration
     @usableFromInline
@@ -38,6 +39,7 @@ public struct BootConfiguration: Codable, Equatable {
     public let disableBattery: Bool
     public let disableBatterySend: Bool
     public let disableBatteryCryptoRechargeModule: Bool
+    public let disableBatteryPromoModule: Bool
     public let flags: Flags
     public let stories: [String]?
     public let reportAmount: String?
@@ -54,9 +56,20 @@ public struct BootConfiguration: Codable, Equatable {
     public let multichainHelpUrl: URL?
     public let multichain: Endpoint
     public let trading: Endpoint
+    public let keeperEarn: URL
     public let explorers: [ChainExplorer]
-    public let earnUrl: URL?
+    public let earnUrl: URL
     public let earnFeaturedVaults: [EarnFeaturedVault]
+    let perpsSecurity: PerpsSecurityBlock?
+    let featureAccess: FeatureAccess?
+
+    struct FeatureAccess: Codable, Equatable {
+        struct Perps: Codable, Equatable {
+            let state: PerpsAccess
+        }
+
+        let perps: Perps?
+    }
 
     public struct Endpoint: Codable, Equatable {
         public let domain: URL
@@ -105,12 +118,16 @@ public struct BootConfiguration: Codable, Equatable {
         public let onboardingStoryDisabled: Bool
         public let nftsDisabled: Bool
         public let nativeSwapDisabled: Bool
+        public let perpsEnabled: Bool
+        /// `tx_validation_enabled`: whether chain-kit validates what is signed. Only an explicit `false`
+        /// from the backend turns validation off, as on Android.
+        public let txValidationEnabled: Bool
     }
 }
 
 extension BootConfiguration {
     /// Used until the boot configuration answers, and whenever it answers without a realtime host.
-    static let defaultMultichainRealtimeURL = URL(string: "wss://rt.tonkeeper.com/connection/websocket")!
+    static let defaultMultichainRealtimeURL = URL(string: "wss://app.geo.tonkeeper.com/connection/websocket")!
 
     static var empty: BootConfiguration {
         BootConfiguration(
@@ -144,6 +161,7 @@ extension BootConfiguration {
             disableBattery: false,
             disableBatterySend: false,
             disableBatteryCryptoRechargeModule: true,
+            disableBatteryPromoModule: true,
             flags: .default,
             stories: [],
             reportAmount: nil,
@@ -157,13 +175,16 @@ extension BootConfiguration {
             aptabaseEndpoint: nil,
             multichainHelpUrl: URL(string: "https://tonkeeper.helpscoutdocs.com/article/137-multichain#Transfer-fees-for-USDT-TRC20-tHzDd"),
             multichain: Endpoint(
-                domain: URL(string: "https://multi.tonkeeper.com")!,
+                domain: URL(string: "https://app.geo.tonkeeper.com/multi")!,
                 realtime: defaultMultichainRealtimeURL
             ),
-            trading: Endpoint(domain: URL(string: "https://trading.tonkeeper.com")!, realtime: nil),
+            trading: Endpoint(domain: URL(string: "https://app.geo.tonkeeper.com/trading")!, realtime: nil),
+            keeperEarn: URL(string: "https://app.geo.tonkeeper.com")!,
             explorers: [],
-            earnUrl: nil,
-            earnFeaturedVaults: []
+            earnUrl: URL(string: "https://vaults-tonkeeper-earn-demo.fly.dev/")!,
+            earnFeaturedVaults: [],
+            perpsSecurity: nil,
+            featureAccess: nil
         )
     }
 }
@@ -183,7 +204,9 @@ extension BootConfiguration.Flags {
             storiesDisabled: true,
             onboardingStoryDisabled: true,
             nftsDisabled: true,
-            nativeSwapDisabled: true
+            nativeSwapDisabled: true,
+            perpsEnabled: false,
+            txValidationEnabled: true
         )
     }
 }

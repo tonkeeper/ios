@@ -14,7 +14,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../KeeperCore"),
         .package(path: "../../TKUIKit"),
-        .package(path: "../../TKLocalize"),
+        .package(path: "../../TKBase"),
     ],
     targets: [
         .target(
@@ -22,7 +22,7 @@ let package = Package(
             dependencies: [
                 .product(name: "TKUIKit", package: "TKUIKit"),
                 .product(name: "KeeperCore", package: "KeeperCore"),
-                .product(name: "TKLocalize", package: "TKLocalize"),
+                .product(name: "TKBase", package: "TKBase"),
             ],
 
             swiftSettings: [

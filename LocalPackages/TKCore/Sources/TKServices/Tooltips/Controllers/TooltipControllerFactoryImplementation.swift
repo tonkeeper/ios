@@ -7,6 +7,9 @@ final class TooltipControllerFactoryImplementation {
     private let tradeTabTooltipRepository: TradeTabTooltipRepository
     private let favoriteTooltipRepository: FavoriteTooltipRepository
     private let addMultichainWalletTooltipRepository: AddMultichainWalletTooltipRepository
+    private let earnSectionTooltipRepository: EarnSectionTooltipRepository
+    private let perpsSectionTooltipRepository: PerpsSectionTooltipRepository
+    private let appSettings: AppSettings
     private let calendar: Calendar
 
     private lazy var withdrawTooltipController = WithdrawTooltipController(
@@ -37,6 +40,14 @@ final class TooltipControllerFactoryImplementation {
         repository: addMultichainWalletTooltipRepository,
         calendar: calendar
     )
+    private lazy var earnSectionTooltipController = EarnSectionTooltipController(
+        repository: earnSectionTooltipRepository,
+        calendar: calendar
+    )
+    private lazy var perpsSectionTooltipController = PerpsSectionTooltipController(
+        repository: perpsSectionTooltipRepository,
+        appSettings: appSettings
+    )
 
     init(
         commonTooltipsRepository: TooltipDataRepository,
@@ -45,6 +56,9 @@ final class TooltipControllerFactoryImplementation {
         tradeTabTooltipRepository: TradeTabTooltipRepository,
         favoriteTooltipRepository: FavoriteTooltipRepository,
         addMultichainWalletTooltipRepository: AddMultichainWalletTooltipRepository,
+        earnSectionTooltipRepository: EarnSectionTooltipRepository,
+        perpsSectionTooltipRepository: PerpsSectionTooltipRepository,
+        appSettings: AppSettings,
         calendar: Calendar
     ) {
         self.commonTooltipsRepository = commonTooltipsRepository
@@ -53,6 +67,9 @@ final class TooltipControllerFactoryImplementation {
         self.tradeTabTooltipRepository = tradeTabTooltipRepository
         self.favoriteTooltipRepository = favoriteTooltipRepository
         self.addMultichainWalletTooltipRepository = addMultichainWalletTooltipRepository
+        self.earnSectionTooltipRepository = earnSectionTooltipRepository
+        self.perpsSectionTooltipRepository = perpsSectionTooltipRepository
+        self.appSettings = appSettings
         self.calendar = calendar
     }
 }
@@ -72,6 +89,10 @@ extension TooltipControllerFactoryImplementation: TooltipControllerFactory {
             addMultichainWalletMainTooltipController
         case .addMultichainWalletWalletsList:
             addMultichainWalletWalletsListTooltipController
+        case .earnSection:
+            earnSectionTooltipController
+        case .perpsSection:
+            perpsSectionTooltipController
         }
     }
 }

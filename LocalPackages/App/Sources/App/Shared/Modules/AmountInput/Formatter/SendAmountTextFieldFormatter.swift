@@ -1,5 +1,6 @@
 import AnyFormatKit
 import KeeperCore
+import TKUIKit
 import UIKit
 
 final class SendAmountTextFieldFormatter: NSObject {
@@ -78,10 +79,10 @@ private extension SendAmountTextFieldFormatter {
             return nil
         }
 
-        return (
-            normalizedText,
-            min(normalizedPrefix.utf16.count, normalizedText.utf16.count)
-        )
+        let caretOffset = min(normalizedPrefix.utf16.count, normalizedText.utf16.count)
+        guard TKNumPadView.isEnabled else { return (normalizedText, caretOffset) }
+        let groupedText = TKAmountDigits.grouped(normalizedText)
+        return (groupedText, TKAmountDigits.offset(afterCharacters: caretOffset, in: groupedText))
     }
 }
 

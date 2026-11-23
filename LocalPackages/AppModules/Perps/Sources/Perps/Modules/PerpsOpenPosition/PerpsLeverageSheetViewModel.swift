@@ -46,12 +46,19 @@ final class PerpsLeverageSheetViewModel: ObservableObject, PerpsLeverageSheetVie
     }
 
     func setLeverage(_ value: Double) {
-        leverage = min(max(value.rounded(), bounds.min), bounds.max)
+        let clamped = min(max(value.rounded(), bounds.min), bounds.max)
+        guard clamped != leverage else { return }
+        leverage = clamped
         recomputeLiquidation()
+        if clamped == bounds.max {
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        }
     }
 
     func setMin() {
+        guard leverage != bounds.min else { return }
         setLeverage(bounds.min)
+        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     func setMax() {
@@ -63,6 +70,6 @@ final class PerpsLeverageSheetViewModel: ObservableObject, PerpsLeverageSheetVie
     }
 
     private func recomputeLiquidation() {
-        liquidationText = reviewLiquidation(leverage).map { format.usd($0) }
+        liquidationText = reviewLiquidation(leverage).map { format.price($0) }
     }
 }

@@ -56,3 +56,7 @@
 
 "yZnBBJ" = "Wallet";
 
+// Read by the App Intents configuration (RateWidgetConfigurationIntent), not by the SiriKit intent.
+"Token" = "Token";
+"Auto" = "Avto";
+"First favorite or largest balance" = "Birinchi sevimli yoki eng katta balans";

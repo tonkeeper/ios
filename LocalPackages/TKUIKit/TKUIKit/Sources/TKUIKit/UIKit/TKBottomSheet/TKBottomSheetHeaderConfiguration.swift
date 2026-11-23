@@ -160,9 +160,22 @@ public struct TKBottomSheetHeaderConfiguration {
         }
     }
 
+    /// Close-only header for a popup, whose content opens with its own icon and title.
+    public static var popup: TKBottomSheetHeaderConfiguration {
+        TKBottomSheetHeaderConfiguration(
+            title: .empty,
+            contentInsets: UIEdgeInsets(
+                top: 16,
+                left: 16,
+                bottom: 0,
+                right: 16
+            )
+        )
+    }
+
     /// Close-only header for sheets whose content carries its own title, so it sits tight above it.
     public static var compact: TKBottomSheetHeaderConfiguration {
-        TKBottomSheetHeaderConfiguration(
+        var configuration = TKBottomSheetHeaderConfiguration(
             title: .empty,
             contentInsets: UIEdgeInsets(
                 top: 8,
@@ -171,6 +184,14 @@ public struct TKBottomSheetHeaderConfiguration {
                 right: 16
             )
         )
+        configuration.insetsKind = .compact
+        return configuration
+    }
+
+    enum InsetsKind {
+        case automatic
+        case compact
+        case custom
     }
 
     let title: Title
@@ -178,6 +199,7 @@ public struct TKBottomSheetHeaderConfiguration {
     public let rightButton: Button?
     let buttonsAlignment: VerticalAlignment
     let contentInsets: UIEdgeInsets
+    private(set) var insetsKind: InsetsKind
 
     public init(
         title: Title,
@@ -220,13 +242,12 @@ public struct TKBottomSheetHeaderConfiguration {
         self.leftButton = leftButton
         self.rightButton = rightButton
         self.contentInsets = resolvedContentInsets
+        insetsKind = contentInsets == nil ? .automatic : .custom
         self.buttonsAlignment = buttonsAlignment
     }
 }
 
 struct TKBottomSheetHeaderContentView: View {
-    @Environment(\.tkPalette) private var palette
-
     let configuration: TKBottomSheetHeaderConfiguration
     let closeAction: () -> Void
 
@@ -239,7 +260,7 @@ struct TKBottomSheetHeaderContentView: View {
         ) {
             buttonView(configuration.leftButton)
         } center: {
-            titleView(configuration.title)
+            TKBottomSheetHeaderTitleView(title: configuration.title, minHeight: 32)
         } trailing: {
             buttonView(configuration.rightButton)
         }
@@ -260,9 +281,16 @@ private extension TKBottomSheetHeaderContentView {
             .layoutPriority(1)
         }
     }
+}
 
-    @ViewBuilder
-    func titleView(_ title: TKBottomSheetHeaderConfiguration.Title) -> some View {
+/// `minHeight` matches the buttons' height, so a single-line title centres on them.
+struct TKBottomSheetHeaderTitleView: View {
+    @Environment(\.tkPalette) private var palette
+
+    let title: TKBottomSheetHeaderConfiguration.Title
+    let minHeight: CGFloat
+
+    var body: some View {
         switch title {
         case .empty:
             EmptyView()
@@ -297,7 +325,9 @@ private extension TKBottomSheetHeaderContentView {
             )
         }
     }
+}
 
+private extension TKBottomSheetHeaderTitleView {
     @ViewBuilder
     func customView(
         _ view: AnyView,
@@ -309,14 +339,14 @@ private extension TKBottomSheetHeaderContentView {
             view
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(
-                    minHeight: 32,
+                    minHeight: minHeight,
                     alignment: alignment.swiftUiAlignment
                 )
         case .fillWidth:
             view
                 .frame(
                     maxWidth: .infinity,
-                    minHeight: 32,
+                    minHeight: minHeight,
                     alignment: alignment.swiftUiAlignment
                 )
         }
@@ -337,7 +367,7 @@ private extension TKBottomSheetHeaderContentView {
         }
         .frame(
             maxWidth: .infinity,
-            minHeight: 32,
+            minHeight: minHeight,
             alignment: alignment.swiftUiAlignment
         )
     }
@@ -379,7 +409,7 @@ private struct TKBottomSheetHeaderButton: View {
         }
         .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
         .disabled(!button.isEnabled)
-        .accessibilityIdentifier(button.accessibilityIdentifier)
+        .accessibilityIdentifier(button.resolvedAccessibilityIdentifier)
         .overlay(
             AnchorViewResolver { view in
                 guard anchorView !== view else { return }
@@ -527,6 +557,20 @@ private extension TKBottomSheetUIKitTitleContainerView {
             width: ceil(size.width),
             height: ceil(size.height)
         )
+    }
+}
+
+extension TKBottomSheetHeaderConfiguration.Button {
+    /// The close preset is the one header control every sheet shares; UI tests close any
+    /// sheet through it, so it carries a default identifier when the sheet sets none.
+    var resolvedAccessibilityIdentifier: String? {
+        if let accessibilityIdentifier {
+            return accessibilityIdentifier
+        }
+        if case .preset(.close) = kind {
+            return "bottom_sheet_close"
+        }
+        return nil
     }
 }
 

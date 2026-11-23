@@ -26,7 +26,7 @@ final class PerpsSnapshotReviewer: PerpetualReviewer, @unchecked Sendable {
     }
 
     func reviewOpen(_ intent: PerpsOpenMarketIntent) -> PerpsOpenOrderReview? {
-        guard let margin = PerpsMarketMath.optionalDouble(intent.marginUsd), margin > 0 else { return nil }
+        guard (PerpsMarketMath.optionalDouble(intent.marginUsd) ?? 0) > 0 else { return nil }
         guard let review: PerpetualReview.Open = plan({
             try intents.open(
                 intent,
@@ -37,7 +37,11 @@ final class PerpsSnapshotReviewer: PerpetualReviewer, @unchecked Sendable {
         }) else {
             return nil
         }
-        return PerpsPlannerMapping.openReview(review, symbol: inputs.symbol, marginUsd: margin)
+        return PerpsPlannerMapping.openReview(
+            review,
+            symbol: inputs.symbol,
+            feePpm: inputs.context.displayedTakerFeePpm(.open)
+        )
     }
 
     func minimumOpenMarginUsd(_ intent: PerpsOpenMarketIntent) -> Double? {

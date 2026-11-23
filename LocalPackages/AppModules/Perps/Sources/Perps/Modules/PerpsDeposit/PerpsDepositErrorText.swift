@@ -3,12 +3,15 @@ import TKLocalize
 
 enum PerpsDepositErrorText {
     /// `nil` where the user already knows: a cancelled passcode needs no message.
-    static func text(for message: PerpsDepositMessage, format: PerpsFormatting) -> String? {
+    /// `hasOtherWallets` drops the advice to pick another wallet when the user has none.
+    static func text(for message: PerpsDepositMessage, format: PerpsFormatting, hasOtherWallets: Bool = true) -> String? {
         switch message {
         case let .belowMinimum(usd):
             TKLocales.Perps.DepositForm.minimum(format.usd(usd))
         case .quoteExpired:
             TKLocales.Perps.DepositForm.quoteExpired
+        case .quoteChanged:
+            TKLocales.Perps.DepositForm.quoteChanged
         case .insufficientBalance:
             TKLocales.Perps.Funding.insufficientBalance
         case let .insufficientNetworkFee(symbol, required):
@@ -19,7 +22,9 @@ enum PerpsDepositErrorText {
             }
         case .accountCreationPending:
             TKLocales.Perps.DepositForm.accountCreationPending
-        case .canceled:
+        case .addressBlocked:
+            hasOtherWallets ? TKLocales.Perps.DepositForm.addressBlocked : TKLocales.Perps.DepositForm.addressBlockedOnlyWallet
+        case .canceled, .regionRestricted:
             nil
         case .failed:
             TKLocales.Perps.DepositForm.failed

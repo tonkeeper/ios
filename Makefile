@@ -26,12 +26,12 @@ SHARED_UIKIT_PACKAGE := $(if $(wildcard ../shared/resources),../shared/resources
 	perps_generate \
 	battery_generate \
 	kandelabr_generate \
+	earn_generate \
+	tonstakers_generate \
 	multichain_generate \
 	swap_generate \
 	api_generate \
 	api_check \
-	maestro_api_sync \
-	maestro_api_check \
 	compile \
 	firebase_config \
 	spm_deps \
@@ -65,8 +65,11 @@ analytics:
 analytics_check:
 	@scripts/analytics/check_key_limits.py
 
-# App Store Connect release steps from the terminal: attach the processed build, push the "What's New"
-# from scripts/appstore/whats_new.txt, submit to review. Without ACTION it shows a chooser.
+# App Store Connect release steps from the terminal. ACTION=info attaches the processed build, sets the
+# release type / phased rollout and pushes the "What's New" from scripts/appstore/whats_new.txt;
+# ACTION=release does what the version's state allows: submit to review, publish the approved version,
+# or pause / resume / complete the rollout; ACTION=status posts the version's state to Slack.
+# Without ACTION it shows a chooser.
 # Needs ASC_KEY_ID / ASC_ISSUER_ID / ASC_PRIVATE_KEY_PATH (env or the repository-root .env).
 appstore_toolings:
 	@scripts/appstore/appstore_toolings.py $(ACTION) \
@@ -74,6 +77,10 @@ appstore_toolings:
 		$(if $(VERSION),--version "$(VERSION)") \
 		$(if $(BUNDLE_ID),--bundle-id "$(BUNDLE_ID)") \
 		$(if $(BUILD),--build "$(BUILD)") \
+		$(if $(RELEASE),--release "$(RELEASE)") \
+		$(if $(PHASED),--phased-release "$(PHASED)") \
+		$(if $(ROLLOUT),--rollout "$(ROLLOUT)") \
+		$(if $(COMMIT),--commit "$(COMMIT)") \
 		$(if $(CREATE),--create) \
 		$(if $(ENCRYPTION_EXEMPT),--encryption-exempt) \
 		$(if $(YES),--yes) \
@@ -93,7 +100,7 @@ setup:
 # per-API target names kept as the entry points. Spelled out rather than generated
 # from a name list, because shell completion parses the Makefile text and does not
 # expand functions, so a computed target list leaves `make <tab>` with nothing to offer.
-tonapi_generate tonconnect_generate tonkeeper_generate trading_generate perps_generate battery_generate kandelabr_generate multichain_generate swap_generate:
+tonapi_generate tonconnect_generate tonkeeper_generate trading_generate perps_generate battery_generate kandelabr_generate earn_generate tonstakers_generate multichain_generate swap_generate:
 	@scripts/apigen/generate.sh $(patsubst %_generate,%,$@)
 
 api_generate:
@@ -103,15 +110,6 @@ api_generate:
 # schema edit that never got regenerated.
 api_check:
 	@scripts/apigen/generate.sh --check all
-
-# Stamp the shared Maestro API HTTP runtime (scripts/api/_api_runtime.js) into
-# every consumer script between the `// >>> api-runtime` markers. Maestro has no
-# JS import mechanism, so this keeps a single source of truth without duplication.
-maestro_api_sync:
-	@python3 maestro_ui_tests/scripts/ci/sync_api_runtime.py
-
-maestro_api_check:
-	@python3 maestro_ui_tests/scripts/ci/sync_api_runtime.py --check
 
 # Build
 
@@ -126,7 +124,7 @@ MODULE_CACHE_PATH := $(HOME)/Library/Developer/Xcode/DerivedData/ModuleCache.noi
 XCODEBUILD_ENV := GIT_CONFIG_GLOBAL=$(GIT_CONFIG_FILE) CLONED_SOURCE_PACKAGES_DIR=$(SOURCE_PACKAGES_DIR) \
 	XCODE_XCCONFIG_FILE=$(CURDIR)/Configurations/PackageBuildSettings.xcconfig
 # Optional quiet output. Default (empty) keeps full progress output for humans.
-XCBEAUTIFY_FLAGS := $(if $(filter 1,$(QUIET)),-qq,)
+XCBEAUTIFY_FLAGS := $(if $(filter 1,$(QUIET)),-qq --disable-colored-output,)
 
 # Provision the gitignored Firebase config into the current working tree. Idempotent;
 # fresh worktrees lack it (gitignored) and would fail the "Firebase plist" build phase.
@@ -170,7 +168,8 @@ compile: firebase_config spm_deps
 #     firebase-ios-sdk/Crashlytics/run. Xcode does not export it to script phases,
 #     and the script's fallback (${BUILD_DIR%/Build/*}/SourcePackages) resolves to
 #     DerivedData/SourcePackages — wrong once -clonedSourcePackagesDirPath moves the
-#     checkout elsewhere — so the build fails without this env var.
+#     checkout elsewhere — so a *Release build fails without this env var. Other
+#     configurations exit the script before it reads the variable.
 #   - -derivedDataPath -> in-repo build/DerivedData: per-worktree so removing the
 #     worktree reclaims it instead of orphaning a path-hashed dir in $HOME.
 	@set -o pipefail; echo 'building Keeper...' && \
@@ -185,6 +184,7 @@ compile: firebase_config spm_deps
 		-derivedDataPath $(BUILD_ROOT)/DerivedData \
 		-clonedSourcePackagesDirPath $(SOURCE_PACKAGES_DIR) \
 		build | $(XCBEAUTIFY) --disable-logging $(XCBEAUTIFY_FLAGS)
+	@scripts/check_embedded_frameworks.sh "$(BUILD_ROOT)/DerivedData/Build/Products/KeeperDebug-iphonesimulator/Keeper.app"
 
 # Per-package SwiftPM build
 # Build one or a set of LocalPackages modules for the iOS Simulator:
@@ -237,6 +237,8 @@ test_project_scheme: spm_deps
 		-project Keeper.xcodeproj \
 		-scheme $(SCHEME) \
 		-destination '$(TEST_DESTINATION)' \
+		-testLanguage en \
+		-testRegion US \
 		-disableAutomaticPackageResolution \
 		-onlyUsePackageVersionsFromResolvedFile \
 		-skipPackageUpdates \
@@ -244,7 +246,7 @@ test_project_scheme: spm_deps
 		-clonedSourcePackagesDirPath $(SOURCE_PACKAGES_DIR) \
 		SWIFT_SUPPRESS_WARNINGS=NO \
 		CLANG_MODULE_CACHE_PATH=$(MODULE_CACHE_PATH) \
-		test $(if $(TEST_ONLY),-only-testing:$(TEST_ONLY),) | $(XCBEAUTIFY)
+		test $(if $(TEST_ONLY),-only-testing:$(TEST_ONLY),) | $(XCBEAUTIFY) --disable-logging $(XCBEAUTIFY_FLAGS)
 
 test_core_swift: SCHEME=WalletCore
 test_core_swift: test_project_scheme
@@ -308,3 +310,4 @@ test_moonpay: test_project_scheme
 test_app: SCHEME=App
 test_app: TEST_ONLY=AppTests
 test_app: test_project_scheme
+

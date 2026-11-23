@@ -5,15 +5,18 @@ actor TradingAssetDetailsServiceImplementation {
     private let api: TradingAPI
     private let cache: InMemoryKeyedCache<String, TradingAssetDetails>
     private let requestContextProvider: TradingRequestContextProvider
+    private let signedPerpSymbols: @Sendable () async -> [Int64: String]?
 
     init(
         api: TradingAPI,
         cache: InMemoryKeyedCache<String, TradingAssetDetails>,
-        requestContextProvider: TradingRequestContextProvider
+        requestContextProvider: TradingRequestContextProvider,
+        signedPerpSymbols: @escaping @Sendable () async -> [Int64: String]?
     ) {
         self.api = api
         self.cache = cache
         self.requestContextProvider = requestContextProvider
+        self.signedPerpSymbols = signedPerpSymbols
     }
 }
 
@@ -46,9 +49,10 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
                 throw .apiError(message: error.localizedDescription)
             }
         }
-        let details = TradingAssetDetails(
+        let details = await TradingAssetDetails(
             response: response,
-            currency: requestContext.currency
+            currency: requestContext.currency,
+            signedPerpSymbols: response.asset.perp_markets?.isEmpty == false ? signedPerpSymbols() : nil
         )
         await cache.set(details, for: id)
         Log.trade.i("load details for asset \(id) - success")

@@ -15,15 +15,21 @@ public struct MultichainPendingTransaction: Sendable, Hashable {
 
         public let fromAssetId: String
         public let toAssetId: String
+        public let fromAddress: String?
+        public let fromAmount: String?
         public let quote: QuoteAttribution?
 
         public init(
             fromAssetId: String,
             toAssetId: String,
+            fromAddress: String? = nil,
+            fromAmount: String? = nil,
             quote: QuoteAttribution? = nil
         ) {
             self.fromAssetId = fromAssetId
             self.toAssetId = toAssetId
+            self.fromAddress = fromAddress
+            self.fromAmount = fromAmount
             self.quote = quote
         }
     }

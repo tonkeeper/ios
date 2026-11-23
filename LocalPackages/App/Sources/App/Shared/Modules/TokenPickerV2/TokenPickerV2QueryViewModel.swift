@@ -96,14 +96,17 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
     }
 
     @Published private(set) var state: State = .idle
+    var didLoadFirstPage: (([TokenPickerV2ChainFilter]?) -> Void)?
 
-    private let query: String?
+    let query: String?
     private let category: TokenPickerV2ChainFilter
     private let displayMode: SendTokenV2PickerDisplayMode
     private let tokenPickerModel: any TokenPickerV2Model
     private let amountFormatter: AmountFormatter
     private let signedAmountFormatter: AmountFormatter
     private let currencyStore: CurrencyStore
+    private let cacheLifetime: TimeInterval
+    private var singlePageLoadedAt: Date?
 
     init(
         query: String?,
@@ -111,8 +114,10 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
         displayMode: SendTokenV2PickerDisplayMode,
         tokenPickerModel: any TokenPickerV2Model,
         amountFormatter: AmountFormatter,
-        currencyStore: CurrencyStore
+        currencyStore: CurrencyStore,
+        cacheLifetime: TimeInterval = 60
     ) {
+        self.cacheLifetime = cacheLifetime
         self.query = query
         self.category = category
         self.displayMode = displayMode
@@ -183,10 +188,15 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
     func appeared() {
         switch state {
         case .idle:
-            let task = Task {
-                await loadFirstPage(fallbackData: .initial)
+            reloadFirstPage(behind: .initial)
+        case let .loaded(rowData):
+            guard let singlePageLoadedAt,
+                  Date().timeIntervalSince(singlePageLoadedAt) >= cacheLifetime,
+                  !rowData.items.isEmpty
+            else {
+                return
             }
-            state = .refreshing(rowData: .initial, task: task)
+            reloadFirstPage(behind: rowData)
         default:
             break
         }
@@ -195,9 +205,9 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
     func disappeared() {
         let fallbackData: RowData
         switch state {
-        case .idle:
+        case .idle, .loaded:
             return
-        case let .loaded(rowData), let .failed(rowData, _):
+        case let .failed(rowData, _):
             fallbackData = rowData
         case let .refreshing(rowData, task), let .loadingMore(rowData, task):
             task.cancel()
@@ -260,6 +270,13 @@ final class TokenPickerV2QueryViewModel: ObservableObject {
 }
 
 private extension TokenPickerV2QueryViewModel {
+    func reloadFirstPage(behind rowData: RowData) {
+        let task = Task {
+            await loadFirstPage(fallbackData: rowData)
+        }
+        state = .refreshing(rowData: rowData, task: task)
+    }
+
     func loadFirstPage(fallbackData: RowData) async {
         let result: TokenPickerLoadResult
         do {
@@ -285,6 +302,7 @@ private extension TokenPickerV2QueryViewModel {
         }
 
         let assets = result.items
+        singlePageLoadedAt = Date()
         state = .loaded(
             rowData: RowData(
                 items: deduplicated(assets.map(makeItem)),
@@ -292,6 +310,7 @@ private extension TokenPickerV2QueryViewModel {
                 hasNextPage: result.nextCursor != nil
             )
         )
+        didLoadFirstPage?(result.filters)
     }
 
     func loadNextPage(fallbackData: RowData) async {
@@ -324,6 +343,7 @@ private extension TokenPickerV2QueryViewModel {
                 next: result.items.map(makeItem)
             )
         )
+        singlePageLoadedAt = nil
         state = .loaded(
             rowData: RowData(
                 items: mergedItems,

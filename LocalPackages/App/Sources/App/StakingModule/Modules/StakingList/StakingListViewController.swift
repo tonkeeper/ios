@@ -21,6 +21,10 @@ final class StakingListViewController: GenericViewViewController<StakingListView
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // The top inset already clears the system bar, which is in the safe area under liquid glass.
+        if TKLiquidGlass.isEnabled {
+            customView.collectionView.contentInsetAdjustmentBehavior = .never
+        }
         setup()
         setupBindings()
         viewModel.viewDidLoad()

@@ -204,7 +204,7 @@ private extension AnalyticsProviderTests {
             )
         )
 
-        let appInfoProvider = AppInfoProvider(
+        let appInfoProvider = DeviceAppInfoProvider(
             userDefaults: userDefaults,
             storefrontCountryCodeCache: StorefrontCountryCodeCache()
         )

@@ -4,6 +4,8 @@ import KeeperCoreComponents
 import TonSwift
 
 struct TonkeeperDeeplinkParser {
+    private static let trumpDappURL = URL(string: "https://trump.keeperwallet.com/")!
+
     private let walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator
 
     init(walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator) {
@@ -99,16 +101,26 @@ struct TonkeeperDeeplinkParser {
         case "raffle":
             switch url.pathComponents.count {
             case 1:
-                return .raffle
-            case 2 where url.pathComponents[1] == "mystery_raffle":
-                return .raffle
+                return .raffle(id: nil)
+            case 2 where url.pathComponents[1] == "dinner_with_trump":
+                return .dapp(Self.trumpDappURL)
+            case 2:
+                return .raffle(id: url.pathComponents[1])
             default:
                 throw .unsupportedDeeplink(code: .notSupportedPath, string: string)
             }
+        case "trump-multichain":
+            return .multichainDapp(Self.trumpDappURL)
         case "perps":
             return try .perps(parsePerps(url: url))
         case "history":
             return .history
+        case "loyalty":
+            return .loyalty(referralCode: parseLoyaltyReferralCode(string: string, decodedURL: url))
+        case "r":
+            return .loyalty(referralCode: url.pathComponents.count == 2 ? validReferralCode(url.pathComponents[1]) : nil)
+        case "earn":
+            return try .earn(parseEarn(url: url))
         default:
             throw .unsupportedDeeplink(
                 code: .notSupportedPath,
@@ -435,16 +447,68 @@ struct TonkeeperDeeplinkParser {
         return url.pathComponents[1]
     }
 
+    private func parseLoyaltyReferralCode(string: String, decodedURL: URL) -> String? {
+        let rawURL = URL(string: string)
+        let queryURL = rawURL?.query == nil ? decodedURL : rawURL
+        return validReferralCode(queryURL.flatMap { referralCodeQueryValue(in: $0) })
+    }
+
+    private func validReferralCode(_ value: String?) -> String? {
+        let code = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let code, code.range(of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil else {
+            return nil
+        }
+        return code
+    }
+
+    private func referralCodeQueryValue(in url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: true)?
+            .queryItems?
+            .first { $0.name == "referral_code" }?
+            .value
+    }
+
     private func parsePerps(url: URL) throws(DeeplinkParserError) -> Deeplink.Perps {
         let path = url.pathComponents.dropFirst()
         guard let section = path.first else {
             return .home
         }
         let marketPath = path.dropFirst()
-        guard section == "market", let marketId = marketPath.first.flatMap({ Int64($0) }) else {
+        guard section == "market", let market = marketPath.first else {
             throw .invalidParameters
         }
-        return marketPath.dropFirst().first == "auto-close" ? .autoClose(marketId: marketId) : .market(id: marketId)
+        let isAutoClose = marketPath.dropFirst().first == "auto-close"
+        if let marketId = Int64(market) {
+            return isAutoClose ? .autoClose(marketId: marketId) : .market(id: marketId)
+        }
+        guard !isAutoClose, market.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }) else {
+            throw .invalidParameters
+        }
+        return .marketSymbol(market)
+    }
+
+    private func parseEarn(url: URL) throws(DeeplinkParserError) -> Deeplink.Earn {
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: true)?.queryItems
+        func value(_ name: String) -> String? {
+            let value = queryItems?.first(where: { $0.name == name })?.value?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value?.isEmpty == false ? value : nil
+        }
+        let network = value("network")?.lowercased()
+        let vaultId = value("vault")
+        guard network != nil || vaultId != nil else {
+            return .home
+        }
+        // The id becomes a path component of the Earn page's URL, so a link's id holds no path characters.
+        guard let network,
+              let vaultId,
+              MultichainChain(earnNetwork: network) != nil,
+              vaultId.isEarnVaultId,
+              vaultId.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") })
+        else {
+            throw .invalidParameters
+        }
+        return .vault(network: network, vaultId: vaultId)
     }
 
     private func parseTradeAssetID(url: URL) throws(DeeplinkParserError) -> String {

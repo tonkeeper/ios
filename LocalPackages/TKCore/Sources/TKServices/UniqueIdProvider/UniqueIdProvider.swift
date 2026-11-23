@@ -7,8 +7,10 @@ public struct UniqueIdProvider {
     }
 
     public var uniqueInstallId: UUID {
-        getOrCreateUniqueInstallId()
+        Self.uniqueInstallId(userDefaults: userDefaults)
     }
+
+    private static let installIdLock = NSLock()
 
     private let lock = NSLock()
 
@@ -35,8 +37,8 @@ public struct UniqueIdProvider {
         }
     }
 
-    private func getOrCreateUniqueInstallId() -> UUID {
-        lock.withLock {
+    public static func uniqueInstallId(userDefaults: UserDefaults = .standard) -> UUID {
+        installIdLock.withLock {
             if let uuidString = userDefaults.string(forKey: .user_defaults_unique_install_id_key),
                let uuid = UUID(uuidString: uuidString)
             {

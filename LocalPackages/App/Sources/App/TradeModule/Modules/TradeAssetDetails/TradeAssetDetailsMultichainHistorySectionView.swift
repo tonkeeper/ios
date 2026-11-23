@@ -6,6 +6,7 @@ import TKUIKit
 struct TradeAssetDetailsMultichainHistorySectionView: View {
     let screen: TradeAssetDetailsMultichainHistorySectionViewData
     let onSelectActivity: (MultichainActivity) -> Void
+    let onDecryptComment: (MultichainActivity) -> Void
     let onSeeAll: () -> Void
 
     var body: some View {
@@ -25,7 +26,8 @@ struct TradeAssetDetailsMultichainHistorySectionView: View {
                 ForEach(Array(screen.items.enumerated()), id: \.element.id) { index, item in
                     MultichainHistoryTransactionCell(
                         item: item,
-                        showsDivider: index < screen.items.count - 1
+                        showsDivider: index < screen.items.count - 1,
+                        onDecryptComment: { onDecryptComment(item.activity) }
                     ) {
                         onSelectActivity(item.activity)
                     }

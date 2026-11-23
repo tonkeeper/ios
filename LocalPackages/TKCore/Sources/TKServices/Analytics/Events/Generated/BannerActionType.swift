@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** The action a home-screen banner leads to, derived from the banner&#39;s deeplink destination. Sent with banner_click as the intended destination at click time, so CTR and drop-off can be segmented by action type without joining to the banner config. - deposit - buy / top up (fiat -&gt; crypto, buy TON) - withdraw - sell (crypto -&gt; fiat) - swap - token swap - staking - stake / unstake - battery - battery (gas) purchase - send - send / transfer - trade - trade UI (markets, asset trading) - exchange - external exchange provider - dapp - opens a dapp / the in-app browser - other - anything else, incl. external web links  */
+/** The action a banner leads to, derived from the banner&#39;s deeplink destination. Sent with banner_click as the intended destination at click time, so CTR and drop-off can be segmented by action type without joining to the banner config. - deposit - buy / top up (fiat -&gt; crypto, buy TON) - withdraw - sell (crypto -&gt; fiat) - swap - token swap - staking - stake / unstake - battery - battery (gas) purchase - send - send / transfer - trade - trade UI (markets, asset trading) - exchange - external exchange provider - dapp - opens a dapp / the in-app browser - other - anything else, incl. external web links  */
 public enum BannerActionType: String, Codable, CaseIterable {
     case deposit = "deposit"
     case withdraw = "withdraw"

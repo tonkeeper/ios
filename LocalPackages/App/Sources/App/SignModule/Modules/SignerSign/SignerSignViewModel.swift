@@ -85,8 +85,8 @@ private extension SignerSignViewModelImplementation {
     }
 
     func setup() {
-        scannerOutput.didScanDeeplink = { [weak self] deeplink in
-            guard case let .publish(sign) = deeplink else {
+        scannerOutput.didScanDeeplink = { [weak self] scanned in
+            guard case let .publish(sign) = scanned.deeplink else {
                 return
             }
             self?.didScanSignedTransaction?(sign)

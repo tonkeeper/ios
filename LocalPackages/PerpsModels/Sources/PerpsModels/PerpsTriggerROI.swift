@@ -34,6 +34,16 @@ public enum PerpsTriggerROI {
         return entryPrice * (1 + direction(side) * percent / 100 / leverage)
     }
 
+    public static func cutToHundredths(_ percent: Double) -> Double {
+        var magnitude = Decimal(string: abs(percent).description, locale: Locale(identifier: "en_US_POSIX")) ?? Decimal(abs(percent))
+        var settled = Decimal()
+        NSDecimalRound(&settled, &magnitude, 10, .plain)
+        var cut = Decimal()
+        NSDecimalRound(&cut, &settled, 2, .down)
+        let value = NSDecimalNumber(decimal: cut).doubleValue
+        return percent < 0 ? -value : value
+    }
+
     private static func direction(_ side: PerpsTradeSide) -> Double {
         side == .long ? 1 : -1
     }

@@ -14,6 +14,7 @@ final class MultichainReceiveCoordinator<V: UIViewController>: RouterCoordinator
     }
 
     private let didCopyAddress: ((String) -> Void)?
+    private let verifier: ReceiveAddressVerifier
     private let addresses: Addresses
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private var flowTask: Task<Void, Never>?
@@ -22,11 +23,13 @@ final class MultichainReceiveCoordinator<V: UIViewController>: RouterCoordinator
         router: ContainerViewControllerRouter<V>,
         addresses: Addresses,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        didCopyAddress: ((String) -> Void)?
+        didCopyAddress: ((String) -> Void)?,
+        verifier: @escaping ReceiveAddressVerifier
     ) {
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.addresses = addresses
         self.didCopyAddress = didCopyAddress
+        self.verifier = verifier
         super.init(router: router)
     }
 
@@ -51,10 +54,18 @@ extension MultichainReceiveCoordinator {
     private func module(
         address: ReceiveAddressPreview
     ) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, ReceiveModuleInput> {
+        let verify: (() -> Void)? = verifier(address).map { verify in
+            { [weak self] in
+                guard let self else { return }
+                let presenter = router.rootViewController.topPresentedViewController()
+                Task { await verify(presenter) }
+            }
+        }
         let viewModel = ReceiveViewModelImplementation(
             address: address,
             qrCodeGenerator: keeperCoreMainAssembly.coreAssembly
-                .qrCodeGenerator(persistent: true)
+                .qrCodeGenerator(persistent: true),
+            verify: verify
         )
         let viewController = ReceiveViewController(
             viewModel: viewModel

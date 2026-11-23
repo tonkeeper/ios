@@ -1,0 +1,7 @@
+generate:
+  - types
+  - client
+typeOverrides:
+  schemas:
+    # ChainKit parses and signs the operation; a typed round trip would drop or refuse what it reads.
+    GenericOperation: OpenAPIRuntime.OpenAPIObjectContainer

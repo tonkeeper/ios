@@ -1,4 +1,4 @@
-@preconcurrency import ReownWalletKit
+@preconcurrency import WalletConnectSign
 
 extension JSONRPCError {
     static let walletConnectUserRejected = JSONRPCError(

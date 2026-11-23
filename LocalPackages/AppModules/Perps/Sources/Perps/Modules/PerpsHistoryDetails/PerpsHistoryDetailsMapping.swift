@@ -14,7 +14,8 @@ enum PerpsHistoryDetailsMapping {
         event: PerpsHistoryEvent,
         market: Market?,
         format: PerpsFormatting,
-        onShare: (() -> Void)?
+        onShare: (() -> Void)?,
+        onOpenLoyalty: @escaping () -> Void
     ) -> MultichainTransactionDetailsModel {
         MultichainTransactionDetailsModel(
             image: .single(.init(imageSource: .url(market?.iconURL))),
@@ -22,6 +23,7 @@ enum PerpsHistoryDetailsMapping {
             fiat: nil,
             date: PerpsHistoryEventText.detailsDate(event, date: format.candleDateTime(event.date)),
             tags: tags(event, format: format),
+            rewardRow: event.loyaltyReward.map { rewardRow(ohms: $0, format: format, onOpen: onOpenLoyalty) },
             rows: rows(event, sizeDecimals: market?.sizeDecimals, format: format),
             transactionButton: nil,
             actionButton: onShare.map {
@@ -43,6 +45,7 @@ enum PerpsHistoryDetailsMapping {
             leverage: event.leverage,
             entryPrice: entryPrice,
             currentPrice: closePrice,
+            isClosed: true,
             pnlPercent: event.pnlPercent,
             isProfit: (event.pnl ?? event.pnlPercent ?? 0) >= 0,
             date: event.date
@@ -52,7 +55,7 @@ enum PerpsHistoryDetailsMapping {
 
 private extension PerpsHistoryDetailsMapping {
     static func amount(_ event: PerpsHistoryEvent, format: PerpsFormatting) -> String? {
-        event.isClosing ? event.pnl.map(format.signedUsd) : event.margin.map(format.usd)
+        event.isClosing ? event.pnl.map(format.signedBalance) : event.margin.map(format.balance)
     }
 
     static func tags(_ event: PerpsHistoryEvent, format: PerpsFormatting) -> [TKTagSwiftUIViewConfig] {
@@ -69,23 +72,35 @@ private extension PerpsHistoryDetailsMapping {
         return tags
     }
 
+    static func rewardRow(ohms: String, format: PerpsFormatting, onOpen: @escaping () -> Void) -> ConfirmActionRow {
+        ConfirmActionRow(
+            id: "loyaltyReward",
+            title: TKLocales.Loyalty.resistanceReward,
+            value: format.hiddenBalanceText.map { .text($0) }
+                ?? .amount(TKLocales.Loyalty.rewardValue(ohms), icon: .TKUIKit.Icons.Size28.ohms),
+            interaction: .tap(onOpen),
+            titleIcon: .TKUIKit.Icons.Size12.informationCircle
+        )
+    }
+
     static func rows(
         _ event: PerpsHistoryEvent,
         sizeDecimals: Int?,
         format: PerpsFormatting
     ) -> [MultichainTransactionDetailsCellContent] {
         var rows: [MultichainTransactionDetailsCellContent] = []
+        let isHidden = format.hiddenBalanceText != nil
         if let entryPrice = event.entryPrice {
-            rows.append(.property(title: TKLocales.Perps.Asset.entryPrice, value: format.usd(entryPrice)))
+            rows.append(.property(title: TKLocales.Perps.Asset.entryPrice, value: format.price(entryPrice)))
         }
         if event.isClosing, let closePrice = event.closePrice {
-            rows.append(.property(title: TKLocales.Perps.HistoryDetails.closePrice, value: format.usd(closePrice)))
+            rows.append(.property(title: TKLocales.Perps.HistoryDetails.closePrice, value: format.price(closePrice)))
         }
         if event.isClosing || event.kind == .increased, let usdSize = event.usdSize {
             let baseSize = event.baseSize.map {
                 "≈ " + format.token($0, symbol: event.symbol, decimals: sizeDecimals ?? Self.fallbackSizeDecimals)
             }
-            rows.append(.value(title: TKLocales.Perps.Asset.size, value: format.usd(usdSize), subvalue: baseSize))
+            rows.append(.value(title: TKLocales.Perps.Asset.size, value: format.balance(usdSize), subvalue: isHidden ? nil : baseSize))
         }
         if event.isClosing, let pnlPercent = event.pnlPercent {
             rows.append(.property(
@@ -94,11 +109,14 @@ private extension PerpsHistoryDetailsMapping {
             ))
         }
         if let feeUsd = event.feeUsd {
-            let fee = event.fee.map { "≈ " + format.token($0.value, symbol: $0.symbol, decimals: Self.feeDecimals) }
-            rows.append(.value(title: TKLocales.Perps.Confirm.fee, value: format.usd(feeUsd), subvalue: fee))
+            let fee = event.fee.flatMap { fee in
+                fee.symbol == "USDC" || fee.symbol == "USD"
+                    ? nil : "≈ " + format.token(fee.value, symbol: fee.symbol, decimals: Self.feeDecimals)
+            }
+            rows.append(.value(title: TKLocales.Perps.Confirm.fee, value: format.balance(feeUsd), subvalue: isHidden ? nil : fee))
         }
         if event.isClosing, let fundingUsd = event.fundingUsd {
-            rows.append(.property(title: TKLocales.Perps.Asset.funding, value: format.signedUsd(fundingUsd)))
+            rows.append(.property(title: TKLocales.Perps.Asset.funding, value: format.signedBalance(fundingUsd)))
         }
         return rows
     }

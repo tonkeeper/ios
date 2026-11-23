@@ -54,7 +54,7 @@ public struct TronUSDTTonFeePaymentBuilder {
         )
 
         guard let signHandler else {
-            throw TransactionConfirmationError.failedToCalculateFee
+            throw TransactionConfirmationError.failedToCalculateFee()
         }
 
         let signedTonFeeTx = try await signedTonFeeTransaction(

@@ -1,6 +1,7 @@
 import KeeperCore
 import Stories
 import TKCore
+import TKStories
 import UIKit
 
 /// The one presenter call the raffle stories need, as a seam: building the concrete
@@ -13,7 +14,9 @@ protocol RaffleStoryPresenting: AnyObject {
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
-        isClosable: Bool,
+        mode: Stories.StoriesPresenter.Mode,
+        ignoresStoriesFlag: Bool,
+        closeAlert: StoriesCloseAlertModel?,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
@@ -201,7 +204,9 @@ final class MysteryRaffleStoriesRouter {
             story: Stories.Story(story: story),
             fromViewController: viewController,
             fromAnalyticsProperty: source,
-            isClosable: true,
+            mode: .regular,
+            ignoresStoriesFlag: false,
+            closeAlert: nil,
             deeplinkAction: { payload in
                 openDeeplink?(payload)
             },

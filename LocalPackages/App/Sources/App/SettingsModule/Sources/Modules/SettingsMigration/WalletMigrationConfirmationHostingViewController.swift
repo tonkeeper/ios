@@ -3,9 +3,17 @@ import TKUIKit
 import UIKit
 
 final class WalletMigrationConfirmationHostingViewController: UIViewController {
+    private let viewModel: WalletMigrationConfirmationViewModel
     private let hostingController: TKHostingController<WalletMigrationConfirmationScreen>
 
+    /// The SwiftUI header hands its buttons and title to the navigation item of the hosting controller,
+    /// while the bar shows this controller's one.
+    override var navigationItem: UINavigationItem {
+        TKLiquidGlass.isEnabled ? hostingController.navigationItem : super.navigationItem
+    }
+
     init(viewModel: WalletMigrationConfirmationViewModel) {
+        self.viewModel = viewModel
         hostingController = TKHostingController(
             content: WalletMigrationConfirmationScreen(viewModel: viewModel)
         )
@@ -38,11 +46,18 @@ final class WalletMigrationConfirmationHostingViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+        tkUpdateNavigationBarForHeader(animated: animated)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isMovingFromParent || isBeingDismissed || navigationController?.isBeingDismissed == true {
+            viewModel.didLeaveScreen()
+        }
     }
 }

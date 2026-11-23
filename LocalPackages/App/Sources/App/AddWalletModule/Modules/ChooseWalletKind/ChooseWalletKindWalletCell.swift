@@ -68,6 +68,8 @@ private struct ChooseWalletKindAvatar: View {
             .TKUIKit.Icons.Size28.ton
         case .multichain:
             .TKUIKit.Icons.Size28.ellipses
+        case .telegram:
+            .TKUIKit.Icons.Size28.telegram
         }
     }
 
@@ -77,6 +79,8 @@ private struct ChooseWalletKindAvatar: View {
             palette.accent.blue
         case .multichain:
             palette.accent.purple
+        case .telegram:
+            palette.icon.primary
         }
     }
 
@@ -86,6 +90,8 @@ private struct ChooseWalletKindAvatar: View {
             palette.accent.blue.opacity(0.12)
         case .multichain:
             palette.accent.purple.opacity(0.12)
+        case .telegram:
+            palette.background.contentTint
         }
     }
 

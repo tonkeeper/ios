@@ -1,10 +1,118 @@
 import Foundation
 @testable import KeeperCore
+import PerpsModels
 import TKPerpsAPI
 import TonSwift
 import XCTest
 
+private final class WatchFocusBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var focus = PerpsWatchFocus.idle
+
+    var value: PerpsWatchFocus {
+        get { lock.withLock { focus } }
+        set { lock.withLock { focus = newValue } }
+    }
+}
+
+/// Counts portfolio reads and, once armed, lets the next status probe wait for one to start.
+private final class StatusPortfolioProbe: @unchecked Sendable {
+    private let lock = NSLock()
+    private var portfolioReads = 0
+    private var readsWhenArmed: Int?
+    private(set) var portfolioDuringStatus: Bool?
+
+    func portfolioRead() {
+        lock.withLock { portfolioReads += 1 }
+    }
+
+    func arm() {
+        lock.withLock { readsWhenArmed = portfolioReads }
+    }
+
+    func statusRead() async {
+        let start: Int? = lock.withLock {
+            defer { readsWhenArmed = nil }
+            return readsWhenArmed
+        }
+        guard let start else { return }
+        for _ in 0 ..< 100 where lock.withLock({ portfolioReads }) == start {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        let seen = lock.withLock { portfolioReads > start }
+        lock.withLock { portfolioDuringStatus = seen }
+    }
+}
+
 final class PerpsAccountStatusMappingTests: XCTestCase {
+    func testARefreshOfAnActiveAccountReadsThePortfolioAlongsideTheStatus() async throws {
+        let probe = StatusPortfolioProbe()
+        let api = AccountStubAPI(
+            account: .init(account_index: 42, has_l2_key: true, has_ro_token: true, available_balance: "75"),
+            balance: .init(available_balance: "75"),
+            onPortfolio: { probe.portfolioRead() },
+            onAccount: { await probe.statusRead() }
+        )
+        let store = PerpsAccountStore(service: PerpsTkAccountReading(api: api), wallet: makeWallet())
+        let loaded = expectation(description: "active with positions")
+        loaded.assertForOverFulfill = false
+        store.addObserver(self) { _, event in
+            if case let .didUpdate(.active(account)) = event, account.positionsLoaded {
+                loaded.fulfill()
+            }
+        }
+        store.resolveIfNeeded()
+        await fulfillment(of: [loaded], timeout: 2)
+
+        probe.arm()
+        store.refresh()
+        for _ in 0 ..< 300 where probe.portfolioDuringStatus == nil {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(probe.portfolioDuringStatus, true, "the portfolio waited for the status probe")
+    }
+
+    func testFundingRefreshDoesNotReuseThePortfolioFromBeforeTheDebit() async throws {
+        let reads = PerpsSharedReads<String, PerpsPortfolioRead>(
+            reuseWindow: 1,
+            now: { Date(timeIntervalSince1970: 1_700_000_000) }
+        )
+        _ = try await reads.value(for: "perps-multichain-wallet") {
+            PerpsPortfolioRead(
+                portfolio: .init(balance: .init(available_balance: "100"), positions: [], open_orders: []),
+                requestedAt: ProcessInfo.processInfo.systemUptime
+            )
+        }
+        let api = AccountStubAPI(
+            account: .init(account_index: 42, has_l2_key: true, has_ro_token: true, available_balance: "75"),
+            balance: .init(available_balance: "75")
+        )
+        let store = PerpsAccountStore(
+            service: PerpsTkAccountReading(api: api, portfolioReads: reads),
+            wallet: makeWallet()
+        )
+        let loaded = expectation(description: "portfolio after withdrawal")
+        loaded.assertForOverFulfill = false
+        store.addObserver(self) { _, event in
+            if case let .didUpdate(.active(account)) = event, account.positionsLoaded {
+                loaded.fulfill()
+            }
+        }
+
+        store.applyFundingState(.loaded([PerpsPendingFundingOperation(
+            operationId: "withdraw", walletId: "perps-wallet", walletIdentity: "identity", environment: "test",
+            details: .withdraw(PerpsPendingWithdraw(
+                stage: .accepted, accountIndex: 42, apiKeyIndex: 1, chainId: 304,
+                assetIndex: 0, routeType: 0, amountUnits: "25000000"
+            ))
+        )]))
+
+        await fulfillment(of: [loaded], timeout: 2)
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("expected active account") }
+        XCTAssertEqual(account.availableBalance, "75")
+    }
+
     func testPortfolioKeepsTransferableSeparateFromAvailable() async throws {
         for transferable in ["7.25", nil] as [String?] {
             let api = AccountStubAPI(account: .init(), balance: .init(
@@ -14,6 +122,33 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
             XCTAssertEqual(snapshot?.availableBalance, "100")
             XCTAssertEqual(snapshot?.transferableBalance, transferable)
         }
+    }
+
+    func testPortfolioOrdersCarryTheLeverageAndMarginTheBackendSends() async throws {
+        let order = Components.Schemas.Order(
+            order_index: 21,
+            market_index: 1,
+            symbol: "ZEC",
+            side: .long,
+            _type: .limit,
+            category: .open,
+            base_size: "0.1",
+            price: "105.4"
+        )
+        let api = AccountStubAPI(
+            account: .init(),
+            balance: .init(available_balance: "100"),
+            openOrders: [
+                .init(value1: order, value2: .init(leverage: 3, margin: "3.5")),
+                .init(value1: order, value2: .init()),
+            ]
+        )
+
+        let snapshot = try await PerpsTkAccountReading(api: api).portfolio(wallet: makeWallet())
+
+        let orders = try XCTUnwrap(snapshot?.openOrders)
+        XCTAssertEqual(orders.map(\.leverage), [3, nil])
+        XCTAssertEqual(orders.map(\.marginUsd), [3.5, nil])
     }
 
     func testPortfolioWithoutReadOnlyTokenSurfacesTheRefusal() async {
@@ -40,7 +175,7 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
         }
     }
 
-    func testPositionsWatchKeepsPollingWhenPortfolioAndOrdersNeedAToken() async {
+    func testPositionsWatchKeepsPollingWhenThePortfolioNeedsAToken() async {
         let api = AccountStubAPI(
             account: .init(),
             portfolioError: .badStatus(.init(
@@ -50,14 +185,7 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
                 retryable: false,
                 reason: nil
             )),
-            positions: [.init(market_index: 1, symbol: "BTC", size: "0.1")],
-            orderError: .badStatus(.init(
-                httpStatus: 400,
-                code: "readonly_token_unavailable",
-                message: nil,
-                retryable: false,
-                reason: nil
-            ))
+            positions: [.init(market_index: 1, symbol: "BTC", size: "0.1")]
         )
         let updated = expectation(description: "positions read without a token")
         updated.expectedFulfillmentCount = 2
@@ -66,12 +194,9 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
         let watch = reading.watchPositions(
             wallet: makeWallet(),
             pollInterval: 0.5,
-            focus: { .positionsAndOrders(["order"]) },
+            focus: { .portfolio },
             onUpdate: { tick in
-                guard case let .positions(positions, openOrders) = tick,
-                      positions.map(\.marketId) == [1],
-                      openOrders == nil
-                else { return }
+                guard case let .positions(positions, _) = tick, positions.map(\.marketId) == [1] else { return }
                 updated.fulfill()
             },
             onInterrupted: { XCTFail("the positions read should use the fallback") }
@@ -81,35 +206,88 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
         withExtendedLifetime(reading) { watch.cancel() }
     }
 
-    func testThePositionsPollCarriesThePortfolioOrders() async {
+    func testThePositionsPollCarriesThePortfolioWithItsBalance() async {
         let api = AccountStubAPI(
             account: .init(),
+            balance: .init(available_balance: "90", transferable_balance: "80"),
             openOrders: [.init(
-                order_index: 21,
-                market_index: 1,
-                symbol: "BTC",
-                side: .long,
-                _type: .limit,
-                category: .open,
-                base_size: "0.0003",
-                price: "80000"
+                value1: .init(
+                    order_index: 21,
+                    market_index: 1,
+                    symbol: "BTC",
+                    side: .long,
+                    _type: .limit,
+                    category: .open,
+                    base_size: "0.0003",
+                    price: "80000"
+                ),
+                value2: .init()
             )]
         )
-        let updated = expectation(description: "orders read with the positions")
+        let updated = expectation(description: "orders and balance read with the positions")
         updated.assertForOverFulfill = false
         let reading = PerpsTkAccountReading(api: api)
         let watch = reading.watchPositions(
             wallet: makeWallet(),
             pollInterval: 0.5,
-            focus: { .positions },
+            focus: { .portfolio },
             onUpdate: { tick in
-                guard case let .positions(_, openOrders) = tick, openOrders?.map(\.order.orderIndex) == [21] else { return }
+                guard case let .portfolio(snapshot) = tick,
+                      snapshot.openOrders.map(\.order.orderIndex) == [21],
+                      snapshot.availableBalance == "90",
+                      snapshot.transferableBalance == "80"
+                else { return }
                 updated.fulfill()
             },
             onInterrupted: { XCTFail("the portfolio read should succeed") }
         )
 
         await fulfillment(of: [updated], timeout: 2)
+        withExtendedLifetime(reading) { watch.cancel() }
+    }
+
+    func testThePositionsWatchReadsAgainOnAnAccountEventInsteadOfATimer() async {
+        let api = AccountStubAPI(account: .init(), balance: .init(available_balance: "90"))
+        let (signals, channel) = AsyncStream<PerpsRealtimeSignal>.makeStream()
+        let reads = expectation(description: "a read on opening and one on the event")
+        reads.expectedFulfillmentCount = 2
+        let reading = PerpsTkAccountReading(api: api, liveFeed: PerpsLiveFeed(signals: { signals }), isRealtimeEnabled: { true })
+        let watch = reading.watchPositions(
+            wallet: makeWallet(),
+            pollInterval: 0.5,
+            focus: { .portfolio },
+            onUpdate: { _ in reads.fulfill() },
+            onInterrupted: { XCTFail("the portfolio read should succeed") }
+        )
+
+        channel.yield(.subscribed(recovered: true))
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        channel.yield(.event(.account))
+
+        await fulfillment(of: [reads], timeout: 2)
+        withExtendedLifetime(reading) { watch.cancel() }
+    }
+
+    func testAnIdleRealtimeWatchReadsOnceTheFocusTurnsToThePortfolioWithoutAnEvent() async {
+        let api = AccountStubAPI(account: .init(), balance: .init(available_balance: "90"))
+        let (signals, channel) = AsyncStream<PerpsRealtimeSignal>.makeStream()
+        let focus = WatchFocusBox()
+        let read = expectation(description: "a read once the focus turns to the portfolio")
+        read.assertForOverFulfill = false
+        let reading = PerpsTkAccountReading(api: api, liveFeed: PerpsLiveFeed(signals: { signals }), isRealtimeEnabled: { true })
+        let watch = reading.watchPositions(
+            wallet: makeWallet(),
+            pollInterval: 0.2,
+            focus: { focus.value },
+            onUpdate: { _ in read.fulfill() },
+            onInterrupted: { XCTFail("the portfolio read should succeed") }
+        )
+
+        channel.yield(.subscribed(recovered: true))
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        focus.value = .portfolio
+
+        await fulfillment(of: [read], timeout: 2)
         withExtendedLifetime(reading) { watch.cancel() }
     }
 
@@ -194,7 +372,7 @@ final class PerpsAccountStatusMappingTests: XCTestCase {
     }
 
     func testTheBindTypedDataIsLinkWalletUnderThePerpsDomain() throws {
-        let json = PerpsAccountBindSigner.typedData(walletId: "wallet-id", deadline: 1_755_600_000)
+        let json = PerpsRootProofSigner.linkWalletTypedData(walletId: "wallet-id", deadline: 1_755_600_000)
         let parsed = try XCTUnwrap(
             JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
         )
@@ -269,50 +447,74 @@ final class AccountStubAPI: PerpsAPI, Sendable {
     private let balance: Components.Schemas.Balance?
     private let portfolioError: PerpsAPIError?
     private let positions: [Components.Schemas.OpenPosition]
-    private let openOrders: [Components.Schemas.Order]
+    private let openOrders: [Components.Schemas.PortfolioOrder]
     private let orderError: PerpsAPIError?
+    private let orderDetail: Components.Schemas.OrderDetail?
     private let onAccount: @Sendable () async throws -> Void
     /// `nil` refuses every issue.
     private let onIssueReadOnlyToken: (@Sendable () async -> Void)?
     private let onAccountTier: (@Sendable () async throws -> Components.Schemas.AccountTier)?
     private let onChangeAccountTier: (@Sendable (String) async -> Void)?
+    private let onLighterAuth: (@Sendable (String) async -> Void)?
+    private let onBindAccount: (@Sendable (Components.Schemas.BindAccountRequest) async throws -> Components.Schemas.Account)?
     private let integrator: Components.Schemas.Integrator
     private let nonce: Int64?
+    private let onNextNonce: (@Sendable () async throws -> Int64)?
     private let tradingScreen: Components.Schemas.TradingScreen?
     private let orderBook: Components.Schemas.TruncatedOrderBook?
-    private let onSendTransactions: (@Sendable ([Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)?
+    private let openPosition: Components.Schemas.OpenPositionDetail?
+    private let onPositionState: (@Sendable (Int64?) async throws -> Components.Schemas.PositionState)?
+    private let onSendTransactions: (@Sendable (_ walletId: String, _ transactions: [Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)?
+    private let onPortfolio: (@Sendable () -> Void)?
+    private let onQuoteWithdraw: (@Sendable (Components.Schemas.WithdrawQuoteRequest) async throws -> Components.Schemas.WithdrawQuote)?
 
     init(
         account: Components.Schemas.Account,
         balance: Components.Schemas.Balance? = nil,
         portfolioError: PerpsAPIError? = nil,
         positions: [Components.Schemas.OpenPosition] = [],
-        openOrders: [Components.Schemas.Order] = [],
+        openOrders: [Components.Schemas.PortfolioOrder] = [],
         orderError: PerpsAPIError? = nil,
+        orderDetail: Components.Schemas.OrderDetail? = nil,
         onIssueReadOnlyToken: (@Sendable () async -> Void)? = nil,
         onAccountTier: (@Sendable () async throws -> Components.Schemas.AccountTier)? = nil,
         onChangeAccountTier: (@Sendable (String) async -> Void)? = nil,
+        onLighterAuth: (@Sendable (String) async -> Void)? = nil,
+        onBindAccount: (@Sendable (Components.Schemas.BindAccountRequest) async throws -> Components.Schemas.Account)? = nil,
         integrator: Components.Schemas.Integrator = .none,
         nonce: Int64? = nil,
+        onNextNonce: (@Sendable () async throws -> Int64)? = nil,
         tradingScreen: Components.Schemas.TradingScreen? = nil,
         orderBook: Components.Schemas.TruncatedOrderBook? = nil,
-        onSendTransactions: (@Sendable ([Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)? = nil,
+        onPositionState: (@Sendable (Int64?) async throws -> Components.Schemas.PositionState)? = nil,
+        openPosition: Components.Schemas.OpenPositionDetail? = nil,
+        onSendTransactions: (@Sendable (_ walletId: String, _ transactions: [Components.Schemas.SignedTransaction]) async throws -> Components.Schemas.SendTransactionsResponse)? = nil,
+        onPortfolio: (@Sendable () -> Void)? = nil,
+        onQuoteWithdraw: (@Sendable (Components.Schemas.WithdrawQuoteRequest) async throws -> Components.Schemas.WithdrawQuote)? = nil,
         onAccount: @escaping @Sendable () async throws -> Void = {}
     ) {
+        self.onPortfolio = onPortfolio
+        self.onQuoteWithdraw = onQuoteWithdraw
         self.account = account
         self.balance = balance
         self.portfolioError = portfolioError
         self.positions = positions
         self.openOrders = openOrders
         self.orderError = orderError
+        self.orderDetail = orderDetail
         self.onAccount = onAccount
         self.onIssueReadOnlyToken = onIssueReadOnlyToken
         self.onAccountTier = onAccountTier
         self.onChangeAccountTier = onChangeAccountTier
+        self.onLighterAuth = onLighterAuth
+        self.onBindAccount = onBindAccount
         self.integrator = integrator
         self.nonce = nonce
+        self.onNextNonce = onNextNonce
         self.tradingScreen = tradingScreen
         self.orderBook = orderBook
+        self.onPositionState = onPositionState
+        self.openPosition = openPosition
         self.onSendTransactions = onSendTransactions
     }
 
@@ -327,9 +529,10 @@ final class AccountStubAPI: PerpsAPI, Sendable {
 
     func bindAccount(
         walletId _: String,
-        request _: Components.Schemas.BindAccountRequest
+        request: Components.Schemas.BindAccountRequest
     ) async throws -> Components.Schemas.Account {
-        throw Unsupported()
+        guard let onBindAccount else { throw Unsupported() }
+        return try await onBindAccount(request)
     }
 
     func tradingScreen(walletId _: String, marketId _: Int64) async throws -> Components.Schemas.TradingScreen {
@@ -350,24 +553,29 @@ final class AccountStubAPI: PerpsAPI, Sendable {
 
     func issueReadOnlyToken(
         walletId _: String,
-        lighterAuth _: String
+        lighterAuth: String
     ) async throws -> Components.Schemas.IssuedRoToken {
+        await onLighterAuth?(lighterAuth)
         guard let onIssueReadOnlyToken else { throw PerpsAPIError.unauthorized }
         await onIssueReadOnlyToken()
         return .init(token: "ro", token_id: 1, account_index: 1, issued_at: Date(), expires_at: Date())
     }
 
     func nextNonce(walletId _: String, apiKeyIndex _: Int) async throws -> Components.Schemas.NextNonce {
+        if let onNextNonce {
+            return try await .init(account_index: 0, nonce: onNextNonce())
+        }
         guard let nonce else { throw Unsupported() }
         return .init(account_index: 0, nonce: nonce)
     }
 
     func sendTransactions(
-        walletId _: String,
+        walletId: String,
+        operationId _: String?,
         transactions: [Components.Schemas.SignedTransaction]
     ) async throws -> Components.Schemas.SendTransactionsResponse {
         guard let onSendTransactions else { throw Unsupported() }
-        return try await onSendTransactions(transactions)
+        return try await onSendTransactions(walletId, transactions)
     }
 
     func openDeposit(
@@ -388,8 +596,9 @@ final class AccountStubAPI: PerpsAPI, Sendable {
         throw Unsupported()
     }
 
-    func quoteWithdraw(walletId _: String, request _: Components.Schemas.WithdrawQuoteRequest) async throws -> Components.Schemas.WithdrawQuote {
-        throw Unsupported()
+    func quoteWithdraw(walletId _: String, request: Components.Schemas.WithdrawQuoteRequest) async throws -> Components.Schemas.WithdrawQuote {
+        guard let onQuoteWithdraw else { throw Unsupported() }
+        return try await onQuoteWithdraw(request)
     }
 
     func getFundingStatus(
@@ -400,29 +609,35 @@ final class AccountStubAPI: PerpsAPI, Sendable {
     }
 
     func portfolio(walletId _: String) async throws -> Components.Schemas.Portfolio {
+        onPortfolio?()
         if let portfolioError { throw portfolioError }
         return .init(balance: balance, positions: positions, open_orders: openOrders)
     }
 
     func getOrder(walletId _: String, id _: String) async throws -> Components.Schemas.OrderDetail {
         if let orderError { throw orderError }
-        throw Unsupported()
+        guard let orderDetail else { throw Unsupported() }
+        return orderDetail
     }
+
+    func recordClientMetrics(walletId _: String, metrics _: [Components.Schemas.ClientMetric]) async throws {}
 
     func listOpenPositions(walletId _: String) async throws -> Components.Schemas.OpenPositionsPage {
         .init(positions: positions)
     }
 
     func getOpenPosition(walletId _: String, id _: String) async throws -> Components.Schemas.OpenPositionDetail {
-        throw Unsupported()
+        guard let openPosition else { throw Unsupported() }
+        return openPosition
     }
 
     func positionState(
         walletId _: String,
         id _: String,
-        clientOrderIndex _: Int64?
+        clientOrderIndex: Int64?
     ) async throws -> Components.Schemas.PositionState {
-        throw Unsupported()
+        guard let onPositionState else { throw Unsupported() }
+        return try await onPositionState(clientOrderIndex)
     }
 
     func accountTier(walletId _: String) async throws -> Components.Schemas.AccountTier {
@@ -430,7 +645,8 @@ final class AccountStubAPI: PerpsAPI, Sendable {
         return try await onAccountTier()
     }
 
-    func changeAccountTier(walletId _: String, lighterAuth _: String, newTier: String) async throws {
+    func changeAccountTier(walletId _: String, lighterAuth: String, newTier: String) async throws {
+        await onLighterAuth?(lighterAuth)
         guard let onChangeAccountTier else { throw Unsupported() }
         await onChangeAccountTier(newTier)
     }

@@ -5,7 +5,6 @@ import XCTest
 final class FakeMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendable {
     private let lock = NSLock()
     private var onUpdate: (@Sendable (HermesMarkPricesSnapshot) async -> Void)?
-    private var onRejected: (@Sendable () async -> Void)?
     private(set) var tickersLog: [[String]] = []
     private(set) var cancelCount = 0
     var onSetTickers: (([String]) -> Void)?
@@ -17,11 +16,10 @@ final class FakeMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendable
     func watch(
         onUpdate: @escaping @Sendable (HermesMarkPricesSnapshot) async -> Void,
         onReconnecting _: @escaping @Sendable () async -> Void,
-        onRejected: @escaping @Sendable () async -> Void
+        onRejected _: @escaping @Sendable () async -> Void
     ) -> HermesMarkPricesWatch {
         lock.withLock {
             self.onUpdate = onUpdate
-            self.onRejected = onRejected
         }
         return HermesMarkPricesWatch(
             onSetTickers: { [weak self] tickers in
@@ -47,11 +45,6 @@ final class FakeMarkPricesClient: HermesMarkPricesStreaming, @unchecked Sendable
                 prices: prices.map { HermesTickerPrice(ticker: $0.ticker, price: $0.price) }
             )
         )
-    }
-
-    func reject() async {
-        let handler = lock.withLock { onRejected }
-        await handler?()
     }
 }
 
@@ -196,7 +189,8 @@ extension PerpsPositionSummary {
         marginUsd: Double = 20.5,
         equityUsd: Double? = nil,
         unrealizedPnlUsd: Double = 0.5,
-        leverage: Double? = 27
+        leverage: Double? = 27,
+        liquidationDistancePercent: Double? = nil
     ) -> PerpsPositionSummary {
         PerpsPositionSummary(
             positionId: "lighter:\(marketId)",
@@ -213,7 +207,8 @@ extension PerpsPositionSummary {
             liquidationPrice: 64141.75,
             unrealizedPnlUsd: unrealizedPnlUsd,
             realizedPnlUsd: 0,
-            fundingPaidUsd: 0
+            fundingPaidUsd: 0,
+            liquidationDistancePercent: liquidationDistancePercent
         )
     }
 }

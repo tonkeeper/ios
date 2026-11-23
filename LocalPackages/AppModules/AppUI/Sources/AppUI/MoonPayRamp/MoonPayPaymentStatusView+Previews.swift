@@ -10,15 +10,15 @@ private extension MoonPayPaymentStatusViewState {
             title: "Payment status",
             steps: steps,
             summary: [
-                .init(id: "paid", title: "You paid", value: "€38 500.00"),
-                .init(id: "receive", title: "You receive", value: "0.4869 BTC", isHighlighted: true),
+                .init(id: "paid", title: "You paid", value: "$200"),
+                .init(id: "receive", title: "You receive", value: "187.07 USDT", isHighlighted: true),
                 .init(id: "order", title: "Order ID", value: "mp_7f3c9a21"),
             ],
             feesTitle: "Fees",
-            feesValue: "€2 177.01",
+            feesValue: "$13.30",
             feeDetails: [
-                .init(id: "moonpay", title: "MoonPay", value: "€1 500.00"),
-                .init(id: "network", title: "Network", value: "€677.01"),
+                .init(id: "moonpay", title: "MoonPay", value: "$10.00"),
+                .init(id: "network", title: "Network", value: "$3.30"),
             ],
             showsDetails: actionTitle == nil,
             actionTitle: actionTitle
@@ -29,12 +29,11 @@ private extension MoonPayPaymentStatusViewState {
 #Preview("Pending") {
     MoonPayPaymentStatusView(
         state: .preview(steps: [
-            .init(id: "started", title: "Payment started", subtitle: "Visa •••• 4148 · €38 500.00 authorised", status: .done),
-            .init(id: "pending", title: "Payment pending", subtitle: "Clearing with the network", status: .inProgress),
-            .init(id: "completed", title: "Payment completed", subtitle: "0.4869 BTC in your wallet", status: .waiting),
+            .init(id: "started", title: "Payment started", subtitle: "Apple Pay · $200.00 authorised", status: .done),
+            .init(id: "pending", title: "Payment pending", subtitle: "Cleared by the network", status: .done),
+            .init(id: "completed", title: "Payment completed", subtitle: "187.07 USDT in your wallet", status: .inProgress),
         ]),
-        onAction: {},
-        onClose: {}
+        onAction: {}
     )
     .tkPreviewTheme(.deepBlue)
 }
@@ -49,8 +48,7 @@ private extension MoonPayPaymentStatusViewState {
             ],
             actionTitle: "Try another card"
         ),
-        onAction: {},
-        onClose: {}
+        onAction: {}
     )
     .tkPreviewTheme(.deepBlue)
 }

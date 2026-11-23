@@ -27,8 +27,26 @@ public final class TKNavigationController: UINavigationController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    /// For a stack whose screens choose their own orientations, as a dapp does; otherwise the app default.
+    public var forwardsSupportedInterfaceOrientations = false
+
     override public var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        .portrait
+        guard forwardsSupportedInterfaceOrientations, let topViewController else { return .tkDefault }
+        return topViewController.supportedInterfaceOrientations
+    }
+
+    override public var shouldAutorotate: Bool {
+        guard forwardsSupportedInterfaceOrientations, let topViewController else { return super.shouldAutorotate }
+        return topViewController.shouldAutorotate
+    }
+
+    public var didDismiss: (() -> Void)?
+
+    override public func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isBeingDismissed {
+            didDismiss?()
+        }
     }
 }
 

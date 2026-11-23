@@ -32,6 +32,7 @@ private extension SettingsConnectedAppsScreen {
                     image: .TKUIKit.Icons.Size16.chevronLeft,
                     size: 16,
                     padding: 8,
+                    liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                     onTap: { _ in
                         viewModel.close()
                     }

@@ -73,7 +73,7 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
         )
         let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle]))
 
-        XCTAssertFalse(presentation.shouldShowMainScreenEntry)
+        XCTAssertFalse(presentation.shouldShowWalletEntry)
     }
 
     func test_mainScreenEntryAppearsForLivePayloadWhileBenefitWindowIsOpen() throws {
@@ -86,7 +86,62 @@ final class MysteryRaffleContentMappingTests: XCTestCase {
         )
         let presentation = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle]))
 
-        XCTAssertTrue(presentation.shouldShowMainScreenEntry)
+        XCTAssertTrue(presentation.shouldShowWalletEntry)
+    }
+
+    func test_presentationChangesWhenRaffleStarts() throws {
+        let raffle = liveRaffle()
+        let before = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.startsAt.addingTimeInterval(-1)))
+        let atStart = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.startsAt))
+        let after = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.startsAt.addingTimeInterval(1)))
+
+        XCTAssertFalse(before.shouldShowWalletEntry)
+        XCTAssertFalse(atStart.shouldShowWalletEntry)
+        XCTAssertTrue(after.shouldShowWalletEntry)
+        XCTAssertEqual(before, atStart)
+        XCTAssertNotEqual(atStart, after)
+    }
+
+    func test_mainScreenEntryOutlivesTheRaffleEnd() throws {
+        let raffle = liveRaffle()
+        let before = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.endsAt.addingTimeInterval(-1)))
+        let after = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.endsAt.addingTimeInterval(1)))
+
+        XCTAssertTrue(before.shouldShowWalletEntry)
+        XCTAssertTrue(after.shouldShowWalletEntry)
+        XCTAssertEqual(before, after)
+    }
+
+    func test_presentationChangesWhenSwapPromoEnds() throws {
+        let zeroFeeEndsAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let raffle = raffle(
+            status: .notJoined,
+            startsAt: zeroFeeEndsAt.addingTimeInterval(-86400),
+            endsAt: zeroFeeEndsAt.addingTimeInterval(86400),
+            ticketsTotal: 0,
+            zeroFeeEndsAt: zeroFeeEndsAt,
+            badgeIconId: "mystery_raffle"
+        )
+        let before = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: zeroFeeEndsAt.addingTimeInterval(-1)))
+        let atEnd = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: zeroFeeEndsAt))
+        let after = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: zeroFeeEndsAt.addingTimeInterval(1)))
+
+        XCTAssertEqual(before.shouldShowWalletEntry, atEnd.shouldShowWalletEntry)
+        XCTAssertTrue(before.shouldShowSwapPromo)
+        XCTAssertFalse(atEnd.shouldShowSwapPromo)
+        XCTAssertFalse(after.shouldShowSwapPromo)
+        XCTAssertNotEqual(before, atEnd)
+        XCTAssertEqual(atEnd, after)
+    }
+
+    func test_presentationsWithinSameWindowRemainEqual() throws {
+        let raffle = liveRaffle()
+        let first = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.startsAt.addingTimeInterval(1)))
+        let next = try XCTUnwrap(MysteryRafflePresentation(raffles: [raffle], now: raffle.startsAt.addingTimeInterval(31)))
+
+        XCTAssertTrue(first.shouldShowWalletEntry)
+        XCTAssertFalse(first.shouldShowSwapPromo)
+        XCTAssertEqual(first, next)
     }
 
     // MARK: - Live raffle

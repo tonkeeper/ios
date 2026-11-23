@@ -14,6 +14,7 @@ final class PairSignerCoordinator: RouterCoordinator<NavigationControllerRouter>
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
     private let multichainAssembly: MultichainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let pairingAnalytics: WalletImportPairingAnalyticsSession
     private let analyticsContext: WalletFlowAnalyticsContext
     private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
 
@@ -30,21 +31,34 @@ final class PairSignerCoordinator: RouterCoordinator<NavigationControllerRouter>
         self.walletUpdateAssembly = walletUpdateAssembly
         self.multichainAssembly = multichainAssembly
         self.coreAssembly = coreAssembly
+        self.pairingAnalytics = WalletImportPairingAnalyticsSession(
+            analyticsProvider: coreAssembly.analyticsProvider,
+            walletMode: .single, walletSource: .signer, from: analyticsContext.from
+        )
         self.analyticsContext = analyticsContext
         self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
         super.init(router: router)
     }
 
     override func start() {
+        pairingAnalytics.start()
         openScanner()
     }
 
+    @discardableResult
+    func cancelPairing() -> Bool {
+        pairingAnalytics.exit()
+    }
+
     override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
-        guard let signerDeeplink = deeplink as? Deeplink else { return false }
+        guard pairingAnalytics.isActive, let signerDeeplink = deeplink as? Deeplink else { return false }
         switch signerDeeplink {
         case let .externalSign(externalSign):
             switch externalSign {
             case let .link(publicKey, name):
+                pairingAnalytics.setBlocked(.cameraPermissionDenied, isBlocked: false)
+                pairingAnalytics.setBlocked(.cameraError, isBlocked: false)
+                pairingAnalytics.advance(to: .connected)
                 openImportCoordinator(publicKey: publicKey, name: name, isDevice: true)
             }
             return true
@@ -61,8 +75,18 @@ private extension PairSignerCoordinator {
             coreAssembly: coreAssembly
         )
 
+        module.output.didUpdateCameraState = { [weak self] state in
+            self?.pairingAnalytics.cameraStateChanged(state)
+        }
+        module.output.didOpenSigner = { [weak self] in
+            self?.pairingAnalytics.action(.signerAppOpened)
+        }
+
         module.output.didScanLinkQRCode = { [weak self] publicKey, name in
-            guard let self else { return }
+            guard let self, pairingAnalytics.isActive else { return }
+            pairingAnalytics.setBlocked(.cameraPermissionDenied, isBlocked: false)
+            pairingAnalytics.setBlocked(.cameraError, isBlocked: false)
+            pairingAnalytics.advance(to: .connected)
             coreAssembly.analyticsProvider.log(WalletImportSignerScanned(
                 walletMode: .single,
                 walletSource: .signer,
@@ -73,13 +97,20 @@ private extension PairSignerCoordinator {
 
         if router.rootViewController.viewControllers.isEmpty {
             module.view.setupSwipeDownButton { [weak self] in
-                self?.didCancel?()
+                guard let self else { return }
+                if cancelPairing() {
+                    didCancel?()
+                } else {
+                    router.dismiss(animated: true)
+                }
             }
         } else {
             module.view.setupBackButton()
         }
 
-        router.push(viewController: module.view, animated: false)
+        router.push(viewController: module.view, animated: false, onPopClosures: { [weak self] in
+            if self?.cancelPairing() == true { self?.didCancel?() }
+        })
     }
 
     func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String, isDevice: Bool) {
@@ -91,7 +122,7 @@ private extension PairSignerCoordinator {
         }
 
         coordinator.didImport = { [weak self] publicKey, revisions, model in
-            guard let self else { return }
+            guard let self, pairingAnalytics.beginImport() else { return }
             Task {
                 do {
                     try await self.importWallet(
@@ -100,11 +131,7 @@ private extension PairSignerCoordinator {
                         model: model,
                         isDevice: isDevice
                     )
-                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
-                        walletMode: .single,
-                        walletSource: .signer,
-                        from: self.analyticsContext.from
-                    )
+                    self.pairingAnalytics.success()
                     await MainActor.run {
                         self.didPaired?()
                     }
@@ -112,12 +139,7 @@ private extension PairSignerCoordinator {
                     Log.e("pair signer: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
-                    self.coreAssembly.analyticsProvider.logWalletImportError(
-                        walletMode: .single,
-                        walletSource: .signer,
-                        from: self.analyticsContext.from,
-                        error: error
-                    )
+                    if self.pairingAnalytics.importFailed(error: error) { self.didCancel?() }
                 }
             }
         }

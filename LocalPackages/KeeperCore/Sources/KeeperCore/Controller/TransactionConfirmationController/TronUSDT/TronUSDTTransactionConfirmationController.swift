@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import OperationReviewModels
 import TKLogging
 import TronSwift
 
@@ -59,6 +60,10 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         }
     }
 
+    func resetAutomaticFeePreference() {
+        updateState { $0.preferredExtraType = nil }
+    }
+
     public func emulate() async -> Result<Void, TransactionConfirmationError> {
         do {
             guard let address = resolvedSenderAddress else {
@@ -97,11 +102,15 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
                 "wallet": maskedSenderAddress,
                 "error": TronSendErrorMessage.logDescription(for: error),
             ])
-            return .failure(.failedToCalculateFee)
+            return .failure(.failedToCalculateFee())
         }
     }
 
     public func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
+        await sendTransaction(consent: .refuse)
+    }
+
+    public func sendTransaction(consent: OperationConsent) async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         guard let address = resolvedSenderAddress else {
             return .failure(failure(stage: "resolve address", error: Error.tronAddressIsNotAvailable))
         }
@@ -127,6 +136,8 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
                 }
                 stage = "extend expiration"
                 let extendedTransaction = try transaction.extendingExpiration(byMilliseconds: 600_000)
+                stage = "review"
+                try await self.clear(extendedTransaction, from: address, consent: consent)
                 stage = "sign"
                 let signedTransaction = try await self.sign(transaction: extendedTransaction)
                 stage = "instant fee"
@@ -156,6 +167,9 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
     }
 
     private func failure(stage: String, error: Swift.Error) -> TransactionConfirmationError {
+        if error is TronExpirationRetry.Expired {
+            return .multichainTransactionFailure(.operationExpired)
+        }
         if let confirmationError = error as? TransactionConfirmationError, confirmationError.isCancel {
             return confirmationError
         }
@@ -164,7 +178,8 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
             "error": TronSendErrorMessage.logDescription(for: error),
         ])
         return .failedToSendTransaction(
-            message: TronSendErrorMessage.userMessage(for: error)
+            message: TronSendErrorMessage.logDescription(for: error).redactingAddresses,
+            localizedMessage: TronSendErrorMessage.userMessage(for: error)
         )
     }
 
@@ -183,6 +198,10 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
     private let feeOptionsResolver: TronUSDTFeeOptionsResolver
     private let transactionSender: TronUSDTTransactionSender
     private let tonFeePaymentBuilder: TronUSDTTonFeePaymentBuilder
+    private let gate: OperationGate
+    /// Signs in place of `tronSignHandler` when the wallet is a hardware one.
+    private let deviceSigner: DeviceTransferSigner?
+    private let now: () -> Date
 
     init(
         wallet: Wallet,
@@ -195,7 +214,10 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         tronUsdtApi: TronUSDTAPI,
         sendService: SendService,
         balanceService: BalanceService,
-        configuration: Configuration
+        configuration: Configuration,
+        gate: OperationGate,
+        deviceSigner: DeviceTransferSigner? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
         self.wallet = wallet
         self.token = token
@@ -205,6 +227,9 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         self.balance = balance
         self.senderAddress = senderAddress
         self.tronUsdtApi = tronUsdtApi
+        self.gate = gate
+        self.deviceSigner = deviceSigner
+        self.now = now
 
         let feeOptionsResolver = TronUSDTFeeOptionsResolver(configuration: configuration)
         self.feeOptionsResolver = feeOptionsResolver
@@ -226,8 +251,44 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         resolvedSenderAddress?.base58.pretty.masked ?? "unavailable"
     }
 
+    /// The gate on the transaction about to be signed. A decline is the user's cancellation, which the
+    /// retry never repeats and the failure log passes over; what could not be reviewed fails the send.
+    private func clear(_ transaction: Transaction, from sender: TronSwift.Address, consent: OperationConsent) async throws {
+        let wasLive = isLive(transaction)
+        do throws(OperationRefusal) {
+            try await gate.clear(.ask, consent: consent) {
+                try [.tronPrebuild(
+                    transaction,
+                    account: ChainKitOperationSender.account(of: signingAddress(sender), holding: token.assetDetails),
+                    intent: .send(amount, of: token.assetDetails, to: recipient.base58)
+                )]
+            }
+        } catch .declined {
+            throw TransactionConfirmationError.cancelledByUser
+        }
+        // The user can read the review past the expiration, and the chain would refuse what is signed
+        // then. One the device's clock had expired already is left to the chain, as it always was.
+        guard !wasLive || isLive(transaction) else {
+            throw TronExpirationRetry.Expired()
+        }
+    }
+
+    private func isLive(_ transaction: Transaction) -> Bool {
+        transaction.expiresAt.timeIntervalSince(now()) > Transaction.relayLead
+    }
+
+    /// The address that signs, with the key a multichain wallet stored for it; a legacy wallet stored none.
+    private func signingAddress(_ sender: TronSwift.Address) -> MultichainWalletAddress {
+        wallet.multichainWalletState?.addresses.first { $0.chain == .tron && $0.address == sender.base58 }
+            ?? MultichainWalletAddress(chain: .tron, address: sender.base58)
+    }
+
     private func sign(transaction: Transaction) async throws -> Transaction {
-        let signature = try await signedTronTransaction(txID: transaction.signingDigest())
+        let signature = if let deviceSigner {
+            try await deviceSignature(transaction: transaction, device: deviceSigner)
+        } else {
+            try await signedTronTransaction(txID: transaction.signingDigest())
+        }
 
         var signedTransaction = transaction
         signedTransaction.signature = signature.hexString()
@@ -256,14 +317,19 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
               case let .default(tonFeeAmount) = extra.value,
               let tonFeeAddress = currentState.tonFeeAddress
         else {
-            throw TransactionConfirmationError.failedToCalculateFee
+            throw TransactionConfirmationError.failedToCalculateFee()
         }
 
+        let feeSigner: OperationGate.TonSigning? = if let signHandler {
+            gate.clearing(signHandler, account: ChainKitOperationSender.tonAccount, intent: .send(tonFeeAmount, of: .gram, to: nil))
+        } else {
+            nil
+        }
         return try await tonFeePaymentBuilder.build(
             wallet: wallet,
             tonFeeAmount: tonFeeAmount,
             tonFeeAddress: tonFeeAddress,
-            signHandler: signHandler
+            signHandler: feeSigner
         )
     }
 
@@ -271,6 +337,23 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         var currentState = state
         update(&currentState)
         state = currentState
+    }
+
+    private func deviceSignature(
+        transaction: Transaction,
+        device: DeviceTransferSigner
+    ) async throws(TransactionConfirmationError) -> TronSwift.SignedTxID {
+        guard let sender = resolvedSenderAddress else {
+            throw .failedToSign(message: "no tron sender to check the device signature against")
+        }
+        do {
+            return try await DeviceTransactionSigner.signTronTransaction(transaction, sender: sender.base58, device: device.tron)
+        } catch {
+            if case .canceled = error {
+                throw .cancelledByUser
+            }
+            throw .multichainTransactionFailure(error)
+        }
     }
 
     private func signedTronTransaction(
@@ -287,9 +370,17 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
                 throw .cancelledByUser
             default:
                 throw .failedToSign(
-                    message: "failed to sign tron transaction due to error: \(error.localizedDescription)"
+                    message: "failed to sign tron transaction due to error: \(error.analyticsReason)"
                 )
             }
         }
+    }
+}
+
+private extension TronToken {
+    /// The token as chain-kit and a send's intent name it.
+    var assetDetails: MultichainAssetDetails {
+        let token = Token.tron(self)
+        return MultichainAssetDetails(assetId: token.assetId(network: .mainnet), name: token.name, symbol: symbol, decimals: fractionDigits, image: "")
     }
 }

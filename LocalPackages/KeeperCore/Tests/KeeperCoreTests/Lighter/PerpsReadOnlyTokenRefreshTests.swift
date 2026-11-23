@@ -1,7 +1,7 @@
 import ChainKit
 import Foundation
 @testable import KeeperCore
-import KeeperCoreComponents
+@testable import KeeperCoreComponents
 import PerpsModels
 import TKPerpsAPI
 import TonSwift
@@ -12,149 +12,127 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
         let address = try XCTUnwrap(makeWallet().multichainAddress(for: .eth))
         let service = makeService(api: AccountStubAPI(account: .init(l1_address: address.uppercased(), status: .not_registered)))
 
-        try await service.ensureDepositBinding(wallet: makeWallet(), passcode: "unused")
+        try await service.ensureDepositBinding(wallet: makeWallet(), passcode: "unused", readOnlyToken: makeToken(service))
     }
 
     func testDepositRejectsAnAccountBoundToAnotherAddress() async throws {
         let service = makeService(api: AccountStubAPI(account: .init(l1_address: "0x00000000000000000000000000000000000000aa")))
         do {
-            try await service.ensureDepositBinding(wallet: makeWallet(), passcode: "unused")
+            try await service.ensureDepositBinding(wallet: makeWallet(), passcode: "unused", readOnlyToken: makeToken(service))
             XCTFail("a deposit must not use a different bound address")
         } catch {
             XCTAssertEqual(error as? PerpsTradingError, .validation("deposit account address does not match the wallet"))
         }
     }
 
-    func testAnExistingTokenStillThrottlesAccountReads() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api)
-
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-
-        let count = await calls.count
-        XCTAssertEqual(count, 1)
-    }
-
-    func testConcurrentRefreshesReserveOneAccountRead() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api)
-        let wallet = makeWallet()
-
-        await withTaskGroup(of: Void.self) { group in
-            for _ in 0 ..< 20 {
-                group.addTask { _ = await service.refreshReadOnlyToken(wallet: wallet) }
-            }
-        }
-
-        let count = await calls.count
-        XCTAssertEqual(count, 1)
-    }
-
-    func testACallArrivingMidMintTakesThatMintsAnswer() async throws {
+    func testAReissueJoinsTheMintInFlightInsteadOfRunningBesideIt() async throws {
         let issues = AccountCalls()
+        let reads = AccountCalls()
         let release = IssueRelease()
-        let api = AccountStubAPI(account: .init(has_ro_token: true), onIssueReadOnlyToken: {
-            await issues.record()
-            await release.wait()
-        })
+        let api = AccountStubAPI(
+            account: .init(has_ro_token: true),
+            onIssueReadOnlyToken: {
+                await issues.record()
+                await release.wait()
+            },
+            onAccount: { await reads.record() }
+        )
         let vault = InMemoryKeychainVault()
         let service = makeService(api: api, vault: vault)
         let wallet = makeWallet()
-        let credentials = LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage)
-        try credentials.saveAccount(PerpsStoredAccount(accountIndex: 7, apiKeyIndex: 3))
-        try credentials.saveL2PrivateKey(Data(repeating: 0xAB, count: 40))
+        try storeCredentials(vault, wallet)
+        let token = makeToken(service, wallet: wallet)
 
-        let first = Task { await service.ensureReadOnlyToken(wallet: wallet) }
+        let first = Task { await token.issue() }
         while await issues.count == 0 {
             await Task.yield()
         }
-        let joining = Task { await service.ensureReadOnlyToken(wallet: wallet) }
-        let refreshing = Task { await service.refreshReadOnlyToken(wallet: wallet) }
+        let joining = (0 ..< 5).map { _ in Task { await token.issue() } }
         try await Task.sleep(nanoseconds: 100_000_000)
         await release.open()
 
         let firstIssued = await first.value
-        let joinedIssued = await joining.value
-        let refreshed = await refreshing.value
-        XCTAssertTrue(firstIssued)
-        XCTAssertTrue(joinedIssued)
-        XCTAssertTrue(refreshed)
-        let count = await issues.count
-        XCTAssertEqual(count, 1)
-    }
-
-    func testAForcedRefreshIsNotHeldBackByTheReadThrottle() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api)
-
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet(), force: true)
-
-        let count = await calls.count
-        XCTAssertEqual(count, 2)
-    }
-
-    func testFailedAccountReadsAreThrottledToo() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init()) {
-            await calls.record()
-            throw AccountStubAPI.Unsupported()
+        var joinedIssued = [Bool]()
+        for task in joining {
+            await joinedIssued.append(task.value)
         }
-        let service = makeService(api: api)
-
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-
-        let count = await calls.count
-        XCTAssertEqual(count, 1)
+        XCTAssertTrue(firstIssued)
+        XCTAssertEqual(joinedIssued, Array(repeating: true, count: 5))
+        let issued = await issues.count
+        let accountReads = await reads.count
+        XCTAssertEqual(issued, 1)
+        XCTAssertEqual(accountReads, 0)
     }
 
-    func testThrottleExpiresWithoutBlockingTheNextRead() async {
-        let calls = AccountCalls()
+    func testATokenIsNotMintedAgainWithinTheReissueInterval() async {
+        let mints = AccountCalls()
         let clock = RefreshClock()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api, now: { clock.now })
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-        clock.advance(by: 59)
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
-        let beforeExpiry = await calls.count
-        XCTAssertEqual(beforeExpiry, 1)
+        let token = PerpsReadOnlyToken(mint: {
+            await mints.record()
+            return true
+        }, now: { clock.now })
 
+        let first = await token.issue()
+        clock.advance(by: PerpsReadOnlyToken.reissueInterval - 1)
+        let beforeInterval = await token.issue()
+        let mintedBefore = await mints.count
         clock.advance(by: 1)
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet())
+        let afterInterval = await token.issue()
 
-        let afterExpiry = await calls.count
-        XCTAssertEqual(afterExpiry, 2)
+        XCTAssertTrue(first)
+        XCTAssertFalse(beforeInterval)
+        XCTAssertEqual(mintedBefore, 1)
+        XCTAssertTrue(afterInterval)
+        let minted = await mints.count
+        XCTAssertEqual(minted, 2)
     }
 
-    func testClearingCredentialsResetsTheReadThrottle() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api)
-        let wallet = makeWallet()
-        _ = await service.refreshReadOnlyToken(wallet: wallet)
+    func testAFailedMintHoldsTheNextOneBackToo() async {
+        let mints = AccountCalls()
+        let token = PerpsReadOnlyToken(mint: {
+            await mints.record()
+            return false
+        })
 
-        service.clearCredentials(wallet: wallet)
-        _ = await service.refreshReadOnlyToken(wallet: wallet)
+        let first = await token.issue()
+        let second = await token.issue()
 
-        let count = await calls.count
-        XCTAssertEqual(count, 2)
+        XCTAssertFalse(first)
+        XCTAssertFalse(second)
+        let minted = await mints.count
+        XCTAssertEqual(minted, 1)
     }
 
-    func testWalletsDoNotShareTheReadThrottle() async {
-        let calls = AccountCalls()
-        let api = AccountStubAPI(account: .init(has_ro_token: true)) { await calls.record() }
-        let service = makeService(api: api)
+    func testWalletScopesShareNoTokenAndNoJournal() async throws {
+        let issues = AccountCalls()
+        let vault = InMemoryKeychainVault()
+        let api = AccountStubAPI(account: .init(has_ro_token: true), onIssueReadOnlyToken: { await issues.record() })
+        let service = makeService(api: api, vault: vault)
+        let first = makeWallet(id: UUID().uuidString)
+        let second = makeWallet(id: UUID().uuidString)
+        try storeCredentials(vault, first)
+        try storeCredentials(vault, second)
+        let firstScope = makeScope(first, service: service, api: api)
+        let secondScope = makeScope(second, service: service, api: api)
+        let operationId = UUID().uuidString
+        _ = try await firstScope.journal.savePendingIfAbsentWithStatus(PerpsPendingTradingAction(
+            operationId: operationId, walletId: first.id, marketId: 1, side: .long, payload: .close
+        ))
 
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet(id: "first"))
-        _ = await service.refreshReadOnlyToken(wallet: makeWallet(id: "second"))
+        let firstIssued = await firstScope.readOnlyToken.issue()
+        let secondIssued = await secondScope.readOnlyToken.issue()
+        let firstAgain = await firstScope.readOnlyToken.issue()
+        let firstPending = try await firstScope.pendingActivityOperations().trading
+        let secondPending = try await secondScope.pendingActivityOperations().trading
 
-        let count = await calls.count
-        XCTAssertEqual(count, 2)
+        XCTAssertTrue(firstIssued)
+        XCTAssertTrue(secondIssued)
+        XCTAssertFalse(firstAgain)
+        let issued = await issues.count
+        XCTAssertEqual(issued, 2)
+        XCTAssertEqual(firstPending.map(\.operationId), [operationId])
+        XCTAssertTrue(secondPending.isEmpty)
+        try await firstScope.journal.removePending(operationId: operationId)
     }
 
     func testAKeyStoredUnderTheAccountIndexDerivationHasNoTradingSession() async throws {
@@ -185,16 +163,39 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
         ]
         for (name, keys, adopted) in cases {
             let vault = InMemoryKeychainVault()
-            let service = makeService(api: AccountStubAPI(account: .init(account_index: 7, has_l2_key: true, api_keys: keys)), vault: vault)
+            let service = makeService(api: AccountStubAPI(account: .init(account_index: 7, l1_address: Self.ethAddress, has_l2_key: true, api_keys: keys)), vault: vault)
             let wallet = makeWallet()
             try LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage).saveL2PrivateKey(key)
 
-            let result = await service.adoptRegisteredTradingKey(wallet: wallet)
+            let result = await service.adoptRegisteredTradingKey(wallet: wallet, readOnlyToken: makeToken(service, wallet: wallet))
 
             XCTAssertEqual(result, adopted, name)
             let session = try await service.tradingSession(wallet: wallet)
             XCTAssertEqual(session?.accountIndex, adopted ? 7 : nil, name)
         }
+    }
+
+    func testAnAccountBoundToAnotherAddressIsNotAdopted() async throws {
+        let key = Data(repeating: 0xAB, count: 40)
+        let ownKey = PerpsAccountService.tradingPublicKey(privateKey: key)
+        let vault = InMemoryKeychainVault()
+        let service = makeService(
+            api: AccountStubAPI(account: .init(
+                account_index: 7,
+                l1_address: "0x00000000000000000000000000000000000000aa",
+                has_l2_key: true,
+                api_keys: [.init(api_key_index: 3, public_key: ownKey)]
+            )),
+            vault: vault
+        )
+        let wallet = makeWallet()
+        try LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage).saveL2PrivateKey(key)
+
+        let adopted = await service.adoptRegisteredTradingKey(wallet: wallet, readOnlyToken: makeToken(service, wallet: wallet))
+
+        XCTAssertFalse(adopted)
+        let session = try await service.tradingSession(wallet: wallet)
+        XCTAssertNil(session)
     }
 
     /// Without the token the account's orders read as none, and limit orders are refused.
@@ -217,7 +218,7 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
         try LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage).saveL2PrivateKey(key)
         WalletAuthKeychainStore(keychainVault: vault).saveAppKey(Data(repeating: 0x11, count: 32), walletId: wallet.id)
 
-        let adopted = await service.adoptRegisteredTradingKey(wallet: wallet)
+        let adopted = await service.adoptRegisteredTradingKey(wallet: wallet, readOnlyToken: makeToken(service, wallet: wallet))
 
         XCTAssertTrue(adopted)
         let issued = await issues.count
@@ -231,10 +232,10 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
         let wallet = makeWallet()
         let credentials = LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage)
 
-        let withoutKey = await service.adoptRegisteredTradingKey(wallet: wallet)
+        let withoutKey = await service.adoptRegisteredTradingKey(wallet: wallet, readOnlyToken: makeToken(service, wallet: wallet))
         try credentials.saveL2PrivateKey(Data(repeating: 0xAB, count: 40))
         try credentials.saveAccount(PerpsStoredAccount(accountIndex: 7, apiKeyIndex: 3))
-        let recorded = await service.adoptRegisteredTradingKey(wallet: wallet)
+        let recorded = await service.adoptRegisteredTradingKey(wallet: wallet, readOnlyToken: makeToken(service, wallet: wallet))
 
         XCTAssertFalse(withoutKey)
         XCTAssertFalse(recorded)
@@ -285,7 +286,7 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
         try credentials.saveL2PrivateKey(Data(repeating: 0xAB, count: 40))
         WalletAuthKeychainStore(keychainVault: vault).saveAppKey(Data(repeating: 0x11, count: 32), walletId: wallet.id)
 
-        await service.ensurePlusTier(wallet: wallet, trigger: .resolve)
+        await service.ensurePlusTier(wallet: wallet, trigger: .resolve, readOnlyToken: makeToken(service, wallet: wallet))
 
         let issued = await issues.count
         let tiers = await changes.tiers
@@ -297,25 +298,50 @@ final class PerpsReadOnlyTokenRefreshTests: XCTestCase {
 private extension PerpsReadOnlyTokenRefreshTests {
     func makeService(
         api: PerpsAPI,
-        vault: InMemoryKeychainVault = InMemoryKeychainVault(),
-        now: @escaping @Sendable () -> Date = { Date() }
+        vault: InMemoryKeychainVault = InMemoryKeychainVault()
     ) -> PerpsAccountService {
         let client = CryptoKitClient(netModule: ModuleNetModule(netConfig: ModuleNetConfig(
-            isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil
+            isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil, nodeManifestHost: nil
         )))
         return PerpsAccountService(
-            mnemonicAccess: .disabled(mnemonicsRepository: .init(
-                rn: RNMnemonicsVault(keychainVault: vault),
-                native: MnemonicsVault(keychainVault: vault, seedProvider: { "unused" })
-            )),
+            mnemonicAccess: .inMemory(seed: "unused", keychainVault: vault),
             keychainVault: vault,
             perpsAPI: api,
+            submitLanes: PerpsSubmitLanes(api: api),
             bindSigner: PerpsAccountBindSigner(client: client),
             walletAuthTokenProvider: UnusedWalletAuth(),
             chainKitClient: client,
-            now: now
+            depositGate: OperationGate { [] }
         )
     }
+
+    func makeToken(_ service: PerpsAccountService, wallet: Wallet? = nil) -> PerpsReadOnlyToken {
+        let wallet = wallet ?? makeWallet()
+        return PerpsReadOnlyToken(mint: { await service.mintReadOnlyToken(wallet: wallet) })
+    }
+
+    func makeScope(_ wallet: Wallet, service: PerpsAccountService, api: PerpsAPI) -> PerpsWalletScope {
+        PerpsWalletScope(
+            wallet: wallet,
+            accountService: service,
+            perpsAPI: api,
+            multichainService: MultichainServiceFake(),
+            historyEvents: PerpsHistoryEvents { false },
+            markPriceProvider: { _ in nil },
+            marketProvider: { _ in nil },
+            markPrices: { _ in AsyncStream { $0.finish() } },
+            perpsSignals: { _ in AsyncStream { $0.finish() } },
+            isRealtimeEnabled: { false }
+        )
+    }
+
+    func storeCredentials(_ vault: InMemoryKeychainVault, _ wallet: Wallet) throws {
+        let credentials = LighterCredentialsStore(keychainVault: vault, walletId: wallet.id, environment: PerpsEnvironment.storage)
+        try credentials.saveAccount(PerpsStoredAccount(accountIndex: 7, apiKeyIndex: 3))
+        try credentials.saveL2PrivateKey(Data(repeating: 0xAB, count: 40))
+    }
+
+    static let ethAddress = "0x7ecebaf27c989adef9ea3dd06d316f6f463a5109"
 
     func makeWallet(id: String = "perps-refresh") -> Wallet {
         Wallet(

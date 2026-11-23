@@ -1,3 +1,4 @@
+import Foundation
 import SwapAPI
 import TKLogging
 
@@ -17,6 +18,7 @@ protocol MultichainRampAPI {
     func getOfframpOrder(orderId: String) async throws -> OffRampOrder
 
     func createMoonPaySession(sandbox: Bool) async throws -> String
+    func getMoonPayPaymentMethods() async throws -> [MoonPayPaymentMethodInfo]
 }
 
 final class MultichainRampAPIImplementation: MultichainRampAPI {
@@ -131,6 +133,29 @@ final class MultichainRampAPIImplementation: MultichainRampAPI {
         switch output {
         case let .ok(ok):
             return try ok.body.json.sessionToken
+        case let .default(statusCode, response):
+            throw try Self.errorPayload(response.body.json) { payload in
+                statusCode >= 500
+                    ? .internalServerError(message: payload.error, requestId: payload.request_id)
+                    : .badRequest(message: payload.error, code: payload.code, requestId: payload.request_id)
+            }
+        }
+    }
+
+    func getMoonPayPaymentMethods() async throws -> [MoonPayPaymentMethodInfo] {
+        let query = SwapAPI.Operations.getMoonPayPaymentMethods.Input.Query(lang: appInfoProvider.language)
+        let output = try await apiCall(await client.getMoonPayPaymentMethods(.init(query: query)))
+        switch output {
+        case let .ok(ok):
+            return try ok.body.json.methods.map { method in
+                MoonPayPaymentMethodInfo(
+                    type: method._type,
+                    title: method.title,
+                    subtitle: method.subtitle,
+                    iconURL: method.icon_url.flatMap(URL.init(string:)),
+                    badge: method.badge
+                )
+            }
         case let .default(statusCode, response):
             throw try Self.errorPayload(response.body.json) { payload in
                 statusCode >= 500

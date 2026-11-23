@@ -9,6 +9,7 @@ final class PerpsCloseReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.closeReview(
             makeReview(returnedMarginQuote: 50_000_000_000, realizedPnlQuote: 5_000_000_000),
             symbol: "ETH",
+            feePpm: 950,
             leverage: 5
         )
 
@@ -21,6 +22,7 @@ final class PerpsCloseReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.closeReview(
             makeReview(closingBaseAmount: 200_000, estimatedFillBaseAmount: 150_000),
             symbol: "ETH",
+            feePpm: 950,
             leverage: nil
         )
 

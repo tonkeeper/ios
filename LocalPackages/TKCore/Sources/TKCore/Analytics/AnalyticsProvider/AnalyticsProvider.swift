@@ -1,4 +1,3 @@
-import Aptabase
 import Foundation
 import KeeperCore
 import TKServices
@@ -11,6 +10,7 @@ public enum EventKey: String, CaseIterable {
     case storyOpen = "story_open"
     case storyPageView = "story_page_view"
     case storyClick = "story_click"
+    case storyCloseAlert = "story_close_alert"
 
     case onrampOpen = "onramp_open"
     case onrampClick = "onramp_click"
@@ -30,14 +30,14 @@ public struct AnalyticsProvider {
     private let firebaseService: FirebaseAnalyticsService
     private let uniqueIdProvider: UniqueIdProvider
     private let deviceIdProvider: () -> String?
-    private let appInfoProvider: AppInfoProvider
+    private let appInfoProvider: DeviceAppInfoProvider
     private let keysCountryCodeProvider: KeysCountryCodeProvider
 
     public init(
         analyticsServices: [AnalyticsService],
         uniqueIdProvider: UniqueIdProvider,
         deviceIdProvider: @escaping () -> String? = { nil },
-        appInfoProvider: AppInfoProvider,
+        appInfoProvider: DeviceAppInfoProvider,
         keysCountryCodeProvider: KeysCountryCodeProvider
     ) {
         self.services = analyticsServices
@@ -148,33 +148,58 @@ public extension AnalyticsEventLegacy {
             ])
         }
 
-        public static func confirm(from: String, to: String, feeProvider: String) -> AnalyticsEventLegacy {
+        /// `amount` is what the user sells, in whole `from` tokens, as `amount` in `send_failed`.
+        public static func confirm(
+            from: String,
+            to: String,
+            feeProvider: String,
+            providerName: String,
+            amount: Double
+        ) -> AnalyticsEventLegacy {
             .init(name: "swap_confirm", params: [
+                "amount": amount,
                 "fee_paid_in": feeProvider,
                 "jetton_symbol_from": from,
                 "jetton_symbol_to": to,
-                "provider_name": "ston.fi",
+                "provider_name": providerName,
                 "type": "native",
             ])
         }
 
-        public static func failed(from: String, to: String, feeProvider: String, error: Error) -> AnalyticsEventLegacy {
+        public static func failed(
+            from: String,
+            to: String,
+            feeProvider: String,
+            providerName: String,
+            amount: Double,
+            errorCode: Int,
+            errorMessage: String
+        ) -> AnalyticsEventLegacy {
             .init(name: "swap_failed", params: [
-                "error_message": error.localizedDescription,
+                "amount": amount,
+                "error_code": errorCode,
+                "error_message": errorMessage,
                 "fee_paid_in": feeProvider,
                 "jetton_symbol_from": from,
                 "jetton_symbol_to": to,
-                "provider_name": "ston.fi",
+                "provider_name": providerName,
                 "type": "native",
             ])
         }
 
-        public static func success(from: String, to: String, feeProvider: String) -> AnalyticsEventLegacy {
+        public static func success(
+            from: String,
+            to: String,
+            feeProvider: String,
+            providerName: String,
+            amount: Double
+        ) -> AnalyticsEventLegacy {
             .init(name: "swap_success", params: [
+                "amount": amount,
                 "fee_paid_in": feeProvider,
                 "jetton_symbol_from": from,
                 "jetton_symbol_to": to,
-                "provider_name": "ston.fi",
+                "provider_name": providerName,
                 "type": "native",
             ])
         }

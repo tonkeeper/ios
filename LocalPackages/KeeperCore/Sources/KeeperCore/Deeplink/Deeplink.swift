@@ -135,7 +135,14 @@ import TonSwift
     @frozen public enum Perps: Equatable {
         case home
         case market(id: Int64)
+        case marketSymbol(String)
         case autoClose(marketId: Int64)
+    }
+
+    @frozen public enum Earn: Equatable {
+        case home
+        /// `network` is the chain's name in the Earn page's routes: `mainnet`, `base`, `bsc` or `arbitrum`.
+        case vault(network: String, vaultId: String)
     }
 
     case transfer(Transfer)
@@ -150,6 +157,7 @@ import TonSwift
     case tonconnect(TonConnectPayload)
     case walletConnect(WalletConnectDeeplink)
     case dapp(URL)
+    case multichainDapp(URL)
     case battery(Battery)
     case browser(network: MultichainChain?)
     case migration
@@ -160,9 +168,11 @@ import TonSwift
     case backup
     case addWallet
     case main
-    case raffle
+    case raffle(id: String?)
     case perps(Perps)
     case history
+    case loyalty(referralCode: String?)
+    case earn(Earn)
 }
 
 @frozen public enum ExternalSignDeeplink: Equatable {

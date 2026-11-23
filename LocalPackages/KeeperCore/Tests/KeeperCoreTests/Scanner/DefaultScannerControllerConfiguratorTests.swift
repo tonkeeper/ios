@@ -179,6 +179,30 @@ final class DefaultScannerControllerConfiguratorTests: XCTestCase {
         XCTAssertThrowsError(try legacyConfigurator.handleQRCode(address))
     }
 
+    func testUnparseableCodeIsAnInvalidLink() {
+        XCTAssertThrowsError(try configurator.handleQRCode("not a link")) { error in
+            XCTAssertEqual(ScanRejection(error: error), .invalidLink)
+        }
+    }
+
+    func testBareAddressWithUtmQueryIsAnInvalidLink() {
+        let code = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c?utm_source=poster"
+
+        XCTAssertThrowsError(try configurator.handleQRCode(code)) { error in
+            XCTAssertEqual(ScanRejection(error: error), .invalidLink)
+        }
+    }
+
+    func testTransferLinkWithUtmQueryIsParsed() throws {
+        let code = "ton://transfer/EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c?amount=1&utm_source=poster"
+
+        guard case let .transfer(.sendTransfer(data)) = try configurator.handleQRCode(code) else {
+            return XCTFail("Expected a send transfer")
+        }
+        XCTAssertEqual(data.recipient, "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
+        XCTAssertEqual(UtmParameters(link: code).source, "poster")
+    }
+
     private var configurator: DefaultScannerControllerConfigurator {
         makeConfigurator(isMultichainEnabled: true)
     }

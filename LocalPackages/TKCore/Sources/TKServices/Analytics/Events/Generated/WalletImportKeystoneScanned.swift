@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Keystone QR was scanned and produced a public key.  */
+/** Keystone QR was scanned and produced a public key. */
 public struct WalletImportKeystoneScanned: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_keystone_scanned"
@@ -42,3 +42,5 @@ public struct WalletImportKeystoneScanned: Codable, JSONEncodable, Hashable {
         try container.encode(from, forKey: .from)
     }
 }
+
+

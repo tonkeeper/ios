@@ -81,9 +81,8 @@ extension RampCoordinator {
         coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)
     }
 
-    func fireDepositClickRampInsertAmountContinue(amount: Float, providerName: String) {
+    func fireDepositClickRampInsertAmountContinue(providerName: String) {
         guard flow == .deposit else { return }
-        flowContext.amount = amount
         flowContext.providerName = providerName
         guard let event = flowContext.makeDepositClickRampInsertAmountContinue() else { return }
         coreAssembly.analyticsProvider.log(event, utm: flowContext.utm)

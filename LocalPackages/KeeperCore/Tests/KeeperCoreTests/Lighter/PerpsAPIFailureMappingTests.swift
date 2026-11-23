@@ -39,6 +39,7 @@ final class PerpsAPIFailureMappingTests: XCTestCase {
         XCTAssertEqual(PerpsTradingErrorMapper.map(failure(status: 401, code: "token_expired")), .authExpired)
         XCTAssertEqual(PerpsTradingErrorMapper.map(failure(status: 401, code: "token_revoked")), .credentialsRevoked)
         XCTAssertEqual(PerpsTradingErrorMapper.map(failure(status: 403, code: "wallet_forbidden")), .regionUnavailable)
+        XCTAssertEqual(PerpsTradingErrorMapper.map(failure(code: "region_restricted")), .regionUnavailable)
         XCTAssertEqual(PerpsTradingErrorMapper.map(failure(status: 404, code: "not_found")), .positionNotFound)
         XCTAssertEqual(PerpsTradingErrorMapper.map(failure(status: 503, code: "upstream_unavailable")), .serverUnavailable)
     }

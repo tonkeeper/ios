@@ -1,4 +1,3 @@
-@testable import KeeperCore
 import PerpsModels
 import XCTest
 

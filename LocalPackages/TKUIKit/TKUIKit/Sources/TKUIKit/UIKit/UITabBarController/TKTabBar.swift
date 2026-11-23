@@ -7,8 +7,11 @@ final class TKTabBar: UITabBar {
         takeOverSystemContent()
     }
 
+    /// `TKTabBarView` follows the bar by frame: UIKit throws when a constraint is removed from a
+    /// controller-managed `UITabBar`, which happens when Duo trades the custom bar for the system one.
     override func layoutSubviews() {
         super.layoutSubviews()
+        subviews.first { $0 is TKTabBarView }?.frame = bounds
         takeOverSystemContent()
         tkTabBarController?.tabBarDidLayoutSubviews()
     }

@@ -3,16 +3,30 @@ import CoreSpotlight
 import TKCore
 import TKFeatureFlags
 import TKLogging
+import TKUIKit
 import UIKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    static let remoteConfig = TKFirebaseRemoteConfigProvider(requestTimeoutMs: 1500)
+    /// Built at launch so the device session refresh starts here; the first scene takes it.
+    private static var launchAssembly: CoreAssembly?
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        ScreenRenderTracker.shared.launchMark(.didFinishLaunching)
         FirebaseConfigurator.configurator.configure()
         Log.configure()
+        Self.remoteConfig.startLoading()
+        // A push wakes the app without UI, and the Keychain is closed before the first unlock.
+        if application.isProtectedDataAvailable, launchOptions?[.remoteNotification] == nil {
+            let remoteConfig = Self.remoteConfig
+            let assembly = LaunchCoordinator.makeCoreAssembly(remoteConfig: remoteConfig)
+            assembly.keeperCoreAssembly.startDeviceSession(after: { await remoteConfig.load() })
+            Self.launchAssembly = assembly
+        }
         CampaignAttributionService.shared.start(launchOptions: launchOptions)
 
         UNUserNotificationCenter.current().delegate = self
@@ -21,6 +35,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         indexMainAppSearchItem()
 
         return true
+    }
+
+    static func takeLaunchAssembly() -> CoreAssembly? {
+        defer { launchAssembly = nil }
+        return launchAssembly
     }
 
     // MARK: UISceneSession Lifecycle

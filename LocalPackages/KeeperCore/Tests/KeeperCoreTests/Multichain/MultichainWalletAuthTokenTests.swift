@@ -11,7 +11,8 @@ import XCTest
 ///
 /// The service itself is not instantiated — it needs a keychain-backed `MnemonicAccess` — but
 /// `CryptoKitClient.auth` is a stateless `WalletAuth()`, so calling it directly signs identically.
-/// Both paths read `ChainKitServiceImplementation.walletKind`, so a change of kind lands here.
+/// The exported key is rebuilt by `ChainKitServiceImplementation.walletKeyPair`, which reads the
+/// kind from the wallet id, as the service does.
 final class MultichainWalletAuthTokenTests: XCTestCase {
     /// Canonical BIP39 zero-entropy vector — deterministic, no secrets.
     private let mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
@@ -72,28 +73,48 @@ final class MultichainWalletAuthTokenTests: XCTestCase {
     func testWalletIdIsTheSelfDescribingV2Format() throws {
         let wallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
 
-        let walletId = wallet.walletIdV2(kind: ChainKitServiceImplementation.walletKind)
+        let walletId = wallet.walletIdV2()
 
         XCTAssertEqual(walletId.count, 36)
         XCTAssertTrue(walletId.hasPrefix("ai"), "expected a version-2 prefix, got \(walletId)")
+    }
+
+    /// A Ledger wallet's id names kind ledger, so its kept app key signs as a Ledger wallet, with the
+    /// same secp256k1 scheme as a mnemonic one.
+    func testALedgerAppKeySignsAsALedgerWallet() throws {
+        let ledger = try XCTUnwrap(LedgerWallet.companion.fromSeed(seed: Data(repeating: 0x2A, count: 64).asKotlinByteArray).getOrNull())
+        let derived = ledger.walletKeyPair()
+        let walletId = ledger.walletIdV2()
+
+        let rebuilt = try ChainKitServiceImplementation.walletKeyPair(appPrivateKey: derived.privateKey.asData, walletId: walletId)
+
+        XCTAssertEqual(rebuilt.kind, .ledger)
+        XCTAssertTrue(walletId.hasPrefix("aka"), "expected a ledger wallet_id, got \(walletId)")
+        XCTAssertEqual(WalletAuth().walletAuthToken(keyPair: rebuilt, accessToken: accessToken).count, 87)
+    }
+
+    /// A key kept under another wallet's id would mint a token for a wallet nobody asked about.
+    func testAnAppKeyUnderAnotherWalletsIdIsRefused() throws {
+        let wallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
+        let ledger = try XCTUnwrap(LedgerWallet.companion.fromSeed(seed: Data(repeating: 0x2A, count: 64).asKotlinByteArray).getOrNull())
+
+        XCTAssertThrowsError(
+            try ChainKitServiceImplementation.walletKeyPair(appPrivateKey: wallet.walletKeyPair().privateKey.asData, walletId: ledger.walletIdV2())
+        )
     }
 
     /// Mirrors `ChainKitServiceImplementation`: the mnemonic path is `walletKeyPair`, and
     /// `viaExportedKey` is `walletAppPrivateKey` followed by `walletAuthToken`.
     private func makeToken(accessToken: String, viaExportedKey: Bool = false) throws -> String {
         let wallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
-        let derived = wallet.walletKeyPair(kind: ChainKitServiceImplementation.walletKind)
+        let derived = wallet.walletKeyPair()
         defer { derived.privateKey.fillZeros() }
 
         guard viaExportedKey else {
             return WalletAuth().walletAuthToken(keyPair: derived, accessToken: accessToken)
         }
 
-        let exported = derived.privateKey.asData
-        let rebuilt = WalletKeyPair.companion.fromPrivateKey(
-            privateKey: exported.asKotlinByteArray,
-            kind: ChainKitServiceImplementation.walletKind
-        )
+        let rebuilt = try ChainKitServiceImplementation.walletKeyPair(appPrivateKey: derived.privateKey.asData, walletId: wallet.walletIdV2())
         defer { rebuilt.privateKey.fillZeros() }
         return WalletAuth().walletAuthToken(keyPair: rebuilt, accessToken: accessToken)
     }

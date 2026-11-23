@@ -24,11 +24,16 @@ extension RampSource {
         }
     }
 
-    func makeDepositViewReceiveTokens(token: Token, walletMode: WalletMode) -> DepositViewReceiveTokens {
+    func makeDepositViewReceiveTokens(
+        token: Token,
+        walletMode: WalletMode,
+        depositScreen: DepositScreen = .addFunds
+    ) -> DepositViewReceiveTokens {
         DepositViewReceiveTokens(
             from: self,
             walletMode: walletMode,
             addFundsOption: .receiveTokens,
+            depositScreen: depositScreen,
             network: token.depositAnalyticsReceiveNetwork
         )
     }
@@ -44,13 +49,14 @@ struct DepositFlowContext {
     var stablecoinSymbol: String?
     var paymentMethod: String?
     var providerName: String?
-    var amount: Float?
     var txId: String?
+    /// The TON-only Add Funds and its screens: the deposit funnel tells them from Buy crypto.
+    let depositScreen: DepositScreen = .addFunds
 }
 
 extension DepositFlowContext {
     func makeDepositStarted(availableOptions: Set<String>) -> DepositStarted {
-        DepositStarted(from: source, walletMode: walletMode, availableOptions: availableOptions)
+        DepositStarted(from: source, walletMode: walletMode, depositScreen: depositScreen, availableOptions: availableOptions)
     }
 
     func makeDepositOptionClick(option: DepositAddFundsOption) -> DepositOptionClick {
@@ -59,7 +65,12 @@ extension DepositFlowContext {
 
     func makeDepositContinueToP2pMarket() -> DepositContinueToP2pMarket? {
         guard let addFundsOption else { return nil }
-        return DepositContinueToP2pMarket(from: source, walletMode: walletMode, addFundsOption: addFundsOption)
+        return DepositContinueToP2pMarket(
+            from: source,
+            walletMode: walletMode,
+            addFundsOption: addFundsOption,
+            depositScreen: depositScreen
+        )
     }
 
     func makeDepositViewBuyTonWithCrypto(availableOptions: Set<String>) -> DepositViewBuyTonWithCrypto? {
@@ -98,6 +109,7 @@ extension DepositFlowContext {
         return DepositViewFiatChooseAsset(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             availableOptions: availableOptions
         )
     }
@@ -107,6 +119,7 @@ extension DepositFlowContext {
         return DepositClickFiatAsset(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset
         )
     }
@@ -116,6 +129,7 @@ extension DepositFlowContext {
         return DepositViewFiatPaymentMethod(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset,
             sellAsset: sellAsset,
             availableOptions: availableOptions
@@ -127,6 +141,7 @@ extension DepositFlowContext {
         return DepositClickFiatPaymentMethod(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset,
             sellAsset: sellAsset,
             paymentMethod: paymentMethod
@@ -138,6 +153,7 @@ extension DepositFlowContext {
         return DepositViewRampInsertAmount(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset,
             sellAsset: sellAsset,
             paymentMethod: paymentMethod,
@@ -146,15 +162,15 @@ extension DepositFlowContext {
     }
 
     func makeDepositClickRampInsertAmountContinue() -> DepositClickRampInsertAmountContinue? {
-        guard let addFundsOption, let buyAsset, let sellAsset, let paymentMethod, let providerName, let amount else { return nil }
+        guard let addFundsOption, let buyAsset, let sellAsset, let paymentMethod, let providerName else { return nil }
         return DepositClickRampInsertAmountContinue(
             from: source,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset,
             sellAsset: sellAsset,
             paymentMethod: paymentMethod,
-            providerName: providerName,
-            amount: amount
+            providerName: providerName
         )
     }
 
@@ -165,7 +181,6 @@ extension DepositFlowContext {
             let sellAsset,
             let paymentMethod,
             let providerName,
-            let amount,
             let txId
         else {
             return nil
@@ -174,11 +189,11 @@ extension DepositFlowContext {
             from: source,
             walletMode: walletMode,
             addFundsOption: addFundsOption,
+            depositScreen: depositScreen,
             buyAsset: buyAsset,
             sellAsset: sellAsset,
             paymentMethod: paymentMethod,
             providerName: providerName,
-            amount: amount,
             txId: txId
         )
     }

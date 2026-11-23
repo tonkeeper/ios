@@ -1,6 +1,0 @@
-appId: com.jbig.tonkeeper
----
-- runFlow:
-    when:
-      visible: Enter passcode
-    file: password/enter_password.yaml

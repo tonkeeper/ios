@@ -7,6 +7,13 @@ import UIKit
 final class TransactionConfirmationViewController: UIViewController {
     private let viewModel: TransactionConfirmationViewModel
     private var hostingController: TKHostingController<ConfirmActionView>?
+    private lazy var consentPresenter = OperationConsentPresenter(host: { [weak self] in self })
+
+    /// The SwiftUI header hands its buttons and title to the navigation item of the hosting controller,
+    /// while the bar shows this controller's one.
+    override var navigationItem: UINavigationItem {
+        TKLiquidGlass.isEnabled ? hostingController?.navigationItem ?? super.navigationItem : super.navigationItem
+    }
 
     init(viewModel: TransactionConfirmationViewModel) {
         self.viewModel = viewModel
@@ -24,6 +31,13 @@ final class TransactionConfirmationViewController: UIViewController {
         setupBindings()
         viewModel.viewDidLoad()
     }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isMovingFromParent || isBeingDismissed || navigationController?.isBeingDismissed == true {
+            consentPresenter.hostDidLeave()
+        }
+    }
 }
 
 private extension TransactionConfirmationViewController {
@@ -34,6 +48,10 @@ private extension TransactionConfirmationViewController {
 
         viewModel.didRequestSendAllConfirmation = { [weak self] tokenName, completion in
             self?.presentSendAllConfirmationAlert(tokenName: tokenName, completion: completion)
+        }
+
+        viewModel.consent = { [consentPresenter] in
+            consentPresenter.consent()
         }
     }
 

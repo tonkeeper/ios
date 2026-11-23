@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 enum WalletConnectConfigurationError: Error, Equatable {
     case invalidRedirect
@@ -45,6 +46,7 @@ extension WalletConnectPairingError {
 @frozen public enum WalletConnectResponseError: Error, Equatable {
     case missingRequest(id: String)
     case requestExpired(id: String)
+    case requestExpiredAfterBroadcast(id: String)
     case missingSession(topic: String)
     case storage(message: String)
     case sdk(message: String, retryable: Bool)
@@ -64,6 +66,7 @@ public extension WalletConnectResponseError {
             return retryable
         case .missingRequest,
              .requestExpired,
+             .requestExpiredAfterBroadcast,
              .missingSession,
              .storage:
             return false
@@ -114,7 +117,9 @@ extension WalletConnectResponseError: LocalizedError {
         case let .missingRequest(id):
             return "WalletConnect request \(id) is no longer pending"
         case .requestExpired:
-            return "Request expired"
+            return TKLocales.WalletConnect.Error.requestExpired
+        case .requestExpiredAfterBroadcast:
+            return TKLocales.WalletConnect.Error.requestExpiredAfterBroadcast
         case let .missingSession(topic):
             return "WalletConnect session \(topic) is no longer active"
         case let .storage(message):
@@ -187,6 +192,7 @@ extension WalletConnectSessionRejectionError: LocalizedError {
 
 @frozen public enum WalletConnectSigningError: Error, Equatable {
     case canceled
+    case requestEndedAfterBroadcast
     case unsupportedWalletKind
     case missingMultichainAddress(chain: WalletConnectChain, walletId: String)
     case senderAddressMismatch(expected: String, actual: String)
@@ -197,6 +203,9 @@ extension WalletConnectSessionRejectionError: LocalizedError {
     case invalidTransaction(reason: String)
     case failedToEstimateNonce(reason: String)
     case failedToCalculateFee(reason: String)
+    /// The review could not read or check what the request signs. The user is told only that it
+    /// couldn't be verified.
+    case unreviewable(reason: String)
     case failedToSign(reason: String)
     case failedToSend(reason: String)
     case notImplemented(reason: String)
@@ -211,12 +220,14 @@ public extension WalletConnectSigningError {
              .missingRecipient:
             return .invalidParams
         case .canceled,
+             .requestEndedAfterBroadcast,
              .unsupportedWalletKind,
              .missingMultichainAddress,
              .missingPasscode,
              .mnemonic,
              .failedToEstimateNonce,
              .failedToCalculateFee,
+             .unreviewable,
              .failedToSign,
              .failedToSend:
             return .userRejected
@@ -231,6 +242,8 @@ extension WalletConnectSigningError: LocalizedError {
         switch self {
         case .canceled:
             return "WalletConnect request was cancelled"
+        case .requestEndedAfterBroadcast:
+            return TKLocales.WalletConnect.Error.requestExpiredAfterBroadcast
         case .unsupportedWalletKind:
             return "Wallet type is not supported for WalletConnect"
         case let .missingMultichainAddress(chain, walletId):
@@ -241,6 +254,8 @@ extension WalletConnectSigningError: LocalizedError {
             return "WalletConnect transaction recipient is missing"
         case .missingPasscode:
             return "Passcode is missing"
+        case .unreviewable:
+            return TKLocales.OperationValidation.Finding.unknown
         case let .mnemonic(reason),
              let .invalidPayload(reason),
              let .invalidTransaction(reason),

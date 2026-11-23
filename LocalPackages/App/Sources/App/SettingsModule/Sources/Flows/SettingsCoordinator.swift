@@ -1,5 +1,6 @@
 import KeeperCore
 import KeeperCoreComponents
+import LedgerKit
 import Stories
 import SwiftUI
 import TKAppInfo
@@ -10,6 +11,7 @@ import TKLocalize
 import TKLogging
 import TKStories
 import TKUIKit
+import TonTransport
 import UIKit
 import WalletExtensions
 
@@ -53,6 +55,14 @@ private extension SettingsCoordinator {
         router.rootViewController.present(alertController, animated: true)
     }
 
+    /// A screen can be pushed above Settings before its wallet's deletion arrives, so a plain pop
+    /// would remove that screen and leave Settings.
+    func popSettings(_ settingsViewController: UIViewController) {
+        let stack = router.rootViewController.viewControllers
+        guard let index = stack.firstIndex(of: settingsViewController), index > 0 else { return }
+        router.rootViewController.popToViewController(stack[index - 1], animated: true)
+    }
+
     func openSettingsRoot() {
         let configurator = SettingsListRootConfigurator(
             wallet: keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) ?? wallet,
@@ -65,7 +75,8 @@ private extension SettingsCoordinator {
             walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
             anaylticsProvider: coreAssembly.analyticsProvider,
             walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository()
+            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository(),
+            featureFlags: coreAssembly.featureFlags
         )
 
         configurator.didOpenURL = { [coreAssembly] in
@@ -136,15 +147,23 @@ private extension SettingsCoordinator {
             self?.openMigration(wallet: wallet)
         }
 
-        configurator.didDeleteWallet = { [weak self] in
-            guard let self else { return }
-            let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
-            if !wallets.isEmpty {
-                self.router.pop(animated: true)
-            }
+        configurator.didTapAddLedgerNetworks = { [weak self] wallet in
+            self?.addLedgerNetworks(wallet: wallet)
+        }
+
+        configurator.didTapLedgerDevice = { [weak self] wallet in
+            self?.openLedgerDevice(wallet: wallet)
         }
 
         let module = SettingsListAssembly.module(configurator: configurator)
+
+        configurator.didDeleteWallet = { [weak self, weak settingsViewController = module.viewController] in
+            guard let self, let settingsViewController else { return }
+            let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
+            if !wallets.isEmpty {
+                self.popSettings(settingsViewController)
+            }
+        }
 
         module.viewModel.didOpenDevMenu = { [weak self] in
             self?.openDevMenu()
@@ -340,6 +359,10 @@ private extension SettingsCoordinator {
             await self?.getPasscode(reason: .enableBiometry)
         }
 
+        configuration.didRequireBiometryPermission = { [weak self] in
+            self?.openNativeSettings()
+        }
+
         configuration.didTapChangePasscode = { [openChangePasscode] in
             openChangePasscode()
         }
@@ -451,12 +474,6 @@ private extension SettingsCoordinator {
                             guard let passcode = await self.getPasscode(reason: .deleteWallet) else { return }
                             await self.keeperCoreMainAssembly.storesAssembly.walletNotificationStore.setNotificationIsOn(false, wallet: wallet)
                             await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
-                            await MainActor.run {
-                                let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
-                                if !wallets.isEmpty {
-                                    self.router.pop(animated: true)
-                                }
-                            }
                         }
                     }
                 },
@@ -618,6 +635,183 @@ private extension SettingsCoordinator {
         coordinator.start()
     }
 
+    /// Lets the user choose the networks to add, then reads their keys on the Ledger. A TON-only Ledger becomes
+    /// multichain instead.
+    func addLedgerNetworks(wallet: Wallet) {
+        let availableChains = wallet.addableLedgerChains(featureFlags: coreAssembly.featureFlags)
+        guard !availableChains.isEmpty else {
+            return
+        }
+
+        selectLedgerNetworks(availableChains: availableChains) { [weak self] chains in
+            guard let self else { return }
+            if wallet.isMultichain {
+                self.readLedgerNetworks(wallet: wallet, chains: chains)
+            } else {
+                self.confirmLedgerUpgrade(wallet: wallet, chains: chains)
+            }
+        }
+    }
+
+    /// Reads the selected network keys of a multichain Ledger, then registers and saves them.
+    func readLedgerNetworks(wallet: Wallet, chains: [MultichainChain]) {
+        guard case let .Ledger(tonPublicKey, _, device) = wallet.identity.kind,
+              let peripheralID = UUID(uuidString: device.deviceId)
+        else {
+            return
+        }
+        let steps = LedgerSteps.addNetworks(chains, tonPublicKey: tonPublicKey, account: Int(device.accountIndex))
+        Task { @MainActor [weak self, coreAssembly, keeperCoreMainAssembly] in
+            guard let self else { return }
+            let read: LedgerNetworkRead<LedgerAppKeys>
+            do {
+                read = try await steps.perform(peripheralID: peripheralID, transport: coreAssembly.ledgerAssembly.transport, from: router.rootViewController)
+            } catch {
+                Log.i("Ledger networks not read", error: error)
+                return
+            }
+            ToastPresenter.showToast(configuration: .loading)
+            let result: ToastPresenter.Configuration
+            do {
+                let added = try await keeperCoreMainAssembly.multichainAssembly.addLedgerNetworks(wallet: wallet, keys: read.value, chains: chains)
+                result = ledgerNetworksToast(added: added, missingApps: read.missingApps)
+            } catch {
+                Log.w("Ledger networks not added", error: error)
+                result = .failed
+            }
+            ToastPresenter.hideAll()
+            ToastPresenter.showToast(configuration: result)
+        }
+    }
+
+    /// Asks before a TON-only Ledger wallet becomes multichain: the change is for good, and the user confirms on the Ledger.
+    func confirmLedgerUpgrade(wallet: Wallet, chains: [MultichainChain]) {
+        let alert = UIAlertController(
+            title: TKLocales.LedgerMigration.title,
+            message: TKLocales.LedgerMigration.description,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel))
+        alert.addAction(UIAlertAction(title: TKLocales.Actions.continueAction, style: .default) { [weak self] _ in
+            self?.upgradeLedgerWallet(wallet: wallet, chains: chains)
+        })
+        router.rootViewController.topPresentedViewController().present(alert, animated: true)
+    }
+
+    /// Makes a TON-only Ledger wallet multichain in place: its account signs the wallet key proof and hands over its
+    /// keys on the Ledger, as at pairing.
+    func upgradeLedgerWallet(wallet: Wallet, chains: [MultichainChain]) {
+        guard case let .Ledger(tonPublicKey, _, device) = wallet.identity.kind,
+              let peripheralID = UUID(uuidString: device.deviceId)
+        else {
+            return
+        }
+        let account = LedgerAccount(publicKey: tonPublicKey, revision: .v4R2, path: AccountPath(index: Int(device.accountIndex)))
+        let selectedChains = MultichainChain.orderedByDisplayOrder([.ton] + chains)
+        let steps = LedgerSteps.multichainAccounts([account], chains: selectedChains)
+        Task { @MainActor [weak self, coreAssembly, keeperCoreMainAssembly] in
+            guard let self else { return }
+            let read: LedgerNetworkRead<[AccountPath: LedgerMultichainAccount]>
+            let multichainAccount: LedgerMultichainAccount?
+            do {
+                read = try await steps.perform(
+                    peripheralID: peripheralID,
+                    transport: coreAssembly.ledgerAssembly.transport,
+                    from: router.rootViewController
+                )
+                multichainAccount = read.value[account.path]
+            } catch {
+                Log.i("Ledger wallet not upgraded", error: error)
+                return
+            }
+            guard let multichainAccount else { return }
+            ToastPresenter.showToast(configuration: .loading)
+            let result: ToastPresenter.Configuration
+            do {
+                let added = try await keeperCoreMainAssembly.multichainAssembly.upgradeLedgerWallet(
+                    wallet,
+                    account: multichainAccount,
+                    chains: selectedChains
+                )
+                result = ledgerNetworksToast(added: added, missingApps: read.missingApps)
+            } catch {
+                Log.w("Ledger wallet not upgraded", error: error)
+                result = .failed
+            }
+            ToastPresenter.hideAll()
+            ToastPresenter.showToast(configuration: result)
+        }
+    }
+
+    func selectLedgerNetworks(
+        availableChains: [MultichainChain],
+        onContinue: @escaping ([MultichainChain]) -> Void
+    ) {
+        let viewModel = LedgerNetworksViewModel(
+            title: TKLocales.LedgerNetworks.title,
+            description: TKLocales.LedgerNetworks.Add.description,
+            chains: availableChains,
+            preselectedChains: []
+        )
+        let viewController = LedgerNetworksViewController(viewModel: viewModel)
+        viewController.setupHeaderBackButton()
+        viewModel.didContinue = { [weak self] chains in
+            self?.router.pop(animated: true) {
+                onContinue(chains)
+            }
+        }
+        router.push(viewController: viewController)
+    }
+
+    func ledgerNetworksToast(added: [MultichainChain], missingApps: [LedgerApp]) -> ToastPresenter.Configuration {
+        if added.isEmpty, let missingApp = missingApps.first {
+            return ToastPresenter.Configuration(title: TKLocales.LedgerSteps.appMissing(missingApp.name))
+        }
+        return ToastPresenter.Configuration(title: added.isEmpty
+            ? TKLocales.LedgerSteps.noNetworksAdded
+            : TKLocales.LedgerSteps.networksAdded(added.map(\.shortDisplayTitle).joined(separator: ", ")))
+    }
+
+    func openLedgerDevice(wallet: Wallet) {
+        let configurator = SettingsListLedgerDeviceConfigurator(
+            wallet: wallet,
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+            featureFlags: coreAssembly.featureFlags
+        )
+        configurator.didTapAddNetworks = { [weak self] wallet in
+            self?.addLedgerNetworks(wallet: wallet)
+        }
+        configurator.didTapCheckConnection = { [weak self] wallet in
+            self?.checkLedgerConnection(wallet: wallet)
+        }
+
+        let module = SettingsListAssembly.module(configurator: configurator)
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
+
+        router.push(viewController: module.viewController)
+    }
+
+    func checkLedgerConnection(wallet: Wallet) {
+        guard case let .Ledger(tonPublicKey, _, device) = wallet.identity.kind,
+              let peripheralID = UUID(uuidString: device.deviceId)
+        else {
+            return
+        }
+        let steps = LedgerSteps.checkConnection(tonPublicKey: tonPublicKey, account: Int(device.accountIndex))
+        Task { @MainActor [weak self, coreAssembly] in
+            guard let self else { return }
+            do {
+                try await steps.perform(peripheralID: peripheralID, transport: coreAssembly.ledgerAssembly.transport, from: router.rootViewController)
+            } catch {
+                Log.i("Ledger connection not checked", error: error)
+                return
+            }
+            ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.LedgerDevice.connected))
+        }
+    }
+
     func openDevMenu() {
         let storiesAssembly = Stories.Assembly(
             keeperCoreAssembly: keeperCoreMainAssembly,
@@ -626,7 +820,9 @@ private extension SettingsCoordinator {
         let configuration = SettingsListDevMenuConfigurator(
             uniqueIdProvider: coreAssembly.uniqueIdProvider,
             storiesService: storiesAssembly.storiesService(),
+            storiesStore: keeperCoreMainAssembly.storesAssembly.storiesStore,
             homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
+            loyaltyStore: keeperCoreMainAssembly.loyaltyStore,
             appInfoProvider: coreAssembly.appInfoProvider,
             featureFlags: coreAssembly.featureFlags,
             tkAppSettings: coreAssembly.tkAppSettings,
@@ -659,6 +855,13 @@ private extension SettingsCoordinator {
                 }
                 ToastPresenter.hideToast()
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: result))
+            }
+        }
+        configuration.didSelectDropLedgerMultichain = { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let count = await self.keeperCoreMainAssembly.multichainAssembly.dropLedgerMultichain()
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: "\(count) Ledger wallets are TON-only again"))
             }
         }
         configuration.didSelectRNSeedPhrasesRecovery = { [weak self] in
@@ -737,7 +940,9 @@ private extension SettingsCoordinator {
             newHistoryEntryPointTooltipSettings: coreAssembly.tooltipsAssembly.newHistoryEntryPointRepository,
             tradeTabTooltipSettings: coreAssembly.tooltipsAssembly.tradeTabRepository,
             favoriteTooltipSettings: coreAssembly.tooltipsAssembly.favoriteRepository,
-            addMultichainWalletTooltipSettings: coreAssembly.tooltipsAssembly.addMultichainWalletRepository
+            addMultichainWalletTooltipSettings: coreAssembly.tooltipsAssembly.addMultichainWalletRepository,
+            earnSectionTooltipSettings: coreAssembly.tooltipsAssembly.earnSectionRepository,
+            perpsSectionTooltipSettings: coreAssembly.tooltipsAssembly.perpsSectionRepository
         )
         configuration.didSelectFirstLaunchDate = { [weak self] selectedDate, completion in
             self?.presentTooltipFirstLaunchDatePicker(selectedDate: selectedDate, completion: completion)
@@ -795,6 +1000,9 @@ private extension SettingsCoordinator {
         }
         configuration.didSelectColorsPreviews = { [weak self] in
             self?.openColorsPreviews()
+        }
+        configuration.didSelectConfirmSliderPreviews = { [weak self] in
+            self?.openConfirmSliderPreviews()
         }
 
         let module = SettingsListAssembly.module(configurator: configuration)
@@ -913,6 +1121,13 @@ private extension SettingsCoordinator {
 
     func openColorsPreviews() {
         let viewController = SettingsColorsPreviewViewController()
+        viewController.setupBackButton()
+        router.push(viewController: viewController)
+    }
+
+    func openConfirmSliderPreviews() {
+        let viewController = TKHostingController(content: ConfirmSliderPreviews())
+        viewController.title = "Confirm Slider"
         viewController.setupBackButton()
         router.push(viewController: viewController)
     }

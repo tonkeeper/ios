@@ -30,7 +30,7 @@ final class PickMultichainAddressCoordinatorImplementation<V: UIViewController>:
         }
         presentedViewController = module.view
         router.rootViewController.topPresentedViewController().present(
-            module.view,
+            module.view.tkLiquidGlassModal(),
             animated: true
         )
     }

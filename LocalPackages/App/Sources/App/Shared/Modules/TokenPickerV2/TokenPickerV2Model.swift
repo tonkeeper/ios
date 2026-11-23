@@ -10,10 +10,12 @@ struct TokenPickerLoadResult: Equatable {
 
     let items: [Item]
     let nextCursor: String?
+    let filters: [TokenPickerV2ChainFilter]?
 
-    init(items: [Item], nextCursor: String?) {
+    init(items: [Item], nextCursor: String?, filters: [TokenPickerV2ChainFilter]? = nil) {
         self.items = items
         self.nextCursor = nextCursor
+        self.filters = filters
     }
 
     init(assets: [MultichainAsset], nextCursor: String?) {
@@ -79,12 +81,31 @@ extension TokenPickerV2Model {
 }
 
 enum TokenPickerV2AssetType: Hashable {
-    case category(TradingAssetCategory)
+    case category(PerpsMarketFilter)
     case perpetuals
 
-    var category: TradingAssetCategory {
+    var category: PerpsMarketFilter {
         if case let .category(category) = self { return category }
         return .all
+    }
+}
+
+struct TokenPickerV2QueryScope: Hashable {
+    enum Sort: Hashable {
+        case catalog(MultichainAssetSearchSort)
+        case perps(PerpsMarketsSort)
+    }
+
+    let assetType: TokenPickerV2AssetType
+    let sort: Sort
+}
+
+extension TokenPickerV2Model {
+    var queryScope: TokenPickerV2QueryScope {
+        TokenPickerV2QueryScope(
+            assetType: assetType,
+            sort: assetType == .perpetuals ? .perps(perpsSearchSort) : .catalog(catalogSearchSort)
+        )
     }
 }
 

@@ -26,24 +26,31 @@ public struct PerpsRootView<ViewModel: PerpsRootViewModeling>: View {
 
             VStack(spacing: 0) {
                 header
-                if viewModel.accountState.isResolving {
-                    accountLoader
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: Layout.sectionSpacing) {
-                            balanceCard
-                            openPositionsSection
-                            limitOrdersSection
-                            exploreSection
+                TrackableScrollView(showsIndicators: false) {
+                    VStack(spacing: Layout.sectionSpacing) {
+                        if viewModel.isRegionRestricted {
+                            regionRestrictionBanner
+                        } else {
+                            VStack(spacing: -12) {
+                                balanceCard.zIndex(1)
+                                if let model = viewModel.depositStatus, !viewModel.accountState.isResolving {
+                                    PerpsDepositStatusRow(model: model)
+                                }
+                            }
                         }
-                        .padding(.horizontal, Layout.horizontalPadding)
-                        .padding(.bottom, scrollBottomInset)
+                        openPositionsSection
+                        limitOrdersSection
+                        exploreSection
                     }
-                    .tkImmediateButtonPresses()
-                    .ignoresSafeArea(.container, edges: .bottom)
+                    .padding(.horizontal, Layout.horizontalPadding)
+                    .padding(.bottom, scrollBottomInset)
+                } onOffsetChange: { _ in
+                    viewModel.depositStatus?.didInteract()
                 }
+                .ignoresSafeArea(.container, edges: .bottom)
             }
         }
+        .simultaneousGesture(TapGesture().onEnded { viewModel.depositStatus?.didInteract() })
         .onPreferenceChange(BottomSafeAreaKey.self) { safeAreaBottom = $0 }
     }
 
@@ -60,48 +67,34 @@ public struct BottomSafeAreaKey: PreferenceKey {
 }
 
 private extension PerpsRootView {
-    var accountLoader: some View {
-        VStack {
-            Spacer()
-            CircularLoader(mode: .indeterminate, preset: .medium)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-    }
-
     var header: some View {
         ZStack {
-            // Kept in the layout under the toast so the header does not change height.
-            headerTitle
-                .opacity(viewModel.fundingToast == nil ? 1 : 0)
-                .allowsHitTesting(viewModel.fundingToast == nil)
-                .accessibilityHidden(viewModel.fundingToast != nil)
-            if let toast = viewModel.fundingToast {
-                Button(action: viewModel.openFundingToast) {
-                    PerpsAssetTradeToast(toast: toast)
-                }
-                .buttonStyle(.plain)
-                .transition(.opacity)
+            if let withdrawStatus = viewModel.withdrawStatus {
+                PerpsRootHeaderTitle(status: withdrawStatus) { headerTitle }
+            } else {
+                headerTitle
             }
 
             HStack(spacing: Layout.navButtonSpacing) {
                 navButton(icon: .TKUIKit.Icons.Size16.chevronLeft, circled: true) {
                     viewModel.onBack?()
                 }
+                .accessibilityIdentifier("perps_back")
                 Spacer()
-                if viewModel.accountState.isActive {
+                if viewModel.accountState != .inactive {
                     navButton(icon: .TKUIKit.Icons.Size28.clockOutline, circled: false) {
                         viewModel.onHistory?()
                     }
+                    .accessibilityIdentifier("perps_history")
                 }
                 navButton(icon: .TKUIKit.Icons.Size28.magnifyingGlassOutline, circled: false) {
                     viewModel.onSearch?()
                 }
+                .accessibilityIdentifier("perps_search")
             }
             .padding(.horizontal, Layout.horizontalPadding)
         }
         .padding(.vertical, Layout.headerVerticalPadding)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.fundingToast)
     }
 
     var headerTitle: some View {
@@ -149,9 +142,14 @@ private extension PerpsRootView {
             .frame(width: Layout.balanceIconSide, height: Layout.balanceIconSide)
 
             VStack(alignment: .leading, spacing: Layout.titleSubtitleSpacing) {
-                Text(viewModel.accountState.portfolio?.balanceText ?? viewModel.zeroBalanceText)
-                    .textStyle(.label1)
-                    .foregroundStyle(.textPrimary)
+                if viewModel.accountState.isResolving {
+                    PerpsSkeletonBar(width: Layout.balanceSkeletonWidth)
+                        .frame(height: Layout.balanceSkeletonLineHeight, alignment: .center)
+                } else {
+                    Text(viewModel.accountState.portfolio?.balanceText ?? viewModel.zeroBalanceText)
+                        .textStyle(.label1)
+                        .foregroundStyle(.textPrimary)
+                }
                 Text(TKLocales.Perps.balance)
                     .textStyle(.body2)
                     .foregroundStyle(.textSecondary)
@@ -161,21 +159,12 @@ private extension PerpsRootView {
 
             Spacer()
 
-            HStack(spacing: Layout.balanceButtonSpacing) {
-                PerpsCircleButton(
-                    icon: .TKUIKit.Icons.Size16.minus,
-                    appearance: .neutral,
-                    side: Layout.balanceButtonSide
-                ) {
-                    viewModel.onWithdraw?()
-                }
-                PerpsCircleButton(
-                    icon: .TKUIKit.Icons.Size16.plus,
-                    appearance: .accent,
-                    side: Layout.balanceButtonSide
-                ) {
-                    viewModel.onDeposit?()
-                }
+            if viewModel.accountState.isResolving {
+                Capsule()
+                    .fill(.backgroundContentTint)
+                    .frame(width: Layout.balanceButtonsSkeletonWidth, height: Layout.balanceButtonSide)
+            } else {
+                balanceButtons
             }
         }
         .padding(Layout.cardPadding)
@@ -185,22 +174,65 @@ private extension PerpsRootView {
         )
     }
 
+    var regionRestrictionBanner: some View {
+        NotificationBanner(
+            content: NotificationBannerContent(
+                title: TKLocales.Perps.RegionRestricted.title,
+                description: TKLocales.Perps.RegionRestricted.banner,
+                state: .accentOrange,
+                buttonTitle: TKLocales.Perps.RegionRestricted.learnMore
+            ),
+            onButtonTap: { viewModel.onRegionRestrictionInfo?() }
+        )
+        .accessibilityIdentifier("perps_region_restricted")
+    }
+
+    var balanceButtons: some View {
+        HStack(spacing: Layout.balanceButtonSpacing) {
+            PerpsCircleButton(
+                icon: .TKUIKit.Icons.Size16.minus,
+                appearance: .neutral,
+                side: Layout.balanceButtonSide
+            ) {
+                viewModel.onWithdraw?()
+            }
+            .accessibilityIdentifier("perps_balance_withdraw")
+            PerpsCircleButton(
+                icon: .TKUIKit.Icons.Size16.plus,
+                appearance: .accent,
+                side: Layout.balanceButtonSide
+            ) {
+                viewModel.onDeposit?()
+            }
+            .accessibilityIdentifier("perps_balance_deposit")
+        }
+    }
+
     @ViewBuilder
     var openPositionsSection: some View {
-        if let portfolio = viewModel.accountState.portfolio,
-           let total = portfolio.positionsTotal
+        if viewModel.loadingPositionsCount > 0 {
+            openPositionsBlock {
+                PerpsOpenPositionsSkeleton(count: viewModel.loadingPositionsCount)
+            }
+        } else if let portfolio = viewModel.accountState.portfolio,
+                  let total = portfolio.positionsTotal
         {
-            VStack(alignment: .leading, spacing: Layout.sectionTitleSpacing) {
-                Text(TKLocales.Perps.openPositions)
-                    .textStyle(.label1)
-                    .foregroundStyle(.textPrimary)
-
+            openPositionsBlock {
                 PerpsOpenPositionsCard(
                     total: total,
                     positions: portfolio.positions,
                     onSelect: viewModel.selectMarket
                 )
             }
+        }
+    }
+
+    func openPositionsBlock(@ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: Layout.sectionTitleSpacing) {
+            Text(TKLocales.Perps.openPositions)
+                .textStyle(.label1)
+                .foregroundStyle(.textPrimary)
+            content()
         }
     }
 
@@ -236,12 +268,7 @@ private extension PerpsRootView {
 
             switch viewModel.marketsState {
             case .loading:
-                HStack {
-                    Spacer()
-                    CircularLoader(mode: .indeterminate, preset: .medium)
-                        .padding(.vertical, Layout.cardPadding)
-                    Spacer()
-                }
+                PerpsSkeletonRowsCard()
             case let .failed(error):
                 Text(error)
                     .textStyle(.body2)
@@ -261,12 +288,12 @@ private extension PerpsRootView {
     }
 
     var balanceIconColor: Color {
-        guard viewModel.accountState.isActive else { return palette.icon.secondary }
+        guard viewModel.accountState.isActive || viewModel.accountState.isResolving else { return palette.icon.secondary }
         return palette.accent.blue
     }
 
     var balanceIconBackgroundOpacity: Double {
-        viewModel.accountState.isActive ? 0.12 : 0.16
+        viewModel.accountState.isActive || viewModel.accountState.isResolving ? 0.12 : 0.16
     }
 }
 
@@ -289,4 +316,7 @@ private enum Layout {
     static let balanceIconSide: CGFloat = 44
     static let balanceButtonSide: CGFloat = 36
     static let balanceButtonSpacing: CGFloat = 12
+    static let balanceSkeletonWidth: CGFloat = 76
+    static let balanceSkeletonLineHeight: CGFloat = 24
+    static let balanceButtonsSkeletonWidth: CGFloat = 84
 }

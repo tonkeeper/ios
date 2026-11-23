@@ -183,6 +183,11 @@ private extension OnboardingCoordinator {
                 analyticsContext: analyticsContext
             )
 
+            navigationController.didDismiss = { [weak self, weak coordinator] in
+                guard coordinator?.cancelPairing() == true else { return }
+                self?.removeChild(coordinator)
+            }
+
             coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
                 guard let navigationController else { return }
                 self?.router.present(navigationController)

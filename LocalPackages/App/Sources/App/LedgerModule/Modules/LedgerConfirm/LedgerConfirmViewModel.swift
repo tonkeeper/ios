@@ -1,9 +1,11 @@
-import BleTransport
+import CoreBluetooth
 import Foundation
 import KeeperCore
+import LedgerKit
 import TKLocalize
 import TKLogging
 import TKUIKit
+import TonSwift
 import TonTransport
 
 enum LedgerConfirmError: Error {
@@ -21,19 +23,17 @@ protocol LedgerConfirmViewModel: AnyObject {
     var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
     var didShowTurnOnBluetoothAlert: (() -> Void)? { get set }
     var didShowBluetoothAuthorisationAlert: (() -> Void)? { get set }
+    var didShowPairingRemovedAlert: ((_ retry: @escaping () -> Void) -> Void)? { get set }
 
     func viewDidLoad()
     func stopTasks()
 }
 
 final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, LedgerConfirmModuleOutput {
-    enum Error: Swift.Error {
-        case invalidDeviceId
-    }
-
     enum State {
         case idle
         case bluetoothConnected
+        case tonAppMissing
         case tonAppOpened
         case confirmed(Int)
     }
@@ -50,8 +50,11 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     var showToast: ((ToastPresenter.Configuration) -> Void)?
     var didShowTurnOnBluetoothAlert: (() -> Void)?
     var didShowBluetoothAuthorisationAlert: (() -> Void)?
+    var didShowPairingRemovedAlert: ((_ retry: @escaping () -> Void) -> Void)?
 
-    private var pollTonAppTask: Task<Void, Swift.Error>?
+    private var bluetoothStateTask: Task<Void, Never>?
+    private var sessionTask: Task<Void, Never>?
+    private var pollTonAppTask: Task<Void, Never>?
     private var disconnectTask: Task<Void, Never>?
 
     private var isClosed: Bool = false
@@ -66,10 +69,10 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     func stopTasks() {
         isClosed = true
 
+        bluetoothStateTask?.cancel()
+        sessionTask?.cancel()
         pollTonAppTask?.cancel()
         disconnectTask?.cancel()
-
-        bleTransport.disconnect(completion: nil)
     }
 
     // MARK: - State
@@ -85,7 +88,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     private let confirmItem: LedgerConfirmConfirmItem
     private let wallet: Wallet
     private let ledgerDevice: Wallet.LedgerDevice
-    private let bleTransport: BleTransportProtocol
+    private let transport: LedgerKit.LedgerTransport
     private let knownJettonResolver: ((Transaction) -> KnownJetton?)?
 
     // MARK: - Init
@@ -94,72 +97,96 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
         confirmItem: LedgerConfirmConfirmItem,
         wallet: Wallet,
         ledgerDevice: Wallet.LedgerDevice,
-        bleTransport: BleTransportProtocol,
+        transport: LedgerKit.LedgerTransport,
         knownJettonResolver: ((Transaction) -> KnownJetton?)?
     ) {
         self.confirmItem = confirmItem
         self.wallet = wallet
         self.ledgerDevice = ledgerDevice
-        self.bleTransport = bleTransport
+        self.transport = transport
         self.knownJettonResolver = knownJettonResolver
     }
 }
 
 private extension LedgerConfirmViewModelImplementation {
     func listenBluetoothState() {
-        bleTransport.bluetoothStateCallback { state in
-            switch state {
-            case .poweredOn:
-                self.connect()
-            case .poweredOff:
-                self.didShowTurnOnBluetoothAlert?()
-            case .unauthorized:
-                self.didShowBluetoothAuthorisationAlert?()
-            default:
-                break
+        bluetoothStateTask = Task { @MainActor in
+            for await state in transport.bluetoothState() {
+                switch state {
+                case .poweredOn:
+                    connect()
+                case .poweredOff:
+                    didShowTurnOnBluetoothAlert?()
+                case .unauthorized:
+                    didShowBluetoothAuthorisationAlert?()
+                default:
+                    break
+                }
             }
         }
     }
 
     func connect() {
-        do {
-            guard let uuid = UUID(uuidString: ledgerDevice.deviceId) else {
-                throw Error.invalidDeviceId
-            }
-            let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
-
-            Log.i("Connecting to \(peripheral.name)...")
-            bleTransport.disconnect { [weak self] _ in
-                guard let self else { return }
-                self.bleTransport.connect(toPeripheralID: peripheral, disconnectedCallback: {
-                    Log.w("Log: Ledger disconnected, isClosed: \(self.isClosed)")
-                    if self.isClosed { return }
-
-                    self.pollTonAppTask?.cancel()
-                    self.connect()
-
-                    self.disconnectTask = Task {
-                        do {
-                            try await Task.sleep(nanoseconds: 3_000_000_000)
-                            try Task.checkCancellation()
-                            await MainActor.run {
-                                self.setDisconnected()
-                            }
-                        } catch {}
-                    }
-                }, success: { result in
-                    Log.i("Connected to \(result.name), udid: \(result.uuid)")
-                    self.disconnectTask?.cancel()
-                    self.setConnected()
-                    self.waitForAppOpen()
-                }, failure: { _ in
-                    if self.isClosed { return }
-                    self.connect()
-                    self.setDisconnected()
-                })
-            }
-        } catch {
+        guard let peripheralID = UUID(uuidString: ledgerDevice.deviceId) else {
             didCancel?()
+            return
+        }
+        sessionTask?.cancel()
+        sessionTask = Task { @MainActor in
+            await runSession(peripheralID: peripheralID)
+        }
+    }
+
+    @MainActor
+    func runSession(peripheralID: UUID) async {
+        Log.i("Connecting to \(ledgerDevice.deviceModel)...")
+        let link: LedgerLink
+        do {
+            link = try await transport.connect(peripheralID)
+        } catch {
+            guard !Task.isCancelled else {
+                return
+            }
+            Log.w("Error connecting to device: \(error.localizedDescription)")
+            setDisconnected()
+            if case LedgerTransportError.pairingRemoved = error {
+                didShowPairingRemovedAlert? { [weak self] in
+                    self?.connect()
+                }
+                return
+            }
+            do {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                return
+            }
+            connect()
+            return
+        }
+        defer { link.close() }
+        guard !Task.isCancelled else {
+            return
+        }
+        Log.i("Connected to \(ledgerDevice.deviceModel), udid: \(peripheralID)")
+        disconnectTask?.cancel()
+        setConnected()
+        waitForAppOpen(link: link)
+
+        for await _ in link.disconnected {}
+
+        pollTonAppTask?.cancel()
+        guard !Task.isCancelled else {
+            return
+        }
+        Log.w("Ledger disconnected")
+        connect()
+        disconnectTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 3_000_000_000)
+            } catch {
+                return
+            }
+            setDisconnected()
         }
     }
 
@@ -186,37 +213,26 @@ private extension LedgerConfirmViewModelImplementation {
         }
     }
 
-    func waitForAppOpen() {
-        let tonTransport = TonTransport(transport: bleTransport)
-
-        @Sendable func startPollTask() {
-            let task = Task {
-                let (isAppOpened, version) = try await tonTransport.isAppOpen()
+    func waitForAppOpen(link: LedgerLink) {
+        let tonTransport = TonTransport(link: link)
+        pollTonAppTask = Task { @MainActor in
+            do {
+                let version = try await link.waitForApp(.ton) { self.setTonAppMissing($0) }
                 try Task.checkCancellation()
-                guard isAppOpened else {
-                    try await Task.sleep(nanoseconds: 1_000_000_000)
-                    try Task.checkCancellation()
-                    await MainActor.run {
-                        startPollTask()
-                    }
-                    return
-                }
-
                 switch checkVersion(version: version) {
                 case .success:
-                    await MainActor.run {
-                        self.setTonAppOpened()
-                        self.sign(tonTransport: tonTransport, appVersion: version)
-                    }
+                    setTonAppOpened()
+                    sign(tonTransport: tonTransport, appVersion: version)
                 case let .failure(error):
-                    await MainActor.run {
-                        self.didError?(error)
-                    }
+                    didError?(error)
                 }
+            } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+                Log.w("Waiting for the TON app failed: \(error.localizedDescription)")
             }
-            self.pollTonAppTask = task
         }
-        startPollTask()
     }
 
     func sign(tonTransport: TonTransport, appVersion: String) {
@@ -224,11 +240,13 @@ private extension LedgerConfirmViewModelImplementation {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
+                let publicKey = try wallet.publicKey
                 switch confirmItem {
                 case let .transaction(transaction):
                     let signature = try await signTransaction(
                         transaction,
                         path: accountPath,
+                        publicKey: publicKey,
                         tonTransport: tonTransport,
                         appVersion: appVersion
                     )
@@ -240,6 +258,7 @@ private extension LedgerConfirmViewModelImplementation {
                         let signature = try await signTransaction(
                             transaction,
                             path: accountPath,
+                            publicKey: publicKey,
                             tonTransport: tonTransport,
                             appVersion: appVersion
                         )
@@ -250,6 +269,7 @@ private extension LedgerConfirmViewModelImplementation {
                 case let .signatureData(signatureData):
                     let signed = try await tonTransport.signAddressProof(
                         path: accountPath,
+                        publicKey: publicKey,
                         domain: signatureData.domain.value,
                         timestamp: signatureData.timestamp,
                         payload: signatureData.payload
@@ -258,6 +278,10 @@ private extension LedgerConfirmViewModelImplementation {
                     self.didSign?(.proof(signed))
                 }
             } catch {
+                guard !self.isClosed else {
+                    return
+                }
+                self.stopTasks()
                 defer {
                     self.didCancel?()
                 }
@@ -269,6 +293,8 @@ private extension LedgerConfirmViewModelImplementation {
                     default:
                         self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
                     }
+                case TonTransportError.publicKeyMismatch:
+                    self.showToast?(ToastPresenter.Configuration(title: TKLocales.LedgerSteps.otherWallet))
                 case let tonTransportError as TonTransportError:
                     self.showToast?(ToastPresenter.Configuration(title: tonTransportError.localizedDescription))
                 default:
@@ -283,6 +309,7 @@ private extension LedgerConfirmViewModelImplementation {
     func signTransaction(
         _ transaction: Transaction,
         path: AccountPath,
+        publicKey: TonSwift.PublicKey,
         tonTransport: TonTransport,
         appVersion: String
     ) async throws -> Data {
@@ -290,16 +317,17 @@ private extension LedgerConfirmViewModelImplementation {
               let minAppVersion = LedgerKnownJettons.minAppVersion(jettonId: knownJetton.jettonId),
               TonTransport.isVersion(appVersion, greaterThanOrEqualTo: minAppVersion)
         else {
-            return try await tonTransport.signTransaction(path: path, transaction: transaction)
+            return try await tonTransport.signTransaction(path: path, publicKey: publicKey, transaction: transaction)
         }
         do {
             return try await tonTransport.signTransaction(
                 path: path,
+                publicKey: publicKey,
                 transaction: transaction.settingKnownJetton(knownJetton)
             )
         } catch TransportStatusError.txParsingFailed {
             Log.w("Ledger rejected the known-jetton hint, signing without it")
-            return try await tonTransport.signTransaction(path: path, transaction: transaction)
+            return try await tonTransport.signTransaction(path: path, publicKey: publicKey, transaction: transaction)
         }
     }
 
@@ -309,6 +337,17 @@ private extension LedgerConfirmViewModelImplementation {
 
     func setConnected() {
         self.state = .bluetoothConnected
+    }
+
+    func setTonAppMissing(_ isMissing: Bool) {
+        switch (state, isMissing) {
+        case (.bluetoothConnected, true):
+            state = .tonAppMissing
+        case (.tonAppMissing, false):
+            state = .bluetoothConnected
+        default:
+            break
+        }
     }
 
     func setTonAppOpened() {
@@ -344,6 +383,8 @@ private extension LedgerConfirmViewModelImplementation {
             bluetoothState = .disconnected
         case .bluetoothConnected:
             bluetoothState = .ready
+        case .tonAppMissing:
+            bluetoothState = .disconnected
         case .tonAppOpened:
             bluetoothState = .ready
         case .confirmed:
@@ -366,7 +407,7 @@ private extension LedgerConfirmViewModelImplementation {
         switch state {
         case .idle:
             stepState = .inProgress
-        case .bluetoothConnected:
+        case .bluetoothConnected, .tonAppMissing:
             stepState = .done
         case .tonAppOpened:
             stepState = .done
@@ -387,13 +428,15 @@ private extension LedgerConfirmViewModelImplementation {
             stepState = .idle
         case .bluetoothConnected:
             stepState = .inProgress
+        case .tonAppMissing:
+            stepState = .failed
         case .tonAppOpened:
             stepState = .done
         case .confirmed:
             stepState = .done
         }
         return LedgerStepView.Model(
-            content: TKLocales.LedgerConfirm.Steps.TonApp.description,
+            content: stepState == .failed ? TKLocales.LedgerSteps.appMissing(LedgerApp.ton.name) : TKLocales.LedgerConfirm.Steps.TonApp.description,
             linkButton: nil,
             state: stepState
         )
@@ -406,7 +449,7 @@ private extension LedgerConfirmViewModelImplementation {
             switch state {
             case .idle:
                 stepState = .idle
-            case .bluetoothConnected:
+            case .bluetoothConnected, .tonAppMissing:
                 stepState = .idle
             case .tonAppOpened:
                 stepState = .inProgress
@@ -434,7 +477,7 @@ private extension LedgerConfirmViewModelImplementation {
                 switch state {
                 case .idle:
                     stepState = .idle
-                case .bluetoothConnected:
+                case .bluetoothConnected, .tonAppMissing:
                     stepState = .idle
                 case .tonAppOpened:
                     stepState = idx == 0 ? .inProgress : .idle

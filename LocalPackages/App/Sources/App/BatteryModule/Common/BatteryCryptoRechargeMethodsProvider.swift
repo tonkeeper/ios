@@ -10,24 +10,31 @@ actor BatteryCryptoRechargeMethodsProvider {
     private let balanceService: BalanceService
     private let batteryService: BatteryService
     private let jettonService: JettonService
+    private let purchaseService: BatteryPurchaseService
+    private let assetBalanceProvider: MultichainAssetBalanceProvider
 
     init(
         wallet: Wallet,
         balanceService: BalanceService,
         batteryService: BatteryService,
-        jettonService: JettonService
+        jettonService: JettonService,
+        purchaseService: BatteryPurchaseService,
+        assetBalanceProvider: MultichainAssetBalanceProvider
     ) {
         self.wallet = wallet
         self.balanceService = balanceService
         self.batteryService = batteryService
         self.jettonService = jettonService
+        self.purchaseService = purchaseService
+        self.assetBalanceProvider = assetBalanceProvider
     }
 
     func getAllRechargeMethods() async -> [BatteryRefillRechargeMethodsModel.RechargeMethodItem] {
+        async let assetItems = assetRechargeItems()
         let rechargeMethods = await loadRechargeMethods()
             .filter { $0.supportRecharge }
 
-        guard let balance = try? await loadBalance().balance else { return [] }
+        guard let balance = try? await loadBalance().balance else { return await assetItems }
 
         var tonRechargeMethods = [BatteryRechargeMethod]()
         var jettonRechargeMethods = [BatteryRechargeMethod]()
@@ -75,11 +82,43 @@ actor BatteryCryptoRechargeMethodsProvider {
         // A gift is a legacy TON transfer to someone else's battery, which a multichain wallet
         // cannot sign here.
         if !result.isEmpty, !wallet.isMultichain {
-            let giftItem = result[0]
-            result.append(.gift(token: giftItem.token))
+            if let token = result[0].token { result.append(.gift(token: token)) }
         }
 
+        result += await assetItems
         return result
+    }
+
+    func cachedAssetRechargeItems() -> [BatteryRefillRechargeMethodsModel.RechargeMethodItem] {
+        guard wallet.isMultichain, wallet.kind == .regular else { return [] }
+        return purchaseService.cachedAssetRechargeMethods(wallet: wallet).compactMap { method in
+            guard let asset = assetBalanceProvider.cachedAsset(for: method.assetId, wallet: wallet), asset.balance > 0,
+                  BatteryAssetRechargeMethod.sameAsset(method.assetId, asset.asset.assetId),
+                  method.decimals == asset.asset.decimals,
+                  let chain = method.chain,
+                  let sender = wallet.multichainWalletState?.walletAddress(for: chain, preferredType: wallet.preferredMultichainAddressType(for: chain)) else { return nil }
+            return .asset(.init(method: method, asset: asset, sender: sender.address, chargeCost: nil, packages: [], isReady: false))
+        }
+    }
+
+    private func assetRechargeItems() async -> [BatteryRefillRechargeMethodsModel.RechargeMethodItem] {
+        guard wallet.isMultichain, wallet.kind == .regular else { return [] }
+        let cached = purchaseService.cachedAssetRechargeMethods(wallet: wallet)
+        let methods = (try? await purchaseService.loadAssetRechargeMethods(wallet: wallet)) ?? cached
+        guard let config = try? await batteryService.loadBatteryConfig(wallet: wallet) else { return [] }
+        let assets = await assetBalanceProvider.loadAssets(named: methods.map(\.assetId), wallet: wallet)
+        return methods.compactMap { method in
+            guard let asset = assets[method.assetId], asset.balance > 0,
+                  BatteryAssetRechargeMethod.sameAsset(method.assetId, asset.asset.assetId),
+                  method.decimals == asset.asset.decimals,
+                  let chain = method.chain,
+                  let sender = wallet.multichainWalletState?.walletAddress(for: chain, preferredType: wallet.preferredMultichainAddressType(for: chain))
+            else { return nil }
+            return .asset(BatteryRechargeAsset(
+                method: method, asset: asset, sender: sender.address, chargeCost: config.charge_cost,
+                packages: config.packages.filter { $0.charges > 0 && $0.name != .unknown }.map { .init(id: $0.name.rawValue, charges: $0.charges) }
+            ))
+        }
     }
 
     func getRechargeMethod(jettonMasterAddress: Address) async -> BatteryRefillRechargeMethodsModel.RechargeMethodItem? {

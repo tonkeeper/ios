@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 import TKLogging
 import TKPerpsAPI
 
@@ -18,6 +19,7 @@ struct PerpsDepositRecord: Sendable, Equatable {
 
     let depositId: String?
     let status: Status
+    let pendingStep: PerpsDepositStatus.Step?
     let creditedAmount: String?
     let accountIndex: Int64?
 
@@ -31,6 +33,16 @@ struct PerpsDepositRecord: Sendable, Equatable {
         case .refunded: .refunded
         case .expired: .expired
         case .none, .unknown: .unknown
+        }
+        if deposit.status == .pending {
+            pendingStep = switch deposit.pending_step {
+            case .sending: .sending
+            case .converting: .converting
+            case .adding: .adding
+            case .none, .unknown: nil
+            }
+        } else {
+            pendingStep = nil
         }
         creditedAmount = deposit.credited_amount
         accountIndex = deposit.account_index
@@ -55,34 +67,37 @@ struct PerpsDepositRegistrar {
         self.journal = journal
     }
 
-    /// Posts the stored body verbatim. A failure throws, leaving the stage where a later
-    /// retry finds it.
+    /// Posts the stored body with the source transaction known by now. A failure throws,
+    /// leaving the stage where a later retry finds it.
     @discardableResult
     func register(operation: PerpsPendingFundingOperation) async throws -> PerpsPendingFundingOperation {
-        guard let deposit = operation.deposit else {
-            throw PerpsDepositRegistrationError.notADeposit(operation.operationId)
-        }
-        guard deposit.stage == .registrationPending else {
-            throw PerpsDepositRegistrationError.unexpectedStage(operation.operationId)
-        }
-        guard let registration = deposit.registration else {
-            throw PerpsDepositRegistrationError.missingRegistration(operation.operationId)
-        }
+        return try await PerpsOperationLog.step("register", source: "backend", fields: operation.operationLogFields) {
+            guard let deposit = operation.deposit else {
+                throw PerpsDepositRegistrationError.notADeposit(operation.operationId)
+            }
+            guard deposit.stage == .registrationPending else {
+                throw PerpsDepositRegistrationError.unexpectedStage(operation.operationId)
+            }
+            guard let registration = deposit.registrationBody else {
+                throw PerpsDepositRegistrationError.missingRegistration(operation.operationId)
+            }
 
-        let recorded = try await api.openDeposit(
-            walletId: operation.walletId,
-            request: Self.request(registration)
-        )
+            let recorded = try await api.openDeposit(
+                walletId: operation.walletId,
+                request: Self.request(registration)
+            )
 
-        try Task.checkCancellation()
-        try Self.validate(recorded, operation: operation, expectedTxHash: registration.l1TxHash)
-        Self.logStatus(recorded, operation: operation)
-        let record = PerpsDepositRecord(recorded)
-        return try await update(operation) { deposit in
-            // The same transaction may already have a record under another operation id.
-            deposit.depositId = record.depositId
-            deposit.stage = Self.stage(for: record, whenPending: .registeredPending)
-            Self.applyCredit(record, to: &deposit)
+            try Task.checkCancellation()
+            try Self.validate(recorded, operation: operation, expectedTxHash: registration.l1TxHash)
+            Self.logStatus(recorded, operation: operation)
+            let record = PerpsDepositRecord(recorded)
+            return try await update(operation) { deposit in
+                deposit.registration = registration
+                // The same transaction may already have a record under another operation id.
+                deposit.depositId = record.depositId
+                deposit.stage = Self.stage(for: record, whenPending: .registeredPending)
+                Self.apply(record, to: &deposit)
+            }
         }
     }
 
@@ -91,33 +106,63 @@ struct PerpsDepositRegistrar {
     /// defer registration until after broadcast — a deposit is credited recorded or not.
     @discardableResult
     func recordBeforeBroadcast(operation: PerpsPendingFundingOperation) async throws -> PerpsPendingFundingOperation {
-        guard let deposit = operation.deposit, deposit.stage == .sourcePending, deposit.depositId == nil,
-              let registration = deposit.registration, let transmission = deposit.transmission,
-              let mainId = try transmission.operation.parsed().payloads.last?.id,
-              !transmission.steps.contains(where: { $0.payloadId == mainId && $0.broadcastAttempted })
+        return try await PerpsOperationLog.step("register_before_broadcast", source: "backend", fields: operation.operationLogFields) {
+            guard let deposit = operation.deposit, deposit.stage == .sourcePending, deposit.depositId == nil,
+                  let registration = deposit.registrationBody, let transmission = deposit.transmission,
+                  let mainId = try transmission.operation.parsed().payloads.last?.id,
+                  !transmission.steps.contains(where: { $0.payloadId == mainId && $0.broadcastAttempted })
+            else { return operation }
+            let record: PerpsDepositRecord
+            do {
+                let recorded = try await api.openDeposit(walletId: operation.walletId, request: Self.request(registration))
+                try Self.validate(recorded, operation: operation, expectedTxHash: registration.l1TxHash)
+                Self.logStatus(recorded, operation: operation)
+                record = PerpsDepositRecord(recorded)
+            } catch let error as PerpsAPIError where error.isAddressNotBound {
+                throw error
+            } catch let error as PerpsAPIError where error.isAccountCreationPending {
+                try await drop(operation, reason: "account_creation_pending")
+                throw PerpsDepositServiceError.accountCreationPending
+            } catch let PerpsAPIError.badStatus(failure) where failure.httpStatus == 409 {
+                try await drop(operation, reason: failure.reason ?? failure.code)
+                throw PerpsAPIError.badStatus(failure)
+            } catch {
+                try Task.checkCancellation()
+                PerpsOperationLog.event("register_before_broadcast", outcome: "deferred", source: "backend", error: error, fields: operation.operationLogFields)
+                return operation
+            }
+            try Task.checkCancellation()
+            return try await update(operation) { deposit in
+                deposit.registration = registration
+                deposit.depositId = record.depositId
+                if let step = record.pendingStep { deposit.pendingStep = step }
+            }
+        }
+    }
+
+    func nameSourceTransaction(operation: PerpsPendingFundingOperation) async throws -> PerpsPendingFundingOperation {
+        guard let deposit = operation.deposit, deposit.stage == .registeredPending, let depositId = deposit.depositId,
+              let registration = deposit.registrationBody, registration != deposit.registration
         else { return operation }
-        let depositId: String?
         do {
-            let recorded = try await api.openDeposit(walletId: operation.walletId, request: Self.request(registration))
-            try Self.validate(recorded, operation: operation, expectedTxHash: registration.l1TxHash)
-            Self.logStatus(recorded, operation: operation)
-            depositId = recorded.deposit_id
-        } catch let error as PerpsAPIError where error.isAddressNotBound {
-            throw error
-        } catch let error as PerpsAPIError where error.isAccountCreationPending {
-            try await drop(operation, reason: "account_creation_pending")
-            throw PerpsDepositServiceError.accountCreationPending
-        } catch let PerpsAPIError.badStatus(failure) where failure.httpStatus == 409 {
-            try await drop(operation, reason: failure.reason ?? failure.code)
-            throw PerpsAPIError.badStatus(failure)
+            return try await PerpsOperationLog.step("name_source_tx", source: "backend", fields: operation.operationLogFields) {
+                let recorded = try await api.openDeposit(walletId: operation.walletId, request: Self.request(registration))
+                try Task.checkCancellation()
+                try Self.validate(recorded, operation: operation, expectedTxHash: registration.l1TxHash, expectedDepositId: depositId)
+                Self.logStatus(recorded, operation: operation)
+                let record = PerpsDepositRecord(recorded)
+                return try await update(operation) { deposit in
+                    deposit.registration = registration
+                    deposit.stage = Self.stage(for: record, whenPending: deposit.stage)
+                    Self.apply(record, to: &deposit)
+                }
+            }
         } catch {
             try Task.checkCancellation()
-            Log.perps.w("Perps deposit: record before broadcast deferred op=\(operation.operationId)", error: error)
-            return operation
-        }
-        try Task.checkCancellation()
-        return try await update(operation) { deposit in
-            deposit.depositId = depositId
+            guard case let PerpsAPIError.badStatus(failure) = error, failure.httpStatus == 400 else { return operation }
+            return try await update(operation) { deposit in
+                deposit.registration = registration
+            }
         }
     }
 
@@ -135,38 +180,42 @@ struct PerpsDepositRegistrar {
 
     @discardableResult
     func refresh(operation: PerpsPendingFundingOperation) async throws -> PerpsPendingFundingOperation {
-        guard let deposit = operation.deposit else {
-            throw PerpsDepositRegistrationError.notADeposit(operation.operationId)
-        }
-        guard let depositId = deposit.depositId else {
-            throw PerpsDepositRegistrationError.missingDepositId(operation.operationId)
-        }
-        guard deposit.stage == .registeredPending else {
-            throw PerpsDepositRegistrationError.unexpectedStage(operation.operationId)
-        }
+        return try await PerpsOperationLog.step("deposit_status", source: "backend", fields: operation.operationLogFields, quiet: true) {
+            guard let deposit = operation.deposit else {
+                throw PerpsDepositRegistrationError.notADeposit(operation.operationId)
+            }
+            guard let depositId = deposit.depositId else {
+                throw PerpsDepositRegistrationError.missingDepositId(operation.operationId)
+            }
+            guard deposit.stage == .registeredPending else {
+                throw PerpsDepositRegistrationError.unexpectedStage(operation.operationId)
+            }
 
-        let response = try await api.getDeposit(walletId: operation.walletId, depositId: depositId)
-        try Task.checkCancellation()
-        try Self.validate(
-            response,
-            operation: operation,
-            expectedTxHash: deposit.registration?.l1TxHash,
-            expectedDepositId: depositId
-        )
-        let record = PerpsDepositRecord(response)
-        if Self.stage(for: record, whenPending: deposit.stage) != deposit.stage {
-            Self.logStatus(response, operation: operation)
-        }
-        return try await update(operation) { deposit in
-            deposit.stage = Self.stage(for: record, whenPending: deposit.stage)
-            Self.applyCredit(record, to: &deposit)
+            let response = try await api.getDeposit(walletId: operation.walletId, depositId: depositId)
+            try Task.checkCancellation()
+            try Self.validate(
+                response,
+                operation: operation,
+                expectedTxHash: deposit.registration?.l1TxHash,
+                expectedDepositId: depositId
+            )
+            let record = PerpsDepositRecord(response)
+            if Self.stage(for: record, whenPending: deposit.stage) != deposit.stage || (record.pendingStep != nil && record.pendingStep != deposit.pendingStep) {
+                Self.logStatus(response, operation: operation)
+            }
+            return try await update(operation) { deposit in
+                deposit.stage = Self.stage(for: record, whenPending: deposit.stage)
+                Self.apply(record, to: &deposit)
+            }
         }
     }
 
     private static func logStatus(_ response: Components.Schemas.Deposit, operation: PerpsPendingFundingOperation) {
-        Log.perps.i(
-            "Deposit status op=\(operation.operationId) deposit=\(response.deposit_id ?? "nil") status=\(response.status?.rawValue ?? "nil") l1=\(response.l1_tx_hash ?? "nil") credited=\(response.credited_amount ?? "nil")"
-        )
+        PerpsOperationLog.event("deposit_status", outcome: response.status?.rawValue ?? "unknown", source: "backend", fields: operation.operationLogFields.merging([
+            "deposit_id": response.deposit_id ?? "none", "tx_hash": response.l1_tx_hash ?? "none",
+            "credited_amount": response.credited_amount ?? "unknown",
+            "pending_step": response.pending_step?.rawValue ?? "none",
+        ]) { _, new in new })
     }
 
     private static func validate(
@@ -214,7 +263,8 @@ struct PerpsDepositRegistrar {
             asset_id: registration.assetId,
             amount: registration.amount,
             execution_id: registration.executionId,
-            l1_tx_hash: registration.l1TxHash
+            l1_tx_hash: registration.l1TxHash,
+            source_tx_hash: registration.sourceTxHash
         )
     }
 
@@ -231,7 +281,8 @@ struct PerpsDepositRegistrar {
         }
     }
 
-    private static func applyCredit(_ record: PerpsDepositRecord, to deposit: inout PerpsPendingDeposit) {
+    private static func apply(_ record: PerpsDepositRecord, to deposit: inout PerpsPendingDeposit) {
+        if let step = record.pendingStep { deposit.pendingStep = step }
         // Credited without an amount happens: the only signal was an account appearing.
         // The declared amount must not take its place.
         if let creditedAmount = record.creditedAmount {

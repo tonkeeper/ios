@@ -29,6 +29,72 @@ extension Components {
                 case sessionToken
             }
         }
+        /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethods`.
+        public struct MoonPayPaymentMethods: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethods/methods`.
+            public var methods: [Components.Schemas.MoonPayPaymentMethod]
+            /// Creates a new `MoonPayPaymentMethods`.
+            ///
+            /// - Parameters:
+            ///   - methods:
+            public init(methods: [Components.Schemas.MoonPayPaymentMethod]) {
+                self.methods = methods
+            }
+            public enum CodingKeys: String, CodingKey {
+                case methods
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod`.
+        public struct MoonPayPaymentMethod: Codable, Hashable, Sendable {
+            /// MoonPay Platform API payment method type, e.g. `card`, `apple_pay`, `revolut_pay`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod/type`.
+            public var _type: Swift.String
+            /// MoonPay display name, in English; translated for generic types such as `card`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod/title`.
+            public var title: Swift.String
+            /// Localized settlement speed, e.g. "Instant", "1–3 days". Absent for a speed we have no text for.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod/subtitle`.
+            public var subtitle: Swift.String?
+            /// MoonPay icon (SVG). Absent when MoonPay has none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod/icon_url`.
+            public var icon_url: Swift.String?
+            /// Localized badge text, e.g. "Recommended"; the badge is set by our config. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MoonPayPaymentMethod/badge`.
+            public var badge: Swift.String?
+            /// Creates a new `MoonPayPaymentMethod`.
+            ///
+            /// - Parameters:
+            ///   - _type: MoonPay Platform API payment method type, e.g. `card`, `apple_pay`, `revolut_pay`.
+            ///   - title: MoonPay display name, in English; translated for generic types such as `card`.
+            ///   - subtitle: Localized settlement speed, e.g. "Instant", "1–3 days". Absent for a speed we have no text for.
+            ///   - icon_url: MoonPay icon (SVG). Absent when MoonPay has none.
+            ///   - badge: Localized badge text, e.g. "Recommended"; the badge is set by our config. Absent when there is none.
+            public init(
+                _type: Swift.String,
+                title: Swift.String,
+                subtitle: Swift.String? = nil,
+                icon_url: Swift.String? = nil,
+                badge: Swift.String? = nil
+            ) {
+                self._type = _type
+                self.title = title
+                self.subtitle = subtitle
+                self.icon_url = icon_url
+                self.badge = badge
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+                case title
+                case subtitle
+                case icon_url
+                case badge
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/ErrorResponse`.
         public struct ErrorResponse: Codable, Hashable, Sendable {
             /// Human-readable message. Sanitised — never reveals internal details.
@@ -64,21 +130,6 @@ extension Components {
                 case error
                 case code
                 case request_id
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/Ok`.
-        public struct Ok: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/Ok/ok`.
-            public var ok: Swift.Bool
-            /// Creates a new `Ok`.
-            ///
-            /// - Parameters:
-            ///   - ok:
-            public init(ok: Swift.Bool) {
-                self.ok = ok
-            }
-            public enum CodingKeys: String, CodingKey {
-                case ok
             }
         }
         /// - Remark: Generated from `#/components/schemas/Platform`.
@@ -468,34 +519,6 @@ extension Components {
                 case valueDifferenceBps
             }
         }
-        /// - Remark: Generated from `#/components/schemas/ExchangeAssetType`.
-        @frozen public enum ExchangeAssetType: String, Codable, Hashable, Sendable, CaseIterable {
-            case fiat = "fiat"
-            case crypto = "crypto"
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeMethod`.
-        public struct ExchangeMethod: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeMethod/type`.
-            public var _type: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeMethod/address`.
-            public var address: Swift.String?
-            /// Creates a new `ExchangeMethod`.
-            ///
-            /// - Parameters:
-            ///   - _type:
-            ///   - address:
-            public init(
-                _type: Swift.String,
-                address: Swift.String? = nil
-            ) {
-                self._type = _type
-                self.address = address
-            }
-            public enum CodingKeys: String, CodingKey {
-                case _type = "type"
-                case address
-            }
-        }
         /// - Remark: Generated from `#/components/schemas/ExchangeLimits`.
         public struct ExchangeLimits: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ExchangeLimits/min`.
@@ -517,117 +540,6 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case min
                 case max
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeAsset`.
-        public struct ExchangeAsset: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/slug`.
-            public var slug: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/type`.
-            public var _type: Components.Schemas.ExchangeAssetType
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/input_methods`.
-            public var input_methods: [Components.Schemas.ExchangeMethod]
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/output_methods`.
-            public var output_methods: [Components.Schemas.ExchangeMethod]
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/image`.
-            public var image: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/decimals`.
-            public var decimals: Swift.Int?
-            /// - Remark: Generated from `#/components/schemas/ExchangeAsset/stablecoin`.
-            public var stablecoin: Swift.Bool?
-            /// Creates a new `ExchangeAsset`.
-            ///
-            /// - Parameters:
-            ///   - slug:
-            ///   - _type:
-            ///   - input_methods:
-            ///   - output_methods:
-            ///   - image:
-            ///   - decimals:
-            ///   - stablecoin:
-            public init(
-                slug: Swift.String,
-                _type: Components.Schemas.ExchangeAssetType,
-                input_methods: [Components.Schemas.ExchangeMethod],
-                output_methods: [Components.Schemas.ExchangeMethod],
-                image: Swift.String? = nil,
-                decimals: Swift.Int? = nil,
-                stablecoin: Swift.Bool? = nil
-            ) {
-                self.slug = slug
-                self._type = _type
-                self.input_methods = input_methods
-                self.output_methods = output_methods
-                self.image = image
-                self.decimals = decimals
-                self.stablecoin = stablecoin
-            }
-            public enum CodingKeys: String, CodingKey {
-                case slug
-                case _type = "type"
-                case input_methods
-                case output_methods
-                case image
-                case decimals
-                case stablecoin
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeSimpleMerchant`.
-        public struct ExchangeSimpleMerchant: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeSimpleMerchant/slug`.
-            public var slug: Components.Schemas.ExchangeMerchantSlug
-            /// - Remark: Generated from `#/components/schemas/ExchangeSimpleMerchant/limits`.
-            public var limits: Components.Schemas.ExchangeLimits?
-            /// Creates a new `ExchangeSimpleMerchant`.
-            ///
-            /// - Parameters:
-            ///   - slug:
-            ///   - limits:
-            public init(
-                slug: Components.Schemas.ExchangeMerchantSlug,
-                limits: Components.Schemas.ExchangeLimits? = nil
-            ) {
-                self.slug = slug
-                self.limits = limits
-            }
-            public enum CodingKeys: String, CodingKey {
-                case slug
-                case limits
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeMerchant`.
-        public struct ExchangeMerchant: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeMerchant/name`.
-            public var name: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeMerchant/slug`.
-            public var slug: Components.Schemas.ExchangeMerchantSlug
-            /// - Remark: Generated from `#/components/schemas/ExchangeMerchant/input_methods`.
-            public var input_methods: [Swift.String]
-            /// - Remark: Generated from `#/components/schemas/ExchangeMerchant/output_methods`.
-            public var output_methods: [Swift.String]
-            /// Creates a new `ExchangeMerchant`.
-            ///
-            /// - Parameters:
-            ///   - name:
-            ///   - slug:
-            ///   - input_methods:
-            ///   - output_methods:
-            public init(
-                name: Swift.String,
-                slug: Components.Schemas.ExchangeMerchantSlug,
-                input_methods: [Swift.String],
-                output_methods: [Swift.String]
-            ) {
-                self.name = name
-                self.slug = slug
-                self.input_methods = input_methods
-                self.output_methods = output_methods
-            }
-            public enum CodingKeys: String, CodingKey {
-                case name
-                case slug
-                case input_methods
-                case output_methods
             }
         }
         /// - Remark: Generated from `#/components/schemas/ExchangeMerchantInfoButton`.
@@ -700,60 +612,6 @@ extension Components {
                 case buttons
             }
         }
-        /// - Remark: Generated from `#/components/schemas/ExchangeCurrencyInfo`.
-        public struct ExchangeCurrencyInfo: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeCurrencyInfo/symbol`.
-            public var symbol: Swift.String
-            /// Blockchain network (e.g. native, jetton, erc-20)
-            ///
-            /// - Remark: Generated from `#/components/schemas/ExchangeCurrencyInfo/network`.
-            public var network: Swift.String?
-            /// Creates a new `ExchangeCurrencyInfo`.
-            ///
-            /// - Parameters:
-            ///   - symbol:
-            ///   - network: Blockchain network (e.g. native, jetton, erc-20)
-            public init(
-                symbol: Swift.String,
-                network: Swift.String? = nil
-            ) {
-                self.symbol = symbol
-                self.network = network
-            }
-            public enum CodingKeys: String, CodingKey {
-                case symbol
-                case network
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangePair`.
-        public struct ExchangePair: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangePair/from`.
-            public var from: Components.Schemas.ExchangeCurrencyInfo
-            /// - Remark: Generated from `#/components/schemas/ExchangePair/to`.
-            public var to: Components.Schemas.ExchangeCurrencyInfo
-            /// - Remark: Generated from `#/components/schemas/ExchangePair/merchants`.
-            public var merchants: [Components.Schemas.ExchangeSimpleMerchant]
-            /// Creates a new `ExchangePair`.
-            ///
-            /// - Parameters:
-            ///   - from:
-            ///   - to:
-            ///   - merchants:
-            public init(
-                from: Components.Schemas.ExchangeCurrencyInfo,
-                to: Components.Schemas.ExchangeCurrencyInfo,
-                merchants: [Components.Schemas.ExchangeSimpleMerchant]
-            ) {
-                self.from = from
-                self.to = to
-                self.merchants = merchants
-            }
-            public enum CodingKeys: String, CodingKey {
-                case from
-                case to
-                case merchants
-            }
-        }
         /// - Remark: Generated from `#/components/schemas/ExchangeMerchantSlug`.
         @frozen public enum ExchangeMerchantSlug: String, Codable, Hashable, Sendable, CaseIterable {
             case mercuryo = "mercuryo"
@@ -777,35 +635,6 @@ extension Components {
             case volt = "volt"
             case p2p = "p2p"
             case ach = "ach"
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeCurrencies`.
-        public struct ExchangeCurrencies: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeCurrencies/assets`.
-            public var assets: [Components.Schemas.ExchangeAsset]
-            /// - Remark: Generated from `#/components/schemas/ExchangeCurrencies/merchants`.
-            public var merchants: [Components.Schemas.ExchangeMerchant]
-            /// - Remark: Generated from `#/components/schemas/ExchangeCurrencies/allowed_pairs`.
-            public var allowed_pairs: [Components.Schemas.ExchangePair]
-            /// Creates a new `ExchangeCurrencies`.
-            ///
-            /// - Parameters:
-            ///   - assets:
-            ///   - merchants:
-            ///   - allowed_pairs:
-            public init(
-                assets: [Components.Schemas.ExchangeAsset],
-                merchants: [Components.Schemas.ExchangeMerchant],
-                allowed_pairs: [Components.Schemas.ExchangePair]
-            ) {
-                self.assets = assets
-                self.merchants = merchants
-                self.allowed_pairs = allowed_pairs
-            }
-            public enum CodingKeys: String, CodingKey {
-                case assets
-                case merchants
-                case allowed_pairs
-            }
         }
         /// - Remark: Generated from `#/components/schemas/ExchangeQuote`.
         public struct ExchangeQuote: Codable, Hashable, Sendable {
@@ -885,135 +714,11 @@ extension Components {
                 case suggested
             }
         }
-        /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod`.
-        public struct ExchangePaymentMethod: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/merchant`.
-            public var merchant: Components.Schemas.ExchangeMerchantSlug
-            /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/methodsPayload`.
-            public struct methodsPayloadPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/methodsPayload/type`.
-                public var _type: Components.Schemas.ExchangePaymentMethodType
-                /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/methodsPayload/image`.
-                public var image: Swift.String
-                /// Creates a new `methodsPayloadPayload`.
-                ///
-                /// - Parameters:
-                ///   - _type:
-                ///   - image:
-                public init(
-                    _type: Components.Schemas.ExchangePaymentMethodType,
-                    image: Swift.String
-                ) {
-                    self._type = _type
-                    self.image = image
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case _type = "type"
-                    case image
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/methods`.
-            public typealias methodsPayload = [Components.Schemas.ExchangePaymentMethod.methodsPayloadPayload]
-            /// - Remark: Generated from `#/components/schemas/ExchangePaymentMethod/methods`.
-            public var methods: Components.Schemas.ExchangePaymentMethod.methodsPayload
-            /// Creates a new `ExchangePaymentMethod`.
-            ///
-            /// - Parameters:
-            ///   - merchant:
-            ///   - methods:
-            public init(
-                merchant: Components.Schemas.ExchangeMerchantSlug,
-                methods: Components.Schemas.ExchangePaymentMethod.methodsPayload
-            ) {
-                self.merchant = merchant
-                self.methods = methods
-            }
-            public enum CodingKeys: String, CodingKey {
-                case merchant
-                case methods
-            }
-        }
         /// - Remark: Generated from `#/components/schemas/ExchangeDirection`.
         @frozen public enum ExchangeDirection: String, Codable, Hashable, Sendable, CaseIterable {
             case buy = "buy"
             case sell = "sell"
             case swap = "swap"
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair`.
-        public struct ExchangeAvailablePair: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/merchant`.
-            public var merchant: Components.Schemas.ExchangeMerchantSlug
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/direction`.
-            public var direction: Components.Schemas.ExchangeDirection
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/crypto_currency`.
-            public var crypto_currency: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/crypto_network`.
-            public var crypto_network: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/fiat_currency`.
-            public var fiat_currency: Swift.String
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/limits`.
-            public var limits: Components.Schemas.ExchangeLimits?
-            /// - Remark: Generated from `#/components/schemas/ExchangeAvailablePair/payment_methods`.
-            public var payment_methods: [Components.Schemas.ExchangePaymentMethodType]?
-            /// Creates a new `ExchangeAvailablePair`.
-            ///
-            /// - Parameters:
-            ///   - merchant:
-            ///   - direction:
-            ///   - crypto_currency:
-            ///   - crypto_network:
-            ///   - fiat_currency:
-            ///   - limits:
-            ///   - payment_methods:
-            public init(
-                merchant: Components.Schemas.ExchangeMerchantSlug,
-                direction: Components.Schemas.ExchangeDirection,
-                crypto_currency: Swift.String,
-                crypto_network: Swift.String,
-                fiat_currency: Swift.String,
-                limits: Components.Schemas.ExchangeLimits? = nil,
-                payment_methods: [Components.Schemas.ExchangePaymentMethodType]? = nil
-            ) {
-                self.merchant = merchant
-                self.direction = direction
-                self.crypto_currency = crypto_currency
-                self.crypto_network = crypto_network
-                self.fiat_currency = fiat_currency
-                self.limits = limits
-                self.payment_methods = payment_methods
-            }
-            public enum CodingKeys: String, CodingKey {
-                case merchant
-                case direction
-                case crypto_currency
-                case crypto_network
-                case fiat_currency
-                case limits
-                case payment_methods
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/ExchangePairs`.
-        public struct ExchangePairs: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ExchangePairs/count`.
-            public var count: Swift.Int
-            /// - Remark: Generated from `#/components/schemas/ExchangePairs/pairs`.
-            public var pairs: [Components.Schemas.ExchangeAvailablePair]
-            /// Creates a new `ExchangePairs`.
-            ///
-            /// - Parameters:
-            ///   - count:
-            ///   - pairs:
-            public init(
-                count: Swift.Int,
-                pairs: [Components.Schemas.ExchangeAvailablePair]
-            ) {
-                self.count = count
-                self.pairs = pairs
-            }
-            public enum CodingKeys: String, CodingKey {
-                case count
-                case pairs
-            }
         }
         /// - Remark: Generated from `#/components/schemas/ExchangeFlow`.
         @frozen public enum ExchangeFlow: String, Codable, Hashable, Sendable, CaseIterable {
@@ -1463,6 +1168,10 @@ extension Components {
             public var asset_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/OnrampAsset/symbol`.
             public var symbol: Swift.String
+            /// Human-readable asset name (e.g. "Bitcoin", "Tether")
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampAsset/name`.
+            public var name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OnrampAsset/network_name`.
             public var network_name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OnrampAsset/network_image`.
@@ -1494,6 +1203,7 @@ extension Components {
             /// - Parameters:
             ///   - asset_id: `{chain}/{net}/coin` for natives, `{chain}/{net}/jetton|token/{addr}` for tokens
             ///   - symbol:
+            ///   - name: Human-readable asset name (e.g. "Bitcoin", "Tether")
             ///   - network_name:
             ///   - network_image:
             ///   - image:
@@ -1506,6 +1216,7 @@ extension Components {
             public init(
                 asset_id: Swift.String,
                 symbol: Swift.String,
+                name: Swift.String? = nil,
                 network_name: Swift.String? = nil,
                 network_image: Swift.String? = nil,
                 image: Swift.String? = nil,
@@ -1518,6 +1229,7 @@ extension Components {
             ) {
                 self.asset_id = asset_id
                 self.symbol = symbol
+                self.name = name
                 self.network_name = network_name
                 self.network_image = network_image
                 self.image = image
@@ -1531,6 +1243,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case asset_id
                 case symbol
+                case name
                 case network_name
                 case network_image
                 case image
@@ -1550,6 +1263,10 @@ extension Components {
             public var asset_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/symbol`.
             public var symbol: Swift.String
+            /// Human-readable asset name (e.g. "Bitcoin", "Tether")
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/name`.
+            public var name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/network_name`.
             public var network_name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/network_image`.
@@ -1564,6 +1281,8 @@ extension Components {
             public var extra_id_required: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/extra_id_name`.
             public var extra_id_name: Swift.String?
+            /// Ordered for display; render as received
+            ///
             /// - Remark: Generated from `#/components/schemas/OnrampAssetDetail/payment_methods`.
             public var payment_methods: [Components.Schemas.OnrampPaymentMethod]
             /// Creates a new `OnrampAssetDetail`.
@@ -1571,6 +1290,7 @@ extension Components {
             /// - Parameters:
             ///   - asset_id:
             ///   - symbol:
+            ///   - name: Human-readable asset name (e.g. "Bitcoin", "Tether")
             ///   - network_name:
             ///   - network_image:
             ///   - image:
@@ -1578,10 +1298,11 @@ extension Components {
             ///   - stablecoin:
             ///   - extra_id_required:
             ///   - extra_id_name:
-            ///   - payment_methods:
+            ///   - payment_methods: Ordered for display; render as received
             public init(
                 asset_id: Swift.String,
                 symbol: Swift.String,
+                name: Swift.String? = nil,
                 network_name: Swift.String? = nil,
                 network_image: Swift.String? = nil,
                 image: Swift.String? = nil,
@@ -1593,6 +1314,7 @@ extension Components {
             ) {
                 self.asset_id = asset_id
                 self.symbol = symbol
+                self.name = name
                 self.network_name = network_name
                 self.network_image = network_image
                 self.image = image
@@ -1605,6 +1327,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case asset_id
                 case symbol
+                case name
                 case network_name
                 case network_image
                 case image
@@ -1621,7 +1344,7 @@ extension Components {
         public struct OnrampPaymentMethod: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/type`.
             public var _type: Components.Schemas.ExchangePaymentMethodType
-            /// Display name (e.g. "Card", "Apple Pay")
+            /// Display name (e.g. "Card", "Apple Pay"), localized for generic types such as `card`
             ///
             /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/name`.
             public var name: Swift.String
@@ -1629,31 +1352,89 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/image`.
             public var image: Swift.String
+            /// Localized subtitle, e.g. the settlement speed "Instant", "1–3 days", or "Buy from other users in Walt" for `p2p`. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/subtitle`.
+            public var subtitle: Swift.String?
+            /// Localized badge text, e.g. "Recommended", "For beginners"; the badge is set by our config. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/badge`.
+            public var badge: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/providers`.
             public var providers: [Components.Schemas.OnrampProvider]
+            /// Amount to prefill, keyed by fiat (ISO 4217, as in `providers[].fiat`). Sent only
+            /// to an install (`F`; `X-Wallet-ID` is not used) with a completed purchase: the next
+            /// step of the ladder 20, 50, 100, 200, 300, 500, 1000, 2000, 3000 USD above its
+            /// largest purchase (past 3000 the next multiple of 5000 USD), converted into the
+            /// fiat, rounded up to a round number,
+            /// and kept within this method's limits for it. A fiat that is absent keeps the
+            /// client's own default.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/default_amounts`.
+            public struct default_amountsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.Double]
+                /// Creates a new `default_amountsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.Double] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Amount to prefill, keyed by fiat (ISO 4217, as in `providers[].fiat`). Sent only
+            /// to an install (`F`; `X-Wallet-ID` is not used) with a completed purchase: the next
+            /// step of the ladder 20, 50, 100, 200, 300, 500, 1000, 2000, 3000 USD above its
+            /// largest purchase (past 3000 the next multiple of 5000 USD), converted into the
+            /// fiat, rounded up to a round number,
+            /// and kept within this method's limits for it. A fiat that is absent keeps the
+            /// client's own default.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnrampPaymentMethod/default_amounts`.
+            public var default_amounts: Components.Schemas.OnrampPaymentMethod.default_amountsPayload?
             /// Creates a new `OnrampPaymentMethod`.
             ///
             /// - Parameters:
             ///   - _type:
-            ///   - name: Display name (e.g. "Card", "Apple Pay")
+            ///   - name: Display name (e.g. "Card", "Apple Pay"), localized for generic types such as `card`
             ///   - image: Image URL for the method
+            ///   - subtitle: Localized subtitle, e.g. the settlement speed "Instant", "1–3 days", or "Buy from other users in Walt" for `p2p`. Absent when there is none.
+            ///   - badge: Localized badge text, e.g. "Recommended", "For beginners"; the badge is set by our config. Absent when there is none.
             ///   - providers:
+            ///   - default_amounts: Amount to prefill, keyed by fiat (ISO 4217, as in `providers[].fiat`). Sent only
             public init(
                 _type: Components.Schemas.ExchangePaymentMethodType,
                 name: Swift.String,
                 image: Swift.String,
-                providers: [Components.Schemas.OnrampProvider]
+                subtitle: Swift.String? = nil,
+                badge: Swift.String? = nil,
+                providers: [Components.Schemas.OnrampProvider],
+                default_amounts: Components.Schemas.OnrampPaymentMethod.default_amountsPayload? = nil
             ) {
                 self._type = _type
                 self.name = name
                 self.image = image
+                self.subtitle = subtitle
+                self.badge = badge
                 self.providers = providers
+                self.default_amounts = default_amounts
             }
             public enum CodingKeys: String, CodingKey {
                 case _type = "type"
                 case name
                 case image
+                case subtitle
+                case badge
                 case providers
+                case default_amounts
             }
         }
         /// A merchant offering this payment method for a given fiat
@@ -2014,6 +1795,10 @@ extension Components {
             public var asset_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/OfframpAsset/symbol`.
             public var symbol: Swift.String
+            /// Human-readable asset name (e.g. "Bitcoin", "Tether")
+            ///
+            /// - Remark: Generated from `#/components/schemas/OfframpAsset/name`.
+            public var name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OfframpAsset/network_name`.
             public var network_name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OfframpAsset/network_image`.
@@ -2045,6 +1830,7 @@ extension Components {
             /// - Parameters:
             ///   - asset_id: `{chain}/{net}/coin` for natives, `{chain}/{net}/jetton|token/{addr}` for tokens
             ///   - symbol:
+            ///   - name: Human-readable asset name (e.g. "Bitcoin", "Tether")
             ///   - network_name:
             ///   - network_image:
             ///   - image:
@@ -2057,6 +1843,7 @@ extension Components {
             public init(
                 asset_id: Swift.String,
                 symbol: Swift.String,
+                name: Swift.String? = nil,
                 network_name: Swift.String? = nil,
                 network_image: Swift.String? = nil,
                 image: Swift.String? = nil,
@@ -2069,6 +1856,7 @@ extension Components {
             ) {
                 self.asset_id = asset_id
                 self.symbol = symbol
+                self.name = name
                 self.network_name = network_name
                 self.network_image = network_image
                 self.image = image
@@ -2082,6 +1870,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case asset_id
                 case symbol
+                case name
                 case network_name
                 case network_image
                 case image
@@ -2101,6 +1890,10 @@ extension Components {
             public var asset_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/symbol`.
             public var symbol: Swift.String
+            /// Human-readable asset name (e.g. "Bitcoin", "Tether")
+            ///
+            /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/name`.
+            public var name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/network_name`.
             public var network_name: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/network_image`.
@@ -2115,6 +1908,8 @@ extension Components {
             public var extra_id_required: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/extra_id_name`.
             public var extra_id_name: Swift.String?
+            /// Ordered for display; render as received
+            ///
             /// - Remark: Generated from `#/components/schemas/OfframpAssetDetail/payout_methods`.
             public var payout_methods: [Components.Schemas.OfframpPayoutMethod]
             /// Creates a new `OfframpAssetDetail`.
@@ -2122,6 +1917,7 @@ extension Components {
             /// - Parameters:
             ///   - asset_id:
             ///   - symbol:
+            ///   - name: Human-readable asset name (e.g. "Bitcoin", "Tether")
             ///   - network_name:
             ///   - network_image:
             ///   - image:
@@ -2129,10 +1925,11 @@ extension Components {
             ///   - stablecoin:
             ///   - extra_id_required:
             ///   - extra_id_name:
-            ///   - payout_methods:
+            ///   - payout_methods: Ordered for display; render as received
             public init(
                 asset_id: Swift.String,
                 symbol: Swift.String,
+                name: Swift.String? = nil,
                 network_name: Swift.String? = nil,
                 network_image: Swift.String? = nil,
                 image: Swift.String? = nil,
@@ -2144,6 +1941,7 @@ extension Components {
             ) {
                 self.asset_id = asset_id
                 self.symbol = symbol
+                self.name = name
                 self.network_name = network_name
                 self.network_image = network_image
                 self.image = image
@@ -2156,6 +1954,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case asset_id
                 case symbol
+                case name
                 case network_name
                 case network_image
                 case image
@@ -2172,7 +1971,7 @@ extension Components {
         public struct OfframpPayoutMethod: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/type`.
             public var _type: Components.Schemas.ExchangePaymentMethodType
-            /// Display name (e.g. "Card", "SEPA")
+            /// Display name (e.g. "Card", "SEPA"), localized for generic types such as `card`
             ///
             /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/name`.
             public var name: Swift.String
@@ -2180,30 +1979,46 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/image`.
             public var image: Swift.String
+            /// Localized subtitle, e.g. the settlement speed "Instant", "1–3 days", or "Buy from other users in Walt" for `p2p`. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/subtitle`.
+            public var subtitle: Swift.String?
+            /// Localized badge text, e.g. "Recommended", "For beginners"; the badge is set by our config. Absent when there is none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/badge`.
+            public var badge: Swift.String?
             /// - Remark: Generated from `#/components/schemas/OfframpPayoutMethod/providers`.
             public var providers: [Components.Schemas.OfframpProvider]
             /// Creates a new `OfframpPayoutMethod`.
             ///
             /// - Parameters:
             ///   - _type:
-            ///   - name: Display name (e.g. "Card", "SEPA")
+            ///   - name: Display name (e.g. "Card", "SEPA"), localized for generic types such as `card`
             ///   - image: Image URL for the method
+            ///   - subtitle: Localized subtitle, e.g. the settlement speed "Instant", "1–3 days", or "Buy from other users in Walt" for `p2p`. Absent when there is none.
+            ///   - badge: Localized badge text, e.g. "Recommended", "For beginners"; the badge is set by our config. Absent when there is none.
             ///   - providers:
             public init(
                 _type: Components.Schemas.ExchangePaymentMethodType,
                 name: Swift.String,
                 image: Swift.String,
+                subtitle: Swift.String? = nil,
+                badge: Swift.String? = nil,
                 providers: [Components.Schemas.OfframpProvider]
             ) {
                 self._type = _type
                 self.name = name
                 self.image = image
+                self.subtitle = subtitle
+                self.badge = badge
                 self.providers = providers
             }
             public enum CodingKeys: String, CodingKey {
                 case _type = "type"
                 case name
                 case image
+                case subtitle
+                case badge
                 case providers
             }
         }
@@ -2796,57 +2611,6 @@ extension Components {
                 case swap_pair
             }
         }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapSlippage`.
-        public struct CrossSwapSlippage: Codable, Hashable, Sendable {
-            /// Slippage options keyed by source-chain identifier (see `CrossSwapChain` enum,
-            /// e.g. `ton`, `eth`, `btc`). Chains absent from this map fall through to a
-            /// wallet-side default of 100 bps.
-            ///
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSlippage/chains`.
-            public struct chainsPayload: Codable, Hashable, Sendable {
-                /// A container of undocumented properties.
-                public var additionalProperties: [String: Components.Schemas.CrossSwapSlippageOptions]
-                /// Creates a new `chainsPayload`.
-                ///
-                /// - Parameters:
-                ///   - additionalProperties: A container of undocumented properties.
-                public init(additionalProperties: [String: Components.Schemas.CrossSwapSlippageOptions] = .init()) {
-                    self.additionalProperties = additionalProperties
-                }
-                public init(from decoder: any Swift.Decoder) throws {
-                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-                }
-                public func encode(to encoder: any Swift.Encoder) throws {
-                    try encoder.encodeAdditionalProperties(additionalProperties)
-                }
-            }
-            /// Slippage options keyed by source-chain identifier (see `CrossSwapChain` enum,
-            /// e.g. `ton`, `eth`, `btc`). Chains absent from this map fall through to a
-            /// wallet-side default of 100 bps.
-            ///
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSlippage/chains`.
-            public var chains: Components.Schemas.CrossSwapSlippage.chainsPayload
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSlippage/default_pair`.
-            public var default_pair: Components.Schemas.CrossSwapDefaultPair?
-            /// Creates a new `CrossSwapSlippage`.
-            ///
-            /// - Parameters:
-            ///   - chains: Slippage options keyed by source-chain identifier (see `CrossSwapChain` enum,
-            ///   - default_pair:
-            public init(
-                chains: Components.Schemas.CrossSwapSlippage.chainsPayload,
-                default_pair: Components.Schemas.CrossSwapDefaultPair? = nil
-            ) {
-                self.chains = chains
-                self.default_pair = default_pair
-            }
-            public enum CodingKeys: String, CodingKey {
-                case chains
-                case default_pair
-            }
-        }
         /// Server-driven pair to pre-select in the cross-swap UI on cold open. Backend controls
         /// this so we can rotate the default (A/B tests, promoted pairs) without a client
         /// release. Clients should treat both asset_ids as opaque and pass them directly to
@@ -2894,27 +2658,6 @@ extension Components {
                 case destination_asset
             }
         }
-        /// Source chain identifier used across cross-swap requests
-        ///
-        /// - Remark: Generated from `#/components/schemas/CrossSwapChain`.
-        @frozen public enum CrossSwapChain: String, Codable, Hashable, Sendable, CaseIterable {
-            case ton = "ton"
-            case eth = "eth"
-            case btc = "btc"
-            case sol = "sol"
-            case bsc = "bsc"
-            case arb = "arb"
-            case op = "op"
-            case base = "base"
-            case polygon = "polygon"
-            case avax = "avax"
-            case tron = "tron"
-            case near = "near"
-            case ltc = "ltc"
-            case doge = "doge"
-            case xrp = "xrp"
-            case ada = "ada"
-        }
         /// - Remark: Generated from `#/components/schemas/CrossSwapSlippageOptions`.
         public struct CrossSwapSlippageOptions: Codable, Hashable, Sendable {
             /// Slippage options the wallet should show, ascending. Values are in basis points (100 bps = 1%)
@@ -2953,14 +2696,47 @@ extension Components {
             case COSMOS = "COSMOS"
             case TRON = "TRON"
             case RIPPLE = "RIPPLE"
+            case LIGHTER = "LIGHTER"
             case OTHER = "OTHER"
         }
         /// Cross-chain aggregator that produced the route.
-        /// `omniston` serves TON to TON only. For clients reporting build
-        /// 26.9.0 or newer on Android, or 26.9.1 or newer on iOS, it is out of
-        /// the default fan-out and is queried as a fallback, when the other
-        /// aggregators returned no route at all; older clients keep it in the
-        /// default fan-out.
+        /// `omniston` serves TON to TON, and swaps leaving TON for an EVM chain
+        /// (`eth`, `bsc`, `arb`, `base`, `polygon`, `avax`) when both sides are
+        /// stablecoins. Those it settles through an escrow, so the route is one
+        /// TON message and the swap completes minutes later; it is not quoted
+        /// into TON, and not above roughly $1000.
+        ///
+        /// A swap out of TON into a chain Omniston serves cross-chain worth less than
+        /// `CROSSSWAP_OMNISTON_CROSSCHAIN_BELOW_USD` is quoted from Omniston
+        /// alone, because its spread there is flat rather than proportional. An
+        /// `aggregators` list or an exclusion naming `omniston` overrides that.
+        ///
+        /// How the TON to TON pair is routed is a server switch,
+        /// `CROSSSWAP_FORCE_OMNISTON_TON`.
+        ///
+        /// While it is on, which is the default, a swap that stays on TON is
+        /// quoted from Omniston alone — whatever `aggregators` names, whatever it
+        /// excludes, whatever build the client reports. The other aggregators are
+        /// tried only if Omniston returns no route.
+        ///
+        /// While it is off, the pair follows the ordinary rules: clients below
+        /// Android 26.9.0 / iOS 26.9.1 still get Omniston alone, newer ones are
+        /// fanned out, and an explicit `aggregators` list wins for either.
+        ///
+        /// A dev build (major 9XX, as in 926.13.0) is routed as with the switch
+        /// off, so its TON to TON swaps go to `swapsxyz`. For such a build
+        /// swaps.xyz may also route them through Rango. On
+        /// `POST /v3/crosschain/quotes` a dev build and a client from 26.14.0
+        /// get `swapsxyz` alone on every pair, through Rango alone.
+        ///
+        /// `exact_output` follows the same switch: within TON it is answered by
+        /// searching Omniston's exact-input quotes (and swaps.xyz's, which
+        /// route through Omniston) for the source amount that yields
+        /// `destination_amount`. Off a
+        /// TON to TON pair Omniston is quoted only when `aggregators` names it.
+        /// `relay` serves Lighter deposits and withdrawals only: it is quoted when
+        /// the request names a `destination_target` or a `source_target`, and
+        /// never in the swap fan-out.
         ///
         ///
         /// - Remark: Generated from `#/components/schemas/CrossSwapAggregator`.
@@ -2968,6 +2744,255 @@ extension Components {
             case swapkit = "swapkit"
             case swapsxyz = "swapsxyz"
             case omniston = "omniston"
+            case relay = "relay"
+        }
+        /// A contract on the destination chain the delivered asset is handed to,
+        /// instead of the recipient's wallet. `recipient_address` is then the
+        /// account that contract credits.
+        /// `lighter`: a Lighter account. The destination asset must be USDC on
+        /// Ethereum (`eth/mainnet/erc20/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`).
+        /// `recipient_address` is either the Ethereum address whose account is
+        /// credited, through Lighter's L1 deposit gateway on Ethereum (this is
+        /// what creates an account), or the index of an existing account, which
+        /// `relay` credits on Lighter directly, with no gateway call and no
+        /// `change_pub_key`. Quoted from `ton`, `eth`, `bsc`, `base`, `arb`, `tron`
+        /// (TRX and TRC-20 tokens) and `btc`; a `btc` quote spends the sender's
+        /// own outputs, so the sender must hold the amount already. USDC
+        /// already on Ethereum to an address is quoted as a direct gateway call
+        /// with no aggregator (protocol `lighter_gateway`, nothing to track),
+        /// anything else through `relay`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapDestinationTarget`.
+        @frozen public enum CrossSwapDestinationTarget: String, Codable, Hashable, Sendable, CaseIterable {
+            case lighter = "lighter"
+        }
+        /// A balance the source asset is taken out of, instead of the sender's
+        /// wallet. `sender_address` then names the account in it. The reverse of
+        /// a `destination_target`.
+        /// `lighter`: the USDC collateral of a Lighter perps account -- a
+        /// withdrawal. `source_asset` is USDC on Ethereum
+        /// (`eth/mainnet/erc20/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`), the
+        /// asset a lighter deposit lands as, and `sender_address` the account
+        /// index, in decimal. `destination_asset` is any asset `relay` delivers
+        /// from Lighter -- quoted today to `ton`, `eth`, `bsc`, `base`, `arb`,
+        /// `tron` and `btc` -- and `recipient_address` the wallet on its chain.
+        /// Nothing leaves Lighter to L1: the one payload is a Lighter transfer of
+        /// the collateral into relay's account there (`lighter_transfer`), and
+        /// relay pays out on the destination chain.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapSourceTarget`.
+        @frozen public enum CrossSwapSourceTarget: String, Codable, Hashable, Sendable, CaseIterable {
+            case lighter = "lighter"
+        }
+        /// Register a Lighter L2 signing key in the same cross-chain action as the
+        /// deposit, so a wallet that holds no ETH never has to pay for the call
+        /// itself. Only with `destination_target: lighter`.
+        /// On a deposit of USDC on Ethereum, which the wallet sends itself, the
+        /// registration is the third call of the EIP-7702 batch, after the
+        /// approval and the deposit: it needs `eip7702_batch: true`, a sender
+        /// that is the recipient (changePubKey runs as the sender), and a sender
+        /// that can run the batch -- an EOA. `authorization` and `execute` are
+        /// then absent: the wallet's own type-4 transaction delegates, and a call
+        /// the account makes to itself needs no signature over it. A quote that
+        /// cannot carry it this way is refused rather than given without it.
+        /// On a route relay fills:
+        /// Lighter's `changePubKey` insists the caller is the account owner, and
+        /// under relay the caller is the solver's multicaller. The way round that
+        /// is EIP-7702: `authorization` delegates the owner's own EOA to the
+        /// delegate contract for the fill, and the solver then calls into that
+        /// EOA, so `msg.sender` is the owner. The delegate is pinned by the
+        /// service; an authorization naming any other address is refused.
+        /// The solver is not the account, so the delegate runs the call only
+        /// with the owner's signature over it: `execute`. Both go together.
+        /// Asked with neither, the quote is a preview: priced as the signed one
+        /// will be, with no payloads and no execution, and the route carries
+        /// `change_pub_key_signing` -- the nonces and the deadline the owner
+        /// signs both over. The same request again with the two signatures is
+        /// the quote to send.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey`.
+        public struct CrossSwapChangePubKey: Codable, Hashable, Sendable {
+            /// The Lighter account the key is registered on. 281474976710655
+            /// (2^48 - 1, Lighter's `NIL_ACCOUNT_INDEX`) is the caller's own
+            /// account, resolved when the call runs -- the one to use, and the
+            /// only one a deposit that creates the account can name: `deposit`
+            /// assigns the index on L1 earlier in the same batch. An explicit
+            /// index is taken by L1 as given, even a wrong one, and fails only
+            /// on L2, with the deposit landed and the key not set.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey/account_index`.
+            public var account_index: Swift.Int64
+            /// The slot the key goes into. 255 is Lighter's "all keys" sentinel
+            /// and is not a slot.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey/api_key_index`.
+            public var api_key_index: Swift.Int
+            /// The L2 public key, 40 bytes.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey/pub_key`.
+            public var pub_key: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey/authorization`.
+            public var authorization: Components.Schemas.EIP7702Authorization?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKey/execute`.
+            public var execute: Components.Schemas.HermesExecuteSignature?
+            /// Creates a new `CrossSwapChangePubKey`.
+            ///
+            /// - Parameters:
+            ///   - account_index: The Lighter account the key is registered on. 281474976710655
+            ///   - api_key_index: The slot the key goes into. 255 is Lighter's "all keys" sentinel
+            ///   - pub_key: The L2 public key, 40 bytes.
+            ///   - authorization:
+            ///   - execute:
+            public init(
+                account_index: Swift.Int64,
+                api_key_index: Swift.Int,
+                pub_key: Swift.String,
+                authorization: Components.Schemas.EIP7702Authorization? = nil,
+                execute: Components.Schemas.HermesExecuteSignature? = nil
+            ) {
+                self.account_index = account_index
+                self.api_key_index = api_key_index
+                self.pub_key = pub_key
+                self.authorization = authorization
+                self.execute = execute
+            }
+            public enum CodingKeys: String, CodingKey {
+                case account_index
+                case api_key_index
+                case pub_key
+                case authorization
+                case execute
+            }
+        }
+        /// The owner's EIP-712 signature letting the solver run the changePubKey
+        /// call through the delegated EOA (HermesDelegateV1's signed batch mode).
+        /// Signed over
+        /// `Execute(bytes32 mode,Call[] calls,uint256 nonce,uint256 deadline)`
+        /// with `Call(address target,uint256 value,bytes data)`, in the domain
+        /// `{name: "Hermes", version: "v1.0.0", chainId: 1, verifyingContract:
+        /// <the owner's address>, salt: <the delegate, left-padded to 32 bytes>}`,
+        /// where `mode` is
+        /// `0x0100000000007821000100000000000000000000000000000000000000000000`
+        /// and `calls` is the one call
+        /// `{target: <Lighter's changePubKey contract 0x183ef7195d443a3da7ec1d7003baca1ff490757d>,
+        /// value: 0, data: changePubKey(account_index, api_key_index, pub_key)}`.
+        /// Checked when the quote is made: a signature that does not recover to
+        /// the owner over that call, or a stale nonce, would revert the fill and
+        /// the deposit with it.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/HermesExecuteSignature`.
+        public struct HermesExecuteSignature: Codable, Hashable, Sendable {
+            /// The owner's nonce at the delegate's nonce manager
+            /// (`HermesV1.nonceOf(owner)`), consumed by the fill. Any other signed
+            /// batch of the owner's in between invalidates the signature.
+            /// Optional: absent, the chain's is taken, and the signature has to
+            /// recover to the owner over it.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/HermesExecuteSignature/nonce`.
+            public var nonce: Swift.Int64?
+            /// Unix seconds after which the signature no longer validates;
+            /// between 5 minutes and 24 hours ahead. The signature stays usable
+            /// until then if the fill fails, so keep it short.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/HermesExecuteSignature/deadline`.
+            public var deadline: Swift.Int64
+            /// r || s || v, v 27 or 28.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HermesExecuteSignature/signature`.
+            public var signature: Swift.String
+            /// Creates a new `HermesExecuteSignature`.
+            ///
+            /// - Parameters:
+            ///   - nonce: The owner's nonce at the delegate's nonce manager
+            ///   - deadline: Unix seconds after which the signature no longer validates;
+            ///   - signature: r || s || v, v 27 or 28.
+            public init(
+                nonce: Swift.Int64? = nil,
+                deadline: Swift.Int64,
+                signature: Swift.String
+            ) {
+                self.nonce = nonce
+                self.deadline = deadline
+                self.signature = signature
+            }
+            public enum CodingKeys: String, CodingKey {
+                case nonce
+                case deadline
+                case signature
+            }
+        }
+        /// An EIP-7702 authorization tuple, signed by the account owner over
+        /// `keccak(0x05 || rlp([chain_id, address, nonce]))`. It is forwarded to
+        /// the aggregator unchanged and lands in the fill transaction.
+        /// The nonce is the owner's own nonce on the destination chain, checked
+        /// against the chain when the quote is made: the solver sends the
+        /// transaction, so the nonce is untouched at execution time, and any
+        /// transaction the owner sends in between invalidates the authorization.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EIP7702Authorization`.
+        public struct EIP7702Authorization: Codable, Hashable, Sendable {
+            /// The chain the delegation applies to. 1 (Ethereum) here; 0 (any chain) is refused.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/chain_id`.
+            public var chain_id: Swift.Int64
+            /// The delegate the EOA's code is set to. Must be the delegate this service pins.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/address`.
+            public var address: Swift.String
+            /// The owner's nonce on that chain when the authorization was signed.
+            /// Optional: absent, the chain's is taken. Either way the signature
+            /// has to recover to the owner over it.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/nonce`.
+            public var nonce: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/y_parity`.
+            public var y_parity: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/r`.
+            public var r: Swift.String
+            /// - Remark: Generated from `#/components/schemas/EIP7702Authorization/s`.
+            public var s: Swift.String
+            /// Creates a new `EIP7702Authorization`.
+            ///
+            /// - Parameters:
+            ///   - chain_id: The chain the delegation applies to. 1 (Ethereum) here; 0 (any chain) is refused.
+            ///   - address: The delegate the EOA's code is set to. Must be the delegate this service pins.
+            ///   - nonce: The owner's nonce on that chain when the authorization was signed.
+            ///   - y_parity:
+            ///   - r:
+            ///   - s:
+            public init(
+                chain_id: Swift.Int64,
+                address: Swift.String,
+                nonce: Swift.Int64? = nil,
+                y_parity: Swift.Int,
+                r: Swift.String,
+                s: Swift.String
+            ) {
+                self.chain_id = chain_id
+                self.address = address
+                self.nonce = nonce
+                self.y_parity = y_parity
+                self.r = r
+                self.s = s
+            }
+            public enum CodingKeys: String, CodingKey {
+                case chain_id
+                case address
+                case nonce
+                case y_parity
+                case r
+                case s
+            }
         }
         /// Underlying protocol or DEX that actually executes the swap (provider-driven, free-form).
         ///
@@ -3004,9 +3029,19 @@ extension Components {
         /// report `estimated_destination_amount`.
         /// `exact_output`: `destination_amount` is what the user must receive,
         /// routes report the `source_amount` the user is expected to pay and
-        /// `maximum_source_amount`, the cap including slippage. Only `swapsxyz`
-        /// can quote `exact_output`; other aggregators are skipped and reported
-        /// in `provider_errors`.
+        /// `maximum_source_amount`, the cap including slippage. Off TON only
+        /// `swapsxyz` can quote `exact_output`; other aggregators are skipped and
+        /// reported in `provider_errors`. Within TON (both assets on TON) only
+        /// `omniston` and `swapsxyz` answer it, each quoted exact-input for the
+        /// smallest source amount found whose estimate reaches
+        /// `destination_amount`: the route is an ordinary
+        /// exact-input swap of that amount, so `maximum_source_amount` equals
+        /// `source_amount`, `estimated_destination_amount` is at least
+        /// `destination_amount` (within 0.15%), and slippage lands on the
+        /// destination side as `minimum_destination_amount`. Both assets must
+        /// have a USD price; a pair without one, or a route found that way which
+        /// loses more than 1% of its USD value, is reported in `provider_errors`
+        /// with code `no_route` instead.
         ///
         ///
         /// - Remark: Generated from `#/components/schemas/CrossSwapExactType`.
@@ -3028,6 +3063,8 @@ extension Components {
             case tron_tx = "tron_tx"
             case ripple_tx = "ripple_tx"
             case alt_vm_deposit = "alt_vm_deposit"
+            case lighter_transfer = "lighter_transfer"
+            case evm_7702_batch_tx = "evm_7702_batch_tx"
         }
         /// Whether the amount inside `payload` is fixed.
         /// `exact` - the amount is part of the calldata and must be signed as
@@ -3050,26 +3087,6 @@ extension Components {
             case validated = "validated"
             case pending = "pending"
             case rejected = "rejected"
-        }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapBroadcastMode`.
-        @frozen public enum CrossSwapBroadcastMode: String, Codable, Hashable, Sendable, CaseIterable {
-            case backend = "backend"
-            case client = "client"
-        }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionStatus`.
-        @frozen public enum CrossSwapExecutionStatus: String, Codable, Hashable, Sendable, CaseIterable {
-            case not_started = "not_started"
-            case source_tx_pending = "source_tx_pending"
-            case source_tx_submitted = "source_tx_submitted"
-            case source_tx_confirmed = "source_tx_confirmed"
-            case bridging = "bridging"
-            case streaming = "streaming"
-            case destination_pending = "destination_pending"
-            case destination_settled = "destination_settled"
-            case refunded = "refunded"
-            case failed = "failed"
-            case expired = "expired"
-            case unknown = "unknown"
         }
         /// Fee category emitted by the aggregator (provider-driven, free-form).
         ///
@@ -3241,9 +3258,15 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/route_id`.
             public var route_id: Swift.String
             /// The aggregator's own identifier for this route, passed through
-            /// verbatim: swapsxyz `txId`, swapkit `routeId`, omniston `quoteId`.
-            /// Interpret it together with `aggregator`. Omitted when the
-            /// provider does not expose one.
+            /// verbatim: swapkit `routeId`, omniston `quoteId`. Interpret it
+            /// together with `aggregator`. Omitted when the provider does not
+            /// expose one.
+            ///
+            /// swapsxyz and relay price a quote without an identifier, so at
+            /// quote time this is an id of ours. The swapsxyz `txId` only exists
+            /// once the transaction is built: with `include_payload: true` the
+            /// route carries the `txId` here, otherwise it arrives as
+            /// `provider_route_id` on the prepare response.
             ///
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/provider_route_id`.
@@ -3268,7 +3291,8 @@ extension Components {
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/maximum_source_amount`.
             public var maximum_source_amount: Swift.String?
             /// Raw base-units amount the user is expected to receive. For
-            /// `exact_output` it equals the requested `destination_amount`.
+            /// `exact_output` it equals the requested `destination_amount`, or
+            /// within TON is at least it (see `CrossSwapExactType`).
             ///
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/estimated_destination_amount`.
@@ -3277,7 +3301,13 @@ extension Components {
             public var minimum_destination_amount: Swift.String
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/estimated_time`.
             public var estimated_time: Components.Schemas.CrossSwapTimeEstimate?
-            /// Aggregate slippage across all legs (bps)
+            /// Meaning depends on the aggregator. `swapkit`: SwapKit's own
+            /// `totalSlippageBps` as is, the route's signed difference from the
+            /// market price in basis points, negative when the user gets less
+            /// (-150 = 1.5% worse than market); not a tolerance. Every other
+            /// aggregator: the slippage tolerance the route was quoted with, in
+            /// basis points. Omitted when 0.
+            ///
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/total_slippage_bps`.
             public var total_slippage_bps: Swift.Int?
@@ -3309,6 +3339,15 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/tags`.
             public var tags: [Components.Schemas.CrossSwapRouteTag]?
+            /// Free-form codes, mostly passed through from the aggregator. Ours:
+            /// - `insufficient_native_balance`: `sender_address` holds less of the
+            ///   source chain's coin than the route is known to need from it (its
+            ///   gas fee rows, plus the amount when the coin is the source asset).
+            ///   Only for EVM sources with a configured node; absent when the
+            ///   balance could not be read in time or the route states no gas.
+            ///   Ignore it when the gas is sponsored (battery).
+            ///
+            ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/warnings`.
             public var warnings: [Swift.String]?
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/fees`.
@@ -3322,12 +3361,22 @@ extension Components {
             /// Signing payloads for this route, prepared inline. Present only
             /// when the quote request had `include_payload: true` and the
             /// provider's prepare step succeeded. When present the client can
-            /// sign and call `/v2/swap/payload/{payload_id}/submit` directly,
-            /// skipping the separate `/v2/swap/route/{route_id}/prepare`.
+            /// sign and broadcast them directly, skipping the separate
+            /// `/v2/crosschain/routes/{route_id}/prepare`.
             ///
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/payloads`.
             public var payloads: [Components.Schemas.CrossSwapPayload]?
+            /// The execution opened for this route by the inline prepare, when
+            /// the provider can follow the route before anything is signed
+            /// (a `relay` deposit, tracked by the id it was quoted under). Absent
+            /// otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/execution_id`.
+            public var execution_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapRoute/change_pub_key_signing`.
+            public var change_pub_key_signing: Components.Schemas.CrossSwapChangePubKeySigning?
             /// Creates a new `CrossSwapRoute`.
             ///
             /// - Parameters:
@@ -3341,18 +3390,20 @@ extension Components {
             ///   - estimated_destination_amount: Raw base-units amount the user is expected to receive. For
             ///   - minimum_destination_amount:
             ///   - estimated_time:
-            ///   - total_slippage_bps: Aggregate slippage across all legs (bps)
+            ///   - total_slippage_bps: Meaning depends on the aggregator. `swapkit`: SwapKit's own
             ///   - value_difference_bps: USD value difference between input and output, in basis points
             ///   - price_impact_bps: Provider-estimated price impact of the trade, in basis points
             ///   - source_usd_price: USD price of one whole source-asset unit at quote time. Omitted when unknown
             ///   - destination_usd_price: USD price of one whole destination-asset unit at quote time. Omitted when unknown
             ///   - tags: Aggregator-assigned highlights (e.g. fastest, cheapest)
-            ///   - warnings:
+            ///   - warnings: Free-form codes, mostly passed through from the aggregator. Ours:
             ///   - fees:
             ///   - legs:
             ///   - date_expire:
             ///   - risk_level:
             ///   - payloads: Signing payloads for this route, prepared inline. Present only
+            ///   - execution_id: The execution opened for this route by the inline prepare, when
+            ///   - change_pub_key_signing:
             public init(
                 route_id: Swift.String,
                 provider_route_id: Swift.String? = nil,
@@ -3375,7 +3426,9 @@ extension Components {
                 legs: [Components.Schemas.CrossSwapLeg],
                 date_expire: Foundation.Date,
                 risk_level: Components.Schemas.CrossSwapRiskLevel,
-                payloads: [Components.Schemas.CrossSwapPayload]? = nil
+                payloads: [Components.Schemas.CrossSwapPayload]? = nil,
+                execution_id: Swift.String? = nil,
+                change_pub_key_signing: Components.Schemas.CrossSwapChangePubKeySigning? = nil
             ) {
                 self.route_id = route_id
                 self.provider_route_id = provider_route_id
@@ -3399,6 +3452,8 @@ extension Components {
                 self.date_expire = date_expire
                 self.risk_level = risk_level
                 self.payloads = payloads
+                self.execution_id = execution_id
+                self.change_pub_key_signing = change_pub_key_signing
             }
             public enum CodingKeys: String, CodingKey {
                 case route_id
@@ -3423,6 +3478,509 @@ extension Components {
                 case date_expire
                 case risk_level
                 case payloads
+                case execution_id
+                case change_pub_key_signing
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute`.
+        public struct CrossSwapQuotedRoute: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/route_id`.
+            public var route_id: Swift.String
+            /// The aggregator's own identifier for this route, passed through
+            /// verbatim: swapkit `routeId`, omniston `quoteId`. Interpret it
+            /// together with `aggregator`. Omitted when the provider does not
+            /// expose one.
+            ///
+            /// swapsxyz and relay price a quote without an identifier, so at
+            /// quote time this is an id of ours. The swapsxyz `txId` only exists
+            /// once the transaction is built: with `include_payload: true` the
+            /// route carries the `txId` here, otherwise it arrives as
+            /// `provider_route_id` on the prepare response.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/provider_route_id`.
+            public var provider_route_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/aggregator`.
+            public var aggregator: Components.Schemas.CrossSwapAggregator
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/protocol`.
+            public var _protocol: Components.Schemas.CrossSwapProtocol?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/route_type`.
+            public var route_type: Components.Schemas.CrossSwapRouteType
+            /// Raw base-units amount the user is paying. For `exact_input` it is
+            /// echoed back from the quote request; for `exact_output` it is the
+            /// provider's expected input, exclusive of slippage.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/source_amount`.
+            public var source_amount: Swift.String?
+            /// Raw base-units cap on what the user may pay, inclusive of
+            /// slippage. Present only for `exact_output` quotes.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/maximum_source_amount`.
+            public var maximum_source_amount: Swift.String?
+            /// Raw base-units amount the user is expected to receive. For
+            /// `exact_output` it equals the requested `destination_amount`, or
+            /// within TON is at least it (see `CrossSwapExactType`).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/estimated_destination_amount`.
+            public var estimated_destination_amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/minimum_destination_amount`.
+            public var minimum_destination_amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/estimated_time`.
+            public var estimated_time: Components.Schemas.CrossSwapTimeEstimate?
+            /// Meaning depends on the aggregator. `swapkit`: SwapKit's own
+            /// `totalSlippageBps` as is, the route's signed difference from the
+            /// market price in basis points, negative when the user gets less
+            /// (-150 = 1.5% worse than market); not a tolerance. Every other
+            /// aggregator: the slippage tolerance the route was quoted with, in
+            /// basis points. Omitted when 0.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/total_slippage_bps`.
+            public var total_slippage_bps: Swift.Int?
+            /// USD value difference between input and output, in basis points
+            /// (1% = 100 bps, so -300 = -3%). Negative means the user receives
+            /// less USD than they pay. Omitted when |bps| < 300 or USD prices
+            /// are unavailable.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/value_difference_bps`.
+            public var value_difference_bps: Swift.Int?
+            /// Provider-estimated price impact of the trade, in basis points
+            /// (1% = 100 bps). Higher = more slippage vs mid-market. Omitted
+            /// when the provider cannot estimate it (e.g. HTLC orders, low
+            /// liquidity paths).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/price_impact_bps`.
+            public var price_impact_bps: Swift.Int?
+            /// USD price of one whole source-asset unit at quote time. Omitted when unknown
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/source_usd_price`.
+            public var source_usd_price: Swift.Double?
+            /// USD price of one whole destination-asset unit at quote time. Omitted when unknown
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/destination_usd_price`.
+            public var destination_usd_price: Swift.Double?
+            /// Aggregator-assigned highlights (e.g. fastest, cheapest)
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/tags`.
+            public var tags: [Components.Schemas.CrossSwapRouteTag]?
+            /// Free-form codes, mostly passed through from the aggregator. Ours:
+            /// - `insufficient_native_balance`: `sender_address` holds less of the
+            ///   source chain's coin than the route is known to need from it (its
+            ///   gas fee rows, plus the amount when the coin is the source asset).
+            ///   Only for EVM sources with a configured node; absent when the
+            ///   balance could not be read in time or the route states no gas.
+            ///   Ignore it when the gas is sponsored (battery).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/warnings`.
+            public var warnings: [Swift.String]?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/fees`.
+            public var fees: [Components.Schemas.CrossSwapFee]?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/legs`.
+            public var legs: [Components.Schemas.CrossSwapLeg]
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/date_expire`.
+            public var date_expire: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuotedRoute/risk_level`.
+            public var risk_level: Components.Schemas.CrossSwapRiskLevel
+            /// Creates a new `CrossSwapQuotedRoute`.
+            ///
+            /// - Parameters:
+            ///   - route_id:
+            ///   - provider_route_id: The aggregator's own identifier for this route, passed through
+            ///   - aggregator:
+            ///   - _protocol:
+            ///   - route_type:
+            ///   - source_amount: Raw base-units amount the user is paying. For `exact_input` it is
+            ///   - maximum_source_amount: Raw base-units cap on what the user may pay, inclusive of
+            ///   - estimated_destination_amount: Raw base-units amount the user is expected to receive. For
+            ///   - minimum_destination_amount:
+            ///   - estimated_time:
+            ///   - total_slippage_bps: Meaning depends on the aggregator. `swapkit`: SwapKit's own
+            ///   - value_difference_bps: USD value difference between input and output, in basis points
+            ///   - price_impact_bps: Provider-estimated price impact of the trade, in basis points
+            ///   - source_usd_price: USD price of one whole source-asset unit at quote time. Omitted when unknown
+            ///   - destination_usd_price: USD price of one whole destination-asset unit at quote time. Omitted when unknown
+            ///   - tags: Aggregator-assigned highlights (e.g. fastest, cheapest)
+            ///   - warnings: Free-form codes, mostly passed through from the aggregator. Ours:
+            ///   - fees:
+            ///   - legs:
+            ///   - date_expire:
+            ///   - risk_level:
+            public init(
+                route_id: Swift.String,
+                provider_route_id: Swift.String? = nil,
+                aggregator: Components.Schemas.CrossSwapAggregator,
+                _protocol: Components.Schemas.CrossSwapProtocol? = nil,
+                route_type: Components.Schemas.CrossSwapRouteType,
+                source_amount: Swift.String? = nil,
+                maximum_source_amount: Swift.String? = nil,
+                estimated_destination_amount: Swift.String,
+                minimum_destination_amount: Swift.String,
+                estimated_time: Components.Schemas.CrossSwapTimeEstimate? = nil,
+                total_slippage_bps: Swift.Int? = nil,
+                value_difference_bps: Swift.Int? = nil,
+                price_impact_bps: Swift.Int? = nil,
+                source_usd_price: Swift.Double? = nil,
+                destination_usd_price: Swift.Double? = nil,
+                tags: [Components.Schemas.CrossSwapRouteTag]? = nil,
+                warnings: [Swift.String]? = nil,
+                fees: [Components.Schemas.CrossSwapFee]? = nil,
+                legs: [Components.Schemas.CrossSwapLeg],
+                date_expire: Foundation.Date,
+                risk_level: Components.Schemas.CrossSwapRiskLevel
+            ) {
+                self.route_id = route_id
+                self.provider_route_id = provider_route_id
+                self.aggregator = aggregator
+                self._protocol = _protocol
+                self.route_type = route_type
+                self.source_amount = source_amount
+                self.maximum_source_amount = maximum_source_amount
+                self.estimated_destination_amount = estimated_destination_amount
+                self.minimum_destination_amount = minimum_destination_amount
+                self.estimated_time = estimated_time
+                self.total_slippage_bps = total_slippage_bps
+                self.value_difference_bps = value_difference_bps
+                self.price_impact_bps = price_impact_bps
+                self.source_usd_price = source_usd_price
+                self.destination_usd_price = destination_usd_price
+                self.tags = tags
+                self.warnings = warnings
+                self.fees = fees
+                self.legs = legs
+                self.date_expire = date_expire
+                self.risk_level = risk_level
+            }
+            public enum CodingKeys: String, CodingKey {
+                case route_id
+                case provider_route_id
+                case aggregator
+                case _protocol = "protocol"
+                case route_type
+                case source_amount
+                case maximum_source_amount
+                case estimated_destination_amount
+                case minimum_destination_amount
+                case estimated_time
+                case total_slippage_bps
+                case value_difference_bps
+                case price_impact_bps
+                case source_usd_price
+                case destination_usd_price
+                case tags
+                case warnings
+                case fees
+                case legs
+                case date_expire
+                case risk_level
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest`.
+        public struct CrossSwapQuoteRequest: Codable, Hashable, Sendable {
+            /// Read only by `POST /v3/crosschain/quotes`, and only while the
+            /// server's `CROSSSWAP_EXPERIMENTAL_AGGREGATOR` is on: true adds
+            /// `experimental_routes`, quote-only prices of more providers, and
+            /// the quote waits for them up to the server's
+            /// `CROSSSWAP_EXPERIMENTAL_DEADLINE` (2.5 s by default).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/experimental_aggregator`.
+            public var experimental_aggregator: Swift.Bool?
+            /// Internal asset identifier (same format as onramp asset_id):
+            /// - native coin: `{chain}/{net}/coin` — e.g. `eth/mainnet/coin`, `btc/mainnet/coin`, `ton/mainnet/coin`
+            /// - TON jetton: `ton/mainnet/jetton/{raw_address}` — e.g. `ton/mainnet/jetton/0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe`
+            /// - EVM/Tron/Solana/NEAR token: `{chain}/{net}/{standard}/{address}` (e.g. `erc20`, `bep20`, `trc20`, `spl`, `nep141`) — `eth/mainnet/erc20/0xdc035d45d973e3ec169d2276ddab16f1e407384f` (USDS)
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/source_asset`.
+            public var source_asset: Swift.String
+            /// Source amount in minimal units. Required when `exact_type`
+            /// is `exact_input` (the default); ignored for `exact_output`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/source_amount`.
+            public var source_amount: Swift.String?
+            /// Internal asset identifier (see source_asset)
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/destination_asset`.
+            public var destination_asset: Swift.String
+            /// Destination amount in minimal units the user must receive.
+            /// Required when `exact_type` is `exact_output`; ignored for
+            /// `exact_input`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/destination_amount`.
+            public var destination_amount: Swift.String?
+            /// Address signing the source tx
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/sender_address`.
+            public var sender_address: Swift.String
+            /// Address receiving funds on the destination chain
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/recipient_address`.
+            public var recipient_address: Swift.String
+            /// Forwarded to SwapsXYZ as `returnDepositAddress`, on
+            /// `/getQuote` when pricing and on `/getAction` when the route
+            /// is prepared, or while quoting for a route with TRON on
+            /// either side. When true, upstream prices and builds a
+            /// deposit-based swap flow and returns a deposit address with
+            /// the transaction. Default false. Ignored by other
+            /// aggregators.
+            /// Ignored (forced to false) only when the source asset is on
+            /// TON and the client reports build 26.9.0 or newer on Android,
+            /// or 26.9.1 or newer on iOS, in its `Tonkeeper/<version>`
+            /// User-Agent: a deposit address puts a TON source on a pricier
+            /// upstream bridge route that those clients no longer need.
+            /// Older clients, clients of an unknown platform below 26.9.1,
+            /// and any non-TON source are honoured as sent.
+            /// Also forced to false, for every client regardless of build,
+            /// when both assets are on TON: a swap that stays on TON bridges
+            /// nothing, so a deposit address only buys the bridge fee.
+            /// Likewise forced to false, for every client, when both assets
+            /// are on Robinhood: upstream has no deposit route there.
+            /// `POST /v3/crosschain/quotes` ignores it on every source: it is
+            /// never forwarded, so swaps.xyz builds a contract call where the
+            /// source chain has one (`exact`; a deposit transfer the source
+            /// chain cannot do without stays `flex`), and a native-coin sell
+            /// through SwapKit keeps its contract-call routes as well as the
+            /// plain transfers.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/return_deposit_address`.
+            public var return_deposit_address: Swift.Bool?
+            /// Adds SwapKit to the default fan-out (SwapsXYZ) for a pair
+            /// with no TON on either side and a source chain the server
+            /// does not pin to one aggregator. An `exact_input` swap whose
+            /// source is worth less than
+            /// `CROSSSWAP_MULTI_AGGREGATOR_BELOW_USD` (a swap that cannot
+            /// be priced is not) is quoted by both together and both
+            /// routes come back; any other `exact_input` swap is quoted by
+            /// SwapKit only when the default fan-out returns no route.
+            /// `exact_output` never reaches SwapKit, which does not quote it.
+            /// Omitted, it is on for clients reporting build 26.9.2 or newer
+            /// in their `Tonkeeper/<version>` User-Agent, and the service
+            /// default applies to every older or unrecognised client; an
+            /// explicit `aggregators` list wins over both.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/use_multi_aggregator`.
+            public var use_multi_aggregator: Swift.Bool?
+            /// True when `source_amount` is the entire balance of the
+            /// source asset. Forwarded to SwapsXYZ `/getAction` as
+            /// `isMax` when the route is prepared; the other aggregators
+            /// ignore it.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/is_max`.
+            public var is_max: Swift.Bool?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/slippage_bps`.
+            public var slippage_bps: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/exact_type`.
+            public var exact_type: Components.Schemas.CrossSwapExactType?
+            /// Optional whitelist of aggregators to query. Pass a single
+            /// entry to force one provider (e.g. `["swapkit"]`) — useful
+            /// for testing fallback behaviour before flipping defaults.
+            /// Naming aggregators also turns the fallback off: the list
+            /// is queried as given and nothing else is tried.
+            /// `swapkit` is not part of the default fan-out: it is quoted
+            /// when named here, or without a list under
+            /// `use_multi_aggregator` (see there).
+            /// `omniston` serves TON to TON, and this field does not
+            /// decide that pair while the server runs with
+            /// `CROSSSWAP_FORCE_OMNISTON_TON` on, which is the default: the
+            /// swap is quoted from Omniston alone however the list reads,
+            /// and the aggregators named here are tried only if Omniston
+            /// returns no route. With the switch off the list wins, and the
+            /// pair otherwise defaults to Omniston only for clients below
+            /// Android 26.9.0 / iOS 26.9.1. `exact_output` follows the
+            /// same rules, answered by an exact-input search. Off a TON to
+            /// TON pair Omniston is quoted when named here, and without a
+            /// list it quotes alone an `exact_input` swap out of TON into a
+            /// chain Omniston serves cross-chain, worth less than `CROSSSWAP_OMNISTON_CROSSCHAIN_BELOW_USD`, the
+            /// other aggregators tried only if it returns no route.
+            /// A dev build (major 9XX, as in 926.13.0) or a client from
+            /// 26.14.0 is quoted from `swapsxyz` alone whatever this field
+            /// names, and swaps.xyz takes Rango alone as its dex and bridge on
+            /// every pair, whatever `protocols` names. A pair Rango does not
+            /// serve gets no route.
+            /// A requested aggregator that is disabled on the server is
+            /// reported in `provider_errors` with code
+            /// `provider_unavailable`; if none of the requested
+            /// aggregators are enabled the request fails with
+            /// `no_aggregators`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/aggregators`.
+            public var aggregators: [Components.Schemas.CrossSwapAggregator]?
+            /// Optional whitelist of underlying protocols
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteRequest/protocols`.
+            public var protocols: [Components.Schemas.CrossSwapProtocol]?
+            /// Creates a new `CrossSwapQuoteRequest`.
+            ///
+            /// - Parameters:
+            ///   - experimental_aggregator: Read only by `POST /v3/crosschain/quotes`, and only while the
+            ///   - source_asset: Internal asset identifier (same format as onramp asset_id):
+            ///   - source_amount: Source amount in minimal units. Required when `exact_type`
+            ///   - destination_asset: Internal asset identifier (see source_asset)
+            ///   - destination_amount: Destination amount in minimal units the user must receive.
+            ///   - sender_address: Address signing the source tx
+            ///   - recipient_address: Address receiving funds on the destination chain
+            ///   - return_deposit_address: Forwarded to SwapsXYZ as `returnDepositAddress`, on
+            ///   - use_multi_aggregator: Adds SwapKit to the default fan-out (SwapsXYZ) for a pair
+            ///   - is_max: True when `source_amount` is the entire balance of the
+            ///   - slippage_bps:
+            ///   - exact_type:
+            ///   - aggregators: Optional whitelist of aggregators to query. Pass a single
+            ///   - protocols: Optional whitelist of underlying protocols
+            public init(
+                experimental_aggregator: Swift.Bool? = nil,
+                source_asset: Swift.String,
+                source_amount: Swift.String? = nil,
+                destination_asset: Swift.String,
+                destination_amount: Swift.String? = nil,
+                sender_address: Swift.String,
+                recipient_address: Swift.String,
+                return_deposit_address: Swift.Bool? = nil,
+                use_multi_aggregator: Swift.Bool? = nil,
+                is_max: Swift.Bool? = nil,
+                slippage_bps: Swift.Int? = nil,
+                exact_type: Components.Schemas.CrossSwapExactType? = nil,
+                aggregators: [Components.Schemas.CrossSwapAggregator]? = nil,
+                protocols: [Components.Schemas.CrossSwapProtocol]? = nil
+            ) {
+                self.experimental_aggregator = experimental_aggregator
+                self.source_asset = source_asset
+                self.source_amount = source_amount
+                self.destination_asset = destination_asset
+                self.destination_amount = destination_amount
+                self.sender_address = sender_address
+                self.recipient_address = recipient_address
+                self.return_deposit_address = return_deposit_address
+                self.use_multi_aggregator = use_multi_aggregator
+                self.is_max = is_max
+                self.slippage_bps = slippage_bps
+                self.exact_type = exact_type
+                self.aggregators = aggregators
+                self.protocols = protocols
+            }
+            public enum CodingKeys: String, CodingKey {
+                case experimental_aggregator
+                case source_asset
+                case source_amount
+                case destination_asset
+                case destination_amount
+                case sender_address
+                case recipient_address
+                case return_deposit_address
+                case use_multi_aggregator
+                case is_max
+                case slippage_bps
+                case exact_type
+                case aggregators
+                case protocols
+            }
+        }
+        /// What the owner signs to register the key on a route relay fills, for
+        /// a quote asked with `change_pub_key` and no signatures. The route is
+        /// then a preview: no payloads, and a prepare is refused. Sign the
+        /// authorization over these values, the Execute over `execute.nonce`
+        /// and `execute.deadline` (see `HermesExecuteSignature`), and quote
+        /// again with both.
+        /// On a route from Ethereum there is no fill: relay swaps in the
+        /// sender's own transaction and runs the calls from it, so that
+        /// transaction delegates the address -- the batch by its own
+        /// authorization, a single payment by an `authorization` the payload
+        /// carries for the wallet to sign into it. `authorization` is then
+        /// absent here, and the quote again takes `execute` alone.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning`.
+        public struct CrossSwapChangePubKeySigning: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/authorization`.
+            public struct authorizationPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/authorization/chain_id`.
+                public var chain_id: Swift.Int64
+                /// The delegate this service pins.
+                ///
+                /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/authorization/address`.
+                public var address: Swift.String
+                /// The owner's nonce on Ethereum now.
+                ///
+                /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/authorization/nonce`.
+                public var nonce: Swift.Int64
+                /// Creates a new `authorizationPayload`.
+                ///
+                /// - Parameters:
+                ///   - chain_id:
+                ///   - address: The delegate this service pins.
+                ///   - nonce: The owner's nonce on Ethereum now.
+                public init(
+                    chain_id: Swift.Int64,
+                    address: Swift.String,
+                    nonce: Swift.Int64
+                ) {
+                    self.chain_id = chain_id
+                    self.address = address
+                    self.nonce = nonce
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case chain_id
+                    case address
+                    case nonce
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/authorization`.
+            public var authorization: Components.Schemas.CrossSwapChangePubKeySigning.authorizationPayload?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/execute`.
+            public struct executePayload: Codable, Hashable, Sendable {
+                /// The owner's Hermes nonce now (HermesV1.nonceOf).
+                ///
+                /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/execute/nonce`.
+                public var nonce: Swift.Int64
+                /// Unix seconds; the signed quote takes it while at least 5 minutes remain.
+                ///
+                /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/execute/deadline`.
+                public var deadline: Swift.Int64
+                /// Creates a new `executePayload`.
+                ///
+                /// - Parameters:
+                ///   - nonce: The owner's Hermes nonce now (HermesV1.nonceOf).
+                ///   - deadline: Unix seconds; the signed quote takes it while at least 5 minutes remain.
+                public init(
+                    nonce: Swift.Int64,
+                    deadline: Swift.Int64
+                ) {
+                    self.nonce = nonce
+                    self.deadline = deadline
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case nonce
+                    case deadline
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/CrossSwapChangePubKeySigning/execute`.
+            public var execute: Components.Schemas.CrossSwapChangePubKeySigning.executePayload
+            /// Creates a new `CrossSwapChangePubKeySigning`.
+            ///
+            /// - Parameters:
+            ///   - authorization:
+            ///   - execute:
+            public init(
+                authorization: Components.Schemas.CrossSwapChangePubKeySigning.authorizationPayload? = nil,
+                execute: Components.Schemas.CrossSwapChangePubKeySigning.executePayload
+            ) {
+                self.authorization = authorization
+                self.execute = execute
+            }
+            public enum CodingKeys: String, CodingKey {
+                case authorization
+                case execute
             }
         }
         /// Per-aggregator error explaining why a quote returned no route
@@ -3437,6 +3995,32 @@ extension Components {
             public var code: Components.Schemas.CrossSwapProviderErrorCode
             /// - Remark: Generated from `#/components/schemas/CrossSwapProviderError/message`.
             public var message: Swift.String
+            /// On `min_amount_not_met`, where the aggregator can price it: the
+            /// smallest source amount it quotes the route at now, in US dollars,
+            /// two places, rounded up -- with headroom for the price and the gas
+            /// to move within a quote's life, so asking again with that much is
+            /// quoted. `relay` deposits into Lighter price it themselves; for
+            /// `swapsxyz` it is `min_source_amount` at our USD rate, without
+            /// headroom.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapProviderError/min_amount_usd`.
+            public var min_amount_usd: Swift.String?
+            /// On `min_amount_not_met`, where known: what the source amount asked
+            /// for would have delivered, in US dollars, two places, rounded down.
+            /// "0.00" when it does not even cover the fixed costs.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapProviderError/expected_amount_usd`.
+            public var expected_amount_usd: Swift.String?
+            /// On `min_amount_not_met`, where the aggregator states it: the
+            /// smallest source amount it quotes, in base units of the source
+            /// asset, rounded up. `swapsxyz` gives its own minimum as is; `relay`
+            /// deposits into Lighter carry the same headroom as `min_amount_usd`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapProviderError/min_source_amount`.
+            public var min_source_amount: Swift.String?
             /// Creates a new `CrossSwapProviderError`.
             ///
             /// - Parameters:
@@ -3444,30 +4028,110 @@ extension Components {
             ///   - _protocol:
             ///   - code:
             ///   - message:
+            ///   - min_amount_usd: On `min_amount_not_met`, where the aggregator can price it: the
+            ///   - expected_amount_usd: On `min_amount_not_met`, where known: what the source amount asked
+            ///   - min_source_amount: On `min_amount_not_met`, where the aggregator states it: the
             public init(
                 aggregator: Components.Schemas.CrossSwapAggregator,
                 _protocol: Components.Schemas.CrossSwapProtocol? = nil,
                 code: Components.Schemas.CrossSwapProviderErrorCode,
-                message: Swift.String
+                message: Swift.String,
+                min_amount_usd: Swift.String? = nil,
+                expected_amount_usd: Swift.String? = nil,
+                min_source_amount: Swift.String? = nil
             ) {
                 self.aggregator = aggregator
                 self._protocol = _protocol
                 self.code = code
                 self.message = message
+                self.min_amount_usd = min_amount_usd
+                self.expected_amount_usd = expected_amount_usd
+                self.min_source_amount = min_source_amount
             }
             public enum CodingKeys: String, CodingKey {
                 case aggregator
                 case _protocol = "protocol"
                 case code
                 case message
+                case min_amount_usd
+                case expected_amount_usd
+                case min_source_amount
             }
         }
+        /// Why an aggregator produced no route, in our own vocabulary. The
+        /// aggregator's own code is not passed through; it stays in `message`,
+        /// which carries the upstream text verbatim after our prefix.
+        ///
+        /// swapsxyz answers with `{"success": false, "error": {"code", "name",
+        /// "message", "statusCode", "details"}}`, and its codes fold in as
+        /// follows:
+        ///
+        /// * `no_route` — `NO_AVAILABLE_ROUTE`, `INSUFFICIENT_LIQUIDITY`,
+        ///   `UNSUPPORTED_NETWORK`, `UNSUPPORTED_NETWORK_PAIR`,
+        ///   `UNSUPPORTED_NETWORK_TOKEN_PAIR`, `UNSUPPORTED_SWAP_DIRECTION`,
+        ///   `INVALID_SOURCE_TOKEN`, `INVALID_DESTINATION_TOKEN`. The pair, the
+        ///   direction or the size has nothing to route; another aggregator may
+        ///   still answer.
+        /// * `min_amount_not_met` — `AMOUNT_TOO_LOW`, and `INVALID_PARAMETER`
+        ///   on `amount` whose reason is a lower bound. `AMOUNT_TOO_HIGH`,
+        ///   `AMOUNT_INVALID`, `INVALID_AMOUNT_ZERO`, `EXCESSIVE_FEE`,
+        ///   `EXCESSIVE_RELAYER_FEE` join it when upstream words them as a bound
+        ///   on the amount, and otherwise arrive as `provider_error`, so treat
+        ///   the message as the detail.
+        /// * `country_blocked` — `GEO_BLOCKED`, a 403 keyed on the caller's IP.
+        ///   Since we call swapsxyz server-side that is our egress, not the
+        ///   user's location, so it means the aggregator is unreachable for
+        ///   everyone rather than for this user.
+        /// * `provider_unavailable` — HTTP 429 and any 5xx, including
+        ///   `INTERNAL_SERVER_ERROR`, plus transport timeouts. Retryable.
+        /// * `provider_error` — everything else: `INVALID_ADDRESS_FORMAT`,
+        ///   `INVALID_PARAMETER`, `CROSS_VM_RECEIVER_REQUIRED`,
+        ///   `MISSING_REQUIRED_FIELD`, `METHOD_NOT_ALLOWED`, `INVALID_API_KEY`,
+        ///   `MISSING_API_KEY`. For `INVALID_PARAMETER` the message names the
+        ///   parameter and upstream's reason.
+        ///
+        /// * `insufficient_balance` — the sender holds less of the source asset
+        ///   than the quote spends. Only a quote that reads the sender's balance
+        ///   reports it: today relay's Bitcoin quote, which builds its
+        ///   transaction out of the sender's own outputs and so has nothing to
+        ///   spend from an empty address. More funds or a smaller amount fixes
+        ///   it; a retry does not.
+        ///
+        /// * `wallet_screened` — `WALLET_SCREENED`, the aggregator's compliance
+        ///   check refusing the sender or the recipient. An AML block on the
+        ///   wallet itself, not a malformed address: the user cannot fix it by
+        ///   correcting anything, and a retry, another route or another
+        ///   aggregator is refused the same way. Terminal — send the user to
+        ///   support rather than to a retry.
+        ///
+        ///   swapsxyz prices against placeholder addresses and screens the real
+        ///   ones only when it builds the transaction. A route with TRON on
+        ///   either side is built while quoting, so there the refusal is always
+        ///   reported by the quote, whatever `include_payload` says, and the
+        ///   quote lists no swapsxyz route. Any other route reaches a quote with
+        ///   it only with `include_payload: true`: the route is still listed,
+        ///   since it priced, but it arrives with no `payloads` and cannot be
+        ///   signed. Without `include_payload` the refusal surfaces on
+        ///   `POST /v2/crosschain/routes/{route_id}/prepare` as a `400` with the
+        ///   same code.
+        ///
+        /// Except for `wallet_screened`, these codes are reported by a quote
+        /// only. Prepare fails the whole request instead: the address family
+        /// (`GEO_BLOCKED`, `INVALID_ADDRESS_FORMAT`, `CROSS_VM_RECEIVER_REQUIRED`,
+        /// `INVALID_PARAMETER` on an address) becomes `invalid_address`, an
+        /// amount under the minimum `min_amount_not_met`, the rest of the amount
+        /// family `insufficient_balance`, any other `INVALID_PARAMETER`
+        /// `provider_rejected`, 429 and 5xx `provider_unavailable`.
+        ///
+        ///
         /// - Remark: Generated from `#/components/schemas/CrossSwapProviderErrorCode`.
         @frozen public enum CrossSwapProviderErrorCode: String, Codable, Hashable, Sendable, CaseIterable {
             case no_route = "no_route"
             case asset_not_supported = "asset_not_supported"
             case min_amount_not_met = "min_amount_not_met"
             case country_blocked = "country_blocked"
+            case wallet_screened = "wallet_screened"
+            case insufficient_balance = "insufficient_balance"
             case provider_unavailable = "provider_unavailable"
             case provider_error = "provider_error"
         }
@@ -3479,7 +4143,11 @@ extension Components {
             public var quote_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/CrossSwapQuote/routes`.
             public var routes: [Components.Schemas.CrossSwapRoute]
-            /// Errors returned by aggregators that yielded no usable route
+            /// Errors returned by aggregators that yielded no usable route. A
+            /// `wallet_screened` entry is the exception that can accompany a
+            /// listed route: with `include_payload: true` the route priced but
+            /// its payloads could not be built, so it is present and unsignable.
+            ///
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapQuote/provider_errors`.
             public var provider_errors: [Components.Schemas.CrossSwapProviderError]?
@@ -3488,7 +4156,7 @@ extension Components {
             /// - Parameters:
             ///   - quote_id: Identifier of this quote, used for telemetry and prepare correlation
             ///   - routes:
-            ///   - provider_errors: Errors returned by aggregators that yielded no usable route
+            ///   - provider_errors: Errors returned by aggregators that yielded no usable route. A
             public init(
                 quote_id: Swift.String,
                 routes: [Components.Schemas.CrossSwapRoute],
@@ -3516,10 +4184,24 @@ extension Components {
             public var receive_asset: Swift.String
             /// - Remark: Generated from `#/components/schemas/CrossSwapHumanSummary/receive_amount`.
             public var receive_amount: Swift.String?
+            /// Least amount of `receive_asset` the user should expect from the
+            /// built transaction, in minimal units, by the same rule as the
+            /// route's `minimum_destination_amount`: the aggregator's floor at
+            /// build time, lowered to `receive_amount` minus the route's slippage
+            /// when the aggregator's floor is higher. It can be below the route's
+            /// `minimum_destination_amount`: the aggregator may reprice between
+            /// quote and build. Omitted when the aggregator reports none at build
+            /// time; then only the route's `minimum_destination_amount` is known.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapHumanSummary/minimum_receive_amount`.
+            public var minimum_receive_amount: Swift.String?
             /// Final destination of the swap (user's address on destination chain)
             ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapHumanSummary/recipient_address`.
             public var recipient_address: Swift.String?
+            /// Provider deposit channel the payload pays into. Never a router a contract call targets.
+            ///
             /// - Remark: Generated from `#/components/schemas/CrossSwapHumanSummary/deposit_address`.
             public var deposit_address: Swift.String?
             /// - Remark: Generated from `#/components/schemas/CrossSwapHumanSummary/memo`.
@@ -3550,8 +4232,9 @@ extension Components {
             ///   - spend_amount:
             ///   - receive_asset:
             ///   - receive_amount:
+            ///   - minimum_receive_amount: Least amount of `receive_asset` the user should expect from the
             ///   - recipient_address: Final destination of the swap (user's address on destination chain)
-            ///   - deposit_address:
+            ///   - deposit_address: Provider deposit channel the payload pays into. Never a router a contract call targets.
             ///   - memo:
             ///   - _protocol:
             ///   - approval_spender: For payloads with `kind: approval`, the spender contract being
@@ -3563,6 +4246,7 @@ extension Components {
                 spend_amount: Swift.String,
                 receive_asset: Swift.String,
                 receive_amount: Swift.String? = nil,
+                minimum_receive_amount: Swift.String? = nil,
                 recipient_address: Swift.String? = nil,
                 deposit_address: Swift.String? = nil,
                 memo: Swift.String? = nil,
@@ -3576,6 +4260,7 @@ extension Components {
                 self.spend_amount = spend_amount
                 self.receive_asset = receive_asset
                 self.receive_amount = receive_amount
+                self.minimum_receive_amount = minimum_receive_amount
                 self.recipient_address = recipient_address
                 self.deposit_address = deposit_address
                 self.memo = memo
@@ -3590,6 +4275,7 @@ extension Components {
                 case spend_amount
                 case receive_asset
                 case receive_amount
+                case minimum_receive_amount
                 case recipient_address
                 case deposit_address
                 case memo
@@ -3629,15 +4315,78 @@ extension Components {
             /// Payload data. Encoding depends on `payload_type`:
             ///   * `ton_boc`: JSON-array string of TON Connect messages
             ///     `[{address, amount, payload: base64_boc, stateInit?}, ...]`
-            ///     (not raw base64 — the outer envelope is JSON).
-            ///   * `utxo_psbt`: base64-encoded PSBT bytes.
+            ///     (not raw base64 — the outer envelope is JSON). A `relay`
+            ///     payload adds `bounce` and `mode` to each message, as the
+            ///     aggregator built it; a wallet that ignores them keeps its
+            ///     defaults.
+            ///   * `lighter_transfer`: JSON-encoded Lighter L2 transfer, chain
+            ///     `lighter/mainnet`: `{"to_account_index", "asset_index",
+            ///     "from_route_type", "to_route_type", "amount", "usdc_fee",
+            ///     "memo"}`, integers as numbers and `memo` 0x and 32 bytes of
+            ///     hex. The wallet signs it as a Lighter transfer (tx type 12)
+            ///     from the account `sender_address` names, with the account's
+            ///     API key and -- the recipient being another account -- the
+            ///     owner's L1 key over Lighter's transfer message, and sends it to
+            ///     Lighter. `amount` plus `usdc_fee` is what leaves the account.
+            ///   * `utxo_psbt`: base64-encoded PSBT bytes. A `relay` PSBT spends
+            ///     the sender's own outputs: sign every input and broadcast.
             ///   * `utxo_pczt`: base64-encoded PCZT bytes.
             ///   * `evm_tx`, `evm_approval_tx`: JSON-encoded EVM transaction
             ///     object (to, data, value, chainId, ...) as returned by the
-            ///     aggregator.
+            ///     aggregator. For `relay`, `gas` is a gas limit, decimal, with
+            ///     headroom already in it -- relay's own figure, or on Ethereum
+            ///     where relay states none (a direct deposit, sometimes the
+            ///     payment) this service's estimate raised by 30%, the payment
+            ///     after an approval estimated as if the approval were mined. It
+            ///     is absent when neither exists or the estimate reverted.
+            ///     A `swapsxyz` payload with `calldata_payload_type: exact` is
+            ///     the flat object `{to, value, data?, gas?, gasPrice?}`, amounts
+            ///     decimal or 0x hex. When the token needs an allowance it comes
+            ///     after a `kind: approval` `evm_approval_tx` built by this
+            ///     service: `{to: token, value: "0", data: approve(router in the
+            ///     main payload's to, spend amount)}`, and the main payload then
+            ///     carries no `requires_token_approval`. swaps.xyz states no gas:
+            ///     this service estimates `gas` (with 30%
+            ///     headroom, the payment as if the approval were mined) and reads
+            ///     `gasPrice` from the node, both decimal; either is absent when
+            ///     the node gives none. The same holds on every EVM chain with a
+            ///     node configured (SWAPSXYZ_EVM_RPC_URLS); one without carries
+            ///     no gas.
+            ///     A `swapkit` payload is SwapKit's object, amounts mostly 0x hex.
+            ///     Where SwapKit states no `gas` or `gasLimit` and the chain has a
+            ///     node (the same SWAPSXYZ_EVM_RPC_URLS), this service adds `gas`,
+            ///     decimal, estimated as for swaps.xyz: the payment after an
+            ///     approval as if the approval were mined. It is absent when the
+            ///     estimate reverts or does not come back in time.
+            ///   * `evm_7702_batch_tx`: JSON-encoded EVM transaction that
+            ///     replaces an approval and the payment after it, on
+            ///     `eth/mainnet`, when the quote asked for `eip7702_batch`:
+            ///     `{from, to, data, value, chainId, gas?, maxFeePerGas?,
+            ///     maxPriorityFeePerGas?, gasPrice?, delegate, authorization?}`.
+            ///     `to` is `from` itself, and `data` is ERC-7821
+            ///     `execute(0x01 followed by 31 zero bytes, abi.encode(Call[]))`
+            ///     with two calls: the approve, then the payment, which run as
+            ///     `delegate`'s code at the sender's address and revert
+            ///     together. `authorization`, `{chainId, address, nonce}`, is
+            ///     present when the address is not delegated yet: the wallet
+            ///     sends a type-4 transaction whose authorization list holds one
+            ///     it signs for `address` on `chainId` with `nonce`, which is the
+            ///     sender's nonce at the quote plus one -- the transaction's own
+            ///     nonce plus one, since the wallet sends it. A wallet whose next
+            ///     nonce plus one is not `nonce` re-quotes: the chain skips a
+            ///     stale authorization and the call then does nothing. Without
+            ///     it, a plain transaction. The delegation
+            ///     stays after the deposit, until the address authorizes
+            ///     another delegate or address zero. `gas` includes the
+            ///     authorization's cost.
             ///   * `solana_tx`, `cosmos_tx`, `tron_tx`, `ripple_tx`: chain-native
             ///     serialized transaction bytes (base64) or aggregator-specific
             ///     envelope; parse per `chain_id`.
+            ///     A `relay` `tron_tx` is the JSON object
+            ///     `{"type":"TriggerSmartContract","parameter":{owner_address,
+            ///     contract_address, call_value, data}}`, addresses in hex with
+            ///     the `41` prefix and `data` without `0x`, for the wallet to
+            ///     build (e.g. TronWeb `triggerSmartContract`) and sign.
             ///   * `alt_vm_deposit`: chain-specific deposit descriptor
             ///     (JSON or address+memo pair) — inspect `chain_id`.
             ///
@@ -3731,6 +4480,13 @@ extension Components {
             public var aggregator: Components.Schemas.CrossSwapAggregator
             /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/payloads`.
             public var payloads: [Components.Schemas.CrossSwapPayload]
+            /// The execution opened for this route, when the provider can follow
+            /// it before anything is signed (a `relay` deposit). Absent
+            /// otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepare/execution_id`.
+            public var execution_id: Swift.String?
             /// Creates a new `CrossSwapPrepare`.
             ///
             /// - Parameters:
@@ -3738,199 +4494,437 @@ extension Components {
             ///   - provider_route_id: The aggregator's own identifier for this route, as the built
             ///   - aggregator:
             ///   - payloads:
+            ///   - execution_id: The execution opened for this route, when the provider can follow
             public init(
                 route_id: Swift.String,
                 provider_route_id: Swift.String? = nil,
                 aggregator: Components.Schemas.CrossSwapAggregator,
-                payloads: [Components.Schemas.CrossSwapPayload]
+                payloads: [Components.Schemas.CrossSwapPayload],
+                execution_id: Swift.String? = nil
             ) {
                 self.route_id = route_id
                 self.provider_route_id = provider_route_id
                 self.aggregator = aggregator
                 self.payloads = payloads
+                self.execution_id = execution_id
             }
             public enum CodingKeys: String, CodingKey {
                 case route_id
                 case provider_route_id
                 case aggregator
                 case payloads
+                case execution_id
             }
         }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapSubmit`.
-        public struct CrossSwapSubmit: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSubmit/execution_id`.
-            public var execution_id: Swift.String
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSubmit/source_tx_hash`.
-            public var source_tx_hash: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapSubmit/status`.
-            public var status: Components.Schemas.CrossSwapExecutionStatus
-            /// Creates a new `CrossSwapSubmit`.
+        /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3`.
+        public struct CrossSwapQuoteV3: Codable, Hashable, Sendable {
+            /// Identifier of this quote, used for telemetry and prepare correlation
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3/quote_id`.
+            public var quote_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3/routes`.
+            public var routes: [Components.Schemas.CrossSwapQuotedRoute]
+            /// Errors returned by aggregators that yielded no usable route.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3/provider_errors`.
+            public var provider_errors: [Components.Schemas.CrossSwapProviderError]?
+            /// Only with `experimental_aggregator: true` and the server's
+            /// `CROSSSWAP_EXPERIMENTAL_AGGREGATOR` on: prices of the experimental
+            /// aggregator, best first (most received for `exact_input`, least
+            /// paid for `exact_output`). They are quotes only: there is no
+            /// `route_id` and nothing to prepare. They carry none of our fee,
+            /// while `routes` do.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3/experimental_routes`.
+            public var experimental_routes: [Components.Schemas.CrossSwapExperimentalRoute]?
+            /// Why each experimental quoter without a route has none, including
+            /// `no answer within` the server's deadline.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapQuoteV3/experimental_errors`.
+            public var experimental_errors: [Components.Schemas.CrossSwapExperimentalError]?
+            /// Creates a new `CrossSwapQuoteV3`.
             ///
             /// - Parameters:
-            ///   - execution_id:
-            ///   - source_tx_hash:
-            ///   - status:
+            ///   - quote_id: Identifier of this quote, used for telemetry and prepare correlation
+            ///   - routes:
+            ///   - provider_errors: Errors returned by aggregators that yielded no usable route.
+            ///   - experimental_routes: Only with `experimental_aggregator: true` and the server's
+            ///   - experimental_errors: Why each experimental quoter without a route has none, including
             public init(
-                execution_id: Swift.String,
-                source_tx_hash: Swift.String? = nil,
-                status: Components.Schemas.CrossSwapExecutionStatus
+                quote_id: Swift.String,
+                routes: [Components.Schemas.CrossSwapQuotedRoute],
+                provider_errors: [Components.Schemas.CrossSwapProviderError]? = nil,
+                experimental_routes: [Components.Schemas.CrossSwapExperimentalRoute]? = nil,
+                experimental_errors: [Components.Schemas.CrossSwapExperimentalError]? = nil
             ) {
-                self.execution_id = execution_id
-                self.source_tx_hash = source_tx_hash
-                self.status = status
+                self.quote_id = quote_id
+                self.routes = routes
+                self.provider_errors = provider_errors
+                self.experimental_routes = experimental_routes
+                self.experimental_errors = experimental_errors
             }
             public enum CodingKeys: String, CodingKey {
-                case execution_id
-                case source_tx_hash
-                case status
+                case quote_id
+                case routes
+                case provider_errors
+                case experimental_routes
+                case experimental_errors
             }
         }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapExecution`.
-        public struct CrossSwapExecution: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/execution_id`.
-            public var execution_id: Swift.String
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/status`.
-            public var status: Components.Schemas.CrossSwapExecutionStatus
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/aggregator`.
-            public var aggregator: Components.Schemas.CrossSwapAggregator
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/protocol`.
-            public var _protocol: Components.Schemas.CrossSwapProtocol?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/provider_tracking_id`.
-            public var provider_tracking_id: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/source_tx_hash`.
-            public var source_tx_hash: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/destination_tx_hash`.
-            public var destination_tx_hash: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/error_code`.
-            public var error_code: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/error_message`.
-            public var error_message: Swift.String?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/explorer_url`.
-            public var explorer_url: Swift.String?
-            /// Per-leg progress for multi-hop swaps (THORChain, Mayachain, Chainflip,
-            /// Near Intents). Empty for single-leg swaps — `status` already covers them.
+        /// A price of the experimental aggregator. Not preparable.
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute`.
+        public struct CrossSwapExperimentalRoute: Codable, Hashable, Sendable {
+            /// The quoter, e.g. `relay`, `near_intents`, `lifi`, `swapsxyz`,
+            /// `across`, `symbiosis`, `thorchain`, `chainflip`. Not limited to
+            /// `CrossSwapAggregator`.
             ///
             ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/legs`.
-            public var legs: [Components.Schemas.CrossSwapExecutionLeg]?
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecution/date_update`.
-            public var date_update: Foundation.Date
-            /// Creates a new `CrossSwapExecution`.
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/aggregator`.
+            public var aggregator: Swift.String
+            /// The quoter's own name for the route, when it gives one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/protocol`.
+            public var _protocol: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/source_amount`.
+            public var source_amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/estimated_destination_amount`.
+            public var estimated_destination_amount: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/minimum_destination_amount`.
+            public var minimum_destination_amount: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/estimated_time`.
+            public var estimated_time: Components.Schemas.CrossSwapTimeEstimate?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/price_impact_bps`.
+            public var price_impact_bps: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/value_difference_bps`.
+            public var value_difference_bps: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/source_usd_price`.
+            public var source_usd_price: Swift.Double?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalRoute/destination_usd_price`.
+            public var destination_usd_price: Swift.Double?
+            /// Creates a new `CrossSwapExperimentalRoute`.
             ///
             /// - Parameters:
-            ///   - execution_id:
-            ///   - status:
-            ///   - aggregator:
-            ///   - _protocol:
-            ///   - provider_tracking_id:
-            ///   - source_tx_hash:
-            ///   - destination_tx_hash:
-            ///   - error_code:
-            ///   - error_message:
-            ///   - explorer_url:
-            ///   - legs: Per-leg progress for multi-hop swaps (THORChain, Mayachain, Chainflip,
-            ///   - date_update:
+            ///   - aggregator: The quoter, e.g. `relay`, `near_intents`, `lifi`, `swapsxyz`,
+            ///   - _protocol: The quoter's own name for the route, when it gives one.
+            ///   - source_amount:
+            ///   - estimated_destination_amount:
+            ///   - minimum_destination_amount:
+            ///   - estimated_time:
+            ///   - price_impact_bps:
+            ///   - value_difference_bps:
+            ///   - source_usd_price:
+            ///   - destination_usd_price:
             public init(
-                execution_id: Swift.String,
-                status: Components.Schemas.CrossSwapExecutionStatus,
-                aggregator: Components.Schemas.CrossSwapAggregator,
-                _protocol: Components.Schemas.CrossSwapProtocol? = nil,
-                provider_tracking_id: Swift.String? = nil,
-                source_tx_hash: Swift.String? = nil,
-                destination_tx_hash: Swift.String? = nil,
-                error_code: Swift.String? = nil,
-                error_message: Swift.String? = nil,
-                explorer_url: Swift.String? = nil,
-                legs: [Components.Schemas.CrossSwapExecutionLeg]? = nil,
-                date_update: Foundation.Date
+                aggregator: Swift.String,
+                _protocol: Swift.String? = nil,
+                source_amount: Swift.String,
+                estimated_destination_amount: Swift.String,
+                minimum_destination_amount: Swift.String? = nil,
+                estimated_time: Components.Schemas.CrossSwapTimeEstimate? = nil,
+                price_impact_bps: Swift.Int? = nil,
+                value_difference_bps: Swift.Int? = nil,
+                source_usd_price: Swift.Double? = nil,
+                destination_usd_price: Swift.Double? = nil
             ) {
-                self.execution_id = execution_id
-                self.status = status
                 self.aggregator = aggregator
                 self._protocol = _protocol
-                self.provider_tracking_id = provider_tracking_id
-                self.source_tx_hash = source_tx_hash
-                self.destination_tx_hash = destination_tx_hash
-                self.error_code = error_code
-                self.error_message = error_message
-                self.explorer_url = explorer_url
-                self.legs = legs
-                self.date_update = date_update
+                self.source_amount = source_amount
+                self.estimated_destination_amount = estimated_destination_amount
+                self.minimum_destination_amount = minimum_destination_amount
+                self.estimated_time = estimated_time
+                self.price_impact_bps = price_impact_bps
+                self.value_difference_bps = value_difference_bps
+                self.source_usd_price = source_usd_price
+                self.destination_usd_price = destination_usd_price
             }
             public enum CodingKeys: String, CodingKey {
-                case execution_id
-                case status
                 case aggregator
                 case _protocol = "protocol"
-                case provider_tracking_id
-                case source_tx_hash
-                case destination_tx_hash
-                case error_code
-                case error_message
-                case explorer_url
-                case legs
-                case date_update
+                case source_amount
+                case estimated_destination_amount
+                case minimum_destination_amount
+                case estimated_time
+                case price_impact_bps
+                case value_difference_bps
+                case source_usd_price
+                case destination_usd_price
             }
         }
-        /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg`.
-        public struct CrossSwapExecutionLeg: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/leg_index`.
-            public var leg_index: Swift.Int
-            /// Chain on which this leg executed (e.g. `eth/mainnet`)
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/chain_id`.
-            public var chain_id: Swift.String
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/status`.
-            public var status: Components.Schemas.CrossSwapExecutionStatus
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/tx_hash`.
-            public var tx_hash: Swift.String?
-            /// Internal asset id consumed by this leg
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/from_asset`.
-            public var from_asset: Swift.String?
-            /// Internal asset id produced by this leg
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/to_asset`.
-            public var to_asset: Swift.String?
-            /// Set when the leg has reached a terminal state
-            ///
-            /// - Remark: Generated from `#/components/schemas/CrossSwapExecutionLeg/date_finish`.
-            public var date_finish: Foundation.Date?
-            /// Creates a new `CrossSwapExecutionLeg`.
+        /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalError`.
+        public struct CrossSwapExperimentalError: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalError/aggregator`.
+            public var aggregator: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalError/code`.
+            public var code: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CrossSwapExperimentalError/message`.
+            public var message: Swift.String
+            /// Creates a new `CrossSwapExperimentalError`.
             ///
             /// - Parameters:
-            ///   - leg_index:
-            ///   - chain_id: Chain on which this leg executed (e.g. `eth/mainnet`)
-            ///   - status:
-            ///   - tx_hash:
-            ///   - from_asset: Internal asset id consumed by this leg
-            ///   - to_asset: Internal asset id produced by this leg
-            ///   - date_finish: Set when the leg has reached a terminal state
+            ///   - aggregator:
+            ///   - code:
+            ///   - message:
             public init(
-                leg_index: Swift.Int,
-                chain_id: Swift.String,
-                status: Components.Schemas.CrossSwapExecutionStatus,
-                tx_hash: Swift.String? = nil,
-                from_asset: Swift.String? = nil,
-                to_asset: Swift.String? = nil,
-                date_finish: Foundation.Date? = nil
+                aggregator: Swift.String,
+                code: Swift.String,
+                message: Swift.String
             ) {
-                self.leg_index = leg_index
-                self.chain_id = chain_id
-                self.status = status
-                self.tx_hash = tx_hash
-                self.from_asset = from_asset
-                self.to_asset = to_asset
-                self.date_finish = date_finish
+                self.aggregator = aggregator
+                self.code = code
+                self.message = message
             }
             public enum CodingKeys: String, CodingKey {
-                case leg_index
+                case aggregator
+                case code
+                case message
+            }
+        }
+        /// An operation of the Generic Payload API: the payloads the wallet signs,
+        /// in signing order. An EVM token swap is an approve at nonce `n` and the
+        /// swap at `n + 1`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/GenericOperation`.
+        public typealias GenericOperation = OpenAPIRuntime.OpenAPIObjectContainer
+        /// - Remark: Generated from `#/components/schemas/GenericPayloadType`.
+        @frozen public enum GenericPayloadType: String, Codable, Hashable, Sendable, CaseIterable {
+            case main = "main"
+            case prebuild = "prebuild"
+            case batch = "batch"
+        }
+        /// One payload of a Generic Payload API operation. `meta` depends on
+        /// `chain_id` and `type`:
+        ///   * TON `main`: `to`, `value`; optional `body` (base64 BOC),
+        ///     `state_init` (base64 BOC), `bounce`, `mode`, `comment`, `token`.
+        ///     With `token` (raw jetton master address) it is a jetton deposit:
+        ///     `value` is in jetton units and the wallet sends that jetton
+        ///     transfer to `to` itself.
+        ///   * TON `batch`: `calls[]`, each `{"type": "main", "meta": {…}}` as
+        ///     above, sent as one transfer. No `wallet_version`: the wallet packs
+        ///     the messages itself.
+        ///   * EVM `main`: `to`, `value` (wei, decimal); optional `data` (0x
+        ///     calldata).
+        ///   * TRON `main`: `to` (base58), `value` (sun, decimal); optional
+        ///     `data` (calldata, hex without 0x), `memo`. `prebuild`: `data`, the
+        ///     TRON transaction JSON as a string.
+        ///   * Bitcoin `main`: `to`, `value` (sats); optional `memo`.
+        ///     `prebuild`: `data`, base64 PSBT.
+        ///   * Solana `main`: `to`, `value`; optional `token` (SPL mint), `memo`.
+        ///     `prebuild`: `data`, base64 transaction.
+        /// A deposit of a token is a call to the token contract (EVM, TRON), with
+        /// the deposit address in the calldata, or a `main` with `token` (TON
+        /// jetton, Solana SPL), with the deposit address in `to`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/GenericPayload`.
+        public struct GenericPayload: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/type`.
+            public var _type: Components.Schemas.GenericPayloadType
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/chain_id`.
+            public var chain_id: Swift.String
+            /// Version of the `(type, chain_id)` pair; 1.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/version`.
+            public var version: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/fee`.
+            public var fee: Components.Schemas.GenericPayloadFee?
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/meta`.
+            public struct metaPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `metaPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/meta`.
+            public var meta: Components.Schemas.GenericPayload.metaPayload
+            /// The payload is a plain transfer whose amount the wallet may change
+            /// before signing, which is what a max send needs. Absent: sign the
+            /// amount as given.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/GenericPayload/amount_editable`.
+            public var amount_editable: Swift.Bool?
+            /// Creates a new `GenericPayload`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - _type:
+            ///   - chain_id:
+            ///   - version: Version of the `(type, chain_id)` pair; 1.
+            ///   - fee:
+            ///   - meta:
+            ///   - amount_editable: The payload is a plain transfer whose amount the wallet may change
+            public init(
+                id: Swift.String,
+                _type: Components.Schemas.GenericPayloadType,
+                chain_id: Swift.String,
+                version: Swift.Int,
+                fee: Components.Schemas.GenericPayloadFee? = nil,
+                meta: Components.Schemas.GenericPayload.metaPayload,
+                amount_editable: Swift.Bool? = nil
+            ) {
+                self.id = id
+                self._type = _type
+                self.chain_id = chain_id
+                self.version = version
+                self.fee = fee
+                self.meta = meta
+                self.amount_editable = amount_editable
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case _type = "type"
                 case chain_id
-                case status
-                case tx_hash
-                case from_asset
-                case to_asset
-                case date_finish
+                case version
+                case fee
+                case meta
+                case amount_editable
+            }
+        }
+        /// The network fee the payload states. `gas`: `data.limit` and
+        /// `data.price`, either may be absent. `eip1559`: `data.limit`,
+        /// `data.max_fee_per_gas`, `data.max_priority_fee_per_gas`. Decimal
+        /// strings.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/GenericPayloadFee`.
+        public struct GenericPayloadFee: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GenericPayloadFee/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case gas = "gas"
+                case eip1559 = "eip1559"
+            }
+            /// - Remark: Generated from `#/components/schemas/GenericPayloadFee/type`.
+            public var _type: Components.Schemas.GenericPayloadFee._typePayload
+            /// - Remark: Generated from `#/components/schemas/GenericPayloadFee/asset_id`.
+            public var asset_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GenericPayloadFee/data`.
+            public struct dataPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `dataPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/GenericPayloadFee/data`.
+            public var data: Components.Schemas.GenericPayloadFee.dataPayload
+            /// Creates a new `GenericPayloadFee`.
+            ///
+            /// - Parameters:
+            ///   - _type:
+            ///   - asset_id:
+            ///   - data:
+            public init(
+                _type: Components.Schemas.GenericPayloadFee._typePayload,
+                asset_id: Swift.String,
+                data: Components.Schemas.GenericPayloadFee.dataPayload
+            ) {
+                self._type = _type
+                self.asset_id = asset_id
+                self.data = data
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+                case asset_id
+                case data
+            }
+        }
+        /// `human_summary` is the swap the operation makes; its
+        /// `approval_spender` and `approval_amount` describe the approve payload,
+        /// when there is one.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3`.
+        public struct CrossSwapPrepareV3: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/route_id`.
+            public var route_id: Swift.String
+            /// The aggregator's own identifier for this route, as in v2 prepare.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/provider_route_id`.
+            public var provider_route_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/aggregator`.
+            public var aggregator: Components.Schemas.CrossSwapAggregator
+            /// The execution opened for this route, when the provider can follow
+            /// it before anything is signed. Absent otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/execution_id`.
+            public var execution_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/operation`.
+            public var operation: Components.Schemas.GenericOperation
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/human_summary`.
+            public var human_summary: Components.Schemas.CrossSwapHumanSummary
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/validation_status`.
+            public var validation_status: Components.Schemas.CrossSwapValidationStatus
+            /// The earliest expiry among the payloads.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CrossSwapPrepareV3/date_expire`.
+            public var date_expire: Foundation.Date
+            /// Creates a new `CrossSwapPrepareV3`.
+            ///
+            /// - Parameters:
+            ///   - route_id:
+            ///   - provider_route_id: The aggregator's own identifier for this route, as in v2 prepare.
+            ///   - aggregator:
+            ///   - execution_id: The execution opened for this route, when the provider can follow
+            ///   - operation:
+            ///   - human_summary:
+            ///   - validation_status:
+            ///   - date_expire: The earliest expiry among the payloads.
+            public init(
+                route_id: Swift.String,
+                provider_route_id: Swift.String? = nil,
+                aggregator: Components.Schemas.CrossSwapAggregator,
+                execution_id: Swift.String? = nil,
+                operation: Components.Schemas.GenericOperation,
+                human_summary: Components.Schemas.CrossSwapHumanSummary,
+                validation_status: Components.Schemas.CrossSwapValidationStatus,
+                date_expire: Foundation.Date
+            ) {
+                self.route_id = route_id
+                self.provider_route_id = provider_route_id
+                self.aggregator = aggregator
+                self.execution_id = execution_id
+                self.operation = operation
+                self.human_summary = human_summary
+                self.validation_status = validation_status
+                self.date_expire = date_expire
+            }
+            public enum CodingKeys: String, CodingKey {
+                case route_id
+                case provider_route_id
+                case aggregator
+                case execution_id
+                case operation
+                case human_summary
+                case validation_status
+                case date_expire
             }
         }
         /// Capability flag. Clients must tolerate unknown values added later

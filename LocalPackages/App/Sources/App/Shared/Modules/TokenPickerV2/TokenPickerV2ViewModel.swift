@@ -62,6 +62,8 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     private let presentation: TokenPickerV2Presentation
 
     private var categoryViewModels = [TokenPickerV2ChainFilter: TokenPickerV2CategoryViewModel]()
+    private var loadedCatalogChainFilters = [TokenPickerV2AssetType: [TokenPickerV2ChainFilter]]()
+    private var cachedQueriesCurrency: Currency?
     private var activateQueryTask: Task<Void, Never>?
     private(set) var loadFiltersTask: Task<Void, Never>?
     private var hasLoaded = false
@@ -86,6 +88,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     }
 
     func viewDidLoad() {
+        selectedChainFilter = tokenPickerModel.initialState.initialFilter
         apply(state: tokenPickerModel.initialState)
         syncCatalogSortState()
         loadFiltersTask = Task { [weak self] in
@@ -109,7 +112,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         tokenPickerModel.setCatalogSearchSort(sort)
         syncCatalogSortState()
 
-        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        categoryViewModels.values.forEach { $0.disappeared() }
         activateCurrentQuery()
     }
 
@@ -124,7 +127,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         tokenPickerModel.setPerpsSearchSort(sort)
         syncCatalogSortState()
 
-        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        categoryViewModels.values.forEach { $0.disappeared() }
         activateCurrentQuery()
     }
 
@@ -134,9 +137,18 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         }
 
         tokenPickerModel.setAssetType(assetType)
+        guard tokenPickerModel.assetType == assetType else {
+            return
+        }
+        cancelActivateQueryTask()
         syncCatalogSortState()
+        let chainFilters = catalogChainFilters
+        tabs = makeTabs(filters: chainFilters)
+        if !chainFilters.contains(selectedChainFilter) {
+            selectedChainFilter = .all
+        }
 
-        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        categoryViewModels.values.forEach { $0.disappeared() }
         guard hasLoaded else {
             return
         }
@@ -155,8 +167,21 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         scheduleQueryActivation(debounced: true)
     }
 
+    func contentViewModel(for filter: TokenPickerV2ChainFilter) -> TokenPickerV2QueryViewModel? {
+        guard let currentQueryViewModel else {
+            return nil
+        }
+        if filter == selectedChainFilter {
+            return currentQueryViewModel
+        }
+        return categoryViewModels[filter]?.cachedQueryViewModel(
+            for: currentQueryViewModel.query,
+            scope: tokenPickerModel.queryScope
+        )
+    }
+
     func selectChainFilter(_ filter: TokenPickerV2ChainFilter) {
-        guard selectedChainFilter != filter else {
+        guard selectedChainFilter != filter, tabs.contains(where: { $0.id == filter }) else {
             return
         }
 
@@ -165,6 +190,13 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         syncCatalogSortState()
 
         guard hasLoaded else {
+            return
+        }
+        activateCurrentQuery()
+    }
+
+    func appeared() {
+        guard hasLoaded, !hasDisappeared else {
             return
         }
         activateCurrentQuery()
@@ -256,7 +288,8 @@ private extension TokenPickerV2ViewModelImplementation {
         categoryViewModels.values.forEach { $0.disappeared() }
         categoryViewModels.removeAll()
 
-        tabs = makeTabs(filters: state.filters)
+        tabs = makeTabs(filters: tokenPickerModel.assetTypes.isEmpty ? state.filters : catalogChainFilters)
+        cachedQueriesCurrency = currencyStore.state
         categoryViewModels = Dictionary(
             uniqueKeysWithValues: state.filters.map { filter in
                 (
@@ -274,7 +307,22 @@ private extension TokenPickerV2ViewModelImplementation {
         if !state.filters.contains(selectedChainFilter) {
             selectedChainFilter = state.initialFilter
         }
-        currentQueryViewModel = categoryViewModels[selectedChainFilter]?.queryViewModel(for: normalizedSearchText)
+        currentQueryViewModel = categoryViewModels[selectedChainFilter]?.queryViewModel(
+            for: normalizedSearchText,
+            scope: tokenPickerModel.queryScope
+        )
+    }
+
+    var catalogChainFilters: [TokenPickerV2ChainFilter] {
+        loadedCatalogChainFilters[tokenPickerModel.assetType]
+            ?? [.all] + (selectedChainFilter == .all ? [] : [selectedChainFilter])
+    }
+
+    func knownCatalogChainFilters(for assetType: TokenPickerV2AssetType) -> [TokenPickerV2ChainFilter]? {
+        guard !tokenPickerModel.assetTypes.isEmpty else {
+            return nil
+        }
+        return loadedCatalogChainFilters[assetType] ?? tokenPickerModel.initialState.filters
     }
 
     func makeTabs(filters: [TokenPickerV2ChainFilter]) -> [TokenPickerV2TabModel] {
@@ -335,9 +383,26 @@ private extension TokenPickerV2ViewModelImplementation {
             return
         }
 
-        let queryViewModel = categoryViewModel.queryViewModel(for: query)
+        if cachedQueriesCurrency != currencyStore.state {
+            categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+            cachedQueriesCurrency = currencyStore.state
+        }
+        let scope = tokenPickerModel.queryScope
+        let queryViewModel = categoryViewModel.queryViewModel(for: query, scope: scope)
         if currentQueryViewModel !== queryViewModel {
             currentQueryViewModel = queryViewModel
+        }
+        queryViewModel.didLoadFirstPage = { [weak self, weak queryViewModel] serverFilters in
+            guard let self, self.currentQueryViewModel === queryViewModel, !self.hasDisappeared,
+                  let filters = serverFilters ?? self.knownCatalogChainFilters(for: scope.assetType)
+            else {
+                return
+            }
+            self.loadedCatalogChainFilters[scope.assetType] = filters
+            self.tabs = self.makeTabs(filters: filters)
+            if !filters.contains(self.selectedChainFilter) {
+                self.selectChainFilter(.all)
+            }
         }
         queryViewModel.appeared()
     }
@@ -401,6 +466,8 @@ extension TokenPickerV2AssetType {
             return TKLocales.TokensPicker.AssetType.all
         case .category(.tokens):
             return TKLocales.Trade.Assets.Categories.tokens
+        case .category(.commodities):
+            return TKLocales.Perps.Search.Filters.commodities
         case .category(.stocks):
             return TKLocales.Trade.Assets.Categories.stocks
         case .category(.etfs):
@@ -408,5 +475,9 @@ extension TokenPickerV2AssetType {
         case .perpetuals:
             return TKLocales.Perps.title
         }
+    }
+
+    var chipTitle: String {
+        self == .category(.all) ? TKLocales.Trade.Assets.Categories.all : title
     }
 }

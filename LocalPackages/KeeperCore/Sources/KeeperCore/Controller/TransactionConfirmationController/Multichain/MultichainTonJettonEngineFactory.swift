@@ -1,4 +1,5 @@
 import BigInt
+import TKLogging
 import TonSwift
 
 final class MultichainTonJettonEngineFactory {
@@ -68,6 +69,40 @@ final class MultichainTonJettonEngineFactory {
             settingsRepository: settingsRepository,
             batteryCalculation: batteryCalculation,
             buildsFeeOptions: true
+        )
+    }
+
+    /// Toncoin keeps the recipient's friendly form: its bounceable flag decides whether the transfer bounces.
+    func makeTonController(
+        wallet: Wallet,
+        recipient: String,
+        amount: BigUInt,
+        comment: String?,
+        isMaxAmount: Bool
+    ) -> TonTransferTransactionConfirmationController? {
+        let recipientAddress: TonRecipient.RecipientAddress
+        do {
+            recipientAddress = try .friendly(FriendlyAddress(string: recipient))
+        } catch {
+            do {
+                recipientAddress = try .raw(Address.parse(recipient))
+            } catch {
+                Log.w("🪵 Multichain: not a TON recipient", error: error, extraInfo: ["recipient": recipient])
+                return nil
+            }
+        }
+        return TonTransferTransactionConfirmationController(
+            wallet: wallet,
+            recipient: TonRecipient(recipientAddress: recipientAddress, isMemoRequired: false, isScam: false),
+            amount: amount,
+            comment: comment,
+            isMaxAmount: isMaxAmount,
+            recipientDisplayAddress: recipient,
+            sendService: sendService,
+            blockchainService: blockchainService,
+            ratesStore: ratesStore,
+            currencyStore: currencyStore,
+            transferService: transferService
         )
     }
 

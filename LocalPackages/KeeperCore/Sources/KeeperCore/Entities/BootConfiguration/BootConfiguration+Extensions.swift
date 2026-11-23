@@ -1,4 +1,5 @@
 import Foundation
+import PerpsModels
 
 public extension BootConfiguration {
     var batteryMeanFeesDecimaNumber: NSDecimalNumber? {
@@ -45,5 +46,12 @@ public extension NSDecimalNumber {
             return nil
         }
         return number
+    }
+}
+
+extension BootConfiguration {
+    var perpsAccess: PerpsAccess {
+        guard let featureAccess else { return flags.perpsEnabled ? .available : .hidden }
+        return featureAccess.perps?.state ?? .hidden
     }
 }

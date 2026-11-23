@@ -28,6 +28,21 @@ import UIKit
     detailsPreview(model: .previewPendingSwap)
 }
 
+@available(iOS 17.0, *)
+#Preview("Perps Deposit") {
+    detailsPreview(model: .previewPerpsDeposit)
+}
+
+@available(iOS 17.0, *)
+#Preview("Perps Withdrawal") {
+    detailsPreview(model: .previewPerpsWithdrawal)
+}
+
+@available(iOS 17.0, *)
+#Preview("Perps Withdrawal Pending") {
+    detailsPreview(model: .previewPerpsWithdrawalPending)
+}
+
 private func detailsPreview(model: MultichainTransactionDetailsModel) -> some View {
     ZStack(alignment: .bottom) {
         TKColor.backgroundOverlayStrong
@@ -91,6 +106,62 @@ private extension MultichainTransactionDetailsModel {
             ),
         ],
         transactionButton: previewTransactionButton
+    )
+
+    static let previewPerpsDeposit = MultichainTransactionDetailsModel(
+        image: .swap(
+            left: Asset(imageSource: .image(previewArtwork(.artwork))),
+            right: Asset(imageSource: .image(previewArtwork(.token)))
+        ),
+        amountLines: [
+            AmountLine(amount: "\u{2212}350 GRAM", chain: nil),
+            AmountLine(amount: "+707.19 USDC", chain: nil),
+        ],
+        fiat: "+ $\u{2009}707.19",
+        date: "Deposited on 4 Feb, 16:00",
+        rows: [
+            .property(title: "Wallet", value: "Main"),
+            .property(title: "Deposited to", value: "Perps balance"),
+            .property(title: "Protocol", value: "Lighter"),
+            .fee(title: "Network fee", amount: "0.06 GRAM", fiatAmount: "$\u{2009}0.12"),
+            .inlineHash(title: "Transaction hash", hash: "762b4145c7a1f0b9e4d6c8a2b5f3e1d0c9b8a7f6ec80300f"),
+        ],
+        transactionButton: previewTransactionButton
+    )
+
+    static let previewPerpsWithdrawal = MultichainTransactionDetailsModel(
+        image: .swap(
+            left: Asset(imageSource: .image(previewArtwork(.token))),
+            right: Asset(imageSource: .image(previewArtwork(.artwork)))
+        ),
+        amountLines: [
+            AmountLine(amount: "\u{2212}4 USDC", chain: nil),
+            AmountLine(amount: "+0.0061 BNB", chain: nil),
+        ],
+        fiat: "+ $\u{2009}3.97",
+        date: "Withdrawn on 3 Feb, 16:00",
+        rows: [
+            .property(title: "Wallet", value: "Main"),
+            .property(title: "Withdrawn from", value: "Perps balance"),
+            .property(title: "Protocol", value: "Lighter"),
+            .fee(title: "Network fee", amount: "0.03 USDC", fiatAmount: "$\u{2009}0.03"),
+            .inlineHash(title: "Transaction hash", hash: "9b7c3e52c7a1f0b9e4d6c8a2b5f3e1d0c9b8a7f6ec84e1a0"),
+        ],
+        transactionButton: previewTransactionButton
+    )
+
+    static let previewPerpsWithdrawalPending = MultichainTransactionDetailsModel(
+        image: .single(Asset(imageSource: .image(previewArtwork(.token)))),
+        amountLines: [AmountLine(amount: "\u{2212}4 USDC", chain: nil)],
+        fiat: "\u{2212} $\u{2009}4",
+        date: "Withdrawal · 3 Feb, 16:00",
+        rows: [
+            .property(title: "Wallet", value: "Main"),
+            .property(title: "Withdrawn from", value: "Perps balance"),
+            .property(title: "Protocol", value: "Lighter"),
+            .status(title: "Status", value: "Pending", color: .textSecondary, isPending: true),
+        ],
+        transactionButton: nil
     )
 
     static let previewSwap = MultichainTransactionDetailsModel(

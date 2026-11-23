@@ -122,12 +122,26 @@ private extension View {
     func titlePadding(config: ButtonView.Config) -> some View {
         modifier(TitlePaddingModifier(config: config))
     }
+
+    @ViewBuilder
+    func buttonBackground(_ color: Color, glassBase: Color?, in shape: some Shape, isGlass: Bool) -> some View {
+        if isGlass, let glassBase {
+            background(shape.fill(color))
+                .tkGlassBackground(tint: glassBase, in: shape)
+        } else if isGlass {
+            tkGlassBackground(tint: color, in: shape)
+        } else {
+            background(shape.fill(color))
+        }
+    }
 }
 
 private struct ButtonStateStyle: SwiftUI.ButtonStyle {
     let config: ButtonView.Config
     let cornerRadius: CGFloat
     let height: CGFloat
+    let isLiquidGlass: Bool
+    let isGlass: Bool
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.modernButtonPreviewState) private var previewStateOverride
@@ -135,24 +149,25 @@ private struct ButtonStateStyle: SwiftUI.ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let state = state(isPressed: configuration.isPressed)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let colors = config.appearance.colors(
+            for: state,
+            palette: palette,
+            isLiquidGlass: isLiquidGlass,
+            showsLoader: config.showsLoader
+        )
 
         configuration.label
-            .foregroundStyle(config.appearance.textColor(for: state, palette: palette))
+            .foregroundStyle(colors.text)
             .environment(\.modernButtonState, state)
             .frame(height: height)
-            .background(
-                RoundedRectangle(
-                    cornerRadius: cornerRadius,
-                    style: .continuous
-                )
-                .fill(config.appearance.backgroundColor(for: state, palette: palette))
+            .buttonBackground(
+                colors.background,
+                glassBase: colors.isGreyedOut ? nil : config.appearance.glassBase(palette: palette),
+                in: shape,
+                isGlass: isGlass
             )
-            .contentShape(
-                RoundedRectangle(
-                    cornerRadius: cornerRadius,
-                    style: .continuous
-                )
-            )
+            .contentShape(shape)
             .animation(.easeInOut(duration: 0.14), value: state)
             .tkTapAnimation(isPressed: configuration.isPressed, haptic: .light)
     }
@@ -176,7 +191,7 @@ private struct ButtonStateStyle: SwiftUI.ButtonStyle {
 
 public struct ButtonView: View {
     @Environment(\.tkPalette) private var palette
-    @Environment(\.modernButtonState) private var state
+    @Environment(\.tkPreviewLiquidGlass) private var previewLiquidGlass
 
     public enum Size {
         case small
@@ -309,7 +324,9 @@ public struct ButtonView: View {
             ButtonStateStyle(
                 config: config,
                 cornerRadius: cornerRadius,
-                height: height
+                height: height,
+                isLiquidGlass: isLiquidGlass,
+                isGlass: isGlass
             )
         )
         .allowsHitTesting(!config.showsLoader)
@@ -364,15 +381,7 @@ public struct ButtonView: View {
     }
 
     private func iconView(_ icon: Icon) -> some View {
-        Image(uiImage: icon.image)
-            .renderingMode(.template)
-            .resizable()
-            .scaledToFit()
-            .foregroundStyle(
-                config.appearance.iconColor(for: state, palette: palette)
-            )
-            .frame(width: iconSize, height: iconSize)
-            .iconPadding(config: icon, size: config.size)
+        ButtonIconView(icon: icon, config: config, side: iconSize, isLiquidGlass: isLiquidGlass)
     }
 
     private var titleView: some View {
@@ -410,6 +419,15 @@ public struct ButtonView: View {
         }
     }
 
+    private var isLiquidGlass: Bool {
+        TKLiquidGlass.isEnabled(previewPin: previewLiquidGlass)
+    }
+
+    /// Only a large button sits on glass; smaller ones keep a flat fill, as the design system says.
+    private var isGlass: Bool {
+        config.size == .large && isLiquidGlass
+    }
+
     private var cornerRadius: CGFloat {
         switch config.size {
         case .tab:
@@ -419,7 +437,7 @@ public struct ButtonView: View {
         case .medium:
             24
         case .large:
-            16
+            isGlass ? height / 2 : 16
         }
     }
 
@@ -437,6 +455,34 @@ public struct ButtonView: View {
     }
 }
 
+/// Reads the state the button style sets on its label, which the enclosing `ButtonView` cannot see.
+private struct ButtonIconView: View {
+    let icon: ButtonView.Icon
+    let config: ButtonView.Config
+    let side: CGFloat
+    let isLiquidGlass: Bool
+
+    @Environment(\.modernButtonState) private var state
+    @Environment(\.tkPalette) private var palette
+
+    var body: some View {
+        Image(uiImage: icon.image)
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(
+                config.appearance.colors(
+                    for: state,
+                    palette: palette,
+                    isLiquidGlass: isLiquidGlass,
+                    showsLoader: config.showsLoader
+                ).icon
+            )
+            .frame(width: side, height: side)
+            .iconPadding(config: icon, size: config.size)
+    }
+}
+
 private enum Layout {
     enum Tab {
         static let titleTopPadding: CGFloat = 6
@@ -447,7 +493,49 @@ private enum Layout {
     }
 }
 
+struct ButtonColors {
+    let text: Color
+    let icon: Color
+    let background: Color
+    let isGreyedOut: Bool
+}
+
 extension ButtonView.Appearance {
+    /// The liquid glass design greys out a disabled button of any type. A disabled button showing its loader
+    /// is busy rather than unavailable, so it keeps its own colours, which its loader is drawn for.
+    func colors(
+        for state: ButtonView.State,
+        palette: TKPalette,
+        isLiquidGlass: Bool,
+        showsLoader: Bool
+    ) -> ButtonColors {
+        if state == .disabled, isLiquidGlass, !showsLoader {
+            return ButtonColors(
+                text: palette.text.secondary,
+                icon: palette.text.secondary,
+                background: palette.button.secondaryBackground,
+                isGreyedOut: true
+            )
+        }
+        return ButtonColors(
+            text: textColor(for: state, palette: palette),
+            icon: iconColor(for: state, palette: palette),
+            background: backgroundColor(for: state, palette: palette),
+            isGreyedOut: false
+        )
+    }
+
+    /// A see-through accent would leave the glass bare, so it lies over the regular glass's own tint.
+    func glassBase(palette: TKPalette) -> Color? {
+        switch self {
+        case .destructive, .attention:
+            palette.background.content.opacity(0.8)
+        case .primary, .primaryAttention, .primaryDestructive, .primaryGreen,
+             .secondary, .secondaryOverlay, .tertiary, .icon, .overlay:
+            nil
+        }
+    }
+
     func textColor(for state: ButtonView.State, palette: TKPalette) -> Color {
         switch state {
         case .normal:

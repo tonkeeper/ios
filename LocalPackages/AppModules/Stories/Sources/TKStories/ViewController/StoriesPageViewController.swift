@@ -1,15 +1,22 @@
+import Combine
 import TKUIKit
 import UIKit
 
 final class StoriesPageViewController: UIViewController {
+    var didBecomeReady: (() -> Void)?
+    private(set) var isReady = false
+
     private let stackView = UIStackView()
     private let backgroundImageView = TKImageView()
     private let titleLabel = UILabel()
     private let descriptionLabel = UILabel()
     private let button = TKButton()
     private let buttonContainer = UIView()
-    private var hasAnimatedBackground = false
+    private let loaderView = UIActivityIndicatorView(style: .medium)
+    private var backgroundLoading: AnyCancellable?
     private var linkRanges: [(range: NSRange, link: StoriesPageModel.Link)] = []
+
+    private static let backgroundWait: UInt64 = 5_000_000_000
 
     private let model: StoriesPageModel
 
@@ -27,26 +34,75 @@ final class StoriesPageViewController: UIViewController {
         super.viewDidLoad()
         setup()
         setupContent()
+        loadBackground()
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        guard !hasAnimatedBackground else { return }
-        hasAnimatedBackground = true
-        UIView.animate(withDuration: 0.3) {
-            self.backgroundImageView.alpha = 1
+    private func loadBackground() {
+        switch model.backgroundImage {
+        case let .image(image):
+            didLoadBackground(image)
+        case let .urlImage(url):
+            guard let url else {
+                showContent()
+                return
+            }
+            backgroundLoading = ImagePrefetcherService().loadImage(url: url) { [weak self] image in
+                self?.didLoadBackground(image)
+            }
+            guard !isReady else { return }
+            loaderView.startAnimating()
+            UIView.animate(withDuration: 0.2, delay: 0.5) {
+                self.loaderView.alpha = 1
+            }
+            // A blocked or stalled CDN must not hold the text back for the whole download timeout;
+            // the background still fades in if it arrives later.
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: Self.backgroundWait)
+                self?.showContent()
+            }
+        }
+    }
+
+    private func didLoadBackground(_ image: UIImage?) {
+        if let image {
+            backgroundImageView.configure(
+                model: TKImageView.Model(
+                    image: .image(image),
+                    tintColor: .clear,
+                    size: .none,
+                    corners: .none
+                )
+            )
+            fadeIn { self.backgroundImageView.alpha = 1 }
+        }
+        showContent()
+    }
+
+    private func showContent() {
+        guard !isReady else { return }
+        isReady = true
+        loaderView.layer.removeAllAnimations()
+        loaderView.stopAnimating()
+        descriptionLabel.accessibilityCustomActions = linkRanges.map { _, link in
+            UIAccessibilityCustomAction(name: link.text) { _ in
+                link.action()
+                return true
+            }
+        }
+        stackView.accessibilityElementsHidden = false
+        fadeIn { self.stackView.alpha = 1 }
+        didBecomeReady?()
+    }
+
+    private func fadeIn(_ changes: @escaping () -> Void) {
+        if view.window == nil {
+            changes()
+        } else {
+            UIView.animate(withDuration: 0.3, animations: changes)
         }
     }
 
     private func setupContent() {
-        backgroundImageView.configure(
-            model: TKImageView.Model(
-                image: model.backgroundImage,
-                tintColor: .clear,
-                size: .none,
-                corners: .none
-            )
-        )
         titleLabel.attributedText = model.title.withTextStyle(.h1, color: .Constant.white)
         let description = NSMutableAttributedString(
             attributedString: model.description.withTextStyle(.body1, color: .Constant.white, lineBreakMode: .byWordWrapping)
@@ -59,12 +115,6 @@ final class StoriesPageViewController: UIViewController {
             description.addAttribute(.foregroundColor, value: UIColor.Accent.blue, range: range)
         }
         descriptionLabel.attributedText = description
-        descriptionLabel.accessibilityCustomActions = linkRanges.map { _, link in
-            UIAccessibilityCustomAction(name: link.text) { _ in
-                link.action()
-                return true
-            }
-        }
         if let button = model.button {
             buttonContainer.isHidden = false
             self.button.configuration.content = TKButton.Configuration.Content(title: .plainString(button.title))
@@ -75,7 +125,7 @@ final class StoriesPageViewController: UIViewController {
     }
 
     func link(at gesture: UIGestureRecognizer) -> StoriesPageModel.Link? {
-        guard !linkRanges.isEmpty, let text = descriptionLabel.attributedText else { return nil }
+        guard isReady, !linkRanges.isEmpty, let text = descriptionLabel.attributedText else { return nil }
         let point = gesture.location(in: descriptionLabel)
         let textStorage = NSTextStorage(attributedString: text)
         let layoutManager = NSLayoutManager()
@@ -106,17 +156,23 @@ final class StoriesPageViewController: UIViewController {
         view.backgroundColor = .black
 
         button.configuration = .actionButtonConfiguration(category: .overlay, size: .medium)
+        button.accessibilityIdentifier = "stories_page_button"
         titleLabel.numberOfLines = 0
         descriptionLabel.numberOfLines = 0
 
         backgroundImageView.contentMode = .scaleAspectFill
         backgroundImageView.alpha = 0
+        stackView.alpha = 0
+        stackView.accessibilityElementsHidden = true
+        loaderView.color = .Constant.white
+        loaderView.alpha = 0
 
         stackView.axis = .vertical
         stackView.spacing = 8
 
         view.addSubview(backgroundImageView)
         view.addSubview(stackView)
+        view.addSubview(loaderView)
 
         let labelsStackView = UIStackView()
         labelsStackView.axis = .vertical
@@ -143,6 +199,9 @@ final class StoriesPageViewController: UIViewController {
 
         backgroundImageView.snp.makeConstraints { make in
             make.edges.equalTo(view)
+        }
+        loaderView.snp.makeConstraints { make in
+            make.center.equalTo(view)
         }
         stackView.snp.makeConstraints { make in
             make.left.right.equalTo(view)

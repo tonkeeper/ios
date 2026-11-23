@@ -390,9 +390,12 @@ extension Components {
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/recipient_address`.
                 public var recipient_address: Swift.String
-                /// Forwarded to SwapsXYZ `/getAction?returnDepositAddress`. When
-                /// true, upstream returns a deposit address in the response for
-                /// deposit-based swap flows. Default false. Ignored by other
+                /// Forwarded to SwapsXYZ as `returnDepositAddress`, on
+                /// `/getQuote` when pricing and on `/getAction` when the route
+                /// is prepared, or while quoting for a route with TRON on
+                /// either side. When true, upstream prices and builds a
+                /// deposit-based swap flow and returns a deposit address with
+                /// the transaction. Default false. Ignored by other
                 /// aggregators.
                 /// Ignored (forced to false) only when the source asset is on
                 /// TON and the client reports build 26.9.0 or newer on Android,
@@ -401,24 +404,180 @@ extension Components {
                 /// upstream bridge route that those clients no longer need.
                 /// Older clients, clients of an unknown platform below 26.9.1,
                 /// and any non-TON source are honoured as sent.
+                /// Also forced to false, for every client regardless of build,
+                /// when both assets are on TON: a swap that stays on TON bridges
+                /// nothing, so a deposit address only buys the bridge fee.
+                /// Likewise forced to false, for every client, when both assets
+                /// are on Robinhood: upstream has no deposit route there.
                 ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/return_deposit_address`.
                 public var return_deposit_address: Swift.Bool?
-                /// Route the quote across several aggregators instead of the
-                /// default one. Below `CROSSSWAP_MULTI_AGGREGATOR_BELOW_USD` the
-                /// swap is quoted by SwapsXYZ and SwapKit together and both
-                /// routes come back; SwapKit also answers when SwapsXYZ finds no
-                /// route. Pairs with TON on either side stay on SwapsXYZ.
-                /// Omitted, the service default applies; an explicit
-                /// `aggregators` list wins over both.
+                /// Turns the quote into a deposit: the destination asset is
+                /// delivered into this contract for `recipient_address`. Only
+                /// aggregators that can call a contract on the destination are
+                /// asked (`relay` today), and the swap routing -- small-swap
+                /// companion, fallback -- does not apply. `source_amount` is a
+                /// budget: the payloads never move more than it, and the route's
+                /// `estimated_destination_amount` equals
+                /// `minimum_destination_amount` -- the deposit is exact, and the
+                /// slippage allowed for is on the source side. `exact_type` must
+                /// be `exact_input`. `source_asset` may equal `destination_asset`.
+                /// With `include_payload: true` each route also carries
+                /// `execution_id`, which `/v2/crosschain/executions/{execution_id}`
+                /// answers from the moment of the quote: the aggregator follows
+                /// the deposit by the id it quoted.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/destination_target`.
+                public struct destination_targetPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/destination_target/value1`.
+                    public var value1: Components.Schemas.CrossSwapDestinationTarget
+                    /// Creates a new `destination_targetPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    public init(value1: Components.Schemas.CrossSwapDestinationTarget) {
+                        self.value1 = value1
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        self.value1 = try decoder.decodeFromSingleValueContainer()
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeToSingleValueContainer(self.value1)
+                    }
+                }
+                /// Turns the quote into a deposit: the destination asset is
+                /// delivered into this contract for `recipient_address`. Only
+                /// aggregators that can call a contract on the destination are
+                /// asked (`relay` today), and the swap routing -- small-swap
+                /// companion, fallback -- does not apply. `source_amount` is a
+                /// budget: the payloads never move more than it, and the route's
+                /// `estimated_destination_amount` equals
+                /// `minimum_destination_amount` -- the deposit is exact, and the
+                /// slippage allowed for is on the source side. `exact_type` must
+                /// be `exact_input`. `source_asset` may equal `destination_asset`.
+                /// With `include_payload: true` each route also carries
+                /// `execution_id`, which `/v2/crosschain/executions/{execution_id}`
+                /// answers from the moment of the quote: the aggregator follows
+                /// the deposit by the id it quoted.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/destination_target`.
+                public var destination_target: Components.RequestBodies.CrossSwapQuote.jsonPayload.destination_targetPayload?
+                /// Turns the quote into a withdrawal: the source asset is taken
+                /// out of this balance, for the account `sender_address` names,
+                /// and delivered to `recipient_address` as `destination_asset`.
+                /// Only aggregators that take from it are asked (`relay`
+                /// today), and the swap routing does not apply. As with a
+                /// `destination_target`, `source_amount` is a budget -- the
+                /// payload never moves more than it, fees of the balance itself
+                /// included -- and `exact_type` must be `exact_input`. Cannot be
+                /// combined with `destination_target`. With
+                /// `include_payload: true` each route carries `execution_id`,
+                /// answered from the moment of the quote.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/source_target`.
+                public struct source_targetPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/source_target/value1`.
+                    public var value1: Components.Schemas.CrossSwapSourceTarget
+                    /// Creates a new `source_targetPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    public init(value1: Components.Schemas.CrossSwapSourceTarget) {
+                        self.value1 = value1
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        self.value1 = try decoder.decodeFromSingleValueContainer()
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeToSingleValueContainer(self.value1)
+                    }
+                }
+                /// Turns the quote into a withdrawal: the source asset is taken
+                /// out of this balance, for the account `sender_address` names,
+                /// and delivered to `recipient_address` as `destination_asset`.
+                /// Only aggregators that take from it are asked (`relay`
+                /// today), and the swap routing does not apply. As with a
+                /// `destination_target`, `source_amount` is a budget -- the
+                /// payload never moves more than it, fees of the balance itself
+                /// included -- and `exact_type` must be `exact_input`. Cannot be
+                /// combined with `destination_target`. With
+                /// `include_payload: true` each route carries `execution_id`,
+                /// answered from the moment of the quote.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/source_target`.
+                public var source_target: Components.RequestBodies.CrossSwapQuote.jsonPayload.source_targetPayload?
+                /// Register a Lighter L2 signing key alongside the deposit. Only
+                /// with `destination_target: lighter`, and only on a relay-filled
+                /// route; a source that is already USDC on Ethereum is sent by the
+                /// wallet itself, which can call `changePubKey` directly.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/change_pub_key`.
+                public struct change_pub_keyPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/change_pub_key/value1`.
+                    public var value1: Components.Schemas.CrossSwapChangePubKey
+                    /// Creates a new `change_pub_keyPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - value1:
+                    public init(value1: Components.Schemas.CrossSwapChangePubKey) {
+                        self.value1 = value1
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        self.value1 = try .init(from: decoder)
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        try self.value1.encode(to: encoder)
+                    }
+                }
+                /// Register a Lighter L2 signing key alongside the deposit. Only
+                /// with `destination_target: lighter`, and only on a relay-filled
+                /// route; a source that is already USDC on Ethereum is sent by the
+                /// wallet itself, which can call `changePubKey` directly.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/change_pub_key`.
+                public var change_pub_key: Components.RequestBodies.CrossSwapQuote.jsonPayload.change_pub_keyPayload?
+                /// The wallet can send an EIP-7702 (type-4) transaction, and
+                /// asks for a token source's approval and payment as one:
+                /// an `evm_7702_batch_tx` payload in their place. Only
+                /// `relay`, only with `destination_target: lighter`, and only
+                /// on an Ethereum source whose sender is an EOA: a plain
+                /// account, one delegated to the service's delegate already, or
+                /// one delegated to any other -- whose delegation the
+                /// authorization then replaces. For a contract sender, anywhere
+                /// else, and on a route with no approval to fold, the payloads
+                /// are what they would be without it. Default false.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/eip7702_batch`.
+                public var eip7702_batch: Swift.Bool?
+                /// Adds SwapKit to the default fan-out (SwapsXYZ) for a pair
+                /// with no TON on either side and a source chain the server
+                /// does not pin to one aggregator. An `exact_input` swap whose
+                /// source is worth less than
+                /// `CROSSSWAP_MULTI_AGGREGATOR_BELOW_USD` (a swap that cannot
+                /// be priced is not) is quoted by both together and both
+                /// routes come back; any other `exact_input` swap is quoted by
+                /// SwapKit only when the default fan-out returns no route.
+                /// `exact_output` never reaches SwapKit, which does not quote it.
+                /// Omitted, it is on for clients reporting build 26.9.2 or newer
+                /// in their `Tonkeeper/<version>` User-Agent, and the service
+                /// default applies to every older or unrecognised client; an
+                /// explicit `aggregators` list wins over both.
                 ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/use_multi_aggregator`.
                 public var use_multi_aggregator: Swift.Bool?
                 /// True when `source_amount` is the entire balance of the
                 /// source asset. Forwarded to SwapsXYZ `/getAction` as
-                /// `isMax`; the other aggregators ignore it.
+                /// `isMax` when the route is prepared; the other aggregators
+                /// ignore it.
                 ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/is_max`.
@@ -432,18 +591,24 @@ extension Components {
                 /// for testing fallback behaviour before flipping defaults.
                 /// Naming aggregators also turns the fallback off: the list
                 /// is queried as given and nothing else is tried.
-                /// `swapkit` is not part of the default fan-out and is currently
-                /// quoted only when named here. When the server enables the
-                /// small-swap threshold (`CROSSSWAP_SWAPKIT_BELOW_USD`, off by
-                /// default) it is also queried without this field: first, and
-                /// alone, when the source side is worth less than the threshold,
-                /// and otherwise as a fallback after the fan-out returned no
-                /// route at all.
-                /// `omniston` is dropped from the default fan-out for clients
-                /// reporting build 26.9.0 or newer on Android, or 26.9.1 or
-                /// newer on iOS, in their `Tonkeeper/<version>` User-Agent;
-                /// older clients still get it. For the newer clients it is a fallback too, and only on
-                /// a TON to TON pair, which is all it serves.
+                /// `swapkit` is not part of the default fan-out: it is quoted
+                /// when named here, or without a list under
+                /// `use_multi_aggregator` (see there).
+                /// `omniston` serves TON to TON, and this field does not
+                /// decide that pair while the server runs with
+                /// `CROSSSWAP_FORCE_OMNISTON_TON` on, which is the default: the
+                /// swap is quoted from Omniston alone however the list reads,
+                /// and the aggregators named here are tried only if Omniston
+                /// returns no route. With the switch off the list wins, and the
+                /// pair otherwise defaults to Omniston only for clients below
+                /// Android 26.9.0 / iOS 26.9.1. `exact_output` follows the
+                /// same rules, answered by an exact-input search. Off a TON to
+                /// TON pair Omniston is quoted when named here, and without a
+                /// list it quotes alone an `exact_input` swap out of TON into a
+                /// chain Omniston serves cross-chain, worth less than `CROSSSWAP_OMNISTON_CROSSCHAIN_BELOW_USD`, the
+                /// other aggregators tried only if it returns no route.
+                /// A dev build (major 9XX, as in 926.13.0) is routed as with the
+                /// switch off.
                 /// A requested aggregator that is disabled on the server is
                 /// reported in `provider_errors` with code
                 /// `provider_unavailable`; if none of the requested
@@ -453,17 +618,39 @@ extension Components {
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/aggregators`.
                 public var aggregators: [Components.Schemas.CrossSwapAggregator]?
-                /// Optional whitelist of underlying protocols
+                /// Optional whitelist of underlying protocols.
+                /// `swapkit` passes it on as its providers.
+                /// `swapsxyz` sends it as its `dexIds` filter, so the names are
+                /// swaps.xyz dex ids (`omniston`, `rango`, ...; `rango` counts
+                /// only for a dev build). The list replaces the server's own
+                /// pick on every pair, and a quote that finds no route through
+                /// it is not retried without it. It chooses no bridge: the
+                /// bridge stays the server's allowlist. A swap that stays on
+                /// TON reaches `swapsxyz` only as described under
+                /// `aggregators`.
+                /// Other aggregators ignore the field.
+                ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/protocols`.
                 public var protocols: [Components.Schemas.CrossSwapProtocol]?
                 /// If true, backend also runs `prepare` inline for each route
                 /// and returns the signing payloads under
                 /// `routes[].payloads`. Lets the wallet skip the separate
-                /// `/v2/swap/route/{route_id}/prepare` call. For SwapsXYZ the
-                /// tx is already returned by the upstream quote and this is
-                /// effectively free; for other aggregators it adds a round-
-                /// trip per route.
+                /// `/v2/crosschain/routes/{route_id}/prepare` call. It adds an
+                /// upstream round-trip per route: for SwapsXYZ that is the
+                /// `/getAction` call that builds the transaction, which the
+                /// quote itself no longer makes — about three seconds. A
+                /// SwapsXYZ route with TRON on either side is the exception:
+                /// its quote already builds the transaction, and the inline
+                /// prepare reuses it with no extra upstream call.
+                ///
+                /// **Ignored from build 26.13.0**, which calls prepare itself
+                /// once the user has picked a route. Older builds still get the
+                /// inline payloads, because they have no second call to fall
+                /// back on. Note the route only lives as long as
+                /// `routes[].date_expire` says — 60 seconds for SwapsXYZ and
+                /// for TON-to-TON — so a prepare that comes later is answered
+                /// `400 route_expired` and the quote has to be repeated.
                 ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuote/json/include_payload`.
@@ -477,13 +664,17 @@ extension Components {
                 ///   - destination_amount: Destination amount in minimal units the user must receive.
                 ///   - sender_address: Address signing the source tx
                 ///   - recipient_address: Address receiving funds on the destination chain
-                ///   - return_deposit_address: Forwarded to SwapsXYZ `/getAction?returnDepositAddress`. When
-                ///   - use_multi_aggregator: Route the quote across several aggregators instead of the
+                ///   - return_deposit_address: Forwarded to SwapsXYZ as `returnDepositAddress`, on
+                ///   - destination_target: Turns the quote into a deposit: the destination asset is
+                ///   - source_target: Turns the quote into a withdrawal: the source asset is taken
+                ///   - change_pub_key: Register a Lighter L2 signing key alongside the deposit. Only
+                ///   - eip7702_batch: The wallet can send an EIP-7702 (type-4) transaction, and
+                ///   - use_multi_aggregator: Adds SwapKit to the default fan-out (SwapsXYZ) for a pair
                 ///   - is_max: True when `source_amount` is the entire balance of the
                 ///   - slippage_bps:
                 ///   - exact_type:
                 ///   - aggregators: Optional whitelist of aggregators to query. Pass a single
-                ///   - protocols: Optional whitelist of underlying protocols
+                ///   - protocols: Optional whitelist of underlying protocols.
                 ///   - include_payload: If true, backend also runs `prepare` inline for each route
                 public init(
                     source_asset: Swift.String,
@@ -493,6 +684,10 @@ extension Components {
                     sender_address: Swift.String,
                     recipient_address: Swift.String,
                     return_deposit_address: Swift.Bool? = nil,
+                    destination_target: Components.RequestBodies.CrossSwapQuote.jsonPayload.destination_targetPayload? = nil,
+                    source_target: Components.RequestBodies.CrossSwapQuote.jsonPayload.source_targetPayload? = nil,
+                    change_pub_key: Components.RequestBodies.CrossSwapQuote.jsonPayload.change_pub_keyPayload? = nil,
+                    eip7702_batch: Swift.Bool? = nil,
                     use_multi_aggregator: Swift.Bool? = nil,
                     is_max: Swift.Bool? = nil,
                     slippage_bps: Swift.Int? = nil,
@@ -508,6 +703,10 @@ extension Components {
                     self.sender_address = sender_address
                     self.recipient_address = recipient_address
                     self.return_deposit_address = return_deposit_address
+                    self.destination_target = destination_target
+                    self.source_target = source_target
+                    self.change_pub_key = change_pub_key
+                    self.eip7702_batch = eip7702_batch
                     self.use_multi_aggregator = use_multi_aggregator
                     self.is_max = is_max
                     self.slippage_bps = slippage_bps
@@ -524,6 +723,10 @@ extension Components {
                     case sender_address
                     case recipient_address
                     case return_deposit_address
+                    case destination_target
+                    case source_target
+                    case change_pub_key
+                    case eip7702_batch
                     case use_multi_aggregator
                     case is_max
                     case slippage_bps
@@ -544,7 +747,8 @@ extension Components {
                 public var approval_mode: Components.Schemas.CrossSwapApprovalMode?
                 /// Skip building the transaction on the aggregator side and
                 /// return a deposit descriptor instead. Send false to get the
-                /// built transaction back.
+                /// built transaction back. Routes paid by a contract call are
+                /// always built.
                 ///
                 ///
                 /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepare/json/disable_build_tx`.
@@ -569,35 +773,30 @@ extension Components {
             /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepare/content/application\/json`.
             case json(Components.RequestBodies.CrossSwapPrepare.jsonPayload)
         }
-        /// - Remark: Generated from `#/components/requestBodies/CrossSwapSubmit`.
-        @frozen public enum CrossSwapSubmit: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/requestBodies/CrossSwapSubmit/json`.
+        /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuoteV3`.
+        @frozen public enum CrossSwapQuoteV3: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/CrossSwapQuoteV3/content/application\/json`.
+            case json(Components.Schemas.CrossSwapQuoteRequest)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepareV3`.
+        @frozen public enum CrossSwapPrepareV3: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepareV3/json`.
             public struct jsonPayload: Codable, Hashable, Sendable {
-                /// Signed payload (base64 or hex, format depends on payload_type)
-                ///
-                /// - Remark: Generated from `#/components/requestBodies/CrossSwapSubmit/json/signed_payload`.
-                public var signed_payload: Swift.String
-                /// - Remark: Generated from `#/components/requestBodies/CrossSwapSubmit/json/broadcast_mode`.
-                public var broadcast_mode: Components.Schemas.CrossSwapBroadcastMode
+                /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepareV3/json/approval_mode`.
+                public var approval_mode: Components.Schemas.CrossSwapApprovalMode?
                 /// Creates a new `jsonPayload`.
                 ///
                 /// - Parameters:
-                ///   - signed_payload: Signed payload (base64 or hex, format depends on payload_type)
-                ///   - broadcast_mode:
-                public init(
-                    signed_payload: Swift.String,
-                    broadcast_mode: Components.Schemas.CrossSwapBroadcastMode
-                ) {
-                    self.signed_payload = signed_payload
-                    self.broadcast_mode = broadcast_mode
+                ///   - approval_mode:
+                public init(approval_mode: Components.Schemas.CrossSwapApprovalMode? = nil) {
+                    self.approval_mode = approval_mode
                 }
                 public enum CodingKeys: String, CodingKey {
-                    case signed_payload
-                    case broadcast_mode
+                    case approval_mode
                 }
             }
-            /// - Remark: Generated from `#/components/requestBodies/CrossSwapSubmit/content/application\/json`.
-            case json(Components.RequestBodies.CrossSwapSubmit.jsonPayload)
+            /// - Remark: Generated from `#/components/requestBodies/CrossSwapPrepareV3/content/application\/json`.
+            case json(Components.RequestBodies.CrossSwapPrepareV3.jsonPayload)
         }
         /// - Remark: Generated from `#/components/requestBodies/OnrampQuote`.
         @frozen public enum OnrampQuote: Sendable, Hashable {

@@ -8,6 +8,7 @@ struct BatteryRefillAssembly {
         wallet: Wallet,
         promocodeStore: BatteryPromocodeStore,
         rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider,
+        analytics: BatteryAnalytics,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
     ) -> MVVMModule<BatteryRefillHostingViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
@@ -37,11 +38,29 @@ struct BatteryRefillAssembly {
                 balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
                 batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation
             ),
+            makeRechargeModel: { token in
+                BatteryRechargeModel(
+                    token: token,
+                    wallet: wallet,
+                    balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
+                    currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+                    tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+                    ratesService: keeperCoreMainAssembly.servicesAssembly.ratesService(),
+                    batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
+                    configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
+                    isGift: false
+                )
+            },
+            balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
+            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
             tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             promocodeOutput: promocodeViewModel,
-            relayedEVMChains: keeperCoreMainAssembly.batteryRelayedEVMChains
+            analytics: analytics,
+            relayedEVMChains: keeperCoreMainAssembly.batteryRelayedEVMChains,
+            batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation
         )
 
         viewModel.endPromocodeEditing = { [weak promocodeViewModel] in

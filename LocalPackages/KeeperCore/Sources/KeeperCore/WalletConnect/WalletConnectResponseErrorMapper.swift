@@ -3,10 +3,14 @@ import Foundation
 enum WalletConnectResponseErrorMapper {
     static func map(
         _ error: Error,
-        requestId _: String?,
+        requestId: String?,
         topic _: String?
     ) -> WalletConnectResponseError {
         let details = WalletConnectSDKErrorDetails(error)
+
+        if let requestId, details.isExpiredSessionRequest {
+            return .requestExpired(id: requestId)
+        }
 
         if details.isRetryableDeliveryFailure {
             return .sdk(message: details.localized, retryable: true)
@@ -58,6 +62,14 @@ struct WalletConnectSDKErrorDetails {
         let localized = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         self.localized = localized
         self.nsError = error as NSError
+    }
+
+    var isExpiredSessionRequest: Bool {
+        // Reown 2.2.9: SessionResponder.Errors has only sessionRequestExpired (NSError code 0).
+        // The type is internal; recheck this bridge when updating the SDK.
+        nsErrorChain.contains {
+            $0.domain == "WalletConnectSign.SessionResponder.Errors" && $0.code == 0
+        }
     }
 
     var isRetryableDeliveryFailure: Bool {

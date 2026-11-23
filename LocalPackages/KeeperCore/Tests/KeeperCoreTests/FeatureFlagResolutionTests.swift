@@ -1,8 +1,23 @@
 @testable import KeeperCore
+import PerpsModels
 import TKFeatureFlags
 import XCTest
 
 final class FeatureFlagResolutionTests: XCTestCase {
+    /// Generic Payload defaults off and is turned on by its own key; the transfer, dApp and swap v3 keys it
+    /// replaces are read no more.
+    func testGenericPayloadDefaultsOffAndCanBeEnabledRemotely() {
+        XCTAssertFalse(makeFeatureFlags()[.genericPayloadEnabled])
+        XCTAssertTrue(makeFeatureFlags(remote: ["ios_generic_payload_enabled": true])[.genericPayloadEnabled])
+        XCTAssertFalse(makeFeatureFlags(
+            local: ["genericPayloadEnabled": false],
+            remote: ["ios_generic_payload_enabled": true]
+        )[.genericPayloadEnabled])
+        XCTAssertFalse(makeFeatureFlags(
+            remote: ["ios_operation_transfer_enabled": true, "ios_operation_dapp_enabled": true, "ios_is_swap_v3_enabled": true]
+        )[.genericPayloadEnabled])
+    }
+
     func testBundleOverrideOutranksLocalOverride() {
         let featureFlags = makeFeatureFlags(
             bundle: ["perpsEnabled": false],
@@ -64,6 +79,115 @@ final class FeatureFlagResolutionTests: XCTestCase {
         XCTAssertTrue(featureFlags[.perpsEnabled])
     }
 
+    func testBootConfigurationKeepsPerpsAndItsPromoOffOutsideItsRegion() throws {
+        let configuration = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: "hidden")
+        )
+
+        XCTAssertFalse(configuration.featureEnabled(.perpsEnabled))
+        XCTAssertTrue(configuration.isPromoHidden(id: "perps"))
+        XCTAssertFalse(configuration.isPromoHidden(id: "earn"))
+    }
+
+    func testThePerpsAccessOverrideReplacesTheBootConfigurationState() throws {
+        let configuration = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: "hidden"),
+            perpsAccessOverride: .restricted
+        )
+
+        XCTAssertEqual(configuration.perpsAccess, .restricted)
+        XCTAssertTrue(configuration.featureEnabled(.perpsEnabled))
+    }
+
+    func testPerpsNeedsBothTheRemoteFlagAndTheBootConfiguration() throws {
+        let open = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: "available")
+        )
+        let restricted = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: "restricted")
+        )
+        let notRolledOut = try makeConfiguration(mainnet: makeBootConfiguration(perpsState: "available"))
+        let silentBootConfiguration = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: nil)
+        )
+        let bootConfigurationNotLoaded = makeConfiguration(remote: ["ios_perps_enabled": true])
+
+        XCTAssertTrue(open.featureEnabled(.perpsEnabled))
+        XCTAssertFalse(open.isPromoHidden(id: "perps"))
+        XCTAssertTrue(restricted.featureEnabled(.perpsEnabled))
+        XCTAssertFalse(restricted.isPromoHidden(id: "perps"))
+        XCTAssertFalse(notRolledOut.featureEnabled(.perpsEnabled))
+        XCTAssertTrue(notRolledOut.isPromoHidden(id: "perps"))
+        XCTAssertFalse(silentBootConfiguration.featureEnabled(.perpsEnabled))
+        XCTAssertFalse(bootConfigurationNotLoaded.featureEnabled(.perpsEnabled))
+    }
+
+    func testDevOverrideOpensPerpsOutsideItsRegion() throws {
+        let configuration = try makeConfiguration(
+            local: ["perpsEnabled": true],
+            mainnet: makeBootConfiguration(perpsState: "hidden")
+        )
+
+        XCTAssertTrue(configuration.featureEnabled(.perpsEnabled))
+    }
+
+    func testPerpsRealtimeFollowsItsOwnFlagOnlyOnTopOfPerps() throws {
+        let perpsRegion = "available"
+        let on = try makeConfiguration(
+            remote: ["ios_perps_enabled": true, "ios_perps_realtime_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: perpsRegion)
+        )
+        let perpsOnly = try makeConfiguration(
+            remote: ["ios_perps_enabled": true, "ios_perps_realtime_enabled": false],
+            mainnet: makeBootConfiguration(perpsState: perpsRegion)
+        )
+        let withoutPerps = try makeConfiguration(
+            remote: ["ios_perps_realtime_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: perpsRegion)
+        )
+        let byDefault = try makeConfiguration(
+            remote: ["ios_perps_enabled": true],
+            mainnet: makeBootConfiguration(perpsState: perpsRegion)
+        )
+
+        XCTAssertTrue(on.featureEnabled(.perpsRealtimeEnabled))
+        XCTAssertFalse(perpsOnly.featureEnabled(.perpsRealtimeEnabled))
+        XCTAssertFalse(withoutPerps.featureEnabled(.perpsRealtimeEnabled))
+        #if DEBUG
+            XCTAssertTrue(byDefault.featureEnabled(.perpsRealtimeEnabled))
+        #else
+            XCTAssertFalse(byDefault.featureEnabled(.perpsRealtimeEnabled))
+        #endif
+    }
+
+    func testLedgerMigrationStaysOffWithoutTheMultichainLedger() {
+        let featureFlags = makeFeatureFlags(
+            local: ["ledgerMigration": true],
+            remote: ["ios_ledger_migration_enabled": true]
+        )
+        let configuration = makeConfiguration(local: ["ledgerMigration": true])
+
+        XCTAssertFalse(featureFlags[.ledgerMigration])
+        XCTAssertEqual(featureFlags.allValues[.ledgerMigration]?.resolvedValue, false)
+        XCTAssertFalse(configuration.featureEnabled(.ledgerMigration))
+    }
+
+    func testLedgerMigrationFollowsItsOwnValueOnTopOfTheMultichainLedger() {
+        let featureFlags = makeFeatureFlags(
+            local: ["ledgerMigration": true],
+            remote: ["ios_is_ledger_multichain_enabled": true]
+        )
+        let configuration = makeConfiguration(remote: ["ios_is_ledger_multichain_enabled": true])
+
+        XCTAssertTrue(featureFlags[.ledgerMigration])
+        XCTAssertFalse(configuration.featureEnabled(.ledgerMigration))
+    }
+
     func testFeatureFlagsDescriptionListsEachFlagWithItsValueAndSource() {
         let configuration = makeConfiguration(
             bundle: ["earnEnabled": true],
@@ -93,6 +217,11 @@ final class FeatureFlagResolutionTests: XCTestCase {
 }
 
 private extension FeatureFlagResolutionTests {
+    func makeBootConfiguration(perpsState: String?) throws -> BootConfiguration {
+        let json = perpsState.map { #"{"feature_access": {"perps": {"state": "\#($0)"}}}"# } ?? "{}"
+        return try JSONDecoder().decode(BootConfiguration.self, from: Data(json.utf8))
+    }
+
     func makeFeatureFlags(
         bundle: [String: Bool] = [:],
         local: [String: Bool] = [:],
@@ -108,14 +237,17 @@ private extension FeatureFlagResolutionTests {
     func makeConfiguration(
         bundle: [String: Bool] = [:],
         local: [String: Bool] = [:],
-        remote: [String: Bool] = [:]
+        remote: [String: Bool] = [:],
+        mainnet: BootConfiguration = .empty,
+        perpsAccessOverride: PerpsAccess? = nil
     ) -> Configuration {
         Configuration(
             bootConfigurationService: BootConfigurationServiceStub(
-                bootConfigurations: BootConfigurations(mainnet: .empty, testnet: .empty)
+                bootConfigurations: BootConfigurations(mainnet: mainnet, testnet: .empty)
             ),
             featureFlags: makeFeatureFlags(bundle: bundle, local: local, remote: remote),
-            tkAppSettings: AppSettingsStub()
+            tkAppSettings: AppSettingsStub(),
+            perpsAccessOverride: perpsAccessOverride
         )
     }
 }

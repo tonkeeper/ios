@@ -23,13 +23,26 @@ public struct MoonPayPlatformAPI: Sendable {
     }
 
     public func buyQuote(accessToken: String, request: MoonPayBuyQuoteRequest) async throws -> MoonPayBuyQuote {
-        let response: MoonPayBuyQuoteResponse = try await perform(makeRequest(
+        let (response, httpResponse): (MoonPayBuyQuoteResponse, HTTPURLResponse) = try await performWithResponse(makeRequest(
             .post,
             path: "/platform/v1/quotes/buy",
             headers: ["Authorization": "Bearer \(accessToken)"],
             body: request
         ))
-        return response.data
+        var quote = response.data
+        if let expiresAt = quote.expiresAt, let serverDate = Self.serverDate(of: httpResponse) {
+            quote.localExpiresAt = Date().addingTimeInterval(expiresAt.timeIntervalSince(serverDate))
+        }
+        return quote
+    }
+
+    private static func serverDate(of response: HTTPURLResponse) -> Date? {
+        guard let value = response.value(forHTTPHeaderField: "Date") else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: value)
     }
 
     /// Payment method types available to the connected customer plus the methods stored on the
@@ -43,6 +56,15 @@ public struct MoonPayPlatformAPI: Sendable {
             headers: ["Authorization": "Bearer \(accessToken)"]
         ))
         return response.data
+    }
+
+    /// Removes a stored payment method from the connected customer's account. Answers `204`.
+    public func deletePaymentMethod(accessToken: String, id: String) async throws {
+        _ = try await send(makeRequest(
+            .delete,
+            path: "/platform/v1/payment-methods/\(id)",
+            headers: ["Authorization": "Bearer \(accessToken)"]
+        ))
     }
 
     /// One page of the assets MoonPay can sell. `source` narrows it to CeFi assets or DeFi tokens.
@@ -76,9 +98,25 @@ public struct MoonPayPlatformAPI: Sendable {
         return response.data
     }
 
+    /// The first page of the customer's transactions created at or after `startDate`. Customer
+    /// scoped: it takes the access token of an active connection.
+    public func transactions(accessToken: String, startDate: Date, limit: Int = 50) async throws -> [MoonPayTransactionDetails] {
+        let response: MoonPayTransactionsResponse = try await perform(makeRequest(
+            .get,
+            path: "/platform/v1/transactions",
+            query: [
+                URLQueryItem(name: "startDate", value: MoonPayJSONCoding.formatISO8601(startDate)),
+                URLQueryItem(name: "limit", value: String(limit)),
+            ],
+            headers: ["Authorization": "Bearer \(accessToken)"]
+        ))
+        return response.data
+    }
+
     private enum HTTPMethod: String {
         case get = "GET"
         case post = "POST"
+        case delete = "DELETE"
     }
 
     private func makeRequest(
@@ -123,6 +161,19 @@ public struct MoonPayPlatformAPI: Sendable {
     }
 
     private func perform<Response: Decodable>(_ request: URLRequest) async throws -> Response {
+        try await performWithResponse(request).0
+    }
+
+    private func performWithResponse<Response: Decodable>(_ request: URLRequest) async throws -> (Response, HTTPURLResponse) {
+        let (data, httpResponse) = try await send(request)
+        do {
+            return try (MoonPayJSONCoding.makeDecoder().decode(Response.self, from: data), httpResponse)
+        } catch {
+            throw MoonPayAPIError.decoding(error)
+        }
+    }
+
+    private func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
         do {
@@ -140,10 +191,6 @@ public struct MoonPayPlatformAPI: Sendable {
             }
             throw MoonPayAPIError.http(status: httpResponse.statusCode, body: serverError)
         }
-        do {
-            return try MoonPayJSONCoding.makeDecoder().decode(Response.self, from: data)
-        } catch {
-            throw MoonPayAPIError.decoding(error)
-        }
+        return (data, httpResponse)
     }
 }

@@ -6,6 +6,12 @@ final class RampOnViewController: UIViewController {
     private let viewModel: RampOnViewModel
     private let hostingController: TKHostingController<RampOnView>
 
+    /// The SwiftUI header hands its buttons and title to the navigation item of the hosting controller,
+    /// while the bar shows this controller's one.
+    override var navigationItem: UINavigationItem {
+        TKLiquidGlass.isEnabled ? hostingController.navigationItem : super.navigationItem
+    }
+
     init(viewModel: RampOnViewModel) {
         self.viewModel = viewModel
         hostingController = TKHostingController(

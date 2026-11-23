@@ -27,7 +27,42 @@ struct TradeRootView: View {
                                 .frame(height: 0)
                                 .id(ScrollAnchor.top)
 
+                            if viewModel.showsMultichainPerpsCell {
+                                TradePerpsEntryCell(
+                                    title: TKLocales.Trade.MultichainPerps.title,
+                                    caption: TKLocales.Trade.MultichainPerps.caption,
+                                    action: viewModel.openPerps
+                                )
+                                .padding(.horizontal, Layout.screenPadding)
+                                .padding(.top, Layout.raffleEntriesTopPadding)
+                                .padding(.bottom, Layout.raffleEntriesBottomPadding)
+                            }
+
+                            if !viewModel.raffleEntries.isEmpty {
+                                RaffleEntryPointsView(
+                                    entries: viewModel.raffleEntries,
+                                    onOpen: { viewModel.openRaffle(id: $0, presentedFromBanner: false) }
+                                )
+                                .padding(.horizontal, Layout.screenPadding)
+                                .padding(.top, Layout.raffleEntriesTopPadding)
+                                .padding(.bottom, viewModel.raffleBanners.isEmpty ? Layout.raffleEntriesBottomPadding : 0)
+                            }
+
                             TradeRaffleBannerView(viewModel: viewModel)
+
+                            if let loyaltyRow = viewModel.loyaltyRow {
+                                RaffleEntryPointView(
+                                    title: TKLocales.Loyalty.resistance,
+                                    badgeText: loyaltyRow.ohmsText,
+                                    badgeColor: .accentOrange,
+                                    action: viewModel.openLoyalty
+                                ) {
+                                    SwiftUI.Image.TKUIKit.Icons.Size28.ohms
+                                }
+                                .padding(.horizontal, Layout.screenPadding)
+                                .padding(.top, Layout.raffleEntriesTopPadding)
+                                .padding(.bottom, Layout.raffleEntriesBottomPadding)
+                            }
 
                             if !viewModel.services.isEmpty {
                                 TradeServicesView(
@@ -215,6 +250,8 @@ private extension TradeRootView {
     enum Layout {
         static let bottomPadding: CGFloat = 20
         static let emptyStateTopPadding: CGFloat = 30
+        static let raffleEntriesTopPadding: CGFloat = 8
+        static let raffleEntriesBottomPadding: CGFloat = 16
         static let screenPadding: CGFloat = 16
         static let shelfSpacing: CGFloat = 16
         static let skeletonItemsCount: Int = 8

@@ -24,6 +24,25 @@ final class TransactionLiveActivityAttributesTests: XCTestCase {
         XCTAssertEqual(resolved.title, "Sending")
         XCTAssertEqual(resolved.source?.amount, "10")
         XCTAssertEqual(resolved.updatedAt, Date(timeIntervalSinceReferenceDate: 123))
+        XCTAssertFalse(resolved.isRedacted)
+        XCTAssertNil(resolved.steps)
+    }
+
+    func test_stateFromAnEarlierVersionDecodesWithoutTheNewFields() throws {
+        let content = try JSONDecoder().decode(Attributes.ContentState.self, from: Data(
+            """
+            {"transactionId":"swap:ton:abc","chain":"TRON","status":"pending","title":"Moving to TRON",
+             "updatedAt":123,"kind":"swap","wallet":{"name":"Main","emoji":"👛"},
+             "stage":{"index":2,"count":4}}
+            """.utf8
+        ))
+
+        XCTAssertEqual(content.wallet, .init(name: "Main"))
+        XCTAssertEqual(content.stage, .init(index: 2, count: 4))
+        XCTAssertNil(content.fiat)
+        XCTAssertNil(content.icon)
+        XCTAssertNil(content.queuedCount)
+        XCTAssertFalse(content.isRedacted)
     }
 
     func test_newContentRoundTripsAndOverridesTheLegacyIdentityAfterHandoff() throws {
@@ -38,10 +57,15 @@ final class TransactionLiveActivityAttributesTests: XCTestCase {
             source: nil,
             destination: .init(network: "ETH", currency: "USDC", amount: "25"),
             kind: .receive,
-            wallet: .init(name: "Wallet", emoji: "👛", icon: nil),
+            wallet: .init(name: "Wallet"),
             counterpartyAddress: "counterparty",
-            stage: .init(index: 4, count: 4),
-            perpsMarketId: 1
+            stage: .init(index: 3, count: 3, title: "Arriving on TRON"),
+            perpsMarketId: 1,
+            steps: 3,
+            fiat: "$25.00",
+            icon: "url-0123.png",
+            queuedCount: 2,
+            isRedacted: true
         )
 
         let decoded = try JSONDecoder().decode(Attributes.ContentState.self, from: JSONEncoder().encode(state))

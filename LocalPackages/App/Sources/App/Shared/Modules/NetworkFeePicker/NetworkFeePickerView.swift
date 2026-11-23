@@ -80,6 +80,7 @@ private extension NetworkFeePickerItem {
             title: title,
             subtitle: subtitle,
             isDisabled: isDisabled,
+            subtitleWarning: warning,
             subtitleActionTitle: actionTitle,
             isSelected: isSelected
         )

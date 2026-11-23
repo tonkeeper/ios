@@ -23,7 +23,7 @@ final class TokenManagementHostingViewController: TKHostingController<TokenManag
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        presentationController?.delegate = self
+        tkPresentationController?.delegate = self
         viewModel.viewDidLoad()
     }
 

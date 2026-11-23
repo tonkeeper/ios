@@ -12,7 +12,7 @@ public struct MultichainTransactionDetailsModel {
 
     public enum Image {
         case single(Asset)
-        case nft(Asset)
+        case nft(Asset, isSecureMode: Bool = false)
         case swap(left: Asset, right: Asset)
     }
 
@@ -77,6 +77,7 @@ public struct MultichainTransactionDetailsModel {
     public let date: String
     public let pendingTitle: String?
     public let tags: [TKTagSwiftUIViewConfig]
+    public let rewardRow: ConfirmActionRow?
     public let rows: [MultichainTransactionDetailsCellContent]
     public let transactionButton: TransactionButton?
     public let actionButton: ActionButton?
@@ -89,6 +90,7 @@ public struct MultichainTransactionDetailsModel {
         date: String,
         pendingTitle: String? = nil,
         tags: [TKTagSwiftUIViewConfig] = [],
+        rewardRow: ConfirmActionRow? = nil,
         rows: [MultichainTransactionDetailsCellContent],
         transactionButton: TransactionButton?,
         actionButton: ActionButton? = nil
@@ -100,6 +102,7 @@ public struct MultichainTransactionDetailsModel {
         self.date = date
         self.pendingTitle = pendingTitle
         self.tags = tags
+        self.rewardRow = rewardRow
         self.rows = rows
         self.transactionButton = transactionButton
         self.actionButton = actionButton
@@ -113,5 +116,11 @@ public enum MultichainTransactionDetailsCellContent {
     case fee(title: String, amount: String, fiatAmount: String?)
     case value(title: String, value: String, subvalue: String?)
     case comment(title: String, value: String)
+    /// A comment still encrypted to the wallet: a spoiler about `length` characters long stands in for it
+    /// until `decrypt` reveals it.
+    case encryptedComment(title: String, length: Int, decrypt: () -> Void)
     case property(title: String, value: String)
+    case status(title: String, value: String, color: TKColor, isPending: Bool = false)
+    /// A hash on one line, shortened in the middle, that copies whole.
+    case inlineHash(title: String, hash: String)
 }

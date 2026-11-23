@@ -1,6 +1,6 @@
 import Foundation
-import ReownWalletKit
 import TonSwift
+import WalletConnectSign
 
 struct WalletConnectSessionNamespaceBuilder {
     static func chains(from namespaces: [String: SessionNamespace]) -> [WalletConnectChain] {

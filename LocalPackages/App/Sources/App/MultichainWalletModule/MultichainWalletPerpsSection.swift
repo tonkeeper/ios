@@ -11,6 +11,7 @@ struct MultichainWalletPerpsSection: View {
 
     let placement: Placement
     @ObservedObject var viewModel: MultichainWalletPerpsSectionViewModel
+    var onResolveTitleAnchor: ((UIView) -> Void)?
 
     var body: some View {
         content
@@ -30,7 +31,7 @@ struct MultichainWalletPerpsSection: View {
         }
     }
 
-    private func positionsSection(_ positions: [PerpsPositionRowItem]) -> some View {
+    private func positionsSection(_ preview: PerpsPositionsPreview) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ListTitleView(config: .text(
                 TKLocales.Perps.title,
@@ -39,8 +40,10 @@ struct MultichainWalletPerpsSection: View {
             ))
 
             PerpsOpenPositionsCard(
-                positions: positions,
-                onSelect: viewModel.openMarket
+                positions: preview.rows,
+                more: preview.more,
+                onSelect: viewModel.openMarket,
+                onMore: viewModel.openPerps
             )
         }
         .padding(.horizontal, Layout.horizontalPadding)
@@ -49,11 +52,14 @@ struct MultichainWalletPerpsSection: View {
 
     private func shelfSection(_ markets: [PerpsShelfMarketViewData]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            ListTitleView(config: .text(
-                TKLocales.Perps.title,
-                accessory: balanceAccessory,
-                titleAction: viewModel.openPerps
-            ))
+            ListTitleView(
+                config: .text(
+                    TKLocales.Perps.title,
+                    accessory: balanceAccessory,
+                    titleAction: viewModel.openPerps
+                ),
+                onResolveTitleAnchor: onResolveTitleAnchor
+            )
             .padding(.horizontal, Layout.horizontalPadding)
 
             MultichainWalletPerpsShelfView(

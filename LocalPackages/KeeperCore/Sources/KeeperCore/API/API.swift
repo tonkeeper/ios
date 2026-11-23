@@ -310,6 +310,16 @@ extension API {
         return Int(response.seqno)
     }
 
+    func getAccountPublicKey(address: Address) async throws -> Data {
+        let response = try await perform {
+            try await $0.getAccountPublicKey(path: .init(accountId: address.toRaw())).ok.body.json
+        }
+        guard let publicKey = Data(strictHex: response.publicKey) else {
+            throw APIError.incorrectResponse
+        }
+        return publicKey
+    }
+
     func getWalletInfo(address: Address) async throws -> WalletInfo {
         let response = try await perform {
             try await $0.getWalletInfo(path: .init(accountId: address.toRaw())).ok.body.json
@@ -452,6 +462,18 @@ extension API {
             try await $0.getRates(query: .init(tokens: tokens, currencies: currencies.map { $0.code })).ok.body.json
         }
 
+        return parseResponse(rates: response.rates.additionalProperties, jettons: jettons)
+    }
+
+    func getRiskRates(currencies: [Currency], jettons: [String]) async throws -> Rates {
+        guard let connection = configuration.cachedTonAPIConnection else {
+            throw APIError.incorrectURL
+        }
+        let client = Client(serverURL: connection.url, apiKey: connection.key, urlSession: urlSession)
+        let response = try await client.getRates(query: .init(
+            tokens: ["GRAM", "USDT"] + jettons,
+            currencies: currencies.map(\.code)
+        )).ok.body.json
         return parseResponse(rates: response.rates.additionalProperties, jettons: jettons)
     }
 

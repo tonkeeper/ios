@@ -1,6 +1,6 @@
 import Foundation
 @testable import KeeperCore
-import KeeperCoreComponents
+@testable import KeeperCoreComponents
 @testable import KeeperCoreSensitive
 import Security
 import Testing
@@ -44,6 +44,20 @@ struct MnemonicsRepositoryV2Tests {
         let decrypted = try cipher.decrypt(encrypted)
 
         #expect(decrypted == original)
+    }
+
+    @Test
+    func legacyVaultsEncryptAtProductionCostAndReturnOriginalMnemonic() async throws {
+        let production = MnemonicsEncryptionParams(N: 16384, r: 8, p: 1)
+        let keychain = InMemoryKeychainVault()
+        let vault = MnemonicsVault(keychainVault: keychain, seedProvider: { "legacy-production-cost" })
+        #expect(vault.encryption == production)
+        #expect(RNMnemonicsVault(keychainVault: keychain).encryption == production)
+        let original = try Mnemonic(mnemonicWords: Array(repeating: "abandon", count: 11) + ["about"])
+
+        try await vault.addMnemonic(original, identifier: "wallet", password: "1234")
+
+        #expect(try await vault.getMnemonic(identifier: "wallet", password: "1234") == original)
     }
 
     @Test
@@ -159,7 +173,11 @@ struct MnemonicsRepositoryV2Tests {
 
     @Test
     func isAmbiguousReturnsFalseForTonOnlyMnemonic() {
-        let tonWords = TonSwift.Mnemonic.mnemonicNew()
+        // About 1 in 256 new TON phrases also passes the BIP39 checksum.
+        var tonWords = TonSwift.Mnemonic.mnemonicNew()
+        while BIP39Mnemonic.isValidBip39Mnemonic(mnemonicArray: tonWords) {
+            tonWords = TonSwift.Mnemonic.mnemonicNew()
+        }
         #expect(!DerivationType.isAmbiguous(tonWords))
     }
 
@@ -234,7 +252,10 @@ struct MnemonicsRepositoryV2Tests {
 
     @Test
     func shouldOfferWalletKindSelectionReturnsFalseForTonOnlyMnemonic() {
-        let tonWords = TonSwift.Mnemonic.mnemonicNew()
+        var tonWords = TonSwift.Mnemonic.mnemonicNew()
+        while BIP39Mnemonic.isValidBip39Mnemonic(mnemonicArray: tonWords) {
+            tonWords = TonSwift.Mnemonic.mnemonicNew()
+        }
         #expect(!DerivationType.shouldOfferWalletKindSelection(tonWords))
     }
 
@@ -797,6 +818,81 @@ struct MnemonicsRepositoryV2Tests {
         #expect(preserved.mnemonicWords == legacyMnemonic.mnemonicWords)
     }
 
+    @Test(arguments: ["5678", "1234"])
+    func v2SaveMnemonicCreatesStorageWhenLegacyVaultIsEmptied(passcode: String) async throws {
+        let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
+        let rawStorage = makeRawStorage(
+            seed: seed,
+            keychain: InMemorySecureStorageKeychain()
+        )
+        let legacyRepository = makeLegacyRepository(
+            seed: seed,
+            keychainVault: InMemoryPasswordKeychainVault()
+        )
+        let mnemonicAccess = makeV2MnemonicAccess(
+            rawStorage: rawStorage,
+            seed: seed,
+            legacyRepository: legacyRepository
+        )
+        let deletedWallet = makeWallet(id: "deleted-wallet")
+        try await legacyRepository.native.saveMnemonic(
+            KeeperCoreComponents.Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew()),
+            wallet: deletedWallet,
+            password: "1234"
+        )
+        try await legacyRepository.native.deleteMnemonic(wallet: deletedWallet, password: "1234")
+        let wallet = makeWallet(id: "new-wallet")
+        let mnemonic = CoreMnemonic(
+            mnemonicWords: TonSwift.Mnemonic.mnemonicNew(),
+            type: .ton
+        )
+
+        try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: passcode)
+
+        #expect(try rawStorage.unlocked(passcode: passcode).getAll() == [wallet.id: mnemonic])
+        let legacyCopy = try await legacyRepository.native.getMnemonic(wallet: wallet, password: passcode)
+        #expect(legacyCopy.mnemonicWords == mnemonic.mnemonicWords)
+    }
+
+    @Test
+    func legacyVaultHoldsMnemonicsUntilTheLastOneIsDeleted() async throws {
+        let vault = makeLegacyRepository(
+            seed: "mnemonics-v2-tests-\(UUID().uuidString)",
+            keychainVault: InMemoryPasswordKeychainVault()
+        ).native
+        let firstWallet = makeWallet(id: "first-wallet")
+        let secondWallet = makeWallet(id: "second-wallet")
+        #expect(vault.holdsMnemonics() == false)
+
+        for wallet in [firstWallet, secondWallet] {
+            try await vault.saveMnemonic(
+                KeeperCoreComponents.Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew()),
+                wallet: wallet,
+                password: "1234"
+            )
+        }
+        #expect(vault.holdsMnemonics())
+
+        try await vault.deleteMnemonic(wallet: firstWallet, password: "1234")
+        #expect(vault.holdsMnemonics())
+
+        try await vault.deleteMnemonic(wallet: secondWallet, password: "1234")
+        #expect(vault.hasMnemonics())
+        #expect(vault.holdsMnemonics() == false)
+    }
+
+    @Test(arguments: ["", "0x", String(repeating: "ab", count: 17)])
+    func legacyVaultWithABoxShorterThanAnEmptiedMapHoldsMnemonics(ct: String) throws {
+        let vault = makeLegacyRepository(
+            seed: "mnemonics-v2-tests-\(UUID().uuidString)",
+            keychainVault: InMemoryPasswordKeychainVault()
+        ).native
+        let json = #"{"kind":"encrypted-scrypt-tweetnacl","N":16384,"r":8,"p":1,"salt":"73616c74","ct":"\#(ct)"}"#
+        try vault.importEncryptedMnemonics(JSONDecoder().decode(EncryptedMnemonics.self, from: Data(json.utf8)))
+
+        #expect(vault.holdsMnemonics())
+    }
+
     @Test
     func v2BatchGetMnemonicsUnlocksStorageOnce() async throws {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
@@ -826,7 +922,7 @@ struct MnemonicsRepositoryV2Tests {
             passcode: "1234"
         )
         let unlockCounter = Counter()
-        let mnemonicAccess = MnemonicAccess.v2(
+        let mnemonicAccess = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -947,7 +1043,7 @@ struct MnemonicsRepositoryV2Tests {
     }
 
     @Test
-    func v2SetPasscodeRemovesLegacyPasscodeForFeatureFlagRollback() throws {
+    func v2SetPasscodeRemovesLegacyPasscode() throws {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
         let rawStorage = makeRawStorage(
             seed: seed,
@@ -961,7 +1057,7 @@ struct MnemonicsRepositoryV2Tests {
             seedProvider: { seed },
             keychain: InMemorySecureStorageKeychain()
         )
-        let mnemonicAccess = MnemonicAccess.v2(
+        let mnemonicAccess = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -978,12 +1074,6 @@ struct MnemonicsRepositoryV2Tests {
 
         #expect(try mnemonicAccess.getPasscode() == "1234")
         #expect(!legacyRepository.native.hasPassword())
-        let rollbackMnemonicAccess = MnemonicAccess.disabled(
-            mnemonicsRepository: legacyRepository
-        )
-        #expect(throws: TKKeychainError.self) {
-            _ = try rollbackMnemonicAccess.getPasscode()
-        }
     }
 
     @Test
@@ -1039,37 +1129,58 @@ struct MnemonicsRepositoryV2Tests {
     }
 
     @Test
-    func disabledBiometryProbeReclassifiesMissingItemWithMarkerAsInvalidated() throws {
+    func v2BiometryProbeReclassifiesMissingItemWithMarkerAsInvalidated() throws {
         // Core device-recovery rule: an invalidated biometryCurrentSet item reads
         // as not-found (.missing) on device. The marker survives the enrollment
         // change and proves the cache existed, so this is invalidated, not absent.
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
-        let keychainVault = InMemoryPasswordKeychainVault()
-        let legacy = makeLegacyRepository(seed: seed, keychainVault: keychainVault)
-        let access = MnemonicAccess.disabled(mnemonicsRepository: legacy)
+        let rawStorage = makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain())
+        let passcodeKeychain = InMemorySecureStorageKeychain()
+        let access = makeV2MnemonicAccess(
+            rawStorage: rawStorage,
+            seed: seed,
+            passcodeStorage: PasscodeStorage(seedProvider: { seed }, keychain: passcodeKeychain),
+            legacyRepository: makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
+        )
 
-        try legacy.native.importEncryptedMnemonics(makeEncryptedMnemonics())
-        try legacy.native.savePassword("secret")
-        keychainVault.removeItem(service: "password_vault_\(seed)", account: "biometry_passcode")
+        try rewriteMnemonicSet(
+            rawStorage: rawStorage,
+            passcode: "secret",
+            mnemonic: CoreMnemonic(mnemonicWords: ["one", "two"], type: .unknown)
+        )
+        try access.setPasscode("secret")
+        passcodeKeychain.setCopyFailure(
+            service: "v2pwd\(seed)",
+            account: "PasscodeWrapKey_a",
+            status: errSecItemNotFound
+        )
 
         #expect(access.biometryAccessProbe() == .invalidated)
         #expect(!access.isBiometryCacheDiscarded())
     }
 
     @Test
-    func disabledBiometryProbeKeepsDiscardedCacheAsMissingDespiteMnemonics() throws {
-        // Storage-v2 rollback shape: the cache AND its marker are gone, so nothing
-        // about the enrolled set changed. Reporting .invalidated here is what
-        // raised a bogus "biometry changed" notice after a rollback (TK-2375).
+    func v2BiometryProbeKeepsDiscardedCacheAsMissingDespiteMnemonics() throws {
+        // The cache AND its marker are gone, so nothing about the enrolled set
+        // changed. Reporting .invalidated here is what raised a bogus "biometry
+        // changed" notice (TK-2375).
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
-        let legacy = makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
-        let access = MnemonicAccess.disabled(mnemonicsRepository: legacy)
+        let rawStorage = makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain())
+        let passcodeStorage = PasscodeStorage(seedProvider: { seed }, keychain: InMemorySecureStorageKeychain())
+        let access = makeV2MnemonicAccess(
+            rawStorage: rawStorage,
+            seed: seed,
+            passcodeStorage: passcodeStorage,
+            legacyRepository: makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
+        )
 
-        try legacy.native.importEncryptedMnemonics(makeEncryptedMnemonics())
-        try legacy.native.savePassword("secret")
-        // What migrating to v2 does to the legacy cache, and what a rollback then
-        // leaves behind: the password item and its marker are both gone.
-        try legacy.native.deletePassword()
+        try rewriteMnemonicSet(
+            rawStorage: rawStorage,
+            passcode: "secret",
+            mnemonic: CoreMnemonic(mnemonicWords: ["one", "two"], type: .unknown)
+        )
+        try access.setPasscode("secret")
+        try passcodeStorage.deleteAllKnownStorageArtifacts()
 
         #expect(access.biometryAccessProbe() == .missing)
         #expect(access.isBiometryCacheDiscarded())
@@ -1077,9 +1188,9 @@ struct MnemonicsRepositoryV2Tests {
 
     @Test
     func biometryCacheIsNotReportedDiscardedWhileTheLegacyCacheAwaitsV2Migration() throws {
-        // Storage v2 is enabled but its passcode storage is still empty, because
-        // the native->v2 migration has not run yet. The live legacy cache is about
-        // to be migrated into it, so biometry must NOT be treated as discarded —
+        // The v2 passcode storage is still empty, because the native->v2
+        // migration has not run yet. The live legacy cache is about to be
+        // migrated into it, so biometry must NOT be treated as discarded —
         // doing so disables biometry for every migrating user.
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
         let legacyRepository = makeLegacyRepository(
@@ -1087,7 +1198,7 @@ struct MnemonicsRepositoryV2Tests {
             keychainVault: InMemoryPasswordKeychainVault()
         )
         let rawStorage = makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain())
-        let access = MnemonicAccess.v2(
+        let access = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -1108,33 +1219,42 @@ struct MnemonicsRepositoryV2Tests {
     }
 
     @Test
-    func disabledBiometryProbeKeepsMissingItemWithoutMnemonicsAsMissing() {
+    func v2BiometryProbeKeepsMissingItemWithoutMnemonicsAsMissing() {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
-        let legacy = makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
-        let access = MnemonicAccess.disabled(mnemonicsRepository: legacy)
+        let access = makeV2MnemonicAccess(
+            rawStorage: makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain()),
+            seed: seed,
+            passcodeStorage: PasscodeStorage(seedProvider: { seed }, keychain: InMemorySecureStorageKeychain())
+        )
 
-        // No mnemonics and no password item → genuinely absent.
+        // No mnemonics and no passcode item → genuinely absent.
         #expect(access.biometryAccessProbe() == .missing)
     }
 
     @Test
-    func disabledBiometryProbeReturnsAccessibleForPresentItem() throws {
+    func v2BiometryProbeReturnsAccessibleForPresentItem() throws {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
-        let legacy = makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
-        let access = MnemonicAccess.disabled(mnemonicsRepository: legacy)
+        let access = makeV2MnemonicAccess(
+            rawStorage: makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain()),
+            seed: seed,
+            passcodeStorage: PasscodeStorage(seedProvider: { seed }, keychain: InMemorySecureStorageKeychain())
+        )
 
-        try legacy.native.savePassword("secret")
+        try access.setPasscode("secret")
         #expect(access.biometryAccessProbe() == .accessible)
     }
 
     @Test
-    func disabledIsBiometryItemMigratedReflectsSavePassword() throws {
+    func v2IsBiometryItemMigratedReflectsSetPasscode() throws {
         let seed = "mnemonics-v2-tests-\(UUID().uuidString)"
-        let legacy = makeLegacyRepository(seed: seed, keychainVault: InMemoryPasswordKeychainVault())
-        let access = MnemonicAccess.disabled(mnemonicsRepository: legacy)
+        let access = makeV2MnemonicAccess(
+            rawStorage: makeRawStorage(seed: seed, keychain: InMemorySecureStorageKeychain()),
+            seed: seed,
+            passcodeStorage: PasscodeStorage(seedProvider: { seed }, keychain: InMemorySecureStorageKeychain())
+        )
 
         #expect(!access.isBiometryItemMigrated())
-        try legacy.native.savePassword("secret")
+        try access.setPasscode("secret")
         #expect(access.isBiometryItemMigrated())
     }
 
@@ -1153,7 +1273,7 @@ struct MnemonicsRepositoryV2Tests {
             seedProvider: { seed },
             keychain: InMemorySecureStorageKeychain()
         )
-        let mnemonicAccess = MnemonicAccess.v2(
+        let mnemonicAccess = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -1204,7 +1324,7 @@ struct MnemonicsRepositoryV2Tests {
             seed: seed,
             keychainVault: InMemoryPasswordKeychainVault()
         )
-        let mnemonicAccess = MnemonicAccess.v2(
+        let mnemonicAccess = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -1263,7 +1383,7 @@ struct MnemonicsRepositoryV2Tests {
             seed: seed,
             keychainVault: InMemoryPasswordKeychainVault()
         )
-        let mnemonicAccess = MnemonicAccess.v2(
+        let mnemonicAccess = MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
@@ -1429,16 +1549,17 @@ private extension MnemonicsRepositoryV2Tests {
     func makeV2MnemonicAccess(
         rawStorage: MnemonicsRawDataRepository,
         seed: String,
+        passcodeStorage: PasscodeStorage? = nil,
         legacyRepository: MnemonicAccess.LegacyRepository? = nil
     ) -> MnemonicAccess {
-        return MnemonicAccess.v2(
+        return MnemonicAccess(
             mnemonicsRepository: MnemonicAccess.ModernRepository(
                 raw: rawStorage,
                 unlocked: { passcode in
                     try rawStorage.unlocked(passcode: passcode)
                 }
             ),
-            passcodeStorage: PasscodeStorage(seedProvider: { seed }),
+            passcodeStorage: passcodeStorage ?? PasscodeStorage(seedProvider: { seed }),
             legacyRepository: legacyRepository ?? makeUnusedLegacyRepository(seed: seed)
         )
     }
@@ -1463,10 +1584,11 @@ private extension MnemonicsRepositoryV2Tests {
         keychainVault: TKKeychainVault
     ) -> MnemonicAccess.LegacyRepository {
         return MnemonicAccess.LegacyRepository(
-            rn: RNMnemonicsVault(keychainVault: keychainVault),
+            rn: RNMnemonicsVault(keychainVault: keychainVault, encryption: .testFast),
             native: MnemonicsVault(
                 keychainVault: keychainVault,
-                seedProvider: { seed }
+                seedProvider: { seed },
+                encryption: .testFast
             )
         )
     }
@@ -1549,13 +1671,6 @@ private final class InMemoryPasswordKeychainVault: TKKeychainVault {
 
     func failNextSet(times: Int) {
         pendingSetFailures = times
-    }
-
-    /// Removes a single item without touching its neighbours, so a test can
-    /// reproduce a biometry-protected item that reads as not-found while the
-    /// non-biometric marker beside it survives.
-    func removeItem(service: String, account: String) {
-        items.removeValue(forKey: "\(service):\(account)")
     }
 
     func set(_ value: Data, query: TKKeychainQuery) throws {
@@ -1648,6 +1763,10 @@ private final class InMemoryRawMnemonicsStorage: RawMnemonicsDataRepositoryV2 {
             throw .notFound
         }
     }
+}
+
+extension MnemonicsEncryptionParams {
+    static let testFast = MnemonicsEncryptionParams(N: 16, r: 8, p: 1)
 }
 
 extension MnemonicsRepositoryV2Crypto.Argon2Cost {

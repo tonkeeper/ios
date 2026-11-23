@@ -11,22 +11,39 @@ struct MultichainSwapValidator {
         selectedRoute: MultichainSwapRoute?,
         usdFiatRate: Decimal?
     ) -> MultichainSwapValidationState {
-        guard !inputs.sendAmount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !inputs.enteredAmountText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .emptyAmount
         }
-        guard let amount = calculator.sourceAmount(
-            inputs: inputs,
-            usdFiatRate: usdFiatRate
-        ), amount > 0 else {
+        guard let enteredAmount = calculator.enteredAmount(inputs: inputs, usdFiatRate: usdFiatRate) else {
             return .invalidAmount
         }
-        let effectiveSourceAmount = MultichainSwapSourceCharge.balanceAmount(
-            requested: amount,
-            route: selectedRoute,
-            asset: inputs.sendAsset
-        )
-        guard effectiveSourceAmount <= inputs.sendAsset.balance else {
-            return .insufficientBalance
+        let sourceAmount: BigUInt?
+        switch enteredAmount {
+        case let .source(amount):
+            sourceAmount = amount
+        case .destination:
+            if let selectedRoute {
+                sourceAmount = selectedRoute.quotedSourceAmount.flatMap { $0 > 0 ? $0 : nil }
+            } else {
+                // While a quote loads, the amount the send card still shows stands in for its route's,
+                // so the balance checks hold through a refresh.
+                sourceAmount = calculator.sourceAmount(inputs: inputs, usdFiatRate: usdFiatRate).flatMap { $0 > 0 ? $0 : nil }
+            }
+        }
+        if let sourceAmount {
+            let effectiveSourceAmount = MultichainSwapSourceCharge.balanceAmount(
+                requested: sourceAmount,
+                route: selectedRoute,
+                asset: inputs.sendAsset
+            )
+            guard effectiveSourceAmount <= inputs.sendAsset.balance else {
+                return .insufficientBalance
+            }
+            if let minimum = MultichainSwapMinimumAmount.minimumSwapInputAmount(for: inputs.sendAsset),
+               sourceAmount < minimum
+            {
+                return .belowMinimum(minimum)
+            }
         }
         guard let sourceChain = inputs.sendAsset.asset.chain,
               let destinationChain = inputs.receiveAsset.asset.chain,
@@ -35,10 +52,21 @@ struct MultichainSwapValidator {
         else {
             return .missingAddress
         }
-        guard selectedRoute != nil else {
+        guard selectedRoute != nil, sourceAmount != nil else {
             return .routeUnavailable
         }
         return .valid
+    }
+}
+
+enum MultichainSwapMinimumAmount {
+    /// GRAM is the one asset whose minimum is known before quoting: the same 1 GRAM the Max preset
+    /// keeps back for fees. Other assets learn theirs from the provider, as `min_amount_not_met`.
+    static func minimumSwapInputAmount(for asset: MultichainAsset) -> BigUInt? {
+        guard asset.asset.isNative, asset.asset.chain == .ton else {
+            return nil
+        }
+        return NativeSwapConstants.tonFeeReserve
     }
 }
 
@@ -50,18 +78,37 @@ enum MultichainSwapSourceCharge {
     /// What a balance check should compare. A TON-native route spends its message
     /// value, gas included, so that figure wins. Otherwise `source_amount` is an
     /// echo of the request: aggregators round it through floating point, and a
-    /// max quote can come back a few units above the balance that was sent.
+    /// max quote can come back a few units above the balance that was sent. An
+    /// exact-output route is quoted again when the swap is prepared and may then
+    /// sell up to its cap, so the balance has to cover the cap and whatever the
+    /// route sends on top of the amount sold, such as a TON route's gas.
     static func balanceAmount(
         requested: BigUInt,
         route: MultichainSwapRoute?,
         asset: MultichainAsset
     ) -> BigUInt {
-        guard let route,
-              let spent = route.spentSourceAmount(sourceAsset: asset)
-        else {
+        guard let route else {
             return requested
         }
-        let echoed = route.sourceAmount.flatMap { BigUInt($0) }
+        let charged = chargedAmount(requested: requested, route: route, asset: asset)
+        guard let cap = route.quotedMaximumSourceAmount,
+              let quoted = route.quotedSourceAmount
+        else {
+            return charged
+        }
+        let overhead = charged > quoted ? charged - quoted : 0
+        return max(charged, cap + overhead)
+    }
+
+    private static func chargedAmount(
+        requested: BigUInt,
+        route: MultichainSwapRoute,
+        asset: MultichainAsset
+    ) -> BigUInt {
+        guard let spent = route.spentSourceAmount(sourceAsset: asset) else {
+            return requested
+        }
+        let echoed = route.quotedSourceAmount
         if let echoed, spent != echoed {
             return spent
         }
@@ -72,7 +119,7 @@ enum MultichainSwapSourceCharge {
         requested: BigUInt,
         route: MultichainSwapRoute?
     ) -> BigUInt {
-        guard let quoted = route?.sourceAmount.flatMap({ BigUInt($0) }) else {
+        guard let quoted = route?.quotedSourceAmount else {
             return requested
         }
         guard quoted > requested, requested > 0 else {

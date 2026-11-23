@@ -71,7 +71,20 @@ struct TokenPickerV2HeaderView: View {
                 accessibilityIdentifier: "token_picker_search"
             )
 
-            if viewModel.tabs.count > 1, viewModel.assetType != .perpetuals {
+            if !viewModel.assetTypes.isEmpty {
+                TabCategoriesView(
+                    items: viewModel.assetTypes.map { assetType in
+                        TabCategoriesView<TokenPickerV2AssetType>.Item(
+                            id: assetType,
+                            title: assetType.chipTitle
+                        )
+                    },
+                    initialSelection: viewModel.assetType,
+                    onSelectionChange: viewModel.selectAssetType,
+                    style: .secondary,
+                    scrollToSelection: true
+                )
+            } else if viewModel.tabs.count > 1 {
                 TabCategoriesView(
                     items: viewModel.tabs.map { tab in
                         TabCategoriesView<TokenPickerV2ChainFilter>.Item(
@@ -139,37 +152,41 @@ struct TokenPickerV2Screen: View {
     @Environment(\.tkPalette) private var palette
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                TokenPickerV2HeaderView(viewModel: viewModel)
+        VStack(spacing: 0) {
+            TokenPickerV2HeaderView(viewModel: viewModel)
 
-                if let queryViewModel = viewModel.currentQueryViewModel {
-                    TokenPickerV2ContentView(
-                        queryViewModel: queryViewModel,
-                        searchText: viewModel.searchText,
-                        showsCatalogSortControl: showsBottomControls,
-                        listTitle: listTitle,
-                        onSelectRow: viewModel.selectRow(_:)
-                    )
-                } else {
-                    TokenPickerV2ContentView.skeleton(
-                        showsCatalogSortControl: showsBottomControls,
-                        palette: palette
-                    )
+            if viewModel.currentQueryViewModel != nil {
+                ZStack {
+                    ForEach(viewModel.tabs) { tab in
+                        if let queryViewModel = viewModel.contentViewModel(for: tab.id) {
+                            let isActive = tab.id == viewModel.selectedChainFilter
+                            TokenPickerV2ContentView(
+                                queryViewModel: queryViewModel,
+                                isActive: isActive,
+                                searchText: viewModel.searchText,
+                                showsCatalogSortControl: showsBottomControls,
+                                listTitle: listTitle,
+                                onSelectRow: viewModel.selectRow(_:)
+                            )
+                            .id(ObjectIdentifier(queryViewModel))
+                            .opacity(isActive ? 1 : 0)
+                            .allowsHitTesting(isActive)
+                            .accessibilityHidden(!isActive)
+                        }
+                    }
                 }
-            }
-            .background(.backgroundPage)
-
-            if showsBottomControls {
-                LinearGradient(
-                    colors: [
-                        palette.background.page.opacity(0),
-                        palette.background.page,
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                TokenPickerV2ContentView.skeleton(
+                    showsCatalogSortControl: showsBottomControls,
+                    palette: palette
                 )
-                .frame(height: Layout.fadeHeight)
+            }
+        }
+        .background(.backgroundPage)
+        .ignoresSafeArea(.container, edges: ignoresSafeArea ? .all : .bottom)
+        .overlay(alignment: .bottom) {
+            if showsBottomControls {
                 HStack(spacing: Layout.controlsSpacing) {
                     if viewModel.showsCatalogSortControl {
                         TokenPickerV2MenuButton(
@@ -186,25 +203,46 @@ struct TokenPickerV2Screen: View {
                             onSelect: viewModel.selectPerpsSort
                         )
                     }
-                    if !viewModel.assetTypes.isEmpty {
+                    if showsChainMenu, let selectedTab {
                         TokenPickerV2MenuButton(
-                            options: viewModel.assetTypes,
-                            selected: viewModel.assetType,
+                            options: viewModel.tabs,
+                            selected: selectedTab,
                             title: \.title,
-                            onSelect: viewModel.selectAssetType
+                            buttonTitle: { tab in
+                                tab.id == .all ? TKLocales.Trade.Assets.allChains : tab.title
+                            },
+                            icon: \.image,
+                            onSelect: { viewModel.selectChainFilter($0.id) }
                         )
-                        .accessibilityIdentifier("token_picker_asset_type")
                     }
                 }
-                .padding(.bottom, Layout.bottomPadding)
+                .padding(Layout.controlsPadding)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            palette.background.page.opacity(0),
+                            palette.background.page,
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea(.container, edges: .bottom)
+                )
             }
         }
-        .background(.backgroundPage)
-        .ignoresSafeArea(.container, edges: ignoresSafeArea ? .all : .bottom)
     }
 
     private var showsBottomControls: Bool {
-        viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl || !viewModel.assetTypes.isEmpty
+        viewModel.showsCatalogSortControl || viewModel.showsPerpsSortControl || showsChainMenu
+    }
+
+    private var showsChainMenu: Bool {
+        !viewModel.assetTypes.isEmpty && viewModel.assetType != .perpetuals
+    }
+
+    private var selectedTab: TokenPickerV2TabModel? {
+        viewModel.tabs.first { $0.id == viewModel.selectedChainFilter }
     }
 
     private var listTitle: String? {
@@ -212,9 +250,8 @@ struct TokenPickerV2Screen: View {
     }
 
     private enum Layout {
-        static let bottomPadding: CGFloat = 36
-        static let controlsSpacing: CGFloat = 8
-        static let fadeHeight: CGFloat = 68
+        static let controlsPadding: CGFloat = 16
+        static let controlsSpacing: CGFloat = 12
     }
 }
 
@@ -226,11 +263,12 @@ private struct TokenPickerV2ContentView: View {
         static let pageLoaderPadding: CGFloat = 16
         static let placeholderTopPadding: CGFloat = 32
         static let rowCornerRadius: CGFloat = 16
-        static let catalogSortBottomInset: CGFloat = 64
+        static let catalogSortBottomInset: CGFloat = 78
         static let perpDividerLeadingInset: CGFloat = 16
     }
 
     @ObservedObject var queryViewModel: TokenPickerV2QueryViewModel
+    let isActive: Bool
     let searchText: String
     let showsCatalogSortControl: Bool
     var listTitle: String?
@@ -284,12 +322,22 @@ private struct TokenPickerV2ContentView: View {
                         onSelect: { onSelectRow(item.id) }
                     )
                     .onAppear {
-                        queryViewModel.loadNextPageIfNeeded(currentItem: item)
+                        if isActive {
+                            queryViewModel.loadNextPageIfNeeded(currentItem: item)
+                        }
+                    }
+                    .onChange(of: isActive) { isActive in
+                        if isActive {
+                            queryViewModel.loadNextPageIfNeeded(currentItem: item)
+                        }
                     }
                 }
             }
         }
         .onReceive(queryViewModel.$state.dropFirst()) { state in
+            guard isActive else {
+                return
+            }
             showToastIfNeeded(for: state)
         }
     }
@@ -473,13 +521,15 @@ private struct TokenPickerV2MenuButton<Option: Equatable>: View {
     let options: [Option]
     let selected: Option
     let title: (Option) -> String
+    var buttonTitle: ((Option) -> String)?
+    var icon: (Option) -> UIImage? = { _ in nil }
     let onSelect: (Option) -> Void
     @State private var anchorView: UIView?
 
     var body: some View {
         ButtonView(
             config: ButtonView.Config(
-                title: title(selected),
+                title: (buttonTitle ?? title)(selected),
                 size: .small,
                 appearance: .tertiary,
                 icon: ButtonView.Icon(
@@ -508,6 +558,7 @@ private struct TokenPickerV2MenuButton<Option: Equatable>: View {
             items: options.enumerated().map { index, option in
                 TKPopupMenuItem(
                     title: title(option),
+                    leftIcon: icon(option).map { TKImageView.Model(image: .image($0)) },
                     hasSeparator: index + 1 < options.count,
                     selectionHandler: { onSelect(option) }
                 )

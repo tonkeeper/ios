@@ -7,4 +7,5 @@ struct BatteryRechargePayload {
     let amount: BigUInt
     let promocode: String?
     let recipient: TonRecipient?
+    let analyticsPurchase: BatteryAnalyticsPurchase
 }

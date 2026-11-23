@@ -83,7 +83,13 @@ struct PerpsIntegratorApproval: Codable, Equatable {
     let expiry: Int64
 }
 
-/// Its mutable state is only touched under `cacheLock`.
+struct PerpsPreparedIntegratorApproval {
+    fileprivate let integrator: Components.Schemas.Integrator
+    fileprivate let key: PerpsIntegratorApprovalKey
+    fileprivate let cryptoWallet: MnemonicWallet
+}
+
+/// Holds no mutable state; `PerpsAPI` and the ChainKit clients are not marked `Sendable`.
 public final class PerpsAccountService: @unchecked Sendable {
     private static let apiKeyIndex = LighterAuth.shared.API_KEY_INDEX
     private static let keyDerivationIndex: Int64 = 0
@@ -104,7 +110,6 @@ public final class PerpsAccountService: @unchecked Sendable {
     static let integratorApprovalRenewalWindowMs: Int64 = 86_400_000
 
     static let readOnlyTokenAttempts = 3
-    static let readOnlyTokenRefreshInterval: TimeInterval = 60
     static let readOnlyTokenRetryDelayNanoseconds: UInt64 = 2_000_000_000
     /// Lighter caps what it accepts and tk-perps caps it again at ten minutes; the
     /// authorization this app signs is shorter still.
@@ -112,7 +117,7 @@ public final class PerpsAccountService: @unchecked Sendable {
 
     private static let lighterClient = LighterClient(
         crypto: LighterCryptoBridge(crypto: CoreLighterCrypto()),
-        nowMillis: { KotlinLong(value: PerpsServerClock.shared.serverNowUnixMs()) }
+        nowMillis: { KotlinLong(value: PerpsServerClock.shared.signingNowUnixMs()) }
     )
 
     static func tradingPublicKey(privateKey: Data) -> String {
@@ -122,60 +127,60 @@ public final class PerpsAccountService: @unchecked Sendable {
     private let mnemonicAccess: MnemonicAccess
     private let keychainVault: TKKeychainVault
     private let perpsAPI: PerpsAPI
+    let submitLanes: PerpsSubmitLanes
+    let integratorReads = PerpsIntegratorReads()
     private let bindSigner: PerpsAccountBindSigner
     private let walletAuthTokenProvider: WalletAuthTokenProviding
     private let chainKitClient: CryptoKitClient
+    private let depositGate: OperationGate
     private let tierUpgrader: PerpsAccountTierUpgrader
-
-    private let cacheLock = NSLock()
-    private var walletsWithReadOnlyToken = Set<String>()
-    private var readOnlyTokenAttemptedAt = [String: Date]()
-    private var readOnlyTokenCheckedAt = [String: Date]()
-    private var readOnlyTokenMints = [String: Task<Bool, Never>]()
-    private let now: @Sendable () -> Date
+    /// The swap's relayed fee methods, which pay a deposit's source fee in battery charges or a token.
+    private let swapFeeMethods: () -> MultichainSwapFeeMethodResolver?
     private let walletAuthStore: WalletAuthKeychainStore
-    /// Retained across credential clears so a wallet/environment keeps one stable
-    /// journal object; file access is serialized process-wide by the journal itself.
-    private var pendingJournalCache = [String: PerpsPendingJournal]()
-    private var fundingRecoveryCache = [String: PerpsFundingRecovery]()
+    private let securityConfig: PerpsSecurityConfigRepository?
 
     init(
         mnemonicAccess: MnemonicAccess,
         keychainVault: TKKeychainVault,
         perpsAPI: PerpsAPI,
+        submitLanes: PerpsSubmitLanes,
         bindSigner: PerpsAccountBindSigner,
         walletAuthTokenProvider: WalletAuthTokenProviding,
         chainKitClient: CryptoKitClient,
+        depositGate: OperationGate,
         tierUpgrader: PerpsAccountTierUpgrader = PerpsAccountTierUpgrader(),
-        now: @escaping @Sendable () -> Date = { Date() }
+        swapFeeMethods: @escaping () -> MultichainSwapFeeMethodResolver? = { nil },
+        securityConfig: PerpsSecurityConfigRepository? = nil
     ) {
         self.mnemonicAccess = mnemonicAccess
         self.keychainVault = keychainVault
         self.walletAuthStore = WalletAuthKeychainStore(keychainVault: keychainVault)
         self.perpsAPI = perpsAPI
+        self.submitLanes = submitLanes
         self.bindSigner = bindSigner
         self.walletAuthTokenProvider = walletAuthTokenProvider
         self.chainKitClient = chainKitClient
+        self.depositGate = depositGate
         self.tierUpgrader = tierUpgrader
-        self.now = now
+        self.swapFeeMethods = swapFeeMethods
+        self.securityConfig = securityConfig
     }
 
     /// Lighter keeps the integrator fee schedule behind a wallet/account-level approval.
     /// The approval is signed by the account's L2 key and by the wallet's L1 owner key, and
     /// sent before the first order that uses a changed or expiring schedule. It is
     /// account-scoped, so one approval covers all markets and order kinds for this wallet.
-    func ensureIntegratorApproval(
+    func prepareIntegratorApproval(
         wallet: Wallet,
         session: PerpsAccountSession,
-        nonceCoordinator: PerpsNonceCoordinator,
         passcodeProvider: () async -> String?
-    ) async throws {
+    ) async throws -> PerpsPreparedIntegratorApproval? {
         let walletId = try walletId(wallet)
         let store = credentialsStore(wallet: wallet)
-        let integrator = try await perpsAPI.integrator(walletId: walletId)
+        let integrator = try await integrator(walletId: walletId)
         guard integrator.integrator_account_index != 0 else {
             store.clearIntegratorApproval()
-            return
+            return nil
         }
         guard integrator.approval_ttl_ms > 0 else {
             throw PerpsTradingError.validation("integrator approval ttl must be positive")
@@ -189,13 +194,8 @@ public final class PerpsAccountService: @unchecked Sendable {
             maxSpotTakerFee: integrator.max_spot_taker_fee,
             maxSpotMakerFee: integrator.max_spot_maker_fee
         )
-        let renewalDeadline = try checkedAdd(
-            PerpsServerClock.shared.serverNowUnixMs(),
-            min(Self.integratorApprovalRenewalWindowMs, integrator.approval_ttl_ms / 2),
-            name: "integrator approval renewal window"
-        )
-        if let approved = try store.loadIntegratorApproval(), approved.key == key, approved.expiry >= renewalDeadline {
-            return
+        guard try !holdsIntegratorApproval(key, ttlMs: integrator.approval_ttl_ms, store: store) else {
+            return nil
         }
 
         let logId = walletLogId(wallet)
@@ -204,33 +204,42 @@ public final class PerpsAccountService: @unchecked Sendable {
             Log.perps.i("integrator approval: passcode canceled wallet=\(logId)")
             throw PerpsTradingError.activationCanceled
         }
-        let cryptoWallet = try await deriveCryptoWallet(wallet: wallet, passcode: passcode)
+        return try await PerpsPreparedIntegratorApproval(
+            integrator: integrator,
+            key: key,
+            cryptoWallet: deriveCryptoWallet(wallet: wallet, passcode: passcode)
+        )
+    }
+
+    func submitIntegratorApproval(
+        _ approval: PerpsPreparedIntegratorApproval,
+        wallet: Wallet,
+        session: PerpsAccountSession,
+        lane: PerpsSubmitLane
+    ) async throws {
+        let walletId = try walletId(wallet)
+        let store = credentialsStore(wallet: wallet)
+        let integrator = approval.integrator
+        guard try !holdsIntegratorApproval(approval.key, ttlMs: integrator.approval_ttl_ms, store: store) else {
+            return
+        }
         guard let privateKeyHex = try await loadL2PrivateKeyHex(wallet: wallet), !privateKeyHex.isEmpty else {
             throw PerpsTradingError.credentialsRevoked
         }
-        let now = PerpsServerClock.shared.serverNowUnixMs()
+        let now = PerpsServerClock.shared.signingNowUnixMs()
         let approvalExpiry = try checkedAdd(now, integrator.approval_ttl_ms, name: "integrator approval expiry")
         let expiredAt = try checkedAdd(now, LighterConstants.shared.DefaultExpireTimeMillis, name: "transaction expiry")
-        let nonceScope = PerpsNonceCoordinator.Scope(
-            environment: PerpsEnvironment.venue,
-            accountIndex: session.accountIndex,
-            apiKeyIndex: session.apiKeyIndex,
-            chainId: LighterConstants.shared.ChainId
-        )
-        let fetchNonce: @Sendable () async throws -> Int64 = { [perpsAPI] in
-            try await perpsAPI.nextNonce(walletId: walletId, apiKeyIndex: Int(session.apiKeyIndex)).nonce
-        }
         // A refused transaction leaves the cursor past a nonce Lighter never used, and
         // unlike an order step the approval has no resign retry to recover from that.
-        try await nonceCoordinator.resync(scope: nonceScope, fetch: fetchNonce)
-        let nonce = try await nonceCoordinator.next(scope: nonceScope, fetch: fetchNonce)
+        try await lane.resyncNonce(walletId: walletId)
+        let nonce = try await lane.nextNonce(walletId: walletId)
         let txClient = Self.lighterClient.doNewTxClient(
             privateKeyHex: privateKeyHex,
             accountIndex: session.accountIndex,
             apiKeyIndex: session.apiKeyIndex,
             chainId: LighterConstants.shared.ChainId
         )
-        let ownerSigner = PerpsOwnerMessageSigner(keySource: Self.accountMediator.keySource(wallet: cryptoWallet))
+        let ownerSigner = PerpsOwnerMessageSigner(keySource: Self.accountMediator.keySource(wallet: approval.cryptoWallet))
         do {
             let request = try LighterApproveIntegratorTxReq(
                 integratorAccountIndex: integrator.integrator_account_index,
@@ -255,25 +264,22 @@ public final class PerpsAccountService: @unchecked Sendable {
                     completionHandler: completion
                 )
             }
-            let response = try await perpsAPI.sendTransactions(
+            try await lane.send(
                 walletId: walletId,
-                transactions: [.init(tx_type: transaction.txType, tx_info: transaction.getTxInfo())]
+                txType: transaction.txType,
+                txInfo: transaction.getTxInfo(),
+                txHash: transaction.getTxHash(),
+                nonce: nonce
             )
-            guard response.transactions.count == 1,
-                  response.transactions[0].tx_type == transaction.txType,
-                  normalizedHash(response.transactions[0].tx_hash) == normalizedHash(transaction.getTxHash())
-            else {
-                throw PerpsTradingError.protocolFailure("integrator approval response does not match the submitted transaction")
-            }
         } catch {
-            try? await nonceCoordinator.resync(scope: nonceScope, fetch: fetchNonce)
+            try? await lane.resyncNonce(walletId: walletId)
             throw error
         }
-        Log.perps.i("integrator approval sent integrator=\(integrator.integrator_account_index) account=\(session.accountIndex) expiry=\(approvalExpiry) wallet=\(logId)")
+        Log.perps.i("integrator approval sent integrator=\(integrator.integrator_account_index) account=\(session.accountIndex) expiry=\(approvalExpiry) wallet=\(walletLogId(wallet))")
         do {
-            try store.saveIntegratorApproval(PerpsIntegratorApproval(key: key, expiry: approvalExpiry))
+            try store.saveIntegratorApproval(PerpsIntegratorApproval(key: approval.key, expiry: approvalExpiry))
         } catch {
-            Log.perps.w("integrator approval not recorded wallet=\(logId)", error: error)
+            Log.perps.w("integrator approval not recorded wallet=\(walletLogId(wallet))", error: error)
         }
     }
 
@@ -282,10 +288,10 @@ public final class PerpsAccountService: @unchecked Sendable {
         credentialsStore(wallet: wallet).clearIntegratorApproval()
     }
 
-    public func bind(wallet: Wallet, passcode: String) async -> PerpsAccountBindOutcome {
+    func bind(wallet: Wallet, passcode: String, readOnlyToken: PerpsReadOnlyToken) async -> PerpsAccountBindOutcome {
         let logId = walletLogId(wallet)
         Log.perps.i("bind: start wallet=\(logId)")
-        let cryptoWallet: CryptoWallet
+        let cryptoWallet: MnemonicWallet
         let walletId: String
         do {
             walletId = try self.walletId(wallet)
@@ -301,7 +307,7 @@ public final class PerpsAccountService: @unchecked Sendable {
             binding = try await bindSigner.makeBinding(
                 wallet: cryptoWallet,
                 walletId: walletId,
-                deadline: PerpsServerClock.shared.serverNowUnixMs() / 1000 + Int64(Self.bindDeadlineInterval)
+                deadline: PerpsServerClock.shared.signingNowUnixMs() / 1000 + Int64(Self.bindDeadlineInterval)
             )
             Log.perps.i("bind: signed wallet=\(logId) l1=\(binding.l1Address)")
         } catch {
@@ -327,14 +333,15 @@ public final class PerpsAccountService: @unchecked Sendable {
             }
             var readOnlyTokenIssued = false
             if account.has_l2_key != true {
-                readOnlyTokenIssued = await registerTradingKey(wallet: wallet, cryptoWallet: cryptoWallet, logId: logId)
-            }
-            if !readOnlyTokenIssued {
-                await ensureReadOnlyToken(
+                readOnlyTokenIssued = await registerTradingKey(
                     wallet: wallet,
                     cryptoWallet: cryptoWallet,
-                    forceReissue: account.has_ro_token == false
+                    readOnlyToken: readOnlyToken,
+                    logId: logId
                 )
+            }
+            if !readOnlyTokenIssued {
+                await ensureReadOnlyToken(wallet: wallet, cryptoWallet: cryptoWallet, readOnlyToken: readOnlyToken)
             }
             return .bound(accountIndex: accountIndex)
         } catch let error as PerpsAPIError {
@@ -360,11 +367,12 @@ public final class PerpsAccountService: @unchecked Sendable {
         return holdsKeptTradingKey(wallet: wallet)
     }
 
-    public func activate(
+    func activate(
         wallet: Wallet,
-        passcode: String
+        passcode: String,
+        readOnlyToken: PerpsReadOnlyToken
     ) async -> PerpsAccountActivationOutcome {
-        let cryptoWallet: CryptoWallet
+        let cryptoWallet: MnemonicWallet
         do {
             cryptoWallet = try await deriveCryptoWallet(wallet: wallet, passcode: passcode)
         } catch let error as PerpsTradingError {
@@ -372,13 +380,13 @@ public final class PerpsAccountService: @unchecked Sendable {
         } catch {
             return .failed(PerpsTradingErrorMapper.map(error))
         }
-        return await activate(wallet: wallet, cryptoWallet: cryptoWallet)
+        return await activate(wallet: wallet, cryptoWallet: cryptoWallet, readOnlyToken: readOnlyToken)
     }
 
     /// Activation without the passcode, for an account a first deposit created with the key kept
     /// before it (`keepTradingKey`): once the account holds that key in this wallet's slot, only
     /// the account is left to record. `false` leaves activation to the passcode.
-    public func adoptRegisteredTradingKey(wallet: Wallet) async -> Bool {
+    func adoptRegisteredTradingKey(wallet: Wallet, readOnlyToken: PerpsReadOnlyToken) async -> Bool {
         let logId = walletLogId(wallet)
         let store = credentialsStore(wallet: wallet)
         do {
@@ -393,6 +401,10 @@ public final class PerpsAccountService: @unchecked Sendable {
                       publicKey: Self.tradingPublicKey(privateKey: key)
                   ) == true
             else { return false }
+            guard PerpsTkAccountDelegate.isBound(account, to: wallet.multichainAddress(for: .eth)) else {
+                Log.perps.w("activation: account bound to another address account=\(accountIndex) l1=\(account.l1_address ?? "nil") wallet=\(logId)")
+                return false
+            }
             try store.saveAccount(
                 PerpsStoredAccount(
                     accountIndex: Int64(accountIndex),
@@ -402,8 +414,8 @@ public final class PerpsAccountService: @unchecked Sendable {
             )
             Log.perps.i("activation: adopted the key the deposit registered account=\(accountIndex) wallet=\(logId)")
             // As `activate` does; `keepTradingKey` kept the wallet auth key the mint signs with.
-            await refreshReadOnlyToken(wallet: wallet, force: true)
-            Task { await self.ensurePlusTier(wallet: wallet, trigger: .activation) }
+            await readOnlyToken.issue()
+            Task { await self.ensurePlusTier(wallet: wallet, trigger: .activation, readOnlyToken: readOnlyToken) }
             return true
         } catch {
             Log.perps.w("activation: registered key not adopted wallet=\(logId)", error: error)
@@ -413,7 +425,8 @@ public final class PerpsAccountService: @unchecked Sendable {
 
     private func activate(
         wallet: Wallet,
-        cryptoWallet: CryptoWallet
+        cryptoWallet: MnemonicWallet,
+        readOnlyToken: PerpsReadOnlyToken
     ) async -> PerpsAccountActivationOutcome {
         let logId = walletLogId(wallet)
         Log.perps.i("activation: start wallet=\(logId)")
@@ -425,13 +438,14 @@ public final class PerpsAccountService: @unchecked Sendable {
                 walletId: walletId,
                 api: perpsAPI,
                 apiKeyIndex: Int(Self.apiKeyIndex),
-                expectedPublicKey: tradingPublicKey(keySource: keySource)
+                expectedPublicKey: tradingPublicKey(keySource: keySource),
+                ownerAddress: cryptoWallet.getAddress(chain: ChainEthereumMainnet.shared).display
             )
             let state: PerpsAccountState = try await bridgeKotlin { completion in
                 mediator.activate(
                     keySource: keySource,
                     delegate: delegate,
-                    nowUnixMs: PerpsServerClock.shared.serverNowUnixMs(),
+                    nowUnixMs: PerpsServerClock.shared.signingNowUnixMs(),
                     completionHandler: completion
                 )
             }
@@ -449,9 +463,13 @@ public final class PerpsAccountService: @unchecked Sendable {
                 accountIndex: Int64(truncating: accountIndex)
             )
             Log.perps.i("activation: credentials persisted account=\(accountIndex) wallet=\(logId)")
-            let readOnlyTokenIssued = await ensureReadOnlyToken(wallet: wallet, cryptoWallet: cryptoWallet)
+            let readOnlyTokenIssued = await ensureReadOnlyToken(
+                wallet: wallet,
+                cryptoWallet: cryptoWallet,
+                readOnlyToken: readOnlyToken
+            )
             // tk-perps reads the tier with the read-only token, so only once there is one.
-            Task { await self.ensurePlusTier(wallet: wallet, trigger: .activation) }
+            Task { await self.ensurePlusTier(wallet: wallet, trigger: .activation, readOnlyToken: readOnlyToken) }
             return .active(
                 accountIndex: Int64(truncating: accountIndex),
                 apiKeyIndex: Self.apiKeyIndex,
@@ -463,95 +481,18 @@ public final class PerpsAccountService: @unchecked Sendable {
         }
     }
 
-    /// tk-perps reads the account's open orders with a read-only token minted at Lighter, and
-    /// without one the trading screen answers with no orders at all — which the planner reads as
-    /// an incomplete account and refuses every limit order on. Minting needs only the short-lived
-    /// Lighter authorization the trading key produces.
-    @discardableResult
-    func refreshReadOnlyToken(wallet: Wallet, force: Bool = false) async -> Bool {
-        let logId = walletLogId(wallet)
-        Log.perps.i("ro-token: refresh start force=\(force) wallet=\(logId)")
-        guard let walletId = try? walletId(wallet) else {
-            Log.perps.i("ro-token: no wallet id wallet=\(logId)")
-            return false
-        }
-        let walletKey = cacheKey(wallet: wallet)
-        if let mint = cacheLock.withLock({ readOnlyTokenMints[walletKey] }) {
-            return await mint.value
-        }
-        let mayCheck = cacheLock.withLock {
-            let checkedAt = now()
-            guard canMintAgainLocked(walletKey),
-                  force || checkedAt.timeIntervalSince(readOnlyTokenCheckedAt[walletKey] ?? .distantPast) >= Self.readOnlyTokenRefreshInterval
-            else { return false }
-            readOnlyTokenCheckedAt[walletKey] = checkedAt
-            return true
-        }
-        guard mayCheck else { return false }
-        let account: Components.Schemas.Account
-        do {
-            account = try await perpsAPI.account(walletId: walletId)
-        } catch {
-            Log.perps.w("ro-token: account read failed wallet=\(logId)", error: error)
-            return false
-        }
-        // Absent means the backend does not report the flag yet, not that a token exists —
-        // treating that as "nothing to do" would leave the wallet unable to read its orders
-        // with no way back, which is the state this call exists to recover from.
-        let forceReissue = force || account.has_ro_token != true
-        Log.perps.i("ro-token: account hasRoToken=\(String(describing: account.has_ro_token)) forceReissue=\(forceReissue) wallet=\(logId)")
-        guard forceReissue else { return false }
-        return await ensureReadOnlyToken(wallet: wallet, replacingIssued: true)
-    }
-
     @discardableResult
     func ensureReadOnlyToken(
         wallet: Wallet,
-        cryptoWallet: CryptoWallet,
-        forceReissue: Bool = false
+        cryptoWallet: MnemonicWallet,
+        readOnlyToken: PerpsReadOnlyToken
     ) async -> Bool {
         await persistWalletAuthKeyIfMissing(wallet: wallet, cryptoWallet: cryptoWallet)
-        return await ensureReadOnlyToken(wallet: wallet, replacingIssued: forceReissue)
+        return await readOnlyToken.issue()
     }
 
-    @discardableResult
-    func ensureReadOnlyToken(
-        wallet: Wallet,
-        replacingIssued: Bool = false
-    ) async -> Bool {
-        let walletKey = cacheKey(wallet: wallet)
-        // A caller arriving mid-mint takes that mint's answer: refused, it would read its orders
-        // as if the wallet had no token while the one being minted is about to land.
-        let (mint, owns) = cacheLock.withLock { () -> (Task<Bool, Never>?, Bool) in
-            if let running = readOnlyTokenMints[walletKey] { return (running, false) }
-            if replacingIssued {
-                guard canMintAgainLocked(walletKey) else { return (nil, false) }
-            } else {
-                guard !walletsWithReadOnlyToken.contains(walletKey) else { return (nil, false) }
-            }
-            let mint = Task {
-                await self.mintReadOnlyToken(wallet: wallet, walletKey: walletKey, replacingIssued: replacingIssued)
-            }
-            readOnlyTokenMints[walletKey] = mint
-            return (mint, true)
-        }
-        guard let mint else { return false }
-        let issued = await mint.value
-        if owns {
-            cacheLock.withLock {
-                if readOnlyTokenMints[walletKey] == mint { readOnlyTokenMints[walletKey] = nil }
-            }
-        }
-        return issued
-    }
-
-    private func mintReadOnlyToken(
-        wallet: Wallet,
-        walletKey: String,
-        replacingIssued: Bool
-    ) async -> Bool {
+    func mintReadOnlyToken(wallet: Wallet) async -> Bool {
         let logId = walletLogId(wallet)
-        var replacementClaimed = false
         for attempt in 1 ... Self.readOnlyTokenAttempts {
             do {
                 let walletId = try walletId(wallet)
@@ -562,25 +503,14 @@ public final class PerpsAccountService: @unchecked Sendable {
                     Log.perps.i("ro-token: no trading key yet wallet=\(logId)")
                     return false
                 }
-                if replacingIssued, !replacementClaimed {
-                    let claimed = cacheLock.withLock {
-                        guard canMintAgainLocked(walletKey) else { return false }
-                        readOnlyTokenAttemptedAt[walletKey] = now()
-                        walletsWithReadOnlyToken.remove(walletKey)
-                        return true
-                    }
-                    guard claimed else { return false }
-                    replacementClaimed = true
-                }
-                Log.perps.i("ro-token: issuing replacing=\(replacingIssued) wallet=\(logId)")
+                Log.perps.i("ro-token: issuing wallet=\(logId)")
                 let lighterAuth = Self.lighterClient.authToken(
                     privateKeyHex: privateKeyHex,
                     accountIndex: account.accountIndex,
                     apiKeyIndex: account.apiKeyIndex,
-                    deadlineUnixSeconds: PerpsServerClock.shared.serverNowUnixMs() / 1000 + Int64(Self.readOnlyTokenDeadlineInterval)
+                    deadlineUnixSeconds: PerpsServerClock.shared.signingNowUnixMs() / 1000 + Int64(Self.readOnlyTokenDeadlineInterval)
                 )
                 let issued = try await perpsAPI.issueReadOnlyToken(walletId: walletId, lighterAuth: lighterAuth)
-                cacheLock.withLock { _ = walletsWithReadOnlyToken.insert(walletKey) }
                 Log.perps.i("ro-token: issued account=\(issued.account_index) expires=\(issued.expires_at) wallet=\(logId)")
                 return true
             } catch {
@@ -596,12 +526,7 @@ public final class PerpsAccountService: @unchecked Sendable {
         return false
     }
 
-    func canMintAgainLocked(_ walletKey: String) -> Bool {
-        let last = readOnlyTokenAttemptedAt[walletKey] ?? .distantPast
-        return now().timeIntervalSince(last) >= Self.readOnlyTokenRefreshInterval
-    }
-
-    func persistWalletAuthKeyIfMissing(wallet: Wallet, cryptoWallet: CryptoWallet) async {
+    func persistWalletAuthKeyIfMissing(wallet: Wallet, cryptoWallet: MnemonicWallet) async {
         guard let walletId = try? walletId(wallet) else { return }
         do {
             guard try walletAuthStore.loadAppKey(walletId: walletId) == nil else { return }
@@ -613,9 +538,29 @@ public final class PerpsAccountService: @unchecked Sendable {
         await walletAuthTokenProvider.persistAppKey(appKey, walletId: walletId)
     }
 
+    func verifiedSecurityConfig() async -> PerpsSecurityConfig? {
+        await securityConfig?.verified()
+    }
+
+    func integrator(walletId: String) async throws -> Components.Schemas.Integrator {
+        try await integratorReads.value(walletId: walletId) { [perpsAPI] in
+            try await perpsAPI.integrator(walletId: walletId)
+        }
+    }
+
+    func refreshIntegrator(walletId: String) {
+        integratorReads.refresh(walletId: walletId) { [perpsAPI] in
+            try await perpsAPI.integrator(walletId: walletId)
+        }
+    }
+
     /// Runs after activation, on every resolve of an activated account — so an account activated
     /// before this existed is caught up the next time the perps section opens — and before a trade.
-    func ensurePlusTier(wallet: Wallet, trigger: PerpsAccountTierUpgrader.Trigger) async {
+    func ensurePlusTier(
+        wallet: Wallet,
+        trigger: PerpsAccountTierUpgrader.Trigger,
+        readOnlyToken: PerpsReadOnlyToken
+    ) async {
         guard let account = try? credentialsStore(wallet: wallet).loadAccount(),
               let walletId = try? walletId(wallet)
         else {
@@ -627,7 +572,7 @@ public final class PerpsAccountService: @unchecked Sendable {
             trigger: trigger,
             readTier: { [self] in
                 // Runs alongside the resolve's own token repair, so it cannot count on a usable token.
-                let tier = try await PerpsAPIError.reissuingReadOnlyToken({ await refreshReadOnlyToken(wallet: wallet, force: true) }) {
+                let tier = try await PerpsAPIError.reissuingReadOnlyToken({ await readOnlyToken.issue() }) {
                     try await perpsAPI.accountTier(walletId: walletId)
                 }
                 Log.perps.d("tier: read id=\(tier.id) name=\(tier.name) account=\(account.accountIndex)")
@@ -641,7 +586,7 @@ public final class PerpsAccountService: @unchecked Sendable {
                     privateKeyHex: privateKeyHex,
                     accountIndex: account.accountIndex,
                     apiKeyIndex: account.apiKeyIndex,
-                    deadlineUnixSeconds: PerpsServerClock.shared.serverNowUnixMs() / 1000 + Int64(Self.readOnlyTokenDeadlineInterval)
+                    deadlineUnixSeconds: PerpsServerClock.shared.signingNowUnixMs() / 1000 + Int64(Self.readOnlyTokenDeadlineInterval)
                 )
                 try await perpsAPI.changeAccountTier(walletId: walletId, lighterAuth: lighterAuth, newTier: newTier)
             }
@@ -669,7 +614,8 @@ public final class PerpsAccountService: @unchecked Sendable {
         passcode: String,
         session: PerpsAccountSession,
         amountUnits: Int64,
-        transfer: PerpsWithdrawQuote?
+        transfer: PerpsWithdrawQuote,
+        lane: PerpsSubmitLane
     ) async throws -> PerpsSignedWithdrawal {
         let walletId = try walletId(wallet)
         guard let privateKeyHex = try await loadL2PrivateKeyHex(wallet: wallet), !privateKeyHex.isEmpty else {
@@ -677,23 +623,18 @@ public final class PerpsAccountService: @unchecked Sendable {
         }
         // Everything that can refuse runs before a nonce is taken: one taken and never sent
         // leaves a gap the venue rejects the next transaction of this key for.
-        var ownerSigner: PerpsOwnerMessageSigner?
-        if let transfer {
-            guard transfer.expiresAt > Date(),
-                  let budget = BigUInt(transfer.budgetUnits, radix: 10), budget >= BigUInt(amountUnits),
-                  LighterConstants.shared.AssetRouteTypePerps == 0
-            else {
-                throw PerpsWithdrawQuoteError.expired
-            }
-            let cryptoWallet = try await deriveCryptoWallet(wallet: wallet, passcode: passcode)
-            guard transfer.expiresAt > Date() else { throw PerpsWithdrawQuoteError.expired }
-            ownerSigner = PerpsOwnerMessageSigner(keySource: Self.accountMediator.keySource(wallet: cryptoWallet))
+        guard transfer.expiresAt > Date(),
+              let budget = BigUInt(transfer.budgetUnits, radix: 10), budget >= BigUInt(amountUnits),
+              LighterConstants.shared.AssetRouteTypePerps == 0
+        else {
+            throw PerpsWithdrawQuoteError.expired
         }
-        let nonce = try await PerpsNonceCoordinator.shared.next(scope: Self.nonceScope(session)) { [perpsAPI] in
-            try await perpsAPI.nextNonce(walletId: walletId, apiKeyIndex: Int(session.apiKeyIndex)).nonce
-        }
+        let cryptoWallet = try await deriveCryptoWallet(wallet: wallet, passcode: passcode)
+        guard transfer.expiresAt > Date() else { throw PerpsWithdrawQuoteError.expired }
+        let ownerSigner = PerpsOwnerMessageSigner(keySource: Self.accountMediator.keySource(wallet: cryptoWallet))
+        let nonce = try await lane.nextNonce(walletId: walletId)
         do {
-            let nowMs = PerpsServerClock.shared.serverNowUnixMs()
+            let nowMs = PerpsServerClock.shared.signingNowUnixMs()
             let expiry = min(nowMs + LighterConstants.shared.DefaultExpireTimeMillis, LighterConstants.shared.MaxTimestamp)
             let client = Self.lighterClient.doNewTxClient(
                 privateKeyHex: privateKeyHex,
@@ -709,59 +650,34 @@ public final class PerpsAccountService: @unchecked Sendable {
                 attributes: nil,
                 dryRun: false
             )
-            if let transfer, let ownerSigner {
-                let request = LighterTransferTxReq(
-                    toAccountIndex: transfer.toAccountIndex,
-                    assetIndex: 3,
-                    fromRouteType: LighterConstants.shared.AssetRouteTypePerps,
-                    toRouteType: LighterConstants.shared.AssetRouteTypePerps,
-                    amount: transfer.transferUnits,
-                    usdcFee: transfer.feeUnits,
-                    memo: transfer.memo.asKotlinByteArray
-                )
-                let transaction: L2TransferTxInfo = try await bridgeKotlin { completion in
-                    client.getTransferTransaction(req: request, ops: options, l1Signer: ownerSigner, completionHandler: completion)
-                }
-                guard transaction.txType == 12,
-                      transaction.fromAccountIndex == session.accountIndex,
-                      transaction.toAccountIndex == transfer.toAccountIndex,
-                      transaction.assetIndex == 3,
-                      transaction.apiKeyIndex == session.apiKeyIndex,
-                      transaction.nonce == nonce,
-                      transaction.expiredAt == expiry,
-                      transaction.fromRouteType == 0,
-                      transaction.toRouteType == 0,
-                      transaction.amount == transfer.transferUnits,
-                      transaction.usdcFee == transfer.feeUnits,
-                      transaction.memo.asData == transfer.memo,
-                      !transaction.l1Sig.isEmpty
-                else {
-                    throw PerpsTradingError.protocolFailure("signed transfer differs from the checked quote")
-                }
-                return PerpsSignedWithdrawal(
-                    nonce: nonce,
-                    expiry: expiry,
-                    txType: transaction.txType,
-                    txInfo: transaction.getTxInfo(),
-                    txHash: transaction.getTxHash()
-                )
+            let request = LighterTransferTxReq(
+                toAccountIndex: transfer.toAccountIndex,
+                assetIndex: 3,
+                fromRouteType: LighterConstants.shared.AssetRouteTypePerps,
+                toRouteType: LighterConstants.shared.AssetRouteTypePerps,
+                amount: transfer.transferUnits,
+                usdcFee: transfer.feeUnits,
+                memo: transfer.memo.asKotlinByteArray
+            )
+            let transaction: L2TransferTxInfo = try await bridgeKotlin { completion in
+                client.getTransferTransaction(req: request, ops: options, l1Signer: ownerSigner, completionHandler: completion)
             }
-            let transaction: L2WithdrawTxInfo = try await bridgeKotlin { completion in
-                client.getWithdrawTransaction(
-                    req: LighterWithdrawTxReq(assetIndex: 3, routeType: LighterConstants.shared.AssetRouteTypePerps, amount: amountUnits),
-                    ops: options,
-                    completionHandler: completion
-                )
-            }
-            guard transaction.txType == 13,
+            guard transaction.txType == 12,
                   transaction.fromAccountIndex == session.accountIndex,
+                  transaction.toAccountIndex == transfer.toAccountIndex,
                   transaction.assetIndex == 3,
                   transaction.apiKeyIndex == session.apiKeyIndex,
                   transaction.nonce == nonce,
                   transaction.expiredAt == expiry,
-                  transaction.routeType == LighterConstants.shared.AssetRouteTypePerps,
-                  transaction.amount == amountUnits
-            else { throw PerpsTradingError.protocolFailure("signed withdrawal differs from the reviewed amount") }
+                  transaction.fromRouteType == 0,
+                  transaction.toRouteType == 0,
+                  transaction.amount == transfer.transferUnits,
+                  transaction.usdcFee == transfer.feeUnits,
+                  transaction.memo.asData == transfer.memo,
+                  !transaction.l1Sig.isEmpty
+            else {
+                throw PerpsTradingError.protocolFailure("signed transfer differs from the checked quote")
+            }
             return PerpsSignedWithdrawal(
                 nonce: nonce,
                 expiry: expiry,
@@ -770,37 +686,12 @@ public final class PerpsAccountService: @unchecked Sendable {
                 txHash: transaction.getTxHash()
             )
         } catch {
-            await resyncWithdrawalNonce(wallet: wallet, session: session)
+            try? await lane.resyncNonce(walletId: walletId)
             throw error
         }
     }
 
-    /// For a withdrawal that took a nonce and was refused, or never sent: the lane goes back to
-    /// the venue's own count instead of skipping it.
-    func resyncWithdrawalNonce(wallet: Wallet, session: PerpsAccountSession) async {
-        guard let walletId = try? walletId(wallet) else { return }
-        try? await PerpsNonceCoordinator.shared.resync(scope: Self.nonceScope(session)) { [perpsAPI] in
-            try await perpsAPI.nextNonce(walletId: walletId, apiKeyIndex: Int(session.apiKeyIndex)).nonce
-        }
-    }
-
-    static func nonceScope(_ session: PerpsAccountSession) -> PerpsNonceCoordinator.Scope {
-        PerpsNonceCoordinator.Scope(
-            environment: PerpsEnvironment.venue,
-            accountIndex: session.accountIndex,
-            apiKeyIndex: session.apiKeyIndex,
-            chainId: LighterConstants.shared.ChainId
-        )
-    }
-
-    func pendingJournal(wallet: Wallet) -> PerpsPendingJournal {
-        let key = cacheKey(wallet: wallet)
-        cacheLock.lock()
-        defer { cacheLock.unlock() }
-        return pendingJournalLocked(wallet: wallet, key: key)
-    }
-
-    func ensureDepositBinding(wallet: Wallet, passcode: String) async throws {
+    func ensureDepositBinding(wallet: Wallet, passcode: String, readOnlyToken: PerpsReadOnlyToken) async throws {
         let account = try await perpsAPI.account(walletId: walletId(wallet))
         if let bound = account.l1_address {
             guard let expected = wallet.multichainAddress(for: .eth), PerpsFundingAssetId.sameAddress(bound, expected) else {
@@ -809,7 +700,7 @@ public final class PerpsAccountService: @unchecked Sendable {
             return
         }
         try Task.checkCancellation()
-        switch await bind(wallet: wallet, passcode: passcode) {
+        switch await bind(wallet: wallet, passcode: passcode, readOnlyToken: readOnlyToken) {
         case .bound:
             try Task.checkCancellation()
         case let .failed(error):
@@ -821,64 +712,80 @@ public final class PerpsAccountService: @unchecked Sendable {
 
     /// A deposit owner for this wallet. Not cached here, where it would outlive the wallet:
     /// `PerpsWalletScope` keeps the one instance whose actor serializes that wallet's payments.
-    func depositService(wallet: Wallet) -> PerpsDepositService? {
-        guard let walletId = wallet.multichainWalletState?.walletId else { return nil }
+    func depositService(
+        wallet: Wallet,
+        journal: PerpsPendingJournal,
+        recovery: PerpsFundingRecovery,
+        readOnlyToken: PerpsReadOnlyToken
+    ) -> PerpsDepositService? {
+        guard let state = wallet.multichainWalletState else { return nil }
+        let walletId = state.walletId
         return PerpsDepositService(
             walletId: walletId,
             walletIdentity: wallet.id,
             environment: PerpsEnvironment.venue,
-            journal: pendingJournal(wallet: wallet),
+            journal: journal,
             api: perpsAPI,
             delivery: PerpsChainKitDepositDelivery(client: chainKitClient, mnemonicAccess: mnemonicAccess, wallet: wallet),
-            recovery: fundingRecovery(wallet: wallet),
+            gate: depositGate,
+            recovery: recovery,
             keyRegistration: { [credentialsStore = credentialsStore(wallet: wallet)] in
                 guard let key = try? credentialsStore.loadL2PrivateKey(), !key.isEmpty else { return nil }
                 return PerpsKeyRegistration(apiKeyIndex: Int(Self.apiKeyIndex), publicKey: Self.tradingPublicKey(privateKey: key))
             },
+            securityConfig: { [securityConfig] in await securityConfig?.verified() },
+            downloadedSecurityConfig: { [securityConfig] in await securityConfig?.verifiedAfterDownload() },
             ensureBinding: { [self] passcode in
-                try await ensureDepositBinding(wallet: wallet, passcode: passcode)
+                try await ensureDepositBinding(wallet: wallet, passcode: passcode, readOnlyToken: readOnlyToken)
+            },
+            relaying: swapFeeMethods().map {
+                PerpsDepositRelaying(swapWallet: MultichainSwapWallet(wallet: wallet, registeredState: state), resolver: $0)
             }
         )
     }
 
-    func withdrawService(wallet: Wallet) -> PerpsWithdrawService? {
+    func withdrawService(
+        wallet: Wallet,
+        journal: PerpsPendingJournal,
+        recovery: PerpsFundingRecovery,
+        readOnlyToken: PerpsReadOnlyToken,
+        transferFeeUnits: @escaping @Sendable (_ accountIndex: Int64, _ toAccountIndex: Int64) async -> Int64? = PerpsWithdrawService.lighterTransferFeeUnits,
+        securityConfig: (@Sendable () async -> PerpsSecurityConfig?)? = nil
+    ) -> PerpsWithdrawService? {
         guard let walletId = wallet.multichainWalletState?.walletId else { return nil }
+        let verifiedConfig = securityConfig ?? { [repository = self.securityConfig] in await repository?.verified() }
         return PerpsWithdrawService(
             wallet: wallet,
             walletId: walletId,
             environment: PerpsEnvironment.venue,
-            journal: pendingJournal(wallet: wallet),
+            journal: journal,
             api: perpsAPI,
-            accountService: self
+            accountService: self,
+            recovery: recovery,
+            readOnlyToken: readOnlyToken,
+            transferFeeUnits: transferFeeUnits,
+            securityConfig: verifiedConfig
         )
     }
 
-    func fundingRecovery(wallet: Wallet) -> PerpsFundingRecovery {
-        let key = cacheKey(wallet: wallet)
-        let walletId = wallet.multichainWalletState?.walletId
-        let recoveryKey = "\(key)/\(PerpsEnvironment.venue)/\(walletId ?? "")"
-        return cacheLock.withLock {
-            if let cached = fundingRecoveryCache[recoveryKey] { return cached }
-            let recovery = PerpsFundingRecovery(
-                walletId: walletId,
-                walletIdentity: wallet.id,
-                environment: PerpsEnvironment.venue,
-                journal: pendingJournalLocked(wallet: wallet, key: key),
-                api: perpsAPI,
-                delivery: PerpsChainKitDepositDelivery(client: chainKitClient, mnemonicAccess: mnemonicAccess, wallet: wallet)
-            )
-            fundingRecoveryCache[recoveryKey] = recovery
-            return recovery
-        }
+    func fundingRecovery(
+        wallet: Wallet,
+        journal: PerpsPendingJournal,
+        awaitChange: (@Sendable (UInt64) async -> Bool)? = nil
+    ) -> PerpsFundingRecovery {
+        PerpsFundingRecovery(
+            walletId: wallet.multichainWalletState?.walletId,
+            walletIdentity: wallet.id,
+            environment: PerpsEnvironment.venue,
+            journal: journal,
+            api: perpsAPI,
+            submitLanes: submitLanes,
+            delivery: PerpsChainKitDepositDelivery(client: chainKitClient, mnemonicAccess: mnemonicAccess, wallet: wallet),
+            awaitChange: awaitChange
+        )
     }
 
     public func clearCredentials(wallet: Wallet) {
-        let walletKey = cacheKey(wallet: wallet)
-        cacheLock.withLock {
-            walletsWithReadOnlyToken.remove(walletKey)
-            readOnlyTokenAttemptedAt[walletKey] = nil
-            readOnlyTokenCheckedAt[walletKey] = nil
-        }
         credentialsStore(wallet: wallet).clear()
     }
 }
@@ -888,13 +795,15 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
     private let api: PerpsAPI
     private let apiKeyIndex: Int
     private let expectedPublicKey: String
+    private let ownerAddress: String
     @Atomic private var hadL2KeyBeforeSubmit: Bool?
 
-    init(walletId: String, api: PerpsAPI, apiKeyIndex: Int, expectedPublicKey: String) {
+    init(walletId: String, api: PerpsAPI, apiKeyIndex: Int, expectedPublicKey: String, ownerAddress: String) {
         self.walletId = walletId
         self.api = api
         self.apiKeyIndex = apiKeyIndex
         self.expectedPublicKey = Self.normalizedHash(expectedPublicKey)
+        self.ownerAddress = ownerAddress
     }
 
     func accountState(completionHandler: @escaping (PerpsAccountState?, Error?) -> Void) {
@@ -902,6 +811,9 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
         Task {
             do {
                 let account = try await api.account(walletId: walletId)
+                if account.account_index != nil || account.l1_address != nil {
+                    try requireOwned(account)
+                }
                 hadL2KeyBeforeSubmit = account.has_l2_key
                 let state = Self.state(of: account, hasL2Key: holdsOurKey(account) ?? account.has_l2_key)
                 Log.perps.i("activation: account state response account=\(String(describing: state.accountIndex)) hasL2Key=\(String(describing: state.hasL2Key)) status=\(state.status ?? "nil") l1=\(state.l1Address ?? "nil")")
@@ -943,6 +855,7 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
             do {
                 let response = try await api.sendTransactions(
                     walletId: walletId,
+                    operationId: nil,
                     transactions: [.init(tx_type: Int32(registration.txType), tx_info: registration.txInfo)]
                 )
                 guard response.transactions.count == 1,
@@ -974,6 +887,11 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
             do {
                 for attempt in 0 ..< PerpsAccountService.registrationConfirmationAttempts {
                     let account = try await api.account(walletId: walletId)
+                    guard account.account_index.map(Int64.init) == registration.accountIndex else {
+                        Log.perps.w("activation: confirmation for another account signed=\(registration.accountIndex) answered=\(String(describing: account.account_index))")
+                        throw PerpsTradingError.protocolFailure("account key registration was confirmed for another account")
+                    }
+                    try requireOwned(account)
                     if isRegistered(account) {
                         Log.perps.i("activation: confirmation success account=\(registration.accountIndex) attempt=\(attempt + 1)")
                         completionHandler(Self.state(of: account, hasL2Key: true), nil)
@@ -998,6 +916,18 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
     private static func normalizedHash(_ hash: String) -> String {
         let value = hash.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         return value.hasPrefix("0x") ? String(value.dropFirst(2)) : value
+    }
+
+    static func isBound(_ account: Components.Schemas.Account, to ownerAddress: String?) -> Bool {
+        guard let bound = account.l1_address, let ownerAddress else { return false }
+        return PerpsFundingAssetId.sameAddress(bound, ownerAddress)
+    }
+
+    private func requireOwned(_ account: Components.Schemas.Account) throws {
+        guard Self.isBound(account, to: ownerAddress) else {
+            Log.perps.w("activation: account bound to another address account=\(String(describing: account.account_index)) l1=\(account.l1_address ?? "nil") wallet=\(walletLogId(walletId))")
+            throw PerpsTradingError.protocolFailure("account is bound to another address")
+        }
     }
 
     private func holdsOurKey(_ account: Components.Schemas.Account) -> Bool? {
@@ -1030,7 +960,7 @@ final class PerpsTkAccountDelegate: NSObject, PerpsAccountDelegate {
     }
 }
 
-private func walletLogId(_ walletId: String) -> String {
+func walletLogId(_ walletId: String) -> String {
     walletId.count <= 6 ? "…" : "…\(walletId.suffix(6))"
 }
 
@@ -1043,8 +973,13 @@ private extension PerpsAccountService {
     /// only relays what the device signed. Binding is the one unlock a wallet is guaranteed to
     /// go through, so the key is registered there rather than inside the first confirmed trade.
     /// A failure is not a failed binding — the trading path still activates on demand.
-    func registerTradingKey(wallet: Wallet, cryptoWallet: CryptoWallet, logId: String) async -> Bool {
-        switch await activate(wallet: wallet, cryptoWallet: cryptoWallet) {
+    func registerTradingKey(
+        wallet: Wallet,
+        cryptoWallet: MnemonicWallet,
+        readOnlyToken: PerpsReadOnlyToken,
+        logId: String
+    ) async -> Bool {
+        switch await activate(wallet: wallet, cryptoWallet: cryptoWallet, readOnlyToken: readOnlyToken) {
         case let .active(accountIndex, apiKeyIndex, readOnlyTokenIssued):
             Log.perps.i("bind: trading key registered account=\(accountIndex) apiKey=\(apiKeyIndex) wallet=\(logId)")
             return readOnlyTokenIssued
@@ -1056,7 +991,7 @@ private extension PerpsAccountService {
         return false
     }
 
-    func deriveCryptoWallet(wallet: Wallet, passcode: String) async throws -> CryptoWallet {
+    func deriveCryptoWallet(wallet: Wallet, passcode: String) async throws -> MnemonicWallet {
         let logId = walletLogId(wallet)
         let phrase: String
         do {
@@ -1094,10 +1029,24 @@ private extension PerpsAccountService {
         return id
     }
 
+    func holdsIntegratorApproval(
+        _ key: PerpsIntegratorApprovalKey,
+        ttlMs: Int64,
+        store: LighterCredentialsStore
+    ) throws -> Bool {
+        let renewalDeadline = try checkedAdd(
+            PerpsServerClock.shared.signingNowUnixMs(),
+            min(Self.integratorApprovalRenewalWindowMs, ttlMs / 2),
+            name: "integrator approval renewal window"
+        )
+        guard let approved = try store.loadIntegratorApproval() else { return false }
+        return approved.key == key && approved.expiry >= renewalDeadline
+    }
+
     /// A wallet with no account yet registers its key with the deposit that creates one. Keeping
     /// the key now — with the wallet auth key the read-only token is signed with — lets the account
     /// that deposit creates trade without another unlock (`adoptRegisteredTradingKey`).
-    func keepTradingKey(wallet: Wallet, cryptoWallet: CryptoWallet) async {
+    func keepTradingKey(wallet: Wallet, cryptoWallet: MnemonicWallet) async {
         do {
             try await credentialsStore(wallet: wallet).keepTradingKey(cryptoWallet: cryptoWallet)
         } catch {
@@ -1132,25 +1081,6 @@ private extension PerpsAccountService {
         )
     }
 
-    func cacheKey(wallet: Wallet) -> String {
-        wallet.id
-    }
-
-    func pendingJournalLocked(
-        wallet: Wallet,
-        key: String
-    ) -> PerpsPendingJournal {
-        if let cached = pendingJournalCache[key] {
-            return cached
-        }
-        let journal = PerpsPendingJournal(
-            walletId: wallet.id,
-            environment: PerpsEnvironment.storage
-        )
-        pendingJournalCache[key] = journal
-        return journal
-    }
-
     func credentialsStore(wallet: Wallet) -> LighterCredentialsStore {
         LighterCredentialsStore(
             keychainVault: keychainVault,
@@ -1173,9 +1103,4 @@ private func int32(_ value: Int, name: String) throws -> Int32 {
         throw PerpsTradingError.validation("\(name) is out of range")
     }
     return result
-}
-
-private func normalizedHash(_ hash: String) -> String {
-    let value = hash.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    return value.hasPrefix("0x") ? String(value.dropFirst(2)) : value
 }

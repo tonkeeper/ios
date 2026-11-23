@@ -167,7 +167,7 @@ private extension TradeAssetDetailsSecureModeTests {
     func makeMultichainItem() -> MultichainHistoryActivityItem {
         let activity = makeActivity()
         return MultichainHistoryActivityItem(
-            id: MultichainHistoryActivityIdentity(activity: activity),
+            id: MultichainHistoryActivityItem.ID(activity: MultichainHistoryActivityIdentity(activity: activity), occurrence: 0),
             activity: activity,
             title: "Swapped",
             subtitle: nil,

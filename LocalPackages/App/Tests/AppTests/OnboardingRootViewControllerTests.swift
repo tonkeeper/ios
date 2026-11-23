@@ -35,11 +35,12 @@ final class OnboardingRootViewControllerTests: XCTestCase {
     }
 
     func testStateCarriesTheScreensOwnTitleAndATappableTermsLink() {
-        let state = OnboardingRootViewModelImplementation().state
+        let termsURL = URL(string: "https://www.keeperwallet.com/terms")
+        let state = OnboardingRootViewModelImplementation(termsURL: termsURL).state
 
         XCTAssertEqual(state.title, TKLocales.Onboarding.title)
         XCTAssertEqual(state.termsLinkTitle, TKLocales.Onboarding.Terms.title)
         XCTAssertTrue(state.termsCaption.contains(state.termsLinkTitle))
-        XCTAssertNotNil(state.termsURL)
+        XCTAssertEqual(state.termsURL, termsURL)
     }
 }

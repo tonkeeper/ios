@@ -17,6 +17,7 @@ final class SettingsListToastTestingConfigurator: SettingsListConfigurator {
                 createDismissRuleSection(),
                 createInteractionsSection(),
                 createShapeSection(),
+                createPinnedSection(),
             ]
         )
     }
@@ -207,6 +208,74 @@ final class SettingsListToastTestingConfigurator: SettingsListConfigurator {
                 ],
                 header: SettingsListSectionHeader(title: "Shape & Appearance")
             )
+        )
+    }
+
+    // MARK: - Pinned
+
+    private func createPinnedSection() -> SettingsListSection {
+        .items(
+            SettingsListItemsSection(
+                items: [
+                    .listItem(createActionItem(title: "Pin progress", id: "toast_pinned_progress") {
+                        ToastPresenter.pinToast(
+                            configuration: Self.pinnedConfiguration(
+                                title: "Swapping",
+                                avatar: .image(.image(.TKUIKit.Icons.Size44.tonLogo), isLoading: true),
+                                dismissRule: .none
+                            )
+                        )
+                    }),
+                    .listItem(createActionItem(title: "Pin outcome (5s)", id: "toast_pinned_outcome") {
+                        ToastPresenter.pinToast(
+                            configuration: Self.pinnedConfiguration(
+                                title: "Swapped",
+                                avatar: .icon(.TKUIKit.Icons.Size32.checkmarkCircle, tintColor: .Accent.green),
+                                feedback: .success,
+                                dismissRule: .duration(5)
+                            )
+                        )
+                    }),
+                    .listItem(createActionItem(title: "Pin failure (5s)", id: "toast_pinned_failure") {
+                        ToastPresenter.pinToast(
+                            configuration: Self.pinnedConfiguration(
+                                title: "Swap failed",
+                                avatar: .icon(.TKUIKit.Icons.Size32.xmarkCircle, tintColor: .Accent.orange),
+                                feedback: .failure,
+                                dismissRule: .duration(5)
+                            )
+                        )
+                    }),
+                    .listItem(createActionItem(title: "Show a toast over it", id: "toast_pinned_cover") {
+                        ToastPresenter.showToast(configuration: .copied)
+                    }),
+                    .listItem(createActionItem(title: "Unpin", id: "toast_pinned_unpin") {
+                        ToastPresenter.unpinToast()
+                    }),
+                ],
+                header: SettingsListSectionHeader(title: "Pinned")
+            )
+        )
+    }
+
+    private static func pinnedConfiguration(
+        title: String,
+        avatar: ToastView.Model.Avatar,
+        feedback: ToastPresenter.Configuration.Feedback = .neutral,
+        dismissRule: ToastPresenter.Configuration.DismissRule
+    ) -> ToastPresenter.Configuration {
+        ToastPresenter.Configuration(
+            title: title,
+            subtitle: "100 GRAM",
+            avatar: avatar,
+            showsDisclosure: true,
+            feedback: feedback,
+            dismissRule: dismissRule,
+            topOffset: 8,
+            allowsSwipeToDismiss: true,
+            onTap: {
+                ToastPresenter.showToast(configuration: .confirmed(text: "Tapped!"))
+            }
         )
     }
 

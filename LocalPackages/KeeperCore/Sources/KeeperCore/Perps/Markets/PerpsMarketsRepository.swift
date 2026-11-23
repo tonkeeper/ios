@@ -15,14 +15,20 @@ public actor PerpsMarketsRepository {
 
     private let api: TradingAPI
     private let requestContextProvider: TradingRequestContextProvider
+    private let signedSymbols: @Sendable () async -> [Int64: String]?
     private var detailsById: [Int64: PerpsMarketDetails] = [:]
     private var detailsFetchedAt: [Int64: Date] = [:]
     private var symbolsById: [Int64: String] = [:]
     private var detailsRequests: [Int64: Task<PerpsMarketDetails, Error>] = [:]
 
-    init(api: TradingAPI, requestContextProvider: TradingRequestContextProvider) {
+    init(
+        api: TradingAPI,
+        requestContextProvider: TradingRequestContextProvider,
+        signedSymbols: @escaping @Sendable () async -> [Int64: String]?
+    ) {
         self.api = api
         self.requestContextProvider = requestContextProvider
+        self.signedSymbols = signedSymbols
     }
 
     public func markets(query: String?, sort: PerpsMarketsSort, cursor: String?) async throws -> PerpsMarketsPage {
@@ -48,10 +54,15 @@ public actor PerpsMarketsRepository {
             chain: nil,
             filter: filter == .all ? nil : Components.Schemas.AssetsFilter(rawValue: filter.rawValue)
         )
-        let items = response.items.compactMap(PerpsMarketSummary.init(item:))
-        let skipped = response.items.count - items.count
+        let mapped = response.items.compactMap(PerpsMarketSummary.init(item:))
+        let skipped = response.items.count - mapped.count
         if skipped > 0 {
             Log.perps.w("skipped \(skipped) catalog rows without a perp market id")
+        }
+        let signed = await signedSymbols()
+        let items = mapped.filter { $0.isListed(in: signed) }
+        if items.count < mapped.count {
+            Log.perps.w("hid \(mapped.count - items.count) catalog markets the signed perps config does not list")
         }
         for item in items {
             symbolsById[item.marketId] = item.symbol
@@ -66,7 +77,7 @@ public actor PerpsMarketsRepository {
         sort: MultichainAssetSearchSort,
         cursor: String?,
         pageSize: Int,
-        category: TradingAssetCategory = .all
+        filter: PerpsMarketFilter = .all
     ) async throws -> TradingCatalogPage {
         let requestContext = await requestContextProvider.makeRequestContext()
         let tradingSort = sort.tradingCatalogSort
@@ -81,11 +92,13 @@ public actor PerpsMarketsRepository {
             sourceShelf: nil,
             showPerps: (showPerps && chain == nil) ? true : nil,
             chain: chain,
-            filter: category == .all ? nil : Components.Schemas.AssetsFilter(rawValue: category.rawValue)
+            filter: filter == .all ? nil : Components.Schemas.AssetsFilter(rawValue: filter.rawValue)
         )
+        let signed = await signedSymbols()
         return TradingCatalogPage(
-            rows: response.items.compactMap(TradingCatalogRow.init(item:)),
-            nextCursor: response.next_cursor?.nilIfEmpty
+            rows: response.items.compactMap(TradingCatalogRow.init(item:)).filter { $0.isListed(in: signed) },
+            nextCursor: response.next_cursor?.nilIfEmpty,
+            chains: response.chains
         )
     }
 
@@ -128,6 +141,11 @@ public actor PerpsMarketsRepository {
     }
 
     func tickers(for marketIds: Set<Int64>) async throws -> [Int64: String] {
+        if let signed = await signedSymbols() {
+            return marketIds.reduce(into: [:]) { tickers, marketId in
+                tickers[marketId] = signed[marketId].map { PerpsMarketTicker.make(base: $0, quote: nil) }
+            }
+        }
         var tickers: [Int64: String] = [:]
         for marketId in marketIds.sorted() {
             if let symbol = symbolsById[marketId] {
@@ -157,6 +175,13 @@ public actor PerpsMarketsRepository {
             guard let details = PerpsMarketDetails(response: response) else {
                 throw PerpsMarketsRepositoryError.unsupportedAsset
             }
+            guard details.metadata.marketId == marketId else {
+                throw PerpsMarketsRepositoryError.marketNotFound
+            }
+            if let signed = await signedSymbols(), signed[marketId] != details.metadata.symbol {
+                Log.perps.w("market \(marketId) \(details.metadata.symbol) is not listed by the signed perps config")
+                throw PerpsMarketsRepositoryError.marketNotFound
+            }
             return details
         }
         detailsRequests[marketId] = request
@@ -170,3 +195,21 @@ public actor PerpsMarketsRepository {
 }
 
 extension PerpsMarketsRepository: PerpsMarketsReading, PerpsMarketsSearching, TradingCatalogSearching {}
+
+extension PerpsMarketSummary {
+    func isListed(in signed: [Int64: String]?) -> Bool {
+        guard let signed else { return true }
+        return signed[marketId] == symbol
+    }
+}
+
+extension TradingCatalogRow {
+    func isListed(in signed: [Int64: String]?) -> Bool {
+        switch self {
+        case .spot:
+            true
+        case let .perp(market):
+            market.isListed(in: signed)
+        }
+    }
+}

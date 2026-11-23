@@ -1,5 +1,6 @@
 import KeeperCore
 import TKCore
+import TKUIKit
 import UIKit
 
 struct HistoryListAssembly {
@@ -11,6 +12,7 @@ struct HistoryListAssembly {
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         historyEventMapper: HistoryEventMapper,
         filter: HistoryList.Filter,
+        screenRenderID: ScreenRenderID? = nil,
         emptyViewProvider: ((HistoryList.Filter) -> HistoryListViewController.EmptyState?)?
     ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
         let viewModel = HistoryListViewModelImplementation(
@@ -30,12 +32,14 @@ struct HistoryListAssembly {
             ),
             nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
             cacheProvider: cacheProvider,
-            filter: filter
+            filter: filter,
+            screenRenderID: screenRenderID
         )
 
         let viewController = HistoryListViewController(
             viewModel: viewModel,
-            emptyViewProvider: emptyViewProvider
+            emptyViewProvider: emptyViewProvider,
+            screenRenderID: screenRenderID
         )
         return .init(view: viewController, output: viewModel, input: viewModel)
     }

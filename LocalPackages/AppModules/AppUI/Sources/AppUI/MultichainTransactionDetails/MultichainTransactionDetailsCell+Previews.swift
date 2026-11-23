@@ -35,7 +35,11 @@ import TKUIKit
             showsDivider: true
         )
         MultichainTransactionDetailsCell(
-            content: .comment(title: "Comment", value: "Thanks!")
+            content: .comment(title: "Comment", value: "Thanks!"),
+            showsDivider: true
+        )
+        MultichainTransactionDetailsCell(
+            content: .encryptedComment(title: "Comment", length: 12, decrypt: {})
         )
     }
     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

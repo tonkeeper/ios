@@ -82,13 +82,12 @@ struct EVMGaslessFeeOption: Equatable {
         }
     }
 
-    /// Rendered as insufficient whenever the method cannot pay: the screen has no other word for
-    /// a method the relayer ruled out.
     var extraOption: TransactionConfirmationModel.ExtraOption {
         TransactionConfirmationModel.ExtraOption(
             type: extraType,
             value: extraValue,
-            isInsufficient: !canPay
+            isInsufficient: isAvailable && isInsufficient,
+            isAvailable: isAvailable
         )
     }
 

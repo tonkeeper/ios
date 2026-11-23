@@ -5,15 +5,35 @@ import URKit
 public protocol ScannerControllerConfigurator {
     func handleQRCode(_ qrCode: String) throws -> Deeplink
     func handleQRCodeUR(_ qrCode: String) throws -> UR
+    func resetURDecoding()
+}
+
+public extension ScannerControllerConfigurator {
+    func resetURDecoding() {}
 }
 
 @frozen public enum URError: Error {
     case noResult
 }
 
+/// Why a read code was not opened: `invalidLink` is neither an address nor a link the app handles,
+/// `unsupportedHere` is a valid link this scanner does not accept.
+@frozen public enum ScanRejection: Equatable, Sendable {
+    case invalidLink
+    case unsupportedHere
+
+    public init(error: any Error) {
+        self = (error as? ScanRejectionError)?.scanRejection ?? .invalidLink
+    }
+}
+
+public protocol ScanRejectionError: Error {
+    var scanRejection: ScanRejection { get }
+}
+
 public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurator {
     private let deeplinkParser: DeeplinkParser
-    private let urDecoder = URDecoder()
+    private let urDecoder = ScannerURDecoder()
     private let extensions: [QRScannerExtension]
     private let isMultichainEnabled: Bool
 
@@ -46,12 +66,11 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
     }
 
     public func handleQRCodeUR(_ qrCode: String) throws -> UR {
-        urDecoder.receivePart(qrCode)
+        try urDecoder.decode(qrCode)
+    }
 
-        guard let result = urDecoder.result else {
-            throw URError.noResult
-        }
-        return try result.get()
+    public func resetURDecoding() {
+        urDecoder.reset()
     }
 
     private func transferDeeplink(for recipient: String) -> Deeplink? {

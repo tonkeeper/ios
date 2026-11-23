@@ -45,9 +45,12 @@ struct ConfirmActionBar: UIViewRepresentable {
 
         let onConfirm = state.onConfirm
         if let slider = coordinator.slider {
+            slider.appearance = state.appearance
             slider.isEnable = state.isEnabled
             slider.swipeHandleAccessibilityIdentifier = state.accessibilityIdentifier
             slider.didConfirm = onConfirm
+            slider.didBeginDrag = state.onSwipeBegan
+            slider.didAbandonDrag = state.onSwipeAbandoned
         }
         if let button = coordinator.button, case let .button(title) = state.kind {
             var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
@@ -76,7 +79,6 @@ struct ConfirmActionBar: UIViewRepresentable {
                 text.append("\n".withTextStyle(.body3, color: .Text.tertiary, alignment: .center))
                 text.append(subtitle.withTextStyle(.body3, color: .Text.tertiary, alignment: .center))
                 slider.title = text
-                slider.appearance = .standart
                 self.slider = slider
                 button = nil
                 view.setContent(slider)

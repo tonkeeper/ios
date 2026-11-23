@@ -42,6 +42,9 @@ extension TransactionConfirmationSendResult {
             .ton,
             wallet: wallet,
             txHashes: signedTransactions.compactMap { signedBoc in
+                if let relayerMessageHash = signedTransactions.relayerMessageHash(for: signedBoc) {
+                    return relayerMessageHash
+                }
                 do {
                     return try TonMessageHash.hex(signedBocBase64: signedBoc)
                 } catch {

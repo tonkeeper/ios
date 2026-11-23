@@ -32,7 +32,10 @@ public final class WalletsUpdateAssembly {
             tonProofTokenService: servicesAssembly.tonProofTokenService(),
             mnemonicAccess: secureAssembly.mnemonicAccess,
             tronBalanceService: servicesAssembly.tronBalanceService(),
-            multichainAssembly: multichainAssembly
+            multichainAssembly: multichainAssembly,
+            watchOnlyContractVersionResolver: WatchOnlyContractVersionResolver(
+                accountLoader: servicesAssembly.telegramWalletAccountLoader()
+            )
         )
     }
 
@@ -40,6 +43,14 @@ public final class WalletsUpdateAssembly {
         WalletImportController(
             activeWalletService: servicesAssembly.activeWalletsService(),
             currencyService: servicesAssembly.currencyService()
+        )
+    }
+
+    public func telegramWalletFinder() -> TelegramWalletFinder {
+        let walletsStore = storesAssembly.walletsStore
+        return TelegramWalletFinder(
+            accountLoader: servicesAssembly.telegramWalletAccountLoader(),
+            addedWallets: { walletsStore.getState().wallets }
         )
     }
 

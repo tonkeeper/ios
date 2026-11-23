@@ -1,4 +1,5 @@
 import KeeperCore
+import LedgerKit
 import TKAppInfo
 import TKFeatureFlags
 import TKKeychain
@@ -38,31 +39,19 @@ public final class CoreAssembly {
 
     public lazy var analyticsProvider: AnalyticsProvider = {
         let configuration = keeperCoreAssembly.configurationAssembly.configuration
-        let aptabaseService = AptabaseConfigurator.configurator.makeAnalyticsService(
-            persistentCacheEnabled: featureFlags[.analyticsPersistentCache],
-            cohortSource: AptabaseCohortSource(
-                devOverride: featureFlags.devOverride(for: .analyticsPersistentCache),
-                remoteValue: featureFlags.allValues[.analyticsPersistentCache]?.remoteValue
-            ),
+        let aptabaseService = AptabaseConfigurator.makeAnalyticsService(
             installId: uniqueIdProvider.uniqueInstallId.uuidString,
             sendStatsImmediately: TKAppPreferences.sendStatsImmediately,
             reachabilityTracker: reachabilityTracker,
             remoteEndpoint: { [weak configuration] in configuration?.value(\.aptabaseEndpoint) }
         )
-        if aptabaseService is AptabaseService {
-            configuration.addUpdateObserver(AptabaseConfigurator.configurator) { [weak configuration] configurator in
-                configurator.retarget { configuration?.value(\.aptabaseEndpoint) }
-            }
-            AptabaseConfigurator.configurator.retarget { [weak configuration] in
-                configuration?.value(\.aptabaseEndpoint)
-            }
-        }
-        let analyticsServices: [AnalyticsService]
+        var analyticsServices = [AnalyticsService]()
         #if DEBUG
-            analyticsServices = [ConsoleAnalyticsLogger(), aptabaseService]
-        #else
-            analyticsServices = [aptabaseService]
+            analyticsServices.append(ConsoleAnalyticsLogger())
         #endif
+        if let aptabaseService {
+            analyticsServices.append(aptabaseService)
+        }
 
         return AnalyticsProvider(
             analyticsServices: analyticsServices,
@@ -99,23 +88,11 @@ public final class CoreAssembly {
     }
 
     public var sharedCacheURL: URL {
-        if let appGroupId: String = InfoProvider.appGroupName(),
-           let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupId)
-        {
-            return containerURL
-        } else {
-            return documentsURL
-        }
+        AppDirectories.sharedCache
     }
 
     public var documentsURL: URL {
-        let documentsDirectory: URL
-        if #available(iOS 16.0, *) {
-            documentsDirectory = URL.documentsDirectory
-        } else {
-            documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        }
-        return documentsDirectory
+        AppDirectories.documents
     }
 
     private lazy var storefrontCountryCodeCache: StorefrontCountryCodeCache = {
@@ -124,8 +101,8 @@ public final class CoreAssembly {
         return cache
     }()
 
-    public var appInfoProvider: AppInfoProvider {
-        AppInfoProvider(
+    public var appInfoProvider: DeviceAppInfoProvider {
+        DeviceAppInfoProvider(
             userDefaults: .standard,
             storefrontCountryCodeCache: storefrontCountryCodeCache
         )

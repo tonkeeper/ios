@@ -23,11 +23,12 @@ final class SignRawRiskView: UIView {
 
     private func setup() {
         addSubview(stackView)
-
-        stackView.snp.makeConstraints {
-            $0.top.bottom.equalToSuperview().inset(12)
-            $0.centerX.equalToSuperview()
-        }
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            stackView.centerXAnchor.constraint(equalTo: centerXAnchor),
+        ])
     }
 }
 

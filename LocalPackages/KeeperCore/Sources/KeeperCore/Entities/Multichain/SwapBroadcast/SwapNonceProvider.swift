@@ -38,4 +38,33 @@ struct SwapNonceProvider {
             }
         }.get()
     }
+
+    /// Waits for the account's nonce to reach `expected`: a TON wallet accepts the transaction at a seqno only
+    /// once the one before it has landed.
+    func waitForNonce<I, O>(
+        _ expected: BignumBigInteger,
+        mediator: ChainMediatorWrapper<I, O>,
+        account: ChainKit.Account,
+        payloadId: String,
+        timeout: TimeInterval = 120
+    ) async throws(MultichainSwapExecutionFailure) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if let current = try? await nonce(mediator: mediator, account: account, payloadId: payloadId),
+               current.compareTo(other: expected) >= 0
+            {
+                return
+            }
+            do {
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+            } catch {
+                throw .canceled
+            }
+        }
+        throw .broadcastFailed(
+            payloadId: payloadId,
+            kind: .networkError,
+            reason: "the account nonce did not reach \(expected) in \(Int(timeout)) s"
+        )
+    }
 }

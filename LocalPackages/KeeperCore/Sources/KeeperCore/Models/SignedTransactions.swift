@@ -4,6 +4,7 @@ public struct SignedTransactions: Equatable, Sendable, RandomAccessCollection, E
 
     public let bocs: [String]
     private let batterySendProofs: [String: String]
+    private var relayerMessageHashes: [String: String] = [:]
 
     public init(_ bocs: [String], batterySendProofs: [String: String] = [:]) {
         self.bocs = bocs
@@ -41,5 +42,16 @@ public struct SignedTransactions: Equatable, Sendable, RandomAccessCollection, E
 
     public func batterySendProof(for boc: String) -> String? {
         batterySendProofs[boc]
+    }
+
+    /// The hash of the relayer's message that carries `boc` on chain, when the relayer sent one.
+    func relayerMessageHash(for boc: String) -> String? {
+        relayerMessageHashes[boc]
+    }
+
+    func carried(byRelayerMessages hashes: [String: String]) -> SignedTransactions {
+        var carried = self
+        carried.relayerMessageHashes = hashes
+        return carried
     }
 }

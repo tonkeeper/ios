@@ -18,7 +18,9 @@ struct MultichainWalletEnricherDependencies {
     var getMnemonics: (_ wallets: [Wallet], _ passcode: String) async throws -> [CoreMnemonicIdentifier: CoreMnemonic]
     var deriveWallet: (_ mnemonic: String) throws -> MultichainWalletState
     var syncWallet: (_ mnemonic: String, _ state: MultichainWalletState) async throws(MultichainServiceError) -> Void
+    var prepareBatteryMigration: (_ source: Wallet, _ destination: Wallet, _ mnemonic: CoreMnemonic) async throws -> Void
     var saveWallet: (_ wallet: Wallet, _ multichain: MultichainWallet) async -> Void
+    var resumeBatteryMigrations: () async -> Void = {}
 }
 
 struct MultichainWalletEnricherImplementation {
@@ -65,6 +67,7 @@ private extension MultichainWalletEnricherImplementation {
             return
         }
         for wallet in wallets {
+            guard !Task.isCancelled else { return }
             do {
                 guard let mnemonic = mnemonicsByWalletId[wallet.id] else {
                     Log.multichain.e(
@@ -83,9 +86,11 @@ private extension MultichainWalletEnricherImplementation {
                 guard multichainWallet != wallet.multichain else {
                     continue
                 }
-                if let registered = wallet.registeredMultichainState,
-                   case let .multichain(derived) = multichainWallet,
-                   derived.walletId == registered.walletId
+                if wallet.multichain == nil, case let .multichain(derived) = multichainWallet {
+                    try await enrichLegacyWallet(derived, for: wallet, mnemonic: mnemonic, phrase: phrase)
+                } else if let registered = wallet.registeredMultichainState,
+                          case let .multichain(derived) = multichainWallet,
+                          derived.walletId == registered.walletId
                 {
                     try await registerAndSave(derived, for: wallet, phrase: phrase)
                 } else {
@@ -111,6 +116,45 @@ private extension MultichainWalletEnricherImplementation {
         }
     }
 
+    func enrichLegacyWallet(
+        _ derived: MultichainWalletState,
+        for wallet: Wallet,
+        mnemonic: CoreMnemonic,
+        phrase: String
+    ) async throws {
+        let registered: MultichainWalletState
+        do {
+            registered = try await register(derived, phrase: phrase)
+        } catch {
+            guard !Task.isCancelled else { return }
+            await dependencies.saveWallet(wallet, .multichain(derived))
+            throw error
+        }
+        guard !Task.isCancelled else { return }
+        let destination = Wallet(
+            id: wallet.id,
+            identity: wallet.identity,
+            metaData: wallet.metaData,
+            setupSettings: wallet.setupSettings,
+            notificationSettings: wallet.notificationSettings,
+            backupSettings: wallet.backupSettings,
+            addressBook: wallet.addressBook,
+            batterySettings: wallet.batterySettings,
+            tron: wallet.tron,
+            multichain: .multichain(registered)
+        )
+        // Keep a signed proof before switching identities so the background transfer needs no keys.
+        do {
+            try await dependencies.prepareBatteryMigration(wallet, destination, mnemonic)
+        } catch {
+            guard !Task.isCancelled else { return }
+            Log.multichain.w("legacy wallet battery proof preparation failed", error: error)
+        }
+        guard !Task.isCancelled else { return }
+        await dependencies.saveWallet(wallet, .multichain(registered))
+        await dependencies.resumeBatteryMigrations()
+    }
+
     /// What the failed pass was adding: the chains, and whether they went to a wallet the backend
     /// already knows — the new networks screen's case — or to one being enriched for the first time.
     func enrichmentInfo(for wallet: Wallet) -> [String: String] {
@@ -130,18 +174,21 @@ private extension MultichainWalletEnricherImplementation {
         for wallet: Wallet,
         phrase: String
     ) async throws(MultichainServiceError) {
+        let registered = try await register(derived, phrase: phrase)
+        await dependencies.saveWallet(wallet, .multichain(registered))
+    }
+
+    func register(
+        _ derived: MultichainWalletState,
+        phrase: String
+    ) async throws(MultichainServiceError) -> MultichainWalletState {
         try await MultichainRetry.run(sleep: sleep) { () async throws(MultichainServiceError) in
             try await dependencies.syncWallet(phrase, derived)
         }
-        await dependencies.saveWallet(
-            wallet,
-            .multichain(
-                MultichainWalletState(
-                    walletId: derived.walletId,
-                    addresses: derived.addresses,
-                    syncState: .synced
-                )
-            )
+        return MultichainWalletState(
+            walletId: derived.walletId,
+            addresses: derived.addresses,
+            syncState: .synced
         )
     }
 
@@ -176,7 +223,7 @@ private extension MultichainWalletEnricherImplementation {
 
     func walletsNeedingEnrichment() -> [Wallet] {
         dependencies.getWallets().filter { wallet in
-            guard wallet.isMainnetRegular else {
+            guard wallet.isMainnetRegular, !wallet.isWalletTg else {
                 return false
             }
             let addresses: [MultichainWalletAddress]

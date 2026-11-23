@@ -137,7 +137,7 @@ private extension LegacySwapWalletTests {
         )
     }
 
-    func makeHDWallet(_ words: [String]) throws -> CryptoWallet {
+    func makeHDWallet(_ words: [String]) throws -> MnemonicWallet {
         try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: words.joined(separator: " "))
     }
 

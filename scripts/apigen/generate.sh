@@ -16,6 +16,8 @@ set -euo pipefail
 # Physical, like GIT_ROOT: the staged target is the package path relative to it.
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+PYTHON=python3
+[ ! -x "$REPO_ROOT/build/apigen-python/bin/python3" ] || PYTHON="$REPO_ROOT/build/apigen-python/bin/python3"
 GIT_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 PACKAGES_DIR="${REPO_ROOT}/LocalPackages/KeeperCore/Packages"
 SPECS_DIR="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)/shared/api"
@@ -31,12 +33,18 @@ APIS=(
   "perps TKPerpsAPI"
   "battery TKBatteryAPI"
   "kandelabr TKKandelabrAPI"
+  "earn TKEarnAPI"
+  "tonstakers TKTonstakersAPI"
   "tonapi TonAPI"
 )
 
 # APIs whose string enums decode a value the spec does not list as `unknown` instead of failing
 # the whole response; their call sites handle `unknown`.
 OPEN_ENUM_APIS=(trading perps battery multichain tonapi)
+
+# OpenAPI 3.1 specs that spell a nullable as `anyOf: [<scalar>, null]`, which the generator skips;
+# their spec is rewritten to `type: [<scalar>, 'null']` before generation.
+NULLABLE_ANY_OF_APIS=(tonstakers)
 
 api_names() {
   local entry
@@ -84,6 +92,14 @@ has_open_enums() {
   return 1
 }
 
+has_nullable_any_of() {
+  local api
+  for api in "${NULLABLE_ANY_OF_APIS[@]}"; do
+    [ "$api" = "$1" ] && return 0
+  done
+  return 1
+}
+
 # swift-openapi-generator emits a closed `@frozen enum` for every string enum. Give each one an
 # `unknown` case that unknown values decode to; an enum whose spec already has `unknown` falls
 # back to that.
@@ -104,10 +120,22 @@ generate_into() {
     echo "error: schema not found: $schema" >&2
     return 1
   fi
+  if has_nullable_any_of "$api"; then
+    python3 "$SCRIPT_DIR/nullable_any_of.py" "$schema" > "$TMP/$api-spec.yml" || return $?
+    schema="$TMP/$api-spec.yml"
+  fi
+
+  if [ "$api" = kandelabr ]; then
+    "$PYTHON" "$SCRIPT_DIR/prepare-spec.py" "$schema" "$TMP/$api-prepared.json" || return $?
+    schema="$TMP/$api-prepared.json"
+  fi
 
   mkdir -p "$out" || return $?
   local args=(--mode types --mode client --access-modifier public)
-  if [ -f "$SCRIPT_DIR/configs/$api.yaml" ]; then
+  if [ -f "$SPECS_DIR/$api.yaml" ]; then
+    cat "$SCRIPT_DIR/configs/$api.yaml" "$SPECS_DIR/filters/$api.yaml" > "$TMP/$api-config.yaml" || return $?
+    args+=(--config "$TMP/$api-config.yaml")
+  elif [ -f "$SCRIPT_DIR/configs/$api.yaml" ]; then
     args+=(--config "$SCRIPT_DIR/configs/$api.yaml")
   fi
   (

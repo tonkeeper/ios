@@ -45,10 +45,6 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
         base.entryPrice
     }
 
-    var leverage: Double {
-        base.leverage
-    }
-
     let baseSize: Double
     let liquidationPrice: Double?
     var priceDecimals: Int {
@@ -64,7 +60,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
     private let format: PerpsFormatting
     private let priceFeed: PerpsMarketPriceFeed?
     private let base: PerpsAutoCloseBase
-    private let inputMemory: PerpsAutoCloseInputMemory.Slot?
+    private let inputMemory: PerpsTradeInputMemory.Slot?
     private var takeProfitTypedAsROI = false
     private var stopLossTypedAsROI = false
     private var didEditTakeProfit = false
@@ -74,7 +70,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
         context: PerpsAutoCloseSheetContext,
         format: PerpsFormatting,
         marketsStore: (any PerpsMarketsStoring)? = nil,
-        inputMemory: PerpsAutoCloseInputMemory.Slot? = nil
+        inputMemory: PerpsTradeInputMemory.Slot? = nil
     ) {
         self.format = format
         self.inputMemory = inputMemory
@@ -91,7 +87,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
             priceDecimals: context.priceDecimals
         )
         hadDraft = context.draft != nil
-        let remembered = inputMemory?.input ?? .none
+        let remembered = inputMemory?.autoCloseInput ?? .none
         if let tp = context.draft?.takeProfit?.triggerPrice {
             takeProfitPriceText = priceText(tp)
             (takeProfitPercentSign, takeProfitPercentText, takeProfitTypedAsROI) = percentField(
@@ -158,11 +154,21 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
             takeProfitPrice: nil,
             stopLossPrice: stopLossPrice,
             format: format
-        )?.message
+        )?.message ?? stopLossNearLiquidationText
     }
 
-    var isValid: Bool {
-        takeProfitWarningText == nil && stopLossWarningText == nil
+    private var stopLossNearLiquidationText: String? {
+        guard let liquidationPrice, liquidationPrice > 0, let stopLossPrice,
+              abs(stopLossPrice - liquidationPrice) < abs(entryPrice - liquidationPrice) * Self.nearLiquidationShare
+        else { return nil }
+        return TKLocales.Perps.OpenPosition.stopLossNearLiquidationPrice(format.price(liquidationPrice))
+    }
+
+    private static let nearLiquidationShare = 0.1
+
+    var stopLossLiquidationText: String? {
+        guard let liquidationPrice, liquidationPrice > 0 else { return nil }
+        return TKLocales.Perps.OpenPosition.liquidationAt(format.price(liquidationPrice))
     }
 
     var takeProfitExpectedText: String {
@@ -186,12 +192,12 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
             : TKLocales.Perps.OpenPosition.expectedLoss(formatted)
     }
 
-    private var triggersPointTheRightWay: Bool {
+    private var triggersAreValid: Bool {
         guard !roiInput.hasInvalidPrice(on: base) else { return false }
         return PerpsAutoCloseValidation.warning(
             side: side,
             referencePrice: referencePrice,
-            liquidationPrice: nil,
+            liquidationPrice: liquidationPrice,
             takeProfitPrice: takeProfitPrice,
             stopLossPrice: stopLossPrice,
             format: format
@@ -202,7 +208,7 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
     /// (design's Empty state); an empty sheet over resting legs stays enabled —
     /// that Set is the clear action. The open flow keeps empty-Set as "no draft".
     var isApplyEnabled: Bool {
-        guard triggersPointTheRightWay else { return false }
+        guard triggersAreValid else { return false }
         guard case .some(.submit) = onApply else { return true }
         return takeProfitPrice != nil || stopLossPrice != nil || hadDraft
     }
@@ -259,9 +265,9 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
         guard let onApply else { return }
         let roiInput = roiInput
         if let inputMemory {
-            inputMemory.remember(PerpsAutoCloseROIInput(
-                takeProfit: roiInput.takeProfit ?? (didEditTakeProfit ? nil : inputMemory.input.takeProfit),
-                stopLoss: roiInput.stopLoss ?? (didEditStopLoss ? nil : inputMemory.input.stopLoss)
+            inputMemory.rememberAutoCloseInput(PerpsAutoCloseROIInput(
+                takeProfit: roiInput.takeProfit ?? (didEditTakeProfit ? nil : inputMemory.autoCloseInput.takeProfit),
+                stopLoss: roiInput.stopLoss ?? (didEditStopLoss ? nil : inputMemory.autoCloseInput.stopLoss)
             ))
         }
         switch onApply {
@@ -363,6 +369,6 @@ final class PerpsAutoCloseSheetViewModel: ObservableObject, PerpsAutoCloseSheetV
     }
 
     private func percentText(_ value: Double) -> String {
-        PerpsDecimalInput.percentText(value)
+        PerpsDecimalInput.percentText(PerpsTriggerROI.cutToHundredths(value))
     }
 }

@@ -24,11 +24,14 @@
 --exclude build
 --exclude .swiftpm
 --exclude worktrees
+--exclude LocalPackages/TKBase/Sources/AnyCodable
 --exclude LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Generated
 --exclude LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Generated
 --exclude LocalPackages/TKCore/Sources/TKServices/Analytics/Events/Deprecated
 --exclude LocalPackages/KeeperCore/Packages/TonConnectAPI/Sources/TonConnectAPI
 --exclude LocalPackages/KeeperCore/Packages/TKKandelabrAPI/Sources/TKKandelabrAPI
+--exclude LocalPackages/KeeperCore/Packages/TKEarnAPI/Sources/TKEarnAPI
+--exclude LocalPackages/KeeperCore/Packages/TKTonstakersAPI/Sources/TKTonstakersAPI
 --exclude LocalPackages/KeeperCore/Packages/TKTradingAPI/Sources/TKTradingAPI
 --exclude LocalPackages/KeeperCore/Packages/TKPerpsAPI/Sources/TKPerpsAPI
 --exclude LocalPackages/KeeperCore/Packages/TKBatteryAPI/Sources/TKBatteryAPI

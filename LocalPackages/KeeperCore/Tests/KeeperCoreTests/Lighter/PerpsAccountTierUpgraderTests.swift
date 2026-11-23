@@ -112,15 +112,13 @@ final class PerpsAccountTierUpgraderTests: XCTestCase {
         let hold = Hold()
         let venue = VenueStub([.tier("standard"), .accepted], hold: hold)
         let upgrader = makeUpgrader(tradeWaitNanoseconds: 50_000_000)
-        let safety = Task {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            await hold.open()
-        }
-        defer { safety.cancel() }
 
-        let startedAt = Date()
-        await ensure(upgrader, venue, .trade)
-        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 1)
+        let traded = expectation(description: "the trade goes on while the check is held")
+        Task {
+            await self.ensure(upgrader, venue, .trade)
+            traded.fulfill()
+        }
+        await fulfillment(of: [traded], timeout: 1)
 
         await hold.open()
         await ensure(upgrader, venue, .resolve)

@@ -25,7 +25,7 @@ final class BrowserCategoryMultichainViewController: TKHostingController<Browser
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: true)
+        tkUpdateNavigationBarForHeader(animated: true)
     }
 }
 

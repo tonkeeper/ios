@@ -10,6 +10,15 @@ import UIKit
 public final class StoriesPresenter {
     private var window: UIWindow?
     private var storiesViewController: TKStories.StoriesViewController?
+    private var presentedMode = Mode.regular
+
+    /// Story windows of every presenter, so a caller can tell that any story is on screen.
+    /// A story counts from its presentation until its dismissal ends, however long its window lives.
+    private static let windows = NSHashTable<UIWindow>.weakObjects()
+
+    public static var isAnyStoryOnScreen: Bool {
+        windows.allObjects.contains { $0.rootViewController?.presentedViewController != nil }
+    }
 
     private let storiesService: StoriesService
     private let storiesStore: StoriesStore
@@ -43,6 +52,12 @@ public final class StoriesPresenter {
         case lastPageButton
     }
 
+    public enum Mode {
+        case regular
+        case required
+        case withoutLastPageButton
+    }
+
     /// Returns whether the story was actually presented — it is dropped when the app has no
     /// wallet/scene to present from or stories are switched off remotely, and a caller
     /// chaining stories has to unwind rather than wait for a dismissal that won't come.
@@ -52,18 +67,21 @@ public final class StoriesPresenter {
         story: Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
-        isClosable: Bool = true,
+        mode: Mode = .regular,
+        ignoresStoriesFlag: Bool = false,
+        closeAlert: StoriesCloseAlertModel? = nil,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((DismissReason) -> Void)? = nil
     ) -> Bool {
         guard !story.pages.isEmpty else { return false }
-        guard window == nil || storiesViewController?.isModalInPresentation != true else { return false }
+        guard window == nil || presentedMode != .required else { return false }
         guard let wallet = try? self.walletsStore.activeWallet else { return false }
-        guard !configuration.flag(\.storiesDisabled, network: wallet.network) else { return false }
+        guard ignoresStoriesFlag || !configuration.flag(\.storiesDisabled, network: wallet.network) else { return false }
         guard let windowScene = fromViewController.windowScene else { return false }
         let window = createWindow(windowScene: windowScene)
         self.window = window
+        Self.windows.add(window)
 
         let backgroundURLs = story.pages.compactMap { $0.image }
         ImagePrefetcherService().prefetch(urls: backgroundURLs)
@@ -72,13 +90,20 @@ public final class StoriesPresenter {
         // completion, which UIKit invokes after the presentation controller's own callback.
         var dismissReason = DismissReason.closed
 
+        let lastPageIndex = story.pages.count - 1
         let models: [StoriesPageModel] = story.pages.enumerated().map { [weak self] index, page in
+            let isLastPage = index == lastPageIndex
+            let showsButton = switch mode {
+            case .regular: true
+            case .required: isLastPage
+            case .withoutLastPageButton: !isLastPage
+            }
             var button: StoriesPageModel.Button?
-            if let pageButton = page.button, isClosable || index == story.pages.count - 1 {
+            if let pageButton = page.button, showsButton {
                 button = StoriesPageModel.Button(
                     title: pageButton.title,
                     action: { [weak self] in
-                        dismissReason = index == story.pages.count - 1 ? .lastPageButton : .action
+                        dismissReason = isLastPage ? .lastPageButton : .action
                         switch pageButton.type {
                         case .deeplink:
                             self?.storiesViewController?.dismiss(animated: true, completion: {
@@ -110,7 +135,7 @@ public final class StoriesPresenter {
                         let isWebPage = ["http", "https"].contains(link.url.scheme?.lowercased())
                             && (try? deeplinkParser.parse(string: link.url.absoluteString)) == nil
                         guard isWebPage else {
-                            guard isClosable else { return }
+                            guard mode != .required else { return }
                             dismissReason = .action
                             storiesViewController?.dismiss(animated: true, completion: {
                                 deeplinkAction(link.url.absoluteString)
@@ -133,24 +158,46 @@ public final class StoriesPresenter {
             )
         }
 
-        let initialIndex = isClosable ? storiesStore.nextPageIndex(for: story.id, totalPages: story.pages.count) : 0
+        let initialIndex = mode == .required
+            ? storiesStore.resumePageIndex(for: story.id, totalPages: story.pages.count)
+            : storiesStore.nextPageIndex(for: story.id, totalPages: story.pages.count)
 
         let storiesViewController = TKStoriesFactory.storiesViewController(models: models)
         storiesViewController.setInitialPage(initialIndex)
-        storiesViewController.isModalInPresentation = !isClosable
-        if isClosable {
+        if mode != .required {
             storiesViewController.didComplete = { [weak storiesViewController] in
                 dismissReason = .completed
                 storiesViewController?.dismiss(animated: true)
             }
         }
-        storiesViewController.didOpen = { [weak self, analyticsProvider] in
-            analyticsProvider.log(eventKey: .storyOpen, args: ["story_id": story.id, "from": fromAnalyticsProperty])
-            analyticsProvider.log(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": initialIndex + 1])
-            self?.storiesStore.setStoryWatchedPageIndex(story.id, pageIndex: initialIndex)
-            if initialIndex >= story.pages.count - 1 {
-                self?.storiesStore.setStoryWatched(story.id)
+        if let closeAlert {
+            storiesViewController.didTapClose = { [weak storiesViewController, analyticsProvider] in
+                var isClosing = false
+                let pageNumber = (storiesViewController?.activePageIndex ?? 0) + 1
+                let close = { (reason: DismissReason, outcome: String) in
+                    guard !isClosing else { return }
+                    isClosing = true
+                    dismissReason = reason
+                    analyticsProvider.log(
+                        eventKey: .storyCloseAlert,
+                        args: ["story_id": story.id, "page_number": pageNumber, "outcome": outcome]
+                    )
+                    storiesViewController?.presentedViewController?.dismiss(animated: true) {
+                        storiesViewController?.dismiss(animated: true)
+                    }
+                }
+                storiesViewController?.present(
+                    TKStoriesFactory.closeAlertViewController(
+                        model: closeAlert,
+                        onSkip: { close(.closed, "skip") },
+                        onContinue: { close(.lastPageButton, "continue") }
+                    ),
+                    animated: true
+                )
             }
+        }
+        storiesViewController.didOpen = { [analyticsProvider] in
+            analyticsProvider.log(eventKey: .storyOpen, args: ["story_id": story.id, "from": fromAnalyticsProperty])
         }
         storiesViewController.didOpenPage = { [weak self, analyticsProvider] pageNumber in
             analyticsProvider.log(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": pageNumber + 1])
@@ -161,6 +208,7 @@ public final class StoriesPresenter {
         }
 
         self.storiesViewController = storiesViewController
+        presentedMode = mode
 
         storiesViewController.storiesPresentationController?.didDismiss = { [weak self] in
             self?.window = nil

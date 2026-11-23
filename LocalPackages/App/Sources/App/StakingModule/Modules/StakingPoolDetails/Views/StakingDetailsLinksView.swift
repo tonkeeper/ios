@@ -1,9 +1,15 @@
+import SnapKit
 import TKUIKit
 import UIKit
 
 final class StakingDetailsLinksView: TKView, ConfigurableView {
     let titleView = TKListTitleView()
     let stackView = UIStackView()
+    private var titleHeightConstraint: Constraint?
+
+    var titleHeight: CGFloat = 56 {
+        didSet { titleHeightConstraint?.update(offset: titleHeight) }
+    }
 
     struct Model {
         struct LinkItem {
@@ -54,7 +60,7 @@ final class StakingDetailsLinksView: TKView, ConfigurableView {
     func setupConstraints() {
         titleView.snp.makeConstraints { make in
             make.top.left.right.equalTo(self)
-            make.height.equalTo(56)
+            titleHeightConstraint = make.height.equalTo(titleHeight).constraint
         }
 
         stackView.snp.makeConstraints { make in

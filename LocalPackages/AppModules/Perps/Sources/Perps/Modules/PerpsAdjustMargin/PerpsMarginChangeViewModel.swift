@@ -17,6 +17,7 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     @Published private(set) var isImmediateRisk = false
     @Published private(set) var livePrice: Double?
     @Published private(set) var limits: PerpsMarginChangeLimits?
+    @Published private(set) var limitsLoadFailed = false
 
     let marketId: Int64
     let direction: PerpsMarginChangeDirection
@@ -71,7 +72,7 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     var priceText: String {
         let price = livePrice ?? displayPrice
         guard price > 0 else { return "—" }
-        return format.usd(price)
+        return format.price(price)
     }
 
     var isPriceTappable: Bool {
@@ -90,16 +91,17 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
         switch direction {
         case .add:
             return PerpsAmountFormBalanceRow(
-                balanceText: availableBalance.map { format.usd($0) },
+                balanceText: availableBalance.map { format.balance($0) },
                 errorText: amountIssueText,
                 onMax: { [weak self] in self?.setMax() },
                 onDeposit: { [weak self] in self?.onDeposit?() }
             )
         case .reduce:
             return PerpsAmountFormBalanceRow(
-                balanceText: limits.map { format.usd($0.maxReduceUsd) },
+                balanceText: limits.map { format.balance($0.maxReduceUsd) },
                 errorText: amountIssueText,
-                onMax: { [weak self] in self?.setMax() }
+                onMax: { [weak self] in self?.setMax() },
+                onRetry: limitsLoadFailed ? { [weak self] in self?.loadLimits() } : nil
             )
         }
     }
@@ -115,9 +117,6 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     var warningText: String? {
-        if exceedsReduceMargin {
-            return TKLocales.Perps.EditPosition.reduceExceedsMargin(format.usd(summary.marginUsd))
-        }
         if isReduceAtImmediateRisk {
             return TKLocales.Perps.AdjustMargin.reduceRisk
         }
@@ -197,20 +196,32 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     private var isAmountReviewable: Bool {
-        amountUsd > 0 && amountIssueText == nil && !exceedsReduceMargin
+        amountUsd > 0 && amountIssueText == nil && (direction == .add || limits != nil)
+    }
+
+    private var addCeilingUsd: Double? {
+        limits?.maxAddUsd ?? availableBalance
     }
 
     private var amountIssueText: String? {
-        guard amountUsd > 0, let limits else { return nil }
-        if amountUsd < limits.minUsd {
+        if direction == .reduce, limitsLoadFailed {
+            return TKLocales.Perps.Asset.failedTitle
+        }
+        guard amountUsd > 0 else { return nil }
+        if let limits, amountUsd < limits.minUsd {
             return TKLocales.Perps.AdjustMargin.minAmount(format.usd(limits.minUsd))
         }
-        guard direction == .reduce, amountUsd > limits.maxReduceUsd else { return nil }
-        return TKLocales.Perps.AdjustMargin.maxReduce(format.usd(limits.maxReduceUsd))
-    }
-
-    private var exceedsReduceMargin: Bool {
-        limits == nil && direction == .reduce && amountUsd > 0 && amountUsd >= summary.marginUsd
+        switch direction {
+        case .add:
+            if let availableBalance, amountUsd > availableBalance {
+                return TKLocales.Perps.OpenPosition.insufficientFunds
+            }
+            guard let maxAddUsd = limits?.maxAddUsd, amountUsd > maxAddUsd else { return nil }
+            return TKLocales.Perps.EditPosition.maximumMargin(format.balance(maxAddUsd))
+        case .reduce:
+            guard let limits, amountUsd > limits.maxReduceUsd else { return nil }
+            return TKLocales.Perps.AdjustMargin.maxReduce(format.balance(limits.maxReduceUsd))
+        }
     }
 
     private var isReduceAtImmediateRisk: Bool {
@@ -218,9 +229,9 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     private var liquidationRowValue: String {
-        let oldText = summary.liquidationPrice > 0 ? format.usd(summary.liquidationPrice) : "—"
+        let oldText = summary.liquidationPrice > 0 ? format.price(summary.liquidationPrice) : "—"
         guard let projected = projectedLiquidation?.new else { return oldText }
-        return "\(oldText) → \(format.usd(projected))"
+        return "\(oldText) → \(format.price(projected))"
     }
 
     private func refreshProjectedLiquidation() {
@@ -263,7 +274,7 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     private func setMax() {
-        let max = direction == .add ? availableBalance : limits?.maxReduceUsd
+        let max = direction == .add ? addCeilingUsd : limits?.maxReduceUsd
         guard let max, max > 0 else { return }
         amountText = PerpsDecimalInput.usdText(max)
         reviewWarningText = nil
@@ -272,11 +283,17 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
 
     private func loadLimits() {
         limitsTask?.cancel()
+        limitsLoadFailed = false
         limitsTask = Task { [weak self, tradingService, marketId] in
             let result = await tradingService.marginChangeLimits(marketId: marketId)
-            guard !Task.isCancelled, let self, case let .success(limits) = result else { return }
-            self.limits = limits
-            refreshProjectedLiquidation()
+            guard !Task.isCancelled, let self else { return }
+            switch result {
+            case let .success(limits):
+                self.limits = limits
+                refreshProjectedLiquidation()
+            case .failure:
+                limitsLoadFailed = limits == nil
+            }
         }
     }
 
@@ -293,11 +310,17 @@ final class PerpsMarginChangeViewModel: ObservableObject, PerpsAmountFormViewMod
     }
 
     private func applyStoreState() {
+        let balance: Double?
         switch accountStore.currentWalletState() {
         case .unresolved, .resolving, .unbound, .inactive:
-            availableBalance = nil
+            balance = nil
         case let .active(value):
-            availableBalance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0
+            balance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0
+        }
+        guard balance != availableBalance else { return }
+        availableBalance = balance
+        if limitsTask != nil {
+            loadLimits()
         }
     }
 }

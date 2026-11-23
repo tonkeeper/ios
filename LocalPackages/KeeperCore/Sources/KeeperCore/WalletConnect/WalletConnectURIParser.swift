@@ -1,5 +1,5 @@
 import Foundation
-import ReownWalletKit
+import WalletConnectSign
 
 enum WalletConnectURIParser {
     static func normalized(_ uriString: String) -> String {

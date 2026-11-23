@@ -55,6 +55,7 @@ protocol WalletsListViewModel: AnyObject {
     var selectedWalletIdentifier: String? { get }
     var didUpdateIsEditing: ((Bool) -> Void)? { get set }
     var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration) -> Void)? { get set }
+    var contentTitle: TKTitleDescriptionView.Model? { get }
 
     func viewDidLoad()
     func getWalletCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
@@ -82,6 +83,10 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
     var didUpdateWaletCellConfiguration: ((WalletsListViewController.Item, TKListItemCell.Configuration) -> Void)?
     var didUpdateIsEditing: ((Bool) -> Void)?
     var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration) -> Void)?
+
+    var contentTitle: TKTitleDescriptionView.Model? {
+        model.subtitle.map { TKTitleDescriptionView.Model(title: TKLocales.WalletsList.title, bottomDescription: $0) }
+    }
 
     func viewDidLoad() {
         // The heaviest target there is — every wallet's full fan-out — behind a screen that renders
@@ -209,8 +214,8 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
 
         raffleObserver = MysteryRafflePresentationObserver(
             raffleStore: raffleStore
-        ) { [weak self] presentation in
-            self?.rafflePresentation = presentation
+        ) { [weak self] raffles in
+            self?.rafflePresentation = MysteryRafflePresentation(raffles: raffles)
             self?.refreshSnapshot()
         }
 
@@ -455,10 +460,10 @@ private extension WalletsListViewModelImplementation {
         }
 
         var tags = [WalletMultichainPresentation.badgeTagConfiguration]
-        if case .watchonly = wallet.kind,
-           let watchOnlyTag = wallet.listTagConfiguration()
+        if wallet.kind == .watchonly || wallet.kind == .ledger,
+           let kindTag = wallet.listTagConfiguration()
         {
-            tags.append(watchOnlyTag)
+            tags.append(kindTag)
         }
         return tags
     }
@@ -519,10 +524,7 @@ private extension WalletsListViewModelImplementation {
         }
 
         return TKBottomSheetHeaderConfiguration(
-            title: .title(
-                title: TKLocales.WalletsList.title,
-                alignment: .center
-            ),
+            title: contentTitle == nil ? .title(title: TKLocales.WalletsList.title, alignment: .center) : .empty,
             leftButton: leftButton
         )
     }

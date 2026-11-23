@@ -46,7 +46,7 @@ public struct TronUSDTFeeOptionsResolver {
 
         let availableTypes = Self.availableTypes(
             isTRXOnlyRegion: configuration.isTRXOnlyRegion(network: wallet.network),
-            isTONBillingAvailable: estimate.tonFeeAddress?.isEmpty == false && requiredTONAmountNano != nil,
+            isTONBillingAvailable: Self.isTONBillingAvailable(estimate: estimate, wallet: wallet),
             requiresSelfPaidTRX: requiresSelfPaidTRX || estimate.requiresSelfPaidTRX
         )
         let selectedType = resolveSelectedType(
@@ -74,6 +74,12 @@ public struct TronUSDTFeeOptionsResolver {
             resources: .init(energy: estimate.energy, bandwidth: estimate.bandwidth),
             tonFeeAddress: estimate.tonFeeAddress
         )
+    }
+
+    /// The TON fee travels as a TON transfer of its own, which a Ledger would sign in another app in the middle of
+    /// the send: it pays with the battery or TRX.
+    static func isTONBillingAvailable(estimate: TronTransferFeeEstimate, wallet: Wallet) -> Bool {
+        wallet.kind != .ledger && estimate.tonFeeAddress?.isEmpty == false && estimate.requiredTONAmountNano != nil
     }
 
     /// A cost the sender has to pay in TRX leaves no room for a sponsor, so the relayer's options

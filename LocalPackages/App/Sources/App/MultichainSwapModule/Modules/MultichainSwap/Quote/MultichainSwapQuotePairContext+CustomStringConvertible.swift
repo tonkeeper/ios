@@ -1,6 +1,6 @@
 extension MultichainSwapQuotePairContext: CustomStringConvertible {
     var description: String {
-        "\(source.assetId) -[\(slippageDescription)]-> \(destination.assetId)"
+        "\(source.assetId) -[\(slippageDescription)]-> \(destination.assetId) \(apiVersion)"
     }
 
     private var slippageDescription: String {

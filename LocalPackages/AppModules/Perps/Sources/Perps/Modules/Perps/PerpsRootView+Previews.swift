@@ -4,10 +4,13 @@ import TKUIKit
 
 private final class PerpsRootPreviewViewModel: PerpsRootViewModeling {
     let accountState: PerpsRootAccountState
+    let loadingPositionsCount: Int
     let marketsState: PerpsRootMarketsState
     let sort: PerpsMarketsSort = .volume
-    let fundingToast: PerpsAssetPageTradeToast?
     let zeroBalanceText = "$0.00"
+    let depositStatus: PerpsDepositStatusViewModel?
+    let withdrawStatus: PerpsWithdrawStatusViewModel?
+    let isRegionRestricted: Bool
 
     let onBack: (() -> Void)? = {}
     let onLearnBasics: (() -> Void)? = {}
@@ -15,20 +18,27 @@ private final class PerpsRootPreviewViewModel: PerpsRootViewModeling {
     let onHistory: (() -> Void)? = {}
     let onDeposit: (() -> Void)? = {}
     let onWithdraw: (() -> Void)? = {}
+    let onRegionRestrictionInfo: (() -> Void)? = {}
 
     init(
         accountState: PerpsRootAccountState,
+        loadingPositionsCount: Int = 0,
         marketsState: PerpsRootMarketsState,
-        fundingToast: PerpsAssetPageTradeToast? = nil
+        depositStatus: PerpsDepositStatusViewModel? = nil,
+        withdrawStatus: PerpsWithdrawStatusViewModel? = nil,
+        isRegionRestricted: Bool = false
     ) {
         self.accountState = accountState
+        self.loadingPositionsCount = loadingPositionsCount
         self.marketsState = marketsState
-        self.fundingToast = fundingToast
+        self.depositStatus = depositStatus
+        self.withdrawStatus = withdrawStatus
+        self.isRegionRestricted = isRegionRestricted
     }
 
+    func onWillAppear() {}
     func onAppear() {}
     func onDisappear() {}
-    func openFundingToast() {}
     func setSort(_: PerpsMarketsSort) {}
     func selectMarket(_: Int64) {}
     func rowAppeared(_: Int64) {}
@@ -40,7 +50,7 @@ private let previewMarkets = [
         id: 1,
         symbol: "BTC",
         iconURL: nil,
-        leverageText: "40X",
+        leverageText: "40⨯",
         volumeText: "$1.24B VOL",
         priceText: "$67,104.20",
         changeText: "+3.84%",
@@ -50,7 +60,7 @@ private let previewMarkets = [
         id: 2,
         symbol: "ETH",
         iconURL: nil,
-        leverageText: "25X",
+        leverageText: "25⨯",
         volumeText: "$684.1M VOL",
         priceText: "$3,481.09",
         changeText: "−1.12%",
@@ -60,7 +70,7 @@ private let previewMarkets = [
         id: 3,
         symbol: "TON",
         iconURL: nil,
-        leverageText: "10X",
+        leverageText: "10⨯",
         volumeText: "$42.7M VOL",
         priceText: "$5.68",
         changeText: "+0.42%",
@@ -76,7 +86,7 @@ private let previewPortfolio = PerpsRootAccountState.Portfolio(
             id: 1,
             symbol: "BTC",
             iconURL: nil,
-            leverageText: "27X",
+            leverageText: "27⨯",
             sideText: "LONG",
             isLong: true,
             valueText: "$540.00",
@@ -87,7 +97,7 @@ private let previewPortfolio = PerpsRootAccountState.Portfolio(
             id: 2,
             symbol: "ETH",
             iconURL: nil,
-            leverageText: "10X",
+            leverageText: "10⨯",
             sideText: "SHORT",
             isLong: false,
             valueText: "$212.40",
@@ -107,16 +117,19 @@ private let previewPortfolio = PerpsRootAccountState.Portfolio(
             marketId: 1,
             symbol: "BTC",
             iconURL: nil,
+            leverageText: "20⨯",
             sideText: "LONG",
             isLong: true,
             valueText: "$18.81",
-            limitText: "Limit $81,799.20"
+            limitText: "Limit $81,799.20",
+            autoCloseText: "TP $90,000 · SL $78,000"
         ),
         PerpsLimitOrderRowItem(
             orderIndex: 844_421_356_582_790,
             marketId: 3,
             symbol: "TON",
             iconURL: nil,
+            leverageText: "5⨯",
             sideText: "SHORT",
             isLong: false,
             valueText: "$40.00",
@@ -138,9 +151,39 @@ private let previewPortfolio = PerpsRootAccountState.Portfolio(
 #Preview("Pending deposit") {
     PerpsRootView(
         viewModel: PerpsRootPreviewViewModel(
+            accountState: .active(previewPortfolio),
+            marketsState: .loaded(items: previewMarkets, isLoadingNextPage: false),
+            depositStatus: PerpsDepositStatusViewModel(
+                accountStore: PerpsDepositStatusPreviewStore(deposits: [.previewSending]),
+                format: .preview
+            )
+        )
+    )
+    .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Sending withdrawal") {
+    PerpsRootView(
+        viewModel: PerpsRootPreviewViewModel(
+            accountState: .active(previewPortfolio),
+            marketsState: .loaded(items: previewMarkets, isLoadingNextPage: false),
+            withdrawStatus: PerpsWithdrawStatusViewModel(
+                accountStore: PerpsDepositStatusPreviewStore(
+                    deposits: [],
+                    activity: PerpsFundingActivity(inFlight: ["w"], withdrawals: ["w"])
+                )
+            )
+        )
+    )
+    .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Region restricted") {
+    PerpsRootView(
+        viewModel: PerpsRootPreviewViewModel(
             accountState: .inactive,
             marketsState: .loaded(items: previewMarkets, isLoadingNextPage: false),
-            fundingToast: .progress("Sending transaction")
+            isRegionRestricted: true
         )
     )
     .tkPreviewTheme(.deepBlue)
@@ -164,4 +207,25 @@ private let previewPortfolio = PerpsRootAccountState.Portfolio(
         )
     )
     .tkPreviewTheme(.light)
+}
+
+#Preview("Skeleton") {
+    PerpsRootView(
+        viewModel: PerpsRootPreviewViewModel(
+            accountState: .resolving,
+            marketsState: .loading
+        )
+    )
+    .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Skeleton with positions") {
+    PerpsRootView(
+        viewModel: PerpsRootPreviewViewModel(
+            accountState: .resolving,
+            loadingPositionsCount: 2,
+            marketsState: .loading
+        )
+    )
+    .tkPreviewTheme(.deepBlue)
 }

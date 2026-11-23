@@ -19,6 +19,10 @@ final class DeeplinkOpenAnalyticsTests: XCTestCase {
         XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .browser(network: nil)), .browser)
         XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .action(eventId: "0x1")), .action)
         XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .story(storyId: "welcome")), .story)
+        XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .earn(.home)), .dapp)
+        XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .perps(.home)), .perps)
+        XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .perps(.market(id: 1))), .perps)
+        XCTAssertEqual(DeeplinkOpen.LinkType(deeplink: .history), .unknown)
     }
 
     func testPendingDeeplinkRoutesTheLatestAndReportsEveryLinkWithItsLaunchState() {

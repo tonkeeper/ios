@@ -37,12 +37,20 @@ final class ReceiveViewModelImplementation: ObservableObject, ReceiveModuleOutpu
 
     private let address: ReceiveAddressPreview
     private let qrCodeGenerationController: QrCodeMatrixGenerationController
+    private let verify: (() -> Void)?
 
+    var canVerify: Bool {
+        verify != nil
+    }
+
+    /// `verify` shows the address on the hardware wallet that holds it; `nil` for any other wallet.
     init(
         address: ReceiveAddressPreview,
-        qrCodeGenerator: QrCodeMatrixGenerator
+        qrCodeGenerator: QrCodeMatrixGenerator,
+        verify: (() -> Void)? = nil
     ) {
         self.address = address
+        self.verify = verify
         self.qrCodeGenerationController = QrCodeMatrixGenerationController(
             qrCodeGenerator: qrCodeGenerator,
             centerCutoutSize: Constants.qrCodeCenterCutoutSize
@@ -65,6 +73,10 @@ final class ReceiveViewModelImplementation: ObservableObject, ReceiveModuleOutpu
 
     func shareSelectedAddress() {
         didRequestShare?(address.address)
+    }
+
+    func verifyAddress() {
+        verify?()
     }
 }
 

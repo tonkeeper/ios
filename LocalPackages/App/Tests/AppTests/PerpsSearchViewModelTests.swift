@@ -196,13 +196,46 @@ final class PerpsSearchViewModelTests: XCTestCase {
             viewModel.$marketsState,
             description: "price patched in place",
             matching: { state in
-                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.usd(60)
+                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.price(60)
             }
         ) {
             await client.emit([("ETH/USD", "60")])
         }
         XCTAssertEqual(viewModel.marketsState.loadedMarketIDs, [1, 2])
         XCTAssertEqual(repository.requests.count, 1)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_livePriceTick_whileCovered_isAppliedOnlyOnReturn() async {
+        let repository = PerpsMarketsSearchingSpy()
+        repository.setResults([makeMarket(id: 1, symbol: "BTC", price: 100)])
+        let client = FakeMarkPricesClient()
+        let store = PerpsMarketsStore.makeForTests(tickers: [1: "BTC/USD"], client: client)
+        let viewModel = makeViewModel(repository: repository, store: store)
+
+        await expectPublished(
+            viewModel.$marketsState,
+            description: "results loaded",
+            matching: { $0.loadedMarketIDs == [1] }
+        ) {
+            viewModel.onAppear()
+        }
+        viewModel.rowAppeared(1)
+        await waitForTickers(client, toEqual: ["BTC/USD"])
+
+        viewModel.setVisible(false)
+        let ignored = expectation(description: "covered list stays untouched")
+        ignored.isInverted = true
+        ignored.assertForOverFulfill = false
+        let cancellable = viewModel.$marketsState.dropFirst().sink { _ in ignored.fulfill() }
+        await client.emit([("BTC/USD", "120")])
+        await fulfillment(of: [ignored], timeout: 0.3)
+        withExtendedLifetime(cancellable) {}
+        XCTAssertEqual(store.getState().price(marketId: 1), 120)
+
+        viewModel.setVisible(true)
+        XCTAssertEqual(viewModel.marketsState.loadedItems.first?.priceText, PerpsFormatting.live.price(120))
         viewModel.onDisappear()
     }
 

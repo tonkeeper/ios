@@ -28,6 +28,14 @@ public final class BatteryAssembly {
         makeBatteryService()
     }
 
+    public func batteryPurchaser(multichainAssembly: MultichainAssembly) -> BatteryPurchaser {
+        multichainAssembly.batteryPurchaser(service: makeBatteryService())
+    }
+
+    public func batteryPurchaseService() -> BatteryPurchaseService {
+        makeBatteryService()
+    }
+
     func batteryGaslessService() -> BatteryGaslessService {
         makeBatteryService()
     }
@@ -40,7 +48,8 @@ public final class BatteryAssembly {
                 tonProofTokenService: tonProofTokenService,
                 deviceAuth: deviceAuth,
                 walletAuthTokenProvider: walletAuthTokenProvider
-            )
+            ),
+            assetMethodsVault: coreAssembly.fileSystemVault()
         )
     }
 

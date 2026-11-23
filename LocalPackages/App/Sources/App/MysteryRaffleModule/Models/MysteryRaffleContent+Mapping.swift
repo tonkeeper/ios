@@ -328,7 +328,7 @@ private extension RaffleAccent {
     }
 }
 
-private extension RaffleSymbol {
+extension RaffleSymbol {
     /// Resolves a backend glyph id (semantic slug) to a bundled symbol. Returns nil
     /// for unknown ids so callers can pick a contextual fallback.
     /// Slug vocabulary confirmed from the live endpoint 2026-06-22.
@@ -346,6 +346,7 @@ private extension RaffleSymbol {
         case "trusted": self = .shield
         case "senior": self = .fire
         case "legend": self = .rocket
+        case "dinner": self = .dinner
         default: return nil
         }
     }

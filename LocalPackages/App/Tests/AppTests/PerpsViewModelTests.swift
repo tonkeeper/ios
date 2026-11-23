@@ -8,6 +8,83 @@ import TonSwift
 import XCTest
 
 final class PerpsViewModelTests: XCTestCase {
+    // MARK: Open positions placeholder
+
+    @MainActor
+    func test_positionsPlaceholder_holdsTheRoomOfTheLastLoadedPositionsUntilTheyLoad() {
+        let count = PerpsViewModel.positionsPlaceholderCount
+        XCTAssertEqual(count(.unresolved, 2), 2)
+        XCTAssertEqual(count(.resolving, 2), 2)
+        XCTAssertEqual(count(.active(makeAccount(positionsLoaded: false)), 2), 2)
+        XCTAssertEqual(count(.active(makeAccount(positionsLoaded: false, hasReadOnlyToken: false)), 2), 0)
+        XCTAssertEqual(count(.active(makeAccount(positions: [makePosition()])), 2), 0)
+        XCTAssertEqual(count(.inactive, 2), 0)
+        XCTAssertEqual(count(.unbound, 2), 0)
+        XCTAssertEqual(count(.resolving, nil), 0)
+        XCTAssertEqual(count(.resolving, 5), 3)
+    }
+
+    @MainActor
+    func test_loadedPositions_areRememberedForTheNextScreen() async {
+        let defaults = makeDefaults()
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(
+            availableBalance: "10",
+            positions: [makePosition(marketId: 1), makePosition(marketId: 2, symbol: "ETH")]
+        )
+        let viewModel = makeViewModel(service: service, defaults: defaults)
+        XCTAssertEqual(viewModel.loadingPositionsCount, 0)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "positions loaded",
+            matching: { $0.portfolio?.positions.count == 2 }
+        ) {
+            viewModel.onAppear()
+        }
+        viewModel.onDisappear()
+
+        XCTAssertEqual(viewModel.loadingPositionsCount, 0)
+        XCTAssertEqual(makeViewModel(service: PerpsHomeServiceSpy(), defaults: defaults).loadingPositionsCount, 2)
+    }
+
+    @MainActor
+    func test_aWalletReadAsInactive_keepsTheRememberedCount() async {
+        let defaults = makeDefaults()
+        makeStores(service: PerpsHomeServiceSpy(), defaults: defaults).account.rememberPositionsCount(2)
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .noAccount(ethAddress: "0xabc")
+        let viewModel = makeViewModel(service: service, defaults: defaults)
+        XCTAssertEqual(viewModel.loadingPositionsCount, 2)
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "account inactive",
+            matching: { if case .inactive = $0 { true } else { false } }
+        ) {
+            viewModel.onAppear()
+        }
+        viewModel.onDisappear()
+
+        XCTAssertEqual(viewModel.loadingPositionsCount, 0)
+        XCTAssertEqual(makeViewModel(service: PerpsHomeServiceSpy(), defaults: defaults).loadingPositionsCount, 2)
+    }
+
+    func makeAccount(
+        positions: [PerpsPositionSummary] = [],
+        positionsLoaded: Bool = true,
+        hasReadOnlyToken: Bool = true
+    ) -> PerpsAccount {
+        PerpsAccount(
+            accountIndex: 7,
+            availableBalance: "10",
+            positions: positions,
+            positionsLoaded: positionsLoaded,
+            hasReadOnlyToken: hasReadOnlyToken
+        )
+    }
+
     // MARK: Markets loading + paging + sort
 
     @MainActor
@@ -30,8 +107,8 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.onAppear()
         }
         let first = viewModel.loadedItems.first
-        XCTAssertEqual(first?.leverageText, "40X")
-        XCTAssertEqual(first?.priceText, PerpsFormatting.live.usd(30))
+        XCTAssertEqual(first?.leverageText, "40⨯")
+        XCTAssertEqual(first?.priceText, "$\u{2009}30.00")
         XCTAssertEqual(service.requestedSorts, [.volume])
         viewModel.onDisappear()
     }
@@ -62,7 +139,7 @@ final class PerpsViewModelTests: XCTestCase {
         let service = PerpsHomeServiceSpy()
         service.pages = [.test([.test(id: 1)])]
         let stores = makeStores(service: service)
-        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, format: PerpsFormatting.live)
+        let first = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, access: { .available }, reloadAccess: { .available }, format: PerpsFormatting.live)
         await expectPublished(first.$marketsState, description: "first home loaded", matching: {
             $0.loadedMarketIDs == [1]
         }) {
@@ -76,7 +153,7 @@ final class PerpsViewModelTests: XCTestCase {
         }
         first.onDisappear()
 
-        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, format: PerpsFormatting.live)
+        let second = PerpsViewModel(marketsStore: stores.markets, accountStore: stores.account, access: { .available }, reloadAccess: { .available }, format: PerpsFormatting.live)
         XCTAssertEqual(second.sort, .openInterest)
         second.onAppear()
         await service.waitForRequestCount(3)
@@ -173,7 +250,7 @@ final class PerpsViewModelTests: XCTestCase {
         XCTAssertEqual(btc?.id, 1)
         XCTAssertEqual(btc?.symbol, "BTC")
         XCTAssertEqual(btc?.isLong, true)
-        XCTAssertEqual(btc?.leverageText, "27X")
+        XCTAssertEqual(btc?.leverageText, "27⨯")
         XCTAssertEqual(btc?.valueText, PerpsFormatting.live.usd(21))
         XCTAssertEqual(btc?.pnlText, PerpsFormatting.live.signedUsd(0.5))
         XCTAssertEqual(btc?.isPnlPositive, true)
@@ -304,7 +381,7 @@ final class PerpsViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_positionRows_keepMarketIdOrderWhateverOrderTheBackendSends() async {
+    func test_positionRows_keepTheBackendOrder() async {
         let service = PerpsHomeServiceSpy()
         service.statusResult = .account(accountIndex: 7)
         service.portfolioResult = makePortfolio(
@@ -324,8 +401,8 @@ final class PerpsViewModelTests: XCTestCase {
         ) {
             viewModel.onAppear()
         }
-        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.id), [2, 5, 9])
-        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.symbol), ["ETH", "TON", "SOL"])
+        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.id), [9, 2, 5])
+        XCTAssertEqual(viewModel.accountState.portfolio?.positions.map(\.symbol), ["SOL", "ETH", "TON"])
         viewModel.onDisappear()
     }
 
@@ -414,14 +491,99 @@ final class PerpsViewModelTests: XCTestCase {
             viewModel.$marketsState,
             description: "price patched in place",
             matching: { state in
-                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.usd(150)
+                state.loadedItems.first(where: { $0.id == 2 })?.priceText == PerpsFormatting.live.price(150)
             }
         ) {
             await client.emit([("BBB/USD", "150")])
         }
         XCTAssertEqual(viewModel.loadedMarketIDs, [1, 2])
         let pumped = viewModel.loadedItems.first(where: { $0.id == 2 })
-        XCTAssertEqual(pumped?.changeText, PerpsFormatting.live.signedPercent(51.5))
+        XCTAssertEqual(pumped?.changeText, "+51.50%")
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_livePriceTick_whileCovered_isAppliedOnlyOnReturn() async {
+        let service = PerpsHomeServiceSpy()
+        service.pages = [.test([.test(id: 1, symbol: "AAA", price: 100, priceChangePercent: 0, volume24h: 30)])]
+        let client = FakeMarkPricesClient()
+        let stores = makeStores(service: service, client: client)
+        let viewModel = PerpsViewModel(
+            marketsStore: stores.markets,
+            accountStore: stores.account,
+            access: { .available },
+            reloadAccess: { .available },
+            format: PerpsFormatting.live
+        )
+
+        await expectPublished(
+            viewModel.$marketsState,
+            description: "initial markets loaded",
+            matching: { $0.loadedMarketIDs == [1] }
+        ) {
+            viewModel.onAppear()
+        }
+        viewModel.onDisappear()
+        let assetPage = stores.markets.makePriceInterest()
+        assetPage.set(marketIds: [1])
+        await waitForTickers(client, toEqual: ["AAA/USD"])
+
+        let ignored = expectation(description: "covered root stays untouched")
+        ignored.isInverted = true
+        ignored.assertForOverFulfill = false
+        let cancellable = viewModel.$marketsState.dropFirst().sink { _ in ignored.fulfill() }
+        await client.emit([("AAA/USD", "150")])
+        await fulfillment(of: [ignored], timeout: 0.3)
+        withExtendedLifetime(cancellable) {}
+
+        viewModel.onAppear()
+        XCTAssertEqual(viewModel.loadedItems.first?.priceText, PerpsFormatting.live.price(150))
+        assetPage.clear()
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_accountChange_whileCovered_isAppliedOnlyOnReturn() async {
+        let service = PerpsHomeServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = makePortfolio(availableBalance: "125.50")
+        let stores = makeStores(service: service)
+        let viewModel = PerpsViewModel(
+            marketsStore: stores.markets,
+            accountStore: stores.account,
+            access: { .available },
+            reloadAccess: { .available },
+            format: PerpsFormatting.live
+        )
+
+        await expectPublished(
+            viewModel.$accountState,
+            description: "account active",
+            matching: \.isActive
+        ) {
+            viewModel.onAppear()
+        }
+        viewModel.onDisappear()
+
+        let ignored = expectation(description: "covered root stays untouched")
+        ignored.isInverted = true
+        ignored.assertForOverFulfill = false
+        let cancellable = viewModel.$accountState.dropFirst().sink { _ in ignored.fulfill() }
+        let stored = expectation(description: "store holds the new balance")
+        stored.assertForOverFulfill = false
+        stores.account.addChangeObserver(self) { _ in
+            if case let .active(account) = stores.account.currentWalletState(), account.availableBalance == "200" {
+                stored.fulfill()
+            }
+        }
+        service.portfolioResult = makePortfolio(availableBalance: "200")
+        stores.account.refresh()
+        await fulfillment(of: [stored], timeout: 2)
+        await fulfillment(of: [ignored], timeout: 0.3)
+        withExtendedLifetime(cancellable) {}
+
+        viewModel.onAppear()
+        XCTAssertEqual(viewModel.accountState.portfolio?.balanceText, PerpsFormatting.live.usd("200"))
         viewModel.onDisappear()
     }
 }
@@ -453,7 +615,8 @@ private extension PerpsViewModelTests {
     @MainActor
     func makeStores(
         service: PerpsHomeServiceSpy,
-        client: FakeMarkPricesClient = FakeMarkPricesClient()
+        client: FakeMarkPricesClient = FakeMarkPricesClient(),
+        defaults: UserDefaults? = nil
     ) -> (markets: PerpsMarketsStore, account: PerpsAccountStore) {
         let wallet = Wallet.perpsTest()
         let tickers = service.pages.flatMap(\.items).reduce(into: [Int64: String]()) { result, market in
@@ -461,19 +624,26 @@ private extension PerpsViewModelTests {
         }
         return (
             PerpsMarketsStore.makeForTests(service: service, tickers: tickers, client: client),
-            PerpsAccountStore(service: service, wallet: wallet)
+            PerpsAccountStore(service: service, wallet: wallet, positionsCountDefaults: defaults ?? makeDefaults())
         )
+    }
+
+    func makeDefaults() -> UserDefaults {
+        UserDefaults(suiteName: "PerpsViewModelTests.\(UUID().uuidString)")!
     }
 
     @MainActor
     func makeViewModel(
         service: PerpsHomeServiceSpy,
-        client: FakeMarkPricesClient = FakeMarkPricesClient()
+        client: FakeMarkPricesClient = FakeMarkPricesClient(),
+        defaults: UserDefaults? = nil
     ) -> PerpsViewModel {
-        let stores = makeStores(service: service, client: client)
+        let stores = makeStores(service: service, client: client, defaults: defaults)
         return PerpsViewModel(
             marketsStore: stores.markets,
             accountStore: stores.account,
+            access: { .available },
+            reloadAccess: { .available },
             format: PerpsFormatting.live
         )
     }

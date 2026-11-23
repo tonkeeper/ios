@@ -75,7 +75,8 @@ final class TokenPickerButton: UIControl {
 
     private enum Layout {
         static let imageSize: CGFloat = 24
-        static let badgeSize: CGFloat = 14
+        static let badgeSize: CGFloat = 12
+        static let badgeOffset: CGFloat = 2
         static let badgeBorderWidth: CGFloat = 1.5
     }
 
@@ -169,8 +170,7 @@ final class TokenPickerButton: UIControl {
 
         networkBadgeImageView.snp.makeConstraints { make in
             make.width.height.equalTo(Layout.badgeSize)
-            make.trailing.equalTo(imageView)
-            make.bottom.equalTo(imageView)
+            make.trailing.bottom.equalTo(imageView).offset(Layout.badgeOffset)
         }
     }
 

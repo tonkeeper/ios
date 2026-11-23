@@ -21,14 +21,17 @@ final class PerpsPendingJournal: Sendable {
         var version: Int
         var pending: [String: PerpsPendingTradingAction]
         var funding: [String: PerpsPendingFundingOperation]
+        var confirmedAutoClose: [String: PerpsAutoClose]
 
         init(
             pending: [String: PerpsPendingTradingAction] = [:],
-            funding: [String: PerpsPendingFundingOperation] = [:]
+            funding: [String: PerpsPendingFundingOperation] = [:],
+            confirmedAutoClose: [String: PerpsAutoClose] = [:]
         ) {
             version = Self.currentVersion
             self.pending = pending
             self.funding = funding
+            self.confirmedAutoClose = confirmedAutoClose
         }
 
         init(from decoder: Decoder) throws {
@@ -50,6 +53,7 @@ final class PerpsPendingJournal: Sendable {
             } else {
                 funding = try container.decode([String: PerpsPendingFundingOperation].self, forKey: .funding)
             }
+            confirmedAutoClose = (try? container.decode([String: PerpsAutoClose].self, forKey: .confirmedAutoClose)) ?? [:]
         }
     }
 
@@ -96,7 +100,8 @@ final class PerpsPendingJournal: Sendable {
     func appendSignedStep(
         operationId: String,
         step: PerpsPendingSignedStep,
-        refs: [PerpsPendingOrderRef]
+        refs: [PerpsPendingOrderRef],
+        followUps: [PerpsPendingTradingAction] = []
     ) async throws {
         try await mutate { contents in
             guard var pending = contents.pending[operationId] else {
@@ -115,6 +120,23 @@ final class PerpsPendingJournal: Sendable {
             }
             pending.orderRefs = orderRefs
             contents.pending[operationId] = pending
+            for followUp in followUps where contents.pending[followUp.operationId] == nil {
+                contents.pending[followUp.operationId] = followUp
+            }
+        }
+    }
+
+    func setRebaseTarget(operationId: String, price: Double) async throws {
+        try await mutate { contents in
+            guard var pending = contents.pending[operationId],
+                  case var .autoCloseRebase(rebase) = pending.payload
+            else {
+                throw PerpsPendingJournalError.missingPending(operationId)
+            }
+            guard rebase.targetPrice == nil else { return }
+            rebase.targetPrice = price
+            pending.payload = .autoCloseRebase(rebase)
+            contents.pending[operationId] = pending
         }
     }
 
@@ -122,14 +144,37 @@ final class PerpsPendingJournal: Sendable {
         try await query { $0.pending[operationId] }
     }
 
-    func removePending(operationId: String) async throws {
+    /// An operation's corrections go with it, or start their settle window when it settles.
+    func removePending(operationId: String, includingFollowUps: Bool = false) async throws {
+        let now = Self.nowMillis()
         try await mutate { contents in
             contents.pending.removeValue(forKey: operationId)
+            for (id, var pending) in contents.pending {
+                guard case var .autoCloseRebase(rebase) = pending.payload, rebase.parentOperationId == operationId else { continue }
+                if includingFollowUps {
+                    contents.pending.removeValue(forKey: id)
+                } else if rebase.entrySettledAtMillis == nil {
+                    rebase.entrySettledAtMillis = now
+                    pending.payload = .autoCloseRebase(rebase)
+                    contents.pending[id] = pending
+                }
+            }
         }
     }
 
     func allPending() async throws -> [PerpsPendingTradingAction] {
         try await query { Array($0.pending.values) }
+    }
+
+    func confirmAutoClose(
+        marketId: Int64,
+        _ update: @escaping @Sendable (_ current: PerpsAutoClose?) -> PerpsAutoClose?
+    ) async throws {
+        try await mutate { $0.confirmedAutoClose[String(marketId)] = update($0.confirmedAutoClose[String(marketId)]) }
+    }
+
+    func confirmedAutoClose(marketId: Int64) async throws -> PerpsAutoClose? {
+        try await query { $0.confirmedAutoClose[String(marketId)] }
     }
 
     func saveFundingIfAbsent(
@@ -156,6 +201,22 @@ final class PerpsPendingJournal: Sendable {
         try await query { contents in
             try self.requireFundingIntact()
             return Array(contents.funding.values)
+        }
+    }
+
+    func acknowledgeDepositStatuses(_ operationIds: Set<String>) async throws {
+        try await mutate { contents in
+            try self.requireFundingIntact()
+            for id in operationIds {
+                guard var operation = contents.funding[id], var deposit = operation.deposit,
+                      deposit.stage.isOutcome || deposit.stage.isStalled,
+                      deposit.statusAcknowledged != true
+                else { continue }
+                deposit.statusAcknowledged = true
+                operation.details = .deposit(deposit)
+                operation.revision += 1
+                contents.funding[id] = operation
+            }
         }
     }
 
@@ -249,30 +310,50 @@ final class PerpsPendingJournal: Sendable {
     }
 
     private func query<T>(_ body: @escaping @Sendable (Contents) throws -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { continuation in
+        let logContext = PerpsOperationLog.context
+        return try await withCheckedThrowingContinuation { continuation in
             Self.ioQueue.async {
-                do {
-                    try continuation.resume(returning: body(self.read()))
-                } catch {
-                    continuation.resume(throwing: error)
+                PerpsOperationLog.$context.withValue(logContext) {
+                    do {
+                        try continuation.resume(returning: body(self.read()))
+                    } catch {
+                        PerpsOperationLog.event("journal_read", outcome: "failed", error: error)
+                        continuation.resume(throwing: error)
+                    }
                 }
             }
         }
     }
 
     private func mutate<T>(_ body: @escaping @Sendable (inout Contents) throws -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { continuation in
+        let logContext = PerpsOperationLog.context
+        return try await withCheckedThrowingContinuation { continuation in
             Self.ioQueue.async {
-                do {
-                    let contents = try self.read()
-                    var updated = contents
-                    let value = try body(&updated)
-                    if updated != contents {
-                        try self.write(updated)
+                PerpsOperationLog.$context.withValue(logContext) {
+                    do {
+                        let contents = try self.read()
+                        var updated = contents
+                        let value = try body(&updated)
+                        if updated != contents {
+                            try self.write(updated)
+                            for (id, operation) in updated.funding where contents.funding[id] != operation {
+                                PerpsOperationLog.event("journal", outcome: "saved", fields: operation.operationLogFields)
+                            }
+                            for (id, operation) in contents.funding where updated.funding[id] == nil {
+                                PerpsOperationLog.event("journal", outcome: "removed", fields: operation.operationLogFields)
+                            }
+                            for (id, operation) in updated.pending where contents.pending[id] != operation {
+                                PerpsOperationLog.event("journal", outcome: "saved", fields: operation.operationLogFields)
+                            }
+                            for (id, operation) in contents.pending where updated.pending[id] == nil {
+                                PerpsOperationLog.event("journal", outcome: "removed", fields: operation.operationLogFields)
+                            }
+                        }
+                        continuation.resume(returning: value)
+                    } catch {
+                        PerpsOperationLog.event("journal_write", outcome: "failed", error: error)
+                        continuation.resume(throwing: error)
                     }
-                    continuation.resume(returning: value)
-                } catch {
-                    continuation.resume(throwing: error)
                 }
             }
         }
@@ -288,7 +369,7 @@ final class PerpsPendingJournal: Sendable {
         } catch {
             let salvaged = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]).flatMap(Self.salvage)
             if let salvaged, !salvaged.lostFunding {
-                Log.perps.w("pending journal partly unreadable — kept \(salvaged.contents.pending.count) trading records")
+                PerpsOperationLog.event("journal_read", outcome: "partially_unreadable", error: error, fields: ["kept_trading_records": String(salvaged.contents.pending.count)])
                 return salvaged.contents
             }
             // A funding record lost here may be a payment still on its way. The document is
@@ -302,7 +383,7 @@ final class PerpsPendingJournal: Sendable {
             } else {
                 try replaceItem(at: evidenceURL, with: fileURL)
             }
-            Log.perps.w("pending journal funding unreadable — set aside at \(evidenceURL.lastPathComponent)")
+            PerpsOperationLog.event("journal_read", outcome: "funding_set_aside", error: error, fields: ["evidence_file": evidenceURL.lastPathComponent])
             return salvaged?.contents ?? Contents()
         }
     }
@@ -324,7 +405,14 @@ final class PerpsPendingJournal: Sendable {
         } else {
             storedVersion != 0 || root["funding"] != nil
         }
-        return (Contents(pending: salvageRecords(pending), funding: recoveredFunding), lostFunding)
+        return (
+            Contents(
+                pending: salvageRecords(pending),
+                funding: recoveredFunding,
+                confirmedAutoClose: salvageRecords(root["confirmedAutoClose"] as? [String: Any] ?? [:])
+            ),
+            lostFunding
+        )
     }
 
     private static func salvageRecords<T: Decodable>(_ records: [String: Any]) -> [String: T] {

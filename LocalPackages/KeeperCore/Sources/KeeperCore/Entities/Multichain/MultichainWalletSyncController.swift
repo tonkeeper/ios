@@ -27,6 +27,8 @@ struct MultichainWalletSyncControllerDependencies {
     var getWallets: () -> [Wallet]
     var getMnemonics: (_ wallets: [Wallet], _ passcode: String) async throws -> [CoreMnemonicIdentifier: CoreMnemonic]
     var syncWallet: (_ mnemonic: String, _ state: MultichainWalletState) async throws(MultichainServiceError) -> Void
+    /// Registers a wallet with the app key kept for it, for wallets that have no mnemonic.
+    var syncLedgerWallet: (_ state: MultichainWalletState) async throws(MultichainServiceError) -> Void
     /// Only `walletId` and `syncState` are honoured. The addresses belong to the enricher, which
     /// writes them without waiting for a sync, so the store merges the two writers inside one
     /// update instead of letting either restore the other's previous value.
@@ -272,6 +274,7 @@ private extension MultichainWalletSyncControllerImplementation {
             guard !Task.isCancelled else { return false }
             await save(wallet: wallet, state: state, syncState: .pending)
         }
+        await performSyncLedgerWallets()
 
         // A truncated request cannot tell a stale binding from one that simply was not sent.
         guard !isTruncated else {
@@ -301,12 +304,12 @@ private extension MultichainWalletSyncControllerImplementation {
 
 private extension MultichainWalletSyncControllerImplementation {
     func walletsNeedingSync() -> [(wallet: Wallet, state: MultichainWalletState)] {
-        multichainWallets().filter { $0.state.syncState != .synced }
+        multichainWallets().filter { $0.wallet.kind == .regular && $0.state.syncState != .synced }
     }
 
     func walletsNeedingAppKeyWarm() async -> [(wallet: Wallet, state: MultichainWalletState)] {
         var result = [(wallet: Wallet, state: MultichainWalletState)]()
-        for entry in multichainWallets() where entry.state.syncState == .synced {
+        for entry in multichainWallets() where entry.wallet.kind == .regular && entry.state.syncState == .synced {
             if await dependencies.hasPersistentAppKey(entry.state.walletId) {
                 continue
             }
@@ -315,9 +318,26 @@ private extension MultichainWalletSyncControllerImplementation {
         return result
     }
 
+    /// A Ledger wallet keeps its app key from pairing, so it is registered without a passcode.
+    func performSyncLedgerWallets() async {
+        for (wallet, state) in multichainWallets() where wallet.kind == .ledger && state.syncState != .synced {
+            guard !Task.isCancelled else { return }
+            do {
+                try await MultichainRetry.run(sleep: sleep) { () async throws(MultichainServiceError) in
+                    try await self.dependencies.syncLedgerWallet(state)
+                }
+                await save(wallet: wallet, state: state, syncState: .synced)
+            } catch {
+                guard !Task.isCancelled else { return }
+                Log.w("failed to sync multichain Ledger wallet", error: error)
+                await save(wallet: wallet, state: state, syncState: .failed)
+            }
+        }
+    }
+
     func multichainWallets() -> [(wallet: Wallet, state: MultichainWalletState)] {
         dependencies.getWallets().compactMap { wallet in
-            guard wallet.kind == .regular,
+            guard wallet.kind == .regular || wallet.kind == .ledger,
                   wallet.network == .mainnet,
                   case let .multichain(state) = wallet.multichain,
                   !state.addresses.isEmpty

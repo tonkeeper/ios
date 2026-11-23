@@ -4,13 +4,21 @@ import TonSwift
 @frozen public enum WalletContractVersion: String, Codable, CaseIterable, Comparable, Hashable {
     /// Regular wallets
     case v3R1, v3R2, v4R1, v4R2, v5Beta = "w5 beta", v5R1 = "w5"
+    /// Telegram wallet: its key comes from a BIP39 phrase only, so it is never derived alongside the regular versions.
+    case walletTg
 
     public static var currentVersion: WalletContractVersion {
         .v5R1
     }
 
+    public static var regularCases: [WalletContractVersion] {
+        allCases.filter { $0 != .walletTg }
+    }
+
     private var intValue: Int {
         switch self {
+        case .walletTg:
+            return 0
         case .v3R1:
             return 1
         case .v3R2:
@@ -46,6 +54,8 @@ extension WalletContractVersion: CellCodable {
             try builder.store(uint: 5, bits: 4)
         case .v5R1:
             try builder.store(uint: 6, bits: 4)
+        case .walletTg:
+            try builder.store(uint: 7, bits: 4)
         }
     }
 
@@ -65,6 +75,8 @@ extension WalletContractVersion: CellCodable {
                 return .v5Beta
             case 6:
                 return .v5R1
+            case 7:
+                return .walletTg
             default:
                 throw TonError.custom("Invalid WalletContractVersion type")
             }

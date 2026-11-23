@@ -29,6 +29,10 @@ public extension UINavigationBar {
     func configureTransparentAppearance() {
         let navigationBarAppearance = UINavigationBarAppearance()
         navigationBarAppearance.configureWithTransparentBackground()
+        // Under liquid glass these stacks show the system bar with titles, so they match the other headers.
+        if TKLiquidGlass.isEnabled {
+            navigationBarAppearance.titleTextAttributes = customTitleTextAttributes
+        }
 
         standardAppearance = navigationBarAppearance
         compactAppearance = navigationBarAppearance

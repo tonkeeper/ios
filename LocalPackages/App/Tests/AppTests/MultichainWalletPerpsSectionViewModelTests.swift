@@ -3,6 +3,7 @@ import Combine
 @testable import KeeperCore
 @testable import Perps
 import PerpsModels
+import TKCore
 import TonSwift
 import XCTest
 
@@ -25,6 +26,10 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
             viewModel.onAppear()
         }
         XCTAssertEqual(viewModel.balanceText, Self.fiatText(712.56))
+        var entryPoint: PerpsEntryPoint?
+        viewModel.onOpenMarket = { _, entry in entryPoint = entry }
+        viewModel.openMarket(1)
+        XCTAssertEqual(entryPoint, .mainCarousel)
         viewModel.onDisappear()
     }
 
@@ -39,17 +44,21 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         let viewModel = makeViewModel(service: service, shelfMarkets: [.test(id: 9, symbol: "ETH")])
 
         await expectPublished(viewModel.$content, description: "positions shown") {
-            if case let .positions(positions) = $0 { return positions.count == 1 }
+            if case let .positions(preview) = $0 { return preview.rows.count == 1 }
             return false
         } perform: {
             viewModel.onAppear()
         }
-        guard case let .positions(positions) = viewModel.content else {
+        guard case let .positions(preview) = viewModel.content else {
             return XCTFail("expected positions")
         }
-        XCTAssertEqual(positions.first?.symbol, "BTC")
-        XCTAssertEqual(positions.first?.valueText, PerpsFormatting.live.usd(21))
-        XCTAssertEqual(positions.first?.pnlText, PerpsFormatting.live.signedUsd(0.5))
+        XCTAssertEqual(preview.rows.first?.symbol, "BTC")
+        XCTAssertEqual(preview.rows.first?.valueText, PerpsFormatting.live.usd(21))
+        XCTAssertEqual(preview.rows.first?.pnlText, PerpsFormatting.live.signedUsd(0.5))
+        var entryPoint: PerpsEntryPoint?
+        viewModel.onOpenPerps = { entryPoint = $0 }
+        viewModel.openPerps()
+        XCTAssertEqual(entryPoint, .mainPositions)
         viewModel.onDisappear()
     }
 
@@ -72,7 +81,7 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         )
 
         await expectPublished(viewModel.$content, description: "positions shown") {
-            if case let .positions(positions) = $0 { return positions.count == 1 }
+            if case let .positions(preview) = $0 { return preview.rows.count == 1 }
             return false
         } perform: {
             viewModel.onAppear()
@@ -80,7 +89,7 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.balanceText, Self.fiatText(712.56))
 
         await expectPublished(viewModel.$content, description: "positions masked") {
-            if case let .positions(positions) = $0 { return positions.first?.valueText == .secureModeValueShort }
+            if case let .positions(preview) = $0 { return preview.rows.first?.valueText == .secureModeValueShort }
             return false
         } perform: {
             Self.setSecureMode(true, in: appSettingsStore)
@@ -88,18 +97,64 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         guard case let .positions(masked) = viewModel.content else {
             return XCTFail("expected positions")
         }
-        XCTAssertEqual(masked.first?.symbol, "BTC")
-        XCTAssertEqual(masked.first?.pnlText, .secureModeValueShort)
-        XCTAssertNil(masked.first?.isPnlPositive)
+        XCTAssertEqual(masked.rows.first?.symbol, "BTC")
+        XCTAssertEqual(masked.rows.first?.pnlText, .secureModeValueShort)
+        XCTAssertNil(masked.rows.first?.isPnlPositive)
         XCTAssertEqual(viewModel.balanceText, .secureModeValueShort)
 
         await expectPublished(viewModel.$content, description: "positions unmasked") {
-            if case let .positions(positions) = $0 { return positions.first?.valueText == PerpsFormatting.live.usd(21) }
+            if case let .positions(preview) = $0 { return preview.rows.first?.valueText == PerpsFormatting.live.usd(21) }
             return false
         } perform: {
             Self.setSecureMode(false, in: appSettingsStore)
         }
         XCTAssertEqual(viewModel.balanceText, Self.fiatText(712.56))
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_aChangeWhileCovered_isAppliedOnlyOnReturn() async {
+        let service = PerpsSectionServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = PerpsAccountSnapshot(
+            availableBalance: "712.56",
+            positions: [.test(marketId: 1, symbol: "BTC", side: .long, marginUsd: 20.5, equityUsd: 21, unrealizedPnlUsd: 0.5)]
+        )
+        let appSettingsStore = AppSettingsStore(
+            keeperInfoStore: KeeperInfoStore(keeperInfoRepository: PerpsSectionKeeperInfoRepositoryStub())
+        )
+        let viewModel = makeViewModel(
+            service: service,
+            shelfMarkets: [],
+            perpsFiatPrice: ["USD": "712.56"],
+            appSettingsStore: appSettingsStore
+        )
+
+        await expectPublished(viewModel.$content, description: "positions shown") {
+            if case let .positions(preview) = $0 { return preview.rows.count == 1 }
+            return false
+        } perform: {
+            viewModel.onAppear()
+        }
+        viewModel.onDisappear()
+
+        let ignored = expectation(description: "covered section stays untouched")
+        ignored.isInverted = true
+        ignored.assertForOverFulfill = false
+        let cancellables = [
+            viewModel.$content.dropFirst().sink { _ in ignored.fulfill() },
+            viewModel.$balanceText.dropFirst().sink { _ in ignored.fulfill() },
+        ]
+        Self.setSecureMode(true, in: appSettingsStore)
+        await fulfillment(of: [ignored], timeout: 0.3)
+        withExtendedLifetime(cancellables) {}
+
+        viewModel.onAppear()
+        XCTAssertEqual(viewModel.balanceText, .secureModeValueShort)
+        guard case let .positions(masked) = viewModel.content else {
+            return XCTFail("expected positions")
+        }
+        XCTAssertEqual(masked.rows.first?.valueText, .secureModeValueShort)
         viewModel.onDisappear()
     }
 
@@ -245,12 +300,42 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         let viewModel = makeViewModel(service: service, shelfMarkets: [])
 
         await expectPublished(viewModel.$content, description: "positions shown") {
-            if case let .positions(positions) = $0 { return positions.count == 2 }
+            if case let .positions(preview) = $0 { return preview.rows.count == 2 }
             return false
         } perform: {
             viewModel.onAppear()
         }
         XCTAssertEqual(service.positionWatchStarts, 1)
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_moreThanThreePositions_showTheNearestToLiquidation_andCollapseTheRest() async {
+        let service = PerpsSectionServiceSpy()
+        service.statusResult = .account(accountIndex: 7)
+        service.portfolioResult = PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [
+                .test(marketId: 1, symbol: "BTC", liquidationDistancePercent: 30),
+                .test(marketId: 2, symbol: "ETH", liquidationDistancePercent: 4),
+                .test(marketId: 3, symbol: "SOL", liquidationDistancePercent: 20),
+                .test(marketId: 4, symbol: "TON", side: .short, liquidationDistancePercent: -9),
+                .test(marketId: 5, symbol: "XAU"),
+            ]
+        )
+        let viewModel = makeViewModel(service: service, shelfMarkets: [])
+
+        await expectPublished(viewModel.$content, description: "positions shown") {
+            if case let .positions(preview) = $0 { return !preview.rows.isEmpty }
+            return false
+        } perform: {
+            viewModel.onAppear()
+        }
+        guard case let .positions(preview) = viewModel.content else {
+            return XCTFail("expected positions")
+        }
+        XCTAssertEqual(preview.rows.map(\.symbol), ["ETH", "TON", "SOL"])
+        XCTAssertEqual(preview.more?.iconURLs.count, 2)
         viewModel.onDisappear()
     }
 
@@ -270,7 +355,7 @@ final class MultichainWalletPerpsSectionViewModelTests: XCTestCase {
         )
 
         await expectPublished(viewModel.$content, description: "positions shown") {
-            if case let .positions(positions) = $0 { return positions.count == 1 }
+            if case let .positions(preview) = $0 { return preview.rows.count == 1 }
             return false
         } perform: {
             viewModel.onAppear()

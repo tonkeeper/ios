@@ -8,7 +8,7 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
     func testMarketsForwardsEveryFilterAndKeepsPerpetualsTab() async throws {
         let api = TradingAPIFake()
         api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [], data_freshness_sec: 1)
-        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD))
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD), signedSymbols: { nil })
         for filter in PerpsMarketFilter.allCases {
             _ = try await repository.markets(query: nil, sort: .volume, cursor: nil, filter: filter)
             XCTAssertEqual(api.catalogRequests.last?.tab, .perpetuals)
@@ -16,14 +16,38 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
         }
     }
 
+    func testCatalogPreservesMissingEmptyAndPopulatedChains() async throws {
+        let api = TradingAPIFake()
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD), signedSymbols: { nil })
+        for chains in [nil, [], ["eth", "ton"]] as [[String]?] {
+            var json: [String: Any] = ["items": [], "data_freshness_sec": 1]
+            json["chains"] = chains
+            api.catalogPages[nil] = try JSONDecoder().decode(
+                Components.Schemas.AssetsCatalogResponse.self,
+                from: JSONSerialization.data(withJSONObject: json)
+            )
+
+            let page = try await repository.catalogSearch(
+                query: "ton",
+                chain: "ton",
+                showPerps: false,
+                sort: .marketCap,
+                cursor: nil,
+                pageSize: 30
+            )
+
+            XCTAssertEqual(page.chains, chains)
+        }
+    }
+
     func testCatalogForwardsSpotCategoryFilter() async throws {
         let api = TradingAPIFake()
         api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [], data_freshness_sec: 1)
-        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD))
-        for category in TradingAssetCategory.allCases {
-            _ = try await repository.catalogSearch(query: nil, chain: nil, showPerps: false, sort: .marketCap, cursor: nil, pageSize: 30, category: category)
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD), signedSymbols: { nil })
+        for filter in PerpsMarketFilter.allCases {
+            _ = try await repository.catalogSearch(query: nil, chain: nil, showPerps: false, sort: .marketCap, cursor: nil, pageSize: 30, filter: filter)
             XCTAssertEqual(api.catalogRequests.last?.tab, .all)
-            XCTAssertEqual(api.catalogRequests.last?.filter, category == .all ? nil : Components.Schemas.AssetsFilter(rawValue: category.rawValue))
+            XCTAssertEqual(api.catalogRequests.last?.filter, filter == .all ? nil : Components.Schemas.AssetsFilter(rawValue: filter.rawValue))
         }
     }
 
@@ -48,7 +72,7 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
             data_freshness_sec: 5
         )
         let contextProvider = try RequestContextStub(currency: XCTUnwrap(Currency(code: "EUR")))
-        let repository = PerpsMarketsRepository(api: api, requestContextProvider: contextProvider)
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: contextProvider, signedSymbols: { nil })
 
         let page = try await repository.markets(query: nil, sort: .openInterest, cursor: nil)
 
@@ -111,7 +135,8 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
         )
         let repository = PerpsMarketsRepository(
             api: api,
-            requestContextProvider: RequestContextStub(currency: .USD)
+            requestContextProvider: RequestContextStub(currency: .USD),
+            signedSymbols: { nil }
         )
 
         let mixed = try await repository.catalogSearch(
@@ -167,6 +192,62 @@ final class PerpsMarketsRepositoryTests: XCTestCase {
         )
     }
 
+    func testOnlyMarketsUnderTheirSignedSymbolAreListed() async throws {
+        let api = TradingAPIFake()
+        api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(
+            items: [
+                perpItem(2, "SOL"),
+                perpItem(161, "SKHYNIX"),
+                perpItem(4, "1000PEPE"),
+                perpItem(9, "BTC"),
+                makeItem(assetId: "ton/mainnet/coin", symbol: "TON", name: "Toncoin", imageURL: "", leverage: nil, price: "3", change24h: "1", volume: "0"),
+            ],
+            data_freshness_sec: 1
+        )
+        let repository = PerpsMarketsRepository(
+            api: api,
+            requestContextProvider: RequestContextStub(currency: .USD),
+            signedSymbols: { [2: "SOL", 161: "SKHYNIXUSD", 4: "1000PEPE"] }
+        )
+
+        let page = try await repository.markets(query: nil, sort: .volume, cursor: nil)
+        let search = try await repository.catalogSearch(query: nil, chain: nil, showPerps: true, sort: .volume, cursor: nil, pageSize: 30)
+
+        XCTAssertEqual(page.items.map(\.marketId), [2, 4])
+        XCTAssertEqual(search.rows.compactMap { row -> Int64? in
+            if case let .perp(market) = row { return market.marketId }
+            return nil
+        }, [2, 4])
+        XCTAssertEqual(search.rows.count, 3)
+    }
+
+    func testWithoutAVerifiedConfigTheCatalogIsListedAsServed() async throws {
+        let api = TradingAPIFake()
+        api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [perpItem(161, "SKHYNIX")], data_freshness_sec: 1)
+        let repository = PerpsMarketsRepository(api: api, requestContextProvider: RequestContextStub(currency: .USD), signedSymbols: { nil })
+
+        let page = try await repository.markets(query: nil, sort: .volume, cursor: nil)
+        let tickers = try await repository.tickers(for: [161])
+
+        XCTAssertEqual(page.items.map(\.marketId), [161])
+        XCTAssertEqual(tickers, [161: "SKHYNIX/USD"])
+    }
+
+    func testLiveTickersFollowTheSignedSymbolAndSkipUnlistedMarkets() async throws {
+        let api = TradingAPIFake()
+        api.catalogPages[nil] = Components.Schemas.AssetsCatalogResponse(items: [perpItem(2, "BTC")], data_freshness_sec: 1)
+        let repository = PerpsMarketsRepository(
+            api: api,
+            requestContextProvider: RequestContextStub(currency: .USD),
+            signedSymbols: { [2: "SOL", 161: "SKHYNIXUSD"] }
+        )
+        _ = try await repository.markets(query: nil, sort: .volume, cursor: nil)
+
+        let tickers = try await repository.tickers(for: [2, 161, 77])
+
+        XCTAssertEqual(tickers, [2: "SOL/USD", 161: "SKHYNIXUSD/USD"])
+    }
+
     func testMetadataMapperRejectsOnlyAMarketItCannotName() {
         XCTAssertNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 1, symbol: "")))
         XCTAssertNotNil(PerpsMarketMetadata(perps: makePerpMarket(marketIndex: 5, symbol: "ETH")))
@@ -216,6 +297,20 @@ private func makeItem(
             provider: "lighter",
             as_of: Date(timeIntervalSince1970: 0)
         )
+    )
+}
+
+private func perpItem(_ marketId: Int64, _ symbol: String) -> Components.Schemas.MarketItem {
+    makeItem(
+        assetId: "lighter/mainnet/market/\(marketId)",
+        symbol: symbol,
+        name: symbol,
+        imageURL: "",
+        leverage: 10,
+        price: "1",
+        change24h: "0",
+        volume: "1",
+        assetType: .perpetuals
     )
 }
 

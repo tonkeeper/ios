@@ -11,20 +11,6 @@ final class PopupDismisser {
     }
 }
 
-extension TKBottomSheetHeaderConfiguration {
-    static var popup: TKBottomSheetHeaderConfiguration {
-        TKBottomSheetHeaderConfiguration(
-            title: .empty,
-            contentInsets: UIEdgeInsets(
-                top: 16,
-                left: 16,
-                bottom: 0,
-                right: 16
-            )
-        )
-    }
-}
-
 @MainActor
 enum PopupContentPresenter {
     @discardableResult
@@ -85,13 +71,12 @@ enum PopupContentPresenter {
         }
     }
 
-    @discardableResult
     static func presentBatteryFeeShortage(
         content: BatteryFeeShortagePopupContent,
         from viewController: UIViewController,
         onRecharge: @escaping () -> Void,
         onDeposit: @escaping () -> Void
-    ) -> TKBottomSheetViewController {
+    ) {
         present(from: viewController) { dismisser in
             BatteryFeeShortagePopupView(
                 content: content,

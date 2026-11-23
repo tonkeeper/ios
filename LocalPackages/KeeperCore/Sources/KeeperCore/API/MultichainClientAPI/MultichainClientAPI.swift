@@ -53,6 +53,8 @@ protocol MultichainClientAPI {
         limit: Int?,
         cursor: String?
     ) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecordsPage
+    /// Nil when the backend does not serve the asset for the wallet.
+    func getWalletAsset(walletId: String, assetId: String, currencies: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord?
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainClientAPIError)
     func getWalletActivities(
         walletId: String,
@@ -79,6 +81,7 @@ protocol MultichainClientAPI {
     func markRaffleImport(walletId: String, importedWalletId: String) async throws(MultichainClientAPIError)
     func getRealtimeConnectionToken() async throws(MultichainClientAPIError) -> String
     func getWalletRealtimeToken(walletId: String) async throws(MultichainClientAPIError) -> String
+    func getWalletPerpsRealtimeToken(walletId: String) async throws(MultichainClientAPIError) -> String
 }
 
 final class MultichainClientAPIImplementation: MultichainClientAPI {
@@ -216,6 +219,27 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         return try mapWalletAssetsOutput(output)
     }
 
+    func getWalletAsset(walletId: String, assetId: String, currencies: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord? {
+        let output = try await apiCall(await walletScopedAPIClient(walletId).getWalletAsset(
+            path: .init(wallet_id: walletId),
+            query: .init(asset_id: assetId, currencies: currencies)
+        ))
+        switch output {
+        case let .ok(ok):
+            return try Self.walletAssetRecord(decodeResponse(ok.body.json))
+        case .notFound:
+            return nil
+        case let .badRequest(error):
+            throw try badRequest(from: error)
+        case let .forbidden(error):
+            throw try forbidden(from: error)
+        case let .internalServerError(error):
+            throw try internalError(from: error)
+        case let .undocumented(statusCode, _):
+            throw MultichainClientAPIError.undocumented(statusCode: statusCode)
+        }
+    }
+
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainClientAPIError) {
         let path = MultichainAPI.Operations.saveWalletAssetsFilters.Input.Path(wallet_id: walletId)
         let body = MultichainAPI.Components.RequestBodies.SetAssetFilters.json(
@@ -234,6 +258,8 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             return
         case let .badRequest(error):
             throw try badRequest(from: error)
+        case let .unauthorized(error):
+            throw try unauthorized(from: error)
         case let .forbidden(error):
             throw try forbidden(from: error)
         case let .notFound(error):
@@ -321,6 +347,8 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
             return
         case let .badRequest(error):
             throw try badRequest(from: error)
+        case let .unauthorized(error):
+            throw try unauthorized(from: error)
         case let .forbidden(error):
             throw try forbidden(from: error)
         case let .notFound(error):
@@ -469,6 +497,29 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         }
     }
 
+    func getWalletPerpsRealtimeToken(walletId: String) async throws(MultichainClientAPIError) -> String {
+        let path = MultichainAPI.Operations.getWalletPerpsRealtimeToken.Input.Path(wallet_id: walletId)
+        let output = try await apiCall(
+            await walletScopedAPIClient(walletId).getWalletPerpsRealtimeToken(path: path)
+        )
+        switch output {
+        case let .ok(response):
+            let token = try decodeResponse(response.body.json)
+            return token.token
+        case let .badRequest(error):
+            throw try badRequest(from: error)
+        case let .unauthorized(error):
+            throw try unauthorized(from: error)
+        case let .forbidden(error):
+            let message = try decodeResponse(error.body.json.error)
+            throw MultichainClientAPIError.forbidden(message: message)
+        case let .internalServerError(error):
+            throw try internalError(from: error)
+        case let .undocumented(statusCode, _):
+            throw MultichainClientAPIError.undocumented(statusCode: statusCode)
+        }
+    }
+
     private func mapSearchAssetsOutput(_ output: MultichainAPI.Operations.searchAssets.Output) throws(MultichainClientAPIError) -> ([MultichainAsset], String?) {
         switch output {
         case let .ok(assets):
@@ -484,23 +535,25 @@ final class MultichainClientAPIImplementation: MultichainClientAPI {
         }
     }
 
+    private static func walletAssetRecord(_ asset: MultichainAPI.Components.Schemas.Asset) -> MultichainWalletAssetRecord? {
+        guard let chain = MultichainAssetDetails(api: asset.asset).chain else {
+            return nil
+        }
+        return MultichainWalletAssetRecord(
+            asset: MultichainAsset(api: asset),
+            account: MultichainWalletAddress(
+                chain: chain,
+                address: asset.address,
+                type: asset._type.flatMap { MultichainWalletAddressType(api: $0) }
+            )
+        )
+    }
+
     private func mapWalletAssetsOutput(_ output: MultichainAPI.Operations.getWalletAssets.Output) throws(MultichainClientAPIError) -> MultichainWalletAssetRecordsPage {
         switch output {
         case let .ok(walletAssets):
             let payload = try decodeResponse(walletAssets.body.json)
-            let records: [MultichainWalletAssetRecord] = payload.assets.compactMap { asset in
-                guard let chain = MultichainAssetDetails(api: asset.asset).chain else {
-                    return nil
-                }
-                return MultichainWalletAssetRecord(
-                    asset: MultichainAsset(api: asset),
-                    account: MultichainWalletAddress(
-                        chain: chain,
-                        address: asset.address,
-                        type: asset._type.flatMap { MultichainWalletAddressType(api: $0) }
-                    )
-                )
-            }
+            let records = payload.assets.compactMap(Self.walletAssetRecord)
             if records.count != payload.assets.count {
                 Log.w("Multichain: dropped \(payload.assets.count - records.count) of \(payload.assets.count) wallet asset records with unrecognized chain")
             }

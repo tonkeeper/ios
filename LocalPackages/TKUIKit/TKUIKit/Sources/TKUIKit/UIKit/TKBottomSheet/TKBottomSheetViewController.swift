@@ -9,14 +9,22 @@ public final class TKBottomSheetViewController: UIViewController {
 
     public var didClose: ((_ interactivly: Bool) -> Void)?
     public var willPresent: (() -> Void)?
+    /// Called when the slide-in animation ends, unless a dismissal started meanwhile.
+    public var didPresent: (() -> Void)?
     public var willDismiss: (() -> Void)?
+    /// Called when the slide-out animation ends. If the sheet sits in a presented navigation controller,
+    /// that modal is removed and the `dismiss(completion:)` completion runs only after this.
+    public var didDismiss: (() -> Void)?
 
     let dimmingView = TKBottomSheetDimmingView()
     let containerView = UIView()
     let headerView = TKBottomSheetHeaderView()
+    /// Read when the header picks its variant: the app may set the flag again before the sheet is presented.
+    private let isLiquidGlass = TKLiquidGlass.isEnabled
     let contentViewController: TKBottomSheetContentViewController
 
-    private var isDismissing = false
+    /// True while the sheet slides out: anything presented on it then leaves together with it.
+    public private(set) var isDismissing = false
     private let scrollController = TKBottomSheetScrollController()
     private let ignoreBottomSafeArea: Bool
     private var isPreparingInitialPresentation = false
@@ -128,9 +136,24 @@ public final class TKBottomSheetViewController: UIViewController {
         performPresent()
     }
 
+    /// A request made while the sheet slides out is dropped, so the sheet goes once.
     public func dismiss(completion: (() -> Void)? = nil) {
+        guard !isDismissing else {
+            return
+        }
         performDismiss(completion: { [weak self] in
-            self?.navigationController?.dismiss(animated: false, completion: completion)
+            // The navigation controller leaves with the sheet, so without it the sheet was closed
+            // already, e.g. by the user while an async step that ends in this call was running.
+            guard let navigationController = self?.navigationController else {
+                return
+            }
+            // Asked of the sheet's own navigation controller, the dismissal would close only a modal
+            // presented on top of the sheet and leave the sheet up, invisible, taking every touch.
+            guard let presentingViewController = navigationController.presentingViewController else {
+                completion?()
+                return
+            }
+            presentingViewController.dismiss(animated: false, completion: completion)
         })
     }
 }
@@ -142,7 +165,13 @@ private extension TKBottomSheetViewController {
         dimmingView.prepareForPresentationTransition()
 
         containerView.backgroundColor = .Background.page
-        containerView.layer.cornerRadius = 16
+        // The liquid glass sheet takes the system sheet's radius, which its glass buttons are concentric with.
+        if isLiquidGlass {
+            containerView.layer.cornerRadius = 38
+            containerView.layer.cornerCurve = .continuous
+        } else {
+            containerView.layer.cornerRadius = 16
+        }
         containerView.layer.masksToBounds = true
 
         view.addSubview(dimmingView)
@@ -167,9 +196,7 @@ private extension TKBottomSheetViewController {
     func setupHeader() {
         containerView.addSubview(headerView)
         headerView.setCloseAction { [weak self] in
-            self?.dismiss(completion: { [weak self] in
-                self?.didClose?(true)
-            })
+            self?.closeByUser()
         }
 
         headerView.configure(configuration: contentViewController.headerConfiguration)
@@ -190,8 +217,8 @@ private extension TKBottomSheetViewController {
                 self?.scrollController.scrollView = scrollView
             }
         }
-        scrollController.didEndDragging = { [weak self] offset, _ in
-            self?.didEndDragging(offset: offset)
+        scrollController.didEndDragging = { [weak self] offset, velocity in
+            self?.didEndDragging(offset: offset, velocity: velocity)
         }
         scrollController.didDrag = { [weak self] offset in
             self?.didDrag(offset: offset)
@@ -236,6 +263,9 @@ private extension TKBottomSheetViewController {
             applyContentLayout(layout)
             animateDragging {
                 self.applyContainerFrame(layout.containerFrame)
+                // The content's autoresizing mask would apply the container's height change to the
+                // already final content frame a second time.
+                self.contentViewController.view.frame = layout.contentFrame
             }
         } else {
             apply(layout: layout)
@@ -275,6 +305,9 @@ private extension TKBottomSheetViewController {
                 self.needsDeferredContentHeightUpdate = false
                 self.updateSheetLayout(animated: true)
             }
+            if !self.isDismissing {
+                self.didPresent?()
+            }
         }
     }
 
@@ -287,8 +320,10 @@ private extension TKBottomSheetViewController {
             self.containerView.frame.origin.y = self.view.bounds.height
             self.dimmingView.performDismissalTransition()
         } completion: { [weak self] _ in
-            completion?()
+            // Cleared first: a close handler may dismiss the sheet again to get a completion of its own.
             self?.isDismissing = false
+            completion?()
+            self?.didDismiss?()
         }
     }
 
@@ -427,9 +462,7 @@ private extension TKBottomSheetViewController {
     }
 
     @objc private func tapGestureHandler() {
-        dismiss(completion: { [weak self] in
-            self?.didClose?(true)
-        })
+        closeByUser()
     }
 
     @objc private func panGestureHandler(_ recognizer: UIPanGestureRecognizer) {
@@ -439,7 +472,8 @@ private extension TKBottomSheetViewController {
             didDrag(offset: translation.y)
         case .ended:
             let translation = recognizer.translation(in: recognizer.view)
-            didEndDragging(offset: translation.y)
+            let velocity = recognizer.velocity(in: recognizer.view)
+            didEndDragging(offset: translation.y, velocity: velocity.y)
         case .cancelled, .failed:
             didFailedDrag()
         default:
@@ -475,16 +509,24 @@ extension TKBottomSheetViewController {
         }
     }
 
-    func didEndDragging(offset: CGFloat) {
+    func didEndDragging(offset: CGFloat, velocity: CGFloat) {
         isDragging = false
-        if offset > 60 {
-            dismiss { [weak self] in
-                self?.didClose?(true)
-            }
+        if offset > 60 || velocity > .dismissVelocity, !isModalInPresentation {
+            closeByUser()
         } else {
             animateDragging {
                 self.containerView.frame = self.containerFrame
             }
+        }
+    }
+
+    /// As with a system sheet, one that is modal in presentation stays up whatever the user does to close it.
+    func closeByUser() {
+        guard !isModalInPresentation else {
+            return
+        }
+        dismiss { [weak self] in
+            self?.didClose?(true)
         }
     }
 
@@ -498,6 +540,7 @@ extension TKBottomSheetViewController {
 
 private extension CGFloat {
     static let maximumDragOffset: CGFloat = 24
+    static let dismissVelocity: CGFloat = 300
     static let animationSpringDamping: CGFloat = 2
     static let animationSpringVelocity: CGFloat = 0
 }

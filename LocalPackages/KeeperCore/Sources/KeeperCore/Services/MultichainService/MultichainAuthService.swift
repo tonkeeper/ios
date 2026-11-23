@@ -33,6 +33,57 @@ public protocol MultichainAuthService: Sendable {
         walletIds: [String]
     ) async throws(MultichainServiceError)
     func unsubscribePush() async throws(MultichainServiceError)
+    func registerLiveActivity(
+        _ registration: MultichainLiveActivityRegistration
+    ) async throws(MultichainServiceError) -> MultichainLiveActivityRegistrationResult
+    func unregisterLiveActivity(activityId: String) async throws(MultichainServiceError)
+}
+
+/// What the server needs to settle a transaction Live Activity without the app: the shown state,
+/// and the texts the app would put in it for each outcome.
+public struct MultichainLiveActivityRegistration: Equatable, Sendable {
+    public struct FinalTitles: Equatable, Sendable {
+        public let confirmed: String
+        public let failed: String
+        public let dropped: String
+
+        public init(confirmed: String, failed: String, dropped: String) {
+            self.confirmed = confirmed
+            self.failed = failed
+            self.dropped = dropped
+        }
+    }
+
+    public let activityId: String
+    public let pushToken: String
+    public let walletId: String
+    /// A JSON object: the content state as ActivityKit decodes it.
+    public let contentState: Data
+    public let finalTitles: FinalTitles
+    public let alertBody: String
+
+    public init(
+        activityId: String,
+        pushToken: String,
+        walletId: String,
+        contentState: Data,
+        finalTitles: FinalTitles,
+        alertBody: String
+    ) {
+        self.activityId = activityId
+        self.pushToken = pushToken
+        self.walletId = walletId
+        self.contentState = contentState
+        self.finalTitles = finalTitles
+        self.alertBody = alertBody
+    }
+}
+
+/// A rejected registration gets the same answer until it or the device's push subscription changes:
+/// the request is invalid, the device is not bound to the wallet, or it gets no pushes.
+@frozen public enum MultichainLiveActivityRegistrationResult: Equatable, Sendable {
+    case registered
+    case rejected(reason: String)
 }
 
 final class MultichainAuthServiceImplementation: MultichainAuthService {
@@ -121,6 +172,20 @@ final class MultichainAuthServiceImplementation: MultichainAuthService {
     func unsubscribePush() async throws(MultichainServiceError) {
         try await withDeviceAuth { [clientAPI] token throws(MultichainClientAPIError) in
             try await clientAPI.unsubscribeWalletPush(deviceJWT: token)
+        }
+    }
+
+    func registerLiveActivity(
+        _ registration: MultichainLiveActivityRegistration
+    ) async throws(MultichainServiceError) -> MultichainLiveActivityRegistrationResult {
+        try await withDeviceAuth { [clientAPI] token throws(MultichainClientAPIError) in
+            try await clientAPI.registerLiveActivity(registration, deviceJWT: token)
+        }
+    }
+
+    func unregisterLiveActivity(activityId: String) async throws(MultichainServiceError) {
+        try await withDeviceAuth { [clientAPI] token throws(MultichainClientAPIError) in
+            try await clientAPI.unregisterLiveActivity(activityId: activityId, deviceJWT: token)
         }
     }
 }

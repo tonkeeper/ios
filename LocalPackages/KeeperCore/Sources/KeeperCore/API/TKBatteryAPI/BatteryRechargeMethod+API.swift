@@ -11,7 +11,7 @@ extension BatteryRechargeMethod {
             guard let jettonMaster = method.jetton_master,
                   let jettonMasterAddress = try? Address.parse(jettonMaster) else { return nil }
             token = .jetton(Jetton(jettonMasterAddress: jettonMasterAddress))
-        case .unknown:
+        case .trc20, .erc20, .spl, .coin, .unknown:
             return nil
         }
 
@@ -20,6 +20,7 @@ extension BatteryRechargeMethod {
             return URL(string: image)
         }()
 
+        chargesRate = method.charges_rate
         rate = NSDecimalNumber(string: method.rate)
         symbol = method.symbol
         decimals = method.decimals

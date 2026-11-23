@@ -4,21 +4,12 @@ import UIKit
 
 final class HistoryView: UIView {
     let safeAreaBar = UIView()
-    let navigationBar: SomeOf<TKNavigationBar, TKUINavigationBar>
+    let navigationBar = TKUINavigationBar()
     let listContainerView = UIView()
     let tabsView = TKTabsView()
 
-    convenience init(navigationBar: TKNavigationBar) {
-        self.init(navigationBar: .certain(navigationBar))
-    }
-
-    convenience init(navigationBar: TKUINavigationBar) {
-        self.init(navigationBar: .certain(navigationBar))
-    }
-
-    private init(navigationBar: SomeOf<TKNavigationBar, TKUINavigationBar>) {
-        self.navigationBar = navigationBar
-        super.init(frame: .zero)
+    override init(frame: CGRect) {
+        super.init(frame: frame)
         setup()
     }
 
@@ -34,7 +25,7 @@ private extension HistoryView {
         backgroundColor = .Background.page
         addSubview(listContainerView)
         addSubview(tabsView)
-        addSubview(navigationBar.uiView)
+        addSubview(navigationBar)
         addSubview(safeAreaBar)
 
         setupConstraints()
@@ -45,11 +36,11 @@ private extension HistoryView {
             make.top.left.right.equalTo(self)
             make.bottom.equalTo(safeAreaLayoutGuide.snp.top)
         }
-        navigationBar.uiView.snp.makeConstraints { make in
+        navigationBar.snp.makeConstraints { make in
             make.top.left.right.equalTo(self)
         }
         tabsView.snp.makeConstraints { make in
-            make.top.equalTo(navigationBar.uiView.snp.bottom)
+            make.top.equalTo(navigationBar.snp.bottom)
             make.left.right.equalTo(self)
         }
         listContainerView.snp.makeConstraints { make in

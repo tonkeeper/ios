@@ -10,19 +10,21 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User tapped \&quot;Import existing wallet\&quot;, entering the import flow. wallet_source says which kind of account is being imported, matching wallet_import_success / wallet_import_error.  */
+/** User tapped \&quot;Import existing wallet\&quot;, entering the import flow. wallet_source says which kind of account is being imported, matching wallet_import_success / wallet_import_error. For Signer, Keystone and Ledger it is sent on the tap of the pairing option in the Add Wallet menu, before the pairing screen; a multichain Ledger is wallet_mode &#x3D; multi. pairing_entry identifies the pairing entry path when known; Signer deeplink and app QR scanner entries can bypass the menu and signer-scanned step. Moving a TON-only Ledger wallet to a multichain one is not an import and does not send it (ledger_migration_start).  */
 public struct WalletImportStarted: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_started"
     public var walletMode: WalletMode
     public var walletSource: WalletSource
     public var from: AddWalletSource
+    public var pairingEntry: PairingEntry?
 
-    public init(eventName: String = "wallet_import_started", walletMode: WalletMode, walletSource: WalletSource, from: AddWalletSource) {
+    public init(eventName: String = "wallet_import_started", walletMode: WalletMode, walletSource: WalletSource, from: AddWalletSource, pairingEntry: PairingEntry? = nil) {
         self.eventName = eventName
         self.walletMode = walletMode
         self.walletSource = walletSource
         self.from = from
+        self.pairingEntry = pairingEntry
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -30,6 +32,7 @@ public struct WalletImportStarted: Codable, JSONEncodable, Hashable {
         case walletMode = "wallet_mode"
         case walletSource = "wallet_source"
         case from
+        case pairingEntry = "pairing_entry"
     }
 
     // Encodable protocol methods
@@ -40,6 +43,7 @@ public struct WalletImportStarted: Codable, JSONEncodable, Hashable {
         try container.encode(walletMode, forKey: .walletMode)
         try container.encode(walletSource, forKey: .walletSource)
         try container.encode(from, forKey: .from)
+        try container.encodeIfPresent(pairingEntry, forKey: .pairingEntry)
     }
 }
 

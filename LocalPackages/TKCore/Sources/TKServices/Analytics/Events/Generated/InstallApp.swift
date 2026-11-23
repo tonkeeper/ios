@@ -10,13 +10,13 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Sent once on the very first app launch after installation. Implemented by storing a firstLaunchTS flag in local storage. iOS only - Android uses legacy &#39;firstOpen&#39; event instead of install_app. */
+/** Sent once on the very first app launch after installation. Implemented by storing a firstLaunchTS flag in local storage. Android fills referrer, deeplink and installerStore; iOS sends the event without them. */
 public struct InstallApp: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "install_app"
-    /** iOS only. The referring app or URL that brought the user to the app store (e.g., 'utm_source=newsletter'). */
+    /** Android only. The raw Google Play install referrer string of the store link that brought the user (e.g., 'utm_source=google-play&utm_medium=organic'). An attribution service link puts its own click id here instead of the campaign tags; the campaign of such an install is install_attribution. */
     public var referrer: String?
-    /** iOS only. The deep link URL that was used to open the app (e.g., 'tonkeeper://wallet'). */
+    /** Android only. The link the first launch came with, if the app was first opened by a link (e.g., 'tonkeeper://wallet'). */
     public var deeplink: String?
     /** Android only. The package name of the app store from which our application was installed. (e.g., 'com.android.vending') */
     public var installerStore: String?

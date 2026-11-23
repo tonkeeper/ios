@@ -61,6 +61,8 @@ public enum PerpsTradingErrorText {
             return TKLocales.Perps.Error.positionNotFound
         case .orderNotFound:
             return TKLocales.Perps.Error.orderNotFound
+        case .orderFilledBeforeCancel:
+            return TKLocales.Perps.Error.orderFilledBeforeCancel
         case .immediateLiquidationRisk:
             return TKLocales.Perps.AdjustMargin.reduceRisk
         case .protocolFailure:

@@ -1,9 +1,16 @@
+import Foundation
 import TKLogging
 
 public protocol MultichainWalletSynchronizer {
     /// Binds one wallet to the current device via `/api/v2/wallets/register`.
     func sync(
         mnemonic: String,
+        state: MultichainWalletState
+    ) async throws(MultichainServiceError)
+
+    /// The same for a wallet whose app key is not derived from a mnemonic, such as a Ledger.
+    func sync(
+        appPrivateKey: Data,
         state: MultichainWalletState
     ) async throws(MultichainServiceError)
 }
@@ -27,13 +34,26 @@ struct MultichainWalletSynchronizerImplementation: MultichainWalletSynchronizer 
         mnemonic: String,
         state: MultichainWalletState
     ) async throws(MultichainServiceError) {
+        let appPrivateKey: Data
+        do {
+            appPrivateKey = try chainKitService.walletAppPrivateKey(mnemonic: mnemonic)
+        } catch {
+            throw .apiError(message: "failed to derive multichain wallet app key: \(error.logDescription)")
+        }
+        try await sync(appPrivateKey: appPrivateKey, state: state)
+    }
+
+    func sync(
+        appPrivateKey: Data,
+        state: MultichainWalletState
+    ) async throws(MultichainServiceError) {
         // The device id is bound into the proof and the challenge is single-use, so both are
         // produced per attempt: a session recovery that rotates the device re-enters here.
         let results = try await authService.registerWallets(walletId: state.walletId) { deviceId throws(MultichainServiceError) in
             let challenge = try await multichainService.getWalletChallenge().challenge
             do {
                 let item = try chainKitService.makeWalletRegisterItem(
-                    mnemonic: mnemonic,
+                    appPrivateKey: appPrivateKey,
                     deviceId: deviceId,
                     challenge: challenge,
                     state: state

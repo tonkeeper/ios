@@ -4,6 +4,7 @@ import TKFeatureFlags
 import TKServices
 import UIKit
 
+@MainActor
 public protocol InAppReviewService {
     func requestReviewManual()
     func trackSuccessfulSend()
@@ -44,6 +45,7 @@ public final class InAppReviewRepository {
     }
 }
 
+@MainActor
 public final class InAppReviewServiceImplementation {
     private let analyticsProvider: AnalyticsProvider?
     private let featureFlags: TKFeatureFlags
@@ -137,7 +139,11 @@ private extension InAppReviewServiceImplementation {
             return false
         }
 
-        SKStoreReviewController.requestReview(in: scene)
+        if #available(iOS 16.0, *) {
+            AppStore.requestReview(in: scene)
+        } else {
+            SKStoreReviewController.requestReview(in: scene)
+        }
 
         repository.lastReviewRequestDate = Date()
         repository.lastReviewedAppVersion = appVersion

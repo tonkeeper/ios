@@ -23,6 +23,7 @@ public final class ServicesAssembly {
 
     /// Stored rather than built per call: freshness and coalescing only work with one instance.
     private let ratesServiceInstance: RatesService
+    private let signRawRiskRatesServiceInstance: RatesService
 
     init(
         repositoriesAssembly: RepositoriesAssembly,
@@ -68,10 +69,21 @@ public final class ServicesAssembly {
             },
             ratesRepository: repositoriesAssembly.ratesRepository()
         )
+        signRawRiskRatesServiceInstance = RatesServiceImplementation(
+            fetchRates: { [api = apiAssembly.riskRatesAPI] jettons, currencies in
+                try await api.getRiskRates(currencies: currencies, jettons: jettons)
+            },
+            ratesRepository: nil,
+            servesStaleRatesOnFailure: false
+        )
     }
 
     public func ratesService() -> RatesService {
         ratesServiceInstance
+    }
+
+    public func signRawRiskRatesService() -> RatesService {
+        signRawRiskRatesServiceInstance
     }
 
     public func walletsService() -> WalletsService {
@@ -126,6 +138,12 @@ public final class ServicesAssembly {
         )
     }
 
+    public func stakingRewardsService() -> StakingRewardsService {
+        StakingRewardsServiceImplementation(
+            tonstakersAPI: apiAssembly.tonstakersAPI(userAgent: coreAssembly.appInfoProvider.userAgent)
+        )
+    }
+
     func activeWalletsService() -> ActiveWalletsService {
         ActiveWalletsServiceImplementation(
             apiProvider: apiAssembly.apiProvider,
@@ -133,6 +151,10 @@ public final class ServicesAssembly {
             accountNFTService: accountNftService(),
             walletsService: walletsService()
         )
+    }
+
+    func telegramWalletAccountLoader() -> TelegramWalletAccountLoader {
+        APITelegramWalletAccountLoader(apiProvider: apiAssembly.apiProvider)
     }
 
     func currencyService() -> CurrencyService {
@@ -183,11 +205,7 @@ public final class ServicesAssembly {
     }
 
     public func accountNftService() -> AccountNFTService {
-        AccountNFTServiceImplementation(
-            apiProvider: apiAssembly.apiProvider,
-            accountNFTRepository: repositoriesAssembly.accountsNftRepository(),
-            nftRepository: repositoriesAssembly.nftRepository()
-        )
+        AccountNFTServiceImplementation(apiProvider: apiAssembly.apiProvider)
     }
 
     func chartService() -> ChartService {
@@ -263,6 +281,10 @@ public final class ServicesAssembly {
 
     public func multichainSwapService() -> MultichainSwapService {
         MultichainSwapServiceImplementation(multichainSwapAPI: multichainSwapAPIAssembly.multichainSwapAPI())
+    }
+
+    func multichainSwapAPI() -> MultichainSwapAPI {
+        multichainSwapAPIAssembly.multichainSwapAPI()
     }
 
     public func multichainRampService() -> MultichainRampService {

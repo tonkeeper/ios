@@ -1,6 +1,9 @@
 import Foundation
 
 public enum PerpsDecimalInput {
+    /// The most fraction digits an amount field holds, whatever the token's own precision.
+    public static let maximumFractionDigits = 8
+
     public static func normalized(_ text: String) -> String {
         text.replacingOccurrences(of: ",", with: ".")
     }
@@ -49,7 +52,7 @@ public enum PerpsDecimalInput {
     }
 
     private static func clamped(_ decimals: Int) -> Int {
-        max(0, min(decimals, 8))
+        max(0, min(decimals, maximumFractionDigits))
     }
 
     private static func normalizedString(_ string: String, maximumFractionDigits: Int) -> String? {

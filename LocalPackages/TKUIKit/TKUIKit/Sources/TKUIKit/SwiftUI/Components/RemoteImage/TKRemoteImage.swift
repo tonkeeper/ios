@@ -38,7 +38,7 @@ public struct TKRemoteImage<Placeholder: View, Failure: View>: View {
         @ViewBuilder failure: @escaping () -> Failure
     ) {
         self.init(
-            source: .network(url),
+            source: url.isFileURL ? .provider(LocalFileImageDataProvider(fileURL: url)) : .network(url),
             downsampleSize: downsampleSize,
             contentMode: contentMode,
             placeholder: placeholder,
@@ -67,6 +67,13 @@ public struct TKRemoteImage<Placeholder: View, Failure: View>: View {
     }
 
     private var processor: ImageProcessor {
+        TKRemoteImageProcessor.make(downsampleSize: downsampleSize, displayScale: displayScale)
+    }
+}
+
+/// The processor is part of the image cache key, so a prefetch must build it the same way.
+enum TKRemoteImageProcessor {
+    static func make(downsampleSize: CGSize?, displayScale: CGFloat) -> ImageProcessor {
         guard let downsampleSize else {
             return DefaultImageProcessor.default
         }

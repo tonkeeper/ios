@@ -32,7 +32,7 @@ final class WalletConnectProposalHostingViewController: TKHostingController<Wall
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        presentationController?.delegate = self
+        tkPresentationController?.delegate = self
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -98,7 +98,7 @@ private extension WalletConnectProposalHostingViewController {
         let viewController = WalletConnectNetworksListHostingViewController(
             chains: viewModel.content.chains
         )
-        present(viewController, animated: true)
+        present(viewController.tkLiquidGlassModal(), animated: true)
     }
 }
 

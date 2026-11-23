@@ -33,6 +33,17 @@ final class BootConfigurationDomainTests: XCTestCase {
         XCTAssertNil(configuration.explorers.last?.tokenURL)
     }
 
+    func testValidatesOperationsUnlessTheResponseTurnsValidationOff() throws {
+        func txValidationEnabled(_ json: String) throws -> Bool {
+            try JSONDecoder().decode(BootConfiguration.self, from: Data(json.utf8)).flags.txValidationEnabled
+        }
+
+        XCTAssertTrue(try txValidationEnabled("{}"))
+        XCTAssertTrue(try txValidationEnabled(#"{"flags": {}}"#))
+        XCTAssertTrue(try txValidationEnabled(#"{"flags": {"tx_validation_enabled": true}}"#))
+        XCTAssertFalse(try txValidationEnabled(#"{"flags": {"tx_validation_enabled": false}}"#))
+    }
+
     func testUsesNoExplorersWhenResponseDoesNotContainThem() throws {
         let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
 
@@ -76,16 +87,31 @@ final class BootConfigurationDomainTests: XCTestCase {
     func testDecodesTheEarnHost() throws {
         let configuration = try JSONDecoder().decode(
             BootConfiguration.self,
-            from: Data(#"{"earn_url": "https://earn.example.com"}"#.utf8)
+            from: Data(#"{"earnUrl": "https://earn.example.com"}"#.utf8)
         )
 
-        XCTAssertEqual(configuration.earnUrl?.absoluteString, "https://earn.example.com")
+        XCTAssertEqual(configuration.earnUrl.absoluteString, "https://earn.example.com")
     }
 
-    func testLeavesTheEarnHostUnsetWhenTheResponseOmitsIt() throws {
+    func testDecodesTheKeeperEarnHost() throws {
+        let configuration = try JSONDecoder().decode(
+            BootConfiguration.self,
+            from: Data(#"{"keeperEarn": "https://earn-api.example.com"}"#.utf8)
+        )
+
+        XCTAssertEqual(configuration.keeperEarn.absoluteString, "https://earn-api.example.com")
+    }
+
+    func testServesKeeperEarnFromTheGeoHostWhenTheResponseOmitsIt() throws {
         let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
 
-        XCTAssertNil(configuration.earnUrl)
+        XCTAssertEqual(configuration.keeperEarn.absoluteString, "https://app.geo.tonkeeper.com")
+    }
+
+    func testFallsBackToTheDemoEarnHostWhenTheResponseOmitsIt() throws {
+        let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
+
+        XCTAssertEqual(configuration.earnUrl.absoluteString, "https://vaults-tonkeeper-earn-demo.fly.dev/")
     }
 
     func testDecodesTheAnalyticsEndpoint() throws {
@@ -178,8 +204,8 @@ final class BootConfigurationDomainTests: XCTestCase {
     func testUsesDefaultDomainsWhenResponseDoesNotContainEndpoints() throws {
         let configuration = try JSONDecoder().decode(BootConfiguration.self, from: Data("{}".utf8))
 
-        XCTAssertEqual(configuration.multichain.domain, URL(string: "https://multi.tonkeeper.com"))
+        XCTAssertEqual(configuration.multichain.domain, URL(string: "https://app.geo.tonkeeper.com/multi"))
         XCTAssertEqual(configuration.multichain.realtime, BootConfiguration.defaultMultichainRealtimeURL)
-        XCTAssertEqual(configuration.trading.domain, URL(string: "https://trading.tonkeeper.com"))
+        XCTAssertEqual(configuration.trading.domain, URL(string: "https://app.geo.tonkeeper.com/trading"))
     }
 }

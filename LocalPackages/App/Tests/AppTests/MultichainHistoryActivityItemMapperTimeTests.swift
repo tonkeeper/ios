@@ -53,7 +53,8 @@ private extension MultichainHistoryActivityItemMapperTimeTests {
         return MultichainHistoryActivityItemMapper(
             amountFormatter: AmountFormatter(configuration: configuration),
             dateFormatter: makeDateFormatter(),
-            timeStyle: timeStyle
+            timeStyle: timeStyle,
+            hidesAmounts: { false }
         )
     }
 

@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 import KeeperCore
+import TKLogging
 
 final class BatteryRechargeModel {
     enum OptionItem: Equatable {
@@ -10,7 +11,7 @@ final class BatteryRechargeModel {
             let tokenAmount: BigUInt
             let tokenSymbol: String
             let tokenDigits: Int
-            let fiatAmount: Decimal
+            let fiatAmount: Decimal?
             let currency: Currency
             let batteryPercent: CGFloat
             let isEnable: Bool
@@ -95,25 +96,55 @@ final class BatteryRechargeModel {
         }
     }
 
+    /// The least amount the wallet can pay with this token now, if there is one.
+    var minimumAmount: BigUInt? {
+        guard case .jetton = token else { return nil }
+        let walletBalance = balanceStore.getState()[wallet]?.walletBalance
+        return Self.minimumAmount(
+            batteryBalance: walletBalance?.batteryBalance,
+            tonBalance: walletBalance?.balance.tonBalance.amount ?? 0,
+            minBootstrapValue: rechargeMethod()?.minBootstrapValue,
+            fractionDigits: token.fractionDigits
+        )
+    }
+
     var promocode: String?
+    var isPromocodeEnabled: Bool {
+        !configuration.isDisableBatteryPromoModule(network: wallet.network)
+    }
+
     var recipient: TonRecipient? {
         didSet {
             updateIsContinueEnable()
         }
     }
 
-    private(set) var tonChargeRate: NSDecimalNumber = 1 {
+    private(set) var tonChargeRate: NSDecimalNumber = 0 {
         didSet {
             didUpdateRate?()
         }
     }
 
-    private(set) var chargeTonRate: NSDecimalNumber = 1
+    private(set) var chargeTonRate: NSDecimalNumber = 0
+
+    private var chargeCost: String?
+    private var hasChargeRate = false
+
+    private var packages = [(name: String, charges: Int)]() {
+        didSet { updateOptionsItems() }
+    }
+
+    private var jettonRate: Rates.Rate? {
+        didSet { updateOptionsItems() }
+    }
+
+    private var jettonRateTask: Task<Void, Never>?
 
     private let wallet: Wallet
     private let balanceStore: BalanceStore
     private let currencyStore: CurrencyStore
     private let tonRatesStore: TonRatesStore
+    private let ratesService: RatesService
     private let batteryService: BatteryService
     private let configuration: Configuration
     let isGift: Bool
@@ -124,6 +155,7 @@ final class BatteryRechargeModel {
         balanceStore: BalanceStore,
         currencyStore: CurrencyStore,
         tonRatesStore: TonRatesStore,
+        ratesService: RatesService,
         batteryService: BatteryService,
         configuration: Configuration,
         isGift: Bool
@@ -133,12 +165,14 @@ final class BatteryRechargeModel {
         self.balanceStore = balanceStore
         self.currencyStore = currencyStore
         self.tonRatesStore = tonRatesStore
+        self.ratesService = ratesService
         self.batteryService = batteryService
         self.configuration = configuration
         self.isGift = isGift
 
         configuration.addUpdateObserver(self) { observer in
             DispatchQueue.main.async {
+                observer.calculateTonChargeRate()
                 observer.updateOptionsItems()
             }
         }
@@ -148,6 +182,7 @@ final class BatteryRechargeModel {
                 guard wallet == observer.wallet else { return }
                 DispatchQueue.main.async {
                     observer.updateOptionsItems()
+                    observer.updateIsContinueEnable()
                     observer.didUpdateBalance?()
                 }
             }
@@ -168,59 +203,92 @@ final class BatteryRechargeModel {
             token: token,
             amount: amount,
             promocode: promocode,
-            recipient: recipient
+            recipient: recipient,
+            analyticsPurchase: .crypto(option: selectedOptionItem, token: token, promocode: promocode)
         )
     }
 
     func start() {
         calculateTonChargeRate()
+        loadJettonRate()
         updateOptionsItems()
         updateIsContinueEnable()
         didUpdateToken?()
         didUpdateRate?()
+        if packages.isEmpty {
+            loadPackages()
+        }
+    }
+
+    private func loadPackages() {
+        Task { @MainActor [weak self, batteryService, wallet] in
+            do {
+                let config = try await batteryService.loadBatteryConfig(wallet: wallet)
+                self?.chargeCost = config.charge_cost
+                self?.calculateTonChargeRate()
+                self?.packages = config.packages
+                    .filter { $0.name != .unknown && $0.charges > 0 }
+                    .map { (name: $0.name.rawValue, charges: $0.charges) }
+            } catch {
+                Log.w("battery recharge: failed to load packages", error: error)
+            }
+        }
+    }
+
+    private func loadJettonRate() {
+        jettonRateTask?.cancel()
+        jettonRate = nil
+        guard case let .jetton(jettonItem) = token else { return }
+        let currency = currencyStore.getState()
+        let address = jettonItem.jettonInfo.address.toRaw()
+        jettonRateTask = Task { @MainActor [weak self, ratesService] in
+            do {
+                let rates = try await ratesService.loadRates(jettons: [address], currencies: [currency])
+                guard !Task.isCancelled else { return }
+                self?.jettonRate = rates.jettonRates[address]?.first(where: { $0.currency == currency })
+            } catch {
+                Log.w("battery recharge: failed to load jetton rate", error: error)
+            }
+        }
+    }
+
+    private func rechargeMethod() -> BatteryRechargeMethod? {
+        let methods = batteryService.getRechargeMethods(wallet: wallet, includeRechargeOnly: false)
+        switch token {
+        case .ton:
+            return methods.first(where: { $0.token == .ton })
+        case let .jetton(jettonItem):
+            return methods.first(where: { $0.jettonMasterAddress == jettonItem.jettonInfo.address })
+        }
     }
 
     private func calculateTonChargeRate() {
-        let methods = batteryService.getRechargeMethods(wallet: wallet, includeRechargeOnly: false)
-        guard let method: BatteryRechargeMethod = {
-            switch token {
-            case .ton:
-                return methods.first(where: { $0.token == .ton })
-            case let .jetton(jettonItem):
-                return methods.first(where: { $0.jettonMasterAddress == jettonItem.jettonInfo.address })
-            }
-        }(), let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(network: wallet.network) else {
-            tonChargeRate = 1
+        guard let method = rechargeMethod(),
+              let rate = BatteryRechargeMath.chargesRate(
+                  method.chargesRate,
+                  rate: method.rate.stringValue,
+                  chargeCost: chargeCost ?? configuration.batteryMeanFeesDecimaNumber(network: wallet.network)?.stringValue ?? "0"
+              )
+        else {
+            hasChargeRate = false
+            tonChargeRate = 0
+            chargeTonRate = 0
+            updateIsContinueEnable()
             return
         }
-
-        let methodRate = method.rate
-        let chargeTonRate = batteryMeanFees
-            .dividing(
-                by: methodRate,
-                withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour
-            )
-        let tonChargeRate = NSDecimalNumber(1)
-            .dividing(
-                by: chargeTonRate,
-                withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour
-            )
-        self.tonChargeRate = tonChargeRate
-        self.chargeTonRate = chargeTonRate
+        hasChargeRate = true
+        self.tonChargeRate = NSDecimalNumber(decimal: rate)
+        self.chargeTonRate = NSDecimalNumber(decimal: 1 / rate)
+        updateIsContinueEnable()
     }
 
     private func calculateTokenAmount(chargesCount: Int) -> BigUInt {
-        let value = chargeTonRate
-            .multiplying(by: NSDecimalNumber(value: chargesCount))
-            .multiplying(byPowerOf10: Int16(token.fractionDigits))
-            .rounding(accordingToBehavior: NSDecimalNumberHandler.zeroRoundBehaviour)
-            .uint64Value
-
-        return BigUInt(value)
+        guard hasChargeRate else { return 0 }
+        return BatteryRechargeMath.amount(charges: chargesCount, rate: tonChargeRate.decimalValue, decimals: token.fractionDigits) ?? 0
     }
 
-    private func calculateFiatAmount(tokenAmount: BigUInt, currency: Currency, rates: Rates.Rate?) -> Decimal {
-        guard let rates else { return 0 }
+    private func calculateFiatAmount(tokenAmount: BigUInt, currency: Currency, rates: Rates.Rate?) -> Decimal? {
+        guard let rates else { return nil }
         return RateConverter().convertToDecimal(amount: tokenAmount, amountFractionLength: token.fractionDigits, rate: rates)
     }
 
@@ -233,7 +301,48 @@ final class BatteryRechargeModel {
         case let .jetton(jettonItem):
             isAmountAvailable = (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0) >= amount
         }
-        self.isContinueEnable = isAmountAvailable && amount > 0 && (!isGift || (isGift && recipient != nil))
+        let chargesCount = Self.chargesCount(amount: amount, fractionDigits: token.fractionDigits, tonChargeRate: tonChargeRate)
+        self.isContinueEnable = hasChargeRate
+            && isAmountAvailable
+            && amount > 0
+            && amount >= (minimumAmount ?? 0)
+            && chargesCount > 0
+            && (!isGift || (isGift && recipient != nil))
+    }
+
+    static let selfPaidGasTonBalance: Int64 = 100_000_000
+
+    /// Without charges, a jetton purchase goes through the relayer only from the method's
+    /// `minBootstrapValue`; a smaller one is sent by the wallet itself and needs TON for its gas.
+    static func minimumAmount(
+        batteryBalance: BatteryBalance?,
+        tonBalance: Int64,
+        minBootstrapValue: NSDecimalNumber?,
+        fractionDigits: Int
+    ) -> BigUInt? {
+        guard batteryBalance?.balanceDecimalNumber.compare(0) != .orderedDescending,
+              tonBalance < selfPaidGasTonBalance,
+              let minBootstrapValue,
+              minBootstrapValue != .notANumber,
+              minBootstrapValue.compare(0) == .orderedDescending
+        else {
+            return nil
+        }
+        let units = minBootstrapValue
+            .multiplying(byPowerOf10: Int16(fractionDigits))
+            .rounding(accordingToBehavior: NSDecimalNumberHandler.upRoundBehaviour)
+        return BigUInt(units.stringValue)
+    }
+
+    static func chargesCount(amount: BigUInt, fractionDigits: Int, tonChargeRate: NSDecimalNumber) -> BigUInt {
+        let chargeUnit = ChargeItem()
+        return RateConverter().convert(
+            amount: amount,
+            amountFractionLength: fractionDigits,
+            rate: tonChargeRate,
+            targetFractionLength: chargeUnit.fractionalDigits,
+            roundingMode: chargeUnit.conversionRounding.intoUnitMode
+        )
     }
 
     private func updateOptionsItems() {
@@ -244,19 +353,21 @@ final class BatteryRechargeModel {
             case .ton:
                 return tonRatesStore.getState().tonRates.first(where: { $0.currency == currency })
             case let .jetton(jettonItem):
-                return balance?
+                return jettonRate ?? balance?
                     .jettonsBalance
                     .first(where: { $0.item == jettonItem })?
                     .rates[currency]
             }
         }()
 
-        var items = BatteryRechargeItem.allCases.map { rechargeItem -> OptionItem in
+        let maxCharges = packages.map { $0.charges }.max() ?? 0
+        let minimumAmount = minimumAmount ?? 0
+        var items = packages.map { package -> OptionItem in
             let tokenAmount = calculateTokenAmount(
-                chargesCount: rechargeItem.chargesCount
+                chargesCount: package.charges
             )
 
-            let isEnable = {
+            let isEnable = tokenAmount > 0 && tokenAmount >= minimumAmount && {
                 switch token {
                 case .ton:
                     (balance?.tonBalance.amount ?? 0) >= tokenAmount
@@ -265,7 +376,7 @@ final class BatteryRechargeModel {
                 }
             }()
 
-            if rechargeItem.rawValue == selectedOptionItem?.identifier, !isEnable {
+            if package.name == selectedOptionItem?.identifier, !isEnable {
                 self.selectedOptionItem = nil
             }
 
@@ -273,14 +384,14 @@ final class BatteryRechargeModel {
 
             return OptionItem.prefilled(
                 OptionItem.Prefilled(
-                    identifier: rechargeItem.rawValue,
-                    chargesCount: rechargeItem.chargesCount,
-                    tokenAmount: calculateTokenAmount(chargesCount: rechargeItem.chargesCount),
+                    identifier: package.name,
+                    chargesCount: package.charges,
+                    tokenAmount: tokenAmount,
                     tokenSymbol: token.symbol,
                     tokenDigits: token.fractionDigits,
                     fiatAmount: fiatAmount,
                     currency: currency,
-                    batteryPercent: rechargeItem.batteryPercent,
+                    batteryPercent: CGFloat(package.charges) / CGFloat(maxCharges),
                     isEnable: isEnable
                 )
             )
@@ -291,20 +402,9 @@ final class BatteryRechargeModel {
 }
 
 private extension NSDecimalNumberHandler {
-    static var multiplyingRoundBehaviour: NSDecimalNumberHandler {
-        return NSDecimalNumberHandler(
-            roundingMode: .plain,
-            scale: 20,
-            raiseOnExactness: false,
-            raiseOnOverflow: false,
-            raiseOnUnderflow: false,
-            raiseOnDivideByZero: false
-        )
-    }
-
-    static var zeroRoundBehaviour: NSDecimalNumberHandler {
-        return NSDecimalNumberHandler(
-            roundingMode: .plain,
+    static var upRoundBehaviour: NSDecimalNumberHandler {
+        NSDecimalNumberHandler(
+            roundingMode: .up,
             scale: 0,
             raiseOnExactness: false,
             raiseOnOverflow: false,

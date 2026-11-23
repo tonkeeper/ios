@@ -73,6 +73,31 @@ final class RatesServiceScopeTests: XCTestCase {
 }
 
 final class RatesServiceFailureTests: XCTestCase {
+    func test_riskPolicyRejectsExpiredRatesOnFailureAndDuringCooldown() async throws {
+        let fetch = ControlledRatesFetch()
+        let clock = ControlledClock()
+        let service = RatesServiceImplementation(
+            fetchRates: { try await fetch.fetch(jettons: $0, currencies: $1) },
+            ratesRepository: nil,
+            servesStaleRatesOnFailure: false,
+            freshnessInterval: 30,
+            failureRetryInterval: 5,
+            now: { clock.now() }
+        )
+        fetch.completeNextLoadImmediately(tonRate: 5)
+        _ = try await service.loadRates(jettons: [], currencies: [.USD])
+        clock.advance(by: 30)
+        fetch.failNextLoadImmediately()
+
+        for _ in 0 ..< 2 {
+            do {
+                _ = try await service.loadRates(jettons: [], currencies: [.USD])
+                XCTFail("Expired rates must not determine a transaction's risk total")
+            } catch {}
+        }
+        XCTAssertEqual(fetch.startedCount, 2)
+    }
+
     func test_failureKeepsServingThePreviousPayload() async throws {
         let fetch = ControlledRatesFetch()
         let clock = ControlledClock()

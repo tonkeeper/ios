@@ -31,6 +31,7 @@ extension Components {
             case offramp = "offramp"
             case p2p = "p2p"
             case perp_deposit = "perp_deposit"
+            case battery_deposit = "battery_deposit"
             case unknown
             public init(from decoder: any Decoder) throws {
                 self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
@@ -44,10 +45,6 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/AssetIdQuery`.
         public typealias AssetIdQuery = Swift.String
-        /// Asset identifier in chain/network/type[/address] format. The id itself contains slashes, so it has to be percent-encoded into a single path segment: `ton/mainnet/coin` is requested as `ton%2Fmainnet%2Fcoin`, and `eth/mainnet/erc20/0xdAC1...` as `eth%2Fmainnet%2Ferc20%2F0xdAC1...`.
-        ///
-        /// - Remark: Generated from `#/components/parameters/AssetIdPath`.
-        public typealias AssetIdPath = Swift.String
         /// Filter activities by asset id (matched against the in or out token). Format chain/network/type[/address].
         ///
         /// - Remark: Generated from `#/components/parameters/AssetIdOptQuery`.
@@ -77,14 +74,6 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/CurrenciesOptQuery`.
         public typealias CurrenciesOptQuery = [Swift.String]
-        /// Pagination limit
-        ///
-        /// - Remark: Generated from `#/components/parameters/CatalogLimitQuery`.
-        public typealias CatalogLimitQuery = Swift.Int
-        /// Unix timestamp in seconds. Return only assets created strictly after this moment
-        ///
-        /// - Remark: Generated from `#/components/parameters/FromDateQuery`.
-        public typealias FromDateQuery = Swift.Int64
         /// Prefix of the token name or symbol, case-insensitive
         ///
         /// - Remark: Generated from `#/components/parameters/SearchQuery`.
@@ -166,10 +155,6 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/ActivityTypeQuery`.
         public typealias ActivityTypeQuery = Components.Schemas.ActivityTypeFilter
-        /// ETag value from previous response
-        ///
-        /// - Remark: Generated from `#/components/parameters/IfNoneMatch`.
-        public typealias IfNoneMatch = Swift.String
         /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
         ///
         /// - Remark: Generated from `#/components/parameters/FirebaseUserHeader`.
@@ -184,5 +169,9 @@ extension Components {
         public typealias RaffleIdsQuery = [Swift.String]
         /// - Remark: Generated from `#/components/parameters/IsNewUserQuery`.
         public typealias IsNewUserQuery = Swift.Bool
+        /// Client country (ISO alpha-2) set by Cloudflare
+        ///
+        /// - Remark: Generated from `#/components/parameters/CountryHeader`.
+        public typealias CountryHeader = Swift.String
     }
 }

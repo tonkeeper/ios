@@ -1,5 +1,6 @@
 @testable import App
 @testable import KeeperCore
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -13,9 +14,11 @@ final class WalletContainerViewModelTests: XCTestCase {
 
         var topBarModel: WalletContainerTopBarModel?
         var modelUpdatesCount = 0
+        let modelUpdated = TestSignal()
         viewModel.didUpdateModel = {
             topBarModel = $0
             modelUpdatesCount += 1
+            modelUpdated.send()
         }
         var settingsWallet: Wallet?
         viewModel.didTapSettingsButton = { settingsWallet = $0 }
@@ -24,7 +27,7 @@ final class WalletContainerViewModelTests: XCTestCase {
         XCTAssertEqual(modelUpdatesCount, 1)
 
         await walletsStore.setWalletMultichain(wallet: wallet, multichain: .multichain(makeMultichainState()))
-        await waitUntil { modelUpdatesCount == 2 }
+        await waitUntil(modelUpdated) { modelUpdatesCount == 2 }
 
         try XCTUnwrap(topBarModel).settingsButton.action()
         XCTAssertEqual(settingsWallet?.isMultichain, true)
@@ -65,19 +68,6 @@ private extension WalletContainerViewModelTests {
             walletId: "imported",
             addresses: [MultichainWalletAddress(chain: .ton, address: "ton-address", type: .tonV5R1)]
         )
-    }
-
-    func waitUntil(
-        timeout: TimeInterval = 2,
-        condition: @escaping () -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        if !condition() {
-            XCTFail("Timed out waiting for the top bar to pick up the multichain state")
-        }
     }
 }
 

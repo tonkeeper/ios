@@ -26,6 +26,7 @@ public final class RootAssembly {
     private let tradingAssembly: TradingAssembly
     private let deeplinkParser: DeeplinkParser
     private let walletConnectAssembly: WalletConnectAssembly
+    private let earnAssembly: EarnAssembly
 
     init(
         appInfoProvider: AppInfoProvider,
@@ -52,7 +53,8 @@ public final class RootAssembly {
         multichainAssembly: MultichainAssembly,
         tradingAssembly: TradingAssembly,
         deeplinkParser: DeeplinkParser,
-        walletConnectAssembly: WalletConnectAssembly
+        walletConnectAssembly: WalletConnectAssembly,
+        earnAssembly: EarnAssembly
     ) {
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
@@ -79,6 +81,7 @@ public final class RootAssembly {
         self.tradingAssembly = tradingAssembly
         self.deeplinkParser = deeplinkParser
         self.walletConnectAssembly = walletConnectAssembly
+        self.earnAssembly = earnAssembly
     }
 
     private var _rootController: RootController?
@@ -142,7 +145,8 @@ public final class RootAssembly {
             multichainAssembly: multichainAssembly,
             tradingAssembly: tradingAssembly,
             deeplinkParser: deeplinkParser,
-            walletConnectAssembly: walletConnectAssembly
+            walletConnectAssembly: walletConnectAssembly,
+            earnAssembly: earnAssembly
         )
     }
 }

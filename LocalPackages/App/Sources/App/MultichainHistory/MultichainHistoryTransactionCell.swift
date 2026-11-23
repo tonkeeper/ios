@@ -7,6 +7,7 @@ import UIKit
 struct MultichainHistoryTransactionCell: View {
     let item: MultichainHistoryActivityItem
     let showsDivider: Bool
+    var onDecryptComment: () -> Void = {}
     let onTap: () -> Void
 
     var body: some View {
@@ -28,7 +29,8 @@ struct MultichainHistoryTransactionCell: View {
                 )
             ),
             onTap: onTap,
-            onTapNft: { _ in onTap() }
+            onTapNft: { _ in onTap() },
+            onTapEncryptedMessage: { _ in onDecryptComment() }
         )
     }
 }
@@ -68,8 +70,20 @@ extension MultichainHistoryActivityItem {
 
         return TransactionCellContent.Amount(
             spans: primaryAmount.transactionAmountSpans,
-            style: showsStatusDetails ? .warning : primaryAmount.transactionAmountStyle
+            style: isPerpsAmountMuted ? .secondary : showsStatusDetails ? .warning : primaryAmount.transactionAmountStyle
         )
+    }
+
+    /// A perps deposit reads grey until it lands on the perps balance; a withdrawal only when it failed.
+    private var isPerpsAmountMuted: Bool {
+        switch MultichainActivityPresentationKind(activity: activity) {
+        case .perpsDeposit:
+            status != .confirmed
+        case .perpsWithdrawal:
+            showsStatusDetails
+        default:
+            false
+        }
     }
 
     var transactionAccessory: TransactionCellContent.Accessory {
@@ -149,13 +163,25 @@ extension MultichainHistoryActivityItem {
             imageSource: .url(nft.imageURL),
             title: nft.name,
             subtitle: nft.collectionName,
-            isVerified: nft.isVerified
+            isVerified: nft.isVerified,
+            isSecureMode: isSecureMode
         )
     }
 
     var transactionMessages: [TransactionCellContent.Message] {
-        guard !activity.isSpam,
-              let comment = comment?.trimmingCharacters(in: .whitespacesAndNewlines),
+        guard !activity.isSpam else {
+            return []
+        }
+        if let encryptedComment, decryptedComment == nil {
+            return [
+                TransactionCellContent.Message(
+                    id: "encrypted_comment",
+                    text: TKLocales.History.Event.Comment.encrypted,
+                    encryptedLength: encryptedComment.approximateLength
+                ),
+            ]
+        }
+        guard let comment = (comment ?? decryptedComment)?.trimmingCharacters(in: .whitespacesAndNewlines),
               !comment.isEmpty
         else {
             return []

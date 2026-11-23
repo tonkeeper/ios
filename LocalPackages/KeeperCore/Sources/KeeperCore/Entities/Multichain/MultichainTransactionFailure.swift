@@ -4,6 +4,11 @@ import TKLogging
     case canceled
     case unsupportedAsset(id: String)
     case insufficientSelectedFee
+    case batteryMigrationFailed(reason: String)
+    case feeQuoteLoading
+    case feeMethodUnavailable
+    /// The prepared operation expired before signing; refresh it before another attempt.
+    case operationExpired
     case emulationFailure(MultichainTransactionEmulationFailure)
     case failedToEstimateNonce(kind: MultichainSwapExecutionErrorKind, reason: String)
     case failedToSign(kind: MultichainSwapExecutionErrorKind, reason: String)
@@ -28,6 +33,14 @@ extension MultichainTransactionFailure: LoggableError {
             return "type=MultichainTransactionFailure, case=unsupportedAsset, assetId=\(id)"
         case .insufficientSelectedFee:
             return "type=MultichainTransactionFailure, case=insufficientSelectedFee"
+        case let .batteryMigrationFailed(reason):
+            return "type=MultichainTransactionFailure, case=batteryMigrationFailed, reason=\(reason)"
+        case .feeQuoteLoading:
+            return "type=MultichainTransactionFailure, case=feeQuoteLoading"
+        case .feeMethodUnavailable:
+            return "type=MultichainTransactionFailure, case=feeMethodUnavailable"
+        case .operationExpired:
+            return "type=MultichainTransactionFailure, case=operationExpired"
         case let .emulationFailure(failure):
             return "type=MultichainTransactionFailure, case=emulationFailure, underlying=\(failure.logDescription)"
         case let .failedToEstimateNonce(kind, _):

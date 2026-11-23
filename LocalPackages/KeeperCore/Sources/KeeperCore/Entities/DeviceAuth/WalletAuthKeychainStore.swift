@@ -3,8 +3,9 @@ import Foundation
 import TKKeychain
 import TKLogging
 
-/// Keychain home of the per-wallet app key and of the credential minted from it. Device-only and
-/// never migrated: both are bound to the device this install registered.
+/// Keychain home of the per-wallet app key, of the credential minted from it and of a Ledger
+/// wallet's seed. Device-only and never migrated: the key and the credential are bound to the
+/// device this install registered.
 ///
 /// Stateless, so the owning actor is the only serialization this needs.
 final class WalletAuthKeychainStore: @unchecked Sendable {
@@ -18,6 +19,7 @@ final class WalletAuthKeychainStore: @unchecked Sendable {
     private enum Item: String {
         case appKey
         case token
+        case ledgerSeed
     }
 
     private let keychainVault: TKKeychainVault
@@ -43,6 +45,14 @@ final class WalletAuthKeychainStore: @unchecked Sendable {
             try keychainVault.set(appKey, query: query(walletId: walletId, item: .appKey))
         } catch {
             Log.w("🪵 WalletAuth: save app key failed", error: error)
+        }
+    }
+
+    func saveLedgerSeed(_ seed: Data, walletId: String) {
+        do {
+            try keychainVault.set(seed, query: query(walletId: walletId, item: .ledgerSeed))
+        } catch {
+            Log.w("🪵 WalletAuth: save Ledger seed failed", error: error)
         }
     }
 
@@ -76,6 +86,7 @@ final class WalletAuthKeychainStore: @unchecked Sendable {
     func delete(walletId: String) {
         try? keychainVault.delete(query(walletId: walletId, item: .appKey))
         try? keychainVault.delete(query(walletId: walletId, item: .token))
+        try? keychainVault.delete(query(walletId: walletId, item: .ledgerSeed))
     }
 
     /// Omitting the account matches every item under the service, so one delete covers wallets this

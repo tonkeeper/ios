@@ -45,6 +45,7 @@ protocol PerpsAPI {
 
     func sendTransactions(
         walletId: String,
+        operationId: String?,
         transactions: [Components.Schemas.SignedTransaction]
     ) async throws -> Components.Schemas.SendTransactionsResponse
 
@@ -95,4 +96,6 @@ protocol PerpsAPI {
 
     /// Withdrawals alone, newest first; `cursor` is the previous page's `next_cursor`.
     func withdrawals(walletId: String, cursor: String?) async throws -> Components.Schemas.ActivityPage
+
+    func recordClientMetrics(walletId: String, metrics: [Components.Schemas.ClientMetric]) async throws
 }

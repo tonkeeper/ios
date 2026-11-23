@@ -10,6 +10,8 @@ public extension WalletContractVersion {
             "W5 BETA"
         case .v5R1:
             "W5"
+        case .walletTg:
+            "TELEGRAM"
         default: nil
         }
     }
@@ -111,7 +113,7 @@ public extension Wallet {
 
     func revisionTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
         guard let revisionTag else { return nil }
-        return .accentTag(text: revisionTag, accent: .accentGreen)
+        return .accentTag(text: revisionTag, accent: isWalletTg ? .accentBlue : .accentGreen)
     }
 
     func listTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
@@ -121,7 +123,7 @@ public extension Wallet {
 
     func revisionTagConfiguration() -> TKTagView.Configuration? {
         guard let revisionTag else { return nil }
-        return .accentTag(text: revisionTag, color: .Accent.green)
+        return .accentTag(text: revisionTag, color: isWalletTg ? .Accent.blue : .Accent.green)
     }
 
     func receiveTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {

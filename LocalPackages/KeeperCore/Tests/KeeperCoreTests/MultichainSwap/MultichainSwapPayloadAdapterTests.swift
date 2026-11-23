@@ -1346,6 +1346,332 @@ final class MultichainSwapPayloadAdapterTests: XCTestCase {
             XCTAssertEqual(error as? MultichainSwapExecutionFailure, .unsupportedPayloadType("unknown"))
         }
     }
+
+    // MARK: - A route /v3 prepared
+
+    /// A route `/v3` prepares is handed to the relayed fee methods in the very payload `/v2` hands them a
+    /// route of its shape in, so the engines offer both the same methods, and none where `/v2` relays nothing.
+    func test_aRouteV3PreparesIsRelayedAsTheV2RouteOfItsShape() throws {
+        let router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+        let deposit = "0x1111111111111111111111111111111111111111"
+        let usdtContract = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+        let usdt = makeTokenAsset("eth/mainnet/erc20/\(usdtContract)")
+        let tronUsdt = makeTokenAsset("tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+        let jetton = makeJettonAsset()
+        let tonAddress = address(for: .ton)
+        let tronAddress = address(for: .tron)
+        let usdtDeposit = "0xa9059cbb00000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000002faf080"
+        let shapes: [(shape: String, v2: MultichainSwapBatteryPayload?, v3: MultichainSwapBatteryPayload?, relayed: MultichainSwapBatteryPayload?)] = try [
+            (
+                "EVM: a router call",
+                normalize(
+                    sourceChain: .eth,
+                    sourceAsset: usdt,
+                    payload: makePayload(
+                        payloadType: "evm_tx",
+                        payload: #"{"to":"\#(router)","value":"0x0","data":"0x38ed1739"}"#,
+                        humanSummary: makeHumanSummary(spendAsset: usdt.asset.assetId, spendAmount: "1000000", receiveAsset: "eth/mainnet/coin")
+                    )
+                ).batteryPayload,
+                relayed(#"{"to":"\#(router)","value":"0","data":"0x38ed1739"}"#, on: .eth, selling: usdt),
+                .evm(EVMSwapRelay(chain: .eth, call: evmCall(to: router, value: 0, data: "0x38ed1739")))
+            ),
+            (
+                "EVM: the coin to a deposit",
+                normalize(
+                    sourceChain: .eth,
+                    payload: makePayload(
+                        payloadType: "evm_tx",
+                        payload: #"{"to":"\#(deposit)","value":"5039792842855559","data":"0x"}"#,
+                        humanSummary: makeHumanSummary(
+                            spendAsset: "eth/mainnet/coin",
+                            spendAmount: "5039792842855559",
+                            receiveAsset: "ton/mainnet/coin",
+                            depositAddress: deposit
+                        )
+                    ),
+                    provider: .swapXyz
+                ).batteryPayload,
+                relayed(#"{"to":"\#(deposit)","value":"5039792842855559"}"#, on: .eth, selling: makeAsset(chain: .eth)),
+                .evm(EVMSwapRelay(chain: .eth, call: evmCall(to: deposit, value: 5_039_792_842_855_559, data: "0x")))
+            ),
+            (
+                "EVM: a token to a deposit",
+                normalize(
+                    sourceChain: .eth,
+                    sourceAsset: usdt,
+                    payload: makePayload(
+                        payloadType: "alt_vm_deposit",
+                        payload: #"{"amount":"50000000","to":"\#(deposit)"}"#,
+                        humanSummary: makeHumanSummary(
+                            spendAsset: usdt.asset.assetId,
+                            spendAmount: "50000000",
+                            receiveAsset: "ton/mainnet/coin",
+                            depositAddress: deposit
+                        ),
+                        calldataPayloadType: .flex
+                    )
+                ).batteryPayload,
+                relayed(#"{"to":"\#(usdtContract)","value":"0","data":"\#(usdtDeposit)"}"#, on: .eth, selling: usdt),
+                .evm(EVMSwapRelay(chain: .eth, call: evmCall(to: usdtContract, value: 0, data: usdtDeposit)))
+            ),
+            (
+                "TON: the coin sold through a router",
+                normalize(
+                    sourceChain: .ton,
+                    payload: makePayload(sourceChain: .ton, payloadType: "ton_boc", payload: #"[{"to":"\#(tonAddress)","value":"700000000","payload":"ton-payload"}]"#)
+                ).batteryPayload,
+                relayed(#"{"to":"\#(tonAddress)","value":"700000000","body":"ton-payload"}"#, on: .ton, selling: makeAsset(chain: .ton)),
+                .ton([TonSwapMessage(to: tonAddress, amount: 700_000_000, payload: "ton-payload", stateInit: nil)])
+            ),
+            (
+                "TON: a jetton sold through a router, in parts",
+                normalize(
+                    sourceChain: .ton,
+                    sourceAsset: jetton,
+                    payload: makePayload(sourceChain: .ton, payloadType: "ton_boc", payload: splitEnvelope(to: tonAddress), calldataPayloadType: .exact)
+                ).batteryPayload,
+                relayed(
+                    #"{"calls":[{"type":"main","meta":{"to":"\#(tonAddress)","value":"185000000","body":"first"}},{"type":"main","meta":{"to":"\#(tonAddress)","value":"330000000","body":"second"}},{"type":"main","meta":{"to":"\#(tonAddress)","value":"260000000","body":"third"}}]}"#,
+                    type: "batch",
+                    on: .ton,
+                    selling: jetton
+                ),
+                .ton([
+                    TonSwapMessage(to: tonAddress, amount: 185_000_000, payload: "first", stateInit: nil),
+                    TonSwapMessage(to: tonAddress, amount: 330_000_000, payload: "second", stateInit: nil),
+                    TonSwapMessage(to: tonAddress, amount: 260_000_000, payload: "third", stateInit: nil),
+                ])
+            ),
+            (
+                "TON: a jetton to a deposit",
+                normalize(
+                    sourceChain: .ton,
+                    sourceAsset: jetton,
+                    payload: makePayload(
+                        sourceChain: .ton,
+                        payloadType: "alt_vm_deposit",
+                        payload: #"[{"to":"\#(tonAddress)","toExtra":null,"value":"100000000","chainId":999000337,"chainKey":"ton"}]"#
+                    ),
+                    provider: .swapXyz
+                ).batteryPayload,
+                relayed(#"{"to":"\#(tonAddress)","value":"100000000","token":"0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"}"#, on: .ton, selling: jetton),
+                .tonJettonDeposit(TonJettonSwapDeposit(recipient: tonAddress, amount: 100_000_000))
+            ),
+            (
+                "TON: a message deploying a contract",
+                normalize(
+                    sourceChain: .ton,
+                    sourceAsset: jetton,
+                    payload: makePayload(
+                        sourceChain: .ton,
+                        payloadType: "ton_boc",
+                        payload: #"[{"to":"\#(tonAddress)","value":"700000000","payload":"ton-payload","state_init":"te6ccgEBAQEAAgAAAA=="}]"#
+                    )
+                ).batteryPayload,
+                relayed(#"{"to":"\#(tonAddress)","value":"700000000","body":"ton-payload","state_init":"te6ccgEBAQEAAgAAAA=="}"#, on: .ton, selling: jetton),
+                nil
+            ),
+            (
+                "TRON: TRX to a deposit",
+                normalize(
+                    sourceChain: .tron,
+                    payload: makePayload(
+                        sourceChain: .tron,
+                        payloadType: "alt_vm_deposit",
+                        payload: #"{"to":"\#(tronAddress)","toExtra":null,"value":"9191671","chainId":728126428,"chainKey":"trx"}"#
+                    ),
+                    provider: .swapXyz
+                ).batteryPayload,
+                relayed(#"{"to":"\#(tronAddress)","value":"9191671"}"#, on: .tron, selling: makeAsset(chain: .tron)),
+                .tron(TronSwapTransfer(to: tronAddress, amount: 9_191_671))
+            ),
+            (
+                "TRON: USDT to a deposit",
+                normalize(
+                    sourceChain: .tron,
+                    sourceAsset: tronUsdt,
+                    payload: makePayload(
+                        sourceChain: .tron,
+                        payloadType: "alt_vm_deposit",
+                        payload: #"{"to":"TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr","toExtra":null,"value":"13125976","chainId":728126428,"chainKey":"trx"}"#
+                    ),
+                    provider: .swapXyz
+                ).batteryPayload,
+                relayed(#"{"to":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","value":"0","data":"\#(Self.trc20Deposit)"}"#, on: .tron, selling: tronUsdt),
+                .tron(TronSwapTransfer(to: "TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr", amount: 13_125_976))
+            ),
+        ]
+
+        for (shape, v2, v3, relayed) in shapes {
+            XCTAssertEqual(v2, relayed, "v2: \(shape)")
+            XCTAssertEqual(v3, relayed, "v3: \(shape)")
+        }
+    }
+
+    /// A route `/v3` prepares that `/v2` has no relayed shape for, or that states more than a relayer
+    /// would send, is paid in the chain's coin.
+    func test_aRouteV3PreparesIsNotRelayedWhereItStatesMoreThanARelayerSends() throws {
+        let router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+        let usdt = makeTokenAsset("eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7")
+        let tronUsdt = makeTokenAsset("tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+        let jetton = makeJettonAsset()
+        let to = address(for: .ton)
+        let master = "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+        let usdtContract = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+        let approve = #"{"chain_id":"eth/mainnet","id":"approve","type":"main","version":1,"meta":{"to":"0xdac17f958d2ee523a2206206994597c13d831ec7","value":"0","data":"0x095ea7b3"}}"#
+        let swap = #"{"chain_id":"eth/mainnet","id":"swap","type":"main","version":1,"meta":{"to":"\#(router)","value":"0","data":"0x38ed1739"}}"#
+        let cases: [(shape: String, relayed: MultichainSwapBatteryPayload?)] = try [
+            ("EVM: a swap behind its approve", relayed(payloads: "[\(approve),\(swap)]", on: .eth, selling: usdt)),
+            (
+                "EVM: a call delegating the address",
+                relayed(
+                    #"{"to":"\#(router)","value":"0","data":"0x38ed1739","authorization":{"chainId":1,"address":"0x24b576BC271823bF9C24BE627B4363b9b00191e9","nonce":"0"}}"#,
+                    on: .eth,
+                    selling: usdt
+                )
+            ),
+            ("TON: a comment", relayed(#"{"to":"\#(to)","value":"700000000","comment":"swap"}"#, on: .ton, selling: jetton)),
+            ("TON: a send mode", relayed(#"{"to":"\#(to)","value":"700000000","body":"ton-payload","mode":3}"#, on: .ton, selling: jetton)),
+            ("TON: a bounce flag", relayed(#"{"to":"\#(to)","value":"700000000","body":"ton-payload","bounce":false}"#, on: .ton, selling: jetton)),
+            ("TON: an expiry", relayed(#"{"to":"\#(to)","value":"700000000","body":"ton-payload","expire_at":1790000000}"#, on: .ton, selling: jetton)),
+            ("TON: a deposit forwarding a comment", relayed(#"{"to":"\#(to)","value":"100000000","token":"\#(master)","comment":"swap"}"#, on: .ton, selling: jetton)),
+            (
+                "TON: a deposit of another jetton",
+                relayed(#"{"to":"\#(to)","value":"100000000","token":"0:\#(String(repeating: "a", count: 64))"}"#, on: .ton, selling: jetton)
+            ),
+            ("TON: a deposit of a jetton for the coin sold", relayed(#"{"to":"\#(to)","value":"100000000","token":"\#(master)"}"#, on: .ton, selling: makeAsset(chain: .ton))),
+            (
+                "TON: a deposit in a batch",
+                relayed(#"{"calls":[{"type":"main","meta":{"to":"\#(to)","value":"100000000","token":"\#(master)"}}]}"#, type: "batch", on: .ton, selling: jetton)
+            ),
+            ("TON: a ready message", relayed(#"{"format":"int_msg","data":"te6ccgEBAQEAAgAAAA=="}"#, type: "prebuild", on: .ton, selling: jetton)),
+            ("TRON: a memo", relayed(#"{"to":"\#(address(for: .tron))","value":"9191671","memo":"swap"}"#, on: .tron, selling: makeAsset(chain: .tron))),
+            ("TRON: TRX paid for a token sold", relayed(#"{"to":"TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr","value":"13125976"}"#, on: .tron, selling: tronUsdt)),
+            ("TRON: a call for the coin sold", relayed(#"{"to":"\#(usdtContract)","value":"0","data":"38ed1739"}"#, on: .tron, selling: makeAsset(chain: .tron))),
+            ("TRON: a call of another kind", relayed(#"{"to":"\#(usdtContract)","value":"0","data":"38ed1739"}"#, on: .tron, selling: tronUsdt)),
+            (
+                "Solana: a deposit of a token for the coin sold",
+                relayed(
+                    #"{"to":"9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM","value":"1000000","token":"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"}"#,
+                    on: .sol,
+                    selling: makeAsset(chain: .sol)
+                )
+            ),
+        ]
+
+        for (shape, relayed) in cases {
+            XCTAssertNil(relayed, shape)
+        }
+    }
+
+    /// A Solana route goes to the relayer as it states itself: a deposit as the transfer a send would ask
+    /// for, a transaction the route built as that transaction.
+    func test_aSolanaRouteV3PreparesIsRelayedAsItsDepositOrItsTransaction() throws {
+        let sol = makeAsset(chain: .sol)
+        let sender = address(for: .sol)
+        let depositAddress = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+
+        XCTAssertEqual(
+            try relayed(#"{"to":"\#(depositAddress)","value":"1000000","memo":"route"}"#, on: .sol, selling: sol),
+            .solana(EVMSwapRelay(
+                chain: .sol,
+                call: EVMGaslessCall(
+                    kind: .swap,
+                    chainId: "sol/mainnet",
+                    sender: sender,
+                    to: depositAddress,
+                    value: 1_000_000,
+                    data: EVMGaslessCall.emptyData,
+                    memo: "route"
+                )
+            ))
+        )
+        XCTAssertEqual(
+            try relayed(#"{"data":"AQ=="}"#, type: "prebuild", on: .sol, selling: sol),
+            .solana(EVMSwapRelay(chain: .sol, call: .solanaSwap(sender: sender, transaction: "AQ==")))
+        )
+    }
+
+    /// swaps.xyz wraps the transaction in an envelope: the relayer gets the transaction alone.
+    func test_aSolanaTransactionOfARouteIsRelayedUnwrapped() throws {
+        let transaction = "AQ=="
+        for provider in [MultichainSwapProvider.swapKit, .swapXyz] {
+            let normalized = try normalize(
+                sourceChain: .sol,
+                payload: makePayload(
+                    sourceChain: .sol,
+                    payloadType: "solana_tx",
+                    payload: provider == .swapXyz ? #"{"base64Tx":"\#(transaction)"}"# : transaction,
+                    humanSummary: makeHumanSummary(
+                        spendAsset: "sol/mainnet/coin",
+                        spendAmount: "1000",
+                        receiveAsset: "ton/mainnet/coin",
+                        depositAddress: address(for: .sol)
+                    )
+                ),
+                provider: provider
+            )
+
+            XCTAssertEqual(
+                normalized.batteryPayload,
+                .solana(EVMSwapRelay(chain: .sol, call: .solanaSwap(sender: address(for: .sol), transaction: transaction))),
+                "\(provider)"
+            )
+        }
+    }
+
+    /// A deposit route of swaps.xyz is typed `solana_tx` but carries no transaction: it is relayed as the
+    /// transfer to its deposit address.
+    func test_aSolanaDepositTypedAsATransactionIsRelayedAsTheTransfer() throws {
+        let depositAddress = "FV3u6gq4BU576wxmTrT43brLQcy8cynz4Z121FLcAY5t"
+        let normalized = try normalize(
+            sourceChain: .sol,
+            payload: makePayload(
+                sourceChain: .sol,
+                payloadType: "solana_tx",
+                payload: #"{"to":"\#(depositAddress)","value":"41000000","chainId":1399811149,"chainKey":"sol"}"#,
+                humanSummary: makeHumanSummary(
+                    spendAsset: "sol/mainnet/coin",
+                    spendAmount: "41000000",
+                    receiveAsset: "sol/mainnet/spl/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+                ),
+                calldataPayloadType: .flex
+            ),
+            provider: .swapXyz
+        )
+
+        guard case let .solana(relay) = normalized.batteryPayload else {
+            return XCTFail("Expected a relayed Solana deposit, got \(String(describing: normalized.batteryPayload))")
+        }
+        XCTAssertEqual(relay.call.to, depositAddress)
+        XCTAssertEqual(relay.call.value, 41_000_000)
+        XCTAssertNil(relay.call.transaction)
+        XCTAssertNil(relay.call.token)
+    }
+
+    /// A TRC-20 call is relayed only as the plain transfer of the token sold, with nothing besides it, so
+    /// the transfer relayed is the very one the payload states.
+    func test_aTRC20CallOfARouteV3PreparesIsRelayedOnlyAsTheTransferOfTheTokenSold() throws {
+        let tronUsdt = makeTokenAsset("tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+        let addressWord = "0000000000000000000000001cb3586d51bd37c42f78c1fca096f14b80aab8e3"
+        let amountWord = "0000000000000000000000000000000000000000000000000000000000c84958"
+        func deposit(to: String = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", value: String = "0", data: String) throws -> MultichainSwapBatteryPayload? {
+            try relayed(#"{"to":"\#(to)","value":"\#(value)","data":"\#(data)"}"#, on: .tron, selling: tronUsdt)
+        }
+        let cases: [(shape: String, relayed: MultichainSwapBatteryPayload?)] = try [
+            ("three words", deposit(data: Self.trc20Deposit + amountWord)),
+            ("an approve", deposit(data: "095ea7b3" + addressWord + amountWord)),
+            ("a recipient word not padded with zeros", deposit(data: "a9059cbb01" + addressWord.dropFirst(2) + amountWord)),
+            ("TRX sent along", deposit(value: "1", data: Self.trc20Deposit)),
+            ("a transfer of another token", deposit(to: "TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr", data: Self.trc20Deposit)),
+        ]
+
+        XCTAssertEqual(try deposit(data: "0x" + Self.trc20Deposit.uppercased()), .tron(TronSwapTransfer(to: "TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr", amount: 13_125_976)))
+        for (shape, relayed) in cases {
+            XCTAssertNil(relayed, shape)
+        }
+    }
 }
 
 private extension MultichainSwapPayloadAdapter.Normalized {
@@ -1358,6 +1684,36 @@ private extension MultichainSwapPayloadAdapter.Normalized {
 }
 
 private extension MultichainSwapPayloadAdapterTests {
+    /// `transfer(TCaxmZvD5kysgFNSqovSpxKKkZdD818cvr, 13125976)` as TRC-20 calldata.
+    static let trc20Deposit = "a9059cbb0000000000000000000000001cb3586d51bd37c42f78c1fca096f14b80aab8e30000000000000000000000000000000000000000000000000000000000c84958"
+
+    /// `meta` as the one payload of a route `/v3` prepared on `chain`, `asset` sold from the wallet's
+    /// address there.
+    func relayed(_ meta: String, type: String = "main", on chain: MultichainChain, selling asset: MultichainAsset) throws -> MultichainSwapBatteryPayload? {
+        try relayed(payloads: #"[{"chain_id":"\#(chain.crossSwapChainId)","id":"swap","type":"\#(type)","version":1,"meta":\#(meta)}]"#, on: chain, selling: asset)
+    }
+
+    func relayed(payloads: String, on chain: MultichainChain, selling asset: MultichainAsset) throws -> MultichainSwapBatteryPayload? {
+        try MultichainSwapBatteryPayload(
+            relaying: ChainKitOperationSender.parse(id: "route", payloads: payloads),
+            selling: asset,
+            from: address(for: chain)
+        )
+    }
+
+    /// A call of the wallet's own address on Ethereum, as a swap hands it to the relayer.
+    func evmCall(to: String, value: BigUInt, data: String) -> EVMGaslessCall {
+        EVMGaslessCall(kind: .swap, chainId: "eth/mainnet", sender: address(for: .eth), to: to, value: value, data: data)
+    }
+
+    func makeTokenAsset(_ assetId: String) -> MultichainAsset {
+        MultichainAsset(
+            asset: MultichainAssetDetails(assetId: assetId, name: "Tether", symbol: "USDT", decimals: 6, image: ""),
+            price: MultichainAssetPrice(prices: [:], diff24h: [:], diff7d: [:]),
+            balance: 0
+        )
+    }
+
     func splitEnvelope(to address: String) -> String {
         let messages = [
             #"{"address":"\#(address)","amount":"185000000","payload":"first"}"#,
@@ -1506,7 +1862,7 @@ private extension MultichainSwapPayloadAdapterTests {
         }
     }
 
-    var chainKitWallet: CryptoWallet {
+    var chainKitWallet: MnemonicWallet {
         try! CryptoWallet.Companion.shared.fromMnemonic(
             mnemonic_: "circle inch grow apart leaf cool crop tomato confirm teach example curtain"
         )

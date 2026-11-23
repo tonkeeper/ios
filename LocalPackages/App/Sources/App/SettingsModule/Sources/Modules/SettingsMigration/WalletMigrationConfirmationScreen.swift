@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -55,6 +56,7 @@ private extension WalletMigrationConfirmationScreen {
                     image: .TKUIKit.Icons.Size16.chevronLeft,
                     size: 16,
                     padding: 8,
+                    liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                     onTap: { _ in
                         viewModel.back()
                     }
@@ -248,15 +250,24 @@ private extension WalletMigrationConfirmationScreen {
         case .retry:
             tryAgainButton
         case .idle, .confirming, .success, .failed:
-            WalletMigrationProcessFooterRepresentable(
-                sliderTitle: viewModel.sliderConfirmTitle,
-                isSliderEnabled: viewModel.isSliderEnabled && !showsScrollHint,
-                processState: viewModel.processState,
-                successTitle: TKLocales.Result.success,
-                errorTitle: TKLocales.Settings.Migration.Confirm.transactionFailed,
-                processTitle: TKLocales.Settings.Migration.Confirm.sendingTransaction,
-                onConfirm: viewModel.confirmSwipe
-            )
+            if TKLiquidGlass.isEnabled {
+                TKConfirmSlider(
+                    isEnabled: viewModel.isSliderEnabled && !showsScrollHint,
+                    process: TKActionBarProcess(viewModel.processState),
+                    handleAccessibilityIdentifier: "confirm_swipe",
+                    onConfirm: viewModel.confirmSwipe
+                )
+            } else {
+                WalletMigrationProcessFooterRepresentable(
+                    sliderTitle: viewModel.sliderConfirmTitle,
+                    isSliderEnabled: viewModel.isSliderEnabled && !showsScrollHint,
+                    processState: viewModel.processState,
+                    successTitle: TKLocales.Result.success,
+                    errorTitle: TKLocales.Settings.Migration.Confirm.transactionFailed,
+                    processTitle: TKLocales.Settings.Migration.Confirm.sendingTransaction,
+                    onConfirm: viewModel.confirmSwipe
+                )
+            }
         }
     }
 

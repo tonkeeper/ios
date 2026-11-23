@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 @testable import KeeperCore
+import SwapAPI
 import XCTest
 
 final class MultichainSwapSpentSourceAmountTests: XCTestCase {
@@ -91,6 +92,32 @@ final class MultichainSwapSpentSourceAmountTests: XCTestCase {
         let route = makeRoute(sourceAmount: nil, payloads: nil)
 
         XCTAssertNil(route.spentSourceAmount(sourceAsset: tonCoin))
+    }
+
+    /// Captured from a swaps.xyz exact-output quote for 5 USDT (BEP20) paid in BNB: the cap is the
+    /// expected amount plus the 1% slippage.
+    func test_exactOutputRoute_carriesTheCapOnTheAmountSold() {
+        let route = MultichainSwapRoute(
+            api: Components.Schemas.CrossSwapRoute(
+                route_id: "route",
+                aggregator: .swapsxyz,
+                route_type: .cross_chain_swap,
+                source_amount: "6872133194057689",
+                maximum_source_amount: "6940309118601912",
+                estimated_destination_amount: "5000000000000000000",
+                minimum_destination_amount: "5000000000000000000",
+                legs: [],
+                date_expire: Date(timeIntervalSince1970: 1000),
+                risk_level: .medium
+            )
+        )
+
+        XCTAssertEqual(route.quotedSourceAmount, 6_872_133_194_057_689)
+        XCTAssertEqual(route.quotedMaximumSourceAmount, 6_940_309_118_601_912)
+    }
+
+    func test_exactInputRoute_hasNoCap() {
+        XCTAssertNil(makeRoute(sourceAmount: "300000000", payloads: nil).quotedMaximumSourceAmount)
     }
 }
 

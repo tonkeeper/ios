@@ -22,7 +22,7 @@ public final class PerpsChartRenderer: NSObject, ChartDelegate, TimeScaleDelegat
     private var positionMarkers: [PerpsChartPositionMarker] = []
     private var lastCrosshairTimestamp: TimeInterval?
     private var timeZoneOffset: TimeInterval = 0
-    private var lastLogicalRange: LogicalRange?
+    private(set) var lastLogicalRange: LogicalRange?
     private var isArmedForOlderLoad = true
     private var priceDecimals = 2
     private var isPriceUp = true
@@ -122,8 +122,13 @@ public final class PerpsChartRenderer: NSObject, ChartDelegate, TimeScaleDelegat
             applyTail(from: renderedCandles.count - 1, candles: candles, mode: mode)
         } else {
             let prepended = timeframeChanged ? 0 : prependedBarCount(old: renderedCandles, new: candles)
+            let wasStretchedToFit = prepended > 0 && Self.isStretchedToFit(
+                lastLogicalRange,
+                barCount: renderedCandles.count,
+                width: Double(chart?.bounds.width ?? 0)
+            )
             applyFull(candles: candles, mode: mode)
-            if timeframeChanged {
+            if timeframeChanged || wasStretchedToFit {
                 chart?.timeScale().resetTimeScale()
                 lastLogicalRange = nil
                 isArmedForOlderLoad = true
@@ -252,6 +257,13 @@ public final class PerpsChartRenderer: NSObject, ChartDelegate, TimeScaleDelegat
         }
     }
 
+    private static func isStretchedToFit(_ range: LogicalRange?, barCount: Int, width: Double) -> Bool {
+        guard let range, barCount > 0 else { return false }
+        return range.from < 0.5
+            && range.to > Double(barCount) - 1.5
+            && Double(barCount) * defaultBarSpacing < width
+    }
+
     private static func visibleEdges(
         of candles: [PerpsChartCandle],
         in range: LogicalRange?
@@ -271,8 +283,9 @@ public final class PerpsChartRenderer: NSObject, ChartDelegate, TimeScaleDelegat
         case .candle:
             areaSeries?.setData(data: [AreaData]())
         case .line:
-            candleSeries?.setData(data: [RoundedCandlestickData]())
+            // Volume before candles: a time scale of volume points alone clamps the bar spacing up.
             volumeSeries?.setData(data: [RoundedHistogramData]())
+            candleSeries?.setData(data: [RoundedCandlestickData]())
         }
     }
 

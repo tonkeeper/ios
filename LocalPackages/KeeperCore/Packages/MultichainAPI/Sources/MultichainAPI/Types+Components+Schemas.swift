@@ -123,70 +123,6 @@ extension Components {
                 self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
             }
         }
-        /// Connection info for a chain RPC node the client may call directly. Within a chain's list, nodes are ordered best-first by measured health so the client can fall back down the list.
-        ///
-        /// - Remark: Generated from `#/components/schemas/Node`.
-        public struct Node: Codable, Hashable, Sendable {
-            /// RPC endpoint URL the client calls directly.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/url`.
-            public var url: Swift.String
-            /// Suggested client-side request budget in requests per second. 0 means unlimited/unknown.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/rate_limit`.
-            public var rate_limit: Swift.Int
-            /// Auth token to present to the node when it requires one (currently only TON). Empty string for public nodes.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/token`.
-            public var token: Swift.String?
-            /// Node type, either main or fallback
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/type`.
-            @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case main = "main"
-                case fallback = "fallback"
-                case unknown
-                public init(from decoder: any Decoder) throws {
-                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                }
-            }
-            /// Node type, either main or fallback
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/type`.
-            public var _type: Components.Schemas.Node._typePayload
-            /// True when the client must present its device JWT in the Authorization header to call this node. Set for nodes proxied through this backend; absent or false for nodes the client may call anonymously.
-            ///
-            /// - Remark: Generated from `#/components/schemas/Node/is_device_token_required`.
-            public var is_device_token_required: Swift.Bool?
-            /// Creates a new `Node`.
-            ///
-            /// - Parameters:
-            ///   - url: RPC endpoint URL the client calls directly.
-            ///   - rate_limit: Suggested client-side request budget in requests per second. 0 means unlimited/unknown.
-            ///   - token: Auth token to present to the node when it requires one (currently only TON). Empty string for public nodes.
-            ///   - _type: Node type, either main or fallback
-            ///   - is_device_token_required: True when the client must present its device JWT in the Authorization header to call this node. Set for nodes proxied through this backend; absent or false for nodes the client may call anonymously.
-            public init(
-                url: Swift.String,
-                rate_limit: Swift.Int,
-                token: Swift.String? = nil,
-                _type: Components.Schemas.Node._typePayload,
-                is_device_token_required: Swift.Bool? = nil
-            ) {
-                self.url = url
-                self.rate_limit = rate_limit
-                self.token = token
-                self._type = _type
-                self.is_device_token_required = is_device_token_required
-            }
-            public enum CodingKeys: String, CodingKey {
-                case url
-                case rate_limit
-                case token
-                case _type = "type"
-                case is_device_token_required
-            }
-        }
         /// Balance envelope — token metadata + price + amount
         ///
         /// - Remark: Generated from `#/components/schemas/SummaryAsset`.
@@ -464,17 +400,17 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/image`.
             public var image: Swift.String
-            /// True when the asset appears on a curated list (main core coins, Trust Wallet assets, ton-blockchain jettons). Clients can use this for a verified badge and/or a 'show unverified' toggle.
+            /// True when verification is whitelist or trusted, or the asset is a main core coin. Use verification instead.
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/verified`.
             @available(*, deprecated)
             public var verified: Swift.Bool?
-            /// Backend-classified scam flag on the token itself (global, not per-wallet). Clients may render a warning badge or hide by default in balances and activities.
+            /// Always false. Use verification instead.
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/is_scam`.
             @available(*, deprecated)
             public var is_scam: Swift.Bool?
-            /// Union of verify and is_scam
+            /// Asset verification status
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/verification`.
             @frozen public enum verificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
@@ -487,7 +423,7 @@ extension Components {
                     self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
                 }
             }
-            /// Union of verify and is_scam
+            /// Asset verification status
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/verification`.
             public var verification: Components.Schemas.AssetInfo.verificationPayload
@@ -502,9 +438,9 @@ extension Components {
             ///   - symbol: Asset symbol (ticker)
             ///   - decimals: Decimals of coin or token
             ///   - image: Asset image URL
-            ///   - verified: True when the asset appears on a curated list (main core coins, Trust Wallet assets, ton-blockchain jettons). Clients can use this for a verified badge and/or a 'show unverified' toggle.
-            ///   - is_scam: Backend-classified scam flag on the token itself (global, not per-wallet). Clients may render a warning badge or hide by default in balances and activities.
-            ///   - verification: Union of verify and is_scam
+            ///   - verified: True when verification is whitelist or trusted, or the asset is a main core coin. Use verification instead.
+            ///   - is_scam: Always false. Use verification instead.
+            ///   - verification: Asset verification status
             ///   - capabilities:
             public init(
                 asset_id: Swift.String,
@@ -701,50 +637,6 @@ extension Components {
                 case slow
                 case normal
                 case fast
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/DnsResolution`.
-        public struct DnsResolution: Codable, Hashable, Sendable {
-            /// Resolved on-chain address the DNS name points to
-            ///
-            /// - Remark: Generated from `#/components/schemas/DnsResolution/address`.
-            public var address: Swift.String
-            /// True when the resolved account is flagged as part of scam activity by the upstream source
-            ///
-            /// - Remark: Generated from `#/components/schemas/DnsResolution/is_scam`.
-            public var is_scam: Swift.Bool
-            /// Creates a new `DnsResolution`.
-            ///
-            /// - Parameters:
-            ///   - address: Resolved on-chain address the DNS name points to
-            ///   - is_scam: True when the resolved account is flagged as part of scam activity by the upstream source
-            public init(
-                address: Swift.String,
-                is_scam: Swift.Bool
-            ) {
-                self.address = address
-                self.is_scam = is_scam
-            }
-            public enum CodingKeys: String, CodingKey {
-                case address
-                case is_scam
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/StonfiSwapStatus`.
-        public struct StonfiSwapStatus: Codable, Hashable, Sendable {
-            /// True when the account has made a swap on STON.fi
-            ///
-            /// - Remark: Generated from `#/components/schemas/StonfiSwapStatus/has_swap`.
-            public var has_swap: Swift.Bool
-            /// Creates a new `StonfiSwapStatus`.
-            ///
-            /// - Parameters:
-            ///   - has_swap: True when the account has made a swap on STON.fi
-            public init(has_swap: Swift.Bool) {
-                self.has_swap = has_swap
-            }
-            public enum CodingKeys: String, CodingKey {
-                case has_swap
             }
         }
         /// - Remark: Generated from `#/components/schemas/WalletAccount`.
@@ -1211,6 +1103,39 @@ extension Components {
                 case name
             }
         }
+        /// Explorer link for one entry of tx_ids.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ActivityExplorerLink`.
+        public struct ActivityExplorerLink: Codable, Hashable, Sendable {
+            /// The tx_ids entry this link opens, format: chain:txhash
+            ///
+            /// - Remark: Generated from `#/components/schemas/ActivityExplorerLink/tx_id`.
+            public var tx_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ActivityExplorerLink/chain`.
+            public var chain: Components.Schemas.Chain
+            /// - Remark: Generated from `#/components/schemas/ActivityExplorerLink/url`.
+            public var url: Swift.String
+            /// Creates a new `ActivityExplorerLink`.
+            ///
+            /// - Parameters:
+            ///   - tx_id: The tx_ids entry this link opens, format: chain:txhash
+            ///   - chain:
+            ///   - url:
+            public init(
+                tx_id: Swift.String,
+                chain: Components.Schemas.Chain,
+                url: Swift.String
+            ) {
+                self.tx_id = tx_id
+                self.chain = chain
+                self.url = url
+            }
+            public enum CodingKeys: String, CodingKey {
+                case tx_id
+                case chain
+                case url
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Activity`.
         public struct Activity: Codable, Hashable, Sendable {
             /// One of ActivityType; kept a plain string so a new kind does not break older clients
@@ -1352,6 +1277,10 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/explorer_url`.
             public var explorer_url: Swift.String?
+            /// Explorer links for every tx_ids entry, in tx_ids order (a cross-chain swap carries both the source and the destination tx). Entries whose chain has no known explorer template are left out.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/explorer_urls`.
+            public var explorer_urls: [Components.Schemas.ActivityExplorerLink]?
             /// Has the wallet owner acknowledged this activity in the app. Client-driven flag.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/is_read`.
@@ -1360,7 +1289,7 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/is_spam`.
             public var is_spam: Swift.Bool?
-            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived. On a `perps.balance_withdrawal` with status `failed` (a withdrawal through an aggregator): `outcome` is what happened to the money, `refunded` (it is back on the perps balance), `failed` or `expired` (the payout was never made); `failure_code` is why, `not_sent` (the money never reached the aggregator), `reverted` (a transaction was reverted) or `other`. Clients draw their text from it and treat an unknown value as `other`. It is always set, `other` on `expired`. A withdrawal that failed before this was added has neither. `reward` — `{asset, amount, boost}`, what the loyalty program paid for the trade: `asset` is the code (`OHM`), `amount` is a decimal string in whole units with `boost` (the streak part, absent when none) already inside. It arrives after the trade, so a fresh row can have none yet.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public struct metaPayload: Codable, Hashable, Sendable {
@@ -1380,7 +1309,7 @@ extension Components {
                     try encoder.encodeAdditionalProperties(additionalProperties)
                 }
             }
-            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived. On a `perps.balance_withdrawal` with status `failed` (a withdrawal through an aggregator): `outcome` is what happened to the money, `refunded` (it is back on the perps balance), `failed` or `expired` (the payout was never made); `failure_code` is why, `not_sent` (the money never reached the aggregator), `reverted` (a transaction was reverted) or `other`. Clients draw their text from it and treat an unknown value as `other`. It is always set, `other` on `expired`. A withdrawal that failed before this was added has neither. `reward` — `{asset, amount, boost}`, what the loyalty program paid for the trade: `asset` is the code (`OHM`), `amount` is a decimal string in whole units with `boost` (the streak part, absent when none) already inside. It arrives after the trade, so a fresh row can have none yet.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public var meta: Components.Schemas.Activity.metaPayload?
@@ -1416,9 +1345,10 @@ extension Components {
             ///   - _protocol: Bridge/DeFi protocol name (stargate, etc.). Always empty for swap activities.
             ///   - tx_ids: On-chain tx identifiers, format: chain:txhash
             ///   - explorer_url: Ready-to-open explorer URL for the primary tx (source chain for cross-chain bridges). Omitted when the chain has no known explorer template — clients should hide the link in that case.
+            ///   - explorer_urls: Explorer links for every tx_ids entry, in tx_ids order (a cross-chain swap carries both the source and the destination tx). Entries whose chain has no known explorer template are left out.
             ///   - is_read: Has the wallet owner acknowledged this activity in the app. Client-driven flag.
             ///   - is_spam: Backend-classified spam flag on this specific activity. Clients may hide by default or show a warning badge.
-            ///   - meta: Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived.
+            ///   - meta: Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost; `perps` — on a Lighter perps row (chain `lighter`, activity types `perps.*`): `{symbol, asset_id, side, reason, account_index, settled_at}`, plus the position figures a detail screen draws from, all decimal strings and absent when unknown: `size` (base units), `size_usd`, `entry_price` (the position's average entry; on an open or an add, the price of that order), `leverage` (e.g. `"40"`). On `perps.position_opened` and `perps.position_increased` (an add to an open position): `margin_usd`, what the order put up. On `perps.position_reduced` (a partial close) and `perps.position_closed` (the whole position closed, or flipped): `close_price` and `result_pct` (the result against the margin behind the closed part, in percent). On `perps.position_closed` only: `funding_usd`, the total funding of the position over its life, signed (positive was received), already inside the result. `side` is the side of the position, `long` or `short`, not the direction of the trade. `reason` is set on `perps.position_reduced` and `perps.position_closed`: `manual`, `take_profit`, `stop_loss` or `liquidation`. `asset_id` is the market's catalog asset (`lighter/<network>/<market_id>`); `account_index` is the Lighter account; `settled_at` is when a deposit arrived. On a `perps.balance_withdrawal` with status `failed` (a withdrawal through an aggregator): `outcome` is what happened to the money, `refunded` (it is back on the perps balance), `failed` or `expired` (the payout was never made); `failure_code` is why, `not_sent` (the money never reached the aggregator), `reverted` (a transaction was reverted) or `other`. Clients draw their text from it and treat an unknown value as `other`. It is always set, `other` on `expired`. A withdrawal that failed before this was added has neither. `reward` — `{asset, amount, boost}`, what the loyalty program paid for the trade: `asset` is the code (`OHM`), `amount` is a decimal string in whole units with `boost` (the streak part, absent when none) already inside. It arrives after the trade, so a fresh row can have none yet.
             public init(
                 activity_type: Swift.String,
                 status: Components.Schemas.ActivityStatus,
@@ -1449,6 +1379,7 @@ extension Components {
                 _protocol: Swift.String? = nil,
                 tx_ids: [Swift.String],
                 explorer_url: Swift.String? = nil,
+                explorer_urls: [Components.Schemas.ActivityExplorerLink]? = nil,
                 is_read: Swift.Bool? = nil,
                 is_spam: Swift.Bool? = nil,
                 meta: Components.Schemas.Activity.metaPayload? = nil
@@ -1482,6 +1413,7 @@ extension Components {
                 self._protocol = _protocol
                 self.tx_ids = tx_ids
                 self.explorer_url = explorer_url
+                self.explorer_urls = explorer_urls
                 self.is_read = is_read
                 self.is_spam = is_spam
                 self.meta = meta
@@ -1516,6 +1448,7 @@ extension Components {
                 case _protocol = "protocol"
                 case tx_ids
                 case explorer_url
+                case explorer_urls
                 case is_read
                 case is_spam
                 case meta
@@ -1533,7 +1466,7 @@ extension Components {
             public var tx_hash: Swift.String
             /// - Remark: Generated from `#/components/schemas/PendingTransaction/activity_type`.
             public var activity_type: Components.Schemas.ActivityType
-            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here.
+            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here; `to_address` — on a cross-chain swap, the recipient on the destination chain (the quote's `recipient_address`), shown as the pending swap's counterparty.
             ///
             /// - Remark: Generated from `#/components/schemas/PendingTransaction/payload`.
             public struct payloadPayload: Codable, Hashable, Sendable {
@@ -1553,7 +1486,7 @@ extension Components {
                     try encoder.encodeAdditionalProperties(additionalProperties)
                 }
             }
-            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here.
+            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here; `to_address` — on a cross-chain swap, the recipient on the destination chain (the quote's `recipient_address`), shown as the pending swap's counterparty.
             ///
             /// - Remark: Generated from `#/components/schemas/PendingTransaction/payload`.
             public var payload: Components.Schemas.PendingTransaction.payloadPayload?
@@ -1564,7 +1497,7 @@ extension Components {
             ///   - network:
             ///   - tx_hash:
             ///   - activity_type:
-            ///   - payload: Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here.
+            ///   - payload: Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself. Read on a swap only. Known fields: `from_asset_id` and `to_asset_id` — catalog ids of the asset sold and the asset bought; `from_amount` and `to_amount` — their amounts in base units, as an integer string; `from_address` — the sending address, which is what attributes the swap to a wallet before it is indexed; `aggregator` — who routed the swap, of which only `swapsxyz` is registered with swaps.xyz; `provider_route_id` — the aggregator's own route id, for swaps.xyz its `txId`, which registers the broadcast hash and keys the pending swap so the webhook and this row converge; `route_id` — the swap backend's own id for the route, stored as sent and not interpreted here; `to_address` — on a cross-chain swap, the recipient on the destination chain (the quote's `recipient_address`), shown as the pending swap's counterparty.
             public init(
                 chain: Components.Schemas.Chain,
                 network: Components.Schemas.Network,
@@ -1584,78 +1517,6 @@ extension Components {
                 case tx_hash
                 case activity_type
                 case payload
-            }
-        }
-        /// Whitelisted java-tron HTTP methods the proxy forwards via POST — the set the mobile TronRpcClient uses.
-        ///
-        /// - Remark: Generated from `#/components/schemas/TronRpcMethod`.
-        @frozen public enum TronRpcMethod: String, Codable, Hashable, Sendable, CaseIterable {
-            case getaccount = "getaccount"
-            case getaccountresource = "getaccountresource"
-            case getchainparameters = "getchainparameters"
-            case getReward = "getReward"
-            case getnowblock = "getnowblock"
-            case gettransactionbyid = "gettransactionbyid"
-            case getcontract = "getcontract"
-            case getcontractinfo = "getcontractinfo"
-            case triggerconstantcontract = "triggerconstantcontract"
-            case broadcasttransaction = "broadcasttransaction"
-            case broadcasthex = "broadcasthex"
-            case unknown
-            public init(from decoder: any Decoder) throws {
-                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-            }
-        }
-        /// java-tron methods the proxy also serves over GET — the no-arg reads (getnowblock, getchainparameters) plus listwitnesses, which takes only query params.
-        ///
-        /// - Remark: Generated from `#/components/schemas/TronRpcGetMethod`.
-        @frozen public enum TronRpcGetMethod: String, Codable, Hashable, Sendable, CaseIterable {
-            case listwitnesses = "listwitnesses"
-            case getnowblock = "getnowblock"
-            case getchainparameters = "getchainparameters"
-            case unknown
-            public init(from decoder: any Decoder) throws {
-                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-            }
-        }
-        /// java-tron request body, forwarded to the node as-is (e.g. { address, visible } for getaccount, {} for getchainparameters)
-        ///
-        /// - Remark: Generated from `#/components/schemas/TronRpcCall`.
-        public struct TronRpcCall: Codable, Hashable, Sendable {
-            /// A container of undocumented properties.
-            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-            /// Creates a new `TronRpcCall`.
-            ///
-            /// - Parameters:
-            ///   - additionalProperties: A container of undocumented properties.
-            public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
-                self.additionalProperties = additionalProperties
-            }
-            public init(from decoder: any Swift.Decoder) throws {
-                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-            }
-            public func encode(to encoder: any Swift.Encoder) throws {
-                try encoder.encodeAdditionalProperties(additionalProperties)
-            }
-        }
-        /// java-tron response body, passed through verbatim; node-level failures are the node's own { Error: ... } shape
-        ///
-        /// - Remark: Generated from `#/components/schemas/TronRpcResult`.
-        public struct TronRpcResult: Codable, Hashable, Sendable {
-            /// A container of undocumented properties.
-            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-            /// Creates a new `TronRpcResult`.
-            ///
-            /// - Parameters:
-            ///   - additionalProperties: A container of undocumented properties.
-            public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
-                self.additionalProperties = additionalProperties
-            }
-            public init(from decoder: any Swift.Decoder) throws {
-                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-            }
-            public func encode(to encoder: any Swift.Encoder) throws {
-                try encoder.encodeAdditionalProperties(additionalProperties)
             }
         }
         /// Per-wallet relationship to the raffle
@@ -2222,6 +2083,8 @@ extension Components {
             public var stories: [Components.Schemas.RaffleStory]?
             /// - Remark: Generated from `#/components/schemas/Raffle/progress`.
             public var progress: Components.Schemas.RaffleProgress?
+            /// - Remark: Generated from `#/components/schemas/Raffle/leaderboard`.
+            public var leaderboard: Components.Schemas.RaffleLeaderboard?
             /// Creates a new `Raffle`.
             ///
             /// - Parameters:
@@ -2244,6 +2107,7 @@ extension Components {
             ///   - banner:
             ///   - stories:
             ///   - progress:
+            ///   - leaderboard:
             public init(
                 id: Swift.String,
                 status: Components.Schemas.RaffleStatus,
@@ -2263,7 +2127,8 @@ extension Components {
                 cta: Components.Schemas.RaffleCTA,
                 banner: Components.Schemas.RaffleBanner? = nil,
                 stories: [Components.Schemas.RaffleStory]? = nil,
-                progress: Components.Schemas.RaffleProgress? = nil
+                progress: Components.Schemas.RaffleProgress? = nil,
+                leaderboard: Components.Schemas.RaffleLeaderboard? = nil
             ) {
                 self.id = id
                 self.status = status
@@ -2284,6 +2149,7 @@ extension Components {
                 self.banner = banner
                 self.stories = stories
                 self.progress = progress
+                self.leaderboard = leaderboard
             }
             public enum CodingKeys: String, CodingKey {
                 case id
@@ -2305,6 +2171,124 @@ extension Components {
                 case banner
                 case stories
                 case progress
+                case leaderboard
+            }
+        }
+        /// Points and ranking of a leaderboard raffle; set only for that kind
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard`.
+        public struct RaffleLeaderboard: Codable, Hashable, Sendable {
+            /// End of the current hold window; absent once no window is left
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/next_hold_at`.
+            public var next_hold_at: Foundation.Date?
+            /// Decimal string, two decimals
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/trade_points`.
+            public var trade_points: Swift.String
+            /// Decimal string, two decimals
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/hold_points`.
+            public var hold_points: Swift.String
+            /// Sum of trade_points and hold_points; decimal string, two decimals
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/points`.
+            public var points: Swift.String
+            /// Absent until the wallet is on the leaderboard
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/rank`.
+            public var rank: Swift.Int?
+            /// After the reveal: in the reserve (status lost), or a seat passed on from the reserve (status won)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/result`.
+            @frozen public enum resultPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case reserve = "reserve"
+                case seat_opened = "seat_opened"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// After the reveal: in the reserve (status lost), or a seat passed on from the reserve (status won)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/result`.
+            public var result: Components.Schemas.RaffleLeaderboard.resultPayload?
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboard/top`.
+            public var top: [Components.Schemas.RaffleLeaderboardRow]
+            /// Creates a new `RaffleLeaderboard`.
+            ///
+            /// - Parameters:
+            ///   - next_hold_at: End of the current hold window; absent once no window is left
+            ///   - trade_points: Decimal string, two decimals
+            ///   - hold_points: Decimal string, two decimals
+            ///   - points: Sum of trade_points and hold_points; decimal string, two decimals
+            ///   - rank: Absent until the wallet is on the leaderboard
+            ///   - result: After the reveal: in the reserve (status lost), or a seat passed on from the reserve (status won)
+            ///   - top:
+            public init(
+                next_hold_at: Foundation.Date? = nil,
+                trade_points: Swift.String,
+                hold_points: Swift.String,
+                points: Swift.String,
+                rank: Swift.Int? = nil,
+                result: Components.Schemas.RaffleLeaderboard.resultPayload? = nil,
+                top: [Components.Schemas.RaffleLeaderboardRow]
+            ) {
+                self.next_hold_at = next_hold_at
+                self.trade_points = trade_points
+                self.hold_points = hold_points
+                self.points = points
+                self.rank = rank
+                self.result = result
+                self.top = top
+            }
+            public enum CodingKeys: String, CodingKey {
+                case next_hold_at
+                case trade_points
+                case hold_points
+                case points
+                case rank
+                case result
+                case top
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleLeaderboardRow`.
+        public struct RaffleLeaderboardRow: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboardRow/rank`.
+            public var rank: Swift.Int
+            /// Shortened address, aaaa…bbbb
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboardRow/address`.
+            public var address: Swift.String
+            /// Decimal string, two decimals
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboardRow/points`.
+            public var points: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleLeaderboardRow/is_me`.
+            public var is_me: Swift.Bool
+            /// Creates a new `RaffleLeaderboardRow`.
+            ///
+            /// - Parameters:
+            ///   - rank:
+            ///   - address: Shortened address, aaaa…bbbb
+            ///   - points: Decimal string, two decimals
+            ///   - is_me:
+            public init(
+                rank: Swift.Int,
+                address: Swift.String,
+                points: Swift.String,
+                is_me: Swift.Bool
+            ) {
+                self.rank = rank
+                self.address = address
+                self.points = points
+                self.is_me = is_me
+            }
+            public enum CodingKeys: String, CodingKey {
+                case rank
+                case address
+                case points
+                case is_me
             }
         }
         /// - Remark: Generated from `#/components/schemas/AuthChallenge`.
@@ -2400,7 +2384,7 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/schemas/WalletRegisterItem`.
         public struct WalletRegisterItem: Codable, Hashable, Sendable {
-            /// Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 1 for multichain.
+            /// Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 0 for legacy, 1 for multichain, 0x80 for ledger.
             ///
             /// - Remark: Generated from `#/components/schemas/WalletRegisterItem/wallet_id`.
             public var wallet_id: Swift.String?
@@ -2415,7 +2399,7 @@ extension Components {
             /// Creates a new `WalletRegisterItem`.
             ///
             /// - Parameters:
-            ///   - wallet_id: Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 1 for multichain.
+            ///   - wallet_id: Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 0 for legacy, 1 for multichain, 0x80 for ledger.
             ///   - wallet_proof: Signature by the wallet root key: 65 bytes (130 hex) secp256k1 recoverable, laid out `R ‖ S ‖ V` as on EVM. Message layout is in BACKEND.md.
             ///   - accounts: `accounts_digest` = blake2b-256 over the compact JSON array of `{address, chain, network, type?}` objects, sorted by (address, chain, network, type).
             public init(
@@ -2454,7 +2438,7 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/wallet_id`.
             public var wallet_id: Swift.String?
-            /// Machine-readable reason when status=failed: invalid_proof, invalid_accounts, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
+            /// Machine-readable reason when status=failed: invalid_proof, invalid_accounts, burn_address, address_limit_reached, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
             ///
             /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/error`.
             public var error: Swift.String?
@@ -2464,7 +2448,7 @@ extension Components {
             ///   - index: Position of this item in the request array
             ///   - status:
             ///   - wallet_id: The id the wallet is filed under, present when status=ok.
-            ///   - error: Machine-readable reason when status=failed: invalid_proof, invalid_accounts, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
+            ///   - error: Machine-readable reason when status=failed: invalid_proof, invalid_accounts, burn_address, address_limit_reached, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
             public init(
                 index: Swift.Int,
                 status: Components.Schemas.WalletRegisterResult.statusPayload,
@@ -2481,153 +2465,6 @@ extension Components {
                 case status
                 case wallet_id
                 case error
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/IntrospectResult`.
-        public struct IntrospectResult: Codable, Hashable, Sendable {
-            /// False for a revoked device and for one we have never seen — the two are deliberately indistinguishable.
-            ///
-            /// - Remark: Generated from `#/components/schemas/IntrospectResult/active`.
-            public var active: Swift.Bool
-            /// Current refresh_version. Compare with the token's `rv` to spot a token issued before a rotation.
-            ///
-            /// - Remark: Generated from `#/components/schemas/IntrospectResult/rv`.
-            public var rv: Swift.Int
-            /// Present only when wallet_id was supplied.
-            ///
-            /// - Remark: Generated from `#/components/schemas/IntrospectResult/member`.
-            public var member: Swift.Bool?
-            /// Every wallet bound to the device. Returned only when no wallet_id was supplied, since the set can run to a couple of hundred.
-            ///
-            /// - Remark: Generated from `#/components/schemas/IntrospectResult/wallets`.
-            public var wallets: [Swift.String]?
-            /// Creates a new `IntrospectResult`.
-            ///
-            /// - Parameters:
-            ///   - active: False for a revoked device and for one we have never seen — the two are deliberately indistinguishable.
-            ///   - rv: Current refresh_version. Compare with the token's `rv` to spot a token issued before a rotation.
-            ///   - member: Present only when wallet_id was supplied.
-            ///   - wallets: Every wallet bound to the device. Returned only when no wallet_id was supplied, since the set can run to a couple of hundred.
-            public init(
-                active: Swift.Bool,
-                rv: Swift.Int,
-                member: Swift.Bool? = nil,
-                wallets: [Swift.String]? = nil
-            ) {
-                self.active = active
-                self.rv = rv
-                self.member = member
-                self.wallets = wallets
-            }
-            public enum CodingKeys: String, CodingKey {
-                case active
-                case rv
-                case member
-                case wallets
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/Jwk`.
-        public struct Jwk: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/Jwk/kty`.
-            @frozen public enum ktyPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case EC = "EC"
-                case unknown
-                public init(from decoder: any Decoder) throws {
-                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/Jwk/kty`.
-            public var kty: Components.Schemas.Jwk.ktyPayload
-            /// - Remark: Generated from `#/components/schemas/Jwk/crv`.
-            @frozen public enum crvPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case P_hyphen_256 = "P-256"
-                case unknown
-                public init(from decoder: any Decoder) throws {
-                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/Jwk/crv`.
-            public var crv: Components.Schemas.Jwk.crvPayload
-            /// base64url of the 32-byte X coordinate
-            ///
-            /// - Remark: Generated from `#/components/schemas/Jwk/x`.
-            public var x: Swift.String
-            /// base64url of the 32-byte Y coordinate
-            ///
-            /// - Remark: Generated from `#/components/schemas/Jwk/y`.
-            public var y: Swift.String
-            /// - Remark: Generated from `#/components/schemas/Jwk/kid`.
-            public var kid: Swift.String
-            /// - Remark: Generated from `#/components/schemas/Jwk/alg`.
-            @frozen public enum algPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case ES256 = "ES256"
-                case unknown
-                public init(from decoder: any Decoder) throws {
-                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/Jwk/alg`.
-            public var alg: Components.Schemas.Jwk.algPayload
-            /// - Remark: Generated from `#/components/schemas/Jwk/use`.
-            @frozen public enum usePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                case sig = "sig"
-                case unknown
-                public init(from decoder: any Decoder) throws {
-                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-                }
-            }
-            /// - Remark: Generated from `#/components/schemas/Jwk/use`.
-            public var use: Components.Schemas.Jwk.usePayload
-            /// Creates a new `Jwk`.
-            ///
-            /// - Parameters:
-            ///   - kty:
-            ///   - crv:
-            ///   - x: base64url of the 32-byte X coordinate
-            ///   - y: base64url of the 32-byte Y coordinate
-            ///   - kid:
-            ///   - alg:
-            ///   - use:
-            public init(
-                kty: Components.Schemas.Jwk.ktyPayload,
-                crv: Components.Schemas.Jwk.crvPayload,
-                x: Swift.String,
-                y: Swift.String,
-                kid: Swift.String,
-                alg: Components.Schemas.Jwk.algPayload,
-                use: Components.Schemas.Jwk.usePayload
-            ) {
-                self.kty = kty
-                self.crv = crv
-                self.x = x
-                self.y = y
-                self.kid = kid
-                self.alg = alg
-                self.use = use
-            }
-            public enum CodingKeys: String, CodingKey {
-                case kty
-                case crv
-                case x
-                case y
-                case kid
-                case alg
-                case use
-            }
-        }
-        /// - Remark: Generated from `#/components/schemas/Jwks`.
-        public struct Jwks: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/Jwks/keys`.
-            public var keys: [Components.Schemas.Jwk]
-            /// Creates a new `Jwks`.
-            ///
-            /// - Parameters:
-            ///   - keys:
-            public init(keys: [Components.Schemas.Jwk]) {
-                self.keys = keys
-            }
-            public enum CodingKeys: String, CodingKey {
-                case keys
             }
         }
     }

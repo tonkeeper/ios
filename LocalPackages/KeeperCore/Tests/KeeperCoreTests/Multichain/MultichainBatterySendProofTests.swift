@@ -44,7 +44,7 @@ final class MultichainBatterySendProofTests: XCTestCase {
 
     private func makeProof(walletId: String, boc: String) throws -> String {
         let wallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
-        let keyPair = wallet.walletKeyPair(kind: ChainKitServiceImplementation.walletKind)
+        let keyPair = wallet.walletKeyPair()
         defer { keyPair.privateKey.fillZeros() }
         return WalletAuth().signBatterySendProof(
             keyPair: keyPair,

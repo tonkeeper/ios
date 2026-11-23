@@ -2,16 +2,13 @@ import Foundation
 import TKLocalize
 
 enum PerpsFundingConfirmRows {
-    static func arrivalTime(seconds: Int) -> PerpsTradeConfirmRow {
-        arrivalTime(minutes: max(1, Int((Double(seconds) / 60).rounded(.up))))
-    }
-
-    static func arrivalTime(minutes: Int) -> PerpsTradeConfirmRow {
+    static func arrivalTime(seconds: Int, hint: String? = nil) -> PerpsTradeConfirmRow {
         PerpsTradeConfirmRow(
             id: .arrivalTime,
             title: TKLocales.Perps.Funding.arrivalTime,
-            value: TKLocales.Ramp.Deposit.upToMin(minutes),
-            subValue: nil
+            value: TKLocales.Ramp.Deposit.upToMin(max(1, Int((Double(seconds) / 60).rounded(.up)))),
+            subValue: nil,
+            titleHint: hint
         )
     }
 
@@ -25,7 +22,7 @@ enum PerpsFundingConfirmRows {
         guard let fee else {
             return PerpsTradeConfirmRow(id: .networkFee, title: title, value: PerpsFundingText.missing, subValue: nil, tone: .tertiary)
         }
-        let token = "\(fee) \(symbol)"
+        let token = PerpsFundingAmountInput.decimal(fee).map { format.tokenCompact($0, symbol: symbol) } ?? "\(fee) \(symbol)"
         guard let usd else {
             return PerpsTradeConfirmRow(id: .networkFee, title: title, value: "≈ \(token)", subValue: nil)
         }
@@ -33,7 +30,7 @@ enum PerpsFundingConfirmRows {
             id: .networkFee,
             title: title,
             value: "≈ \(format.usd(NSDecimalNumber(decimal: usd).doubleValue))",
-            subValue: token
+            subValue: symbol == "USDC" || symbol == "USD" ? nil : token
         )
     }
 

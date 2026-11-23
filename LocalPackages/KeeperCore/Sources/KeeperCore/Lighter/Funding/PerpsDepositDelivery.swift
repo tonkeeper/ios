@@ -19,6 +19,16 @@ protocol PerpsDepositDelivery {
     /// before the user has agreed to anything.
     func networkFeeUnits(of operation: PerpsDepositOperation, on chain: MultichainChain) async -> BigUInt?
 
+    func walletNetworkFeeUnits(of operation: PerpsDepositOperation, on chain: MultichainChain) async -> [String: BigUInt]
+
+    func tronBandwidthFeeUnits() async -> BigUInt?
+
+    func bitcoinBytePrice(paying units: BigUInt, from sender: String) async -> BigUInt?
+
+    /// The account of `asset`, the chain's own coin when `nil`, at `sender`: the address the
+    /// operation was quoted for. No keys, so a review reads the same account before the unlock as after it.
+    func account(of asset: PerpsFundingAsset?, on chain: MultichainChain, sender: String) throws -> ChainKit.Account
+
     /// One unlock. The derived keys live in the returned session and nowhere else.
     func broadcastLegacy(_ step: PerpsPendingL1Step, on chain: MultichainChain, expiresAt: Date?) async throws
     func broadcast(_ transmission: PerpsDepositTransmission, on chain: MultichainChain, persist: (ChainKitSignedTransaction) async throws -> Void) async throws
@@ -46,15 +56,114 @@ struct PerpsChainKitDepositDelivery: PerpsDepositDelivery {
     }
 
     func networkFeeUnits(of operation: PerpsDepositOperation, on chain: MultichainChain) async -> BigUInt? {
-        guard let parsed = try? operation.parsed(),
-              let account = try? ChainKitOperationSender.account(wallet: wallet, chain: chain)
-        else { return nil }
+        let parsed: ChainKit.Operation
+        let account: ChainKit.Account
+        do {
+            parsed = try operation.parsed()
+            account = try ChainKitOperationSender.account(wallet: wallet, chain: chain)
+        } catch {
+            PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "wallet", error: error, fields: ["chain": chain.rawValue])
+            return nil
+        }
         var total = BigUInt(0)
         for fee in await sender.fees(of: parsed, account: account) {
-            guard let fee, let amount = BigUInt(fee.amount.description) else { return nil }
+            guard let fee, let amount = BigUInt(fee.amount.description) else {
+                PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "chain_rpc", fields: ["chain": chain.rawValue, "reason": "fee_not_priced"])
+                return nil
+            }
             total += amount
         }
         return total
+    }
+
+    func walletNetworkFeeUnits(of operation: PerpsDepositOperation, on chain: MultichainChain) async -> [String: BigUInt] {
+        let unpriced: ChainKit.Operation
+        let account: ChainKit.Account
+        do {
+            let parsed = try operation.parsed()
+            unpriced = ChainKit.Operation.Companion.shared.build(id: parsed.id, payloads: parsed.payloads.filter { $0.fee != nil }.map {
+                $0.doCopy(id: $0.id, type: $0.type, chain: $0.chain, version: $0.version, fee: nil, meta: $0.meta)
+            })
+            account = try ChainKitOperationSender.account(wallet: wallet, chain: chain)
+        } catch {
+            PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "wallet", error: error, fields: ["chain": chain.rawValue, "reason": "wallet_estimate"])
+            return [:]
+        }
+        let coinId = account.chain.toAsset().id
+        var units = [String: BigUInt]()
+        for (payload, fee) in zip(unpriced.payloads, await sender.fees(of: unpriced, account: account)) {
+            guard let fee, fee.asset.id == coinId, let amount = BigUInt(fee.amount.description) else {
+                PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "chain_rpc", fields: ["chain": chain.rawValue, "payload_id": payload.id, "reason": "wallet_estimate"])
+                continue
+            }
+            units[payload.id] = amount
+        }
+        return units
+    }
+
+    func tronBandwidthFeeUnits() async -> BigUInt? {
+        let units: BigUInt?
+        do {
+            let account = try ChainKitOperationSender.account(wallet: wallet, chain: .tron)
+            let payload = ChainKit.Payload(
+                id: "tron_bandwidth",
+                type: .main,
+                chain: account.chain,
+                version: ChainKit.Payload.Companion.shared.VERSION,
+                fee: nil,
+                meta: PayloadMetaTronMain(
+                    to: account.address,
+                    value: BignumBigInteger.Companion.shared.parseString(string: "0", base: 10),
+                    data: nil,
+                    memo: nil
+                )
+            )
+            let operation = ChainKit.Operation.Companion.shared.build(id: "tron_bandwidth", payloads: [payload])
+            let fee = await sender.fees(of: operation, account: account).first ?? nil
+            units = fee.flatMap { BigUInt($0.amount.description) }
+        } catch {
+            PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "wallet", error: error, fields: ["chain": MultichainChain.tron.rawValue, "reason": "bandwidth"])
+            return nil
+        }
+        PerpsOperationLog.event("network_fee", outcome: units == nil ? "unavailable" : "bandwidth", source: "chain_rpc", fields: ["chain": MultichainChain.tron.rawValue, "bandwidth_units": units?.description ?? "none"])
+        return units
+    }
+
+    func bitcoinBytePrice(paying units: BigUInt, from sender: String) async -> BigUInt? {
+        let price: BigUInt?
+        do {
+            let account = try account(of: nil, on: .btc, sender: sender)
+            let payload = ChainKit.Payload(
+                id: "bitcoin_byte_price",
+                type: .main,
+                chain: account.chain,
+                version: ChainKit.Payload.Companion.shared.VERSION,
+                fee: nil,
+                meta: PayloadMetaBitcoinMain(
+                    to: account.address,
+                    value: BignumBigInteger.Companion.shared.parseString(string: units.description, base: 10),
+                    memo: nil
+                )
+            )
+            let operation = ChainKit.Operation.Companion.shared.build(id: "bitcoin_byte_price", payloads: [payload])
+            let fee = await self.sender.fees(of: operation, account: account).first ?? nil
+            price = (fee as? FeeGas).flatMap { BigUInt($0.price.description, radix: 10) }
+        } catch {
+            PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "wallet", error: error, fields: ["chain": MultichainChain.btc.rawValue, "reason": "byte_price"])
+            return nil
+        }
+        PerpsOperationLog.event("network_fee", outcome: price == nil ? "unavailable" : "byte_price", source: "chain_rpc", fields: ["chain": MultichainChain.btc.rawValue, "byte_price": price?.description ?? "none"])
+        return price
+    }
+
+    func account(of asset: PerpsFundingAsset?, on chain: MultichainChain, sender: String) throws -> ChainKit.Account {
+        let account = try ChainKitOperationSender.account(wallet: wallet, chain: chain, holding: asset.map {
+            MultichainAssetDetails(assetId: $0.assetId, name: $0.symbol, symbol: $0.symbol, decimals: $0.decimals, image: "")
+        })
+        guard PerpsFundingAssetId.sameAddress(account.addressDisplay, sender) else {
+            throw ChainKitOperationError.keyMismatch(expected: sender, unlocked: account.addressDisplay)
+        }
+        return account
     }
 
     func broadcastLegacy(_ step: PerpsPendingL1Step, on chain: MultichainChain, expiresAt: Date?) async throws {
@@ -137,7 +246,7 @@ struct PerpsChainKitDepositDelivery: PerpsDepositDelivery {
     private struct Session: PerpsDepositSigningSession {
         let sender: ChainKitOperationSender
         let wallet: Wallet
-        let cryptoWallet: CryptoWallet
+        let cryptoWallet: MnemonicWallet
 
         var registrationAddress: String {
             cryptoWallet.getAddress(chain: ChainEthereumMainnet.shared).display
@@ -148,7 +257,7 @@ struct PerpsChainKitDepositDelivery: PerpsDepositDelivery {
             guard PerpsFundingAssetId.sameAddress(account.addressDisplay, quoted) else {
                 throw ChainKitOperationError.keyMismatch(expected: quoted, unlocked: account.addressDisplay)
             }
-            return try await sender.send(operation.parsed(), account: account, wallet: cryptoWallet, expiresAt: expiresAt, saved: saved, persist: persist)
+            return try await sender.send(operation.parsed(), account: account, wallet: cryptoWallet, expiresAt: expiresAt, fees: [], saved: saved, persist: persist)
         }
 
         func signDocuments(_ operation: PerpsDepositOperation, owner: String) async throws -> [String: String] {

@@ -204,3 +204,16 @@ public extension TKTextStyle {
         uppercased: true
     )
 }
+
+public extension TKTextStyle {
+    /// Loads the font files and their OpenType feature tables, which the first frame otherwise loads on the main thread.
+    static func warmUp() {
+        let styles: [TKTextStyle] = [
+            .balance, .num1, .h1, .num2, .h2, .h3, .label1, .label2, .label3,
+            .body1, .body1Mono, .body2, .body3, .body3Alternate, .body4, .body4Bold, .body4Caps,
+        ] + BalanceSwiftUIView.amountTextStyles
+        for style in styles {
+            _ = NSAttributedString(string: "Aa 0123456789", attributes: [.font: style.font]).size()
+        }
+    }
+}

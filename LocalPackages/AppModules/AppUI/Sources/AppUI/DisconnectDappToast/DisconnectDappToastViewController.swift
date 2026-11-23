@@ -40,19 +40,19 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
             view.addSubview(toastViewController.view)
             toastViewController.didMove(toParent: self)
 
-            toastViewController.view.snp.makeConstraints { make in
-                make.left.right.equalTo(self.view)
-                    .inset(16)
-                make.bottom.equalTo(self.view.snp.top)
-            }
+            let toastView: UIView = toastViewController.view
+            toastView.translatesAutoresizingMaskIntoConstraints = false
+            let offscreenConstraint = toastView.bottomAnchor.constraint(equalTo: view.topAnchor)
+            NSLayoutConstraint.activate([
+                toastView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+                toastView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+                offscreenConstraint,
+            ])
 
             view.layoutIfNeeded()
 
-            toastViewController.view.snp.remakeConstraints { make in
-                make.left.right.equalTo(self.view)
-                    .inset(16)
-                make.top.equalTo(self.view.safeAreaLayoutGuide.snp.top)
-            }
+            offscreenConstraint.isActive = false
+            toastView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
 
             UIView.animate(
                 withDuration: Constants.springAnimationDuration,

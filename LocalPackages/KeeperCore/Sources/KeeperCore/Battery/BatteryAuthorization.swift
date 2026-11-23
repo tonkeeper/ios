@@ -1,4 +1,5 @@
 import Foundation
+import TKLogging
 
 /// Credentials the battery accepts for one wallet. Exactly one identity travels per request: a
 /// wallet with a backend wallet id authenticates by that id and the device session, every other
@@ -57,6 +58,22 @@ struct BatteryAuthorization: Equatable {
 
 enum BatteryAuthorizationError: Error, Equatable {
     case unavailable
+    case legacyProofUnavailable
+    case deviceSessionFailure(DeviceAuthError)
+}
+
+extension BatteryAuthorizationError: LoggableError {
+    var logDescription: String {
+        let description = LogDescription(type: Self.self)
+        switch self {
+        case .unavailable:
+            return description.with("case", "unavailable").text
+        case .legacyProofUnavailable:
+            return description.with("case", "legacyProofUnavailable").text
+        case let .deviceSessionFailure(underlying):
+            return description.with("case", "deviceSessionFailure").with("underlying", error: underlying).text
+        }
+    }
 }
 
 final class BatteryAuthorizationService {
@@ -76,7 +93,7 @@ final class BatteryAuthorizationService {
 
     func authorization(for wallet: Wallet) async throws -> BatteryAuthorization {
         if let walletId = walletId(for: wallet) {
-            guard let deviceAccessToken = await deviceAccessToken(for: wallet) else {
+            guard let deviceAccessToken = try await deviceAccessToken(for: wallet) else {
                 throw BatteryAuthorizationError.unavailable
             }
             return await BatteryAuthorization(
@@ -87,7 +104,7 @@ final class BatteryAuthorizationService {
             )
         }
         guard let tonProof = tonProof(for: wallet) else {
-            throw BatteryAuthorizationError.unavailable
+            throw BatteryAuthorizationError.legacyProofUnavailable
         }
         return BatteryAuthorization(tonProof: tonProof, walletId: nil, deviceAccessToken: nil)
     }
@@ -115,6 +132,48 @@ final class BatteryAuthorizationService {
         )
     }
 
+    func withMigrationAuthorization<T>(
+        from sourceWallet: Wallet,
+        to destinationWallet: Wallet,
+        validateDestination: (BatteryAuthorization) async throws -> Void,
+        operation: (BatteryAuthorization) async throws -> T
+    ) async throws -> T {
+        guard let tonProof = tonProof(for: sourceWallet) else {
+            throw BatteryAuthorizationError.legacyProofUnavailable
+        }
+        let destination = try await authorization(for: destinationWallet)
+        guard destination.walletId != nil else {
+            throw BatteryAuthorizationError.unavailable
+        }
+        func migrationAuthorization(_ destination: BatteryAuthorization) -> BatteryAuthorization {
+            BatteryAuthorization(
+                tonProof: tonProof,
+                walletId: destination.walletId,
+                deviceAccessToken: destination.deviceAccessToken,
+                walletAuthToken: destination.walletAuthToken
+            )
+        }
+        do {
+            return try await operation(migrationAuthorization(destination))
+        } catch let error as BatteryAPI.ApiError {
+            guard case .badStatus(status: 401, message: _) = error else { throw error }
+            // A migration 401 can reject either identity. Only a device-only request may
+            // invalidate the shared session; a rejected legacy proof must leave it intact.
+            let validated: BatteryAuthorization
+            do {
+                validated = try await withAuthorization(for: destinationWallet) { authorization in
+                    try await validateDestination(authorization)
+                    return authorization
+                }
+            } catch let probeError as BatteryAPI.ApiError {
+                guard case .badStatus(status: 401, message: _) = probeError else { throw probeError }
+                throw BatteryAuthorizationError.unavailable
+            }
+            guard validated.deviceAccessToken != destination.deviceAccessToken else { throw error }
+            return try await operation(migrationAuthorization(validated))
+        }
+    }
+
     private func withAuthorization<T>(
         _ authorization: BatteryAuthorization,
         operation: (BatteryAuthorization) async throws -> T
@@ -129,7 +188,12 @@ final class BatteryAuthorizationService {
                 throw error
             }
 
-            let recovered = try await deviceAuth.recoverSession(invalidating: expiredToken)
+            let recovered: DeviceAuthSession
+            do {
+                recovered = try await deviceAuth.recoverSession(invalidating: expiredToken)
+            } catch {
+                throw Self.sessionFailure(error)
+            }
             guard !recovered.accessToken.isEmpty else {
                 throw BatteryAuthorizationError.unavailable
             }
@@ -178,13 +242,18 @@ private extension BatteryAuthorizationService {
 
     /// Only a wallet the backend can identify needs a device session, so a legacy wallet never pays
     /// for one just to read its battery balance.
-    func deviceAccessToken(for wallet: Wallet) async -> String? {
-        guard walletId(for: wallet) != nil,
-              let session = try? await deviceAuth.session(),
-              !session.accessToken.isEmpty
-        else {
-            return nil
+    func deviceAccessToken(for wallet: Wallet) async throws(BatteryAuthorizationError) -> String? {
+        guard walletId(for: wallet) != nil else { return nil }
+        do {
+            let session = try await deviceAuth.session()
+            return session.accessToken.isEmpty ? nil : session.accessToken
+        } catch {
+            throw Self.sessionFailure(error)
         }
-        return session.accessToken
+    }
+
+    static func sessionFailure(_ error: DeviceAuthError) -> BatteryAuthorizationError {
+        if case .unauthorized = error { return .unavailable }
+        return .deviceSessionFailure(error)
     }
 }

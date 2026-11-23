@@ -81,6 +81,7 @@ private extension CustomizeWalletScreen {
                 image: .TKUIKit.Icons.Size16.chevronDown,
                 size: Layout.headerIconSize,
                 padding: Layout.headerIconPadding,
+                liquidGlassImage: .TKUIKit.Icons.Size28.chevronDown,
                 onTap: { _ in button.action() }
             )
         }

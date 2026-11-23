@@ -248,6 +248,7 @@ private extension BalanceSwiftUIView {
         if let battery = content.battery {
             button(action: batteryAction) {
                 BatterySwiftUIView(config: battery)
+                    .batteryHintWiggle(isActive: battery.showsHint)
                     .padding(.top, Layout.batteryTopPadding)
             }
             .padding(.leading, Layout.amountSpacing)
@@ -388,6 +389,12 @@ private extension BalanceSwiftUIView {
                     .transformEffect(.init(translationX: 1, y: 6))
             }
             .frame(height: Layout.amountHeight, alignment: .center)
+    }
+}
+
+extension BalanceSwiftUIView {
+    static var amountTextStyles: [TKTextStyle] {
+        [Layout.balanceTextStyle, Layout.balanceReducedTextStyle, Layout.balanceFractionTextStyle]
     }
 }
 

@@ -5,7 +5,7 @@ enum WalletMigrationVisibility {
         wallet: Wallet,
         wallets: [Wallet]
     ) -> Bool {
-        guard wallet.isMultichain else {
+        guard wallet.hasMultichainMnemonic else {
             return false
         }
         return legacyTonWalletCount(wallets: wallets) > 0
@@ -37,7 +37,8 @@ enum WalletMigrationVisibility {
     }
 
     static func isLegacyTonWallet(_ wallet: Wallet) -> Bool {
-        guard case .regular = wallet.kind, case .mainnet = wallet.network else {
+        // Migrating a Telegram wallet's assets into a multichain wallet is not supported.
+        guard case .regular = wallet.kind, case .mainnet = wallet.network, !wallet.isWalletTg else {
             return false
         }
         switch wallet.multichain {

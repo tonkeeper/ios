@@ -36,6 +36,9 @@ final class NativeSwapTransactionConfirmationViewController: GenericViewViewCont
         super.viewDidDisappear(animated)
         dismissInfoHint()
         viewModel.viewDidDisappear()
+        if isMovingFromParent || navigationController?.isBeingDismissed == true {
+            viewModel.didLeaveScreen()
+        }
     }
 }
 

@@ -117,6 +117,8 @@ public struct OnRampPaymentMethod: Equatable, Codable {
     public let image: String
     public let isP2P: Bool
     public let providers: [OnRampProvider]
+    public var subtitle: String?
+    public var badge: String?
 }
 
 public struct OnRampProvider: Equatable, Codable {
@@ -431,4 +433,23 @@ public struct OffRampOrder: Equatable {
     public let estimatedDuration: Int?
     public let dateCreate: Date
     public let dateUpdate: Date?
+}
+
+// MARK: - MoonPay
+
+/// Display data of one MoonPay payment method type, to decorate the types MoonPay Platform returns.
+public struct MoonPayPaymentMethodInfo: Sendable, Equatable {
+    public let type: String
+    public let title: String
+    public let subtitle: String?
+    public let iconURL: URL?
+    public let badge: String?
+
+    public init(type: String, title: String, subtitle: String? = nil, iconURL: URL? = nil, badge: String? = nil) {
+        self.type = type
+        self.title = title
+        self.subtitle = subtitle
+        self.iconURL = iconURL
+        self.badge = badge
+    }
 }

@@ -7,7 +7,7 @@ final class TokenPickerV2SelectionTests: XCTestCase {
         .all, .chain(.ton), .chain(.eth), .chain(.base), .chain(.bsc),
     ]
 
-    func test_chainFilters_unrestricted_keepsWalletFiltersAndSelectsAll() {
+    func test_chainFilters_unrestricted_keepsWalletFiltersAndSelectsInitialChain() {
         let selection = SendTokenV2PickerModel.chainFilters(
             walletFilters: walletFilters,
             allowedChains: nil,
@@ -15,6 +15,16 @@ final class TokenPickerV2SelectionTests: XCTestCase {
         )
 
         XCTAssertEqual(selection.filters, walletFilters)
+        XCTAssertEqual(selection.initialFilter, .chain(.eth))
+    }
+
+    func test_chainFilters_unrestricted_missingInitialChainFallsBackToAll() {
+        let selection = SendTokenV2PickerModel.chainFilters(
+            walletFilters: walletFilters,
+            allowedChains: nil,
+            initialChain: .arb
+        )
+
         XCTAssertEqual(selection.initialFilter, .all)
     }
 

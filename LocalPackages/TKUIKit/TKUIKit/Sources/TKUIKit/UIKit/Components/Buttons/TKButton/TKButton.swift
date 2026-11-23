@@ -25,6 +25,10 @@ open class TKButton: UIControl {
 
     let buttonContentView = TKButtonContentView()
     let loaderView = TKLoaderView(size: .small, style: .primary)
+    /// Created only for a button that sits on liquid glass.
+    private var glassView: TKButtonGlassView?
+    /// Whether the title was last built greyed out, so a state change rebuilds it only when that flips.
+    private var isTitleGreyedOut = false
 
     var buttonState: TKButtonState = .normal {
         didSet { didUpdateButtonState() }
@@ -77,6 +81,10 @@ open class TKButton: UIControl {
             height: contentViewHeight
         )
         buttonContentView.frame = contentViewFrame
+        if isLiquidGlass {
+            glassView?.frame = contentViewFrame
+            buttonContentView.cornerRadius = contentViewFrame.height / 2
+        }
 
         loaderView.sizeToFit()
         loaderView.center = CGPoint(
@@ -119,11 +127,68 @@ private extension TKButton {
     }
 
     func didUpdateButtonState() {
-        buttonContentView.backgroundColor = configuration.backgroundColors[buttonState]
-        buttonContentView.titleLabel.alpha = configuration.contentAlpha[buttonState] ?? 1
-        buttonContentView.imageView.alpha = configuration.contentAlpha[buttonState] ?? 1
+        updateAppearanceForState()
         buttonContentView.layer.borderColor = configuration.borderColors[buttonState]?.cgColor
         buttonContentView.layer.borderWidth = buttonState == .selected ? configuration.borderWidth : 0
+    }
+
+    /// The liquid glass design greys out a disabled button. One showing its loader is busy rather than
+    /// unavailable, so it keeps its own colours, which its loader is drawn for.
+    var isGreyedOut: Bool {
+        isLiquidGlass && buttonState == .disabled && !configuration.showsLoader
+    }
+
+    var isLiquidGlass: Bool {
+        configuration.sitsOnLiquidGlass && TKLiquidGlass.isEnabled
+    }
+
+    func updateAppearanceForState() {
+        let backgroundColor = isGreyedOut ? .Button.secondaryBackground : configuration.backgroundColors[buttonState]
+        if isLiquidGlass {
+            let glassView = glassView ?? makeGlassView()
+            glassView.isHidden = false
+            glassView.tint = backgroundColor
+            buttonContentView.backgroundColor = .clear
+        } else {
+            glassView?.isHidden = true
+            buttonContentView.backgroundColor = backgroundColor
+        }
+        let contentAlpha = isGreyedOut ? 1 : configuration.contentAlpha[buttonState] ?? 1
+        buttonContentView.titleLabel.alpha = contentAlpha
+        buttonContentView.imageView.alpha = contentAlpha
+        buttonContentView.iconTintColor = isGreyedOut ? .Text.secondary : configuration.iconTintColor
+        if isGreyedOut != isTitleGreyedOut {
+            updateTitle()
+        }
+    }
+
+    func makeGlassView() -> TKButtonGlassView {
+        let glassView = TKButtonGlassView()
+        insertSubview(glassView, belowSubview: buttonContentView)
+        self.glassView = glassView
+        setNeedsLayout()
+        return glassView
+    }
+
+    func updateTitle() {
+        isTitleGreyedOut = isGreyedOut
+        switch configuration.content.title {
+        case let .plainString(string):
+            let textColor = isGreyedOut ? .Text.secondary : configuration.textColor
+            buttonContentView.title = string.withTextStyle(configuration.textStyle, color: textColor, alignment: .center)
+        case let .attributedString(attributedString) where isGreyedOut:
+            let greyedOut = NSMutableAttributedString(attributedString: attributedString)
+            greyedOut.addAttribute(
+                .foregroundColor,
+                value: UIColor.Text.secondary,
+                range: NSRange(location: 0, length: greyedOut.length)
+            )
+            buttonContentView.title = greyedOut
+        case let .attributedString(attributedString):
+            buttonContentView.title = attributedString
+        case .none:
+            buttonContentView.title = nil
+        }
     }
 
     func didUpdateControlState() {
@@ -144,8 +209,6 @@ private extension TKButton {
         self.buttonContentView.padding = configuration.contentPadding
         self.buttonContentView.spacing = configuration.spacing
         self.buttonContentView.iconPosition = configuration.iconPosition
-        self.buttonContentView.iconTintColor = configuration.iconTintColor
-        self.buttonContentView.backgroundColor = configuration.backgroundColors[buttonState]
         self.buttonContentView.cornerRadius = configuration.cornerRadius
         self.loaderView.size = configuration.loaderSize
         self.loaderView.style = configuration.loaderStyle
@@ -153,13 +216,11 @@ private extension TKButton {
         self.loaderView.isHidden = !configuration.showsLoader
         self.isUserInteractionEnabled = !configuration.showsLoader
         self.isEnabled = configuration.isEnabled
-        switch configuration.content.title {
-        case let .plainString(string):
-            self.buttonContentView.title = string.withTextStyle(configuration.textStyle, color: configuration.textColor, alignment: .center)
-        case let .attributedString(attributedString):
-            self.buttonContentView.title = attributedString
-        case .none:
-            self.buttonContentView.title = nil
+        updateAppearanceForState()
+        updateTitle()
+        if isLiquidGlass {
+            // The capsule radius follows the laid-out height, and the configuration's radius was just put back.
+            setNeedsLayout()
         }
         self.buttonContentView.titleLabel.numberOfLines = configuration.textNumberOfLines
         self.buttonContentView.icon = configuration.content.icon

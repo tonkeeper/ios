@@ -2,7 +2,7 @@ import TKLocalize
 import TKUIKit
 import UIKit
 
-final class SendV3ViewController: GenericViewViewController<SendV3View>, KeyboardObserving {
+final class SendV3ViewController: GenericViewViewController<SendV3View> {
     enum Autofocus {
         case recipient
         case amount
@@ -26,7 +26,6 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         setup()
         setupBindings()
         setupViewEvents()
@@ -35,7 +34,6 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        registerForKeyboardEvents()
         guard isFirstAppear else { return }
         isFirstAppear = false
         if let coordinator = transitionCoordinator, animated {
@@ -56,31 +54,14 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
         }
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        unregisterFromKeyboardEvents()
-    }
-
-    func keyboardWillShow(_ notification: Notification) {
-        guard let animationDuration = notification.keyboardAnimationDuration,
-              let keyboardHeight = notification.keyboardSize?.height else { return }
-        UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-            self.customView.scrollView.contentInset.bottom = keyboardHeight
-        }
-    }
-
-    func keyboardWillHide(_ notification: Notification) {
-        guard let animationDuration = notification.keyboardAnimationDuration else { return }
-        UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-            self.customView.scrollView.contentInset.bottom = self.customView.safeAreaInsets.bottom + 16
-        }
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
         customView.navigationBar.layoutIfNeeded()
-        customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
+        let navigationBarHeight = customView.navigationBar.bounds.height
+        customView.scrollView.contentInset.top = TKLiquidGlass.isEnabled
+            ? max(0, navigationBarHeight - customView.scrollView.safeAreaInsets.top)
+            : navigationBarHeight
     }
 }
 
@@ -95,19 +76,18 @@ private extension SendV3ViewController {
         var configuration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
         configuration.content.title = .plainString(TKLocales.Actions.paste)
         configuration.action = { [weak viewModel] in
-            viewModel?.didTapRecipientPasteButton()
-        }
-        customView.recipientPasteButton.configuration = configuration
-
-        configuration.action = { [weak viewModel] in
             viewModel?.didTapCommentPasteButton()
         }
         customView.commentPasteButton.configuration = configuration
 
+        configuration.padding = UIEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
+        configuration.action = { [weak viewModel] in
+            viewModel?.didTapRecipientPasteButton()
+        }
+        customView.recipientPasteButton.configuration = configuration
+
         var scanConfiguration = TKButton.Configuration.fieldAccentButtonConfiguration()
-        scanConfiguration.content.icon = .TKUIKit.Icons.Size28.qrViewFinderThin
-        scanConfiguration.padding.left = 8
-        scanConfiguration.padding.right = 16
+        scanConfiguration.content.icon = .TKUIKit.Icons.Size28.qrViewFinder
         scanConfiguration.action = { [weak viewModel] in
             viewModel?.didTapRecipientScanButton()
         }
@@ -179,7 +159,11 @@ private extension SendV3ViewController {
                 customView.commentInputView.isHidden = false
                 customView.commentInputView.commentTextField.placeholder = commentState.placeholder
                 customView.commentInputView.commentTextField.isValid = commentState.isValid
-                customView.commentInputView.descriptionLabel.attributedText = commentState.description
+                if let description = commentState.description {
+                    customView.commentInputView.descriptionLabel.setAttributedText(description, actionItems: commentState.actionItems)
+                } else {
+                    customView.commentInputView.descriptionLabel.attributedText = nil
+                }
                 customView.commentInputView.descriptionContainer.isHidden = commentState.description == nil
             } else {
                 customView.commentInputView.isHidden = true

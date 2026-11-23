@@ -27,7 +27,7 @@ enum DappNativeBridge {
         static func current(featuredVaults: [EarnFeaturedVault]) -> Config {
             Config(
                 theme: DappNativeBridge.theme,
-                locale: Bundle.main.preferredLocalizations.first ?? "en",
+                locale: DappNativeBridge.language,
                 featuredVaults: featuredVaults
             )
         }
@@ -49,6 +49,10 @@ enum DappNativeBridge {
 
     static var theme: String {
         TKThemeManager.shared.theme.stringDescription
+    }
+
+    static var language: String {
+        Bundle.main.preferredLocalizations.first ?? "en"
     }
 
     static func injection(config: Config) -> String {
@@ -109,9 +113,13 @@ enum DappNativeBridge {
     static func trackParams(_ params: [String: Any]?) -> [String: Any] {
         guard let params else { return [:] }
         return params.filter { key, value in
-            AnalyticsLimits.isValidPropertyKey(key) && (value is String || value is NSNumber)
+            AnalyticsLimits.isValidPropertyKey(key)
+                && !baseEventKeys.contains(key)
+                && (value is String || value is NSNumber)
         }
     }
+
+    private static let baseEventKeys = Set(AnalyticsEventMobileNative.CodingKeys.allCases.map(\.rawValue))
 }
 
 private extension EarnFeaturedVault {

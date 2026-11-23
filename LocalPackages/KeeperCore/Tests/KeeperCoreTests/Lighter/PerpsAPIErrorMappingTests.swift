@@ -46,6 +46,38 @@ final class PerpsAPIErrorMappingTests: XCTestCase {
         }
     }
 
+    func testWithdrawalRateLimitSurvivesSendAndQuoteResponses() async {
+        for status in [HTTPResponse.Status.badRequest, .conflict, .tooManyRequests, .serviceUnavailable] {
+            for body in [
+                #"{"code":"withdrawal_rate_limited","retryable":false}"#,
+                #"{"code":"validation_error","details":{"reason":"withdrawal_rate_limited"},"retryable":false}"#,
+            ] {
+                let transport = StubTransport(status: status, contentType: "application/json", body: body)
+                let api = PerpsAPIImplementation { _ in
+                    Client(serverURL: URL(string: "https://perps.tonkeeper.com")!, transport: transport)
+                }
+                do {
+                    _ = try await api.sendTransactions(walletId: "wallet", operationId: nil, transactions: [])
+                    XCTFail("expected the send to be refused")
+                } catch {
+                    XCTAssertEqual(PerpsWithdrawService.message(for: error), .withdrawalRateLimited, "status=\(status)")
+                }
+                do {
+                    _ = try await api.quoteWithdraw(walletId: "wallet", request: .init(destination_asset: "ton/mainnet/coin", amount: "1000000", recipient_address: "UQ"))
+                    XCTFail("expected the quote to be refused")
+                } catch {
+                    XCTAssertEqual(PerpsWithdrawService.message(for: error), .withdrawalRateLimited, "status=\(status)")
+                }
+            }
+        }
+    }
+
+    func testRetryableErrorsAreNotDefinitiveWithdrawalRateLimitRefusals() {
+        let error = PerpsAPIError.badStatus(.init(httpStatus: 503, code: "withdrawal_rate_limited", message: nil, retryable: true, reason: nil))
+        XCTAssertFalse(error.isWithdrawalRateLimited)
+        XCTAssertEqual(PerpsWithdrawService.message(for: error), .serviceUnavailable)
+    }
+
     private func openDepositFailure(status: HTTPResponse.Status, contentType: String, body: String) async -> PerpsAPIError? {
         let transport = StubTransport(status: status, contentType: contentType, body: body)
         let api = PerpsAPIImplementation { _ in

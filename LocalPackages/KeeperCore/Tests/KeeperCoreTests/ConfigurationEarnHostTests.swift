@@ -4,7 +4,7 @@ import XCTest
 
 final class ConfigurationEarnHostTests: XCTestCase {
     func testConfiguredHostIsUsedAsIs() throws {
-        let configuration = try makeConfiguration(bootConfigurationJSON: #"{"earn_url": "https://earn.example.com"}"#)
+        let configuration = try makeConfiguration(bootConfigurationJSON: #"{"earnUrl": "https://earn.example.com"}"#)
 
         XCTAssertEqual(configuration.earnUrl.absoluteString, "https://earn.example.com")
     }
@@ -12,7 +12,7 @@ final class ConfigurationEarnHostTests: XCTestCase {
     func testMissingHostFallsBackToTheDemoStand() throws {
         let configuration = try makeConfiguration(bootConfigurationJSON: "{}")
 
-        XCTAssertEqual(configuration.earnUrl, EarnHardcodedData.url)
+        XCTAssertEqual(configuration.earnUrl.absoluteString, "https://vaults-tonkeeper-earn-demo.fly.dev/")
     }
 }
 

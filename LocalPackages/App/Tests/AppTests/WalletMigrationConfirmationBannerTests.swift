@@ -2,6 +2,7 @@
 import BigInt
 @testable import KeeperCore
 import TKCore
+import TKTestSupport
 import TonSwift
 import TronSwift
 import XCTest
@@ -106,14 +107,121 @@ final class WalletMigrationConfirmationBannerTests: XCTestCase {
 
         XCTAssertNil(presented)
     }
+
+    func test_confirmThatFailedBeforeSendingReloadsTheScreen() async {
+        await assertReloadsTheScreen(after: WalletMigrationPartFailure(
+            part: .ton,
+            isPartial: false,
+            underlying: WalletMigrationError.insufficientTonForGas(required: 2, available: 1)
+        ))
+    }
+
+    func test_freshSetWithoutTheChosenFeeMethodReloadsTheScreen() async {
+        await assertReloadsTheScreen(after: WalletMigrationPartFailure(
+            part: .ton,
+            isPartial: false,
+            underlying: WalletMigrationExecutionError.emptyTransactions
+        ))
+    }
+
+    func test_leavingDuringASendStillReportsItsFailure() async {
+        let viewModel = await leaveDuringASend(thatFailsWith: WalletMigrationPartFailure(
+            part: .ton,
+            isPartial: true,
+            underlying: WalletMigrationExecutionError.signingFailed
+        ))
+
+        await waitUntil(viewModel) { viewModel.confirmationState == .failed }
+    }
+
+    func test_leavingDuringASendThatFailsBeforeSendingDoesNotReloadTheScreen() async {
+        let viewModel = await leaveDuringASend(thatFailsWith: WalletMigrationPartFailure(
+            part: .ton,
+            isPartial: false,
+            underlying: WalletMigrationError.insufficientTonForGas(required: 2, available: 1)
+        ))
+
+        await waitUntil(viewModel) { viewModel.confirmationState == .idle }
+        XCTAssertEqual(viewModel.state, .ready)
+    }
+
+    func test_tonShortageFoundAfterTheScreenWasLeftRaisesNoPopup() async {
+        var presented: InsufficientFeePopupContent?
+        let viewModel = makeViewModel(
+            prepare: makePrepareResult(
+                methods: [.ton(amountNano: 67_000_000)],
+                availableTonNano: 19_900_000,
+                requiredTonNano: nil
+            ),
+            availableBatteryCharges: 5,
+            onPresentInsufficientFee: { presented = $0 }
+        )
+
+        viewModel.didLeaveScreen()
+        await viewModel.start()
+
+        XCTAssertEqual(
+            viewModel.state,
+            .failed(.insufficientTonSoft(.init(required: 67_000_000, available: 19_900_000)))
+        )
+        XCTAssertNil(presented)
+    }
 }
 
 private extension WalletMigrationConfirmationBannerTests {
+    func leaveDuringASend(thatFailsWith failure: Error) async -> WalletMigrationConfirmationViewModel {
+        let broadcast = TestGate()
+        let viewModel = makeViewModel(
+            prepare: makePrepareResult(methods: [.ton(amountNano: 10000)], availableTonNano: 1_000_000, requiredTonNano: nil),
+            availableBatteryCharges: nil,
+            onPresentInsufficientFee: { _ in },
+            onConfirm: { _ in
+                try await Task { try await broadcast.wait() }.value
+                throw failure
+            }
+        )
+        await viewModel.start()
+
+        viewModel.confirmSwipe()
+        viewModel.back()
+        await broadcast.open()
+        return viewModel
+    }
+
+    func assertReloadsTheScreen(
+        after failure: Error,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let viewModel = makeViewModel(
+            prepare: makePrepareResult(methods: [.ton(amountNano: 10000)], availableTonNano: 1_000_000, requiredTonNano: nil),
+            reprepare: makePrepareResult(
+                methods: [.ton(amountNano: 10000)],
+                availableTonNano: 1_000_000,
+                requiredTonNano: nil,
+                seqno: 2
+            ),
+            availableBatteryCharges: nil,
+            onPresentInsufficientFee: { _ in },
+            onConfirm: { _ in throw failure }
+        )
+        await viewModel.start()
+
+        viewModel.confirmSwipe()
+        await waitUntil(viewModel, file: file, line: line) {
+            viewModel.state == .ready && viewModel.preparedResult?.transactions.first?.seqno == 2
+        }
+
+        XCTAssertEqual(viewModel.confirmationState, .idle, file: file, line: line)
+    }
+
     func makeViewModel(
         prepare: WalletMigrationPrepareResult,
+        reprepare: WalletMigrationPrepareResult? = nil,
         tronPrepare: WalletMigrationTronPrepareResult? = nil,
         availableBatteryCharges: Int?,
-        onPresentInsufficientFee: @escaping (InsufficientFeePopupContent) -> Void
+        onPresentInsufficientFee: @escaping (InsufficientFeePopupContent) -> Void,
+        onConfirm: @escaping (WalletMigrationConfirmationViewModel.ConfirmPayload) async throws -> Void = { _ in }
     ) -> WalletMigrationConfirmationViewModel {
         let sourceWallet = makeWallet(id: "source", publicKeySeed: 1)
         let destinationWallet = makeWallet(id: "destination", publicKeySeed: 2)
@@ -135,6 +243,7 @@ private extension WalletMigrationConfirmationBannerTests {
             destinationWallet: destinationWallet,
             walletMigrationService: WalletMigrationServiceStub(
                 prepare: prepare,
+                reprepare: reprepare,
                 tronPrepare: tronPrepare,
                 availableBatteryCharges: availableBatteryCharges
             ),
@@ -151,14 +260,16 @@ private extension WalletMigrationConfirmationBannerTests {
                 appInfoProvider: coreAssembly.appInfoProvider,
                 keysCountryCodeProvider: coreAssembly.keysCountryCodeProvider
             ),
-            onPresentInsufficientFee: onPresentInsufficientFee
+            onPresentInsufficientFee: onPresentInsufficientFee,
+            onConfirm: onConfirm
         )
     }
 
     func makePrepareResult(
         methods: [WalletMigrationPrepareResult.FeeMethod],
         availableTonNano: UInt64?,
-        requiredTonNano: UInt64?
+        requiredTonNano: UInt64?,
+        seqno: Int = 1
     ) -> WalletMigrationPrepareResult {
         let sourceAddress = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
         let destinationAddress = "0:0000000000000000000000000000000000000000000000000000000000000002"
@@ -170,7 +281,8 @@ private extension WalletMigrationConfirmationBannerTests {
             transactions: [
                 makePreparedTransaction(
                     sourceAddress: sourceAddress,
-                    destinationAddress: destinationAddress
+                    destinationAddress: destinationAddress,
+                    seqno: seqno
                 ),
             ],
             batteryTransactions: nil,
@@ -182,7 +294,8 @@ private extension WalletMigrationConfirmationBannerTests {
 
     func makePreparedTransaction(
         sourceAddress: String,
-        destinationAddress: String
+        destinationAddress: String,
+        seqno: Int
     ) -> WalletMigrationPreparedTransaction {
         let source = try! TonSwift.Address.parse(sourceAddress)
         let destination = try! TonSwift.Address.parse(destinationAddress)
@@ -190,7 +303,7 @@ private extension WalletMigrationConfirmationBannerTests {
         let destinationAccount = WalletAccount(address: destination, name: nil, isScam: false, isWallet: true)
 
         return WalletMigrationPreparedTransaction(
-            seqno: 1,
+            seqno: seqno,
             boc: "te6cckEBAQEAAgAAAA==",
             event: AccountEvent(
                 eventId: "1",
@@ -272,15 +385,19 @@ private enum BannerTestError: Error {
 
 private actor WalletMigrationServiceStub: WalletMigrationService {
     private let prepare: WalletMigrationPrepareResult
+    private let reprepare: WalletMigrationPrepareResult?
     private let tronPrepare: WalletMigrationTronPrepareResult?
     private let charges: Int?
+    private var prepareCount = 0
 
     init(
         prepare: WalletMigrationPrepareResult,
+        reprepare: WalletMigrationPrepareResult? = nil,
         tronPrepare: WalletMigrationTronPrepareResult? = nil,
         availableBatteryCharges: Int?
     ) {
         self.prepare = prepare
+        self.reprepare = reprepare
         self.tronPrepare = tronPrepare
         charges = availableBatteryCharges
     }
@@ -290,7 +407,8 @@ private actor WalletMigrationServiceStub: WalletMigrationService {
         to destinationWallet: Wallet,
         currency: Currency
     ) async throws -> WalletMigrationPrepareResult {
-        prepare
+        prepareCount += 1
+        return prepareCount > 1 ? reprepare ?? prepare : prepare
     }
 
     func prepareTronMigration(

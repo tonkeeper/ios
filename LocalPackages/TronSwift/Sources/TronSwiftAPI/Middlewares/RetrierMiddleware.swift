@@ -3,9 +3,14 @@ import TKLogging
 
 struct RetrierMiddleware: HttpApiMiddleware {
     private let rateLimitRetryHandler: RequestRetrier
+    private let pause: @Sendable (_ nanoseconds: UInt64) async -> Void
 
-    init(rateLimitRetryHandler: RequestRetrier) {
+    init(
+        rateLimitRetryHandler: RequestRetrier,
+        pause: @escaping @Sendable (_ nanoseconds: UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
+    ) {
         self.rateLimitRetryHandler = rateLimitRetryHandler
+        self.pause = pause
     }
 
     func execute(
@@ -64,6 +69,6 @@ struct RetrierMiddleware: HttpApiMiddleware {
     /// Cooldown is per-request: pushing it into the shared rate limiter would stall
     /// every Tron call in the app behind one throttled endpoint.
     private func sleep(cooldown: TimeInterval) async {
-        try? await Task.sleep(nanoseconds: UInt64(max(0, cooldown) * 1_000_000_000))
+        await pause(UInt64(max(0, cooldown) * 1_000_000_000))
     }
 }

@@ -115,7 +115,7 @@ private extension WalletConnectProposal {
             viewController.dismiss(animated: true, completion: completion)
         }
 
-        router.rootViewController.topPresentedViewController().present(viewController, animated: true)
+        router.rootViewController.topPresentedViewController().present(viewController.tkLiquidGlassModal(), animated: true)
     }
 
     func openWalletPicker(
@@ -125,7 +125,8 @@ private extension WalletConnectProposal {
     ) {
         let model = WalletConnectWalletsPickerListModel(
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            selectedWallet: wallet
+            selectedWallet: wallet,
+            isEligible: keeperCoreMainAssembly.configurationAssembly.configuration.isMultichainDappsAvailable
         )
         model.didSelectWallet = { wallet in
             didSelectWallet(wallet)
@@ -190,13 +191,16 @@ final class WalletConnectWalletsPickerListModel: WalletsListModel {
 
     private let walletsStore: WalletsStore
     private let selectedWallet: Wallet
+    private let isEligible: (Wallet) -> Bool
 
     init(
         walletsStore: WalletsStore,
-        selectedWallet: Wallet
+        selectedWallet: Wallet,
+        isEligible: @escaping (Wallet) -> Bool
     ) {
         self.walletsStore = walletsStore
         self.selectedWallet = selectedWallet
+        self.isEligible = isEligible
         walletsStore.addObserver(self) { observer, event in
             DispatchQueue.main.async {
                 switch event {
@@ -240,6 +244,6 @@ final class WalletConnectWalletsPickerListModel: WalletsListModel {
     }
 
     private func filteredWallets() -> [Wallet] {
-        walletsStore.state.wallets.filter(\.isMultichain)
+        walletsStore.state.wallets.filter(isEligible)
     }
 }

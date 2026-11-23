@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import TKTestSupport
 import TronSwiftAPI
 import XCTest
 
@@ -79,7 +80,8 @@ final class WalletMigrationTronConfirmationWaiterTests: XCTestCase {
     func test_cancellationIsPropagated() async {
         let clock = TronConfirmationTestClock()
         let stub = TronConfirmationInfoStub(clock: clock, responseAt: .infinity, response: nil)
-        let waiter = makeWaiter(loadInfo: stub, clock: clock)
+        let neverElapses = TestGate()
+        let waiter = makeWaiter(loadInfo: stub, clock: clock, sleep: { _ in try await neverElapses.wait() })
 
         let task = Task {
             try await waiter.wait(txId: "tx")
@@ -97,7 +99,8 @@ final class WalletMigrationTronConfirmationWaiterTests: XCTestCase {
     private func makeWaiter(
         loadInfo: TronConfirmationInfoStub,
         clock: TronConfirmationTestClock,
-        timeout: TimeInterval = 120
+        timeout: TimeInterval = 120,
+        sleep: WalletMigrationTronConfirmationWaiter.Sleep? = nil
     ) -> WalletMigrationTronConfirmationWaiter {
         WalletMigrationTronConfirmationWaiter(
             loadInfo: { txId in
@@ -105,7 +108,7 @@ final class WalletMigrationTronConfirmationWaiterTests: XCTestCase {
             },
             pollInterval: 3,
             timeout: timeout,
-            sleep: { delay in clock.advance(by: delay) },
+            sleep: sleep ?? { delay in clock.advance(by: delay) },
             now: { clock.now() }
         )
     }

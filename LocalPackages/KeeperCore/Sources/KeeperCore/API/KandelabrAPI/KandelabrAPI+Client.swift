@@ -10,7 +10,8 @@ extension TKKandelabrAPI.Client {
 
     init(
         hostProvider: APIHostProvider,
-        urlSession: URLSession
+        urlSession: URLSession,
+        deviceAuth: DeviceAuthProviding
     ) async throws(InitFailure) {
         let basePath = await hostProvider.basePath
         guard let hostURL = URL(string: basePath), !basePath.isEmpty else {
@@ -19,7 +20,7 @@ extension TKKandelabrAPI.Client {
         self = Client(
             serverURL: hostURL,
             transport: URLSessionTransport(urlSession: urlSession),
-            middlewares: .logged()
+            middlewares: .logged([DeviceSessionMiddleware(deviceAuth: deviceAuth)])
         )
     }
 }

@@ -102,6 +102,7 @@ final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
     private let flow: Flow
+    private let utm: UtmParameters
 
     init(
         router: WindowRouter,
@@ -113,7 +114,8 @@ final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
         isSilentConnect: Bool,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        injectedDappDomainProvider: (() -> String?)? = nil
+        injectedDappDomainProvider: (() -> String?)? = nil,
+        utm: UtmParameters = .empty
     ) {
         self.connector = connector
         self.parameters = parameters
@@ -124,6 +126,7 @@ final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.flow = flow
+        self.utm = utm
         super.init(router: router)
     }
 
@@ -390,7 +393,8 @@ private extension TonConnectConnectCoordinator {
                 )
             },
             attemptSource: redAttemptSource,
-            isSafeMode: flow == .deeplink
+            isSafeMode: flow == .deeplink,
+            utm: utm
         )
     }
 
@@ -436,20 +440,25 @@ private extension TonConnectConnectCoordinator {
                     )
                     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
-                    bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+                    var hasResumed = false
+                    let resumeOnce: (Result<Data, Error>) -> Void = { result in
+                        guard !hasResumed else { return }
+                        hasResumed = true
+                        continuation.resume(with: result)
+                    }
+
+                    bottomSheetViewController.didClose = { isInteractivly in
                         guard isInteractivly else { return }
-                        bottomSheetViewController?.dismiss(completion: {
-                            continuation.resume(throwing: ConnectError.cancelled)
-                        })
+                        resumeOnce(.failure(ConnectError.cancelled))
                     }
 
                     module.output.didScanSignedTransaction = { [weak bottomSheetViewController] ur in
                         bottomSheetViewController?.dismiss {
                             guard let signature = try? TonSignature(cbor: ur.cbor).signature else {
-                                continuation.resume(throwing: ConnectError.unknown)
+                                resumeOnce(.failure(ConnectError.unknown))
                                 return
                             }
-                            continuation.resume(returning: signature)
+                            resumeOnce(.success(signature))
                         }
                     }
 
@@ -462,7 +471,11 @@ private extension TonConnectConnectCoordinator {
     }
 
     func handleLedgerProof(fromViewController: UIViewController, signatureData: TonConnect.SignatureData, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) async throws -> Data {
-        try await withCheckedThrowingContinuation { continuation in
+        // A multichain Ledger derives its wallet key from a proof with these values; no dApp gets one.
+        guard signatureData.domain.value != LedgerWalletKey.proofDomain, signatureData.payload != LedgerWalletKey.proofPayload else {
+            throw ConnectError.unknown
+        }
+        return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.main.async {
                 let module = LedgerConfirmAssembly.module(
                     confirmItem: .signatureData(signatureData),
@@ -473,13 +486,20 @@ private extension TonConnectConnectCoordinator {
 
                 let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
+                var hasResumed = false
+                let resumeOnce: (Result<Data, Error>) -> Void = { result in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    continuation.resume(with: result)
+                }
+
                 bottomSheetViewController.didClose = { _ in
-                    continuation.resume(throwing: ConnectError.cancelled)
+                    resumeOnce(.failure(ConnectError.cancelled))
                 }
 
                 module.output.didCancel = { [weak bottomSheetViewController] in
                     bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(throwing: ConnectError.cancelled)
+                        resumeOnce(.failure(ConnectError.cancelled))
                     })
                 }
 
@@ -487,16 +507,16 @@ private extension TonConnectConnectCoordinator {
                     bottomSheetViewController?.dismiss(completion: {
                         switch signature {
                         case let .proof(data):
-                            continuation.resume(returning: data)
+                            resumeOnce(.success(data))
                         default:
-                            continuation.resume(throwing: ConnectError.unknown)
+                            resumeOnce(.failure(ConnectError.unknown))
                         }
                     })
                 }
 
                 module.output.didError = { [weak bottomSheetViewController] _ in
                     bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(throwing: ConnectError.unknown)
+                        resumeOnce(.failure(ConnectError.unknown))
                     })
                 }
 

@@ -11,6 +11,7 @@ public final class LoadersAssembly {
     private let knownAccountsAssembly: KnownAccountsAssembly
     private let tronAssembly: TronUSDTAssembly
     private let configurationAssembly: ConfigurationAssembly
+    private let earnAssembly: EarnAssembly
     private let tkAppSettings: TKAppSettings
 
     init(
@@ -21,6 +22,7 @@ public final class LoadersAssembly {
         knownAccountsAssembly: KnownAccountsAssembly,
         tronAssembly: TronUSDTAssembly,
         configurationAssembly: ConfigurationAssembly,
+        earnAssembly: EarnAssembly,
         tkAppSettings: TKAppSettings
     ) {
         self.servicesAssembly = servicesAssembly
@@ -30,6 +32,7 @@ public final class LoadersAssembly {
         self.knownAccountsAssembly = knownAccountsAssembly
         self.tronAssembly = tronAssembly
         self.configurationAssembly = configurationAssembly
+        self.earnAssembly = earnAssembly
         self.tkAppSettings = tkAppSettings
     }
 
@@ -68,6 +71,7 @@ public final class LoadersAssembly {
         }
         let loader = HomeBannersLoader(
             tonkeeperAPI: tonkeeperAPIAssembly.api,
+            configuration: configurationAssembly.configuration,
             homeBannersStore: storesAssembly.homeBannersStore,
             walletsStore: storesAssembly.walletsStore
         )
@@ -229,7 +233,8 @@ public final class LoadersAssembly {
                 walletNFTSStore: storesAssembly.walletNFTsStore(wallet: wallet, nftService: servicesAssembly.accountNftService()),
                 balanceService: servicesAssembly.balanceService(),
                 stackingService: servicesAssembly.stackingService(),
-                accountNFTService: servicesAssembly.accountNftService()
+                accountNFTService: servicesAssembly.accountNftService(),
+                earnPortfolioLoader: earnAssembly.portfolioLoader
             )
             _walletBalanceLoaders[wallet] = { [weak store] in store }
             return store

@@ -3,6 +3,7 @@ import Foundation
 @frozen public enum ImportWalletKind: String, Equatable, Hashable, Sendable {
     case ton
     case multichain
+    case telegram
 }
 
 @frozen public enum ImportWalletKindPreference: Equatable, Sendable {

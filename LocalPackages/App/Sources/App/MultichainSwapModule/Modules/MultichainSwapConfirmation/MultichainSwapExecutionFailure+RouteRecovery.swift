@@ -24,6 +24,7 @@ extension MultichainSwapExecutionFailure {
              .nonceFailed,
              .signingFailed,
              .broadcastFailed,
+             .broadcastRefused,
              .internal:
             return false
         }

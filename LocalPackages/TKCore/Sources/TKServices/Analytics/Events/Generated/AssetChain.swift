@@ -10,14 +10,14 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Canonical chain identifier. For a concrete on-chain asset it is the first segment of its Asset ID (chain/network/type[/addr]; see docs/ASSET_ID.md and docs/MULTICHAIN_ARCHITECTURE.md) — lowercase and stable across platforms. EVM chains (eth / base / arb / pol / bnb / avax / robinhood) share one signing stack but keep distinct ids; the BitcoinLike family (ltc / doge / bch) is config-driven. Network (mainnet / testnet) is a separate Asset ID segment, not part of this enum. The special value &#x60;multichain&#x60; marks an entity (e.g. a dapp) that spans several chains rather than being tied to one — it is NOT a valid Asset ID prefix.  - ton:  TON - eth:  Ethereum - base: Base - arb:  Arbitrum - bnb:  BNB Chain - pol:  Polygon - avax: Avalanche C-Chain - robinhood: Robinhood Chain - sol:  Solana - tron: TRON - btc:  Bitcoin - ltc:  Litecoin - doge: Dogecoin - bch:  Bitcoin Cash - multichain: spans several chains (dapps only; not an Asset ID prefix)  */
+/** Canonical chain identifier. For a concrete on-chain asset it is the first segment of its Asset ID (chain/network/type[/addr]; see docs/ASSET_ID.md and docs/MULTICHAIN_ARCHITECTURE.md) — lowercase and stable across platforms. EVM chains (eth / base / arb / bsc / polygon / avax / robinhood) share one signing stack but keep distinct ids; the BitcoinLike family (ltc / doge / bch) is config-driven. Network (mainnet / testnet) is a separate Asset ID segment, not part of this enum. The special value &#x60;multichain&#x60; marks an entity (e.g. a dapp) that spans several chains rather than being tied to one — it is NOT a valid Asset ID prefix.  - ton:  TON - eth:  Ethereum - base: Base - arb:  Arbitrum - bsc:  BNB Smart Chain - polygon: Polygon - avax: Avalanche C-Chain - robinhood: Robinhood Chain - sol:  Solana - tron: TRON - btc:  Bitcoin - ltc:  Litecoin - doge: Dogecoin - bch:  Bitcoin Cash - lighter: Lighter, the order-book exchange Perps trades on; its Asset IDs are markets (lighter/mainnet/market/{market_index}), not tokens - multichain: spans several chains (dapps only; not an Asset ID prefix)  */
 public enum AssetChain: String, Codable, CaseIterable {
     case ton = "ton"
     case eth = "eth"
     case base = "base"
     case arb = "arb"
-    case bnb = "bnb"
-    case pol = "pol"
+    case bsc = "bsc"
+    case polygon = "polygon"
     case avax = "avax"
     case robinhood = "robinhood"
     case sol = "sol"
@@ -26,6 +26,7 @@ public enum AssetChain: String, Codable, CaseIterable {
     case ltc = "ltc"
     case doge = "doge"
     case bch = "bch"
+    case lighter = "lighter"
     case multichain = "multichain"
 }
 

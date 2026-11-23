@@ -343,9 +343,9 @@ struct PasscodeStorageTests {
     @Test
     func probeAndMarkerTellADiscardedCacheApartFromAnInvalidatedEnrolledSet() throws {
         // An enrollment change leaves the non-biometric marker untouched, so a
-        // caller can treat a not-found wrap key as invalidated. A storage-version
-        // rollback wipes the whole storage, marker included — the same not-found
-        // read then means the cache is gone and the enrolled set never changed.
+        // caller can treat a not-found wrap key as invalidated. Wiping the whole
+        // storage removes the marker too — the same not-found read then means the
+        // cache is gone and the enrolled set never changed.
         let seed = "passcode-storage-tests-\(UUID().uuidString)"
         let keychain = InMemorySecureStorageKeychain()
         let storage = makeStorage(seed: seed, keychain: keychain)

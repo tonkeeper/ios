@@ -63,6 +63,26 @@ extension TooltipViewControllerFactoryImplementation: TooltipViewControllerFacto
                     position: direction
                 )
             )
+        case .earnSection:
+            rootView = AnyView(
+                TKTooltipView(
+                    configuration: TKTooltipView.Configuration(
+                        title: TKLocales.tooltipEarn,
+                        badgeTitle: TKLocales.Common.new
+                    ),
+                    position: direction
+                )
+            )
+        case .perpsSection:
+            rootView = AnyView(
+                TKTooltipView(
+                    configuration: TKTooltipView.Configuration(
+                        title: TKLocales.tooltipPerps,
+                        badgeTitle: TKLocales.Common.new
+                    ),
+                    position: direction
+                )
+            )
         }
         let hostingController = TKHostingController(content: rootView)
         hostingController.view.backgroundColor = .clear

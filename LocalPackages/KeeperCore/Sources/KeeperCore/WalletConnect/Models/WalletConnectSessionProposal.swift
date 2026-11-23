@@ -26,6 +26,11 @@ public struct WalletConnectSessionProposal: Sendable, Equatable {
 }
 
 public extension WalletConnectSessionProposal {
+    /// The wallet the proposal starts on: the first of `wallets` that can approve it, or else the first of them.
+    func preferredWallet(among wallets: [Wallet]) -> Wallet? {
+        wallets.first(where: canBeApproved(wallet:)) ?? wallets.first
+    }
+
     func canBeApproved(wallet: Wallet) -> Bool {
         let requiredChains = Set(namespaces.filter(\.isRequired).flatMap(\.chains))
         guard requiredChains.allSatisfy({ wallet.walletConnectAddress(for: $0) != nil }) else {

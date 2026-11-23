@@ -120,7 +120,7 @@ final class NativeSwapAmountView: UIControl {
     private func setupTextFiled() {
         textTextField.accessibilityIdentifier = "input_value"
         textTextField.font = TKTextStyle.num2.font
-        textTextField.keyboardType = .decimalPad
+        textTextField.tkNumPadAmountKeyboard()
         textTextField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textTextField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textTextField.clipsToBounds = true

@@ -24,7 +24,7 @@ public struct VectorImageDataProvider: ImageDataProvider {
                     handler(.success(bytes))
                     return
                 }
-                if let image = await SVGImageRasterizer.rasterize(svgData: bytes),
+                if let image = SVGImageRasterizer.rasterize(svgData: bytes),
                    let png = image.pngData()
                 {
                     handler(.success(png))

@@ -21,12 +21,10 @@ public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
     }
 
     public func setStoryWatchedPageIndex(_ storyId: String, pageIndex: Int) {
-        let currentStatus = repository.getStoryStatus(by: storyId)
-        let finalIndex = (currentStatus?.watchedPageIndex).map { max($0, pageIndex) } ?? pageIndex
         repository.setStoryStatus(
             id: storyId,
-            isWatched: currentStatus?.isWatched ?? false,
-            watchedPageIndex: finalIndex
+            isWatched: repository.getStoryStatus(by: storyId)?.isWatched ?? false,
+            watchedPageIndex: pageIndex
         )
     }
 
@@ -52,5 +50,20 @@ public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
             return 0
         }
         return max(0, min(nextIndex, totalPages - 1))
+    }
+
+    public func resumePageIndex(for storyId: String, totalPages: Int) -> Int {
+        let status = repository.getStoryStatus(by: storyId)
+        guard status?.isWatched != true else { return max(0, totalPages - 1) }
+        return max(0, min((status?.watchedPageIndex ?? -1) + 1, totalPages - 1))
+    }
+
+    public func resetStatuses() {
+        repository.resetStoryStatuses()
+        updateState { _ in
+            StateUpdate(newState: .init(watched: []))
+        } completion: { [weak self] state in
+            self?.sendEvent(.didUpdateState(state: state))
+        }
     }
 }

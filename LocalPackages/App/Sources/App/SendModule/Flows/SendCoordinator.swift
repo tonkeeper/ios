@@ -10,7 +10,7 @@ protocol SendCoordinator: Coordinator {
     var didSendSuccessfully: ((RouterCoordinator<NavigationControllerRouter>?) -> Void)? { get set }
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)? { get set }
     var didRequestRefill: ((Token, _ onRefill: @escaping () -> Void) -> Void)? { get set }
-    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)? { get set }
+    var didRequestOpenBattery: ((BatteryAnalyticsSource, @escaping () -> Void) -> Void)? { get set }
     var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)? { get set }
 
     func start(pushAnimated: Bool)
@@ -23,7 +23,7 @@ extension SendCoordinator {
         onRefresh: @escaping () -> Void
     ) {
         if case .battery = extraType {
-            didRequestOpenBattery?(onRefresh)
+            didRequestOpenBattery?(.send, onRefresh)
             return
         }
 

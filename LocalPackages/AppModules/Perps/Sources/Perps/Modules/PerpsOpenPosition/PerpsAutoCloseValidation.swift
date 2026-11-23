@@ -157,6 +157,27 @@ public enum PerpsAutoCloseValidation {
         )
     }
 
+    public static func legsPassed(
+        byLimitPrice limitPrice: Double,
+        side: PerpsTradeSide,
+        autoClose: PerpsAutoClose?
+    ) -> InvalidLegs {
+        let takeProfit = autoClose?.takeProfit?.triggerPrice
+        let stopLoss = autoClose?.stopLoss?.triggerPrice
+        switch side {
+        case .long:
+            return InvalidLegs(
+                takeProfit: takeProfit.map { limitPrice >= $0 } ?? false,
+                stopLoss: stopLoss.map { limitPrice <= $0 } ?? false
+            )
+        case .short:
+            return InvalidLegs(
+                takeProfit: takeProfit.map { limitPrice <= $0 } ?? false,
+                stopLoss: stopLoss.map { limitPrice >= $0 } ?? false
+            )
+        }
+    }
+
     @MainActor
     static func refusedLegs<Review>(
         _ autoClose: PerpsAutoClose,
@@ -193,9 +214,9 @@ public enum PerpsAutoCloseValidation {
             case .stopLossMustBeAboveCurrent:
                 return TKLocales.Perps.OpenPosition.stopLossMustBeAboveCurrentPrice
             case let .stopLossMustBeAboveLiquidation(price):
-                return TKLocales.Perps.OpenPosition.stopLossMustBeAboveLiquidationPrice(format.usd(price))
+                return TKLocales.Perps.OpenPosition.stopLossMustBeAboveLiquidationPrice(format.price(price))
             case let .stopLossMustBeBelowLiquidation(price):
-                return TKLocales.Perps.OpenPosition.stopLossMustBeBelowLiquidationPrice(format.usd(price))
+                return TKLocales.Perps.OpenPosition.stopLossMustBeBelowLiquidationPrice(format.price(price))
             }
         }
     }

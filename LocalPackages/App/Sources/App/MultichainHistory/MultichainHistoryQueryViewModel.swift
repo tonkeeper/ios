@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import KeeperCore
 import TKLocalize
+import TKUIKit
 
 @MainActor
 final class MultichainHistoryQueryViewModel: ObservableObject {
@@ -75,9 +76,14 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
     private let rowDataReducer: MultichainHistoryRowDataReducer
     private let paginationViewModel: MultichainHistoryPaginationViewModel
     private let nftResolver: MultichainActivityNFTResolver
+    private let encryptedComments: MultichainEncryptedComments?
 
+    /// The history screen this list reports for; a list of another screen, or of a history screen that
+    /// does not own the session, reports nothing.
+    private weak var screenRenderOwner: AnyObject?
     private var nftResolutionTask: Task<Void, Never>?
     private var nftResolutionObservation: AnyCancellable?
+    private var decryptionObservation: AnyCancellable?
     private var autoAdvancedPages = 0
 
     init(
@@ -89,9 +95,13 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
+        encryptedComments: MultichainEncryptedComments? = nil,
+        appSettingsStore: AppSettingsStore,
         currentDateProvider: @escaping () -> Date = Date.init,
-        onAddFunds: (() -> Void)? = nil
+        onAddFunds: (() -> Void)? = nil,
+        screenRenderOwner: AnyObject? = nil
     ) {
+        self.screenRenderOwner = screenRenderOwner
         let hideDust = hidesDustTransactions && !category.isSpamCategory ? true : nil
         self.multichainState = multichainState
         self.category = category
@@ -102,12 +112,14 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
         self.currentDateProvider = currentDateProvider
         self.onAddFunds = onAddFunds
         self.nftResolver = nftResolver
+        self.encryptedComments = encryptedComments
 
         let itemMapper = MultichainHistoryActivityItemMapper(
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
-            labelsPerpsBalanceMoves: category.typeFilter != .perps,
-            nftProvider: { nftResolver.nft(for: $0) }
+            hidesAmounts: { [weak appSettingsStore] in appSettingsStore?.getState().isSecureMode == true },
+            nftProvider: { nftResolver.nft(for: $0) },
+            encryptedComments: encryptedComments
         )
         self.rowDataReducer = MultichainHistoryRowDataReducer(
             itemMapper: itemMapper,
@@ -126,6 +138,15 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.remapRowData()
             }
+        self.decryptionObservation = encryptedComments?.$revision
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.remapRowData()
+            }
+        appSettingsStore.addObserver(self) { observer, event in
+            guard case .didUpdateIsSecureMode = event else { return }
+            Task { @MainActor in observer.remapRowData() }
+        }
     }
 
     deinit {
@@ -304,6 +325,10 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             task: startLoadingNextPage(fallbackData: rowData)
         )
     }
+
+    func decryptComment(of activity: MultichainActivity) {
+        encryptedComments?.decrypt(activity)
+    }
 }
 
 private extension MultichainHistoryQueryViewModel {
@@ -341,15 +366,23 @@ private extension MultichainHistoryQueryViewModel {
         return task
     }
 
+    /// Falls back to the list itself, which never owns a session, so its stages are ignored.
+    private var screenRenderSource: AnyObject {
+        screenRenderOwner ?? self
+    }
+
     func loadFirstPage(fallbackData: RowData) async {
         let page: MultichainWalletActivitiesPage
+        ScreenRenderTracker.shared.requestStarted(for: .history, from: screenRenderSource)
         do {
             page = try await loadPage(cursor: nil)
         } catch {
             guard !Task.isCancelled, !isCancelled(error) else {
                 return
             }
+            ScreenRenderTracker.shared.requestFinished(for: .history, from: screenRenderSource)
             applyFailure(error, fallbackData: fallbackData)
+            ScreenRenderTracker.shared.failed(.history, error: ScreenRenderErrorKind(error), from: screenRenderSource)
             return
         }
 
@@ -357,7 +390,9 @@ private extension MultichainHistoryQueryViewModel {
             return
         }
 
+        ScreenRenderTracker.shared.requestFinished(for: .history, from: screenRenderSource)
         applyFirstPage(page, fallbackData: fallbackData)
+        ScreenRenderTracker.shared.contentApplied(.fresh, for: .history, from: screenRenderSource)
         finishFirstPageLoad()
         loadNextPageIfStalled(previousItemCount: 0)
     }
@@ -515,7 +550,7 @@ private extension MultichainHistoryQueryViewModel {
         } else {
             dateFormatter.dateFormat = "LLLL y"
         }
-        return dateFormatter.string(from: date).capitalized
+        return dateFormatter.string(from: date).capitalizedFirst
     }
 
     var sectionCalendar: Calendar {

@@ -40,6 +40,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
         deeplink: CoordinatorDeeplink?,
         deeplinkOpenContexts: [DeeplinkOpenAnalyticsContext]
     ) {
+        keeperCoreAssembly.warmUpWalletScreenStores()
         makeTKUIKitInitialSetup()
         setupSensitiveContentAnalytics()
 
@@ -51,7 +52,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
         logLaunchApp()
         for context in deeplinkOpenContexts {
-            logDeeplinkOpen(context.link, isColdStart: context.isColdStart)
+            didReceiveDeeplink(context.link, isColdStart: context.isColdStart)
         }
 
         openRoot(deeplink: deeplink)
@@ -61,7 +62,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
     override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
         if let link = deeplink as? String {
-            logDeeplinkOpen(link, isColdStart: false)
+            didReceiveDeeplink(link, isColdStart: false)
         }
         guard let rootCoordinator else { return false }
         return rootCoordinator.handleDeeplink(deeplink: deeplink)
@@ -70,12 +71,15 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
     /// Every link that reaches the app from the outside passes through here or through `start`;
     /// links opened from inside the app go straight to `MainCoordinator` and report their own
     /// placement instead.
-    private func logDeeplinkOpen(_ link: String, isColdStart: Bool) {
+    private func didReceiveDeeplink(_ link: String, isColdStart: Bool) {
         guard !link.isEmpty else { return }
 
         let linkType: DeeplinkOpen.LinkType
         do {
             let parsed = try keeperCoreAssembly.rootAssembly().rootController().parseDeeplink(string: link)
+            if case let .loyalty(referralCode?) = parsed {
+                keeperCoreAssembly.repositoriesAssembly.loyaltyReferralCodeRepository().save(referralCode)
+            }
             linkType = DeeplinkOpen.LinkType(deeplink: parsed)
         } catch let error as DeeplinkParserError where error.isSilent {
             // A WalletConnect wake-up opens nothing, so it is neither an app open nor a campaign entry.
@@ -96,6 +100,9 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
     private func makeTKUIKitInitialSetup() {
         ToastPresenter.windowLevel = .toast
+        let configuration = keeperCoreAssembly.configurationAssembly.configuration
+        TKLiquidGlass.isFeatureEnabled = configuration.featureEnabled(.liquidGlassEnabled)
+        TKNumPadView.isEnabled = configuration.featureEnabled(.numPadEnabled)
     }
 
     /// Flag values are only final once the boot config is loaded, so the event waits for it,
@@ -103,13 +110,18 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
     /// The permission read runs alongside that wait and is not covered by the same bound.
     private func logLaunchApp() {
         let theme = TKThemeManager.shared.theme.analyticsTheme
-        let walletsCount = keeperCoreAssembly.rootAssembly().storesAssembly.walletsStore.wallets.count
+        // The first read of the wallets store reads the wallets file; at launch that read is slow.
+        let storesAssembly = keeperCoreAssembly.rootAssembly().storesAssembly
+        let walletsStore = storesAssembly.walletsStore
+        let walletNotificationStore = storesAssembly.walletNotificationStore
         let configuration = keeperCoreAssembly.configurationAssembly.configuration
+        let liveActivities = LaunchApp.LiveActivities.current
         Task { [analyticsProvider = coreAssembly.analyticsProvider, configuration] in
             async let pushPermission = UNUserNotificationCenter.current()
                 .notificationSettings()
                 .authorizationStatus
                 .analyticsPushPermission
+            async let widgets = PlacedWidgets.analyticsValue()
             let deadline = Task {
                 try? await Task.sleep(nanoseconds: Self.bootConfigurationDeadline * NSEC_PER_MSEC)
             }
@@ -120,10 +132,20 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
             await deadline.value
             Log.i("feature flags:\n\(configuration.featureFlagsDescription)")
 
+            let permission = await pushPermission
+            let wallets = walletsStore.wallets
+            let notificationStates = walletNotificationStore.getState()
             let event = LaunchApp(
                 theme: theme,
-                walletsCount: walletsCount,
-                pushPermission: await pushPermission
+                walletsCount: wallets.count,
+                pushPermission: permission,
+                pushMismatchWalletsCount: permission.map { permission in
+                    permission == .granted
+                        ? wallets.filter { notificationStates[$0]?.isOn != true }.count
+                        : 0
+                },
+                liveActivities: liveActivities,
+                widgets: await widgets
             )
             analyticsProvider.log(
                 event.withExtraValues(configuration.resolvedFeatureFlags.analyticsParameters)
@@ -169,7 +191,7 @@ extension AppCoordinator: AppStateTrackerObserver {
 
 class AppCoordinatorRootViewController: UIViewController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        .portrait
+        .tkDefault
     }
 
     override func viewDidLoad() {

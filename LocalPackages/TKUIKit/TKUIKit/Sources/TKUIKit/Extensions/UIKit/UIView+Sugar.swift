@@ -13,14 +13,18 @@ public extension UIView {
         return sizeThatFits(CGSize(width: bounds.width, height: height)).height
     }
 
+    /// Probed where a hint would point: a view scrolled out of its scroll view still counts while the user can
+    /// scroll it back and its screen is on top.
     var isReachableByUser: Bool {
         guard let window, !isHidden, alpha > 0.01, !bounds.isEmpty else {
             return false
         }
 
-        let boundsCenter = CGPoint(x: bounds.midX, y: bounds.midY)
-        let centerInWindow = convert(boundsCenter, to: window)
-        guard let hitView = window.hitTest(centerInWindow, with: nil) else {
+        let anchor = hintAnchor(in: window)
+        guard
+            anchor.isRevealable,
+            let hitView = window.hitTest(CGPoint(x: anchor.frame.midX, y: anchor.frame.midY), with: nil)
+        else {
             return false
         }
 

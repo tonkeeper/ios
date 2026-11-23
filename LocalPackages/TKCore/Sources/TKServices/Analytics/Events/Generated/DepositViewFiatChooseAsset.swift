@@ -10,20 +10,22 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User sees the \&quot;Choose asset\&quot; screen listing assets available for purchase with fiat (TON, USDT TON, USDT TRC20, etc.)  */
+/** User sees the \&quot;Choose asset\&quot; screen listing assets available for purchase with fiat (TON, USDT TON, USDT TRC20, etc.). On \&quot;Buy crypto\&quot;: the asset picker opened.  */
 public struct DepositViewFiatChooseAsset: Codable, JSONEncodable, Hashable {
 
     public static let availableOptionsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     public var eventName: String = "deposit_view_fiat_choose_asset"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** Slugs of the options shown to the user on this screen. Use standard identifier slugs from the backend response.  */
     public var availableOptions: Set<String>
 
-    public init(eventName: String = "deposit_view_fiat_choose_asset", from: RampSource, addFundsOption: AddFundsOption, availableOptions: Set<String>) {
+    public init(eventName: String = "deposit_view_fiat_choose_asset", from: RampSource, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, availableOptions: Set<String>) {
         self.eventName = eventName
         self.from = from
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.availableOptions = availableOptions
     }
 
@@ -31,6 +33,7 @@ public struct DepositViewFiatChooseAsset: Codable, JSONEncodable, Hashable {
         case eventName
         case from
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case availableOptions = "available_options"
     }
 
@@ -41,6 +44,7 @@ public struct DepositViewFiatChooseAsset: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(availableOptions, forKey: .availableOptions)
     }
 }

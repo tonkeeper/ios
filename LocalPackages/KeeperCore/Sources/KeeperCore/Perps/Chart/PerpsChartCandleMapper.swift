@@ -16,13 +16,6 @@ enum PerpsChartCandleMapper {
         let volumes: [Int64: Double]
     }
 
-    static func wireCandles(
-        from batch: Components.Schemas.GetCandlesResponse,
-        timeframe: PerpsChartTimeframe
-    ) -> [PerpsChartCandle] {
-        mapBatch(from: batch, timeframe: timeframe).candles
-    }
-
     static func mapBatch(
         from batch: Components.Schemas.GetCandlesResponse,
         timeframe: PerpsChartTimeframe
@@ -159,10 +152,8 @@ enum PerpsChartCandleMapper {
               let close = positive(candle.c),
               high >= low
         else { return nil }
-        let openedAt = Date(timeIntervalSince1970: Double(timestamp) / 1000)
-        guard openedAt.timeIntervalSince1970 > 0 else { return nil }
         return PerpsChartCandle(
-            openedAt: openedAt,
+            openedAt: Date(timeIntervalSince1970: Double(timestamp) / 1000),
             open: open,
             high: high,
             low: low,
@@ -175,11 +166,14 @@ enum PerpsChartCandleMapper {
         let (offset, offsetOverflow) = Int64(index).multipliedReportingOverflow(by: step)
         guard !offsetOverflow else { return nil }
         let (timestamp, timestampOverflow) = startTs.addingReportingOverflow(offset)
-        return timestampOverflow ? nil : timestamp
+        guard !timestampOverflow, supportedTimestamps.contains(timestamp) else { return nil }
+        return timestamp
     }
 
     private static func positive(_ raw: String?) -> Double? {
         guard let value = PerpsMarketMath.optionalDouble(raw), value.isFinite, value > 0 else { return nil }
         return value
     }
+
+    private static let supportedTimestamps: ClosedRange<Int64> = 1 ... 4_102_444_800_000
 }

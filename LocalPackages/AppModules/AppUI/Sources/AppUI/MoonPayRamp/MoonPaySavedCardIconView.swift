@@ -22,24 +22,72 @@ public struct MoonPaySavedCardIconView: View {
         self.size = size
     }
 
+    /// `size` is the card's width; its height follows the design's 44×30 ratio.
     public var body: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: size * 0.11)
                 .fill(.accentBlue)
-            Text(icon.brand.uppercased())
-                .font(.system(size: size * 0.2, weight: .heavy, design: .rounded))
-                .italic()
-                .foregroundStyle(.constantWhite)
+            brandMark
                 .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.top, 4)
-                .padding(.trailing, 5)
+                .padding(.top, inset)
+                .padding(.leading, inset)
+                .padding(.trailing, inset)
             Text(icon.last4)
-                .font(.system(size: size * 0.2, weight: .semibold))
+                .font(.system(size: fontSize, weight: .semibold))
+                .lineLimit(1)
                 .foregroundStyle(.constantWhite)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .padding(.leading, 5)
-                .padding(.bottom, 4)
+                .padding(.leading, inset)
+                .padding(.bottom, inset * 0.75)
         }
-        .frame(width: size * 1.45, height: size)
+        .frame(width: size, height: size * Self.aspectRatio)
     }
+
+    /// The design's logos for Visa and Mastercard; any other brand is written out.
+    @ViewBuilder
+    private var brandMark: some View {
+        switch Brand(icon.brand) {
+        case .visa:
+            SwiftUI.Image.TKUIKit.Artwork.PaymentCards.visa
+                .resizable()
+                .renderingMode(.template)
+                .foregroundStyle(.constantWhite)
+                .frame(width: size * 19 / 44, height: size * 6 / 44)
+        case .mastercard:
+            SwiftUI.Image.TKUIKit.Artwork.PaymentCards.mastercard
+                .resizable()
+                .frame(width: size * 10 / 44, height: size * 6 / 44)
+        case .other:
+            Text(icon.brand.uppercased())
+                .font(.system(size: fontSize, weight: .heavy, design: .rounded))
+                .italic()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(.constantWhite)
+        }
+    }
+
+    private enum Brand {
+        case visa
+        case mastercard
+        case other
+
+        init(_ name: String) {
+            switch name.lowercased().filter(\.isLetter) {
+            case "visa": self = .visa
+            case "mastercard": self = .mastercard
+            default: self = .other
+            }
+        }
+    }
+
+    private var fontSize: CGFloat {
+        size * 0.18
+    }
+
+    private var inset: CGFloat {
+        size * 0.09
+    }
+
+    private static let aspectRatio: CGFloat = 30 / 44
 }

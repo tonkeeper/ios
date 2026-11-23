@@ -55,27 +55,18 @@ let package = Package(
     name: "TKUIKit",
     platforms: [.iOS(.v15)],
     products: [
-        // Statically linked (automatic). Keeping this product non-`.dynamic` is what fixes
-        // SwiftUI Previews: importing an explicitly `.dynamic` product force-promotes
-        // transitive deps (e.g. Kingfisher) into synthesized `*_PackageProduct.framework`s
-        // that XCPreviewAgent can't locate.
-        .library(
-            name: "TKUIKit",
-            targets: ["TKUIKit"]
-        ),
+        // Dynamic: embedded once in the app and shared with the widget and intents extensions.
+        // Its dependencies must stay automatic products; a `.dynamic` one breaks this package's
+        // previews (XCPreviewAgent doesn't search `PackageFrameworks/`).
+        .library(name: "TKUIKit", type: .dynamic, targets: ["TKUIKit"]),
     ],
     dependencies: [
         .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1")),
+        .package(url: "https://github.com/swhitty/SwiftDraw", exact: "0.29.0"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "7.0.0")),
-        .package(url: "https://github.com/SVGKit/SVGKit.git", revision: "9b573a08e7698149de1a0ed576f22f68f5a0e30b"),
-        .package(url: "https://github.com/airbnb/lottie-spm.git", exact: "4.6.0"),
-        .package(path: "../TKLogging"),
-        .package(path: "../TKLocalize"),
-        // Resources live in their own package so `TKUIKit` depends on them as a *product*
-        // (like `SnapKit-Dynamic`). That makes the dynamic `KeeperResources` library build as
-        // a single shared framework — embedded once and reused by the app + extensions — rather
-        // than being statically copied into every consumer. A same-package target dependency
-        // can't be built dynamically, so the separate package is required.
+        .package(url: "https://github.com/airbnb/lottie-ios", exact: "4.6.0"),
+        .package(path: "../TKBase"),
+        // Resources live in their own package, shared with Android; only `TKUIKit` links them.
         .package(path: resourcesRoot.path),
     ],
     targets: [
@@ -83,12 +74,11 @@ let package = Package(
             name: "TKUIKit",
             dependencies: [
                 .product(name: "KeeperResources", package: "resources"),
-                .product(name: "SnapKit-Dynamic", package: "SnapKit"),
+                .product(name: "SnapKit", package: "SnapKit"),
                 .byName(name: "Kingfisher"),
-                .product(name: "SVGKit", package: "SVGKit"),
-                .product(name: "Lottie", package: "lottie-spm"),
-                .product(name: "TKLogging", package: "TKLogging"),
-                .product(name: "TKLocalize", package: "TKLocalize"),
+                .product(name: "SwiftDraw", package: "SwiftDraw"),
+                .product(name: "Lottie", package: "lottie-ios"),
+                .product(name: "TKBase", package: "TKBase"),
             ],
             path: "TKUIKit/Sources/TKUIKit",
 
@@ -96,7 +86,10 @@ let package = Package(
         ),
         .testTarget(
             name: "TKUIKitTests",
-            dependencies: ["TKUIKit"],
+            dependencies: [
+                "TKUIKit",
+                .product(name: "TKTestSupport", package: "TKBase"),
+            ],
 
             swiftSettings: [
                 .treatAllWarnings(as: .error),

@@ -3,16 +3,23 @@ import UIKit
 public final class TKUIActionButton: TKUIButton<TKUIButtonTitleIconContentView, TKUIButtonDefaultBackgroundView> {
     private let category: TKUIActionButtonCategory
     private let size: TKUIActionButtonSize
+    /// Only a large button sits on glass, as a capsule; smaller ones keep a flat fill, as in `ButtonView`.
+    private let isLiquidGlass: Bool
 
     public init(category: TKUIActionButtonCategory, size: TKUIActionButtonSize) {
         self.category = category
         self.size = size
+        let isLiquidGlass = size == .large && TKLiquidGlass.isEnabled
+        self.isLiquidGlass = isLiquidGlass
         super.init(
             contentView: TKUIButtonTitleIconContentView(
                 textStyle: size.textStyle,
                 foregroundColor: category.titleColor
             ),
-            backgroundView: TKUIButtonDefaultBackgroundView(cornerRadius: size.cornerRadius),
+            backgroundView: TKUIButtonDefaultBackgroundView(
+                cornerRadius: isLiquidGlass ? size.height / 2 : size.cornerRadius,
+                isLiquidGlass: isLiquidGlass
+            ),
             contentHorizontalPadding: size.padding.left
         )
     }
@@ -28,6 +35,10 @@ public final class TKUIActionButton: TKUIButton<TKUIButtonTitleIconContentView, 
 
     override public func setupButtonState() {
         switch buttonState {
+        case .disabled where isLiquidGlass:
+            // The liquid glass design greys out a disabled button.
+            backgroundView.setBackgroundColor(.Button.secondaryBackground)
+            buttonContentView.setForegroundColor(.Text.secondary)
         case .disabled:
             backgroundView.setBackgroundColor(category.disabledBackgroundColor)
             buttonContentView.setForegroundColor(category.disabledTitleColor)

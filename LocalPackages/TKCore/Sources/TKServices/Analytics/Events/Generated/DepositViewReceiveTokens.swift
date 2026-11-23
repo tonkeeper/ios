@@ -21,14 +21,16 @@ public struct DepositViewReceiveTokens: Codable, JSONEncodable, Hashable {
     public var from: RampSource
     public var walletMode: WalletMode
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** Which network tab is selected on the Receive tokens screen */
     public var network: Network
 
-    public init(eventName: String = "deposit_view_receive_tokens", from: RampSource, walletMode: WalletMode, addFundsOption: AddFundsOption, network: Network) {
+    public init(eventName: String = "deposit_view_receive_tokens", from: RampSource, walletMode: WalletMode, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, network: Network) {
         self.eventName = eventName
         self.from = from
         self.walletMode = walletMode
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.network = network
     }
 
@@ -37,6 +39,7 @@ public struct DepositViewReceiveTokens: Codable, JSONEncodable, Hashable {
         case from
         case walletMode = "wallet_mode"
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case network
     }
 
@@ -48,6 +51,7 @@ public struct DepositViewReceiveTokens: Codable, JSONEncodable, Hashable {
         try container.encode(from, forKey: .from)
         try container.encode(walletMode, forKey: .walletMode)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(network, forKey: .network)
     }
 }

@@ -8,6 +8,7 @@ public struct PerpsAmountField<Accessory: View>: View {
     var suffix: String?
     var suffixStyle: TKTextStyle = .num1
     var suffixSpacing: CGFloat = 0
+    var allowsSign = false
     @ViewBuilder var accessory: () -> Accessory
 
     public init(
@@ -17,6 +18,7 @@ public struct PerpsAmountField<Accessory: View>: View {
         suffix: String? = nil,
         suffixStyle: TKTextStyle = .num1,
         suffixSpacing: CGFloat = 0,
+        allowsSign: Bool = false,
         @ViewBuilder accessory: @escaping () -> Accessory
     ) {
         _text = text
@@ -25,6 +27,7 @@ public struct PerpsAmountField<Accessory: View>: View {
         self.suffix = suffix
         self.suffixStyle = suffixStyle
         self.suffixSpacing = suffixSpacing
+        self.allowsSign = allowsSign
         self.accessory = accessory
     }
 
@@ -36,12 +39,10 @@ public struct PerpsAmountField<Accessory: View>: View {
                         .textStyle(.num1)
                         .foregroundStyle(.textSecondary)
                 }
-                TextField("0", text: $text)
-                    .keyboardType(.decimalPad)
+                TKNumPadTextField("0", text: $text, font: TKTextStyle.num1.font, allowsSign: allowsSign)
                     .focused(focused)
                     .textStyle(.num1)
-                    .foregroundStyle(.textPrimary)
-                    .widthHugging(text.isEmpty ? "0" : text, style: .num1)
+                    .widthHugging(text.isEmpty ? "0" : TKNumPadTextField.displayText(text), style: .num1)
                 if let suffix, !suffix.isEmpty {
                     Text(suffix)
                         .textStyle(suffixStyle)
@@ -49,6 +50,7 @@ public struct PerpsAmountField<Accessory: View>: View {
                         .padding(.leading, suffixSpacing)
                 }
             }
+            .animation(TKNumPadTextField.layoutAnimation, value: text)
             accessory()
         }
         .padding(.horizontal, Layout.horizontalPadding)

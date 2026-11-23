@@ -149,6 +149,26 @@ extension Components {
             /// - Remark: Generated from `#/components/requestBodies/AccountIDs/content/application\/json`.
             case json(Components.RequestBodies.AccountIDs.JsonPayload)
         }
+        /// - Remark: Generated from `#/components/requestBodies/PublicKeys`.
+        @frozen public enum PublicKeys: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/PublicKeys/json`.
+            public struct JsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/PublicKeys/json/public_keys`.
+                public var publicKeys: [Swift.String]
+                /// Creates a new `JsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - publicKeys:
+                public init(publicKeys: [Swift.String]) {
+                    self.publicKeys = publicKeys
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case publicKeys = "public_keys"
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/PublicKeys/content/application\/json`.
+            case json(Components.RequestBodies.PublicKeys.JsonPayload)
+        }
         /// - Remark: Generated from `#/components/requestBodies/TonConnectProof`.
         @frozen public enum TonConnectProof: Sendable, Hashable {
             /// - Remark: Generated from `#/components/requestBodies/TonConnectProof/json`.

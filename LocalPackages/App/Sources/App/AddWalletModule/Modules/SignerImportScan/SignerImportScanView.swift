@@ -16,6 +16,8 @@ final class SignerImportScanView: UIView {
             .highlighted: .white.withAlphaComponent(0.44),
         ]
         configuration.textColor = .black
+        // A white button over the camera preview: tinted glass there would read only as well as the frame behind.
+        configuration.sitsOnLiquidGlass = false
         configuration.action = { [weak self] in
             self?.didTapOpenSignerButton?()
         }

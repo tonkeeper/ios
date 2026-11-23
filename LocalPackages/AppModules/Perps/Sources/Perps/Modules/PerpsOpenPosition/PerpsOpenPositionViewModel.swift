@@ -4,6 +4,7 @@ import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKLogging
+import TKUIKit
 
 @MainActor
 final class PerpsOpenPositionViewModel: ObservableObject {
@@ -23,14 +24,21 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         case ready(balance: Double)
     }
 
+    struct AmountEntry: Equatable {
+        var text = ""
+        var sizeMode: SizeDisplayMode = .usd
+        var maxMarginUsd: Double?
+        var isSizeBelowStep = false
+    }
+
     /// Everything the user has typed or chosen, plus what the market read and the
     /// planner answered for it. The single source the screen renders from.
     struct State: Equatable {
         var viewState: ViewState = .loading
         var account: AccountState = .resolving
         var orderType: PerpsOrderType = .market
-        var amountText: String = ""
-        var sizeMode: SizeDisplayMode = .usd
+        var amount = AmountEntry()
+        var amountToggle = AmountToggle<AmountEntry>()
         var leverage: Double
         /// Trigger prices as last set. A leg with a typed ROI follows the price the
         /// order would open at, so read the draft through `autoClose(in:)`.
@@ -44,6 +52,14 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         /// Last liquidation price the planner reviewed for this draft. Not derived
         /// here: the client does not compute trade figures.
         var liquidationPrice: Double?
+
+        var amountText: String {
+            amount.text
+        }
+
+        var sizeMode: SizeDisplayMode {
+            amount.sizeMode
+        }
     }
 
     @Published private(set) var state: State
@@ -70,13 +86,15 @@ final class PerpsOpenPositionViewModel: ObservableObject {
     private let priceFeed: PerpsMarketPriceFeed
     private let draftReviewer = PerpsDraftReviewer()
     private let reviewerLoadedSubject = PassthroughSubject<Void, Never>()
-    private var hasUserAdjustedLeverage = false
+    private let rememberedLeverage: @MainActor (_ accountIndex: Int64) -> Double?
+    private var hasSettledLeverage = false
     private var isLoadingMarket = false
     private var didAppear = false
 
     private let format: PerpsFormatting
 
     private static let quoteDecimals = 6
+    private static let placeholderLeverage: Double = 20
     private static let minimumOpenMarginUsd: Double = 1
 
     init(
@@ -85,7 +103,7 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         service: PerpsTradingService,
         accountStore: any PerpsAccountStoring,
         marketsStore: any PerpsMarketsStoring,
-        initialLeverage: Double,
+        rememberedLeverage: @escaping @MainActor (_ accountIndex: Int64) -> Double?,
         format: PerpsFormatting
     ) {
         self.format = format
@@ -94,7 +112,8 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         self.service = service
         self.accountStore = accountStore
         priceFeed = PerpsMarketPriceFeed(marketId: marketId, store: marketsStore)
-        state = State(leverage: initialLeverage)
+        self.rememberedLeverage = rememberedLeverage
+        state = State(leverage: Self.placeholderLeverage)
         observeAccount()
         priceFeed.observe(self) { $0.applyLivePrice() }
     }
@@ -160,10 +179,6 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         state.autoCloseROIInput
     }
 
-    var limitPrice: Double? {
-        state.limitPrice
-    }
-
     var context: PerpsOpenMarketContext? {
         state.context
     }
@@ -184,11 +199,6 @@ final class PerpsOpenPositionViewModel: ObservableObject {
 
     var sizeUsd: Double {
         marginUsd * leverage
-    }
-
-    var canDeposit: Bool {
-        if case .needsDeposit = state.account { return true }
-        return false
     }
 
     var isReviewEnabled: Bool {
@@ -251,7 +261,7 @@ final class PerpsOpenPositionViewModel: ObservableObject {
     var headerPriceText: String {
         let price = effectivePrice
         guard price > 0 else { return "—" }
-        return format.usd(price)
+        return format.price(price)
     }
 
     var sizeText: String? {
@@ -268,8 +278,8 @@ final class PerpsOpenPositionViewModel: ObservableObject {
     var balanceText: String? {
         switch account {
         case .resolving: return nil
-        case let .needsDeposit(balance): return balance.map { format.usd($0) }
-        case let .ready(balance): return format.usd(balance)
+        case let .needsDeposit(balance): return balance.map { format.balance($0) }
+        case let .ready(balance): return format.balance(balance)
         }
     }
 
@@ -279,7 +289,7 @@ final class PerpsOpenPositionViewModel: ObservableObject {
 
     var balanceErrorText: String? {
         let margin = marginUsd
-        guard viewState == .ready, margin > 0 else { return nil }
+        guard viewState == .ready, margin > 0 || state.amount.isSizeBelowStep else { return nil }
         if !meetsMinimumMargin(in: state) {
             return TKLocales.Perps.OpenPosition.minimumMargin(format.usd(minimumMarginUsd(in: state)))
         }
@@ -300,36 +310,32 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         let sanitized = decimals > 0
             ? PerpsDecimalInput.sanitize(text, decimals: decimals)
             : String(PerpsDecimalInput.sanitize(text, decimals: 1).prefix { $0 != "." })
-        let isEdit = sanitized != state.amountText
+        guard sanitized != state.amountText else { return }
         update {
-            $0.amountText = sanitized
-            if isEdit { $0.reviewWarningText = nil }
+            $0.amount = AmountEntry(text: sanitized, sizeMode: $0.sizeMode)
+            $0.amountToggle.reset()
+            $0.reviewWarningText = nil
         }
     }
 
     func toggleSizeMode() {
         guard effectivePrice > 0 else { return }
         update { draft in
-            switch draft.sizeMode {
-            case .usd:
-                draft.amountText = tokenText(forMarginUsd: marginUsd(in: draft), in: draft)
-                draft.sizeMode = .token
-            case .token:
-                let margin = marginUsd(in: draft)
-                draft.amountText = margin > 0 ? PerpsDecimalInput.usdText(margin) : ""
-                draft.sizeMode = .usd
-            }
+            let converted = toggledAmount(in: draft)
+            draft.amount = draft.amountToggle.toggle(draft.amount, converted: converted)
             draft.reviewWarningText = nil
         }
     }
 
     func setMax() {
         guard case let .ready(balance) = state.account, balance > 0 else { return }
+        let text = PerpsDecimalInput.usdText(balance)
+        let budget = PerpsDecimalInput.double(text) ?? 0
         update {
-            switch $0.sizeMode {
-            case .usd: $0.amountText = PerpsDecimalInput.usdText(balance)
-            case .token: $0.amountText = tokenText(forMarginUsd: balance, in: $0)
-            }
+            $0.amount = $0.sizeMode == .usd
+                ? AmountEntry(text: text, maxMarginUsd: budget)
+                : tokenAmount(forMarginUsd: budget, maxMarginUsd: budget, in: $0)
+            $0.amountToggle.reset()
             $0.reviewWarningText = nil
         }
     }
@@ -338,8 +344,9 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         update { draft in
             draft.orderType = type
             if type == .market { draft.limitPrice = nil }
+            draft.amountToggle.reset()
             draft.reviewWarningText = nil
-            resetInvalidAutoCloseIfNeeded(in: &draft)
+            applyTermsChange(in: &draft)
         }
     }
 
@@ -347,17 +354,23 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         update { draft in
             draft.limitPrice = price
             draft.orderType = .limit
+            draft.amountToggle.reset()
             draft.reviewWarningText = nil
-            resetInvalidAutoCloseIfNeeded(in: &draft)
+            applyTermsChange(in: &draft)
         }
     }
 
     func applyLeverage(_ value: Double) {
-        hasUserAdjustedLeverage = true
+        hasSettledLeverage = true
+        changeLeverage(to: value)
+    }
+
+    private func changeLeverage(to value: Double) {
         update { draft in
             draft.leverage = value
+            draft.amountToggle.reset()
             draft.reviewWarningText = nil
-            resetInvalidAutoCloseIfNeeded(in: &draft)
+            applyTermsChange(in: &draft)
         }
     }
 
@@ -386,6 +399,7 @@ final class PerpsOpenPositionViewModel: ObservableObject {
 
     func openLeverage() {
         guard let context = state.context else { return }
+        hasSettledLeverage = true
         onOpenLeverage?(PerpsLeverageSheetContext(
             marketId: marketId,
             side: side,
@@ -405,12 +419,22 @@ final class PerpsOpenPositionViewModel: ObservableObject {
             side: side,
             priceDecimals: context.priceDecimals,
             referencePrice: referencePrice(in: state),
-            initialLimitPrice: state.limitPrice
+            initialLimitPrice: state.limitPrice,
+            autoClose: priceTypedAutoClose(in: state)
         ))
+    }
+
+    func priceTypedAutoClose(in draft: State) -> PerpsAutoClose? {
+        let autoClose = PerpsAutoClose(
+            takeProfit: draft.autoCloseROIInput.takeProfit == nil ? draft.autoClose?.takeProfit : nil,
+            stopLoss: draft.autoCloseROIInput.stopLoss == nil ? draft.autoClose?.stopLoss : nil
+        )
+        return autoClose.isEmpty ? nil : autoClose
     }
 
     func openAutoClose() {
         guard let context = state.context else { return }
+        hasSettledLeverage = true
         onOpenAutoClose?(PerpsAutoCloseSheetContext(
             marketId: marketId,
             side: side,
@@ -442,17 +466,17 @@ final class PerpsOpenPositionViewModel: ObservableObject {
             guard let self else { return }
             defer { isReviewInFlight = false }
             guard await ensureAccountReady?() ?? true else {
+                PerpsOperationLog.event("ui_review", outcome: "blocked", source: "wallet", fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "reason": "account_not_ready"])
                 requestAmountFocus()
                 return
             }
             switch await confirmContext() {
             case let .success(context):
                 update { $0.reviewWarningText = nil }
-                let limit = context.intent.limitPrice
-                Log.perps.i("OpenPosition: review → confirm market=\(marketId) side=\(side) lev=\(context.intent.leverage)x \(limit.map { "limit=\($0)" } ?? "market")")
+                PerpsOperationLog.event("ui_review", outcome: "ready", fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "side": side.rawValue, "leverage": String(context.intent.leverage), "order_type": context.intent.limitPrice == nil ? "market" : "limit"])
                 onReview?(context)
             case let .failure(error):
-                Log.perps.w("OpenPosition: review failed market=\(marketId) side=\(side) margin=\(marginUsd) lev=\(state.leverage)x \(state.limitPrice.map { "limit=\($0)" } ?? "market") — \(error)")
+                PerpsOperationLog.event("ui_review", outcome: "failed", error: error, fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "side": side.rawValue, "margin_usd": String(marginUsd), "leverage": String(state.leverage)])
                 if case .invalidAmount = error, let load = reviewerLoad(for: probe(state)) {
                     await draftReviewer.reload(load)
                     applyLoadedReviewer()
@@ -481,10 +505,6 @@ final class PerpsOpenPositionViewModel: ObservableObject {
         }
         review()
     }
-
-    func setReviewWarning(_ text: String?) {
-        update { $0.reviewWarningText = text }
-    }
 }
 
 private extension PerpsOpenPositionViewModel {
@@ -492,24 +512,23 @@ private extension PerpsOpenPositionViewModel {
         guard state.context == nil, !isLoadingMarket else { return }
         isLoadingMarket = true
         update { $0.viewState = .loading }
-        Log.perps.i("OpenPosition: load start market=\(marketId) side=\(side)")
+        PerpsOperationLog.event("ui_market", outcome: "started", fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "side": side.rawValue])
 
         guard let context = await service.openMarketContext(marketId: marketId, side: side) else {
             isLoadingMarket = false
-            Log.perps.w("OpenPosition: load failed market=\(marketId) → closing")
+            PerpsOperationLog.event("ui_market", outcome: "unavailable", source: "backend", fields: ["flow": "trade", "action": "open", "market_id": String(marketId)])
             onLoadFailed?()
             return
         }
 
+        let leverage = settleStartingLeverage(for: context)
         update {
             $0.context = context
-            if !hasUserAdjustedLeverage {
-                $0.leverage = context.defaultLeverage
-            }
+            $0.leverage = leverage
             $0.viewState = .ready
         }
         isLoadingMarket = false
-        Log.perps.i("OpenPosition: ready market=\(marketId) price=\(context.displayPrice) lev=\(state.leverage)x")
+        PerpsOperationLog.event("ui_market", outcome: "ready", fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "price": String(context.displayPrice), "leverage": String(state.leverage)])
         if amountFocusState.isActive {
             requestAmountFocus()
         }
@@ -570,6 +589,9 @@ private extension PerpsOpenPositionViewModel {
         case .usd:
             return PerpsDecimalInput.normalized(draft.amountText)
         case .token:
+            if let budget = draft.amount.maxMarginUsd {
+                return PerpsDecimalInput.text(budget, decimals: Self.quoteDecimals)
+            }
             let price = effectivePrice(in: draft)
             let base = baseSize(in: draft)
             guard base > 0, price > 0, draft.leverage > 0 else { return "" }
@@ -592,11 +614,32 @@ private extension PerpsOpenPositionViewModel {
 
     func tokenText(forMarginUsd margin: Double, in draft: State) -> String {
         var probe = draft
-        probe.sizeMode = .usd
-        probe.amountText = PerpsDecimalInput.text(margin, decimals: Self.quoteDecimals)
+        probe.amount = AmountEntry(text: PerpsDecimalInput.text(margin, decimals: Self.quoteDecimals))
         let base = steppedBaseSize(in: probe)
         guard base > 0 else { return "" }
         return PerpsDecimalInput.text(base, decimals: draft.context?.sizeDecimals ?? 0)
+    }
+
+    func tokenAmount(forMarginUsd margin: Double, maxMarginUsd: Double?, in draft: State) -> AmountEntry {
+        let text = tokenText(forMarginUsd: margin, in: draft)
+        let isSizeBelowStep = margin > 0 && text.isEmpty
+        return AmountEntry(
+            text: isSizeBelowStep ? "0" : text,
+            sizeMode: .token,
+            maxMarginUsd: maxMarginUsd,
+            isSizeBelowStep: isSizeBelowStep
+        )
+    }
+
+    func toggledAmount(in draft: State) -> AmountEntry {
+        let margin = marginUsd(in: draft)
+        let budget = draft.amount.maxMarginUsd
+        switch draft.sizeMode {
+        case .usd:
+            return tokenAmount(forMarginUsd: margin, maxMarginUsd: budget, in: draft)
+        case .token:
+            return AmountEntry(text: margin > 0 ? PerpsDecimalInput.usdText(margin) : "", maxMarginUsd: budget)
+        }
     }
 
     /// Both minimums the venue holds, measured on the size it would actually place:
@@ -631,9 +674,14 @@ private extension PerpsOpenPositionViewModel {
         return (size * step).rounded(.down) / step
     }
 
+    /// Reviewed without the auto-close legs: they do not move the liquidation, and the
+    /// planner refuses the whole review over a stop loss past it.
     func reviewedLiquidation(in draft: State, context: PerpsOpenMarketContext) -> Double? {
         guard let reviewer = draftReviewer.current else { return nil }
-        return reviewer.reviewOpen(openIntent(in: draft, context: context))?.liquidationPrice
+        var terms = draft
+        terms.autoClose = nil
+        terms.autoCloseROIInput = .none
+        return reviewer.reviewOpen(openIntent(in: terms, context: context))?.liquidationPrice
     }
 
     /// Reloads what a review reads. Called when there is nothing loaded yet and when
@@ -648,8 +696,7 @@ private extension PerpsOpenPositionViewModel {
 
     func probe(_ draft: State) -> State {
         var probe = draft
-        probe.sizeMode = .usd
-        probe.amountText = PerpsDecimalInput.usdText(probeMarginUsd(in: draft))
+        probe.amount = AmountEntry(text: PerpsDecimalInput.usdText(probeMarginUsd(in: draft)))
         return probe
     }
 
@@ -678,7 +725,7 @@ private extension PerpsOpenPositionViewModel {
             do {
                 return try await service.loadReviewer(for: intent).get()
             } catch {
-                Log.perps.w("OpenPosition: reviewer load failed market=\(intent.marketId) — \(error)")
+                PerpsOperationLog.event("ui_reviewer", outcome: "failed", error: error, fields: ["flow": "trade", "action": "open", "market_id": String(intent.marketId)])
                 return nil
             }
         }
@@ -734,7 +781,34 @@ private extension PerpsOpenPositionViewModel {
 
         guard newValue != state.account else { return }
         update { $0.account = newValue }
-        Log.perps.i("OpenPosition: account → \(label) market=\(marketId)")
+        PerpsOperationLog.event("ui_account", outcome: "changed", fields: ["flow": "trade", "action": "open", "market_id": String(marketId), "account_state": label])
+        if !hasSettledLeverage, let context = state.context {
+            let leverage = settleStartingLeverage(for: context)
+            if leverage != state.leverage {
+                changeLeverage(to: leverage)
+            }
+        }
+    }
+
+    func settleStartingLeverage(for context: PerpsOpenMarketContext) -> Double {
+        guard case let .active(account) = accountStore.currentWalletState() else { return context.defaultLeverage }
+        hasSettledLeverage = true
+        return rememberedLeverage(account.accountIndex).map {
+            min(max($0, context.leverageBounds.min), context.leverageBounds.max)
+        } ?? context.defaultLeverage
+    }
+
+    /// The liquidation and the auto-close warning belong to the old terms: the
+    /// refresh that follows reviews the new ones, and a warning it does not
+    /// repeat is no longer true.
+    func applyTermsChange(in draft: inout State) {
+        guard draft.leverage != state.leverage
+            || draft.orderType != state.orderType
+            || draft.limitPrice != state.limitPrice
+        else { return }
+        draft.liquidationPrice = nil
+        draft.autoCloseWarningText = nil
+        resetInvalidAutoCloseIfNeeded(in: &draft)
     }
 
     func resetInvalidAutoCloseIfNeeded(in draft: inout State) {
@@ -780,7 +854,9 @@ private extension PerpsOpenPositionViewModel {
             leverage: draft.leverage,
             maxSlippage: context.maxSlippage,
             autoClose: autoClose(in: draft),
-            limitPrice: draft.orderType == .limit ? draft.limitPrice : nil
+            limitPrice: draft.orderType == .limit ? draft.limitPrice : nil,
+            takeProfitROIPercent: draft.autoCloseROIInput.takeProfit?.value,
+            stopLossROIPercent: draft.autoCloseROIInput.stopLoss?.value
         )
     }
 
@@ -808,6 +884,9 @@ private extension PerpsOpenPositionViewModel {
         var next = state
         body(&next)
         next.autoCloseROIInput = next.autoCloseROIInput.keeping(legsOf: next.autoClose)
+        if next.sizeMode == .token, let budget = next.amount.maxMarginUsd {
+            next.amount = tokenAmount(forMarginUsd: budget, maxMarginUsd: budget, in: next)
+        }
         guard next != state else { return }
         let previous = state
         state = next
@@ -818,8 +897,7 @@ private extension PerpsOpenPositionViewModel {
 
     func reviewInputsChanged(from old: State, to new: State) -> Bool {
         old.leverage != new.leverage
-            || old.amountText != new.amountText
-            || old.sizeMode != new.sizeMode
+            || old.amount != new.amount
             || old.orderType != new.orderType
             || old.limitPrice != new.limitPrice
             || old.context != new.context
@@ -881,10 +959,14 @@ extension PerpsOpenPositionViewModel: PerpsAmountFormViewModel {
                 id: "autoClose",
                 title: TKLocales.Perps.OpenPosition.autoClose,
                 value: autoCloseSummary ?? TKLocales.Perps.OpenPosition.set,
-                valueColor: autoCloseSummary == nil ? .textAccent : .textPrimary,
-                action: { [weak self] in self?.openAutoClose() }
+                valueColor: !canEditAutoClose ? .textTertiary : autoCloseSummary == nil ? .textAccent : .textPrimary,
+                action: canEditAutoClose ? { [weak self] in self?.openAutoClose() } : nil
             ),
         ]
+    }
+
+    private var canEditAutoClose: Bool {
+        accountStore.marketExtras(marketId: marketId)?.flags.canEditAutoClose ?? true
     }
 
     func tapPrice() {

@@ -3,6 +3,7 @@ import Combine
 @testable import KeeperCore
 @testable import Perps
 import PerpsModels
+import TKTestSupport
 import XCTest
 
 @MainActor
@@ -50,7 +51,7 @@ final class PerpsTradeConfirmViewModelTests: XCTestCase {
 
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67000")])
-        await waitUntil { viewModel.rows.first { $0.id == .pnl }?.value == PerpsFormatting.live.signedUsd(-1.2) }
+        await waitUntil(viewModel) { viewModel.rows.first { $0.id == .pnl }?.value == PerpsFormatting.live.signedUsd(-1.2) }
 
         XCTAssertEqual(viewModel.rows.first { $0.id == .pnl }?.value, PerpsFormatting.live.signedUsd(-1.2))
         XCTAssertEqual(viewModel.rows.first { $0.id == .pnl }?.tone, .negative)
@@ -88,12 +89,16 @@ final class PerpsTradeConfirmViewModelTests: XCTestCase {
             marketsStore: PerpsMarketsStore.makeForTests(tickers: [1: "BTC/USD"], client: client)
         )
         var announced: [PerpsAutoCloseValidation.ConfirmStaleKind] = []
-        viewModel.onAutoCloseStale = { announced.append($0) }
+        let staleAnnounced = TestSignal()
+        viewModel.onAutoCloseStale = {
+            announced.append($0)
+            staleAnnounced.send()
+        }
         viewModel.onAppear()
         await waitForTickers(client, toEqual: ["BTC/USD"])
 
         await client.emit([("BTC/USD", "71000")])
-        await waitUntil { !announced.isEmpty }
+        await waitUntil(staleAnnounced) { !announced.isEmpty }
         await client.emit([("BTC/USD", "71500")])
         try await Task.sleep(nanoseconds: 300_000_000)
 
@@ -118,7 +123,7 @@ final class PerpsTradeConfirmViewModelTests: XCTestCase {
         await waitForTickers(client, toEqual: ["BTC/USD"])
 
         await client.emit([("BTC/USD", "71000")])
-        await waitUntil { viewModel.rows.first { $0.id == .autoClose }?.valueParts?.first?.tone == .negative }
+        await waitUntil(viewModel) { viewModel.rows.first { $0.id == .autoClose }?.valueParts?.first?.tone == .negative }
 
         XCTAssertEqual(viewModel.rows.first { $0.id == .autoClose }?.valueParts?.first?.tone, .negative)
         XCTAssertTrue(announced.isEmpty)
@@ -131,11 +136,11 @@ final class PerpsTradeConfirmViewModelTests: XCTestCase {
         viewModel.updateOpenAutoClose(PerpsAutoClose(takeProfit: PerpsAutoCloseTrigger(triggerPrice: 70000), stopLoss: nil))
 
         viewModel.updateOpenReview(FakePerpsTradingService.makeReview(entryPrice: 67000), for: context.intent)
-        XCTAssertEqual(viewModel.rows.first { $0.id == .entry }?.value, PerpsFormatting.live.usd(66541.70))
+        XCTAssertEqual(viewModel.rows.first { $0.id == .entry }?.value, PerpsFormatting.live.price(66541.70))
 
         let current = try XCTUnwrap(viewModel.openConfirmContext?.intent)
         viewModel.updateOpenReview(FakePerpsTradingService.makeReview(entryPrice: 67000), for: current)
-        XCTAssertEqual(viewModel.rows.first { $0.id == .entry }?.value, PerpsFormatting.live.usd(67000))
+        XCTAssertEqual(viewModel.rows.first { $0.id == .entry }?.value, PerpsFormatting.live.price(67000))
     }
 
     func test_sizeChangeConfirm_aRefreshFinishingAfterConfirmChangesNothing() throws {
@@ -178,12 +183,5 @@ final class PerpsTradeConfirmViewModelTests: XCTestCase {
         )
         viewModel.reviewLifetime = reviewLifetime
         return viewModel
-    }
-
-    private func waitUntil(timeout: TimeInterval = 2, condition: @escaping () -> Bool) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
     }
 }

@@ -124,6 +124,42 @@ final class PerpsHistoryEventMappingTests: XCTestCase {
         XCTAssertNotEqual(firstWithoutTx?.id, event(.perpsPositionOpened, assetId: "lighter/mainnet/market/1", txIds: [])?.id)
     }
 
+    func test_aRewardIsKeptOnlyWhileTheLoyaltySectionShows() {
+        let figures = MultichainActivityPerpsMeta(
+            symbol: "BTC",
+            assetId: "lighter/mainnet/market/1",
+            side: .long,
+            closeReason: nil,
+            accountIndex: 1,
+            settledAt: nil,
+            loyaltyReward: "1000"
+        )
+
+        XCTAssertEqual(event(.perpsPositionOpened, figures: figures, showsLoyaltyReward: true)?.loyaltyReward, "1000")
+        XCTAssertNil(event(.perpsPositionOpened, figures: figures, showsLoyaltyReward: false)?.loyaltyReward)
+    }
+
+    func test_observersHearOnlyAChangeOfWhetherTheRewardShows() {
+        var isShown = false
+        var loyaltyUpdated: (() -> Void)?
+        let events = PerpsHistoryEvents(
+            showsLoyaltyReward: { isShown },
+            observeLoyalty: { _, onChange in loyaltyUpdated = onChange }
+        )
+        var changes = 0
+        events.observeChanges(by: self) { changes += 1 }
+
+        loyaltyUpdated?()
+        XCTAssertEqual(changes, 0)
+        isShown = true
+        loyaltyUpdated?()
+        loyaltyUpdated?()
+        XCTAssertEqual(changes, 1)
+        isShown = false
+        loyaltyUpdated?()
+        XCTAssertEqual(changes, 2)
+    }
+
     private func event(
         _ type: MultichainActivityType,
         reason: MultichainPerpsCloseReason? = nil,
@@ -136,7 +172,8 @@ final class PerpsHistoryEventMappingTests: XCTestCase {
         feeToken: MultichainAssetDetails? = nil,
         txIds: [String] = ["lighter:0xabc"],
         blockTime: Date = Date(timeIntervalSince1970: 0),
-        figures: MultichainActivityPerpsMeta? = nil
+        figures: MultichainActivityPerpsMeta? = nil,
+        showsLoyaltyReward: Bool = true
     ) -> PerpsHistoryEvent? {
         let usdc = MultichainAssetDetails(
             assetId: "lighter/mainnet/3",
@@ -176,6 +213,6 @@ final class PerpsHistoryEventMappingTests: XCTestCase {
                 accountIndex: 1,
                 settledAt: nil
             )
-        ))
+        ), showsLoyaltyReward: showsLoyaltyReward)
     }
 }

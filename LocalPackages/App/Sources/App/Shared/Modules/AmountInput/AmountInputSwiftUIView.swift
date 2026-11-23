@@ -44,7 +44,8 @@ extension AmountInputSwiftUIViewModel {
                 isLoading: converted.showsShimmer,
                 showsChevron: converted.showsChevron,
                 leadingImage: converted.leadingImage,
-                leadingImageURL: converted.leadingImageURL
+                leadingImageURL: converted.leadingImageURL,
+                leadingChainImage: converted.leadingChainImage
             ),
             quickOptions: quickOptionRows.map { option in
                 .init(

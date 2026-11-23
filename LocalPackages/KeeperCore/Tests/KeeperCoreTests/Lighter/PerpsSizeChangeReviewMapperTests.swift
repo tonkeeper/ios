@@ -36,8 +36,9 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.addReview(
             review,
             symbol: "BTC",
+            feePpm: 950,
             direction: .add,
-            marginDeltaUsd: 10,
+            allocatedMarginBefore: 30_000_000_000,
             oldBase: 100_000,
             oldEntry: 20_000_000,
             oldNotionalUsd: 2000,
@@ -45,6 +46,7 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         )
 
         XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.add)
+        XCTAssertEqual(mapped.marginDeltaUsd, 10, accuracy: 1e-9)
         XCTAssertEqual(mapped.baseSize.old, 1, accuracy: 1e-9)
         XCTAssertEqual(mapped.baseSize.new, 1.5, accuracy: 1e-9)
         XCTAssertEqual(mapped.entryPrice.old, 2000, accuracy: 1e-6)
@@ -79,6 +81,7 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.closeSizeReview(
             review,
             symbol: "BTC",
+            feePpm: 950,
             direction: .reduce,
             marginDeltaUsd: 40,
             leverage: 5,
@@ -89,6 +92,7 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         )
 
         XCTAssertEqual(mapped.direction, PerpsSizeChangeDirection.reduce)
+        XCTAssertEqual(mapped.feeRatePercent ?? 0, 0.095, accuracy: 1e-12)
         XCTAssertEqual(mapped.baseSize.old, 1, accuracy: 1e-9)
         XCTAssertEqual(mapped.baseSize.new, 0.6, accuracy: 1e-9)
         XCTAssertEqual(mapped.entryPrice.new, 2000, accuracy: 1e-6)
@@ -100,8 +104,9 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.addReview(
             addReview(liquidationPrice: KotlinLong(value: 19_000_000)),
             symbol: "BTC",
+            feePpm: 950,
             direction: .add,
-            marginDeltaUsd: 10,
+            allocatedMarginBefore: 30_000_000_000,
             oldBase: 100_000,
             oldEntry: 20_000_000,
             oldNotionalUsd: 2000,
@@ -118,8 +123,9 @@ final class PerpsSizeChangeReviewMapperTests: XCTestCase {
         let mapped = PerpsPlannerMapping.addReview(
             addReview(liquidationPrice: KotlinLong(value: 19_000_000)),
             symbol: "BTC",
+            feePpm: 950,
             direction: .add,
-            marginDeltaUsd: 10,
+            allocatedMarginBefore: 30_000_000_000,
             oldBase: 100_000,
             oldEntry: 20_000_000,
             oldNotionalUsd: 2000,

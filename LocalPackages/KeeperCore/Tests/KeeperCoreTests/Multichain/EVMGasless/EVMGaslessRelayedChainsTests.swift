@@ -3,9 +3,9 @@ import Foundation
 import TKBatteryAPI
 import XCTest
 
-/// Which EVM chains the relayer's config turns into relayed engines, and how the config is kept.
+/// Which EVM chains and Solana the relayer's config turns into relayed engines, and how the config is kept.
 final class EVMGaslessRelayedChainsTests: XCTestCase {
-    func test_onlyEVMChainsThatTakeAMainPayloadAreRelayed() {
+    func test_onlyEVMChainsAndSolanaThatTakeAMainPayloadAreRelayed() {
         let config = Components.Schemas.GaslessV2Config(chains: [
             chain("ton/mainnet"),
             chain("eth/mainnet"),
@@ -18,7 +18,26 @@ final class EVMGaslessRelayedChainsTests: XCTestCase {
             chain("optimism/mainnet"),
         ])
 
-        XCTAssertEqual(EVMGaslessRelayedChains.relayedEVMChains(in: config), [.eth, .arb, .base, .polygon])
+        XCTAssertEqual(EVMGaslessRelayedChains.relayedEVMChains(in: config), [.eth, .arb, .base, .polygon, .sol])
+    }
+
+    /// A remote switch must take Solana away at once, not when the cached config runs out.
+    func test_aChainSwitchedOffLeavesTheCachedSetAtOnce() async {
+        let loader = ConfigLoader(results: [.success(config(.eth, .sol))])
+        let isSolanaOn = Switch(true)
+        let chains = EVMGaslessRelayedChains(
+            loadConfig: { try await loader.load() },
+            includes: { chain in chain != .sol || isSolanaOn.value }
+        )
+
+        let before = await chains.chains()
+        isSolanaOn.value = false
+        let after = await chains.chains()
+
+        XCTAssertEqual(before, [.eth, .sol])
+        XCTAssertEqual(after, [.eth])
+        let loads = await loader.loads
+        XCTAssertEqual(loads, 1)
     }
 
     func test_theConfigIsReadOnceWhileItLasts() async {
@@ -98,6 +117,14 @@ private extension EVMGaslessRelayedChainsTests {
 
     func config(_ chains: MultichainChain...) -> Components.Schemas.GaslessV2Config {
         Components.Schemas.GaslessV2Config(chains: chains.map { chain($0.relayerChainId) })
+    }
+}
+
+private final class Switch: @unchecked Sendable {
+    var value: Bool
+
+    init(_ value: Bool) {
+        self.value = value
     }
 }
 

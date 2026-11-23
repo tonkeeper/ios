@@ -90,6 +90,7 @@ private extension WalletContainerViewModelImplementation {
                 icon: icon,
                 color: wallet.tintColor.themedColor
             ),
+            walletButtonColor: wallet.tintColor == .defaultColor ? nil : wallet.tintColor.uiColor,
             walletButtonAction: { [weak self] in
                 self?.didTapWalletButton()
             },

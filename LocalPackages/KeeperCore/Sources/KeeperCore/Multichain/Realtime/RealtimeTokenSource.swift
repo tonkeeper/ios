@@ -33,6 +33,14 @@ struct RealtimeTokenSource {
         }
     }
 
+    func perpsSubscriptionToken(walletId: String) async -> RealtimeTokenResult {
+        do {
+            return try .token(await clientAPI.getWalletPerpsRealtimeToken(walletId: walletId))
+        } catch {
+            return mapError(error)
+        }
+    }
+
     private func mapError(_ error: Error) -> RealtimeTokenResult {
         guard let error = error as? MultichainClientAPIError else {
             return .failure(message: error.localizedDescription)

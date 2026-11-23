@@ -10,7 +10,6 @@ struct PerpsAccountBinding {
 
 struct PerpsAccountBindSigner {
     static let proofDomain = "perps.account.bind.v1"
-    static let walletKind: ChainKit.WalletKind = .multichain
 
     private let signer: PerpsRootProofSigner
 
@@ -19,7 +18,7 @@ struct PerpsAccountBindSigner {
     }
 
     func makeBinding(
-        wallet: CryptoWallet,
+        wallet: MnemonicWallet,
         walletId: String,
         deadline: Int64
     ) async throws -> PerpsAccountBinding {
@@ -39,13 +38,9 @@ struct PerpsAccountBindSigner {
         try PerpsProofFraming.message(domain: proofDomain, fields: [walletId, l1Address])
     }
 
-    func walletAuthKey(wallet: CryptoWallet) -> Data {
-        let keyPair = wallet.walletKeyPair(kind: Self.walletKind)
+    func walletAuthKey(wallet: MnemonicWallet) -> Data {
+        let keyPair = wallet.walletKeyPair()
         defer { keyPair.privateKey.fillZeros() }
         return keyPair.privateKey.asData
-    }
-
-    static func typedData(walletId: String, deadline: Int64) -> String {
-        PerpsRootProofSigner.linkWalletTypedData(walletId: walletId, deadline: deadline)
     }
 }

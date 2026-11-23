@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKShimmerLabel: UIView {
+public final class TKShimmerLabel: TKLayerAnimationView {
     public var text: NSAttributedString? {
         didSet {
             label.attributedText = text
@@ -40,8 +40,6 @@ public final class TKShimmerLabel: UIView {
         return layer
     }()
 
-    private var enterForegroundToken: NSObjectProtocol?
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         addSubview(label)
@@ -49,19 +47,7 @@ public final class TKShimmerLabel: UIView {
         layer.addSublayer(contentLayer)
         contentLayer.addSublayer(shimmerLayer)
 
-        addAnimation()
-
-        enterForegroundToken = NotificationCenter.default.addObserver(
-            forName: UIApplication.willEnterForegroundNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.addAnimation()
-        }
-    }
-
-    deinit {
-        enterForegroundToken = nil
+        startAnimation()
     }
 
     @available(*, unavailable)
@@ -77,21 +63,21 @@ public final class TKShimmerLabel: UIView {
         gradientLayer.frame = bounds
     }
 
-    public func startAnimation() {
-        addAnimation()
+    override func removeAnimations() {
+        gradientLayer.removeAnimation(forKey: .shimmerAnimationKey)
     }
 
-    public func stopAnimation() {
-        gradientLayer.removeAllAnimations()
-    }
-
-    private func addAnimation() {
+    override func addAnimations() {
         let gradientAnimation = CABasicAnimation(keyPath: "locations")
         gradientAnimation.fromValue = [0.0, 0.0, 0.25]
         gradientAnimation.toValue = [0.75, 1.0, 1.0]
         gradientAnimation.duration = 2.0
         gradientAnimation.repeatCount = Float.infinity
 
-        gradientLayer.add(gradientAnimation, forKey: nil)
+        gradientLayer.add(gradientAnimation, forKey: .shimmerAnimationKey)
     }
+}
+
+private extension String {
+    static let shimmerAnimationKey = "shimmer"
 }

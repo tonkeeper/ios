@@ -110,11 +110,51 @@ final class TonConnectAppsTests: XCTestCase {
         )
     }
 
+    func testDeleteConnectedAppSessionSendsDisconnectEventOnlyForRemoteSession() {
+        let service = TonConnectServiceMock()
+        let sent = expectation(description: "disconnect event sent")
+        service.didSendDisconnectEvent = { sent.fulfill() }
+        let store = makeStore(tonConnectService: service)
+        let wallet = makeWallet(id: "wallet")
+
+        store.deleteConnectedAppSession(
+            wallet: wallet,
+            app: makeApp(clientId: "injected", host: "example.com", connectionType: .bridge)
+        )
+        store.deleteConnectedAppSession(
+            wallet: wallet,
+            app: makeApp(clientId: "remote", host: "example.com")
+        )
+
+        wait(for: [sent], timeout: 1)
+        XCTAssertEqual(service.sentDisconnectEventClientIds, ["remote"])
+    }
+
+    func testDisconnectEventDecryptsToTonConnectDisconnectEvent() throws {
+        let walletSession = try TonConnectSessionCrypto()
+        let dAppSession = try TonConnectSessionCrypto()
+
+        let body = try TonConnectResponseBuilder.buildDisconnectEvent(
+            sessionCrypto: walletSession,
+            clientId: dAppSession.sessionId
+        )
+        let decrypted = try dAppSession.decrypt(
+            message: XCTUnwrap(Data(base64Encoded: body)),
+            senderPublicKey: walletSession.keyPair.publicKey.data
+        )
+        let event = try XCTUnwrap(JSONSerialization.jsonObject(with: decrypted) as? [String: Any])
+
+        XCTAssertEqual(event["event"] as? String, "disconnect")
+        XCTAssertNotNil(event["id"] as? Int)
+        XCTAssertEqual((event["payload"] as? [String: Any])?.isEmpty, true)
+    }
+
     private func makeStore(
+        tonConnectService: TonConnectService = TonConnectServiceMock(),
         now: @escaping @Sendable () -> Date = { Date() }
     ) -> TonConnectAppsStore {
         TonConnectAppsStore(
-            tonConnectService: TonConnectServiceMock(),
+            tonConnectService: tonConnectService,
             connectionMetadataStore: TonConnectConnectionMetadataStore(
                 vault: FileSystemVault<TonConnectStoredConnectionMetadata, String>(
                     fileManager: .default,
@@ -151,7 +191,8 @@ private extension TonConnectAppsTests {
     func makeApp(
         clientId: String,
         host: String,
-        manifestURL: URL? = nil
+        manifestURL: URL? = nil,
+        connectionType: TonConnectApp.ConnectionType = .remote
     ) -> TonConnectApp {
         TonConnectApp(
             clientId: clientId,
@@ -164,12 +205,15 @@ private extension TonConnectAppsTests {
                 publicKey: PublicKey(data: Data(repeating: 1, count: 32)),
                 privateKey: PrivateKey(data: Data(repeating: 2, count: 64))
             ),
-            connectionType: .remote
+            connectionType: connectionType
         )
     }
 }
 
 private final class TonConnectServiceMock: TonConnectService {
+    var sentDisconnectEventClientIds = [String]()
+    var didSendDisconnectEvent: (() -> Void)?
+
     func loadAppManifest(parameters: TonConnectParameters) async -> Result<TonConnectManifest, TonConnectManifestError> {
         fatalError("Unused")
     }
@@ -263,6 +307,11 @@ private final class TonConnectServiceMock: TonConnectService {
         appRequest: TonConnect.DisconnectRequest,
         app: TonConnectApp
     ) async throws {}
+
+    func sendDisconnectEvent(app: TonConnectApp) async throws {
+        sentDisconnectEventClientIds.append(app.clientId)
+        didSendDisconnectEvent?()
+    }
 
     func getLastEventId() throws -> String {
         ""

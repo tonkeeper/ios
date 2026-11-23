@@ -72,34 +72,35 @@ public struct BannerView: View {
                     )
                 }
                 if let currentItem {
-                    BannerItemView(
-                        item: currentItem,
-                        height: Layout.height,
-                        onTapDismiss: {
-                            popStack()
-                        },
-                        isTapEnabled: !isCurrentItemTapSuppressed
-                    )
-                    .overlay {
-                        palette.background.content
-                            .opacity(1 - currentItemPromotionProgress)
-                            .clipShape(bannerItemShape)
+                    swipeableBanner(containerWidth: proxy.size.width) {
+                        BannerItemView(
+                            item: currentItem,
+                            height: Layout.height,
+                            onTapDismiss: {
+                                popStack()
+                            },
+                            isTapEnabled: !isCurrentItemTapSuppressed
+                        )
+                        .overlay {
+                            palette.background.content
+                                .opacity(1 - currentItemPromotionProgress)
+                                .clipShape(bannerItemShape)
+                        }
+                        .scaleEffect(
+                            x: downscaleCoefficient(progress: currentItemPromotionProgress),
+                            y: downscaleCoefficient(progress: currentItemPromotionProgress),
+                            anchor: .topLeading
+                        )
+                        .offset(
+                            x: currentItemHorizontalOffset + stackItemHorizontalOffset(
+                                containerWidth: proxy.size.width,
+                                progress: currentItemPromotionProgress
+                            ),
+                            y: stackItemVerticalOffset(progress: currentItemPromotionProgress)
+                        )
+                        .blur(radius: currentItemBlurRadius)
+                        .opacity(currentItemOpacity)
                     }
-                    .scaleEffect(
-                        x: downscaleCoefficient(progress: currentItemPromotionProgress),
-                        y: downscaleCoefficient(progress: currentItemPromotionProgress),
-                        anchor: .topLeading
-                    )
-                    .offset(
-                        x: currentItemHorizontalOffset + stackItemHorizontalOffset(
-                            containerWidth: proxy.size.width,
-                            progress: currentItemPromotionProgress
-                        ),
-                        y: stackItemVerticalOffset(progress: currentItemPromotionProgress)
-                    )
-                    .blur(radius: currentItemBlurRadius)
-                    .opacity(currentItemOpacity)
-                    .simultaneousGesture(horizontalSwipeGesture(containerWidth: proxy.size.width))
                 }
                 if let outgoingSwipeItem {
                     BannerItemView(
@@ -253,20 +254,54 @@ public struct BannerView: View {
         }
     }
 
+    @ViewBuilder
+    private func swipeableBanner(containerWidth: CGFloat, @ViewBuilder content: () -> some View) -> some View {
+        if !isSwipeEnabled {
+            content()
+        } else if #available(iOS 18.0, *) {
+            content()
+                .gesture(BannerHorizontalSwipeGesture(
+                    isEnabled: !isAnimatingPopStack,
+                    onChanged: { translation in
+                        updateSwipe(translation, containerWidth: containerWidth)
+                    },
+                    onEnded: { translation in
+                        endSwipe(translation, containerWidth: containerWidth)
+                        releaseSwipeTapSuppression()
+                    },
+                    onCancelled: {
+                        if isTrackingHorizontalSwipe {
+                            cancelSwipeDismissal()
+                        }
+                        releaseSwipeTapSuppression()
+                    }
+                ))
+        } else {
+            content()
+                .simultaneousGesture(horizontalSwipeGesture(containerWidth: containerWidth))
+        }
+    }
+
+    private func releaseSwipeTapSuppression() {
+        DispatchQueue.main.async {
+            isCurrentItemTapSuppressed = false
+        }
+    }
+
     private func horizontalSwipeGesture(containerWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: Layout.swipeMinimumDistance, coordinateSpace: .local)
             .updating($isSwipeGestureActive) { _, state, _ in
                 state = true
             }
             .onChanged { value in
-                updateSwipe(value, containerWidth: containerWidth)
+                updateSwipe(value.translation, containerWidth: containerWidth)
             }
             .onEnded { value in
-                endSwipe(value, containerWidth: containerWidth)
+                endSwipe(value.translation, containerWidth: containerWidth)
             }
     }
 
-    private func updateSwipe(_ value: DragGesture.Value, containerWidth: CGFloat) {
+    private func updateSwipe(_ translation: CGSize, containerWidth: CGFloat) {
         guard isSwipeEnabled,
               !isAnimatingPopStack
         else {
@@ -274,7 +309,7 @@ public struct BannerView: View {
         }
 
         if !isTrackingHorizontalSwipe {
-            guard abs(value.translation.width) > abs(value.translation.height) else {
+            guard abs(translation.width) > abs(translation.height) else {
                 return
             }
 
@@ -284,23 +319,23 @@ public struct BannerView: View {
         }
 
         withTransaction(Transaction(animation: nil)) {
-            currentItemHorizontalOffset = value.translation.width
+            currentItemHorizontalOffset = translation.width
             dismissalProgress = swipeDismissalProgress(
-                offset: value.translation.width,
+                offset: translation.width,
                 containerWidth: containerWidth
             )
         }
     }
 
-    private func endSwipe(_ value: DragGesture.Value, containerWidth: CGFloat) {
+    private func endSwipe(_ translation: CGSize, containerWidth: CGFloat) {
         guard isSwipeEnabled,
               isTrackingHorizontalSwipe
         else {
             return
         }
 
-        if abs(value.translation.width) >= swipeDismissalThreshold(containerWidth: containerWidth) {
-            completeSwipeDismissal(offset: value.translation.width, containerWidth: containerWidth)
+        if abs(translation.width) >= swipeDismissalThreshold(containerWidth: containerWidth) {
+            completeSwipeDismissal(offset: translation.width, containerWidth: containerWidth)
         } else {
             cancelSwipeDismissal()
         }

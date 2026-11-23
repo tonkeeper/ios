@@ -93,7 +93,11 @@ private extension KeystoneSignViewModelImplementation {
 
     func setup() {
         scannerOutput.didScanUR = { [weak self] ur in
-            self?.didScanSignedTransaction?(ur)
+            guard let self, let didScanSignedTransaction,
+                  (try? TonSignature(cbor: ur.cbor).signature) != nil
+            else { return false }
+            didScanSignedTransaction(ur)
+            return true
         }
     }
 

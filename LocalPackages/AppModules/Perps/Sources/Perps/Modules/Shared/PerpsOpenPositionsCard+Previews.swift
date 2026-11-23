@@ -6,7 +6,7 @@ private let previewPositions = [
         id: 1,
         symbol: "BTC",
         iconURL: nil,
-        leverageText: "27X",
+        leverageText: "27⨯",
         sideText: "LONG",
         isLong: true,
         valueText: "$540.00",
@@ -17,7 +17,7 @@ private let previewPositions = [
         id: 2,
         symbol: "ETH",
         iconURL: nil,
-        leverageText: "10X",
+        leverageText: "10⨯",
         sideText: "SHORT",
         isLong: false,
         valueText: "$212.40",
@@ -41,6 +41,31 @@ private let previewPositions = [
         )
         PerpsOpenPositionsCard(positions: [previewPositions[1]], onSelect: { _ in })
     }
+    .padding()
+    .frame(width: 390)
+    .background(.backgroundPage)
+    .tkPreviewTheme(.deepBlue)
+}
+
+@available(iOS 17.0, *)
+#Preview("More positions", traits: .sizeThatFitsLayout) {
+    PerpsOpenPositionsCard(
+        positions: previewPositions + [
+            PerpsPositionRowItem(
+                id: 3,
+                symbol: "SOL",
+                iconURL: nil,
+                leverageText: "10⨯",
+                sideText: "LONG",
+                isLong: true,
+                valueText: "$54.30",
+                pnlText: "− $2.14",
+                isPnlPositive: false
+            ),
+        ],
+        more: PerpsMorePositions(iconURLs: [nil, nil]),
+        onSelect: { _ in }
+    )
     .padding()
     .frame(width: 390)
     .background(.backgroundPage)

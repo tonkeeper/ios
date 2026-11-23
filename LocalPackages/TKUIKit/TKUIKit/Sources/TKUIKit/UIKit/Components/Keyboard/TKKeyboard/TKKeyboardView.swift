@@ -1,3 +1,4 @@
+import TKLocalize
 import UIKit
 
 public final class TKKeyboardView: UIView {
@@ -23,6 +24,17 @@ public final class TKKeyboardView: UIView {
             }
         }
 
+        var accessibilityLabel: String? {
+            switch self {
+            case .faceId:
+                return "Face ID"
+            case .touchId:
+                return "Touch ID"
+            case .none:
+                return nil
+            }
+        }
+
         var isUserInteractionEnable: Bool {
             switch self {
             case .faceId:
@@ -40,13 +52,16 @@ public final class TKKeyboardView: UIView {
     public var biometry: Biometry = .none {
         didSet {
             buttons[.biometry]?.configure(model: biometry.model)
+            buttons[.biometry]?.accessibilityLabel = biometry.accessibilityLabel
             buttons[.biometry]?.isUserInteractionEnabled = biometry.isUserInteractionEnable
         }
     }
 
-    private var touchedDownButton: TKKeyboardButton?
+    private var touchedDownKey: (button: TKKeyboardButton, type: Button)?
 
     private var buttons = [Button: TKKeyboardButton]()
+    private let feedback = KeyboardKeyFeedback()
+    private let deleteRepeat = KeyboardDeleteRepeat()
 
     private let stackView: UIStackView = {
         let stackView = UIStackView()
@@ -63,6 +78,13 @@ public final class TKKeyboardView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override public func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            deleteRepeat.cancel()
+        }
     }
 }
 
@@ -106,33 +128,64 @@ private extension TKKeyboardView {
             button.configure(model: .text("\(digit)"))
         case .backspace:
             button.configure(model: .image(.TKUIKit.Icons.Size36.delete))
+            button.accessibilityLabel = TKLocales.Actions.delete
         case .biometry:
             button.configure(model: biometry.model)
+            button.accessibilityLabel = biometry.accessibilityLabel
             button.isUserInteractionEnabled = biometry.isUserInteractionEnable
         }
 
+        if type == .backspace {
+            button.addAction(UIAction { [weak self] _ in
+                self?.commitTouchedDownKey()
+                self?.startDeleting()
+            }, for: .touchDown)
+            button.addAction(UIAction { [weak self] _ in
+                self?.deleteRepeat.cancel()
+            }, for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
+            return button
+        }
+
+        let id = ObjectIdentifier(button)
         button.addAction(UIAction(handler: { [weak self] _ in
-            if let touchedDownButton = self?.touchedDownButton {
-                touchedDownButton.cancelTracking(with: nil)
-                self?.didTapButton?(type)
-            }
-            self?.touchedDownButton = button
+            self?.feedback.press(id)
+            self?.commitTouchedDownKey()
+            self?.touchedDownKey = (button, type)
         }), for: .touchDown)
 
         button.addAction(UIAction(handler: { [weak self] _ in
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            self?.touchedDownButton = nil
+            self?.feedback.release(id)
+            self?.touchedDownKey = nil
             self?.didTapButton?(type)
         }), for: .touchUpInside)
 
         button.addAction(UIAction(handler: { [weak self] _ in
-            self?.touchedDownButton = nil
-        }), for: .touchDragExit)
-
-        button.addAction(UIAction(handler: { [weak self] _ in
-            self?.touchedDownButton = nil
-        }), for: .touchCancel)
+            self?.feedback.cancel(id)
+            self?.touchedDownKey = nil
+        }), for: [.touchDragExit, .touchCancel])
 
         return button
+    }
+
+    func commitTouchedDownKey() {
+        guard let touchedDownKey else { return }
+        self.touchedDownKey = nil
+        touchedDownKey.button.cancelTracking(with: nil)
+        feedback.cancel(ObjectIdentifier(touchedDownKey.button))
+        didTapButton?(touchedDownKey.type)
+    }
+
+    func startDeleting() {
+        didTapButton?(.backspace)
+        feedback.delete()
+        deleteRepeat.start(
+            onRepeat: { [weak self] in self?.repeatDelete() },
+            onClear: { [weak self] in self?.repeatDelete() }
+        )
+    }
+
+    func repeatDelete() {
+        didTapButton?(.backspace)
+        feedback.select()
     }
 }

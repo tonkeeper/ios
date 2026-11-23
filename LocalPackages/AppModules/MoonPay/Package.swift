@@ -12,13 +12,13 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../../TKLogging"),
+        .package(path: "../../TKBase"),
     ],
     targets: [
         .target(
             name: "MoonPay",
             dependencies: [
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
             ],
             swiftSettings: [
                 .treatAllWarnings(as: .error),

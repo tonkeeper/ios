@@ -18,6 +18,16 @@ public struct SignRawEmulation {
         public let totalAmountTreshold: Decimal = 0.2
         public let transferAllRemainingBalance: Bool
         public let totalEquivalent: Double?
+        public let currency: Currency
+
+        init(ton: UInt64, jettons: [Jetton], nftsCount: Int, transferAllRemainingBalance: Bool, totalEquivalent: Double?, currency: Currency = .defaultCurrency) {
+            self.ton = ton
+            self.jettons = jettons
+            self.nftsCount = nftsCount
+            self.transferAllRemainingBalance = transferAllRemainingBalance
+            self.totalEquivalent = totalEquivalent
+            self.currency = currency
+        }
     }
 
     public struct FeeConverted {
@@ -38,7 +48,7 @@ public struct SignRawEmulation {
 
 public extension SignRawEmulation.Risk {
     func totalEquivalent(limitingTonTo tonBalance: BigUInt, tonRate: Rates.Rate) -> Double? {
-        guard let totalEquivalent else {
+        guard let totalEquivalent, tonRate.currency == currency else {
             return nil
         }
         let tonAtRisk = BigUInt(ton)
@@ -75,6 +85,7 @@ public final class SignRawController {
     private let sendService: SendService
     private let nftService: NFTService
     private let tonRatesStore: TonRatesStore
+    private let ratesService: RatesService
     private let currencyStore: CurrencyStore
     private let resultHandler: SignRawControllerResultHandler?
 
@@ -85,6 +96,7 @@ public final class SignRawController {
         sendService: SendService,
         nftService: NFTService,
         tonRatesStore: TonRatesStore,
+        ratesService: RatesService,
         currencyStore: CurrencyStore,
         resultHandler: SignRawControllerResultHandler?
     ) {
@@ -94,6 +106,7 @@ public final class SignRawController {
         self.sendService = sendService
         self.nftService = nftService
         self.tonRatesStore = tonRatesStore
+        self.ratesService = ratesService
         self.currencyStore = currencyStore
         self.resultHandler = resultHandler
     }
@@ -111,7 +124,7 @@ public final class SignRawController {
             transfer = try await transferProvider()
         } catch {
             let error = TransferError.failedToCreateTransferData(
-                message: "failed to get transfer data from provider due to error: \(error.localizedDescription)"
+                message: "failed to get transfer data from provider due to error: \(error.analyticsReason)"
             )
             resultHandler?.didFail(error: .certain(error))
             throw .certain(error)
@@ -154,7 +167,7 @@ public final class SignRawController {
             transfer = try await transferProvider()
         } catch {
             let error = TransferError.failedToCreateTransferData(
-                message: "failed to get transfer data from provider due to error: \(error.localizedDescription)"
+                message: "failed to get transfer data from provider due to error: \(error.analyticsReason)"
             )
             resultHandler?.didFail(error: .certain(error))
             throw .certain(error)
@@ -238,9 +251,10 @@ public final class SignRawController {
         // TODO: Update to extra
         let fee = UInt64(abs(transactionInfo.event.extra))
         let totalFees = UInt64(transactionInfo.trace.transaction.totalFees)
-        let nfts = try await loadEventNFTs(event: event)
-        let risk = handleRisk(risk: transactionInfo.risk)
         let currency = currencyStore.state
+        async let riskTask = handleRisk(risk: transactionInfo.risk, currency: currency, transferType: result.transferType)
+        let nfts = try await loadEventNFTs(event: event)
+        let risk = await riskTask
 
         let traceChildrenCount = transactionInfo.trace.children?.count
 
@@ -278,8 +292,19 @@ public final class SignRawController {
         )
     }
 
-    private func handleRisk(risk: TonAPI.Components.Schemas.Risk) -> SignRawEmulation.Risk {
-        SignRawEmulation.Risk(
+    private func handleRisk(risk: TonAPI.Components.Schemas.Risk, currency: Currency, transferType: TransferType) async -> SignRawEmulation.Risk {
+        var totalEquivalent = SignRawRiskFiatValue.serverTotal(risk: risk, transferType: transferType)
+        // Battery emulation does not declare the fiat currency of its optional estimate.
+        if totalEquivalent == nil,
+           risk.nfts.isEmpty,
+           let rates = try? await ratesService.loadRates(
+               jettons: risk.jettons.map(\.jetton.address),
+               currencies: [currency]
+           )
+        {
+            totalEquivalent = SignRawRiskFiatValue.calculate(risk: risk, rates: rates, currency: currency)
+        }
+        return SignRawEmulation.Risk(
             ton: UInt64(risk.gram),
             jettons: risk.jettons.compactMap {
                 try? SignRawEmulation.Risk.Jetton(
@@ -290,7 +315,8 @@ public final class SignRawController {
             },
             nftsCount: risk.nfts.count,
             transferAllRemainingBalance: risk.transferAllRemainingBalance,
-            totalEquivalent: risk.totalEquivalent.flatMap(Double.init)
+            totalEquivalent: totalEquivalent,
+            currency: currency
         )
     }
 
@@ -308,7 +334,9 @@ public final class SignRawController {
             }
         }
 
-        if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), network: wallet.network) {
+        if !nftAddressesToLoad.isEmpty,
+           let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), network: wallet.network)
+        {
             nfts.merge(loadedNFTs, uniquingKeysWith: { $1 })
         }
 

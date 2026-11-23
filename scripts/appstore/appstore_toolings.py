@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""App Store Connect release tooling for the iOS app: prepare the build, push "What's New", submit for review.
+"""App Store Connect release tooling for the iOS app: release info, then release by the version's state.
 
-Each release needs the same three clicks-through in App Store Connect: pick the processed build for the
-version, type the release notes per locale, and send the version to review. `make appstore_toolings` does
-them from the terminal (a numbered chooser, or `ACTION=build|whats-new|submit` to skip it) so the release
-notes go through a PR (`scripts/appstore/whats_new.txt`) and the steps are repeatable.
+Each release needs the same clicks-through in App Store Connect: pick the processed build for the version
+and its release options (manual or automatic release, phased 7-day rollout), type the release notes per
+locale, send the version to review, release it once approved, and pause, resume or complete the rollout.
+`make appstore_toolings` does them from the terminal (a numbered chooser, or `ACTION=info|release|status`
+to skip it): `info` sets the build, release options and What's New; `release` does the one step the
+version's state allows (submit, publish, or pause / resume / complete the rollout) and, when it publishes,
+tags the tip of `release/ios/<version>` as `ios/<version>_<build>` and pushes the tag (`--commit` names another
+commit; a tip newer than the build's upload is refused); `status` posts the
+version's state to Slack ("waiting for review", "1%" ... "100%"; `SLACK_BOT_TOKEN` and
+`SLACK_RELEASES_CHANNEL`, through `shared/scripts/release_slack.py`, which Android's `playstore_toolings`
+shares; the public mirror does not carry it, so there `status` is unavailable and `.env` is not read).
+The release notes go through a PR (`scripts/appstore/whats_new.txt`) and the steps are repeatable.
 
 The script only works with a version that already exists in App Store Connect (it offers to create a
 missing one) and never creates locales. It is stdlib-only on purpose — macOS ships Python 3.9 without
@@ -19,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import datetime
 import json
 import os
 import pathlib
@@ -52,12 +61,31 @@ MAX_BUILDS = 10
 OPEN_SUBMISSION_STATES = {"READY_FOR_REVIEW", "WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES"}
 SECTION_RE = re.compile(r"^\[([A-Za-z][A-Za-z0-9-]*)\]\s*$")
 VERSION_RE = re.compile(r"^APP_VERSION_COMMON\s*=\s*(\d{2}\.\d{2}\.\d+)", re.MULTILINE)
+VERSION_STRING_RE = re.compile(r"^\d{2}\.\d{2}\.\d+$")
 
 ACTIONS = (
-    ("build", "Prepare build info (attach the processed build to the version)"),
-    ("whats-new", "Update What's New from scripts/appstore/whats_new.txt"),
-    ("submit", "Submit the version to App Review"),
+    ("info", "Manage release info (build, release type, phased rollout, What's New)"),
+    ("release", "Manage release (submit to review, publish, phased rollout)"),
+    ("status", "Post the release status to Slack (waiting for review / N%)"),
 )
+# Apple's phased release schedule: share of users with automatic updates per day.
+PHASED_PERCENT_BY_DAY = {1: 1, 2: 2, 3: 5, 4: 10, 5: 20, 6: 50, 7: 100}
+# `release` action: states that need no action, and states in which the phased rollout can be managed.
+# READY_FOR_REVIEW is not one of them: the version sits in a review submission nobody has sent yet.
+IN_REVIEW_STATES = {"WAITING_FOR_REVIEW", "IN_REVIEW"}
+RELEASED_STATES = {"READY_FOR_DISTRIBUTION", "READY_FOR_SALE"}
+RELEASE_TYPES = {"manual": "MANUAL", "auto": "AFTER_APPROVAL"}
+RELEASE_TYPE_LABELS = {"MANUAL": "manual", "AFTER_APPROVAL": "after approval", "SCHEDULED": "scheduled"}
+# `rollout` action: the transitions App Store Connect allows from each phased release state.
+ROLLOUT_TRANSITIONS = {
+    "ACTIVE": (("pause", "Pause the rollout", "PAUSED"), ("complete", "Release to everyone now", "COMPLETE")),
+    "PAUSED": (("resume", "Resume the rollout", "ACTIVE"), ("complete", "Release to everyone now", "COMPLETE")),
+}
+# Publishing tags the shipped commit: the tip of the platform release branch, named like Android's
+# `android/<version>_<code>` tags from .github/workflows/publish.yml.
+GIT_REMOTE = "origin"
+RELEASE_BRANCH = "release/ios/{version}"
+RELEASE_TAG = "ios/{version}_{build}"
 
 
 class UsageError(Exception):
@@ -76,18 +104,20 @@ def repo_root() -> pathlib.Path:
     return ios_root().parent
 
 
-def load_env_file(path: pathlib.Path) -> None:
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+def release_slack(required: bool = True):
+    """The shared `.env` / Slack module, imported on demand: the public mirror has no `shared/scripts/`.
+
+    Without `required` a missing module answers `None` instead of raising."""
+    directory = repo_root() / "shared" / "scripts"
+    if not (directory / "release_slack.py").is_file():
+        if not required:
+            return None
+        raise UsageError("shared/scripts/release_slack.py is not in this checkout; ACTION=status needs the private monorepo")
+    if str(directory) not in sys.path:
+        sys.path.insert(0, str(directory))
+    import release_slack  # noqa: PLC0415
+
+    return release_slack
 
 
 def default_version() -> str | None:
@@ -111,6 +141,27 @@ def confirm(question: str) -> bool:
     except EOFError:
         return False
     return answer.strip().lower() in ("y", "yes")
+
+
+def ask(question: str, default: str) -> str:
+    """Free-text answer with a default; the default wins without a terminal."""
+    if not interactive():
+        return default
+    try:
+        answer = input(f"{question} [{default}] ").strip()
+    except EOFError:
+        return default
+    return answer or default
+
+
+def next_version(current: str, now: time.struct_time | None = None) -> str:
+    """The rule of scripts/bump_version.sh: bump N within the same month, else YY.MM.0."""
+    yy, mm, n = current.split(".")
+    now = now or time.localtime()
+    cur_yy, cur_mm = f"{now.tm_year % 100:02d}", f"{now.tm_mon:02d}"
+    if (cur_yy, cur_mm) == (yy, mm):
+        return f"{yy}.{mm}.{int(n) + 1}"
+    return f"{cur_yy}.{cur_mm}.0"
 
 
 def choose(title: str, options: list[str], default: int = 0) -> int:
@@ -265,13 +316,14 @@ class AscError(Exception):
 
 
 class AscClient:
-    VERSION_FIELDS = {"fields[appStoreVersions]": "versionString,appVersionState,platform"}
+    VERSION_FIELDS = {"fields[appStoreVersions]": "versionString,appVersionState,platform,releaseType"}
     BUILD_FIELDS = {"fields[builds]": "version,uploadedDate,processingState,usesNonExemptEncryption,expired,buildAudienceType"}
+    PHASED_FIELDS = {"fields[appStoreVersionPhasedReleases]": "phasedReleaseState,startDate,currentDayNumber"}
 
     def __init__(self, token: str) -> None:
         self._token = token
 
-    def request(self, method: str, path_or_url: str, body: dict | None = None) -> dict:
+    def request(self, method: str, path_or_url: str, body: dict | None = None, allow_404: bool = False) -> dict:
         url = path_or_url if path_or_url.startswith("http") else ASC_BASE_URL + path_or_url
         data = json.dumps(body).encode() if body is not None else None
         request = urllib.request.Request(url, data=data, method=method)
@@ -283,6 +335,8 @@ class AscClient:
             with urllib.request.urlopen(request, timeout=60) as response:
                 payload = response.read()
         except urllib.error.HTTPError as error:
+            if allow_404 and error.code == 404:
+                return {}
             raise AscError(self._describe(error, method, url)) from None
         except urllib.error.URLError as error:
             raise AscError(f"{method} {url}: {error.reason}") from None
@@ -348,6 +402,58 @@ class AscClient:
                 }
             },
         )["data"]
+
+    def set_release_type(self, version_id: str, release_type: str) -> None:
+        self.request(
+            "PATCH",
+            f"/v1/appStoreVersions/{version_id}",
+            {"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"releaseType": release_type}}},
+        )
+
+    def release_version(self, version_id: str) -> None:
+        self.request(
+            "POST",
+            "/v1/appStoreVersionReleaseRequests",
+            {
+                "data": {
+                    "type": "appStoreVersionReleaseRequests",
+                    "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}},
+                }
+            },
+        )
+
+    # Phased release
+
+    def phased_release(self, version_id: str) -> dict | None:
+        # A version without a phased release answers `data: null`; 404 is tolerated for the same meaning.
+        return self.request(
+            "GET",
+            f"/v1/appStoreVersions/{version_id}/appStoreVersionPhasedRelease?" + urllib.parse.urlencode(self.PHASED_FIELDS),
+            allow_404=True,
+        ).get("data")
+
+    def create_phased_release(self, version_id: str) -> None:
+        self.request(
+            "POST",
+            "/v1/appStoreVersionPhasedReleases",
+            {
+                "data": {
+                    "type": "appStoreVersionPhasedReleases",
+                    "attributes": {"phasedReleaseState": "INACTIVE"},
+                    "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}},
+                }
+            },
+        )
+
+    def delete_phased_release(self, phased_id: str) -> None:
+        self.request("DELETE", f"/v1/appStoreVersionPhasedReleases/{phased_id}")
+
+    def set_phased_release_state(self, phased_id: str, state: str) -> None:
+        self.request(
+            "PATCH",
+            f"/v1/appStoreVersionPhasedReleases/{phased_id}",
+            {"data": {"type": "appStoreVersionPhasedReleases", "id": phased_id, "attributes": {"phasedReleaseState": state}}},
+        )
 
     # Localizations
 
@@ -458,6 +564,103 @@ class AscClient:
 
 
 # ---------------------------------------------------------------------------------------------------
+# Release tag
+
+
+def git(*args: str) -> str:
+    result = subprocess.run(["git", *args], cwd=repo_root(), capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise UsageError(f"git {' '.join(args)}: {result.stderr.strip() or result.stdout.strip()}")
+    return result.stdout.strip()
+
+
+def release_branch(version: str) -> str:
+    return RELEASE_BRANCH.format(version=version)
+
+
+def release_tag(version: str, build: str) -> str:
+    return RELEASE_TAG.format(version=version, build=build)
+
+
+def release_commit(version: str) -> str:
+    """The tip of the release branch on the remote, fetched so it can be tagged locally."""
+    branch = release_branch(version)
+    try:
+        git("fetch", "--quiet", GIT_REMOTE, f"refs/heads/{branch}")
+    except UsageError as error:
+        raise UsageError(f"no branch {branch} on {GIT_REMOTE} to tag ({error})") from None
+    return git("rev-parse", "--verify", "FETCH_HEAD^{commit}")
+
+
+def resolve_commit(revision: str) -> str:
+    """A commit named by the operator (`--commit`), taken as is: it is not checked against the branch."""
+    try:
+        return git("rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}")
+    except UsageError:
+        raise UsageError(f"{revision} is not a commit in this checkout; fetch it first") from None
+
+
+def committer_date(commit: str) -> str:
+    return git("show", "-s", "--format=%cI", commit)
+
+
+def parse_iso(value: str) -> datetime.datetime:
+    """ISO 8601 with an offset, as git `%cI` and App Store Connect's `uploadedDate` give it (`Z` tolerated)."""
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def local_time(value: str | None) -> str:
+    """`YYYY-MM-DD HH:MM` in this machine's timezone; empty when the value is missing."""
+    if not value:
+        return ""
+    return parse_iso(value).astimezone().strftime("%Y-%m-%d %H:%M")
+
+
+def tip_after_upload(committed: str, uploaded: str | None) -> bool:
+    """Whether the branch tip was committed after the build was uploaded, i.e. the build cannot contain it."""
+    if not uploaded:
+        return False
+    return parse_iso(committed) > parse_iso(uploaded)
+
+
+def remote_tag(tag: str) -> str | None:
+    """The commit the tag points at on the remote, else `None`."""
+    found = git("ls-remote", "--tags", GIT_REMOTE, f"refs/tags/{tag}")
+    return found.split()[0] if found else None
+
+
+def local_tag(tag: str) -> str | None:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{tag}^{{commit}}"],
+        cwd=repo_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def tag_decision(tag: str, remote: str | None, local: str | None, commit: str) -> str:
+    """`tag` when the remote lacks the tag, `skip` when it already marks the commit there.
+
+    Only the remote counts as published; a local tag on the commit is just reused by `push_tag`. A tag on
+    another commit, remote or local, is an error so it is found before the release, not after."""
+    if remote == commit:
+        return "skip"
+    if remote is not None:
+        raise UsageError(f"tag {tag} on {GIT_REMOTE} points at {remote[:7]}, not at {commit[:7]}; move it by hand or fix the branch")
+    if local is not None and local != commit:
+        raise UsageError(f"local tag {tag} points at {local[:7]}, not at {commit[:7]}; delete it (git tag -d {tag}) or fix the branch")
+    return "tag"
+
+
+def push_tag(tag: str, commit: str) -> None:
+    if local_tag(tag) != commit:
+        git("tag", tag, commit)
+    git("push", GIT_REMOTE, f"refs/tags/{tag}")
+
+
+# ---------------------------------------------------------------------------------------------------
 # Shared steps
 
 
@@ -476,7 +679,7 @@ class Context:
             editable = ", ".join(client.editable_versions(self.app_id)) or "none"
             print(f"no iOS App Store version {self.version} for {args.bundle_id} (editable versions: {editable})")
             if not allow_create:
-                raise UsageError("create the version first (action 1 or 2 offers to)")
+                raise UsageError("create the version first (action 1 offers to)")
             if not args.create and not confirm(f"Create App Store version {self.version}?"):
                 raise UsageError("version not created; pass --create (make CREATE=1) to create it without asking")
             if args.dry_run:
@@ -487,13 +690,52 @@ class Context:
         state = asc_version["attributes"].get("appVersionState")
         print(f"{args.bundle_id} {self.version} ({state})")
         if state not in EDITABLE_STATES:
-            raise UsageError(f"version {self.version} is in state {state}; it can no longer be edited")
+            if not allow_create:
+                raise UsageError(f"version {self.version} is in state {state}; it can no longer be edited")
+            return self.prepare_next_version(state)
+        return asc_version
+
+    def prepare_next_version(self, state: str) -> dict | None:
+        """Switches to the next version (an editable one if any, else the bump rule) and creates it on demand."""
+        client, args = self.client, self.args
+        editable = client.editable_versions(self.app_id)
+        candidate = editable[0] if editable else next_version(self.version)
+        print(f"version {self.version} is {state}; editable versions: {', '.join(editable) or 'none'}")
+        # Only the version taken from common.xcconfig is replaced, and only after asking: an explicit
+        # --version names what the operator wants, and --create means "create it", not "pick another".
+        if args.version or not interactive():
+            raise UsageError(
+                f"version {self.version} can no longer be edited; pass --version {candidate} "
+                f"(make VERSION={candidate}; CREATE=1 creates it) to prepare the next version"
+            )
+        chosen = ask("Prepare version", candidate)
+        if not VERSION_STRING_RE.match(chosen):
+            raise UsageError(f"{chosen} is not a YY.MM.N version")
+        self.version = chosen
+        asc_version = client.app_store_version(self.app_id, chosen)
+        if asc_version is not None:
+            chosen_state = asc_version["attributes"].get("appVersionState")
+            print(f"{args.bundle_id} {chosen} ({chosen_state})")
+            if chosen_state not in EDITABLE_STATES:
+                raise UsageError(f"version {chosen} is in state {chosen_state}; it can no longer be edited")
+        if chosen != default_version():
+            print(
+                f"note: Configurations/common.xcconfig still has {default_version()}; run scripts/bump_version.sh "
+                f"so the next build carries {chosen}"
+            )
+        if asc_version is not None:
+            return asc_version
+        if args.dry_run:
+            print(f"dry run: would create App Store version {chosen}")
+            return None
+        asc_version = client.create_app_store_version(self.app_id, chosen)
+        print(f"created App Store version {chosen}")
         return asc_version
 
 
 def describe_build(build: dict) -> str:
     attrs = build["attributes"]
-    uploaded = (attrs.get("uploadedDate") or "")[:16].replace("T", " ")
+    uploaded = local_time(attrs.get("uploadedDate"))
     compliance = {None: "missing compliance", True: "uses non-exempt encryption", False: "encryption exempt"}
     return f"build {attrs.get('version')}  {uploaded}  {compliance[attrs.get('usesNonExemptEncryption')]}"
 
@@ -514,14 +756,62 @@ def build_blocker(build: dict, version: str) -> str | None:
     return None
 
 
+def describe_phased_release(phased: dict | None) -> str:
+    if phased is None:
+        return "everyone at once"
+    attrs = phased["attributes"]
+    state = (attrs.get("phasedReleaseState") or "unknown").lower()
+    if state == "inactive":
+        return "phased over 7 days (not started)"
+    parts = [f"phased over 7 days, {state}"]
+    if attrs.get("currentDayNumber"):
+        parts.append(f"day {attrs['currentDayNumber']} of 7")
+    if attrs.get("startDate"):
+        parts.append(f"started {attrs['startDate'][:10]}")
+    return ", ".join(parts)
+
+
+def describe_release_options(release_type: str | None, phased: dict | None) -> str:
+    label = RELEASE_TYPE_LABELS.get(release_type or "", release_type or "unknown")
+    return f"release: {label}, rollout: {describe_phased_release(phased)}"
+
+
+def plan_release_options(
+    current_type: str | None, phased_enabled: bool, wanted_type: str | None, wanted_phased: bool | None
+) -> list[str]:
+    """Steps that bring the version's release options to the wanted ones; `None` means keep."""
+    plan = []
+    if wanted_type and wanted_type != current_type:
+        plan.append(f"set release type to {RELEASE_TYPE_LABELS[wanted_type]}")
+    if wanted_phased is not None and wanted_phased != phased_enabled:
+        plan.append("enable phased release" if wanted_phased else "disable phased release")
+    return plan
+
+
+def rollout_transitions(state: str | None) -> tuple[tuple[str, str, str], ...]:
+    """`(key, label, target state)` triples the `rollout` action offers from the current phased state."""
+    return ROLLOUT_TRANSITIONS.get(state or "", ())
+
+
+def status_label(version_attrs: dict, phased: dict | None) -> str | None:
+    """The Slack status line, or `None` when the state is not one the team announces."""
+    state = version_attrs.get("appVersionState")
+    if state in IN_REVIEW_STATES:
+        return "waiting for review"
+    if state not in RELEASED_STATES:
+        return None
+    if phased and phased["attributes"].get("phasedReleaseState") in ("ACTIVE", "PAUSED"):
+        day = phased["attributes"].get("currentDayNumber") or 1
+        return f"{PHASED_PERCENT_BY_DAY.get(day, 100)}%"
+    return "100%"
+
+
 # ---------------------------------------------------------------------------------------------------
-# Action 1: prepare build info
+# Action 1: manage release info (build, release options, What's New)
 
 
-def action_build(ctx: Context) -> int:
-    asc_version = ctx.resolve_version(allow_create=True)
-    if asc_version is None:
-        return 0
+def step_build(ctx: Context, asc_version: dict) -> bool:
+    """Attaches the chosen build and sets the release options; `False` when no build could be attached."""
     client, args = ctx.client, ctx.args
 
     current = client.attached_build(asc_version["id"])
@@ -531,24 +821,27 @@ def action_build(ctx: Context) -> int:
     builds = client.builds(ctx.app_id, ctx.version)
     blockers = {b["id"]: build_blocker(b, ctx.version) for b in builds}
     valid = [b for b in builds if blockers[b["id"]] is None]
-    if not valid:
-        states = ", ".join(f"{b['attributes'].get('version')} ({blockers[b['id']]})" for b in builds) or "none"
-        raise UsageError(f"no attachable build for {ctx.version} (builds: {states}); upload one or wait for processing")
-
+    chosen = None
     if args.build:
         chosen = next((b for b in builds if b["attributes"].get("version") == args.build), None)
         if chosen is None:
             raise UsageError(f"build {args.build} is not a build of {ctx.version}")
         if blockers[chosen["id"]]:
             raise UsageError(f"build {args.build} cannot be attached: {blockers[chosen['id']]}")
-    else:
+    elif valid:
         chosen = valid[choose(f"Attachable builds of {ctx.version}, newest first:", [describe_build(b) for b in valid])]
+    else:
+        states = ", ".join(f"{b['attributes'].get('version')} ({blockers[b['id']]})" for b in builds) or "none"
+        print(
+            f"warning: no attachable build for {ctx.version} (builds: {states}); upload one or wait for processing",
+            file=sys.stderr,
+        )
 
-    attach = not current or current["id"] != chosen["id"]
+    attach = chosen is not None and (not current or current["id"] != chosen["id"])
     # Export compliance is a legal declaration, so it has its own consent: the prompt or --encryption-exempt.
     # --create only covers creating the version.
     declare_exempt = False
-    if chosen["attributes"].get("usesNonExemptEncryption") is None:
+    if chosen and chosen["attributes"].get("usesNonExemptEncryption") is None:
         declare_exempt = args.encryption_exempt or confirm(
             "The build has no export compliance. Declare it uses only exempt encryption?"
         )
@@ -559,25 +852,51 @@ def action_build(ctx: Context) -> int:
                 file=sys.stderr,
             )
 
-    plan = ([f"attach {describe_build(chosen)}"] if attach else []) + (
-        ["declare the build encryption-exempt"] if declare_exempt else []
+    # Release options: a flag, else the chooser (defaulting to the current setting); without a terminal
+    # and without a flag they stay as App Store Connect has them.
+    current_type = asc_version["attributes"].get("releaseType")
+    phased = client.phased_release(asc_version["id"])
+    print(describe_release_options(current_type, phased))
+    wanted_type = wanted_phased = None
+    if args.release:
+        wanted_type = RELEASE_TYPES[args.release]
+    elif current_type == "SCHEDULED":
+        print("release type stays scheduled; pass --release manual|auto (make RELEASE=...) to change it")
+    elif interactive():
+        index = choose(
+            "Release this version:",
+            ["Manually (make appstore_toolings ACTION=release)", "Automatically after approval"],
+            default=1 if current_type == "AFTER_APPROVAL" else 0,
+        )
+        wanted_type = ("MANUAL", "AFTER_APPROVAL")[index]
+    if args.phased_release:
+        wanted_phased = args.phased_release == "on"
+    elif interactive():
+        options = ["Phased release over 7 days", "Release to everyone at once"]
+        wanted_phased = choose("Rollout:", options, default=0 if phased else 1) == 0
+
+    plan = (
+        ([f"attach {describe_build(chosen)}"] if attach else [])
+        + (["declare the build encryption-exempt"] if declare_exempt else [])
+        + plan_release_options(current_type, phased is not None, wanted_type, wanted_phased)
     )
     if not plan:
-        print("build already attached, nothing to do")
-        return 0
-    if args.dry_run:
-        print("dry run: would " + "; ".join(plan))
-        return 0
-    if declare_exempt:
-        client.set_encryption_exempt(chosen["id"])
-    if attach:
-        client.attach_build(asc_version["id"], chosen["id"])
-    print("done: " + "; ".join(plan))
-    return 0
-
-
-# ---------------------------------------------------------------------------------------------------
-# Action 2: update What's New
+        print("build: nothing to do")
+    elif args.dry_run:
+        print("build: dry run, would " + "; ".join(plan))
+    else:
+        if declare_exempt:
+            client.set_encryption_exempt(chosen["id"])
+        if attach:
+            client.attach_build(asc_version["id"], chosen["id"])
+        if wanted_type and wanted_type != current_type:
+            client.set_release_type(asc_version["id"], wanted_type)
+        if wanted_phased and phased is None:
+            client.create_phased_release(asc_version["id"])
+        elif wanted_phased is False and phased is not None:
+            client.delete_phased_release(phased["id"])
+        print("build: " + "; ".join(plan))
+    return chosen is not None
 
 
 def plan_updates(notes: dict[str, str], localizations: list[dict]) -> tuple[list[dict], list[str]]:
@@ -619,13 +938,8 @@ def print_table(rows: list[dict]) -> None:
         print(f"  {row['locale']:<{width}}  <- [{row['source']}]  {state}")
 
 
-def action_whats_new(ctx: Context) -> int:
-    notes = parse_notes(pathlib.Path(ctx.args.notes).read_text(encoding="utf-8"))
-    asc_version = ctx.resolve_version(allow_create=True)
-    if asc_version is None:
-        return 0
+def step_whats_new(ctx: Context, asc_version: dict, notes: dict[str, str]) -> None:
     client, args = ctx.client, ctx.args
-
     rows, warnings = plan_updates(notes, client.localizations(asc_version["id"]))
     if not rows:
         raise UsageError(f"version {ctx.version} has no localizations")
@@ -635,20 +949,29 @@ def action_whats_new(ctx: Context) -> int:
 
     to_update = [r for r in rows if r["changed"]]
     if args.dry_run:
-        print(f"dry run: {len(to_update)} to update, {len(rows) - len(to_update)} unchanged")
-        return 0
+        print(f"what's new: dry run, {len(to_update)} to update, {len(rows) - len(to_update)} unchanged")
+        return
     for row in to_update:
         client.set_whats_new(row["id"], row["text"])
-    print(f"updated {len(to_update)}, unchanged {len(rows) - len(to_update)}")
-    return 0
+    print(f"what's new: updated {len(to_update)}, unchanged {len(rows) - len(to_update)}")
+
+
+def action_info(ctx: Context) -> int:
+    # The notes file is checked before anything is written, so a bad file costs no requests.
+    notes = parse_notes(pathlib.Path(ctx.args.notes).read_text(encoding="utf-8"))
+    asc_version = ctx.resolve_version(allow_create=True)
+    if asc_version is None:
+        return 0
+    build_ok = step_build(ctx, asc_version)
+    step_whats_new(ctx, asc_version, notes)
+    return 0 if build_ok else 1
 
 
 # ---------------------------------------------------------------------------------------------------
-# Action 3: submit to review
+# Action 2: manage release (submit to review, publish, phased rollout), by the version's state
 
 
-def action_submit(ctx: Context) -> int:
-    asc_version = ctx.resolve_version(allow_create=False)
+def step_submit(ctx: Context, asc_version: dict) -> int:
     client, args = ctx.client, ctx.args
 
     build = client.attached_build(asc_version["id"])
@@ -664,12 +987,19 @@ def action_submit(ctx: Context) -> int:
         if not (loc["attributes"].get("whatsNew") or "").strip()
     ]
     if missing:
-        raise UsageError(f"What's New is empty for {', '.join(sorted(missing))}; run action 2 first")
+        raise UsageError(f"What's New is empty for {', '.join(sorted(missing))}; run action 1 first")
 
+    # A submission that was created but never sent (version state READY_FOR_REVIEW) is completed
+    # rather than duplicated; one already with Apple blocks a new one.
     open_subs = client.open_submissions(ctx.app_id)
-    if open_subs:
+    unsent = [s for s in open_subs if s["attributes"]["state"] == "READY_FOR_REVIEW"]
+    if open_subs and not unsent:
         states = ", ".join(s["attributes"]["state"] for s in open_subs)
-        raise UsageError(f"an iOS review submission is already open ({states}); finish or cancel it in App Store Connect")
+        raise UsageError(f"an iOS review submission is already with Apple ({states}); wait for it in App Store Connect")
+    if unsent and asc_version["attributes"].get("appVersionState") != "READY_FOR_REVIEW":
+        raise UsageError(
+            f"an unsent review submission exists without {ctx.version} in it; add the version to it or delete it in App Store Connect"
+        )
 
     if args.dry_run:
         print(f"dry run: would submit {ctx.version} to App Review")
@@ -677,10 +1007,154 @@ def action_submit(ctx: Context) -> int:
     if not args.yes and not confirm(f"Submit {ctx.version} to App Review?"):
         raise UsageError("not submitted; pass --yes (make YES=1) to submit without asking")
 
-    submission_id = client.create_submission(ctx.app_id)
-    client.add_submission_item(submission_id, asc_version["id"])
+    if unsent:
+        submission_id = unsent[0]["id"]
+    else:
+        submission_id = client.create_submission(ctx.app_id)
+        client.add_submission_item(submission_id, asc_version["id"])
     client.submit(submission_id)
     print(f"submitted {ctx.version} to App Review")
+    return 0
+
+
+def step_publish(ctx: Context, asc_version: dict, phased: dict | None) -> int:
+    client, args = ctx.client, ctx.args
+    build = client.attached_build(asc_version["id"])
+    if build is None:
+        raise UsageError("no build is attached to the version; nothing to release or tag")
+    print(f"build: {describe_build(build)}")
+    audience = "1% of users with automatic updates on day 1, everyone by day 7" if phased else "everyone"
+
+    # The tag is resolved before the release so a missing branch or a misplaced tag stops the run while
+    # nothing irreversible has happened yet.
+    tag = release_tag(ctx.version, build["attributes"]["version"])
+    branch = release_branch(ctx.version)
+    if args.commit:
+        commit = resolve_commit(args.commit)
+        source = args.commit
+    else:
+        # App Store Connect records no git SHA, so the branch tip stands in for the built commit. A tip
+        # committed after the upload cannot be in the build: the operator names the right commit instead.
+        commit = release_commit(ctx.version)
+        source = branch
+        committed, uploaded = committer_date(commit), build["attributes"].get("uploadedDate")
+        if tip_after_upload(committed, uploaded):
+            raise UsageError(
+                f"{branch} moved after build {build['attributes']['version']} was uploaded "
+                f"(tip {commit[:7]} committed {committed}, build uploaded {uploaded}); "
+                f"pass --commit <sha> (make COMMIT=<sha>) to tag the commit the build came from"
+            )
+    decision = tag_decision(tag, remote_tag(tag), local_tag(tag), commit)
+    tagging = f"tag {tag} at {source} ({commit[:7]}) and push it to {GIT_REMOTE}"
+    print(f"tag: {tag} -> {source} ({commit[:7]}){' (already tagged)' if decision == 'skip' else ''}")
+
+    if args.dry_run:
+        print(f"dry run: would release {ctx.version} to the App Store ({audience})" + (f" and {tagging}" if decision == "tag" else ""))
+        return 0
+    question = f"Release {ctx.version} to the App Store ({audience})" + (f" and {tagging}" if decision == "tag" else "") + "?"
+    if not args.yes and not confirm(question):
+        raise UsageError("not released; pass --yes (make YES=1) to release without asking")
+    client.release_version(asc_version["id"])
+    print(f"released {ctx.version} to {audience}")
+    if decision == "skip":
+        return 0
+    try:
+        push_tag(tag, commit)
+    except UsageError as error:
+        print(
+            f"warning: released, but the tag was not pushed: {error}\n"
+            f"  push it by hand: git push {GIT_REMOTE} {commit}:refs/tags/{tag}",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"tagged {tag} ({commit[:7]}) and pushed it to {GIT_REMOTE}")
+    return 0
+
+
+def step_rollout(ctx: Context, asc_version: dict, phased: dict) -> int:
+    client, args = ctx.client, ctx.args
+    state = phased["attributes"].get("phasedReleaseState")
+    transitions = rollout_transitions(state)
+    keys = "|".join(key for key, _, _ in transitions)
+    if args.rollout:
+        chosen = next((t for t in transitions if t[0] == args.rollout), None)
+        if chosen is None:
+            raise UsageError(f"cannot {args.rollout} a rollout that is {state.lower()} (allowed: {keys})")
+    elif not interactive():
+        raise UsageError(f"pass --rollout {keys} (make ROLLOUT=...) when there is no terminal")
+    else:
+        chosen = transitions[choose("Rollout:", [label for _, label, _ in transitions])]
+    _, label, target = chosen
+
+    if args.dry_run:
+        print(f"dry run: would {label.lower()} for {ctx.version}")
+        return 0
+    if not args.yes and not confirm(f"{label} for {ctx.version}?"):
+        raise UsageError("rollout unchanged; pass --yes (make YES=1) to change it without asking")
+    client.set_phased_release_state(phased["id"], target)
+    print(f"done: {label.lower()}; rollout: {describe_phased_release(client.phased_release(asc_version['id']))}")
+    return 0
+
+
+def lookup_version(ctx: Context) -> tuple[dict, dict | None]:
+    """The version in any state (no creation, no editability check) and its phased release."""
+    asc_version = ctx.client.app_store_version(ctx.app_id, ctx.version)
+    if asc_version is None:
+        raise UsageError(f"no iOS App Store version {ctx.version} for {ctx.args.bundle_id}; run action 1 first")
+    phased = ctx.client.phased_release(asc_version["id"])
+    print(f"{ctx.args.bundle_id} {ctx.version} ({asc_version['attributes'].get('appVersionState')})")
+    print(describe_release_options(asc_version["attributes"].get("releaseType"), phased))
+    return asc_version, phased
+
+
+def action_release(ctx: Context) -> int:
+    """One step per run, chosen by the version's state: submit, publish, or change the rollout."""
+    asc_version, phased = lookup_version(ctx)
+    state = asc_version["attributes"].get("appVersionState")
+
+    if state in IN_REVIEW_STATES:
+        print("in review; nothing to do until App Review finishes")
+        return 0
+    if state in EDITABLE_STATES or state == "READY_FOR_REVIEW":
+        return step_submit(ctx, asc_version)
+    if state == "PENDING_DEVELOPER_RELEASE":
+        return step_publish(ctx, asc_version, phased)
+    if state == "PENDING_APPLE_RELEASE":
+        print("approved; Apple releases it (release type is not manual)")
+        return 0
+    if state in RELEASED_STATES:
+        if phased and rollout_transitions(phased["attributes"].get("phasedReleaseState")):
+            return step_rollout(ctx, asc_version, phased)
+        print("released to everyone; nothing to do")
+        return 0
+    raise UsageError(f"version {ctx.version} is in state {state}; nothing to do from the terminal")
+
+
+# ---------------------------------------------------------------------------------------------------
+# Action 3: post the release status to Slack
+
+
+def action_status(ctx: Context) -> int:
+    asc_version, phased = lookup_version(ctx)
+    client, args = ctx.client, ctx.args
+    label = status_label(asc_version["attributes"], phased)
+    if label is None:
+        print(f"nothing to announce for state {asc_version['attributes'].get('appVersionState')}")
+        return 0
+    slack = release_slack()
+    build = client.attached_build(asc_version["id"])
+    text = slack.slack_message("ios", ctx.version, build["attributes"].get("version") if build else None, label)
+    print("message:\n" + "\n".join("  " + line for line in text.splitlines()))
+    if args.dry_run:
+        print("dry run: not posted")
+        return 0
+    if not args.yes and not confirm("Post to Slack?"):
+        raise UsageError("not posted; pass --yes (make YES=1) to post without asking")
+    try:
+        slack.post_slack(text)
+    except slack.SlackError as error:
+        raise UsageError(str(error)) from None
+    print("posted")
     return 0
 
 
@@ -709,6 +1183,63 @@ def self_test() -> int:
     assert [(r["locale"], r["source"], r["changed"]) for r in rows] == [("ru", "ru", False), ("en-US", "default", True)]
     assert warnings == []
     assert plan_updates({"default": "D", "de-de": "X"}, [{"id": "1", "attributes": {"locale": "ru"}}])[1]
+
+    october = time.strptime("2026-10-22", "%Y-%m-%d")
+    assert next_version("26.10.3", october) == "26.10.4"
+    assert next_version("26.09.4", october) == "26.10.0"
+    assert next_version("25.10.1", october) == "26.10.0"
+
+    released = {"appVersionState": "READY_FOR_DISTRIBUTION"}
+    phased_day = lambda day, state="ACTIVE": {"attributes": {"phasedReleaseState": state, "currentDayNumber": day}}  # noqa: E731
+    assert status_label({"appVersionState": "WAITING_FOR_REVIEW"}, None) == "waiting for review"
+    assert status_label({"appVersionState": "IN_REVIEW"}, None) == "waiting for review"
+    assert status_label({"appVersionState": "READY_FOR_REVIEW"}, None) is None
+    assert status_label({"appVersionState": "PENDING_DEVELOPER_RELEASE"}, phased_day(1, "INACTIVE")) is None
+    assert status_label({"appVersionState": "PREPARE_FOR_SUBMISSION"}, None) is None
+    assert [status_label(released, phased_day(d)) for d in range(1, 8)] == ["1%", "2%", "5%", "10%", "20%", "50%", "100%"]
+    assert status_label(released, phased_day(3, "PAUSED")) == "5%"
+    assert status_label(released, phased_day(7, "COMPLETE")) == "100%"
+    assert status_label(released, None) == "100%"
+
+    assert release_branch("26.10.4") == "release/ios/26.10.4"
+    assert release_tag("26.10.4", "1234") == "ios/26.10.4_1234"
+    assert not tip_after_upload("2026-10-20T10:00:00+03:00", "2026-10-20T12:00:00-07:00")
+    assert not tip_after_upload("2026-10-20T10:00:00+00:00", "2026-10-20T10:00:00Z")
+    assert tip_after_upload("2026-10-21T09:00:00+00:00", "2026-10-20T12:00:00-07:00")
+    assert tip_after_upload("2026-10-20T20:00:00+00:00", "2026-10-20T12:00:00-07:00")
+    assert not tip_after_upload("2026-10-21T09:00:00+00:00", None)
+    a, b = "a" * 40, "b" * 40
+    assert tag_decision("ios/26.10.4_1234", None, None, a) == "tag"
+    assert tag_decision("ios/26.10.4_1234", None, a, a) == "tag", "a local-only tag is not published yet"
+    assert tag_decision("ios/26.10.4_1234", a, None, a) == "skip"
+    assert tag_decision("ios/26.10.4_1234", a, a, a) == "skip"
+    assert tag_decision("ios/26.10.4_1234", a, b, a) == "skip", "published already; the stale local tag is not pushed"
+    for remote, local in ((b, None), (b, a), (None, b)):
+        try:
+            tag_decision("ios/26.10.4_1234", remote, local, a)
+        except UsageError:
+            pass
+        else:
+            raise AssertionError(f"accepted a tag on another commit (remote={remote}, local={local})")
+
+    assert plan_release_options("MANUAL", True, None, None) == []
+    assert plan_release_options("MANUAL", True, "MANUAL", True) == []
+    assert plan_release_options("AFTER_APPROVAL", False, "MANUAL", True) == [
+        "set release type to manual",
+        "enable phased release",
+    ]
+    assert plan_release_options("MANUAL", True, "AFTER_APPROVAL", False) == [
+        "set release type to after approval",
+        "disable phased release",
+    ]
+    assert plan_release_options(None, False, None, True) == ["enable phased release"]
+    assert [k for k, _, _ in rollout_transitions("ACTIVE")] == ["pause", "complete"]
+    assert [k for k, _, _ in rollout_transitions("PAUSED")] == ["resume", "complete"]
+    assert all(rollout_transitions(s) == () for s in ("INACTIVE", "COMPLETE", None))
+    assert describe_phased_release(None) == "everyone at once"
+    assert describe_phased_release({"attributes": {"phasedReleaseState": "INACTIVE"}}) == "phased over 7 days (not started)"
+    active = {"attributes": {"phasedReleaseState": "ACTIVE", "currentDayNumber": 3, "startDate": "2026-10-20T10:00:00Z"}}
+    assert describe_phased_release(active) == "phased over 7 days, active, day 3 of 7, started 2026-10-20"
 
     with tempfile.TemporaryDirectory() as tmp:
         key = pathlib.Path(tmp) / "key.p8"
@@ -760,18 +1291,29 @@ def main() -> int:
         action="store_true",
         help="declare a build without export compliance as using only exempt encryption, without asking",
     )
-    parser.add_argument("--yes", action="store_true", help="submit to review without asking")
+    parser.add_argument("--release", choices=sorted(RELEASE_TYPES), help="release type for the version (default: ask, or keep)")
+    parser.add_argument("--phased-release", choices=("on", "off"), help="phased 7-day rollout (default: ask, or keep)")
+    parser.add_argument("--rollout", choices=("pause", "resume", "complete"), help="phased rollout change (default: ask)")
+    parser.add_argument(
+        "--commit",
+        help="commit to tag when publishing (default: the tip of release/ios/<version>, refused if newer than the build)",
+    )
+    parser.add_argument("--yes", action="store_true", help="submit, release, change the rollout or post to Slack without asking")
     parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     if args.self_test:
         return self_test()
-    load_env_file(repo_root() / ".env")
     try:
+        shared = release_slack(required=False)
+        if shared:
+            shared.load_env_file(repo_root() / ".env")
+        else:
+            print("note: shared/scripts/ is not in this checkout; .env is not read, set the credentials in the environment", file=sys.stderr)
         action = args.action
         if action is None:
             if not interactive():
-                raise UsageError("pass an action (build, whats-new, submit) when there is no terminal")
+                raise UsageError(f"pass an action ({', '.join(name for name, _ in ACTIONS)}) when there is no terminal")
             action = ACTIONS[choose("App Store Connect:", [label for _, label in ACTIONS])][0]
 
         version = args.version or default_version()
@@ -785,7 +1327,8 @@ def main() -> int:
             client = AscClient(make_jwt(key_id, issuer_id, key_path))
 
         ctx = Context(client, args, version)
-        return {"build": action_build, "whats-new": action_whats_new, "submit": action_submit}[action](ctx)
+        actions = {"info": action_info, "release": action_release, "status": action_status}
+        return actions[action](ctx)
     except (UsageError, AscError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

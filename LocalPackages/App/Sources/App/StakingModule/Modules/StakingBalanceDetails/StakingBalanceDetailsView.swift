@@ -21,6 +21,8 @@ final class StakingBalanceDetailsView: TKView {
     let stakeStateButtonContainer = TKPaddingContainerView()
     let rewardsView = StakingBalanceDetailsRewardsView()
     let rewardsViewContainer = TKPaddingContainerView()
+    let upcomingRewardView = StakingBalanceDetailsHostingBlockView()
+    let rewardsHistoryView = StakingBalanceDetailsHostingBlockView()
     let detailsTitleView = TKListTitleView()
     let listView = StakingDetailsListView()
     let linksView = StakingDetailsLinksView()
@@ -63,6 +65,9 @@ final class StakingBalanceDetailsView: TKView {
         rewardsViewContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16)
         rewardsViewContainer.isHidden = true
 
+        upcomingRewardView.isHidden = true
+        rewardsHistoryView.isHidden = true
+
         let detailsTitleContainer = TKPaddingContainerView()
         detailsTitleContainer.setViews([detailsTitleView])
         detailsTitleContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
@@ -73,6 +78,7 @@ final class StakingBalanceDetailsView: TKView {
 
         let linksViewContainer = TKPaddingContainerView()
         linksViewContainer.setViews([linksView])
+        linksView.titleHeight = 48
         linksViewContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16)
 
         addSubview(scrollView)
@@ -83,6 +89,8 @@ final class StakingBalanceDetailsView: TKView {
         contentStackView.addArrangedSubview(stakeStateButtonContainer)
         contentStackView.addArrangedSubview(jettonButtonContainer)
         contentStackView.addArrangedSubview(jettonButtonDescriptionContainer)
+        contentStackView.addArrangedSubview(upcomingRewardView)
+        contentStackView.addArrangedSubview(rewardsHistoryView)
         contentStackView.addArrangedSubview(rewardsViewContainer)
         contentStackView.addArrangedSubview(detailsTitleContainer)
         contentStackView.addArrangedSubview(listViewContainer)
@@ -91,7 +99,7 @@ final class StakingBalanceDetailsView: TKView {
         contentStackView.addArrangedSubview(bottomSpacerView)
 
         detailsTitleView.snp.makeConstraints { make in
-            make.height.equalTo(56)
+            make.height.equalTo(48)
         }
 
         setupConstraints()

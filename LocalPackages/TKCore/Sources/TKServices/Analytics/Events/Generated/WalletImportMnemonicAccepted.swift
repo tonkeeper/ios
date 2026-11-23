@@ -42,3 +42,5 @@ public struct WalletImportMnemonicAccepted: Codable, JSONEncodable, Hashable {
         try container.encode(from, forKey: .from)
     }
 }
+
+

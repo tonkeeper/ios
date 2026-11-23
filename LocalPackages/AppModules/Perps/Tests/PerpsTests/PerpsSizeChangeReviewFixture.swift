@@ -10,7 +10,9 @@ enum PerpsSizeChangeReviewFixture {
         notionalUsd: PerpsValueChange = PerpsValueChange(old: 540, new: 1080),
         baseSize: PerpsValueChange = PerpsValueChange(old: 0.008, new: 0.0163),
         liquidationPrice: Double? = 64141.75,
-        estimatedFeeUsd: Double? = 0.144
+        estimatedFeeUsd: Double? = 0.144,
+        feeRatePercent: Double? = 0.095,
+        closesWholePosition: Bool = false
     ) -> PerpsSizeChangeReview {
         PerpsSizeChangeReview(
             symbol: "BTC",
@@ -23,7 +25,9 @@ enum PerpsSizeChangeReviewFixture {
             baseSize: baseSize,
             liquidationPrice: liquidationPrice.map { PerpsValueChange(old: $0, new: $0) },
             liquidationUnavailableReason: liquidationPrice == nil ? .missingMark : nil,
-            estimatedFeeUsd: estimatedFeeUsd
+            estimatedFeeUsd: estimatedFeeUsd,
+            feeRatePercent: feeRatePercent,
+            closesWholePosition: closesWholePosition
         )
     }
 }

@@ -16,6 +16,8 @@ import TKLogging
     case nonceFailed(payloadId: String, kind: MultichainSwapExecutionErrorKind, reason: String)
     case signingFailed(payloadId: String, kind: MultichainSwapExecutionErrorKind, reason: String)
     case broadcastFailed(payloadId: String, kind: MultichainSwapExecutionErrorKind, reason: String)
+    /// The relayer refused the payload and said why: nothing reached a chain.
+    case broadcastRefused(payloadId: String, kind: MultichainSwapExecutionErrorKind, reason: String)
     case missingMainPayload(routeId: String)
     case `internal`(reason: String)
 }
@@ -53,6 +55,8 @@ extension MultichainSwapExecutionFailure: LoggableError {
             return "type=MultichainSwapExecutionFailure, case=signingFailed, payloadId=\(payloadId), kind=\(kind.description)"
         case let .broadcastFailed(payloadId, kind, _):
             return "type=MultichainSwapExecutionFailure, case=broadcastFailed, payloadId=\(payloadId), kind=\(kind.description)"
+        case let .broadcastRefused(payloadId, kind, _):
+            return "type=MultichainSwapExecutionFailure, case=broadcastRefused, payloadId=\(payloadId), kind=\(kind.description)"
         case let .missingMainPayload(routeId):
             return "type=MultichainSwapExecutionFailure, case=missingMainPayload, routeId=\(routeId)"
         case .internal:

@@ -1,7 +1,10 @@
 import Foundation
 @testable import KeeperCore
+import TKTestSupport
 import TronSwift
 import XCTest
+
+private let untilCancelled = TestGate()
 
 final class WalletMigrationTronBalanceLoadingTests: XCTestCase {
     func test_loadDeduplicatesAddressesAndMapsBalanceToEveryWallet() async throws {
@@ -163,15 +166,15 @@ final class WalletMigrationTronBalanceLoadingTests: XCTestCase {
         let address = try TronSwift.Address(
             raw: Data([0x41] + Array(repeating: 1, count: 20))
         )
-        let batchProbe = BatchCancellationProbe()
+        let batchStarted = TestGate()
         let recorder = TronBalanceRequestRecorder()
 
         let task = Task {
             await WalletMigrationTronBalanceLoading.load(
                 addressByWalletId: ["wallet": address],
                 batchLoad: { _ in
-                    await batchProbe.markStarted()
-                    try await Task.sleep(nanoseconds: 60_000_000_000)
+                    await batchStarted.open()
+                    try await untilCancelled.wait()
                     return [:]
                 },
                 loadBalance: { address in
@@ -180,7 +183,7 @@ final class WalletMigrationTronBalanceLoadingTests: XCTestCase {
             )
         }
 
-        await batchProbe.waitUntilStarted()
+        try await batchStarted.wait()
         task.cancel()
         let balances = await task.value
 
@@ -209,20 +212,6 @@ private actor FallbackRequestRecorder {
     func load(address: TronSwift.Address) -> TronBalance {
         requestedAddresses.append(address.base58)
         return TronBalance(amount: 99, trxAmount: 99)
-    }
-}
-
-private actor BatchCancellationProbe {
-    private var started = false
-
-    func markStarted() {
-        started = true
-    }
-
-    func waitUntilStarted() async {
-        while !started {
-            await Task.yield()
-        }
     }
 }
 

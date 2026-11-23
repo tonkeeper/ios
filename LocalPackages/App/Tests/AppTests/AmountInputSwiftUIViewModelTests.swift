@@ -23,6 +23,35 @@ final class AmountInputSwiftUIViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isEnable)
     }
 
+    func testQuotedChargesDoNotRepriceTheAssetAmountAndSurviveUnitToggle() {
+        let model = makeViewModel(sourceUnit: StubUnit(inputSymbol: .text("USDC"), fractionalDigits: 6, symbol: "USDC"), destinationUnit: ChargeItem())
+        model.rate = 100
+        model.setText("1")
+        var changes = [BigUInt]()
+        model.didUpdateSourceAmount = { changes.append($0) }
+
+        model.setQuotedDestinationAmount(90)
+        XCTAssertEqual(model.converted.text, "90")
+        XCTAssertEqual(model.text, "1")
+        model.toggle()
+        XCTAssertEqual(model.text, "90")
+        XCTAssertEqual(model.converted.text, "1")
+        XCTAssertTrue(changes.isEmpty)
+    }
+
+    func testLateQuoteDoesNotOverwriteTheChargeAmountBeingTyped() {
+        let model = makeViewModel(sourceUnit: StubUnit(inputSymbol: .text("USDC"), fractionalDigits: 6, symbol: "USDC"), destinationUnit: ChargeItem())
+        model.rate = 100
+        model.toggle()
+        model.setText("750")
+        var changes = [BigUInt]()
+        model.didUpdateSourceAmount = { changes.append($0) }
+        model.setQuotedDestinationAmount(700)
+        XCTAssertEqual(model.text, "750")
+        XCTAssertEqual(model.converted.text, "7.5")
+        XCTAssertTrue(changes.isEmpty)
+    }
+
     func test_sourceUnitChangeClearsInputTextAndDisablesContinue() {
         let viewModel = makeViewModel()
         viewModel.sourceBalance = BigUInt(1_000_000_000)
@@ -154,12 +183,12 @@ final class AmountInputSwiftUIViewModelTests: XCTestCase {
     }
 
     private func makeViewModel(
-        sourceUnit: StubUnit = StubUnit(
+        sourceUnit: AmountInputUnit = StubUnit(
             inputSymbol: .text("TON"),
             fractionalDigits: 9,
             symbol: "TON"
         ),
-        destinationUnit: StubUnit = StubUnit(
+        destinationUnit: AmountInputUnit = StubUnit(
             inputSymbol: .text("USD"),
             fractionalDigits: 2,
             symbol: "USD"

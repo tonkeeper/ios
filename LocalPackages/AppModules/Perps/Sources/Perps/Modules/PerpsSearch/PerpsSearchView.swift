@@ -21,6 +21,7 @@ public protocol PerpsSearchViewModeling: ObservableObject {
 
     func onAppear()
     func onDisappear()
+    func setVisible(_ isVisible: Bool)
     func requestSearchFocus()
     func updateSearchText(_ value: String)
     func setSort(_ sort: PerpsMarketsSort)
@@ -44,12 +45,15 @@ public struct PerpsSearchView<ViewModel: PerpsSearchViewModeling>: View {
             DefaultModalCardHeader(
                 config: .push(
                     title: TKLocales.Perps.explore,
+                    backAccessibilityIdentifier: "perps_search_back",
                     onBack: { viewModel.onBack?() }
                 )
             )
             searchField
             filters
             content
+                .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .top)
+                .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.backgroundPage)
@@ -81,6 +85,7 @@ private extension PerpsSearchView {
             ),
             isFocused: $isSearchFocused
         )
+        .accessibilityIdentifier("perps_search_input")
     }
 
     var filters: some View {
@@ -109,16 +114,16 @@ private extension PerpsSearchView {
         }
     }
 
+    var listTitle: String {
+        viewModel.filter == .all ? TKLocales.TokensPicker.AssetType.all : title(for: viewModel.filter)
+    }
+
     @ViewBuilder
     var content: some View {
         switch viewModel.marketsState {
         case .loading:
-            VStack {
-                Spacer()
-                CircularLoader(mode: .indeterminate, preset: .medium)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            PerpsSkeletonRowsCard()
+                .padding(.horizontal, Layout.horizontalPadding)
         case let .failed(message):
             placeholder(
                 config: PlaceholderView.Config(
@@ -142,13 +147,16 @@ private extension PerpsSearchView {
             )
         case let .loaded(markets, isLoadingNextPage):
             ScrollView(showsIndicators: false) {
-                PerpsMarketRowsCard(
-                    markets: markets,
-                    isLoadingNextPage: isLoadingNextPage,
-                    onSelect: viewModel.selectMarket,
-                    onRowAppear: viewModel.rowAppeared,
-                    onRowDisappear: viewModel.rowDisappeared
-                )
+                VStack(alignment: .leading, spacing: 0) {
+                    ListTitleView(config: .text(listTitle))
+                    PerpsMarketRowsCard(
+                        markets: markets,
+                        isLoadingNextPage: isLoadingNextPage,
+                        onSelect: viewModel.selectMarket,
+                        onRowAppear: viewModel.rowAppeared,
+                        onRowDisappear: viewModel.rowDisappeared
+                    )
+                }
                 .padding(.horizontal, Layout.horizontalPadding)
                 .padding(.bottom, Layout.listBottomPadding)
             }

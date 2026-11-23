@@ -103,6 +103,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testColorManifestMatchesAssetCatalog() throws {
+        try requireSourceTree()
         let manifestResources = Set(TKUIKitGeneratedColorAsset.allCases.map(\.rawValue))
         let catalogResources = try colorResourceNames(in: colorsRoot)
 
@@ -111,6 +112,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testColorThemesHaveIdenticalTokenPaths() throws {
+        try requireSourceTree()
         let resourceNames = try colorResourceNames(in: colorsRoot)
         var tokenPathsByTheme = [String: Set<String>]()
 
@@ -138,6 +140,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testColorAssetsUseSingleUniversalSRGBDefinition() throws {
+        try requireSourceTree()
         for colorSetURL in try colorSetURLs(in: colorsRoot) {
             let contents = try JSONDecoder().decode(
                 ColorSetContents.self,
@@ -279,6 +282,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testImageManifestMatchesAssetCatalog() throws {
+        try requireSourceTree()
         let manifestResources = Set(TKUIKitGeneratedImageAsset.allCases.map(\.resourceName))
         let catalogResources = try imageRootDirectories.reduce(into: Set<String>()) { result, rootDirectory in
             try result.formUnion(
@@ -293,6 +297,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testIconsUseFlatSizeFirstHierarchy() throws {
+        try requireSourceTree()
         let catalogResources = try imageResourceNames(
             in: resourcesRoot.appendingPathComponent("Assets.xcassets/Icons"),
             namespace: "Icons"
@@ -313,6 +318,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testImageAssetNamesDoNotRepeatSizeNamespace() throws {
+        try requireSourceTree()
         let catalogResources = try imageResourceNames(
             in: resourcesRoot.appendingPathComponent("Assets.xcassets/Icons"),
             namespace: "Icons"
@@ -341,6 +347,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testIconImagesetsUseNormalizedNames() throws {
+        try requireSourceTree()
         let iconsDirectory = resourcesRoot.appendingPathComponent("Assets.xcassets/Icons")
         let imagesetURLs = try imageSetURLs(in: iconsDirectory)
         var imagesetNameViolations = [String]()
@@ -407,6 +414,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testImageRuntimeUsesGeneratedAssetResources() throws {
+        try requireSourceTree()
         let imageFiles = [
             sourceRoot.appendingPathComponent("UIKit/Components/Views/TKFancyQRCodeView.swift"),
         ]
@@ -461,6 +469,7 @@ final class ResourceTests: XCTestCase {
     }
 
     func testLottieAndFontFacadesDoNotDeclareRawFilenames() throws {
+        try requireSourceTree()
         let lottieResource = sourceRoot.appendingPathComponent("Shared/LottieResource.swift")
         let lottieContents = try String(contentsOf: lottieResource, encoding: .utf8)
         XCTAssertFalse(
@@ -568,6 +577,14 @@ private extension ResourceTests {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+    }
+
+    /// Xcode Cloud runs tests on a machine without the repository, so a test that reads sources skips there.
+    func requireSourceTree() throws {
+        try XCTSkipUnless(
+            FileManager.default.fileExists(atPath: packageRoot.appendingPathComponent("Package.swift").path),
+            "No source tree on this machine"
+        )
     }
 
     func resourceFileNames(

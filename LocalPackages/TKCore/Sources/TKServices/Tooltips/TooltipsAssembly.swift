@@ -42,6 +42,10 @@ public final class TooltipsAssembly {
 
     public private(set) lazy var addMultichainWalletRepository = AddMultichainWalletTooltipRepository()
 
+    public private(set) lazy var earnSectionRepository = EarnSectionTooltipRepository()
+
+    public private(set) lazy var perpsSectionRepository = PerpsSectionTooltipRepository()
+
     public private(set) lazy var service: TooltipsService = TooltipsServiceImplementation(
         tooltipControllerFactory: tooltipControllerFactory,
         viewControllerFactory: TooltipViewControllerFactoryImplementation()
@@ -54,6 +58,9 @@ public final class TooltipsAssembly {
         tradeTabTooltipRepository: tradeTabRepository,
         favoriteTooltipRepository: favoriteRepository,
         addMultichainWalletTooltipRepository: addMultichainWalletRepository,
+        earnSectionTooltipRepository: earnSectionRepository,
+        perpsSectionTooltipRepository: perpsSectionRepository,
+        appSettings: dependencies.appSettings,
         calendar: .current
     )
 }

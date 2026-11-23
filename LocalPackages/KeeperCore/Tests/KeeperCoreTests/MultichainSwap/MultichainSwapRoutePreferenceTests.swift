@@ -75,11 +75,52 @@ final class MultichainSwapRoutePreferenceTests: XCTestCase {
     func test_preferredRoute_isNilWithoutRoutes() {
         XCTAssertNil(makeQuote([]).preferredRoute(at: now))
     }
+
+    func test_preferredRoute_skipsTheRouteOfAnAggregatorThatScreenedTheWallet() {
+        let quote = makeQuote(
+            [
+                makeRoute(routeId: "swapsxyz-route", aggregator: .swapsXyz),
+                makeRoute(routeId: "swapkit-route", aggregator: .swapKit),
+            ],
+            providerErrors: [walletScreened(by: .swapsXyz)]
+        )
+
+        XCTAssertEqual(quote.preferredRoute(at: now)?.routeId, "swapkit-route")
+    }
+
+    func test_preferredRoute_isNilWhenTheOnlyRouteIsScreened() {
+        let quote = makeQuote(
+            [makeRoute(routeId: "swapsxyz-route", aggregator: .swapsXyz)],
+            providerErrors: [walletScreened(by: .swapsXyz)]
+        )
+
+        XCTAssertNil(quote.preferredRoute(at: now))
+    }
+
+    func test_preferredRoute_keepsARouteWhoseOwnAggregatorDidNotScreenTheWallet() {
+        let quote = makeQuote(
+            [makeRoute(routeId: "swapsxyz-route", aggregator: .swapsXyz)],
+            providerErrors: [walletScreened(by: .swapKit)]
+        )
+
+        XCTAssertEqual(quote.preferredRoute(at: now)?.routeId, "swapsxyz-route")
+    }
 }
 
 private extension MultichainSwapRoutePreferenceTests {
-    func makeQuote(_ routes: [MultichainSwapRoute]) -> MultichainSwapQuote {
-        MultichainSwapQuote(quoteId: "quote", routes: routes)
+    func makeQuote(
+        _ routes: [MultichainSwapRoute],
+        providerErrors: [MultichainSwapProviderError]? = nil
+    ) -> MultichainSwapQuote {
+        MultichainSwapQuote(quoteId: "quote", routes: routes, providerErrors: providerErrors)
+    }
+
+    func walletScreened(by aggregator: MultichainSwapAggregator) -> MultichainSwapProviderError {
+        MultichainSwapProviderError(
+            aggregator: aggregator.rawValue,
+            code: "wallet_screened",
+            message: "wallet blocked by the provider's compliance screening"
+        )
     }
 
     func makeRoute(

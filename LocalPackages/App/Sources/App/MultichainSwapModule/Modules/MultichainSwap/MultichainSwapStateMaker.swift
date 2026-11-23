@@ -1,16 +1,21 @@
+import BigInt
 import Foundation
 import KeeperCore
 
 struct MultichainSwapStateMaker {
     let calculator: MultichainSwapAmountCalculator
     let validator: MultichainSwapValidator
+    let exactOutputSupport: MultichainSwapExactOutputSupport
 
     func make(
         inputs: MultichainSwapInputs,
-        quote: MultichainSwapQuoteSnapshot
+        quote: MultichainSwapQuoteSnapshot,
+        feePlan: MultichainSwapFeePlan = .preparing,
+        showsBatteryPromo: Bool = false
     ) -> MultichainSwapLoadedState {
         let routeUsdPrice = quote.destinationUsdPrice
         let usdFiatRate = calculator.fiatRates.effectiveUsdFiatRate(inputs: inputs, quote: quote)
+        let validationState = validator.validate(inputs, selectedRoute: quote.selectedRoute, usdFiatRate: usdFiatRate)
         return MultichainSwapLoadedState(
             sendAmount: inputs.sendAmount,
             sendAmountInputMode: inputs.sendAmountInputMode,
@@ -45,13 +50,24 @@ struct MultichainSwapStateMaker {
                 usdFiatRate: usdFiatRate,
                 routeUsdPrice: routeUsdPrice
             ),
-            validationState: validator.validate(
-                inputs,
-                selectedRoute: quote.selectedRoute,
-                usdFiatRate: usdFiatRate
+            validationState: validationState,
+            quote: quote,
+            feeSummary: MultichainSwapFeeSummary(
+                plan: feePlan,
+                picked: inputs.feeMethod,
+                amountBlockedAssetId: validationState.isBelowMinimum ? inputs.sendAsset.asset.assetId : nil
             ),
-            quote: quote
+            enteredField: inputs.enteredField,
+            isReceiveAmountEditable: acceptsReceiveAmount(inputs),
+            showsBatteryPromo: showsBatteryPromo
         )
+    }
+
+    /// Only a pair quoted by the amount to receive takes it typed, and only as crypto: fiat mode just
+    /// renders it.
+    func acceptsReceiveAmount(_ inputs: MultichainSwapInputs) -> Bool {
+        inputs.receiveAmountInputMode == .crypto
+            && exactOutputSupport.supports(sendAsset: inputs.sendAsset, receiveAsset: inputs.receiveAsset)
     }
 
     private func receiveAmountText(
@@ -72,20 +88,41 @@ struct MultichainSwapStateMaker {
         }
     }
 
-    func resolvedReceiveAmount(
-        previous: String,
-        quote: MultichainSwapQuoteSnapshot,
-        receiveAsset: MultichainAsset
+    func resolvedQuotedAmount(
+        inputs: MultichainSwapInputs,
+        quote: MultichainSwapQuoteSnapshot
     ) -> String {
+        let previous = inputs.quotedAmountText
         switch quote.quoteState {
-        case .ready:
+        // Offline the last quote for the amount stays on screen, with no swap offered for it.
+        case .ready, .failed(.offline):
             guard let route = quote.selectedRoute else {
-                return previous
+                return quote.quoteState == .ready ? previous : ""
             }
-            return calculator.formattedAmount(route.estimatedDestinationAmount, asset: receiveAsset)
+            // A zero is left empty: the editable card would complete "0" to "0." and take it as typed.
+            switch inputs.enteredField {
+            case .send:
+                guard let amount = BigUInt(route.estimatedDestinationAmount), amount > 0 else {
+                    return ""
+                }
+                return calculator.formattedAmount(route.estimatedDestinationAmount, asset: inputs.receiveAsset)
+            case .receive:
+                guard let sourceAmount = route.quotedSourceAmount else {
+                    return previous
+                }
+                guard sourceAmount > 0 else {
+                    return ""
+                }
+                return calculator.inputAmountString(
+                    sourceAmount: sourceAmount,
+                    mode: inputs.sendAmountInputMode,
+                    asset: inputs.sendAsset,
+                    usdFiatRate: calculator.fiatRates.effectiveUsdFiatRate(inputs: inputs, quote: quote)
+                )
+            }
         case .loading:
             return previous
-        case .idle, .expired, .failed:
+        case .idle, .failed:
             return ""
         }
     }

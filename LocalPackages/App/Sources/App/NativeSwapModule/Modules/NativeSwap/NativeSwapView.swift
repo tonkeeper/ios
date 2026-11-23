@@ -124,7 +124,12 @@ final class NativeSwapView: UIView {
     }
 
     private func setup() {
-        navigationBar.leftViews = [titleView]
+        // In the system bar a leading view gets a glass pill, so the title goes to the centre there.
+        if TKLiquidGlass.isEnabled {
+            navigationBar.centerView = titleView
+        } else {
+            navigationBar.leftViews = [titleView]
+        }
 
         swapContainerView.clipsToBounds = false
 

@@ -16,7 +16,7 @@ struct LedgerConfirmAssembly {
             confirmItem: confirmItem,
             wallet: wallet,
             ledgerDevice: ledgerDevice,
-            bleTransport: coreAssembly.ledgerAssembly.bleTransport,
+            transport: coreAssembly.ledgerAssembly.transport,
             knownJettonResolver: knownJettonResolver
         )
         let viewController = LedgerConfirmViewController(viewModel: viewModel)

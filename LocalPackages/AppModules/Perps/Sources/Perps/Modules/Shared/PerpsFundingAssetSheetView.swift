@@ -3,25 +3,67 @@ import SwiftUI
 import TKUIKit
 
 struct PerpsFundingAssetSheetView: View {
-    let assets: [PerpsFundingAssetRow]
+    @StateObject private var model: PerpsFundingAssetSheetModel
     let selected: PerpsFundingAssetRow
+    let loadIcon: (@MainActor (String) async -> URL?)?
     let onSelect: (PerpsFundingAssetRow) -> Void
+
+    init(
+        assets: [PerpsFundingAssetRow],
+        selected: PerpsFundingAssetRow,
+        loadIcon: (@MainActor (String) async -> URL?)? = nil,
+        onSelect: @escaping (PerpsFundingAssetRow) -> Void
+    ) {
+        _model = StateObject(wrappedValue: PerpsFundingAssetSheetModel(assets: assets))
+        self.selected = selected
+        self.loadIcon = loadIcon
+        self.onSelect = onSelect
+    }
 
     var body: some View {
         AssetPickerList(
-            rows: assets.indices.map { index in
-                let asset = assets[index]
-                return asset.pickerRow(
-                    id: "\(index)",
+            rows: model.assets.map { asset in
+                asset.pickerRow(
+                    id: asset.assetId,
                     accessory: asset.assetId.lowercased() == selected.assetId.lowercased() ? .checkmark : .none
                 )
             },
             onSelect: { row in
-                guard let index = Int(row.id), assets.indices.contains(index) else { return }
-                onSelect(assets[index])
+                guard let asset = model.assets.first(where: { $0.assetId == row.id }) else { return }
+                onSelect(asset)
             }
         )
         .padding(.bottom, 16)
+        .task {
+            if let loadIcon { await model.loadIcons(using: loadIcon) }
+        }
+    }
+}
+
+@MainActor
+final class PerpsFundingAssetSheetModel: ObservableObject {
+    @Published private(set) var assets: [PerpsFundingAssetRow]
+
+    init(assets: [PerpsFundingAssetRow]) {
+        self.assets = assets
+    }
+
+    func loadIcons(using loadIcon: @escaping @MainActor (String) async -> URL?) async {
+        await withTaskGroup(of: (String, URL?).self) { group in
+            for asset in assets where asset.iconURL == nil {
+                let id = asset.assetId
+                group.addTask { await(id, loadIcon(id)) }
+            }
+            for await(id, icon) in group {
+                guard !Task.isCancelled else { return }
+                guard let icon, let index = assets.firstIndex(where: { $0.assetId == id }) else { continue }
+                let asset = assets[index]
+                assets[index] = PerpsFundingAssetRow(
+                    assetId: asset.assetId, symbol: asset.symbol, network: asset.network,
+                    iconURL: icon, balanceText: asset.balanceText
+                )
+            }
+        }
     }
 }
 

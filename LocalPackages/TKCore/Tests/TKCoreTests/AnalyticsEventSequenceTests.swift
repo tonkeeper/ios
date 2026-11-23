@@ -49,53 +49,20 @@ final class AnalyticsEventSequenceTests: XCTestCase {
         XCTAssertEqual(after.next(), 3)
     }
 
-    func test_decorationCarriesTheSequenceTheCohortAndTheInstallScope() {
+    func test_decorationCarriesTheSequenceTheTransportAndTheInstallScope() {
         let sequence = makeSequence()
 
-        let args = AptabaseTransportProperty.decorate(
-            ["existing": "value"],
-            transport: .cache,
-            cohortSource: .remote,
-            sequence: sequence
-        )
+        let args = AptabaseTransportProperty.decorate(["existing": "value"], sequence: sequence)
 
         XCTAssertEqual(args["existing"] as? String, "value")
         XCTAssertEqual(args[AptabaseTransportProperty.sequence] as? Int, 1)
         XCTAssertEqual(args[AptabaseTransportProperty.transport] as? String, "cache")
         XCTAssertEqual(args[AptabaseTransportProperty.installId] as? String, "install")
-        XCTAssertEqual(args[AptabaseTransportProperty.cohortSource] as? String, "remote")
     }
 
-    /// The cohort source has to reach both branches: an install that never resolved the remote config
-    /// takes the SDK branch, and that is exactly the case the property exists to exclude.
-    func test_decorationCarriesTheCohortSourceOnTheSdkBranchToo() {
-        let args = AptabaseTransportProperty.decorate(
-            [:],
-            transport: .sdk,
-            cohortSource: .default,
-            sequence: makeSequence()
-        )
-
-        XCTAssertEqual(args[AptabaseTransportProperty.transport] as? String, "sdk")
-        XCTAssertEqual(args[AptabaseTransportProperty.cohortSource] as? String, "default")
-    }
-
-    /// A remote `false` is a cohort assignment; no remote value at all is not. The two are the same
-    /// transport and the same flag value, which is why the difference has to travel with the event.
-    func test_cohortSourceSeparatesAnAssignedControlFromAnUnresolvedFlag() {
-        XCTAssertEqual(AptabaseCohortSource(devOverride: nil, remoteValue: false), .remote)
-        XCTAssertEqual(AptabaseCohortSource(devOverride: nil, remoteValue: nil), .default)
-    }
-
-    /// Our own dev-menu runs must not read as a cohort: the last on-device run was indistinguishable
-    /// from an install that had genuinely switched cohorts mid-window.
-    func test_devOverrideOutranksAResolvedRemoteValue() {
-        XCTAssertEqual(AptabaseCohortSource(devOverride: true, remoteValue: false), .override)
-    }
-
-    /// Seven `deposit_*` events carry a `Set<String>`, which the SDK refuses by dropping the whole
-    /// event. Both transports have to see the same flattened props for the comparison to mean anything.
-    func test_normalizationFlattensValuesTheSdkWouldRefuse() {
+    /// Seven `deposit_*` events carry a `Set<String>`, which cannot be encoded as a scalar and would
+    /// cost the whole event.
+    func test_normalizationFlattensValuesThatCannotBeEncoded() {
         let args = AptabaseTransportProperty.normalized([
             "set": Set(["p2p", "card"]),
             // What a `Set<String>` becomes once it has been through `Encodable.asDictionary()`, in the

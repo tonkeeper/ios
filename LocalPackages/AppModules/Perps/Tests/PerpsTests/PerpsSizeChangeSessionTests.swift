@@ -86,6 +86,8 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         movedForm.resolveAutoClose()
         let request = try XCTUnwrap(session.beginPreparation())
         XCTAssertEqual(request.intent.autoCloseUpdate, try .replace(XCTUnwrap(movedContext.draft)))
+        XCTAssertEqual(try XCTUnwrap(request.intent.takeProfitROIPercent), 10.12, accuracy: 1e-9)
+        XCTAssertNil(request.intent.stopLossROIPercent, "a leg typed as a price carries no ROI")
         XCTAssertTrue(session.acceptPreparation(makePrepared(request: request), for: request))
         session.backToEditing()
         XCTAssertEqual(session.autoCloseROIInput, input)
@@ -100,6 +102,7 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         )
         session.selectAutoClose(resting, roiInput: input)
         let initial = try XCTUnwrap(session.beginPreparation())
+        XCTAssertNil(initial.intent.takeProfitROIPercent, "a reduce leaves the entry, so its legs keep their prices")
         XCTAssertTrue(session.acceptPreparation(makePrepared(request: initial), for: initial))
         let replacement = PerpsAutoCloseROIInput(takeProfit: PerpsAutoCloseROI(sign: .plus, text: "30"))
         let request = try XCTUnwrap(session.beginRepreparation(desiredAutoClose: edited, roiInput: replacement))
@@ -270,6 +273,34 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
         XCTAssertEqual(replacing.autoCloseForConfirmValidation, edited)
     }
 
+    func test_aWholePositionCloseCarriesNoAutoCloseToTheConfirm_andKeepsThatDecisionThroughRefreshes() throws {
+        let whole = PerpsSizeChangeReviewFixture.make(
+            direction: .reduce,
+            notionalUsd: PerpsValueChange(old: 540, new: 0),
+            baseSize: PerpsValueChange(old: 0.008, new: 0),
+            liquidationPrice: nil,
+            closesWholePosition: true
+        )
+
+        let following = makeSession(resting: resting)
+        following.setAmount("20")
+        let followingRequest = try XCTUnwrap(following.beginPreparation())
+        XCTAssertTrue(following.acceptPreparation(makePrepared(request: followingRequest, review: whole), for: followingRequest))
+        XCTAssertNil(following.preparedAutoClose)
+
+        let replacing = makeSession(resting: resting)
+        replacing.setAmount("20")
+        replacing.selectAutoClose(edited)
+        let replaceRequest = try XCTUnwrap(replacing.beginPreparation())
+        XCTAssertTrue(replacing.acceptPreparation(makePrepared(request: replaceRequest, review: whole), for: replaceRequest))
+        XCTAssertNil(replacing.preparedAutoClose)
+        XCTAssertNil(replacing.autoCloseForConfirmValidation)
+
+        XCTAssertFalse(replacing.refreshReview(PerpsSizeChangeReviewFixture.make(direction: .reduce), operationId: "prepared"))
+        XCTAssertEqual(replacing.prepared?.review, whole)
+        XCTAssertTrue(replacing.refreshReview(whole, operationId: "prepared"))
+    }
+
     func test_refreshReviewSwapsTheFiguresOfTheCurrentOperationOnly() throws {
         let session = try reviewingSession(resting: resting)
         let prepared = try XCTUnwrap(session.prepared)
@@ -368,22 +399,28 @@ final class PerpsSizeChangeSessionTests: XCTestCase {
                 liquidationDistancePercent: -10
             ),
             displayPrice: price, sizeDecimals: 6,
-            accountStore: StubRootAccountStore(), marketsStore: StubRootMarketsStore(), format: .test
+            accountStore: StubRootAccountStore(), marketsStore: StubRootMarketsStore(), loadLimits: { nil }, format: .test
         )
     }
 
     private func makePrepared(
         request: PerpsSizeChangeSession.PreparationRequest,
-        operationId: String = "prepared"
+        operationId: String = "prepared",
+        review: PerpsSizeChangeReview = PerpsSizeChangeReviewFixture.make(direction: .reduce)
     ) -> PerpsPreparedSizeChangeAction {
         PerpsPreparedSizeChangeAction(
             operationId: operationId,
             walletId: "wallet",
             marketId: 1,
             intent: request.intent,
-            review: PerpsSizeChangeReviewFixture.make(direction: .reduce),
-            normalizedAutoClose: request.intent.autoCloseUpdate.applying(to: nil)
+            review: review,
+            normalizedAutoClose: plannedAutoClose(request.intent.autoCloseUpdate)
         )
+    }
+
+    private func plannedAutoClose(_ update: PerpsAutoCloseUpdate) -> PerpsAutoClose? {
+        guard case let .replace(autoClose) = update else { return nil }
+        return autoClose
     }
 
     private func triggerOrders(from autoClose: PerpsAutoClose?) -> [PerpsTriggerOrderSummary] {

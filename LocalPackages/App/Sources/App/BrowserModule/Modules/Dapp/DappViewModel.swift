@@ -8,6 +8,7 @@ import UIKit
 protocol DappModuleOutput: AnyObject {
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)? { get set }
     var didRequestClose: (() -> Void)? { get set }
+    var didRequestOpenDapp: ((URL) -> Void)? { get set }
 }
 
 protocol DappModuleInput: AnyObject {
@@ -18,7 +19,10 @@ protocol DappModuleInput: AnyObject {
 protocol DappViewModel: AnyObject {
     var didOpenApp: ((URL?, String?) -> Void)? { get set }
     var injectHandler: ((String) -> Void)? { get set }
+    var keeperBridgeInjectHandler: ((_ js: String, _ containsCredentials: Bool) async -> Void)? { get set }
+    var didChangeCloseButtonVisibility: ((Bool) -> Void)? { get set }
     var currentURLProvider: (() -> URL?)? { get set }
+    var isKeeperBridgeEnabled: Bool { get }
     var jsInjection: String? { get }
     var walletIdentifier: String? { get }
     var applicationNameForUserAgent: String? { get }
@@ -26,15 +30,23 @@ protocol DappViewModel: AnyObject {
     var didUpdateIsLandscapeEnable: (() -> Void)? { get set }
     var isLandscapeEnable: Bool { get }
     var didShareURLSystemShareSheet: ((URL) -> Void)? { get set }
+    var didRequestShareText: ((String) -> Void)? { get set }
 
     func viewDidLoad()
     func didChangeSystemAppearance()
     func didCommitLoad()
     func didTapClose()
+    func didRequestNewWindow(url: URL) -> Bool
     func isNativeHeaderHidden(for url: URL) -> Bool
+    func showsLoadFailurePlaceholder(
+        for failure: TKBridgeWebViewController.LoadFailure,
+        at url: URL,
+        isPageShown: Bool
+    ) -> Bool
     func didLoadInitialRequest()
     func didFailLoad(_ failure: TKBridgeWebViewController.LoadFailure)
     func didReceiveMessage(body: Any)
+    func didReceiveKeeperBridgeMessage(body: Any, senderOrigin: URL?)
     func copyDappURL(url: URL)
     func shareDappURL(url: URL)
 }
@@ -44,6 +56,7 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
 
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)?
     var didRequestClose: (() -> Void)?
+    var didRequestOpenDapp: ((URL) -> Void)?
 
     // MARK: - DappModuleInput
 
@@ -59,9 +72,12 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
 
     var didOpenApp: ((URL?, String?) -> Void)?
     var injectHandler: ((String) -> Void)?
+    var keeperBridgeInjectHandler: ((_ js: String, _ containsCredentials: Bool) async -> Void)?
+    var didChangeCloseButtonVisibility: ((Bool) -> Void)?
     var currentURLProvider: (() -> URL?)?
     var didUpdateIsLandscapeEnable: (() -> Void)?
     var didShareURLSystemShareSheet: ((URL) -> Void)?
+    var didRequestShareText: ((String) -> Void)?
     var isLandscapeEnable: Bool = false {
         didSet {
             didUpdateIsLandscapeEnable?()
@@ -79,6 +95,10 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     }
 
     func didCommitLoad() {
+        keeperBridgeDocument += 1
+        if isKeeperBridgeEnabled {
+            didChangeCloseButtonVisibility?(true)
+        }
         deliveredTheme = injectedTheme
         deliverThemeIfNeeded()
     }
@@ -87,8 +107,38 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         didRequestClose?()
     }
 
+    func didRequestNewWindow(url: URL) -> Bool {
+        guard let didRequestOpenDapp, KeeperDappBridge.opensInSeparateDapp(newWindowURL: url, from: dapp.url) else {
+            return false
+        }
+        didRequestOpenDapp(url)
+        return true
+    }
+
     func isNativeHeaderHidden(for url: URL) -> Bool {
-        earnDappMatcher.matches(url: url)
+        earnDappMatcher.matches(url: url) || (isKeeperBridgeEnabled && KeeperDappBridge.isTrusted(url: url))
+    }
+
+    func showsLoadFailurePlaceholder(
+        for failure: TKBridgeWebViewController.LoadFailure,
+        at url: URL,
+        isPageShown: Bool
+    ) -> Bool {
+        switch failure {
+        case .network:
+            // Once the page has drawn, a later navigation that fails leaves it on screen and usable.
+            !isPageShown
+        case .httpError:
+            // A third-party site keeps its own error page: single-page apps on static hosting answer
+            // a deep link with 404 and still render.
+            isNativeHeaderHidden(for: url)
+        case .processTerminated, .timeout:
+            true
+        }
+    }
+
+    var isKeeperBridgeEnabled: Bool {
+        KeeperDappBridge.isTrusted(url: dapp.url)
     }
 
     var walletIdentifier: String? {
@@ -96,11 +146,11 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     }
 
     var applicationNameForUserAgent: String? {
-        earnDappMatcher.matches(url: dapp.url) ? userAgent : nil
+        earnDappMatcher.matches(url: dapp.url) || isKeeperBridgeEnabled ? userAgent : nil
     }
 
     var allowsBackForwardNavigationGestures: Bool {
-        earnDappMatcher.matches(url: dapp.url)
+        earnDappMatcher.matches(url: dapp.url) || KeeperDappBridge.isLoyalty(url: dapp.url)
     }
 
     private var evmProviderInjection: String {
@@ -208,6 +258,37 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         }
     }
 
+    func didReceiveKeeperBridgeMessage(body: Any, senderOrigin: URL?) {
+        guard let request = KeeperDappBridge.parse(body) else {
+            return
+        }
+        let pageURL = currentURLProvider?()
+        let document = keeperBridgeDocument
+        guard isKeeperBridgeEnabled,
+              KeeperDappBridge.isTrusted(url: senderOrigin),
+              KeeperDappBridge.isTrusted(url: pageURL),
+              let pageHost = pageURL?.host?.lowercased()
+        else {
+            Log.w("keeper dapp bridge: request rejected: untrusted page", extraInfo: [
+                "senderHost": senderOrigin?.host ?? "",
+                "pageHost": pageURL?.host ?? "",
+                "queryId": request.queryId,
+            ])
+            Task { @MainActor [weak self] in
+                await self?.send(.failure(.forbidden), to: request, document: document)
+            }
+            return
+        }
+        Log.d("keeper dapp bridge: request received", extraInfo: [
+            "method": (try? request.method.get().name) ?? "invalid",
+            "queryId": request.queryId,
+        ])
+
+        Task { @MainActor [weak self] in
+            await self?.respond(to: request, document: document, pageHost: pageHost)
+        }
+    }
+
     func copyDappURL(url: URL) {
         let resultUrl = if explorerURLMatcher.matches(url: url) {
             url
@@ -235,10 +316,15 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     private let wallet: Wallet?
     private let isSignMessageSupported: Bool
     private let explorerURLMatcher: BlockchainExplorerURLMatcher
-    private let earnDappMatcher = EarnDappMatcher()
+    private let earnDappMatcher: EarnDappMatcher
     private let earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository
+    private let authorizationService: BatteryWebAuthorizationService
+    private let loyaltyReferralCodeRepository: LoyaltyReferralCodeRepository
     private let userAgent: String
 
+    private var keeperBridgeDocument = 0
+    private var isLoyaltyReferralCodeTaken = false
+    private var takenLoyaltyReferralCode: String?
     private var deliveredTheme: String?
     private var injectedTheme: String?
 
@@ -256,7 +342,10 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         wallet: Wallet?,
         isSignMessageSupported: Bool,
         explorerURLMatcher: BlockchainExplorerURLMatcher,
+        earnDappMatcher: EarnDappMatcher,
         earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository,
+        authorizationService: BatteryWebAuthorizationService,
+        loyaltyReferralCodeRepository: LoyaltyReferralCodeRepository,
         userAgent: String
     ) {
         self.dapp = dapp
@@ -265,8 +354,107 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         self.wallet = wallet
         self.isSignMessageSupported = isSignMessageSupported
         self.explorerURLMatcher = explorerURLMatcher
+        self.earnDappMatcher = earnDappMatcher
         self.earnFeaturedVaultsRepository = earnFeaturedVaultsRepository
+        self.authorizationService = authorizationService
+        self.loyaltyReferralCodeRepository = loyaltyReferralCodeRepository
         self.userAgent = userAgent
+    }
+
+    @MainActor
+    private func respond(to request: KeeperDappBridge.Request, document: Int, pageHost: String) async {
+        switch request.method {
+        case let .failure(code):
+            await send(.failure(code), to: request, document: document)
+        case .success(.getData):
+            let theme = KeeperDappBridge.theme(for: TKThemeManager.shared.theme)
+            let language = DappNativeBridge.language
+            let result = await authorization(queryId: request.queryId, expiredDeviceToken: nil).map {
+                KeeperDappBridge.getDataPayload(
+                    authorization: $0,
+                    theme: theme,
+                    language: language,
+                    referralCode: loyaltyReferralCode(pageHost: pageHost)
+                )
+            }
+            await send(result, to: request, document: document)
+        case let .success(.refreshData(expiredAccessToken)):
+            let result = await authorization(queryId: request.queryId, expiredDeviceToken: expiredAccessToken)
+                .map(KeeperDappBridge.refreshDataPayload(authorization:))
+            await send(result, to: request, document: document)
+        case .success(.close):
+            await send(.success([:]), to: request, document: document)
+            if document == keeperBridgeDocument {
+                didRequestClose?()
+            }
+        case let .success(.haptic(style)):
+            if document == keeperBridgeDocument {
+                style.play()
+            }
+            await send(.success([:]), to: request, document: document)
+        case let .success(.setCloseButton(isVisible)):
+            if document == keeperBridgeDocument {
+                didChangeCloseButtonVisibility?(isVisible)
+            }
+            await send(.success([:]), to: request, document: document)
+        case let .success(.share(text)):
+            if document == keeperBridgeDocument {
+                didRequestShareText?(text)
+            }
+            await send(.success([:]), to: request, document: document)
+        case let .success(.track(event, params)):
+            analyticsSession.logPageEvent(name: event, params: params as? [String: Any] ?? [:], provider: pageHost)
+            await send(.success([:]), to: request, document: document)
+        }
+    }
+
+    @MainActor
+    private func send(
+        _ result: Result<[String: String], KeeperDappBridge.ErrorCode>,
+        to request: KeeperDappBridge.Request,
+        document: Int
+    ) async {
+        guard document == keeperBridgeDocument else {
+            Log.d("keeper dapp bridge: response dropped: page reloaded", extraInfo: ["queryId": request.queryId])
+            return
+        }
+        let response = KeeperDappBridge.response(queryId: request.queryId, result: result)
+            ?? KeeperDappBridge.response(queryId: request.queryId, result: .failure(.internalError))
+        guard let response else {
+            Log.e("keeper dapp bridge: failed to encode response", extraInfo: ["queryId": request.queryId])
+            return
+        }
+        let containsCredentials = (try? result.get())?["deviceToken"] != nil
+        await keeperBridgeInjectHandler?(KeeperDappBridge.script(response: response), containsCredentials)
+    }
+
+    @MainActor
+    private func loyaltyReferralCode(pageHost: String) -> String? {
+        guard pageHost == KeeperDappBridge.loyaltyURL.host else { return nil }
+        if !isLoyaltyReferralCodeTaken {
+            isLoyaltyReferralCodeTaken = true
+            takenLoyaltyReferralCode = loyaltyReferralCodeRepository.take()
+        }
+        return takenLoyaltyReferralCode
+    }
+
+    private func authorization(
+        queryId: String,
+        expiredDeviceToken: String?
+    ) async -> Result<BatteryWebAuthorization, KeeperDappBridge.ErrorCode> {
+        guard let wallet else {
+            Log.w("keeper dapp bridge: no active wallet", extraInfo: ["queryId": queryId])
+            return .failure(.unauthorized)
+        }
+        do {
+            return try await .success(authorizationService.authorization(
+                for: wallet,
+                expiredDeviceToken: expiredDeviceToken
+            ))
+        } catch {
+            Log.w("keeper dapp bridge: authorization unavailable", error: error, extraInfo: ["queryId": queryId])
+            return .failure(.unauthorized)
+        }
     }
 
     private func observeTheme() {
@@ -318,7 +506,8 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         let deviceInfo = TonConnect.DeviceInfo(
             maxMessages: (try? wallet?.contract.maxMessages) ?? 4,
             appVersion: InfoProvider.appVersion(),
-            isSignMessageSupported: isSignMessageSupported
+            isSignMessageSupported: isSignMessageSupported,
+            isSignDataSupported: wallet?.isTonConnectSignDataAvailable ?? true
         )
         let info = Info(
             isWalletBrowser: true,

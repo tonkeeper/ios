@@ -2,40 +2,29 @@ import Foundation
 import KeeperCoreComponents
 import TKLogging
 
-public struct EarnPortfolioRepository {
-    private let service: EarnPortfolioService
-    private let fileSystemVault: FileSystemVault<[EarnPosition], String>
+struct EarnPortfolioRepository {
+    private let fileSystemVault: FileSystemVault<EarnPortfolio, String>
 
-    init(
-        service: EarnPortfolioService,
-        fileSystemVault: FileSystemVault<[EarnPosition], String>
-    ) {
-        self.service = service
+    init(fileSystemVault: FileSystemVault<EarnPortfolio, String>) {
         self.fileSystemVault = fileSystemVault
     }
 
-    public func cachedPositions(address: String) -> [EarnPosition]? {
+    func portfolio(walletId: String) -> EarnPortfolio? {
         do {
-            return try fileSystemVault.loadItem(key: Self.key(address: address))
-        } catch FileSystemVault<[EarnPosition], String>.LoadError.noItem {
+            return try fileSystemVault.loadItem(key: walletId)
+        } catch FileSystemVault<EarnPortfolio, String>.LoadError.noItem {
             return nil
         } catch {
-            Log.w("earn positions cache is unreadable", extraInfo: ["error": "\(error)"])
+            Log.w("earn portfolio cache is unreadable", extraInfo: ["error": "\(error)"])
             return nil
         }
     }
 
-    public func loadPositions(address: String) async throws -> [EarnPosition] {
-        let positions = try await service.loadPositions(address: address)
+    func savePortfolio(_ portfolio: EarnPortfolio, walletId: String) {
         do {
-            try fileSystemVault.saveItem(positions, key: Self.key(address: address))
+            try fileSystemVault.saveItem(portfolio, key: walletId)
         } catch {
-            Log.w("earn positions cache write failed", extraInfo: ["error": "\(error)"])
+            Log.w("earn portfolio cache write failed", extraInfo: ["error": "\(error)"])
         }
-        return positions
-    }
-
-    private static func key(address: String) -> String {
-        "EarnPositions_\(address.lowercased())"
     }
 }

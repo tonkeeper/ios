@@ -28,12 +28,12 @@ struct MultichainRelayedOperation {
     let json: String
     let operation: ChainKit.Operation
 
-    init(id: String, json: String) throws(MultichainRelayedOperationError) {
+    init(id: String, json: String, allowedTypes: [ChainKit.Payload.Type_] = Self.relayedTypes) throws(MultichainRelayedOperationError) {
         let result = ChainKit.Operation.Companion.shared.parse(id: id, meta: json)
         guard let operation = result.getOrNull() else {
             throw .malformed(result.error?.message ?? "unknown")
         }
-        for payload in operation.payloads where !Self.relayedTypes.contains(payload.type) {
+        for payload in operation.payloads where !allowedTypes.contains(payload.type) {
             throw .foreignPayload(id: payload.id, type: payload.type.id)
         }
         self.id = id

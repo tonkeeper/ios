@@ -1,9 +1,50 @@
 @testable import App
 import Foundation
 import KeeperCore
+import TKTestSupport
 import XCTest
 
 final class MultichainStartupControllerTests: XCTestCase {
+    func test_foregroundDuringTrailingBatteryResumeRetriesFailedBindings() async throws {
+        let resumes = BatteryResumeCounter()
+        let entered = TestGate()
+        let hold = TestGate()
+        let syncController = FakeWalletSyncController(result: false)
+        let controller = MultichainStartupController(
+            authService: FakeMultichainAuthService(),
+            walletSyncController: syncController,
+            resumeBatteryMigrations: {
+                if await resumes.increment() == 2 {
+                    await entered.open()
+                    try? await hold.wait()
+                }
+            }
+        )
+        let first = Task { await controller.startBindingsReconcile() }
+        try await entered.wait()
+
+        await controller.startBindingsReconcile()
+
+        XCTAssertEqual(syncController.reconcileCount, 2)
+        await hold.open()
+        await first.value
+    }
+
+    func test_batteryQueueResumesOnForegroundAfterBindingsAlreadySucceeded() async {
+        let resumes = BatteryResumeCounter()
+        let controller = MultichainStartupController(
+            authService: FakeMultichainAuthService(),
+            walletSyncController: FakeWalletSyncController(result: true),
+            resumeBatteryMigrations: { _ = await resumes.increment() }
+        )
+
+        await controller.startBindingsReconcile()
+        await controller.startBindingsReconcile()
+
+        let count = await resumes.count
+        XCTAssertEqual(count, 3)
+    }
+
     func test_bindingsReconcile_runsOnceWhenItSucceeds() async {
         let syncController = FakeWalletSyncController(result: true)
         let controller = makeController(syncController: syncController)
@@ -82,6 +123,14 @@ final class MultichainStartupControllerTests: XCTestCase {
     }
 }
 
+private actor BatteryResumeCounter {
+    private(set) var count = 0
+    func increment() -> Int {
+        count += 1
+        return count
+    }
+}
+
 // MARK: -
 
 private final class FakeWalletSyncController: MultichainWalletSyncController, @unchecked Sendable {
@@ -145,6 +194,13 @@ private struct FakeMultichainAuthService: MultichainAuthService {
         walletIds _: [String]
     ) async throws(MultichainServiceError) {}
     func unsubscribePush() async throws(MultichainServiceError) {}
+    func registerLiveActivity(
+        _: MultichainLiveActivityRegistration
+    ) async throws(MultichainServiceError) -> MultichainLiveActivityRegistrationResult {
+        .registered
+    }
+
+    func unregisterLiveActivity(activityId _: String) async throws(MultichainServiceError) {}
 }
 
 private final class AsyncGate: @unchecked Sendable {

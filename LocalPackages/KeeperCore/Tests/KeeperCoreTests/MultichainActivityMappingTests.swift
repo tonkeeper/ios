@@ -2,6 +2,7 @@ import Foundation
 @testable import KeeperCore
 import MultichainAPI
 import OpenAPIRuntime
+import TonSwift
 import XCTest
 
 final class MultichainActivityMappingTests: XCTestCase {
@@ -75,6 +76,66 @@ final class MultichainActivityMappingTests: XCTestCase {
         )))
 
         XCTAssertNil(activity.comment)
+    }
+
+    func test_aBlankComment_isNone() throws {
+        let sender = "0:27bafbc6d4a559505c397864e9e2a68c69ffbea37c61f34b54d114231d3906f3"
+        let encrypted: [String: (any Sendable)?] = ["encryption_type": "simple", "cipher_text": "940cff78"]
+
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "receive",
+            direction: ._in,
+            fromAddress: sender,
+            meta: ["comment": " \n", "encrypted_comment": encrypted]
+        )))
+
+        XCTAssertNil(activity.comment)
+        XCTAssertEqual(activity.encryptedComment?.cipherText, "940cff78")
+    }
+
+    /// An encrypted comment comes with the address that sent it, which its decryption takes in; one
+    /// without a cipher text or a sender is no comment to decrypt.
+    func test_encryptedComment_isReadFromMetaWithTheSender() throws {
+        let sender = "0:27bafbc6d4a559505c397864e9e2a68c69ffbea37c61f34b54d114231d3906f3"
+        let encrypted: [String: (any Sendable)?] = ["encryption_type": "simple", "cipher_text": "940cff78"]
+
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "receive",
+            direction: ._in,
+            fromAddress: sender,
+            meta: ["encrypted_comment": encrypted]
+        )))
+        let noSender = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "receive",
+            direction: ._in,
+            meta: ["encrypted_comment": encrypted]
+        )))
+        let noCipherText = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "receive",
+            direction: ._in,
+            fromAddress: sender,
+            meta: ["encrypted_comment": ["encryption_type": "simple", "cipher_text": ""] as [String: (any Sendable)?]]
+        )))
+
+        XCTAssertEqual(activity.encryptedComment, MultichainActivityEncryptedComment(cipherText: "940cff78", senderAddress: sender))
+        XCTAssertNil(activity.comment)
+        XCTAssertEqual(activity.encryptedComment?.payload?.senderAddress.toRaw(), sender)
+        XCTAssertEqual(activity.encryptedComment?.payload?.encryptedComment.cipherText, "940cff78")
+        XCTAssertNil(noSender.encryptedComment)
+        XCTAssertNil(noCipherText.encryptedComment)
+    }
+
+    func test_anEncryptedComment_fromANonTonSender_isNone() throws {
+        let encrypted: [String: (any Sendable)?] = ["encryption_type": "simple", "cipher_text": "940cff78"]
+
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "receive",
+            direction: ._in,
+            fromAddress: "0x7ECe2D2F3B0C1a8f7c3e5E7bD6A1C4f0d2B95109",
+            meta: ["encrypted_comment": encrypted]
+        )))
+
+        XCTAssertNil(activity.encryptedComment)
     }
 
     func test_tronResource_isReadFromMetaTronResourceKey() throws {
@@ -255,6 +316,63 @@ final class MultichainActivityMappingTests: XCTestCase {
         XCTAssertNil(activity.feeType)
         XCTAssertNil(activity.batteryCharges)
     }
+
+    func test_explorerLinks_keepTheTransactionsOfKnownChainsInOrder() throws {
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(
+            activityType: "swap",
+            direction: .out,
+            explorerURLs: [
+                .init(tx_id: "ton:source", chain: .ton, url: "https://tonviewer.com/transaction/source"),
+                .init(tx_id: "new:hash", chain: .unknown, url: "https://example.com/tx/hash"),
+                .init(tx_id: "btc:destination", chain: .btc, url: "https://mempool.space/tx/destination"),
+            ]
+        )))
+
+        XCTAssertEqual(activity.explorerLinks, try [
+            MultichainActivityExplorerLink(
+                transactionId: "ton:source",
+                chain: .ton,
+                url: XCTUnwrap(URL(string: "https://tonviewer.com/transaction/source"))
+            ),
+            MultichainActivityExplorerLink(
+                transactionId: "btc:destination",
+                chain: .btc,
+                url: XCTUnwrap(URL(string: "https://mempool.space/tx/destination"))
+            ),
+        ])
+    }
+
+    func test_explorerLinks_isEmptyWhenBackendOmitsThem() throws {
+        let activity = try XCTUnwrap(MultichainActivity(api: apiActivity(activityType: "swap", direction: .out)))
+
+        XCTAssertEqual(activity.explorerLinks, [])
+    }
+
+    func test_parties_mapAddressAndName() throws {
+        var api = try apiActivity(activityType: "send", direction: .out)
+        api.from_address = "0:deprecated"
+        api.from = .init(address: "0:from")
+        api.to = .init(address: "0:to", name: "alice.ton")
+
+        let activity = try XCTUnwrap(MultichainActivity(api: api))
+
+        XCTAssertEqual(activity.fromAddress, "0:from")
+        XCTAssertNil(activity.fromName)
+        XCTAssertEqual(activity.toAddress, "0:to")
+        XCTAssertEqual(activity.toName, "alice.ton")
+    }
+
+    func test_parties_fallBackToFlatAddressesWhenBackendOmitsThem() throws {
+        var api = try apiActivity(activityType: "send", direction: .out)
+        api.from_address = "0:from"
+        api.to_address = "0:to"
+
+        let activity = try XCTUnwrap(MultichainActivity(api: api))
+
+        XCTAssertEqual(activity.fromAddress, "0:from")
+        XCTAssertEqual(activity.toAddress, "0:to")
+        XCTAssertNil(activity.toName)
+    }
 }
 
 private extension MultichainActivityMappingTests {
@@ -266,6 +384,8 @@ private extension MultichainActivityMappingTests {
         feeType: MultichainAPI.Components.Schemas.ActivityFeeType? = nil,
         feeAmount: String? = nil,
         fee: MultichainAPI.Components.Schemas.ActivityFee? = nil,
+        explorerURLs: [MultichainAPI.Components.Schemas.ActivityExplorerLink]? = nil,
+        fromAddress: String? = nil,
         meta: [String: (any Sendable)?]? = nil
     ) throws -> MultichainAPI.Components.Schemas.Activity {
         try MultichainAPI.Components.Schemas.Activity(
@@ -275,10 +395,12 @@ private extension MultichainActivityMappingTests {
             from_chain: "eth",
             to_chain: "eth",
             direction: direction,
+            from_address: fromAddress,
             fee_type: feeType,
             fee_amount: feeAmount,
             fee: fee,
             tx_ids: ["eth:hash"],
+            explorer_urls: explorerURLs,
             is_spam: isSpam,
             meta: meta.map { try .init(additionalProperties: OpenAPIObjectContainer(unvalidatedValue: $0)) }
         )

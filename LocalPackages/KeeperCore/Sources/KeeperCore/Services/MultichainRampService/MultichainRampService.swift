@@ -16,6 +16,7 @@ public protocol MultichainRampService {
     func getOfframpOrder(orderId: String) async throws -> OffRampOrder
 
     func createMoonPaySession(sandbox: Bool) async throws -> String
+    func getMoonPayPaymentMethods() async throws -> [MoonPayPaymentMethodInfo]
 }
 
 final class MultichainRampServiceImplementation: MultichainRampService {
@@ -75,5 +76,9 @@ final class MultichainRampServiceImplementation: MultichainRampService {
 
     func createMoonPaySession(sandbox: Bool) async throws -> String {
         try await multichainRampAPI.createMoonPaySession(sandbox: sandbox)
+    }
+
+    func getMoonPayPaymentMethods() async throws -> [MoonPayPaymentMethodInfo] {
+        try await multichainRampAPI.getMoonPayPaymentMethods()
     }
 }

@@ -16,7 +16,10 @@ struct BatteryPromocodeInputView: View {
             isValid: viewModel.isValid,
             isFocused: $isFocused
         ) {
+            // The Paste button and the check are taller than a text line; they overhang it
+            // instead of growing the field past its 64 pt.
             trailingAccessory
+                .frame(height: Layout.accessoryHeight)
         }
         .onChange(of: isFocused) { newValue in
             viewModel.isFocused = newValue
@@ -63,5 +66,6 @@ private extension BatteryPromocodeInputView {
     enum Layout {
         static let loaderSize: CGFloat = 16
         static let successIconSize: CGFloat = 28
+        static let accessoryHeight: CGFloat = 24
     }
 }

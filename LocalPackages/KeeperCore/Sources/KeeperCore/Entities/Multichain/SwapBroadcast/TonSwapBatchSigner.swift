@@ -90,7 +90,10 @@ struct TonSwapBatchSigner {
                 reason: "ton batch has no message to sign"
             )
         }
-        input.messages = inputs.flatMap(\.messages)
+        let messages = inputs.flatMap(\.messages)
+        // wallet-core lays a W5 wallet's out actions down in reverse, so it gets them last to first for the
+        // wallet to send them first to last.
+        input.messages = input.walletVersion == .walletV5R1 ? messages.reversed() : messages
         let output: TheOpenNetworkSigningOutput = AnySigner.sign(input: input, coin: .ton)
         guard output.error == .ok else {
             throw .signingFailed(

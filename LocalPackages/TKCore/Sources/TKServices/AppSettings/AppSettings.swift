@@ -106,6 +106,33 @@ public final class AppSettings {
         }
     }
 
+    public var isSwapBatteryPromoShown: Bool {
+        get {
+            userDefaults.bool(forKey: .swapBatteryPromoShown)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .swapBatteryPromoShown)
+        }
+    }
+
+    public var walletAssetsLimit: Int {
+        get {
+            userDefaults.integer(forKey: .walletAssetsLimit)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .walletAssetsLimit)
+        }
+    }
+
+    public var walletEarnLimit: Int {
+        get {
+            userDefaults.integer(forKey: .walletEarnLimit)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .walletEarnLimit)
+        }
+    }
+
     public let dappHostWhiteList: [String] = ["dapp.aeon.xyz"]
 }
 
@@ -120,4 +147,7 @@ private extension String {
     static let addressCopyCount = "address_copy_count"
     static let firstLaunchTimestamp = "first_launch_timestamp"
     static let perpsStoryAccepted = "perps_story_accepted"
+    static let swapBatteryPromoShown = "swap_battery_promo_shown"
+    static let walletAssetsLimit = "wallet_assets_limit"
+    static let walletEarnLimit = "wallet_earn_limit"
 }

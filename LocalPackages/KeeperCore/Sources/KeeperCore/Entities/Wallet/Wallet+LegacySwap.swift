@@ -20,7 +20,7 @@ public extension Wallet {
                 tonAddressType = .tonV4R2
             case .v5R1:
                 tonAddressType = .tonV5R1
-            case .v3R1, .v3R2, .v4R1, .v5Beta:
+            case .v3R1, .v3R2, .v4R1, .v5Beta, .walletTg:
                 return nil
             }
             return try MultichainSwapWallet(

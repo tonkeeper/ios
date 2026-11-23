@@ -72,7 +72,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         } catch {
             self.emulationResult = nil
             await updateFee(emulationResult: nil)
-            return .failure(.failedToCalculateFee)
+            return .failure(.failedToCalculateFee())
         }
     }
 
@@ -121,16 +121,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
                 )
             )
         } catch {
-            if case let .secondOption(transactionError) = error,
-               case .cancelledByUser = transactionError
-            {
-                return .failure(.cancelledByUser)
-            }
-            return .failure(
-                .failedToSendTransaction(
-                    message: error.localizedDescription
-                )
-            )
+            return .failure(TransactionConfirmationError(sendFailure: error))
         }
     }
 

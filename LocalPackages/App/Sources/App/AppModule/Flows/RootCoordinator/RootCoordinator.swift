@@ -49,7 +49,8 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
         self.multichainStartupController = MultichainStartupController(
             authService: multichainAssembly.multichainAuthService,
-            walletSyncController: multichainAssembly.walletSyncController
+            walletSyncController: multichainAssembly.walletSyncController,
+            resumeBatteryMigrations: multichainAssembly.resumeLegacyBatteryMigrations
         )
         self.pushNotificationsManager = PushNotificationManager(
             appSettings: dependencies.coreAssembly.appSettings,
@@ -84,6 +85,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     override func start(deeplink: CoordinatorDeeplink? = nil) {
+        ScreenRenderTracker.shared.launchMark(.rootStart)
         // Push setup kicks off an async registration that can reach the device session, so the
         // device-change handler has to be wired first.
         setupMultichainDeviceChangeHandling()
@@ -339,10 +341,14 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         )
 
         coordinator.didInputPasscode = { [weak self, weak coordinator] passcode in
+            ScreenRenderTracker.shared.resumeLaunch()
+            ScreenRenderTracker.shared.launchMark(.passcodeEntered)
             self?.removeChild(coordinator)
             completion?(passcode)
         }
 
+        ScreenRenderTracker.shared.launchMark(.passcodeShown)
+        ScreenRenderTracker.shared.pauseLaunch()
         coordinator.start()
         addChild(coordinator)
 
@@ -365,6 +371,7 @@ private extension RootCoordinator {
     }
 
     func openOnboarding(deeplink: CoordinatorDeeplink?) {
+        ScreenRenderTracker.shared.cancelLaunch()
         resolveRaffleUserIfNeeded()
         let module = OnboardingModule(
             dependencies: OnboardingModule.Dependencies(
@@ -493,10 +500,9 @@ private extension RootCoordinator {
         let hasNothingToUnlock = !hasMnemonicWallet && !hasStoredMnemonics
         // Independent second reason: the biometry cache is gone from every storage,
         // marker included, so it was discarded rather than invalidated by an
-        // enrollment change — a storage-version rollback drops it, since the
-        // passcode lives in the storage being switched away from. Turn biometry off
-        // silently: a "biometry changed" notice would be wrong, and the biometry
-        // button could only fail. The user re-enables it in settings.
+        // enrollment change. Turn biometry off silently: a "biometry changed" notice
+        // would be wrong, and the biometry button could only fail. The user
+        // re-enables it in settings.
         let isBiometryCacheDiscarded = mnemonicAccess.isBiometryCacheDiscarded()
         guard hasNothingToUnlock || isBiometryCacheDiscarded else {
             return completion()
@@ -620,6 +626,7 @@ private extension RootCoordinator {
         let firstLaunchTimestamp = appSettings.firstLaunchDate
         guard firstLaunchTimestamp == nil else { return }
         appSettings.firstLaunchDate = Date()
+        BatteryHintAvailability.shared.isAvailable = true
 
         analyticsProvider.log(InstallApp())
     }

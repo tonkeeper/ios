@@ -97,7 +97,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
             throw error
         }
 
-        let selfTransactions = try mapTransactions(selfResponse.transactions)
+        let selfTransactions = try mapTransactions(selfResponse.transactions, wallet: sourceWallet)
         async let availableTonNano = loadAvailableTonNano(wallet: sourceWallet)
 
         let batteryTransactions = await batteryPrep
@@ -167,6 +167,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
             let excessAddress = try resolvedBatteryConfig.excessAddress
             let transactions = try mapTransactions(
                 response.transactions,
+                wallet: wallet,
                 sponsoredExcessAddress: excessAddress
             )
             guard transactions.contains(where: \.sponsored) else { return nil }
@@ -178,6 +179,7 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
 
     private func mapTransactions(
         _ transactions: [MigrationTransactionBody],
+        wallet: Wallet,
         sponsoredExcessAddress: TonSwift.Address? = nil
     ) throws -> [WalletMigrationPreparedTransaction] {
         try transactions.map { transaction in
@@ -205,8 +207,19 @@ final class WalletMigrationServiceImplementation: WalletMigrationService {
                 event: event,
                 totalFees: transaction.resolvedGasSpentNano,
                 totalEquivalent: transaction.emulation.risk.totalEquivalent.map(Double.init),
-                sponsored: transaction.isSponsored
+                sponsored: transaction.isSponsored,
+                validUntil: preparedValidUntil(transaction.boc, wallet: wallet)
             )
+        }
+    }
+
+    private func preparedValidUntil(_ boc: String, wallet: Wallet) -> Date? {
+        do {
+            let validUntil = try WalletMigrationTransactionSigner.validUntil(preparedBodyBOC: boc, wallet: wallet)
+            return Date(timeIntervalSince1970: TimeInterval(validUntil))
+        } catch {
+            Log.migration.w("prepared body valid_until unreadable", error: error)
+            return nil
         }
     }
 

@@ -46,10 +46,15 @@ final class EVMGaslessFeeSelectionTests: XCTestCase {
         XCTAssertEqual(fee.relayerAssetId, GaslessFixtures.usdtId)
     }
 
-    func test_aMethodThatCannotPayIsRenderedInsufficient() {
+    func testShortAndUnavailableMethodsHaveDifferentRecoveryStates() {
         XCTAssertFalse(battery(charges: 3).extraOption.isInsufficient)
         XCTAssertTrue(battery(charges: 3, insufficient: true).extraOption.isInsufficient)
-        XCTAssertTrue(battery(charges: 3, available: false).extraOption.isInsufficient)
+        var unavailableToken = token(usdt, amount: 1)
+        unavailableToken.isAvailable = false
+        for option in [battery(charges: 3, available: false), unavailableToken] {
+            XCTAssertFalse(option.extraOption.isAvailable)
+            XCTAssertFalse(option.extraOption.isInsufficient)
+        }
     }
 
     func test_pricingKeepsTheMethodAndChangesTheAmount() {

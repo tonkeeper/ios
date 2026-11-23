@@ -9,6 +9,8 @@ extension TKBridgeWebViewController.LoadFailure {
             "http_error"
         case .processTerminated:
             "web_content_process_terminated"
+        case .timeout:
+            "timeout"
         }
     }
 

@@ -46,8 +46,8 @@ enum AptabasePropValue: Codable, Equatable {
         }
     }
 
-    /// Failsafe only: `AptabaseTransportProperty.normalized` runs first and flattens everything the SDK
-    /// cannot encode, so both transports see the same props by the time either of them drops anything.
+    /// Failsafe only: `AptabaseTransportProperty.normalized` runs first and flattens everything that
+    /// cannot be encoded.
     static func props(from args: [String: Any]) -> [String: AptabasePropValue] {
         args.reduce(into: [:]) { result, element in
             result[element.key] = AptabasePropValue(analyticsValue: element.value)

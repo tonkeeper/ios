@@ -14,6 +14,8 @@ final class CollectiblesContainerViewController: GenericViewViewController<Colle
     var collectiblesViewController: CollectiblesListViewController? {
         didSet {
             oldValue?.willMove(toParent: nil)
+            // A replaced list keeps no hold on the item the bar shows.
+            oldValue?.lentNavigationItem = nil
             customView.setContentView(nil)
             oldValue?.removeFromParent()
 
@@ -40,7 +42,7 @@ final class CollectiblesContainerViewController: GenericViewViewController<Colle
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+        tkUpdateNavigationBarForHeader(animated: animated)
     }
 
     private func setup() {
@@ -49,6 +51,9 @@ final class CollectiblesContainerViewController: GenericViewViewController<Colle
 
     private func setupCollectiblesViewController() {
         guard isViewLoaded, let collectiblesViewController else { return }
+        if TKLiquidGlass.isEnabled {
+            collectiblesViewController.lentNavigationItem = navigationItem
+        }
         addChild(collectiblesViewController)
         customView.setContentView(collectiblesViewController.view)
         collectiblesViewController.didMove(toParent: self)

@@ -109,6 +109,21 @@ final class BrowserExploreMultichainViewModelImplementation: ObservableObject, B
 
     private var selectedCountry: SelectedCountry = .auto
     private var loadingTask: Task<Void, Never>?
+    private(set) var isLoadingPopularApps = false
+    /// Why the last popular apps load failed, for a revisit of the failed screen.
+    private(set) var popularAppsErrorKind: ScreenRenderErrorKind?
+
+    var hasNothingToLoad: Bool {
+        isDappsDisabled
+    }
+
+    var isShowingPopularApps: Bool {
+        if case .content = state {
+            return true
+        }
+        return false
+    }
+
     private var didStart = false
     private var pendingNetworkChain: MultichainChain?
 
@@ -234,6 +249,7 @@ private extension BrowserExploreMultichainViewModelImplementation {
 
     func loadContentForActiveWallet() {
         loadingTask?.cancel()
+        isLoadingPopularApps = false
         let network: Network = (try? walletStore.activeWallet)?.network ?? .mainnet
         let dappsDisabled = configuration.flag(\.dappsDisabled, network: network)
         isRefreshEnabled = !dappsDisabled
@@ -241,30 +257,46 @@ private extension BrowserExploreMultichainViewModelImplementation {
             state = .empty
         } else if let cached = getCachedPopularApps() {
             state = .content(popularAppsData: cached)
+            ScreenRenderTracker.shared.contentApplied(.cached, for: .browser)
         } else {
             state = .loading
         }
 
-        guard !dappsDisabled else { return }
+        guard !dappsDisabled else {
+            ScreenRenderTracker.shared.contentApplied(.fresh, for: .browser)
+            return
+        }
         loadPopularApps()
     }
 
     func loadPopularApps() {
         loadingTask?.cancel()
+        isLoadingPopularApps = true
         loadingTask = Task { [weak self] in
             await self?.loadPopularAppsFromNetwork()
+            guard !Task.isCancelled else { return }
+            self?.isLoadingPopularApps = false
         }
     }
 
     func loadPopularAppsFromNetwork() async {
         let lang = Locale.current.languageCode ?? "en"
+        let tracker = ScreenRenderTracker.shared
+        tracker.requestStarted(for: .browser)
         do {
             let loaded = try await browserExploreController.loadPopularApps(lang: lang)
+            tracker.requestFinished(for: .browser)
             try Task.checkCancellation()
             state = .content(popularAppsData: loaded)
+            popularAppsErrorKind = nil
+            tracker.contentApplied(.fresh, for: .browser)
         } catch {
             guard !error.isCancelledError else { return }
+            tracker.requestFinished(for: .browser)
             state = .empty
+            let errorKind = ScreenRenderErrorKind(error)
+            popularAppsErrorKind = errorKind
+            tracker.failed(.browser, error: errorKind)
         }
     }
 

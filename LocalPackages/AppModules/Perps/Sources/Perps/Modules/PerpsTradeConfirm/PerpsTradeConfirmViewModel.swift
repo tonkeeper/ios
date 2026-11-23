@@ -31,8 +31,11 @@ struct PerpsConfirmContext {
         )
     }
 
-    func replacingAutoClose(_ autoClose: PerpsAutoClose?) -> PerpsConfirmContext {
-        PerpsConfirmContext(
+    /// A nil `roiInput` keeps the ROI typed for the legs that remain.
+    func replacingAutoClose(_ autoClose: PerpsAutoClose?, roiInput: PerpsAutoCloseROIInput? = nil) -> PerpsConfirmContext {
+        let takeProfitROI = roiInput.map { $0.takeProfit?.value } ?? intent.takeProfitROIPercent
+        let stopLossROI = roiInput.map { $0.stopLoss?.value } ?? intent.stopLossROIPercent
+        return PerpsConfirmContext(
             intent: PerpsOpenMarketIntent(
                 marketId: intent.marketId,
                 side: intent.side,
@@ -40,7 +43,9 @@ struct PerpsConfirmContext {
                 leverage: intent.leverage,
                 maxSlippage: intent.maxSlippage,
                 autoClose: autoClose,
-                limitPrice: intent.limitPrice
+                limitPrice: intent.limitPrice,
+                takeProfitROIPercent: autoClose?.takeProfit == nil ? nil : takeProfitROI,
+                stopLossROIPercent: autoClose?.stopLoss == nil ? nil : stopLossROI
             ),
             sizeDecimals: sizeDecimals,
             priceDecimals: priceDecimals,
@@ -75,12 +80,20 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
     let iconURL: URL?
 
     var onConfirm: (() -> Void)?
+    var onSwipeBegan: (() -> Void)?
+    var onSwipeAbandoned: (() -> Void)?
     var onClose: (() -> Void)?
     var onBack: (() -> Void)?
     var onEditAutoClose: (@MainActor () async -> Void)?
     var onAutoCloseStale: ((PerpsAutoCloseValidation.ConfirmStaleKind) -> Void)?
     var onRefreshReview: (@MainActor () async -> Void)?
-    var reviewLifetime: TimeInterval = 5
+    var onOpenLoyalty: (() -> Void)?
+    var loyaltyReward: (@MainActor (_ volumeUsd: Double) async throws -> String?)? {
+        didSet { refreshLoyaltyReward() }
+    }
+
+    var reviewLifetime: TimeInterval = 1
+    var loyaltyRewardInterval: TimeInterval = 3
 
     var openConfirmContext: PerpsConfirmContext? {
         guard case let .open(context) = subject else { return nil }
@@ -92,9 +105,14 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
     private var sizeChangeSessionCancellable: AnyCancellable?
     private var markPrice: Double?
     private var reviewRefresh = ReviewRefresh.idle(since: Date())
+    private(set) var awaitsReview = false
     private var isOnScreen = false
     private var autoCloseEditTask: Task<Void, Never>?
     private var announcedAutoCloseStale: PerpsAutoCloseValidation.ConfirmStaleKind?
+    private var loyaltyRewardShown: (volume: Double, ohms: String)?
+    private var loyaltyRewardVolume: Double?
+    private var loyaltyRewardAskedAt: Date?
+    private var loyaltyRewardTask: Task<Void, Never>?
     let format: PerpsFormatting
 
     convenience init(
@@ -164,14 +182,19 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
 
     // MARK: - Intent
 
+    func swipeBegan() {
+        onSwipeBegan?()
+    }
+
+    func swipeAbandoned() {
+        onSwipeAbandoned?()
+    }
+
     func confirm() {
         guard isConfirmationEnabled, autoCloseEditTask == nil else { return }
         isConfirmationEnabled = false
         isProcessing = true
-        let shown = rows
-            .map { "\($0.title)=\($0.value)\($0.subValue.map { " (\($0))" } ?? "")" }
-            .joined(separator: "; ")
-        Log.perps.i("confirm \(titleText): \(shown)")
+        PerpsOperationLog.event("ui_confirm", outcome: "started", fields: ["flow": "trade", "market_id": String(subject.marketId), "action": subject.action])
         onConfirm?()
     }
 
@@ -180,14 +203,30 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
         isConfirmationEnabled = true
     }
 
+    /// For an open shown on figures that may no longer hold: the swipe waits for a review read for
+    /// this screen, and the first read starts on appear instead of a second later.
+    func awaitReview() {
+        guard case .open = subject else { return }
+        awaitsReview = true
+        isConfirmationEnabled = false
+        isProcessing = true
+        reviewRefresh = .idle(since: .distantPast)
+        loyaltyRewardTask?.cancel()
+        loyaltyRewardVolume = nil
+    }
+
     func close() {
-        cancelAutoCloseEdit()
+        leave()
         onClose?()
     }
 
     func back() {
-        cancelAutoCloseEdit()
+        leave()
         onBack?()
+    }
+
+    func openLoyalty() {
+        onOpenLoyalty?()
     }
 
     func editAutoClose() {
@@ -216,6 +255,13 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
         autoCloseEditTask = nil
     }
 
+    /// A screen the user left waits for no figures of its own, so a read that fails after that
+    /// cannot end whatever flow is open by then.
+    private func leave() {
+        awaitsReview = false
+        cancelAutoCloseEdit()
+    }
+
     func onAppear() {
         isOnScreen = true
         priceFeed?.subscribe()
@@ -228,17 +274,25 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
         priceFeed?.unsubscribe()
     }
 
-    func updateOpenAutoClose(_ autoClose: PerpsAutoClose?, review: PerpsOpenOrderReview? = nil) {
+    func updateOpenAutoClose(
+        _ autoClose: PerpsAutoClose?,
+        roiInput: PerpsAutoCloseROIInput? = nil,
+        review: PerpsOpenOrderReview? = nil
+    ) {
         guard case var .open(context) = subject else { return }
         if let review { context.review = review }
-        subject = .open(context.replacingAutoClose(autoClose))
+        subject = .open(context.replacingAutoClose(autoClose, roiInput: roiInput))
         refreshRows()
     }
 
     func updateOpenReview(_ review: PerpsOpenOrderReview, for intent: PerpsOpenMarketIntent) {
-        guard isConfirmationEnabled, case var .open(context) = subject, context.intent == intent else { return }
+        guard isConfirmationEnabled || awaitsReview, case var .open(context) = subject, context.intent == intent else { return }
         context.review = review
         subject = .open(context)
+        if awaitsReview {
+            awaitsReview = false
+            restoreConfirmation()
+        }
         refreshRows()
     }
 
@@ -267,7 +321,7 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
 
     private func refreshReviewIfStale() {
         guard isOnScreen,
-              isConfirmationEnabled,
+              isConfirmationEnabled || awaitsReview,
               case let .idle(since) = reviewRefresh,
               Date().timeIntervalSince(since) >= reviewLifetime,
               let onRefreshReview
@@ -290,6 +344,7 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
     // MARK: - Rows
 
     private func refreshRows() {
+        var rows: [Row]
         switch subject {
         case let .open(context):
             rows = Self.makeOpenRows(
@@ -311,7 +366,49 @@ final class PerpsTradeConfirmViewModel: ObservableObject, PerpsTradeConfirmViewM
         case let .marginChange(context):
             rows = Self.makeMarginChangeRows(review: context.review, format: format)
         }
+        if let loyaltyRewardShown, subject.loyaltyVolumeUsd != nil {
+            rows.append(Row(
+                id: .loyaltyReward,
+                title: TKLocales.Loyalty.resistanceReward,
+                value: TKLocales.Loyalty.rewardValue(loyaltyRewardShown.ohms),
+                subValue: nil
+            ))
+        }
+        self.rows = rows
         announceAutoCloseStaleIfNeeded()
+        refreshLoyaltyReward()
+    }
+
+    private func refreshLoyaltyReward() {
+        guard !awaitsReview, let loyaltyReward, let volume = subject.loyaltyVolumeUsd, volume != loyaltyRewardVolume else { return }
+        loyaltyRewardVolume = volume
+        loyaltyRewardTask?.cancel()
+        let delay = loyaltyRewardAskedAt.map { max(0, loyaltyRewardInterval - Date().timeIntervalSince($0)) } ?? 0
+        loyaltyRewardTask = Task { [weak self] in
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+            guard !Task.isCancelled else { return }
+            self?.loyaltyRewardAskedAt = Date()
+            let shown: (volume: Double, ohms: String)?
+            do {
+                shown = try await loyaltyReward(volume).map { (volume, $0) }
+            } catch {
+                guard let self, !Task.isCancelled else { return }
+                loyaltyRewardVolume = nil
+                if loyaltyRewardShown?.volume != volume {
+                    loyaltyRewardShown = nil
+                }
+                refreshRows()
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
+            let changed = loyaltyRewardShown?.ohms != shown?.ohms
+            loyaltyRewardShown = shown
+            if changed {
+                refreshRows()
+            }
+        }
     }
 
     private func announceAutoCloseStaleIfNeeded() {
@@ -377,9 +474,34 @@ private extension PerpsTradeConfirmViewModel {
             }
         }
 
+        var action: String {
+            switch self {
+            case .open: "open"
+            case .close: "close"
+            case .sizeChange: "size_change"
+            case .marginChange: "margin_change"
+            }
+        }
+
         var limitPrice: Double? {
             guard case let .open(context) = self else { return nil }
             return context.intent.limitPrice
+        }
+
+        var loyaltyVolumeUsd: Double? {
+            let notionalUsd: Double? = switch self {
+            case let .open(context): context.review.notionalUsd
+            case let .close(context): context.review.notionalUsd
+            case .sizeChange, .marginChange: nil
+            }
+            return notionalUsd.map(Self.cents)
+        }
+
+        private static func cents(_ usd: Double) -> Double {
+            var value = Decimal(string: String(usd)) ?? Decimal(usd)
+            var cents = Decimal()
+            NSDecimalRound(&cents, &value, 2, .down)
+            return NSDecimalNumber(decimal: cents).doubleValue
         }
 
         var isInteractionEnabled: Bool {
@@ -394,19 +516,25 @@ private extension PerpsTradeConfirmViewModel {
         }
 
         var titleText: String {
+            let isLong = side == .long
             switch self {
             case .open:
-                "\(TKLocales.Perps.Confirm.open) \(position)"
+                return isLong ? TKLocales.Perps.Confirm.openLong(symbol) : TKLocales.Perps.Confirm.openShort(symbol)
             case .close:
-                "\(TKLocales.Perps.Confirm.close) \(position)"
+                return isLong ? TKLocales.Perps.Confirm.closeLong(symbol) : TKLocales.Perps.Confirm.closeShort(symbol)
             case let .sizeChange(state, _):
-                state.prepared.review.direction == .add
-                    ? TKLocales.Perps.EditPosition.addTitle(position)
-                    : TKLocales.Perps.EditPosition.reduceTitle(position)
+                return PerpsSizeChangeViewModel.titleText(
+                    direction: state.prepared.review.direction,
+                    side: side,
+                    symbol: symbol
+                )
             case let .marginChange(context):
-                context.review.direction == .add
-                    ? TKLocales.Perps.AdjustMargin.addConfirmTitle(position)
-                    : TKLocales.Perps.AdjustMargin.reduceConfirmTitle(position)
+                switch (context.review.direction, side) {
+                case (.add, .long): return TKLocales.Perps.AdjustMargin.addConfirmTitleLong(symbol)
+                case (.add, .short): return TKLocales.Perps.AdjustMargin.addConfirmTitleShort(symbol)
+                case (.reduce, .long): return TKLocales.Perps.AdjustMargin.reduceConfirmTitleLong(symbol)
+                case (.reduce, .short): return TKLocales.Perps.AdjustMargin.reduceConfirmTitleShort(symbol)
+                }
             }
         }
 
@@ -426,11 +554,6 @@ private extension PerpsTradeConfirmViewModel {
             case let .sizeChange(state, _): state.prepared.review.side
             case let .marginChange(context): context.review.side
             }
-        }
-
-        private var position: String {
-            let sideText = side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
-            return "\(sideText) \(symbol)"
         }
     }
 }

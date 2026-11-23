@@ -22,6 +22,7 @@ final class HermesSocketHub: @unchecked Sendable {
         let description: String?
     }
 
+    private let deviceAuth: DeviceAuthProviding
     private let makeSocket: @Sendable () async throws -> any HermesSocket
     private let sleep: @Sendable (TimeInterval) async -> Void
     private let lock = NSLock()
@@ -33,19 +34,24 @@ final class HermesSocketHub: @unchecked Sendable {
     private var skipBackoff = false
     private var healthy = false
     private var nextRequestId: Int64 = 0
+    private var staleToken: String?
+    private var renewedToken: String?
+    private var renewing = false
 
-    convenience init(hostProvider: APIHostProvider, urlSession: URLSession) {
+    convenience init(hostProvider: APIHostProvider, urlSession: URLSession, deviceAuth: DeviceAuthProviding) {
         let socketFactory = HermesSocketFactory(hostProvider: hostProvider, urlSession: urlSession)
-        self.init(makeSocket: { try await socketFactory.makeTask() })
+        self.init(deviceAuth: deviceAuth, makeSocket: { try await socketFactory.makeTask() })
     }
 
     init(
         sleep: @escaping @Sendable (TimeInterval) async -> Void = { seconds in
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
         },
+        deviceAuth: DeviceAuthProviding,
         makeSocket: @escaping @Sendable () async throws -> any HermesSocket
     ) {
         self.sleep = sleep
+        self.deviceAuth = deviceAuth
         self.makeSocket = makeSocket
     }
 
@@ -72,6 +78,7 @@ final class HermesSocketHub: @unchecked Sendable {
             socket?.cancel(with: .normalClosure, reason: nil)
             socket = nil
             holders = [:]
+            renewing = false
         }
     }
 
@@ -125,6 +132,14 @@ final class HermesSocketHub: @unchecked Sendable {
         while !Task.isCancelled {
             let healthy = await connectOnce()
             guard !Task.isCancelled else { return }
+            let renewed = lock.withLock {
+                defer { renewing = false }
+                return renewing
+            }
+            if renewed {
+                backoff = Self.minBackoff
+                continue
+            }
             for listener in lock.withLock({ Array(listeners.values) }) {
                 await listener.onDisconnected()
             }
@@ -150,6 +165,7 @@ final class HermesSocketHub: @unchecked Sendable {
     }
 
     private func connectOnce() async -> Bool {
+        guard let session = await deviceSession() else { return false }
         let socket: any HermesSocket
         do {
             socket = try await makeSocket()
@@ -158,6 +174,10 @@ final class HermesSocketHub: @unchecked Sendable {
             return false
         }
         socket.resume()
+        guard await logIn(socket, token: session.accessToken) else {
+            socket.cancel(with: .goingAway, reason: nil)
+            return false
+        }
         let connected: [HermesSocketListener]? = lock.withLock {
             guard !Task.isCancelled, !listeners.isEmpty else { return nil }
             self.socket = socket
@@ -191,6 +211,14 @@ final class HermesSocketHub: @unchecked Sendable {
         }
         defer { pingTask.cancel() }
 
+        let renewIn = session.expiresAt.timeIntervalSinceNow - Self.tokenRefreshLead
+        let renewTask = renewIn > 0 ? Task { [weak self, sleep] in
+            await sleep(renewIn)
+            guard !Task.isCancelled else { return }
+            self?.renewToken(session.accessToken, of: socket)
+        } : nil
+        defer { renewTask?.cancel() }
+
         do {
             while !Task.isCancelled {
                 guard let data = try await socket.receive().data else { continue }
@@ -200,11 +228,113 @@ final class HermesSocketHub: @unchecked Sendable {
                 }
             }
         } catch {
-            if !Task.isCancelled {
+            if !Task.isCancelled, !lock.withLock({ renewing }) {
                 Log.perps.w("hermes session failed — \(error)")
             }
         }
         return lock.withLock { healthy }
+    }
+
+    private func deviceSession() async -> DeviceAuthSession? {
+        let stale = lock.withLock { staleToken }
+        do {
+            var session: DeviceAuthSession
+            if let stale {
+                session = try await deviceAuth.recoverSession(invalidating: stale)
+                lock.withLock { renewedToken = session.accessToken }
+            } else {
+                session = try await deviceAuth.session()
+            }
+            if session.expiresAt.timeIntervalSinceNow < Self.tokenRefreshLead {
+                session = try await deviceAuth.recoverSession(invalidating: session.accessToken)
+            }
+            lock.withLock { staleToken = nil }
+            return session
+        } catch {
+            if !Task.isCancelled {
+                Log.perps.w("hermes has no device session — \(error)")
+            }
+            return nil
+        }
+    }
+
+    private func logIn(_ socket: any HermesSocket, token: String) async -> Bool {
+        let reqid = lock.withLock {
+            nextRequestId += 1
+            return nextRequestId
+        }
+        let request: Data
+        do {
+            request = try HermesRequest.encode(
+                channel: HermesChannel.login,
+                name: HermesMessageName.login,
+                reqid: reqid,
+                payload: ["token": token]
+            )
+        } catch {
+            Log.perps.w("hermes login encode failed — \(error)")
+            return false
+        }
+        socket.send(.string(String(decoding: request, as: UTF8.self))) { error in
+            guard let error else { return }
+            Log.perps.w("hermes login send failed — \(error)")
+            socket.cancel(with: .goingAway, reason: nil)
+        }
+        let timeout = Task { [sleep] in
+            await sleep(Self.loginTimeout)
+            guard !Task.isCancelled else { return }
+            socket.cancel(with: .goingAway, reason: nil)
+        }
+        defer { timeout.cancel() }
+        return await withTaskCancellationHandler {
+            await loginReply(reqid, token: token, on: socket)
+        } onCancel: {
+            socket.cancel(with: .goingAway, reason: nil)
+        }
+    }
+
+    private func loginReply(_ reqid: Int64, token: String, on socket: any HermesSocket) async -> Bool {
+        do {
+            while true {
+                guard let data = try await socket.receive().data,
+                      let envelope = try? JSONDecoder().decode(HermesInboundEnvelope<ErrorPayload>.self, from: data),
+                      let message = envelope.message,
+                      message.reqid == reqid
+                else { continue }
+                let code = message.payload?.code
+                if message.name == HermesMessageName.loginResponse || code == HermesErrorCode.alreadyAuthenticated {
+                    lock.withLock { renewedToken = nil }
+                    return true
+                }
+                if code == HermesErrorCode.invalidCredentials {
+                    lock.withLock {
+                        if token != renewedToken {
+                            staleToken = token
+                        }
+                    }
+                    Log.perps.w("hermes login rejected — invalid credentials")
+                    return false
+                }
+                Log.perps.w("hermes login failed — \(message.name ?? "") \(code ?? "") \(message.payload?.description ?? "")")
+                return false
+            }
+        } catch {
+            if !Task.isCancelled {
+                Log.perps.w("hermes login failed — \(error)")
+            }
+            return false
+        }
+    }
+
+    private func renewToken(_ token: String, of socket: any HermesSocket) {
+        let isCurrent = lock.withLock {
+            guard self.socket === socket else { return false }
+            staleToken = token
+            renewing = true
+            return true
+        }
+        guard isCurrent else { return }
+        socket.cancel(with: .normalClosure, reason: nil)
     }
 
     private func ping() {
@@ -223,6 +353,8 @@ final class HermesSocketHub: @unchecked Sendable {
     }
 
     private static let pingInterval: TimeInterval = 120
+    private static let loginTimeout: TimeInterval = 30
+    private static let tokenRefreshLead: TimeInterval = 120
     private static let minBackoff: TimeInterval = 1
     private static let maxBackoff: TimeInterval = 30
 }

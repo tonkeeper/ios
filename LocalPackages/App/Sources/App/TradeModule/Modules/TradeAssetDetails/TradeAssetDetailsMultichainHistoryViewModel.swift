@@ -7,6 +7,7 @@ import UIKit
 
 struct TradeAssetDetailsMultichainHistoryPreview {
     let multichainState: MultichainWalletState
+    let activities: [MultichainActivity]
     let items: [MultichainHistoryActivityItem]
 }
 
@@ -30,13 +31,16 @@ final class TradeAssetDetailsMultichainHistoryViewModel: ObservableObject, Trade
     private let itemMapper: MultichainHistoryActivityItemMapper
 
     private var task: Task<Void, Never>?
+    private var decryptionObservation: AnyCancellable?
 
     init(
         assetId: String,
         multichainState: MultichainWalletState,
         multichainService: MultichainService,
+        realtimeManager: MultichainRealtimeManager,
         amountFormatter: AmountFormatter,
-        dateFormatter: DateFormatter
+        dateFormatter: DateFormatter,
+        encryptedComments: MultichainEncryptedComments? = nil
     ) {
         self.assetId = assetId
         self.multichainState = multichainState
@@ -44,8 +48,23 @@ final class TradeAssetDetailsMultichainHistoryViewModel: ObservableObject, Trade
         self.itemMapper = MultichainHistoryActivityItemMapper(
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
-            timeStyle: .dateAndTime
+            timeStyle: .dateAndTime,
+            hidesAmounts: { false },
+            encryptedComments: encryptedComments
         )
+        decryptionObservation = encryptedComments?.$revision
+            .dropFirst()
+            .sink { [weak self] _ in
+                guard let self, let state else { return }
+                self.state = makePreview(activities: state.activities)
+            }
+
+        realtimeManager.addHistoryInvalidationObserver(self) { observer, walletId in
+            Task { @MainActor in
+                guard observer.multichainState.walletId == walletId else { return }
+                observer.scheduleUpdate()
+            }
+        }
     }
 
     deinit {
@@ -83,14 +102,12 @@ private extension TradeAssetDetailsMultichainHistoryViewModel {
     }
 
     func makePreview(activities: [MultichainActivity]) -> TradeAssetDetailsMultichainHistoryPreview {
-        let items = activities
-            .filter { !$0.isSpam }
-            .prefix(Constants.previewLimit)
-            .map(itemMapper.makeItem)
+        let activities = activities.filter { !$0.isSpam }
 
         return TradeAssetDetailsMultichainHistoryPreview(
             multichainState: multichainState,
-            items: Array(items)
+            activities: activities,
+            items: itemMapper.makeItems(activities.prefix(Constants.previewLimit))
         )
     }
 

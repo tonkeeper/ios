@@ -15,10 +15,10 @@ final class URLEarnVaultTests: XCTestCase {
         XCTAssertEqual(url.earnVaultAssetId, "base/mainnet/erc20/0xabc")
     }
 
-    func test_bscVaultTakesTheBnbChain() throws {
+    func test_bscVaultIsABep20Token() throws {
         let url = try XCTUnwrap(URL(string: "https://vaults.fyi/earn/bsc/0xFD5840Cd36d94D7229439859C0112a4185BC0255"))
 
-        XCTAssertEqual(url.earnVaultAssetId, "bnb/mainnet/erc20/0xfd5840cd36d94d7229439859c0112a4185bc0255")
+        XCTAssertEqual(url.earnVaultAssetId, "bsc/mainnet/bep20/0xfd5840cd36d94d7229439859c0112a4185bc0255")
     }
 
     func test_vaultOnANetworkTheWalletDoesNotHaveHasNoId() throws {

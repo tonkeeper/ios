@@ -18,6 +18,7 @@ extension URL {
         else {
             return nil
         }
-        return "\(chain.rawValue)/mainnet/erc20/\(components[earnIndex + 2].lowercased())"
+        let tokenType = chain == .bsc ? "bep20" : "erc20"
+        return "\(chain.rawValue)/mainnet/\(tokenType)/\(components[earnIndex + 2].lowercased())"
     }
 }

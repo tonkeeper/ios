@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKUIKit
 import UIKit
 
 protocol BatteryPromocodeInputModuleOutput: AnyObject {
@@ -73,10 +74,12 @@ final class BatteryPromocodeInputViewModel: ObservableObject, BatteryPromocodeIn
     }
 
     func paste() {
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        text = pasteboardString
-        isFocused = false
-        resolve(text: pasteboardString)
+        Task { @MainActor [weak self] in
+            guard let self, let pasteboardString = await UIPasteboard.general.readString() else { return }
+            text = pasteboardString
+            isFocused = false
+            resolve(text: pasteboardString)
+        }
     }
 
     func endEditing() {

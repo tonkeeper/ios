@@ -32,12 +32,18 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/eventIDParameter`.
         public typealias EventIDParameter = Swift.String
+        /// - Remark: Generated from `#/components/parameters/publicKeyParameter`.
+        public typealias PublicKeyParameter = Swift.String
         /// - Remark: Generated from `#/components/parameters/i18n`.
         public typealias I18n = Swift.String
         /// - Remark: Generated from `#/components/parameters/limitQuery`.
         public typealias LimitQuery = Swift.Int
         /// - Remark: Generated from `#/components/parameters/offsetQuery`.
         public typealias OffsetQuery = Swift.Int
+        /// number of days before expiration
+        ///
+        /// - Remark: Generated from `#/components/parameters/periodQuery`.
+        public typealias PeriodQuery = Swift.Int
         /// nft collection
         ///
         /// - Remark: Generated from `#/components/parameters/collectionQuery`.

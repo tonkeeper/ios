@@ -44,6 +44,8 @@ public actor WalletNFTStore {
 
     private var observers = [WeakWalletNFTStoreObserver]()
     private var loadingTask: Task<WalletNFTs?, Never>?
+    /// Every balance reload loads the NFTs again, so an unchanged list is not written again.
+    private var savedNFTs: WalletNFTs?
 
     private nonisolated let wallet: Wallet
     private let repository: WalletNFTsRepository
@@ -130,7 +132,9 @@ public actor WalletNFTStore {
                 _state = State(loadingState: .idle, nfts: _state.nfts)
                 return _state.nfts
             }
-            try? self.repository.save(nfts: loadedNFTs, wallet: wallet)
+            if loadedNFTs != savedNFTs, (try? self.repository.save(nfts: loadedNFTs, wallet: wallet)) != nil {
+                savedNFTs = loadedNFTs
+            }
             _state = State(loadingState: .idle, nfts: loadedNFTs)
             return loadedNFTs
         }

@@ -1,7 +1,9 @@
+import ChainKit
 import Foundation
 import HTTPTypes
 @testable import KeeperCore
 import OpenAPIRuntime
+import PerpsModels
 import TKFeatureFlags
 import TKLogging
 import TonAPI
@@ -76,6 +78,199 @@ final class APILoggingTests: XCTestCase {
                 error.logDescription
             )
         }
+    }
+
+    func testFundingHTTPLogsCorrelationAtInfoWithoutSignedBodies() async throws {
+        let backend = RecordingLogBackend()
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/funding/quote")
+        request.headerFields[.contentType] = "application/json"
+        let body = #"{"operation":{"signature":"secret-signature"}}"#
+        let returned = try await withRecording(backend, minimumSeverity: .info) {
+            try await PerpsOperationLog.$context.withValue(["trace_id": "funding-trace", "flow": "deposit"]) {
+                try await APILoggingMiddleware(bodyLoggedOperations: ["quoteDeposit"]).intercept(
+                    request, body: HTTPBody(body), baseURL: URL(string: "https://perps.test")!, operationID: "quoteDeposit"
+                ) { _, _, _ in
+                    self.response(status: 200, json: body)
+                }
+            }
+        }
+        let forwarded = try await Data(collecting: XCTUnwrap(returned.1), upTo: 4096)
+        XCTAssertEqual(forwarded, Data(body.utf8))
+        let record = try XCTUnwrap(backend.records.first)
+        XCTAssertEqual(record.extraInfo["trace_id"], "funding-trace")
+        XCTAssertTrue(record.message.contains("quoteDeposit POST /funding/quote → 200"))
+        XCTAssertNil(record.extraInfo["requestBody"])
+        XCTAssertNil(record.extraInfo["responseBody"])
+        let errorEnvelope = #"{"code":"upstream_unavailable","details":{"reason":"lighter_unavailable"}}"#
+        _ = try await withRecording(backend, minimumSeverity: .info) {
+            try await PerpsOperationLog.$context.withValue(["trace_id": "funding-trace", "flow": "deposit"]) {
+                try await send(response: response(status: 503, json: errorEnvelope))
+            }
+        }
+        let refusal = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(refusal.extraInfo["trace_id"], "funding-trace")
+        XCTAssertEqual(refusal.extraInfo["responseBody"], errorEnvelope)
+        XCTAssertNil(refusal.extraInfo["requestBody"])
+    }
+
+    func testFundingStatusPollDoesNotLogEverySuccessfulHTTPRead() async throws {
+        let backend = RecordingLogBackend()
+        _ = try await withRecording(backend, minimumSeverity: .info) {
+            try await PerpsOperationLog.$context.withValue(["trace_id": "poll-trace", "poll": "true"]) {
+                try await send()
+            }
+        }
+        XCTAssertTrue(backend.records.isEmpty)
+    }
+
+    func testFundingFailureBeforeQuoteKeepsContextAndSource() async throws {
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            do {
+                try await PerpsOperationLog.step("review_input", fields: ["flow": "deposit", "asset_id": "sol/mainnet/coin", "amount": "0.0383"]) {
+                    throw PerpsDepositQuoteError.malformedKeyRegistration("trading key unavailable")
+                }
+            } catch {}
+        }
+        let started = try XCTUnwrap(backend.records.first)
+        let failed = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(failed.extraInfo["trace_id"], started.extraInfo["trace_id"])
+        XCTAssertNotNil(failed.extraInfo["trace_id"])
+        XCTAssertEqual(failed.extraInfo["asset_id"], "sol/mainnet/coin")
+        XCTAssertEqual(failed.extraInfo["amount"], "0.0383")
+        XCTAssertEqual(failed.extraInfo["source"], "wallet")
+        XCTAssertEqual(failed.extraInfo["outcome"], "failed")
+        XCTAssertTrue(failed.extraInfo["error"]?.contains("trading key unavailable") == true)
+    }
+
+    func testFundingCancellationIsLoggedAndContextDoesNotLeak() async throws {
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            do {
+                try await PerpsOperationLog.step("quote", fields: ["flow": "withdraw"]) {
+                    throw CancellationError()
+                }
+            } catch {}
+            XCTAssertTrue(PerpsOperationLog.context.isEmpty)
+        }
+        let cancelled = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(cancelled.severity, .info)
+        XCTAssertEqual(cancelled.extraInfo["outcome"], "cancelled")
+    }
+
+    func testFundingNestedStepsRetainTraceAndRestoreParentFields() async {
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            await PerpsOperationLog.step("review", fields: ["flow": "deposit", "asset_id": "sol/mainnet/coin"]) {
+                let trace = PerpsOperationLog.context["trace_id"]
+                await PerpsOperationLog.step("quote", fields: ["quote_id": "q-1"]) {
+                    XCTAssertEqual(PerpsOperationLog.context["trace_id"], trace)
+                    XCTAssertEqual(PerpsOperationLog.context["asset_id"], "sol/mainnet/coin")
+                }
+                XCTAssertNil(PerpsOperationLog.context["quote_id"])
+            }
+        }
+        XCTAssertEqual(Set(backend.records.compactMap { $0.extraInfo["trace_id"] }).count, 1)
+    }
+
+    func testConcurrentFundingAttemptsHaveIndependentTraces() async {
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            await withTaskGroup(of: Void.self) { group in
+                for wallet in ["wallet-a", "wallet-b"] {
+                    group.addTask {
+                        await PerpsOperationLog.step("review", fields: ["flow": "deposit", "wallet_id": wallet]) {
+                            await Task.yield()
+                            PerpsOperationLog.event("quote", outcome: "started", source: "backend")
+                        }
+                    }
+                }
+            }
+        }
+        let records = backend.records
+        let first = Set(records.filter { $0.extraInfo["wallet_id"] == "wallet-a" }.compactMap { $0.extraInfo["trace_id"] })
+        let second = Set(records.filter { $0.extraInfo["wallet_id"] == "wallet-b" }.compactMap { $0.extraInfo["trace_id"] })
+        XCTAssertEqual(first.count, 1)
+        XCTAssertEqual(second.count, 1)
+        XCTAssertTrue(first.isDisjoint(with: second))
+    }
+
+    func testFundingSourceDistinguishesBackendLighterAndAmbiguousTransport() {
+        XCTAssertEqual(PerpsAPIError.badStatus(.init(httpStatus: 400, code: "validation_error", message: nil, retryable: false, reason: "lighter_rejected")).operationLogSource, "lighter")
+        XCTAssertEqual(PerpsAPIError.badStatus(.undecoded(500, message: "internal")).operationLogSource, "backend")
+        XCTAssertEqual(PerpsAPIError.transport(underlying: URLError(.timedOut)).operationLogSource, "network")
+        XCTAssertEqual(PerpsAPIError.transport(underlying: nil).operationLogSource, "unknown")
+        let refusal = PerpsAPIError.badStatus(.init(httpStatus: 400, code: "validation_error", message: nil, retryable: false, reason: "amount_too_low", minUsdAmount: "2.95"))
+        XCTAssertEqual(refusal.operationLogFields["http_status"], "400")
+        XCTAssertEqual(refusal.operationLogFields["reason"], "amount_too_low")
+        XCTAssertEqual(refusal.operationLogFields["min_usd_amount"], "2.95")
+    }
+
+    func testTradingExecutionCallbackRestoresTraceBeforeMappingOriginalFailure() async throws {
+        let failure = PerpsAPIError.badStatus(.init(httpStatus: 400, code: "validation_error", message: nil, retryable: false, reason: "lighter_rejected"))
+        let api = AccountStubAPI(account: .init(), onNextNonce: { throw failure })
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            let relay = await PerpsOperationLog.withContext(fields: ["flow": "trade", "trace_id": "trade-trace", "operation_id": "op", "market_id": "7"]) {
+                PerpsExecutionRelay(lane: PerpsSubmitLane(api: api, apiKeyIndex: 3), persistState: { _, _ in })
+            }
+            XCTAssertTrue(PerpsOperationLog.context.isEmpty)
+            let error: Error? = await withCheckedContinuation { continuation in
+                relay.nextNonce(scope: PerpsScope(walletId: "wallet", venue: "lighter", chainId: 304, environment: "mainnet", accountIndex: 42, keyBindingId: "42/3", expectedPublicKey: "public")) { _, error in
+                    continuation.resume(returning: error)
+                }
+            }
+            XCTAssertNotNil(error)
+        }
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.extraInfo["trace_id"], "trade-trace")
+        XCTAssertEqual(record.extraInfo["operation_id"], "op")
+        XCTAssertEqual(record.extraInfo["market_id"], "7")
+        XCTAssertEqual(record.extraInfo["delegate_stage"], "nextNonce")
+        XCTAssertEqual(record.extraInfo["source"], "lighter")
+        XCTAssertEqual(record.extraInfo["reason"], "lighter_rejected")
+        XCTAssertEqual(record.extraInfo["domain_error"], "serverRejected")
+    }
+
+    func testTradingJournalPreservesTraceAcrossIOAndOmitsSignedPayload() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let journal = PerpsPendingJournal(walletId: "wallet", environment: "test", directoryURL: directory)
+        let pending = PerpsPendingTradingAction(
+            operationId: "trade-op", walletId: "wallet", marketId: 7, side: .long, payload: .close,
+            orderRefs: [.init(role: .close, clientOrderIndex: 17)],
+            signedSteps: [.init(stepId: "close", attemptId: "attempt", nonce: 5, transactionExpiryUnixMs: 1000, txType: 14, txInfo: "secret-signed-payload", txHash: "public-hash", state: .sending)]
+        )
+        let backend = RecordingLogBackend()
+        try await withRecording(backend) {
+            try await PerpsOperationLog.withContext(fields: ["flow": "trade", "trace_id": "trade-op", "review_id": "review"]) {
+                _ = try await journal.savePendingIfAbsentWithStatus(pending)
+            }
+        }
+        let record = try XCTUnwrap(backend.records.last)
+        XCTAssertEqual(record.extraInfo["trace_id"], "trade-op")
+        XCTAssertEqual(record.extraInfo["review_id"], "review")
+        XCTAssertEqual(record.extraInfo["outcome"], "saved")
+        XCTAssertEqual(record.extraInfo["action"], "close")
+        XCTAssertEqual(record.extraInfo["step_states"], "close:sending")
+        XCTAssertEqual(record.extraInfo["tx_hashes"], "public-hash")
+        XCTAssertEqual(record.extraInfo["order_indices"], "close:17")
+        XCTAssertFalse(record.extraInfo.values.contains { $0.contains("secret-signed-payload") })
+    }
+
+    func testTradingUnknownCancellationAndNoopKeepDistinctOutcomes() async {
+        let backend = RecordingLogBackend()
+        await withRecording(backend) {
+            await PerpsOperationLog.withContext(fields: ["flow": "trade", "operation_id": "op"]) {
+                PerpsOperationLog.event("submit", outcome: "failed", error: PerpsTradingError.unknown("secret-payload"))
+                PerpsOperationLog.event("submit", outcome: "failed", error: PerpsTradingError.activationCanceled)
+                PerpsOperationLog.event("prepare", outcome: "noop", error: PerpsTradingError.nothingToChange)
+            }
+        }
+        XCTAssertEqual(backend.records.map { $0.extraInfo["outcome"] }, ["unknown", "cancelled", "noop"])
+        XCTAssertEqual(backend.records.map(\.severity), [.warning, .info, .info])
+        XCTAssertEqual(backend.records.first?.extraInfo["source"], "unknown")
+        XCTAssertFalse(backend.records.flatMap { $0.extraInfo.values }.contains { $0.contains("secret-payload") })
     }
 
     // MARK: - Middleware
@@ -408,10 +603,19 @@ private extension APILoggingTests {
 }
 
 private final class RecordingLogBackend: LogBackend, @unchecked Sendable {
-    private(set) var records = [LogRecord]()
+    private let lock = NSLock()
+    private var stored = [LogRecord]()
+
+    var records: [LogRecord] {
+        lock.lock()
+        defer { lock.unlock() }
+        return stored
+    }
 
     func log(_ record: LogRecord) {
-        records.append(record)
+        lock.lock()
+        defer { lock.unlock() }
+        stored.append(record)
     }
 }
 

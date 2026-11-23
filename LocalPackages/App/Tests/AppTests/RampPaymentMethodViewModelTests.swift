@@ -313,6 +313,10 @@ private final class MultichainRampServiceFake: MultichainRampService, @unchecked
     func createMoonPaySession(sandbox _: Bool) async throws -> String {
         fatalError("unused")
     }
+
+    func getMoonPayPaymentMethods() async throws -> [MoonPayPaymentMethodInfo] {
+        fatalError("unused")
+    }
 }
 
 private final class CurrenciesServiceFake: CurrenciesService {

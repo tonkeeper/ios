@@ -14,10 +14,8 @@ let package = Package(
     dependencies: [
         .package(path: "../AppUI"),
         .package(path: "../../LightweightCharts"),
-        .package(path: "../../PerpsModels"),
+        .package(path: "../../TKBase"),
         .package(path: "../../TKCoordinator"),
-        .package(path: "../../TKLocalize"),
-        .package(path: "../../TKLogging"),
         .package(path: "../../TKUIKit"),
     ],
     targets: [
@@ -26,10 +24,8 @@ let package = Package(
             dependencies: [
                 .product(name: "AppUI", package: "AppUI"),
                 .product(name: "LightweightCharts", package: "LightweightCharts"),
-                .product(name: "PerpsModels", package: "PerpsModels"),
+                .product(name: "TKBase", package: "TKBase"),
                 .product(name: "TKCoordinator", package: "TKCoordinator"),
-                .product(name: "TKLocalize", package: "TKLocalize"),
-                .product(name: "TKLogging", package: "TKLogging"),
                 .product(name: "TKUIKit", package: "TKUIKit"),
             ],
             swiftSettings: [
@@ -38,7 +34,10 @@ let package = Package(
         ),
         .testTarget(
             name: "PerpsTests",
-            dependencies: ["Perps"],
+            dependencies: [
+                "Perps",
+                .product(name: "TKTestSupport", package: "TKBase"),
+            ],
             swiftSettings: [
                 .treatAllWarnings(as: .error),
             ]

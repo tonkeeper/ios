@@ -29,6 +29,7 @@ public struct MultichainRaffle: Equatable, Sendable, Identifiable {
     public let cta: MultichainRaffleCTA
     public let progress: MultichainRaffleProgress?
     public let banner: MultichainRaffleBanner?
+    public let leaderboard: MultichainRaffleLeaderboard?
     /// Onboarding-style stories attached to the raffle; the active phase can override them.
     public let stories: [MultichainRaffleStory]
 
@@ -51,6 +52,7 @@ public struct MultichainRaffle: Equatable, Sendable, Identifiable {
         cta: MultichainRaffleCTA,
         progress: MultichainRaffleProgress?,
         banner: MultichainRaffleBanner? = nil,
+        leaderboard: MultichainRaffleLeaderboard? = nil,
         stories: [MultichainRaffleStory] = []
     ) {
         self.id = id
@@ -71,6 +73,7 @@ public struct MultichainRaffle: Equatable, Sendable, Identifiable {
         self.cta = cta
         self.progress = progress
         self.banner = banner
+        self.leaderboard = leaderboard
         self.stories = stories
     }
 }
@@ -148,6 +151,14 @@ public struct MultichainRaffleBanner: Equatable, Sendable {
         self.description = description
         self.imageURL = imageURL
         self.button = button
+    }
+}
+
+public struct MultichainRaffleLeaderboard: Equatable, Sendable {
+    public let points: Decimal
+
+    public init(points: Decimal) {
+        self.points = points
     }
 }
 

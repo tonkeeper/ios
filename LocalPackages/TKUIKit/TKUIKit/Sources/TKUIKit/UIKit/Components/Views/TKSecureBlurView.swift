@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 
 public final class TKSecureBlurView: UIView {
@@ -42,4 +43,14 @@ public final class TKSecureBlurView: UIView {
         let blurEffect = UIBlurEffect(style: style)
         return UIVisualEffectView(effect: blurEffect)
     }
+}
+
+public struct TKSecureBlurViewRepresentable: UIViewRepresentable {
+    public init() {}
+
+    public func makeUIView(context: Context) -> TKSecureBlurView {
+        TKSecureBlurView()
+    }
+
+    public func updateUIView(_ uiView: TKSecureBlurView, context: Context) {}
 }

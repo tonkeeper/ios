@@ -19,13 +19,15 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
         batteryCalculation: BatteryCalculation,
         configuration: Configuration,
         chainKitService: ChainKitService,
-        mnemonicAccess: MnemonicAccess
+        mnemonicAccess: MnemonicAccess,
+        offersBatteryMigration: @escaping (Wallet) async -> Bool = { _ in false }
     ) {
         self.transferService = transferService
         self.balanceService = balanceService
         batteryChargesReader = BatteryChargesReader(
             batteryService: batteryService,
-            batteryCalculation: batteryCalculation
+            batteryCalculation: batteryCalculation,
+            offersMigration: offersBatteryMigration
         )
         self.batteryCalculation = batteryCalculation
         self.configuration = configuration
@@ -66,11 +68,10 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
         ]
     }
 
-    func send(
+    func prepare(
         context: MultichainSwapFeeContext,
-        confirmed: MultichainSwapRelayedFee,
-        passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String? {
+        confirmed: MultichainSwapRelayedFee
+    ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapPreparedRelay {
         let payloadId = context.payloadId
         guard case let .batteryCharges(confirmedCharges) = confirmed else {
             throw .internal(reason: "a ton swap can only be relayed against battery charges")
@@ -78,7 +79,7 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
         guard let prepared = await preparedTransfer(context: context) else {
             throw .internal(reason: "battery cannot pay for swap payload \(payloadId)")
         }
-        let availableCharges = await batteryChargesReader.availableCharges(wallet: context.wallet)
+        let availableCharges = await batteryChargesReader.currentCharges(wallet: context.wallet)
         try MultichainSwapBatteryFeeRules.requireCharges(
             confirmedCharges,
             available: availableCharges,
@@ -96,35 +97,22 @@ struct MultichainSwapTonBatteryFeeEngine: MultichainSwapRelayedFeeEngine {
             available: availableCharges,
             payloadId: payloadId
         )
-        let signedTransactions = try await relay(
-            prepared.transfer,
-            wallet: context.wallet,
-            payloadId: payloadId,
-            passcodeProvider: passcodeProvider
-        ).get()
-        guard let boc = signedTransactions.bocs.first else {
-            throw .broadcastFailed(
-                payloadId: payloadId,
-                kind: .unknown,
-                reason: "battery relay returned no signed message"
-            )
-        }
-        do {
-            return try TonMessageHash.hex(signedBocBase64: boc)
-        } catch {
-            Log.multichainSwap.w(
-                "battery swap hash resolution failed",
-                error: error,
-                extraInfo: ["payloadId": payloadId]
-            )
-            // The relayer already holds the message, so this reads as an unknown outcome rather than
-            // an internal error: signing again could land a second swap.
-            throw .broadcastFailed(
-                payloadId: payloadId,
-                kind: .unknown,
-                reason: "failed to derive the hash of a relayed swap: \(error.logDescription)"
-            )
-        }
+        let relayed = try await relayedTransfer(prepared.transfer, wallet: context.wallet, payloadId: payloadId)
+        return MultichainSwapPreparedRelay(
+            signables: { intent in
+                try [.ton(
+                    relayed.request,
+                    of: context.wallet,
+                    account: context.sourceAccount(on: .ton),
+                    intent: intent,
+                    fidelity: .exactWrap
+                )]
+            },
+            expiresAt: relayed.transfer.transferData.timeout.map { Date(timeIntervalSince1970: TimeInterval($0)) },
+            send: { signer throws(MultichainSwapExecutionFailure) in
+                try await send(relayed, wallet: context.wallet, payloadId: payloadId, signer: signer)
+            }
+        )
     }
 }
 
@@ -133,6 +121,14 @@ private extension MultichainSwapTonBatteryFeeEngine {
         let transfer: Transfer
         let attachedAmount: BigUInt
         let emulation: BatteryEmulation
+    }
+
+    /// The transfer the battery relays, built once: what is signed is exactly this, and every
+    /// review reads it from the same `request`.
+    struct RelayedTransfer {
+        let transfer: TransferService.PreparedTransfer
+        let walletTransfer: WalletTransfer
+        let request: SignableOperation.TonRequest
     }
 
     struct BatteryEmulation {
@@ -146,6 +142,7 @@ private extension MultichainSwapTonBatteryFeeEngine {
         let isBatterySendEnabled = await configuration.isBatterySendEnable(network: context.wallet.network)
         guard MultichainSwapBatteryFeeRules.isBatteryAllowed(
             wallet: context.wallet,
+            chain: .ton,
             isBatteryEnabled: isBatteryEnabled,
             isBatterySendEnabled: isBatterySendEnabled
         ), case .tonJetton = MultichainSwapBatteryFeeRules.relayedAsset(
@@ -203,7 +200,7 @@ private extension MultichainSwapTonBatteryFeeEngine {
                 context: context,
                 deposit: deposit
             )
-        case .tron, .evm:
+        case .tron, .evm, .evmBatch, .solana:
             return nil
         }
     }
@@ -399,54 +396,148 @@ private extension MultichainSwapTonBatteryFeeEngine {
         )
     }
 
-    /// The excess address handed over here is only a fallback: the send path replaces it with the
-    /// battery's own, which is what the emulation above was priced against.
-    func relay(
+    /// The excess address handed over here is only a fallback: `TransferService.prepare` replaces
+    /// it with the battery's own, which is what the emulation was priced against.
+    func relayedTransfer(
         _ transfer: Transfer,
         wallet: Wallet,
-        payloadId: String,
-        passcodeProvider: @escaping () async -> String?
-    ) async -> Result<SignedTransactions, MultichainSwapExecutionFailure> {
+        payloadId: String
+    ) async throws(MultichainSwapExecutionFailure) -> RelayedTransfer {
         let excessAddress: Address
         do {
             excessAddress = try wallet.address
         } catch {
-            return .failure(
-                .preparationFailed(
-                    kind: .internalError,
-                    reason: "failed to resolve the wallet address of a relayed swap"
-                )
+            throw .preparationFailed(
+                kind: .internalError,
+                reason: "failed to resolve the wallet address of a relayed swap"
             )
         }
+        let prepared: TransferService.PreparedTransfer
         do {
-            let signedTransactions = try await transferService.sendTransaction(
+            prepared = try await transferService.prepare(
                 wallet: wallet,
                 transfer: transfer,
-                transferType: .battery(excessAddress: excessAddress),
-                signClosure: { transferData in
-                    await sign(
-                        transferData: transferData,
-                        wallet: wallet,
-                        payloadId: payloadId,
-                        passcodeProvider: passcodeProvider
-                    )
-                }
+                transferType: .battery(excessAddress: excessAddress)
             )
-            return .success(signedTransactions)
         } catch {
-            switch error {
-            case let .firstOption(transferError):
-                return .failure(failure(transferError, payloadId: payloadId))
-            case let .secondOption(signFailure):
-                return .failure(signFailure)
-            }
+            throw Self.relayFailure(error, payloadId: payloadId)
+        }
+        do {
+            let walletTransfer = try await UnsignedTransferBuilder(transferData: prepared.transferData)
+                .createUnsignedWalletTransfer(wallet: wallet)
+            return try RelayedTransfer(
+                transfer: prepared,
+                walletTransfer: walletTransfer,
+                request: SignableOperation.TonRequest(signing: walletTransfer)
+            )
+        } catch {
+            throw Self.signingFailure(error, payloadId: payloadId)
         }
     }
 
-    /// Only `sendFailed` leaves the outcome unknown — the relayer may already hold the message — so
-    /// it is the one failure that must not read as "nothing happened" to a caller deciding whether
-    /// to offer a retry.
-    func failure(
+    func send(
+        _ relayed: RelayedTransfer,
+        wallet: Wallet,
+        payloadId: String,
+        signer: MultichainTransferSigner
+    ) async throws(MultichainSwapExecutionFailure) -> String? {
+        guard case let .mnemonic(passcodeProvider) = signer else {
+            throw .internal(reason: "a hardware wallet pays its ton swaps itself")
+        }
+        let signedTransactions = try await sign(
+            relayed,
+            wallet: wallet,
+            payloadId: payloadId,
+            passcodeProvider: passcodeProvider
+        )
+        let broadcast: SignedTransactions
+        do {
+            broadcast = try await transferService.broadcast(signedTransactions, wallet: wallet, prepared: relayed.transfer)
+        } catch {
+            throw Self.relayFailure(error, payloadId: payloadId)
+        }
+        guard let boc = broadcast.bocs.first else {
+            throw .broadcastFailed(
+                payloadId: payloadId,
+                kind: .unknown,
+                reason: "battery relay returned no signed message"
+            )
+        }
+        if let relayerMessageHash = broadcast.relayerMessageHash(for: boc) {
+            return relayerMessageHash
+        }
+        do {
+            return try TonMessageHash.hex(signedBocBase64: boc)
+        } catch {
+            Log.multichainSwap.w(
+                "battery swap hash resolution failed",
+                error: error,
+                extraInfo: ["payloadId": payloadId]
+            )
+            // The relayer already holds the message, so this reads as an unknown outcome rather than
+            // an internal error: signing again could land a second swap.
+            throw .broadcastFailed(
+                payloadId: payloadId,
+                kind: .unknown,
+                reason: "failed to derive the hash of a relayed swap: \(error.logDescription)"
+            )
+        }
+    }
+
+    func sign(
+        _ relayed: RelayedTransfer,
+        wallet: Wallet,
+        payloadId: String,
+        passcodeProvider: () async -> String?
+    ) async throws(MultichainSwapExecutionFailure) -> SignedTransactions {
+        guard let passcode = await passcodeProvider() else {
+            throw .canceled
+        }
+        do {
+            let mnemonic = try await mnemonicAccess.getMnemonic(wallet: wallet, passcode: passcode)
+            let keyPair = try mnemonic.toKeyPair()
+            let signed = try TransferSigner.signWalletTransfer(
+                relayed.walletTransfer,
+                wallet: wallet,
+                seqno: relayed.transfer.transferData.seqno,
+                signer: WalletTransferSecretKeySigner(secretKey: keyPair.privateKey.data)
+            )
+            let boc = try signed.toBoc().base64EncodedString()
+            // A hash that cannot be derived has to fail here, while nothing has been handed over:
+            // after the relay it would leave a sent swap the screen is free to send again.
+            _ = try TonMessageHash.hex(signedBocBase64: boc)
+            return SignedTransactions(
+                boc: boc,
+                batterySendProof: chainKitService.batterySendProof(
+                    wallet: wallet,
+                    mnemonic: mnemonic.mnemonicWords.joined(separator: " "),
+                    boc: boc
+                )
+            )
+        } catch {
+            throw Self.signingFailure(error, payloadId: payloadId)
+        }
+    }
+
+    static func signingFailure(_ error: any Error, payloadId: String) -> MultichainSwapExecutionFailure {
+        Log.multichainSwap.w(
+            "battery swap signing failed",
+            error: error,
+            extraInfo: ["payloadId": payloadId]
+        )
+        return .signingFailed(
+            payloadId: payloadId,
+            kind: .signInternalError,
+            reason: "failed to sign a relayed swap: \(error.localizedDescription)"
+        )
+    }
+}
+
+extension MultichainSwapTonBatteryFeeEngine {
+    /// A failed send leaves the outcome unknown — the relayer may already hold the message — so it must not
+    /// read as "nothing happened" to a caller deciding whether to offer a retry. A relayer that refused for
+    /// lack of funds did not take it, and that refusal reads as one.
+    static func relayFailure(
         _ error: TransferError,
         payloadId: String
     ) -> MultichainSwapExecutionFailure {
@@ -456,12 +547,12 @@ private extension MultichainSwapTonBatteryFeeEngine {
             extraInfo: ["payloadId": payloadId]
         )
         switch error {
-        case let .sendFailed(message):
-            return .broadcastFailed(
-                payloadId: payloadId,
-                kind: .unknown,
-                reason: "battery relay rejected the swap: \(message ?? "no message")"
-            )
+        case let .sendFailed(message, refusal):
+            let reason = "battery relay rejected the swap: \(message ?? "no message")"
+            guard refusal?.isFundsShortage == true else {
+                return .broadcastFailed(payloadId: payloadId, kind: .unknown, reason: reason)
+            }
+            return .broadcastRefused(payloadId: payloadId, kind: .insufficientBalance, reason: reason)
         case .nothingToSend,
              .unsupportedTransfer,
              .failedToCreateTransferData,
@@ -470,56 +561,6 @@ private extension MultichainSwapTonBatteryFeeEngine {
             return .preparationFailed(
                 kind: .internalError,
                 reason: "battery relay could not build the swap: \(error.localizedDescription)"
-            )
-        }
-    }
-
-    func sign(
-        transferData: TransferData,
-        wallet: Wallet,
-        payloadId: String,
-        passcodeProvider: () async -> String?
-    ) async -> Result<SignedTransactions, MultichainSwapExecutionFailure> {
-        guard let passcode = await passcodeProvider() else {
-            return .failure(.canceled)
-        }
-        do {
-            let mnemonic = try await mnemonicAccess.getMnemonic(wallet: wallet, passcode: passcode)
-            let keyPair = try mnemonic.toKeyPair()
-            let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
-                .createUnsignedWalletTransfer(wallet: wallet)
-            let signed = try TransferSigner.signWalletTransfer(
-                walletTransfer,
-                wallet: wallet,
-                seqno: transferData.seqno,
-                signer: WalletTransferSecretKeySigner(secretKey: keyPair.privateKey.data)
-            )
-            let boc = try signed.toBoc().base64EncodedString()
-            // A hash that cannot be derived has to fail here, while nothing has been handed over:
-            // after the relay it would leave a sent swap the screen is free to send again.
-            _ = try TonMessageHash.hex(signedBocBase64: boc)
-            return .success(
-                SignedTransactions(
-                    boc: boc,
-                    batterySendProof: chainKitService.batterySendProof(
-                        wallet: wallet,
-                        mnemonic: mnemonic.mnemonicWords.joined(separator: " "),
-                        boc: boc
-                    )
-                )
-            )
-        } catch {
-            Log.multichainSwap.w(
-                "battery swap signing failed",
-                error: error,
-                extraInfo: ["payloadId": payloadId]
-            )
-            return .failure(
-                .signingFailed(
-                    payloadId: payloadId,
-                    kind: .signInternalError,
-                    reason: "failed to sign a relayed swap: \(error.localizedDescription)"
-                )
             )
         }
     }

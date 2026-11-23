@@ -40,6 +40,9 @@ public final class TKFeatureFlagsImplementation {
 extension TKFeatureFlagsImplementation: TKFeatureFlags {
     public subscript(flag: FeatureFlag) -> Bool {
         get {
+            if let requirement = flag.requirement, !self[requirement] {
+                return false
+            }
             if let overrideValue = devOverride(for: flag) {
                 return overrideValue
             }

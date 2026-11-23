@@ -35,6 +35,7 @@ public struct BatteryRechargeMethod: Codable {
     public let imageURL: URL?
     public let minBootstrapValue: NSDecimalNumber?
     public let rate: NSDecimalNumber
+    public let chargesRate: String?
     public let symbol: String
     public let decimals: Int
     public let supportGasless: Bool
@@ -54,6 +55,7 @@ public struct BatteryRechargeMethod: Codable {
         case imageURL
         case minBootstrapValue
         case rate
+        case chargesRate
         case symbol
         case decimals
         case supportGasless
@@ -64,6 +66,7 @@ public struct BatteryRechargeMethod: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         token = try container.decode(Token.self, forKey: .token)
         imageURL = try container.decodeIfPresent(URL.self, forKey: .imageURL)
+        chargesRate = try container.decodeIfPresent(String.self, forKey: .chargesRate)
         symbol = try container.decode(String.self, forKey: .symbol)
         decimals = try container.decode(Int.self, forKey: .decimals)
         supportGasless = try container.decode(Bool.self, forKey: .supportGasless)
@@ -88,5 +91,6 @@ public struct BatteryRechargeMethod: Codable {
         try container.encode(supportRecharge, forKey: .supportRecharge)
         try container.encodeIfPresent(minBootstrapValue?.stringValue, forKey: .minBootstrapValue)
         try container.encode(rate.stringValue, forKey: .rate)
+        try container.encodeIfPresent(chargesRate, forKey: .chargesRate)
     }
 }

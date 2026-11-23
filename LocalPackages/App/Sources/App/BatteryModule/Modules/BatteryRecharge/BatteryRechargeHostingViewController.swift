@@ -2,7 +2,12 @@ import SwiftUI
 import TKUIKit
 import UIKit
 
-final class BatteryRechargeHostingViewController: TKHostingController<BatteryRechargeScreen> {
+@MainActor
+protocol BatteryRechargePickerHosting: AnyObject {
+    func setPaymentMethodsLoading(_ loading: Bool)
+}
+
+final class BatteryRechargeHostingViewController: TKHostingController<BatteryRechargeScreen>, BatteryRechargePickerHosting {
     private let viewModel: BatteryRechargeViewModelImplementation
 
     init(
@@ -26,11 +31,15 @@ final class BatteryRechargeHostingViewController: TKHostingController<BatteryRec
         fatalError("init(coder:) has not been implemented")
     }
 
+    func setPaymentMethodsLoading(_ loading: Bool) {
+        viewModel.isLoadingPaymentMethods = loading
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        viewModel.didTapClose = { [weak self] in
-            self?.dismiss(animated: true)
+        if viewModel.didTapClose == nil {
+            viewModel.didTapClose = { [weak self] in self?.dismiss(animated: true) }
         }
         viewModel.endEditing = { [weak self] in
             self?.view.endEditing(true)

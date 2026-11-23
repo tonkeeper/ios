@@ -56,7 +56,7 @@ public final class TKActionLabel: UILabel {
         resetColors()
         if let touch = touches.first,
            let item = getActionItem(touch: touch),
-           item == self.touchedActionItem
+           isTouched(item)
         {
             item.action()
         }
@@ -65,13 +65,25 @@ public final class TKActionLabel: UILabel {
 
     override public func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         resetColors()
+        // A tap another recognizer took, as a screen's keyboard-dismissing tap does, still acts; a touch
+        // cancelled for anything else, a scroll, a long press or the system, does not.
         if let touch = touches.first,
+           Self.isTakenByTap(touch),
            let item = getActionItem(touch: touch),
-           item == self.touchedActionItem
+           isTouched(item)
         {
             item.action()
         }
         self.touchedActionItem = nil
+    }
+
+    /// Matched by its text: the label can be handed new items for the same links while the finger is down.
+    private func isTouched(_ item: ActionItem) -> Bool {
+        item.text == touchedActionItem?.text
+    }
+
+    private static func isTakenByTap(_ touch: UITouch) -> Bool {
+        touch.gestureRecognizers?.contains { $0 is UITapGestureRecognizer && $0.state == .ended } ?? false
     }
 
     private func getActionItem(touch: UITouch) -> ActionItem? {

@@ -18,8 +18,10 @@ import TKLocalize
     }
 
     static let codePriority: [MultichainSwapProviderErrorCode] = [
+        .walletScreened,
         .countryBlocked,
         .minAmountNotMet,
+        .insufficientBalance,
         .noRoute,
         .assetNotSupported,
         .providerUnavailable,
@@ -28,10 +30,14 @@ import TKLocalize
 
     private static func message(for code: MultichainSwapProviderErrorCode?) -> String {
         switch code {
+        case .walletScreened:
+            return TKLocales.MultichainSwap.ProviderError.walletScreened
         case .countryBlocked:
             return TKLocales.MultichainSwap.ProviderError.countryBlocked
         case .minAmountNotMet:
             return TKLocales.MultichainSwap.ProviderError.minAmountNotMet
+        case .insufficientBalance:
+            return TKLocales.MultichainSwap.Screen.Confirm.Error.insufficientBalance
         case .noRoute:
             return TKLocales.NativeSwap.Quote.Rate.pairUnavailable
         case .assetNotSupported:

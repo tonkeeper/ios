@@ -154,6 +154,7 @@ enum TransactionLiveActivityMock {
                     expectedBaseSize: isOpen ? 0.015 : 0.5
                 ),
                 marketSymbol: isOpen ? "BTC" : "ETH",
+                markPrice: isOpen ? 96000 : 3400,
                 status: isResolved ? .confirmed : .pending
             )
         }
@@ -187,10 +188,10 @@ enum TransactionLiveActivityMock {
             toAddress: nil,
             outToken: token("USDT", chain: .ton),
             outAmount: "25000000",
-            outAmountUsd: nil,
+            outAmountUsd: 25,
             inToken: token("USDT", chain: .tron),
             inAmount: "24800000",
-            inAmountUsd: nil,
+            inAmountUsd: 24.8,
             feeToken: nil,
             feeAmount: nil,
             feeAmountUsd: nil,
@@ -224,10 +225,10 @@ enum TransactionLiveActivityMock {
             toAddress: isIncoming ? nil : "UQDGQ7uTp6a4Bq8tCVlq8UlHBq5DBXL4OLllNaD-BdZ_H7CE",
             outToken: isIncoming ? nil : token(isSwap ? "USDT" : "TON", chain: chain),
             outAmount: isSwap ? "12500000" : isIncoming ? nil : "1250000000",
-            outAmountUsd: nil,
+            outAmountUsd: isSwap ? 12.5 : isIncoming ? nil : 3.4,
             inToken: isSwap || isIncoming ? token(isSwap ? "TON" : "USDT", chain: chain) : nil,
             inAmount: isSwap ? "4500000000" : isIncoming ? "72000000" : nil,
-            inAmountUsd: nil,
+            inAmountUsd: isSwap ? 12.2 : isIncoming ? 72 : nil,
             feeToken: nil,
             feeAmount: nil,
             feeAmountUsd: nil,
@@ -251,8 +252,13 @@ enum TransactionLiveActivityMock {
     }
 
     private nonisolated static func token(_ symbol: String, chain: MultichainChain) -> MultichainAssetDetails {
-        MultichainAssetDetails(
-            assetId: "mock:\(symbol.lowercased())",
+        let assetId = switch (symbol, chain) {
+        case ("TON", .ton): "ton/mainnet/coin"
+        case ("USDT", .tron): "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+        default: "mock:\(symbol.lowercased())"
+        }
+        return MultichainAssetDetails(
+            assetId: assetId,
             chain: chain,
             name: symbol,
             symbol: symbol,

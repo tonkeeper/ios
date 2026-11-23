@@ -1,6 +1,7 @@
 import AppUI
 import BigInt
 import KeeperCore
+import OperationReviewModels
 import SwiftUI
 import TKFeatureFlags
 import TKLocalize
@@ -19,6 +20,7 @@ struct WithdrawDisplayInfo {
     let networkType: String
     let estimatedDurationSeconds: Int?
     let withdrawalFeeUsd: Double?
+    let recipientExtraId: String?
 }
 
 @MainActor
@@ -32,6 +34,7 @@ protocol TransactionConfirmationOutput: AnyObject {
     var didConfirmTransaction: ((TransactionConfirmationModel) -> Void)? { get set }
     var didFailTransaction: ((TransactionConfirmationModel, any AnalyticsError) -> Void)? { get set }
     var didCancelTransaction: (() -> Void)? { get set }
+    var didWaitForFee: (() -> Void)? { get set }
     var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)? { get set }
     var didRequestOpenFeeRefill: ((_ extraType: TransactionConfirmationModel.ExtraType) -> Void)? { get set }
     var didDetectInsufficientMultichainFee: ((MultichainNativeFeeShortage) -> Void)? { get set }
@@ -45,6 +48,8 @@ protocol TransactionConfirmationOutput: AnyObject {
 protocol TransactionConfirmationViewModel: AnyObject {
     var didUpdateState: ((ConfirmActionState) -> Void)? { get set }
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)? { get set }
+    /// A fresh consent for each confirm attempt, asked on the screen.
+    var consent: (() -> OperationConsent)? { get set }
     func viewDidLoad()
     func didTapCloseButton()
 }
@@ -62,12 +67,14 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     var didConfirmTransaction: ((TransactionConfirmationModel) -> Void)?
     var didFailTransaction: ((TransactionConfirmationModel, any AnalyticsError) -> Void)?
     var didCancelTransaction: (() -> Void)?
+    var didWaitForFee: (() -> Void)?
     var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)?
     var didRequestOpenFeeRefill: ((_ extraType: TransactionConfirmationModel.ExtraType) -> Void)?
     var didDetectInsufficientMultichainFee: ((MultichainNativeFeeShortage) -> Void)?
     var didDetectInsufficientTronFee: ((TronFeeShortage) -> Void)?
     var didClose: (() -> Void)?
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)?
+    var consent: (() -> OperationConsent)?
 
     // MARK: - TransactionConfirmationViewModel
 
@@ -89,7 +96,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     func didTapCloseButton() {
-        updateTask?.cancel()
+        updateTask.cancel()
         confirmTask?.cancel()
         didClose?()
     }
@@ -122,7 +129,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     private var usdtFiatRate: Rates.Rate?
     private var walletBalance: KeeperCore.WalletBalance?
 
-    private var updateTask: Task<Void, Never>?
+    private let updateTask = TransactionConfirmationUpdateTask()
     private var confirmTask: Task<Void, Never>?
 
     // MARK: - Dependencies
@@ -207,10 +214,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         guard !isRetryUnsafe else {
             return
         }
-        updateTask?.cancel()
-        updateTask = Task { [weak self] in
+        updateTask.replace { [weak self] in
             guard let self else { return }
-            defer { updateTask = nil }
 
             state = .idle
             confirmationController.setLoading()
@@ -383,6 +388,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             walletRow(transaction: transaction),
             recipientRow(transaction: transaction),
             recipientAddressRow(transaction: transaction),
+            memoRow(),
             assetChainRow(transaction: transaction),
             networkRow(),
             amountRow(transaction: transaction, rate: amountRate, currency: currency),
@@ -396,27 +402,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     private func handleError(_ error: TransactionConfirmationError) {
-        let text: String
-        switch error {
-        case .failedToCalculateFee:
-            text = "Failed to calculate fee"
-        case let .failedToSendTransaction(message):
-            text = message ?? "Failed to send transaction"
-        case let .multichainTransactionFailure(failure):
-            text = failure.transactionConfirmationUserMessage
-        case .failedToSign:
-            text = "Failed to sign"
-        case .cancelledByUser:
-            text = "Cancelled"
+        guard let text = error.userMessage else {
+            return
         }
-
         ToastPresenter.showToast(configuration: .defaultConfiguration(text: text))
     }
 
     private static func copyInteraction(_ value: String) -> ConfirmActionRow.Interaction {
         .tap {
             UIPasteboard.general.string = value
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
             ToastPresenter.showToast(configuration: .copied)
         }
     }
@@ -470,6 +464,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             id: "assetChain",
             title: TKLocales.Ramp.Deposit.network,
             value: .text(chain.addressConfiguration.title, subtitle: chain.tokenType)
+        )
+    }
+
+    private func memoRow() -> ConfirmActionRow? {
+        guard let memo = withdrawDisplayInfo?.recipientExtraId, !memo.isEmpty else { return nil }
+        return ConfirmActionRow(
+            id: "memo",
+            title: TKLocales.TransactionConfirmation.memo,
+            value: .text(memo),
+            interaction: Self.copyInteraction(memo)
         )
     }
 
@@ -534,7 +538,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         guard let comment = transaction.comment, !comment.isEmpty else { return nil }
         return ConfirmActionRow(
             id: "comment",
-            title: TKLocales.TransactionConfirmation.comment,
+            title: transaction.isCommentEncrypted ? TKLocales.TransactionConfirmation.encryptedComment : TKLocales.TransactionConfirmation.comment,
             value: .text(comment),
             interaction: Self.copyInteraction(comment)
         )
@@ -633,7 +637,13 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         currency: Currency
     ) -> ConfirmActionRow? {
         guard case let .staking(staking) = transaction.transaction else { return nil }
-        let reserve = staking.pool.implementation.temporaryReserve
+        let reserve = switch staking.flow {
+        case .deposit:
+            staking.pool.implementation.depositExtraFee
+        case .withdraw:
+            staking.pool.implementation.temporaryReserve
+        }
+        guard reserve > 0 else { return nil }
         let token = TonToken.ton
         let reserveFormatted = amountFormatter.format(
             amount: reserve,
@@ -655,6 +665,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             )
         }
         let hint = switch staking.flow {
+        case .withdraw where staking.pool.implementation.keepsWithdrawalFee:
+            TKLocales.TransactionConfirmation.TemporaryReserve.whalesUnstakeHint(reserveFormatted)
         case .withdraw:
             TKLocales.TransactionConfirmation.TemporaryReserve.unstakeHint(reserveFormatted)
         case .deposit:
@@ -682,6 +694,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         // disabled with no way to top up.
         let canOpenFeePicker = transaction.availableExtraTypes.count > 1
             || isSelectedFeeInsufficient(transaction: transaction)
+            || transaction.isSelectedFeeUnavailable
         switch transaction.extraState {
         case .loading:
             value = .loading
@@ -700,10 +713,18 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             if canOpenFeePicker {
                 let primaryText: String
                 let tokenSymbol: String?
+                var shortage: String?
                 switch feeDetails.kind {
                 case .battery:
-                    primaryText = "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"
+                    primaryText = transaction.isSelectedFeeUnavailable
+                        ? TKLocales.Multichain.Transaction.Error.failedToCalculateFee
+                        : feeFormatted.topValue
                     tokenSymbol = TKLocales.TronUsdtFees.Common.ItemTitle.battery
+                    if isSelectedFeeInsufficient(transaction: transaction), let walletBalance {
+                        shortage = TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnoughCharges(
+                            "\(batteryChargesBalance(walletBalance: walletBalance))"
+                        )
+                    }
 
                 case let .token(_, _, symbol, _):
                     if let fiatValue = feeFormatted.bottomValue {
@@ -713,8 +734,17 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                         primaryText = "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"
                         tokenSymbol = nil
                     }
+                    if selectedFeeRefill(transaction) != nil {
+                        shortage = TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnough(symbol)
+                    }
                 }
-                value = .feeOption(primaryText, token: tokenSymbol, showsPicker: true)
+                value = .feeOption(
+                    primaryText,
+                    token: tokenSymbol,
+                    showsPicker: true,
+                    subtitle: shortage,
+                    isShortage: shortage != nil
+                )
             } else {
                 let tronFeeBalanceAvailability = tronFeeBalanceAvailabilityText(
                     transaction: transaction,
@@ -785,6 +815,25 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     private func actionBar(model: TransactionConfirmationModel) -> ConfirmActionBarState {
+        if let refill = selectedFeeRefill(model) {
+            let title = if case .battery = refill {
+                TKLocales.MultichainSwap.Screen.Confirm.topUpBattery
+            } else {
+                TKLocales.FeeMethodPicker.deposit
+            }
+            return ConfirmActionBarState(
+                kind: .button(title: title),
+                isEnabled: true,
+                process: state,
+                successTitle: TKLocales.Result.success,
+                failureTitle: TKLocales.Result.failure,
+                resetToken: sliderResetToken,
+                appearance: TKSlider.Appearance(review: model.review),
+                onConfirm: { [weak self] in
+                    self?.didRequestOpenFeeRefill?(refill)
+                }
+            )
+        }
         let kind: ConfirmActionBarState.Kind = if configurationAssembly.configuration.isConfirmButtonInsteadSlider {
             .button(title: confirmButtonTitle(transaction: model.transaction))
         } else {
@@ -797,6 +846,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             successTitle: TKLocales.Result.success,
             failureTitle: TKLocales.Result.failure,
             resetToken: sliderResetToken,
+            appearance: TKSlider.Appearance(review: model.review),
             onConfirm: { [weak self] in
                 self?.confirmAction(model: model)
             }
@@ -1055,6 +1105,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         tonRate: Rates.Rate?,
         trxRate: Rates.Rate?
     ) -> FeeOptionPresentation {
+        guard extraOption?.isAvailable != false else {
+            return FeeOptionPresentation(description: TKLocales.Multichain.Transaction.Error.failedToCalculateFee, isEnabled: false)
+        }
         let description = extraOption.flatMap { option in
             self.textFormatter.formatFeeOptionDescription(
                 feeKind: self.feeCalculator.feeKind(
@@ -1143,6 +1196,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         transaction: TransactionConfirmationModel,
         extraOption: TransactionConfirmationModel.ExtraOption?
     ) -> Bool {
+        guard extraOption?.isAvailable != false else { return false }
         guard case let .transfer(.multichain(asset)) = transaction.transaction,
               asset.asset.chain == .ton,
               case let .gasless(_, feeAmount) = extraOption?.value,
@@ -1157,7 +1211,21 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         guard case .extra = transaction.extraState else {
             return false
         }
-        return !isSelectedFeeInsufficient(transaction: transaction)
+        return !transaction.isSelectedFeeUnavailable && !isSelectedFeeInsufficient(transaction: transaction)
+    }
+
+    /// The picked method is short and can be refilled, so the button goes to its top-up instead of confirming.
+    private func selectedFeeRefill(_ transaction: TransactionConfirmationModel) -> TransactionConfirmationModel.ExtraType? {
+        guard isNetworkFeePickerTransaction(transaction),
+              !transaction.isSelectedFeeUnavailable,
+              case let .extra(extra) = transaction.extraState,
+              isSelectedFeeInsufficient(transaction: transaction)
+        else {
+            return nil
+        }
+        let extraType = extra.value.extraType
+        let extraOption = transaction.extraOptions.first { $0.type == extraType }
+        return isFeeOptionRefillable(transaction: transaction, extraOption: extraOption) ? extraType : nil
     }
 
     private func isSelectedFeeInsufficient(transaction: TransactionConfirmationModel) -> Bool {
@@ -1281,7 +1349,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             let didCancelTransaction = self.didCancelTransaction
             let result = await withTaskCancellationHandler(
                 operation: {
-                    await self.runConfirmAction(model: model)
+                    await self.makeConfirmRun().run(model: model)
                 },
                 onCancel: {
                     didCancelTransaction?()
@@ -1290,6 +1358,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             guard !Task.isCancelled else { return }
 
             switch result {
+            case .feeQuoteLoading:
+                sliderResetToken += 1
+                state = .idle
+                didWaitForFee?()
             case .cancelledByUser:
                 sliderResetToken += 1
                 state = .idle
@@ -1301,7 +1373,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 guard !Task.isCancelled else { return }
                 state = .idle
                 didProduceInsufficientFundsError?(error)
-            case let .failure(error):
+            case let .failure(error), let .requote(error):
                 handleError(error)
                 if case .multichainTransactionFailure(.relayerOutcomeUnknown) = error {
                     isRetryUnsafe = true
@@ -1312,6 +1384,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 guard !Task.isCancelled else { return }
                 state = .idle
+                if case .requote = result {
+                    update()
+                }
             case .success:
                 state = .success
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -1330,53 +1405,19 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }
     }
 
-    private func runConfirmAction(model: TransactionConfirmationModel) async -> ConfirmActionResult {
-        if model.isMaxAmountUsed {
-            let tokenName = model.amount?.token.symbol ?? "Token"
-            let confirmed = await withCheckedContinuation { continuation in
-                didRequestSendAllConfirmation?(tokenName) { confirmed in
-                    continuation.resume(returning: confirmed)
-                }
-            }
-            guard !Task.isCancelled else {
-                return .cancelledByUser
-            }
-            guard confirmed else {
-                return .cancelledByUser
-            }
-        }
-
-        state = .processing
-
-        do {
-            try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
-        } catch {
-            return .insufficientFunds(error)
-        }
-        guard !Task.isCancelled else {
-            return .cancelledByUser
-        }
-
-        let result = await confirmationController.sendTransaction()
-        if case let .success(sendResult) = result {
-            await pendingTransactionsService.record(
-                sendResult,
-                wallet: confirmationController.getModel().wallet
-            )
-        }
-        guard !Task.isCancelled else {
-            return .cancelledByUser
-        }
-
-        switch result {
-        case .success:
-            return .success
-        case let .failure(error):
-            if case .cancelledByUser = error {
-                return .cancelledByUser
-            }
-            return .failure(error)
-        }
+    private func makeConfirmRun() -> TransactionConfirmRun {
+        TransactionConfirmRun(
+            confirmationController: confirmationController,
+            fundsValidator: fundsValidator,
+            pendingTransactionsService: pendingTransactionsService,
+            confirmSendAll: { tokenName in
+                await UserAnswer.ask { self.didRequestSendAllConfirmation?(tokenName, $0) }
+            },
+            enterProcessing: {
+                self.state = .processing
+            },
+            consent: consent?() ?? .refuse
+        )
     }
 }
 
@@ -1422,8 +1463,10 @@ private extension TransactionConfirmationViewModelImplementation {
                 }
                 let extraType = transaction.availableExtraTypes[index]
                 let extraOption = transaction.extraOptions.first { $0.type == extraType }
-
-                if self.isFeeOptionInsufficient(
+                if extraOption?.isAvailable == false {
+                    guard case let .extra(selected) = transaction.extraState, selected.value.extraType == extraType else { return }
+                }
+                if extraOption?.isAvailable != false, self.isFeeOptionInsufficient(
                     transaction: transaction,
                     extraOption: extraOption,
                     walletBalance: self.walletBalance
@@ -1470,7 +1513,21 @@ private extension TransactionConfirmationViewModelImplementation {
                 transaction: transaction,
                 extraOption: extraOption
             )
-            let subtitle = optionPresentation.description
+            let isShortBattery = extraType == .battery && !optionPresentation.isEnabled && isRefillable
+            let shortBatteryCharges: Int? = {
+                guard isShortBattery,
+                      let extraOption,
+                      case let .battery(charges?, _, _) = feeCalculator.feeKind(
+                          value: extraOption.value,
+                          wallet: transaction.wallet
+                      )
+                else {
+                    return nil
+                }
+                return charges
+            }()
+            let subtitle = shortBatteryCharges.map { "\($0) \(TKLocales.Battery.Refill.chargesCount(count: $0))" }
+                ?? optionPresentation.description
             let text: NetworkFeePickerItem.Text = if let subtitle {
                 .titled(
                     title: extraType.networkFeePickerTitle,
@@ -1485,20 +1542,15 @@ private extension TransactionConfirmationViewModelImplementation {
                 leading: extraType.networkFeePickerLeading,
                 text: text,
                 isDisabled: !optionPresentation.isEnabled,
-                actionTitle: optionPresentation.isEnabled || !isRefillable
+                warning: shortBatteryCharges == nil ? nil : TKLocales.FeeMethodPicker.notEnough,
+                actionTitle: extraOption?.isAvailable == false
+                    ? (extraType == selectedExtraType ? TKLocales.Actions.retry : nil)
+                    : optionPresentation.isEnabled || !isRefillable
                     ? nil
-                    : TKLocales.FeeMethodPicker.deposit,
-                isSelected: extraType == selectedExtraType
+                    : (isShortBattery ? TKLocales.FeeMethodPicker.topUp : TKLocales.FeeMethodPicker.deposit),
+                // A short battery leads to its top-up, so its row is not marked as the pick.
+                isSelected: extraType == selectedExtraType && !isShortBattery
             )
         }
-    }
-}
-
-private extension TransactionConfirmationViewModelImplementation {
-    enum ConfirmActionResult {
-        case cancelledByUser
-        case insufficientFunds(InsufficientFundsError)
-        case failure(TransactionConfirmationError)
-        case success
     }
 }

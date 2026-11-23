@@ -91,6 +91,7 @@ private struct NFTDetailsHeaderView: View {
                 image: .TKUIKit.Icons.Size16.chevronDown,
                 size: Layout.headerIconSize,
                 padding: Layout.headerIconPadding,
+                liquidGlassImage: .TKUIKit.Icons.Size28.chevronDown,
                 onTap: { _ in onClose() }
             )
         }
@@ -101,6 +102,7 @@ private struct NFTDetailsHeaderView: View {
             image: .TKUIKit.Icons.Size16.ellipses,
             size: Layout.headerIconSize,
             padding: Layout.headerIconPadding,
+            liquidGlassImage: .TKUIKit.Icons.Size28.ellipses,
             onTap: { sourceView in
                 guard let sourceView else { return }
                 TKPopupMenuController.show(

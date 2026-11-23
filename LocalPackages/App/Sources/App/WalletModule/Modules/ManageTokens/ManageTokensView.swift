@@ -32,6 +32,10 @@ private extension ManageTokensView {
     func setup() {
         backgroundColor = .Background.page
         collectionView.backgroundColor = .Background.page
+        // The top inset already clears the system bar, which is in the safe area under liquid glass.
+        if TKLiquidGlass.isEnabled {
+            collectionView.contentInsetAdjustmentBehavior = .never
+        }
 
         navigationBar.scrollView = collectionView
         navigationBar.centerView = titleView

@@ -2,7 +2,7 @@ import BigInt
 import Foundation
 import TonSwift
 
-public struct BatteryBalance: Codable, Equatable {
+public struct BatteryBalance: Codable, Equatable, Sendable {
     public var balanceDecimalNumber: NSDecimalNumber {
         NSDecimalNumber.number(stringValue: balance) ?? 0
     }

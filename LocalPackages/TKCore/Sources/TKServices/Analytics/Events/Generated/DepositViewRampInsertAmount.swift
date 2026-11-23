@@ -10,39 +10,45 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User sees the amount entry screen for the onramp purchase */
+/** User sees the amount entry screen for the onramp purchase. On \&quot;Buy crypto\&quot;, where the amount sits on the screen itself: sent once per opening, as soon as the provider is known: with MoonPay when its payment methods load, with a merchant at its first offer; &#x60;provider_name&#x60; is the merchant or &#x60;MoonPay&#x60;.  */
 public struct DepositViewRampInsertAmount: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "deposit_view_ramp_insert_amount"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Carried from deposit_view_fiat_payment_method */
     public var sellAsset: String
     /** Carried from deposit_click_fiat_payment_method */
     public var paymentMethod: String
-    /** Name of the onramp provider */
+    /** Name of the onramp provider. On \"Buy crypto\" the provider first known at the opening (MoonPay, or the merchant of the first offer); the later events carry the provider at the tap, which can differ.  */
     public var providerName: String
+    public var providerMode: RampProviderMode?
 
-    public init(eventName: String = "deposit_view_ramp_insert_amount", from: RampSource, addFundsOption: AddFundsOption, buyAsset: String, sellAsset: String, paymentMethod: String, providerName: String) {
+    public init(eventName: String = "deposit_view_ramp_insert_amount", from: RampSource, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, buyAsset: String, sellAsset: String, paymentMethod: String, providerName: String, providerMode: RampProviderMode? = nil) {
         self.eventName = eventName
         self.from = from
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.buyAsset = buyAsset
         self.sellAsset = sellAsset
         self.paymentMethod = paymentMethod
         self.providerName = providerName
+        self.providerMode = providerMode
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case from
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case buyAsset = "buy_asset"
         case sellAsset = "sell_asset"
         case paymentMethod = "payment_method"
         case providerName = "provider_name"
+        case providerMode = "provider_mode"
     }
 
     // Encodable protocol methods
@@ -52,10 +58,12 @@ public struct DepositViewRampInsertAmount: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(buyAsset, forKey: .buyAsset)
         try container.encode(sellAsset, forKey: .sellAsset)
         try container.encode(paymentMethod, forKey: .paymentMethod)
         try container.encode(providerName, forKey: .providerName)
+        try container.encodeIfPresent(providerMode, forKey: .providerMode)
     }
 }
 

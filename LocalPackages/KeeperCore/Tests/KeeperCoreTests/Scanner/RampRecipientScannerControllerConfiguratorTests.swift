@@ -23,6 +23,7 @@ final class RampRecipientScannerControllerConfiguratorTests: XCTestCase {
                 error as? RampRecipientScannerControllerConfigurator.Error,
                 .invalidAddress(networkName: "Optimism")
             )
+            XCTAssertEqual(ScanRejection(error: error), .unsupportedHere)
         }
     }
 

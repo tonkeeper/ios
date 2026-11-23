@@ -1,6 +1,7 @@
 import Foundation
 @testable import KeeperCore
 import PerpsModels
+import TKKandelabrAPI
 import XCTest
 
 final class PerpsChartTimelineTests: XCTestCase {
@@ -61,6 +62,28 @@ final class PerpsChartTimelineTests: XCTestCase {
         XCTAssertFalse(timeline.merge(makeBatch([(start + step, 110)])))
         XCTAssertTrue(timeline.merge(makeBatch([(start - step, 90)])))
         XCTAssertEqual(timeline.publishedCandles.map(\.close), [90, 100, 110])
+    }
+
+    func test_merge_keepsTimelineWhenBatchStartsAtExtremeTimestamp() {
+        let start: Int64 = 1_700_000_000_000
+        var timeline = PerpsChartTimeline(timeframe: .h1)
+        timeline.merge(makeBatch([(start, 100)]))
+
+        for startTs in [Int64.max, Int64.max - 1000, 9_000_000_000_000_000] {
+            let extreme = PerpsChartCandleMapper.mapBatch(
+                from: .init(
+                    ticker: "BTC/USD",
+                    resolution: "1h",
+                    start_ts: startTs,
+                    candles: [.init(o: "1", h: "2", l: "0.5", c: "1.5", v: "10", empty: nil)]
+                ),
+                timeframe: .h1
+            )
+            XCTAssertFalse(timeline.merge(extreme))
+        }
+
+        XCTAssertEqual(timeline.publishedCandles.map(\.close), [100])
+        XCTAssertEqual(timeline.oldestTimestamp, start)
     }
 }
 

@@ -20,9 +20,8 @@ struct MultichainHistoryRowDataReducer {
         _ page: MultichainWalletActivitiesPage,
         currentData _: RowData
     ) -> RowData {
-        let firstPageItems = deduplicated(items(from: page))
-        return RowData(
-            items: firstPageItems,
+        RowData(
+            items: items(from: page),
             nextCursor: page.nextCursor,
             hasNextPage: page.nextCursor != nil,
             hasLoadedNextPages: false
@@ -35,11 +34,14 @@ struct MultichainHistoryRowDataReducer {
         var didChange = false
 
         for index in items.indices {
-            let item = items[index]
-            guard itemMapper.nft(for: item.activity) != item.nft else {
+            let remapped = itemMapper.makeItem(
+                activity: items[index].activity,
+                occurrence: items[index].id.occurrence
+            )
+            guard remapped != items[index] else {
                 continue
             }
-            items[index] = itemMapper.makeItem(activity: item.activity)
+            items[index] = remapped
             didChange = true
         }
 
@@ -59,9 +61,19 @@ struct MultichainHistoryRowDataReducer {
         _ page: MultichainWalletActivitiesPage,
         currentData: RowData
     ) -> RowData {
-        let nextPageItems = items(from: page)
+        let activities = page.activities.filter { $0.isSpam == isSpamCategory }
+        var transactionStatuses = [MultichainHistoryActivityIdentity: MultichainActivityStatus]()
+        for activity in activities {
+            let identity = MultichainHistoryActivityIdentity(activity: activity)
+            if !identity.txIds.isEmpty {
+                transactionStatuses[identity] = activity.status
+            }
+        }
+        let items = currentData.items.filter { item in
+            transactionStatuses[item.id.activity].map { $0 == item.activity.status } ?? true
+        }
         return RowData(
-            items: deduplicated(currentData.items + nextPageItems),
+            items: items + itemMapper.makeItems(activities, after: items),
             nextCursor: page.nextCursor,
             hasNextPage: page.nextCursor != nil,
             hasLoadedNextPages: true
@@ -71,26 +83,6 @@ struct MultichainHistoryRowDataReducer {
 
 private extension MultichainHistoryRowDataReducer {
     func items(from page: MultichainWalletActivitiesPage) -> [MultichainHistoryActivityItem] {
-        page.activities
-            .filter { $0.isSpam == isSpamCategory }
-            .map(itemMapper.makeItem)
-    }
-
-    func deduplicated(_ items: [MultichainHistoryActivityItem]) -> [MultichainHistoryActivityItem] {
-        var indexByIdentity = [MultichainHistoryActivityIdentity: Int]()
-        indexByIdentity.reserveCapacity(items.count)
-
-        var result = [MultichainHistoryActivityItem]()
-        result.reserveCapacity(items.count)
-
-        for item in items {
-            if let index = indexByIdentity[item.id] {
-                result[index] = item
-            } else {
-                indexByIdentity[item.id] = result.count
-                result.append(item)
-            }
-        }
-        return result
+        itemMapper.makeItems(page.activities.filter { $0.isSpam == isSpamCategory })
     }
 }

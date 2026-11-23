@@ -10,10 +10,10 @@ final class PerpsWalletAuthKeyTests: XCTestCase {
     func testDerivingTheWalletAuthKeyTwiceGivesTheSameLiveKey() throws {
         let wallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic)
 
-        let first = wallet.walletKeyPair(kind: .multichain)
+        let first = wallet.walletKeyPair()
         let firstBytes = first.privateKey.asData
         first.privateKey.fillZeros()
-        let second = wallet.walletKeyPair(kind: .multichain)
+        let second = wallet.walletKeyPair()
         let secondBytes = second.privateKey.asData
         second.privateKey.fillZeros()
 

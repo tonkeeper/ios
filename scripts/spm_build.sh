@@ -32,10 +32,6 @@ fi
 
 IOS_MIN="${IOS_MIN:-15.0}"
 TRIPLE="arm64-apple-ios${IOS_MIN}-simulator"
-SWIFT_BUILD_QUIET_FLAG=
-if [ "${QUIET:-0}" = "1" ]; then
-	SWIFT_BUILD_QUIET_FLAG="--quiet"
-fi
 
 # Resolve toolchain paths dynamically (no hardcoded absolute paths).
 SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
@@ -61,6 +57,23 @@ cat >"$DEST_JSON" <<EOF
 }
 EOF
 
+# `swift build --quiet` drops the compiler diagnostics, so QUIET=1 holds the output back
+# and prints it only on failure, without progress lines, the multi-KB frontend command
+# dumps and color codes.
+quiet() {
+	if [ "${QUIET:-0}" != 1 ]; then
+		"$@"
+	elif ! out=$("$@" 2>&1); then
+		printf '%s\n' "$out" | awk '
+			/^Failed frontend command:$/ { skip = 1; next }
+			skip { skip = 0; next }
+			/^\[[0-9]/ { next }
+			{ gsub(/\033\[[0-9;]*m/, ""); print }
+		'
+		return 1
+	fi
+}
+
 build_one() {
 	pkg="$1"
 
@@ -69,6 +82,8 @@ build_one() {
 		pkg_dir="LocalPackages/$pkg"
 	elif [ -f "LocalPackages/AppModules/$pkg/Package.swift" ]; then
 		pkg_dir="LocalPackages/AppModules/$pkg"
+	elif [ -e "LocalPackages/TKBase/Sources/$pkg" ]; then
+		pkg_dir="LocalPackages/TKBase"
 	elif [ "$pkg" = KeeperResources ] && [ -f ../shared/resources/Package.swift ]; then
 		pkg_dir="../shared/resources"
 	elif [ "$pkg" = KeeperResources ] && [ -f resources/Package.swift ]; then
@@ -92,8 +107,7 @@ build_one() {
 
 	echo "building $pkg ($pkg_dir) for $TRIPLE ..."
 
-	swift build \
-		${SWIFT_BUILD_QUIET_FLAG:+"$SWIFT_BUILD_QUIET_FLAG"} \
+	quiet swift build \
 		--package-path "$pkg_dir" \
 		--destination "$DEST_JSON" \
 		--disable-automatic-resolution \

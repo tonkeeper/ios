@@ -20,9 +20,13 @@ public final class SignRawConfirmationView: UIView {
 
     func embedContent(_ view: UIView) {
         contentContainer.addSubview(view)
-        view.snp.makeConstraints { make in
-            make.edges.equalTo(contentContainer)
-        }
+        view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            view.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+            view.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
+        ])
     }
 }
 
@@ -31,9 +35,12 @@ public final class SignRawConfirmationView: UIView {
 private extension SignRawConfirmationView {
     func setup() {
         addSubview(contentContainer)
-
-        contentContainer.snp.makeConstraints { make in
-            make.edges.equalTo(self)
-        }
+        contentContainer.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            contentContainer.topAnchor.constraint(equalTo: topAnchor),
+            contentContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
+            contentContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 }

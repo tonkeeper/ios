@@ -31,13 +31,173 @@ final class PerpsDepositRegistrarTests: XCTestCase {
         XCTAssertNil(request.execution_id)
     }
 
+    func testACrosschainRegistrationNamesItsSourceTransaction() async throws {
+        let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "dep-1", status: .pending)))
+        let registrar = PerpsDepositRegistrar(api: api, journal: journal())
+        let operation = try await save(makeOperation(route: .crosschainSwap, registration: .crosschain, sourceTxHash: "0xsource"))
+
+        let registered = try await registrar.register(operation: operation)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.map(\.source_tx_hash), ["0xsource"])
+        XCTAssertEqual(registered.deposit?.registration?.sourceTxHash, "0xsource")
+        XCTAssertEqual(registered.deposit?.stage, .registeredPending)
+    }
+
+    func testADirectRegistrationNamesNoSourceTransaction() async throws {
+        let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "dep-1", status: .pending)))
+        let registrar = PerpsDepositRegistrar(api: api, journal: journal())
+        let operation = try await save(makeOperation(sourceTxHash: "0xsource"))
+
+        _ = try await registrar.register(operation: operation)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.map(\.source_tx_hash), [nil])
+    }
+
+    func testARecordedDepositNamesASourceTransactionLearnedLaterOnce() async throws {
+        let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "dep-1", status: .pending, pending_step: .converting)))
+        let registrar = PerpsDepositRegistrar(api: api, journal: journal())
+        let operation = try await save(makeOperation(
+            stage: .registeredPending,
+            route: .crosschainSwap,
+            registration: .crosschain,
+            sourceTxHash: "0xsource",
+            depositId: "dep-1"
+        ))
+
+        let named = try await registrar.nameSourceTransaction(operation: operation)
+        let again = try await registrar.nameSourceTransaction(operation: named)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.map(\.operation_id), ["op-1"])
+        XCTAssertEqual(requests.map(\.source_tx_hash), ["0xsource"])
+        XCTAssertEqual(again, named)
+        XCTAssertEqual(named.deposit?.registration?.sourceTxHash, "0xsource")
+        XCTAssertEqual(named.deposit?.stage, .registeredPending)
+        XCTAssertEqual(named.deposit?.pendingStep, .converting)
+    }
+
+    func testARefusedSourceTransactionLeavesTheRecordedDepositFollowed() async throws {
+        let refused = PerpsAPIError.badStatus(.init(httpStatus: 400, code: "invalid_execution_id", message: nil, retryable: false, reason: nil))
+        let api = FundingStubAPI(
+            openDeposit: .failure(refused),
+            getDeposit: .success(.init(deposit_id: "dep-1", status: .credited, credited_amount: "25"))
+        )
+        let registrar = PerpsDepositRegistrar(api: api, journal: journal())
+        let operation = try await save(makeOperation(
+            stage: .registeredPending,
+            route: .crosschainSwap,
+            registration: .crosschain,
+            sourceTxHash: "0xsource",
+            depositId: "dep-1"
+        ))
+
+        let refusedOnce = try await registrar.nameSourceTransaction(operation: operation)
+        let notAgain = try await registrar.nameSourceTransaction(operation: refusedOnce)
+        let refreshed = try await registrar.refresh(operation: notAgain)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(refusedOnce.deposit?.stage, .registeredPending)
+        XCTAssertEqual(notAgain, refusedOnce)
+        XCTAssertEqual(refreshed.deposit?.stage, .credited)
+    }
+
+    func testOnlyARejectedBodyEndsNamingTheSourceTransaction() async throws {
+        let api = FundingStubAPI(openDeposit: .failure(.transport(underlying: URLError(.notConnectedToInternet))))
+        let registrar = PerpsDepositRegistrar(api: api, journal: journal())
+        let operation = try await save(makeOperation(
+            stage: .registeredPending,
+            route: .crosschainSwap,
+            registration: .crosschain,
+            sourceTxHash: "0xsource",
+            depositId: "dep-1"
+        ))
+
+        let offline = try await registrar.nameSourceTransaction(operation: operation)
+        await api.setOpenDepositResult(.failure(.badStatus(.init(httpStatus: 401, code: "token_expired", message: nil, retryable: false, reason: nil))))
+        let unauthorized = try await registrar.nameSourceTransaction(operation: offline)
+        await api.setOpenDepositResult(.success(.init(deposit_id: "other", status: .pending)))
+        let contradicted = try await registrar.nameSourceTransaction(operation: unauthorized)
+        await api.setOpenDepositResult(.success(.init(deposit_id: "dep-1", status: .pending)))
+        let named = try await registrar.nameSourceTransaction(operation: contradicted)
+
+        XCTAssertEqual(contradicted, operation)
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.map(\.source_tx_hash), ["0xsource", "0xsource", "0xsource", "0xsource"])
+        XCTAssertEqual(named.deposit?.registration?.sourceTxHash, "0xsource")
+    }
+
     func testUnchangedPendingResponseKeepsTheJournalRevision() async throws {
-        let response = Components.Schemas.Deposit(deposit_id: "dep-1", status: .pending)
+        let response = Components.Schemas.Deposit(deposit_id: "dep-1", status: .pending, pending_step: .sending)
         let api = FundingStubAPI(openDeposit: .success(response), getDeposit: .success(response))
         let (registrar, operation) = try await makeRegistrar(api: api)
         let registered = try await registrar.register(operation: operation)
         let refreshed = try await registrar.refresh(operation: registered)
         XCTAssertEqual(refreshed, registered)
+    }
+
+    func testPollingCanSkipConversionAndRestoresTheStepAfterRestart() async throws {
+        let api = FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "dep-1", status: .pending, pending_step: .sending)),
+            getDeposit: .success(.init(deposit_id: "dep-1", status: .pending, pending_step: .adding))
+        )
+        let (registrar, operation) = try await makeRegistrar(api: api)
+        let registered = try await registrar.register(operation: operation)
+        XCTAssertEqual(registered.deposit?.pendingStep, .sending)
+
+        let refreshed = try await registrar.refresh(operation: registered)
+        XCTAssertEqual(refreshed.deposit?.pendingStep, .adding)
+        XCTAssertEqual(refreshed.depositStatus?.step, .adding)
+        XCTAssertEqual(refreshed.deposit?.stage, .registeredPending)
+        let restored = try await journal().funding(operationId: operation.operationId)
+        XCTAssertEqual(restored, refreshed)
+    }
+
+    func testCompletionCanSkipEveryPendingStep() async throws {
+        let completed = try await makeRegistered(
+            getDeposit: .success(.init(deposit_id: "dep-1", status: .credited, credited_amount: "25"))
+        )
+        XCTAssertEqual(completed.deposit?.stage, .credited)
+        XCTAssertEqual(completed.depositStatus?.state, .completed)
+        XCTAssertNil(completed.deposit?.pendingStep)
+    }
+
+    func testAMissingStepDoesNotForgetTheLastKnownStep() async throws {
+        let (registrar, operation) = try await makeRegistrar(api: FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "dep-1", status: .pending, pending_step: .adding)),
+            getDeposit: .success(.init(deposit_id: "dep-1", status: .pending))
+        ))
+        let registered = try await registrar.register(operation: operation)
+        let refreshed = try await registrar.refresh(operation: registered)
+        XCTAssertEqual(refreshed, registered)
+    }
+
+    func testATerminalResponseKeepsTheLastKnownStepForTheFailure() async throws {
+        let (registrar, operation) = try await makeRegistrar(api: FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "dep-1", status: .pending, pending_step: .converting)),
+            getDeposit: .success(.init(deposit_id: "dep-1", status: .refunded))
+        ))
+        let registered = try await registrar.register(operation: operation)
+        let refunded = try await registrar.refresh(operation: registered)
+        XCTAssertEqual(refunded.deposit?.stage, .refunded)
+        XCTAssertEqual(refunded.depositStatus?.state, .refunded)
+        XCTAssertEqual(refunded.deposit?.pendingStep, .converting)
+    }
+
+    func testUnknownOrMissingStepsDoNotChangeTheOutcome() throws {
+        let unknown = try JSONDecoder().decode(
+            Components.Schemas.Deposit.self,
+            from: Data(#"{"deposit_id":"dep-1","status":"pending","pending_step":"future-step"}"#.utf8)
+        )
+        XCTAssertEqual(PerpsDepositRecord(unknown).status, .pending)
+        XCTAssertNil(PerpsDepositRecord(unknown).pendingStep)
+        XCTAssertNil(PerpsDepositRecord(.init(status: .pending)).pendingStep)
+        XCTAssertEqual(PerpsDepositRecord(.init(status: .pending, pending_step: .converting)).pendingStep, .converting)
+        for status: Components.Schemas.Deposit.statusPayload in [.credited, .failed, .refunded, .unfunded, .expired, .unknown] {
+            XCTAssertNil(PerpsDepositRecord(.init(status: status, pending_step: .sending)).pendingStep)
+        }
     }
 
     func testTheRecordedDepositIdIsTheOneTheBackendAnswered() async throws {
@@ -286,21 +446,29 @@ private extension PerpsDepositRegistrarTests {
         try await journal().saveFundingIfAbsent(operation).operation
     }
 
-    func makeOperation(registration: PerpsDepositRegistration? = .stub) -> PerpsPendingFundingOperation {
+    func makeOperation(
+        stage: PerpsDepositStage = .registrationPending,
+        route: PerpsDepositRoute = .directGateway,
+        registration: PerpsDepositRegistration? = .stub,
+        sourceTxHash: String? = nil,
+        depositId: String? = nil
+    ) -> PerpsPendingFundingOperation {
         PerpsPendingFundingOperation(
             operationId: "op-1",
             walletId: "wallet",
             walletIdentity: "identity",
             environment: "test",
             details: .deposit(PerpsPendingDeposit(
-                stage: .registrationPending,
-                route: .directGateway,
+                stage: stage,
+                route: route,
                 beneficiary: "0xabc",
                 sourceAsset: .usdcEthereum,
                 sourceAmountUnits: "25000000",
                 targetAsset: .usdcEthereum,
                 minimumTargetAmountUnits: "25000000",
-                registration: registration
+                sourceTxHash: sourceTxHash,
+                registration: registration,
+                depositId: depositId
             ))
         )
     }
@@ -322,6 +490,14 @@ private extension PerpsDepositRegistration {
         l1TxHash: "0x" + String(repeating: "a", count: 64),
         executionId: nil
     )
+
+    static let crosschain = PerpsDepositRegistration(
+        operationId: "op-1",
+        assetId: "arb/mainnet/erc20/0xaf88",
+        amount: "25",
+        l1TxHash: nil,
+        executionId: "exec-1"
+    )
 }
 
 actor FundingStubAPI: PerpsAPI {
@@ -342,6 +518,7 @@ actor FundingStubAPI: PerpsAPI {
     private(set) var withdrawalsRequests = 0
     private(set) var nextNonceRequests = 0
     private(set) var sendTransactionsRequests = 0
+    private(set) var sentOperationIds = [String?]()
     private let onOpen: @Sendable (Int) async -> Void
     private var accountResult: Result<Components.Schemas.Account, PerpsAPIError> = .success(.init())
 
@@ -458,9 +635,11 @@ actor FundingStubAPI: PerpsAPI {
 
     func sendTransactions(
         walletId _: String,
+        operationId: String?,
         transactions _: [Components.Schemas.SignedTransaction]
     ) async throws -> Components.Schemas.SendTransactionsResponse {
         sendTransactionsRequests += 1
+        sentOperationIds.append(operationId)
         throw Unsupported()
     }
 
@@ -475,6 +654,8 @@ actor FundingStubAPI: PerpsAPI {
     func getOrder(walletId _: String, id _: String) async throws -> Components.Schemas.OrderDetail {
         throw Unsupported()
     }
+
+    func recordClientMetrics(walletId _: String, metrics _: [Components.Schemas.ClientMetric]) async throws {}
 
     func getOpenPosition(walletId _: String, id _: String) async throws -> Components.Schemas.OpenPositionDetail {
         throw Unsupported()

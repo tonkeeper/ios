@@ -75,6 +75,11 @@ enum PerpsAPIError: Error {
     case transport(underlying: Error?)
     case unknown(underlying: Error?)
 
+    var isWithdrawalRateLimited: Bool {
+        guard case let .badStatus(failure) = self, !failure.retryable else { return false }
+        return failure.code == "withdrawal_rate_limited" || failure.reason == "withdrawal_rate_limited"
+    }
+
     var isResignRequired: Bool {
         guard case let .badStatus(failure) = self else { return false }
         return failure.reason == "resign_required"

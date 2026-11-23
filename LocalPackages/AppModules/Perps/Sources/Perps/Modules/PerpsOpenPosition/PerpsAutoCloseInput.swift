@@ -88,36 +88,3 @@ struct PerpsAutoCloseBase: Equatable {
         return priceText(price) == priceText(triggerPrice)
     }
 }
-
-/// The ROI the user typed per venue account and market, for this app launch only.
-/// A sheet shows a remembered ROI only while it still names the leg's trigger
-/// price, so a stale entry can never be shown — at worst it goes unused.
-@MainActor
-final class PerpsAutoCloseInputMemory {
-    static let shared = PerpsAutoCloseInputMemory()
-
-    @MainActor
-    struct Slot {
-        fileprivate let memory: PerpsAutoCloseInputMemory
-        fileprivate let key: Key
-
-        var input: PerpsAutoCloseROIInput {
-            memory.inputs[key] ?? .none
-        }
-
-        func remember(_ input: PerpsAutoCloseROIInput) {
-            memory.inputs[key] = input == .none ? nil : input
-        }
-    }
-
-    fileprivate struct Key: Hashable {
-        let accountIndex: Int64
-        let marketId: Int64
-    }
-
-    private var inputs = [Key: PerpsAutoCloseROIInput]()
-
-    func slot(accountIndex: Int64, marketId: Int64) -> Slot {
-        Slot(memory: self, key: Key(accountIndex: accountIndex, marketId: marketId))
-    }
-}

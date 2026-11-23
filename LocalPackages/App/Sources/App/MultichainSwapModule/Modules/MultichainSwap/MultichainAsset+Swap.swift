@@ -30,10 +30,4 @@ extension MultichainAsset {
             style: .compact
         )
     }
-
-    func swapAmountLine(amount: String) -> String {
-        [amount, swapDisplaySymbol]
-            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .joined(separator: " ")
-    }
 }

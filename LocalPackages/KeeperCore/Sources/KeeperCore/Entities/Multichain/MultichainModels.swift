@@ -48,6 +48,9 @@ public struct MultichainAssetDetails: Hashable, Sendable, Codable {
     public let image: String
     public let verification: MultichainAssetVerification
     public let capabilities: Set<MultichainAssetCapability>
+    /// The aggregators the swap backend quotes this asset through. `nil` where the source did not
+    /// say, such as a portfolio cached before the field was kept.
+    public let swapAggregators: Set<MultichainSwapAggregator>?
 
     public var isVerified: Bool {
         switch verification {
@@ -78,7 +81,8 @@ public struct MultichainAssetDetails: Hashable, Sendable, Codable {
         decimals: Int,
         image: String,
         verification: MultichainAssetVerification = .none,
-        capabilities: Set<MultichainAssetCapability> = []
+        capabilities: Set<MultichainAssetCapability> = [],
+        swapAggregators: Set<MultichainSwapAggregator>? = nil
     ) {
         self.assetId = assetId
         self.chain = chain ?? AssetIdComponents(assetId: assetId).flatMap {
@@ -90,6 +94,7 @@ public struct MultichainAssetDetails: Hashable, Sendable, Codable {
         self.image = image
         self.verification = verification
         self.capabilities = capabilities
+        self.swapAggregators = swapAggregators
     }
 }
 
@@ -97,6 +102,13 @@ public struct MultichainAssetPrice: Equatable, Sendable, Codable {
     public let prices: [String: Double]
     public let diff24h: [String: String]
     public let diff7d: [String: String]
+
+    public func value(for currencyCode: String) -> Double? {
+        for key in [currencyCode, currencyCode.uppercased(), currencyCode.lowercased()] {
+            if let price = prices[key] { return price }
+        }
+        return prices.first { $0.key.caseInsensitiveCompare(currencyCode) == .orderedSame }?.value
+    }
 
     public init(
         prices: [String: Double],
@@ -420,19 +432,6 @@ public extension MultichainActivity {
     func displaySymbol(for token: MultichainAssetDetails) -> String {
         isPerpsDollar(token) ? "USD" : token.symbol
     }
-
-    /// What a withdrawal took off the perps balance: Lighter debits its fee on top of the amount sent.
-    var perpsDebitedOutAmount: String? {
-        guard activityType == .perpsBalanceWithdrawal,
-              let outAmount, let outToken, let feeAmount, let feeToken,
-              outToken.assetId.caseInsensitiveCompare(feeToken.assetId) == .orderedSame
-        else { return outAmount }
-        let sign = outAmount.hasPrefix("-") ? "-" : ""
-        guard let amount = BigUInt(outAmount.dropFirst(sign.count)),
-              let fee = BigUInt(feeAmount.drop { $0 == "-" })
-        else { return outAmount }
-        return sign + (amount + fee).description
-    }
 }
 
 @frozen public enum MultichainActivityTypeFilter: String, Sendable, Equatable {
@@ -475,6 +474,7 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
     /// Closing events only: funding accrued over the position's life, already inside the result.
     /// Positive is received, negative is paid.
     public let fundingUsd: Double?
+    public let loyaltyReward: String?
 
     public init(
         symbol: String?,
@@ -490,7 +490,8 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
         sizeUsd: Double? = nil,
         marginUsd: Double? = nil,
         resultPercent: Double? = nil,
-        fundingUsd: Double? = nil
+        fundingUsd: Double? = nil,
+        loyaltyReward: String? = nil
     ) {
         self.symbol = symbol
         self.assetId = assetId
@@ -506,6 +507,33 @@ public struct MultichainActivityPerpsMeta: Hashable, Sendable {
         self.marginUsd = marginUsd
         self.resultPercent = resultPercent
         self.fundingUsd = fundingUsd
+        self.loyaltyReward = loyaltyReward
+    }
+}
+
+/// The explorer page of one of an activity's transactions.
+public struct MultichainActivityExplorerLink: Hashable, Sendable {
+    /// The `txIds` entry it opens, `chain:txhash`.
+    public let transactionId: String
+    public let chain: MultichainChain
+    public let url: URL
+
+    public init(transactionId: String, chain: MultichainChain, url: URL) {
+        self.transactionId = transactionId
+        self.chain = chain
+        self.url = url
+    }
+}
+
+/// A TON comment encrypted to its recipient, which the sender and the recipient can read with their own keys.
+public struct MultichainActivityEncryptedComment: Hashable, Sendable {
+    public let cipherText: String
+    /// The address that sent it: the decryption takes it in.
+    public let senderAddress: String
+
+    public init(cipherText: String, senderAddress: String) {
+        self.cipherText = cipherText
+        self.senderAddress = senderAddress
     }
 }
 
@@ -520,6 +548,8 @@ public struct MultichainActivity: Hashable, Sendable {
     public let direction: MultichainActivityDirection
     public let fromAddress: String?
     public let toAddress: String?
+    public let fromName: String?
+    public let toName: String?
     public let outToken: MultichainAssetDetails?
     public let outAmount: String?
     public let outAmountUsd: Double?
@@ -532,9 +562,17 @@ public struct MultichainActivity: Hashable, Sendable {
     public let protocolName: String?
     public let txIds: [String]
     public let explorerURL: URL?
+    /// The `txIds` entry `explorerURL` opens, when it is not the primary one.
+    public let explorerTxId: String?
+    /// In `txIds` order, for the transactions whose chain has an explorer: a cross-chain swap has its
+    /// source and destination ones.
+    public let explorerLinks: [MultichainActivityExplorerLink]
     public let isRead: Bool?
     public let isSpam: Bool
+    /// Never blank: a comment of only whitespace shows nowhere, so it is none, and an encrypted one can show.
     public let comment: String?
+    /// Only one a TON key can decrypt: its sender is a TON address, which the decryption takes in.
+    public let encryptedComment: MultichainActivityEncryptedComment?
     public let tronResource: MultichainTronResource?
     public let feeType: MultichainActivityFeeType?
     /// Keeper Battery charges spent on the fee. `0` is a real value; `nil` means the backend did not report it.
@@ -552,6 +590,8 @@ public struct MultichainActivity: Hashable, Sendable {
         direction: MultichainActivityDirection,
         fromAddress: String?,
         toAddress: String?,
+        fromName: String? = nil,
+        toName: String? = nil,
         outToken: MultichainAssetDetails?,
         outAmount: String?,
         outAmountUsd: Double?,
@@ -564,9 +604,12 @@ public struct MultichainActivity: Hashable, Sendable {
         protocolName: String?,
         txIds: [String],
         explorerURL: URL? = nil,
+        explorerTxId: String? = nil,
+        explorerLinks: [MultichainActivityExplorerLink] = [],
         isRead: Bool?,
         isSpam: Bool = false,
         comment: String? = nil,
+        encryptedComment: MultichainActivityEncryptedComment? = nil,
         tronResource: MultichainTronResource? = nil,
         feeType: MultichainActivityFeeType? = nil,
         batteryCharges: Int? = nil,
@@ -582,6 +625,8 @@ public struct MultichainActivity: Hashable, Sendable {
         self.direction = direction
         self.fromAddress = fromAddress
         self.toAddress = toAddress
+        self.fromName = fromName
+        self.toName = toName
         self.outToken = outToken
         self.outAmount = outAmount
         self.outAmountUsd = outAmountUsd
@@ -594,9 +639,12 @@ public struct MultichainActivity: Hashable, Sendable {
         self.protocolName = protocolName
         self.txIds = txIds
         self.explorerURL = explorerURL
+        self.explorerTxId = explorerTxId
+        self.explorerLinks = explorerLinks
         self.isRead = isRead
         self.isSpam = isSpam
-        self.comment = comment
+        self.comment = comment.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+        self.encryptedComment = encryptedComment?.payload == nil ? nil : encryptedComment
         self.tronResource = tronResource
         self.feeType = feeType
         self.batteryCharges = batteryCharges

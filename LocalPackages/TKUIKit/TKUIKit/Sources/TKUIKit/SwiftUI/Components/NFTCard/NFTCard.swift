@@ -120,7 +120,7 @@ private extension NFTCard {
             )
             .overlay {
                 if content.isSecureMode {
-                    NFTCardSecureBlurView()
+                    TKSecureBlurViewRepresentable()
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -217,14 +217,6 @@ private struct NFTCardButtonStyle: ButtonStyle {
         configuration.label
             .tkTapAnimation(isPressed: configuration.isPressed)
     }
-}
-
-private struct NFTCardSecureBlurView: UIViewRepresentable {
-    func makeUIView(context: Context) -> TKSecureBlurView {
-        TKSecureBlurView()
-    }
-
-    func updateUIView(_ uiView: TKSecureBlurView, context: Context) {}
 }
 
 #Preview {

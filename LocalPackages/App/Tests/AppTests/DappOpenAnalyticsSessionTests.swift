@@ -45,6 +45,24 @@ final class DappOpenAnalyticsSessionTests: XCTestCase {
         XCTAssertEqual(spy.events.map(\.name), ["dapp_app_click", "dapp_app_loaded"])
     }
 
+    func test_pageEventIsLoggedUnderItsOwnNameAndMarkedWithItsProvider() {
+        let spy = AnalyticsServiceSpy()
+        let session = makeSession(spy: spy, now: Date.init)
+
+        session.logPageEvent(
+            name: "loyalty_quest_opened",
+            params: ["tab": "quests", "count": 3, "eventProvider": "page"],
+            provider: "loyalty.keeperwallet.com"
+        )
+
+        XCTAssertEqual(spy.events.map(\.name), ["loyalty_quest_opened"])
+        let args = spy.events.first?.args
+        XCTAssertEqual(args?["tab"] as? String, "quests")
+        XCTAssertEqual(args?["count"] as? Int, 3)
+        XCTAssertEqual(args?["isExternalWebView"] as? Int, 1)
+        XCTAssertEqual(args?["eventProvider"] as? String, "loyalty.keeperwallet.com")
+    }
+
     func test_loadWithoutATapCountsFromTheStartOfTheSession() {
         let spy = AnalyticsServiceSpy()
         var now = Date(timeIntervalSince1970: 1000)

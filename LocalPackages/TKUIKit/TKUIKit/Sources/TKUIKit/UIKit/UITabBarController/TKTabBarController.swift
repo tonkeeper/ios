@@ -1,16 +1,36 @@
-import SnapKit
 import UIKit
 
 public final class TKTabBarController: UITabBarController {
     public var didLongPressTabBarItem: ((Int) -> Void)?
     public var didLayoutTabBar: (() -> Void)?
+    public var didChangeStyle: ((TKTabBarStyle) -> Void)?
+    public private(set) var style: TKTabBarStyle
 
+    private let isLiquidGlassEnabled: Bool
     private let customTabBar = TKTabBarView()
     private var displayedSelectedIndex = 0
     private var capturedTabTitles = [ObjectIdentifier: String]()
     private var systemTabBar: TKSystemTabBar?
+    private var hasHinge = false
 
-    public init() {
+    private lazy var longPressRecognizer: UILongPressGestureRecognizer = {
+        let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleSystemTabBarLongPress(_:)))
+        recognizer.delegate = self
+        return recognizer
+    }()
+
+    /// The liquid glass bar is the system `UITabBar` of iOS 26; earlier systems keep the custom bar.
+    public init(isLiquidGlassEnabled: Bool = false) {
+        if #available(iOS 26.0, *) {
+            self.isLiquidGlassEnabled = isLiquidGlassEnabled
+        } else {
+            self.isLiquidGlassEnabled = false
+        }
+        self.style = TKTabBarStyle.resolve(
+            verticalBarEdgeIsSpecified: false,
+            keepsSystemBar: false,
+            liquidGlassEnabled: self.isLiquidGlassEnabled
+        )
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -27,6 +47,12 @@ public final class TKTabBarController: UITabBarController {
                 registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) { (controller: Self, _) in
                     _ = controller.adoptSystemTabBarIfNeeded()
                 }
+                // Duo reports no vertical bar edge in some orientations; its hinge is there in all of them.
+                view.addInteraction(UIHingeInteraction { [weak self] _, update in
+                    guard let self, update.hinge != nil, !hasHinge else { return }
+                    hasHinge = true
+                    _ = adoptSystemTabBarIfNeeded()
+                })
             }
         #endif
         if adoptSystemTabBarIfNeeded() { return }
@@ -70,8 +96,15 @@ public final class TKTabBarController: UITabBarController {
     }
 
     public func tabBarItemView(at index: Int) -> UIView? {
-        guard systemTabBar == nil else { return nil }
-        return customTabBar.itemView(at: index)
+        switch style {
+        case .custom:
+            customTabBar.itemView(at: index)
+        case .systemHorizontal:
+            systemItemView(at: index)
+        // Hints point only up or down, so they cannot point at the vertical bar.
+        case .systemVertical:
+            nil
+        }
     }
 
     public func setTabBarStaticIconHidden(_ isHidden: Bool, at index: Int) {
@@ -97,19 +130,52 @@ private extension TKTabBarController {
         #else
             verticalBarEdgeIsSpecified = false
         #endif
-        let style = TKTabBarStyle.resolve(
+        let newStyle = TKTabBarStyle.resolve(
             verticalBarEdgeIsSpecified: verticalBarEdgeIsSpecified,
-            systemTabBarLocked: systemTabBar != nil
+            keepsSystemBar: hasHinge || systemTabBar != nil,
+            liquidGlassEnabled: isLiquidGlassEnabled
         )
-        guard style == .system else { return false }
-        guard systemTabBar == nil else { return true }
+        guard newStyle != .custom else { return false }
 
-        customTabBar.removeFromSuperview()
-        restoreCapturedTitles()
-        let systemTabBar = TKSystemTabBar(controller: self)
-        self.systemTabBar = systemTabBar
-        systemTabBar.install()
+        if systemTabBar == nil {
+            customTabBar.removeFromSuperview()
+            restoreCapturedTitles()
+            let systemTabBar = TKSystemTabBar(controller: self)
+            self.systemTabBar = systemTabBar
+            systemTabBar.install()
+        }
+        updateStyle(newStyle)
         return true
+    }
+
+    /// Runs once the system bar is installed, so the callback sees the bar it describes.
+    func updateStyle(_ newStyle: TKTabBarStyle) {
+        // The vertical bar takes its own touches, so a recognizer on the bar never fires there.
+        if newStyle == .systemHorizontal {
+            tabBar.addGestureRecognizer(longPressRecognizer)
+        } else {
+            tabBar.removeGestureRecognizer(longPressRecognizer)
+        }
+        guard newStyle != style else { return }
+        style = newStyle
+        didChangeStyle?(newStyle)
+    }
+
+    func systemItemView(at index: Int) -> UIView? {
+        guard let items = tabBar.items, items.indices.contains(index) else { return nil }
+        return items[index].value(forKey: "view") as? UIView
+    }
+
+    @objc
+    func handleSystemTabBarLongPress(_ recognizer: UILongPressGestureRecognizer) {
+        guard style == .systemHorizontal, recognizer.state == .began else { return }
+        let location = recognizer.location(in: tabBar)
+        let count = tabBar.items?.count ?? 0
+        guard let index = (0 ..< count).first(where: { index in
+            guard let itemView = systemItemView(at: index) else { return false }
+            return itemView.convert(itemView.bounds, to: tabBar).contains(location)
+        }) else { return }
+        didLongPressTabBarItem?(index)
     }
 
     func restoreCapturedTitles() {
@@ -140,10 +206,8 @@ private extension TKTabBarController {
             self?.didLongPressTabBarItem?(index)
         }
 
+        customTabBar.frame = tabBar.bounds
         tabBar.addSubview(customTabBar)
-        customTabBar.snp.makeConstraints { make in
-            make.edges.equalTo(tabBar)
-        }
 
         reloadItems()
     }
@@ -203,5 +267,14 @@ private extension TKTabBarController {
         itemAppearance.focused.iconColor = .clear
         itemAppearance.disabled.iconColor = .clear
         return itemAppearance
+    }
+}
+
+extension TKTabBarController: UIGestureRecognizerDelegate {
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        gestureRecognizer === longPressRecognizer || otherGestureRecognizer === longPressRecognizer
     }
 }

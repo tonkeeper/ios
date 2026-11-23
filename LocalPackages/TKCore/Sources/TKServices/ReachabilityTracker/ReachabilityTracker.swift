@@ -15,7 +15,16 @@ public final class ReachabilityTracker {
         weak var observer: ReachabilityTrackerObserver?
     }
 
+    public enum InterfaceType {
+        case wifi
+        case cellular
+        case wired
+        case other
+        case none
+    }
+
     private let pathMonitor = NWPathMonitor()
+    public private(set) var interfaceType = InterfaceType.other
     public private(set) var state = State.connected {
         didSet {
             guard state != oldValue else { return }
@@ -27,6 +36,7 @@ public final class ReachabilityTracker {
 
     package init() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
+            self?.interfaceType = Self.interfaceType(for: path)
             self?.state = Self.state(for: path)
         }
         pathMonitor.start(queue: .main)
@@ -54,6 +64,14 @@ private extension ReachabilityTracker {
         return internetCapableInterfaceTypes.contains(where: path.usesInterfaceType)
             ? .connected
             : .noInternetConnection
+    }
+
+    static func interfaceType(for path: NWPath) -> InterfaceType {
+        guard path.status == .satisfied else { return .none }
+        if path.usesInterfaceType(.wifi) { return .wifi }
+        if path.usesInterfaceType(.cellular) { return .cellular }
+        if path.usesInterfaceType(.wiredEthernet) { return .wired }
+        return .other
     }
 
     static var internetCapableInterfaceTypes: [NWInterface.InterfaceType] {

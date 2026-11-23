@@ -99,7 +99,10 @@ private extension WalletCoordinator {
         }
         let module = WalletContainerAssembly.module(
             walletBalanceModule: createWalletBalanceModule(wallet: wallet),
-            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+            usesSystemNavigationBar: WalletContainerAssembly.usesSystemNavigationBar(
+                configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+            )
         )
         walletContainerViewController = module.view
 

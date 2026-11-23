@@ -1,18 +1,22 @@
+import KeeperCore
 import TKCore
 
 final class TonConnectConnectAttemptTracker {
     private let session: RedAnalyticsSessionHolder
     private let attemptSource: RedAnalyticsAttemptSource
     private let isSafeMode: Bool
+    private let utm: UtmParameters
 
     init(
         makeSession: @escaping () -> RedAnalyticsSessionHolder,
         attemptSource: RedAnalyticsAttemptSource,
-        isSafeMode: Bool
+        isSafeMode: Bool,
+        utm: UtmParameters = .empty
     ) {
         session = makeSession()
         self.attemptSource = attemptSource
         self.isSafeMode = isSafeMode
+        self.utm = utm
     }
 
     func start(manifestHost: String, returnStrategy: String?) {
@@ -24,7 +28,8 @@ final class TonConnectConnectAttemptTracker {
                 .dappHost: manifestHost,
                 "return_strategy": returnStrategy,
                 "is_safe_mode": isSafeMode,
-            ]
+            ],
+            utm: utm
         )
     }
 

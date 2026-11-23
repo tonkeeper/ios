@@ -11,4 +11,5 @@ struct Account {
     let isWallet: Bool
     let isScam: Bool?
     let isMemoRequired: Bool?
+    var interfaces: [String] = []
 }

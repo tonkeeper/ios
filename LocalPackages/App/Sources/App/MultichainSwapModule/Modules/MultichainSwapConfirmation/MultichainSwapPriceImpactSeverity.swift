@@ -1,3 +1,6 @@
+import Foundation
+import KeeperCore
+
 enum MultichainSwapPriceImpactSeverity: String, Equatable {
     case none
     case warning
@@ -27,5 +30,17 @@ enum MultichainSwapPriceImpactSeverity: String, Equatable {
         case .warning, .danger:
             return true
         }
+    }
+}
+
+extension AmountFormatter {
+    /// A value difference the way the receive card reads it, with nothing around the sign or the percent:
+    /// "−4%".
+    func swapPriceImpactPercent(bps: Int) -> String {
+        var configuration = config
+        configuration.style = .percent
+        configuration.signPolicy = .negativeOnly
+        configuration.space = ""
+        return AmountFormatter(configuration: configuration).format(decimal: Decimal(bps) / 100)
     }
 }

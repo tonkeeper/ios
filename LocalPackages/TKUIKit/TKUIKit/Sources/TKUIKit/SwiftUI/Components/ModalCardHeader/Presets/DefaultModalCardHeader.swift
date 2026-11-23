@@ -4,15 +4,31 @@ import SwiftUI
 public struct DefaultModalCardHeader: View {
     var config: Config
 
+    @Environment(\.tkPalette) private var palette
+    @Environment(\.tkPreviewLiquidGlass) private var previewLiquidGlass
+    @Environment(\.tkModalCardHeaderStaysInCard) private var staysInCard
+
     @State private var rightButtonAnchorView: UIView?
     @State private var secondaryRightButtonAnchorView: UIView?
     @State private var leftButtonAnchorView: UIView?
+    /// Under liquid glass a header in a navigation controller hands its content to the system bar.
+    @State private var isInNavigationStack = false
+
+    private let usesSystemBar = TKLiquidGlass.isEnabled
 
     public init(config: Config) {
         self.config = config
     }
 
     public var body: some View {
+        if #available(iOS 26.0, *), usesSystemBar, !staysInCard {
+            systemBarBody
+        } else {
+            cardBody
+        }
+    }
+
+    private var cardBody: some View {
         Group {
             switch config.height {
             case .compact:
@@ -52,7 +68,7 @@ public struct DefaultModalCardHeader: View {
                 if let subtitle = config.subtitle {
                     VStack(spacing: 0) {
                         titleView
-                            .padding(.top, Layout.titleTopPaddingCompact)
+                            .padding(.top, metrics.titleTopPaddingCompact)
                         if let onTap = subtitle.onTap {
                             Button {
                                 onTap()
@@ -67,10 +83,11 @@ public struct DefaultModalCardHeader: View {
                     }
                 } else {
                     titleView
-                        .padding(.top, Layout.titleTopPaddingRegular)
+                        .padding(.top, metrics.titleTopPaddingRegular)
+                        .padding(.bottom, titleBottomPadding)
                 }
             } trailing: {
-                HStack(spacing: Layout.trailingIconsSpacing) {
+                HStack(spacing: metrics.trailingButtonsSpacing) {
                     if let icon = config.rightIcon {
                         iconButton(config: icon, anchor: $rightButtonAnchorView)
                     }
@@ -84,7 +101,25 @@ public struct DefaultModalCardHeader: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, Layout.horizontalInset)
+        .padding(.horizontal, metrics.horizontalInset)
+    }
+
+    private var isGlass: Bool {
+        TKLiquidGlass.isEnabled(previewPin: previewLiquidGlass)
+    }
+
+    private var metrics: Layout.Metrics {
+        isGlass ? .liquidGlass : .regular
+    }
+
+    /// A compact header is as tall as its content, so space below the title would move what follows it.
+    private var titleBottomPadding: CGFloat {
+        guard case .atLeast = config.height else { return 0 }
+        return metrics.titleBottomPadding
+    }
+
+    private var glassTint: Color {
+        palette.background.content.opacity(Layout.LiquidGlass.tintOpacity)
     }
 
     private var titleView: some View {
@@ -106,6 +141,8 @@ public struct DefaultModalCardHeader: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: config.title.alignment.swiftUiAlignment)
+        // A title at a side lines up with the buttons' glass, not with their slots.
+        .padding(.horizontal, isGlass && config.title.alignment != .center ? Layout.LiquidGlass.buttonInset : 0)
     }
 
     private var titleText: some View {
@@ -179,7 +216,7 @@ public struct DefaultModalCardHeader: View {
         }
         .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
         .accessibilityIdentifierIfPresent(config.accessibilityIdentifier)
-        .padding(.top, Layout.iconTopPadding)
+        .padding(.top, metrics.buttonsTopPadding)
         .overlay(
             AnchorViewResolver { view in
                 anchor.wrappedValue = view
@@ -190,44 +227,202 @@ public struct DefaultModalCardHeader: View {
 
     private func textButton(config: TextButton) -> some View {
         Button(action: config.onTap) {
-            Text(config.title)
-                .textStyle(.label2)
-                .foregroundStyle(.buttonSecondaryForeground)
-                .padding(.horizontal, Layout.textButtonHorizontalPadding)
-                .frame(height: Layout.textButtonHeight)
-                .background(.buttonSecondaryBackground)
-                .clipShape(Capsule())
+            if isGlass {
+                Text(config.title)
+                    .textStyle(.label2)
+                    .foregroundStyle(.buttonSecondaryForeground)
+                    .padding(.horizontal, Layout.LiquidGlass.textButtonHorizontalPadding)
+                    .frame(height: Layout.LiquidGlass.buttonSide)
+                    .tkGlassBackground(tint: glassTint, in: Capsule())
+                    .padding(Layout.LiquidGlass.buttonInset)
+            } else {
+                Text(config.title)
+                    .textStyle(.label2)
+                    .foregroundStyle(.buttonSecondaryForeground)
+                    .padding(.horizontal, Layout.textButtonHorizontalPadding)
+                    .frame(height: Layout.textButtonHeight)
+                    .background(.buttonSecondaryBackground)
+                    .clipShape(Capsule())
+            }
         }
         .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
         .accessibilityIdentifierIfPresent(config.accessibilityIdentifier)
-        .padding(.top, Layout.iconTopPadding)
+        .padding(.top, metrics.buttonsTopPadding)
     }
 
+    @ViewBuilder
     private func iconView(
         config: Icon
     ) -> some View {
-        Group {
-            if let lottie = config.lottie {
+        if isGlass {
+            iconContent(
+                config: config,
+                image: config.liquidGlassImage ?? config.image,
+                size: config.liquidGlassImage == nil ? config.size : Layout.LiquidGlass.iconSide
+            )
+            .frame(width: Layout.LiquidGlass.buttonSide, height: Layout.LiquidGlass.buttonSide)
+            // A lottie drawn at the glass glyph size spreads its ripple past the circle.
+            .clipShape(Circle())
+            // The glass takes no touches, and neither does a lottie: the circle is the button.
+            .contentShape(Circle())
+            .tkGlassBackground(tint: glassTint, in: Circle())
+            .padding(Layout.LiquidGlass.buttonInset)
+        } else {
+            iconContent(config: config, image: config.image, size: config.size)
+                .padding(config.lottie == nil ? config.padding : 0)
+                .background(.buttonSecondaryBackground)
+                .clipShape(Circle())
+        }
+    }
+
+    @ViewBuilder
+    private func iconContent(config: Icon, image: UIImage, size: CGFloat) -> some View {
+        if let lottie = config.lottie {
+            if isGlass {
+                // The animation draws its glyph at `config.size` inside `config.padding`, so it scales with the glyph.
+                let glyphScale = config.size > 0 ? size / config.size : 1
+                LottieFramesIconView(
+                    resource: lottie.resource,
+                    isOn: lottie.isOn,
+                    side: Layout.LiquidGlass.buttonSide,
+                    contentSide: (config.size + config.padding * 2) * glyphScale
+                )
+            } else {
                 LottieIconView(resource: lottie.resource, isOn: lottie.isOn)
                     .frame(
                         width: config.size + config.padding * 2,
                         height: config.size + config.padding * 2
                     )
+            }
+        } else {
+            Image(uiImage: image)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .foregroundStyle(config.tintColor)
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+private extension DefaultModalCardHeader {
+    /// Away from a navigation controller there is no system bar, so the card header stays.
+    var systemBarBody: some View {
+        Group {
+            if isInNavigationStack {
+                Color.clear.frame(height: 0)
             } else {
-                Image(uiImage: config.image)
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(
-                        width: config.size,
-                        height: config.size
-                    )
-                    .foregroundStyle(config.tintColor)
-                    .padding(config.padding)
+                cardBody
             }
         }
-        .background(.buttonSecondaryBackground)
-        .clipShape(Circle())
+        .background(
+            TKNavigationStackProbe { isInStack in
+                guard isInNavigationStack != isInStack else { return }
+                isInNavigationStack = isInStack
+            }
+        )
+        .toolbar {
+            if isInNavigationStack {
+                systemBarToolbar
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        // The bridged toolbar owns the navigation item, so the hosting controller's own flag is not enough;
+        // the header's back button, if any, is its left icon.
+        .navigationBarBackButtonHidden(isInNavigationStack)
+    }
+
+    @ToolbarContentBuilder
+    var systemBarToolbar: some ToolbarContent {
+        if let icon = config.leftIcon {
+            ToolbarItem(placement: .topBarLeading) {
+                systemBarIconButton(icon, anchor: $leftButtonAnchorView)
+            }
+        }
+        if hasSystemBarTitle {
+            ToolbarItem(placement: .principal) {
+                systemBarTitle
+            }
+        }
+        if let icon = config.rightIcon {
+            ToolbarItem(placement: .topBarTrailing) {
+                systemBarIconButton(icon, anchor: $rightButtonAnchorView)
+            }
+        }
+        if let icon = config.secondaryRightIcon {
+            // Keeps the two buttons in separate glass circles.
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarItem(placement: .topBarTrailing) {
+                systemBarIconButton(icon, anchor: $secondaryRightButtonAnchorView)
+            }
+        }
+        if let textButton = config.rightTextButton {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: textButton.onTap) {
+                    Text(textButton.title)
+                        .textStyle(.label2)
+                        .foregroundStyle(.buttonSecondaryForeground)
+                }
+                .accessibilityIdentifierIfPresent(textButton.accessibilityIdentifier)
+            }
+        }
+    }
+
+    func systemBarIconTint(_ icon: Icon) -> TKColor {
+        if icon.lottie?.isOn == true {
+            return .accentBlue
+        }
+        return icon.tintColor == .buttonSecondaryForeground ? .iconPrimary : icon.tintColor
+    }
+
+    var hasSystemBarTitle: Bool {
+        !config.title.text.isEmpty || config.subtitle != nil
+    }
+
+    var systemBarTitle: some View {
+        VStack(spacing: 0) {
+            if !config.title.text.isEmpty {
+                titleView
+            }
+            if let subtitle = config.subtitle {
+                if let onTap = subtitle.onTap {
+                    Button(action: onTap) {
+                        subtitleView(subtitle: subtitle)
+                    }
+                    .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
+                } else {
+                    subtitleView(subtitle: subtitle)
+                }
+            }
+        }
+        .fixedSize()
+    }
+
+    func systemBarIconButton(_ icon: Icon, anchor: Binding<UIView?>) -> some View {
+        Button {
+            icon.onTap(anchor.wrappedValue)
+        } label: {
+            // A Lottie icon is drawn for a 16 pt glyph, so the bar shows its static glyph at the bar's size,
+            // in the accent colour while it is on.
+            let liquidGlassImage = icon.liquidGlassImage
+            Image(uiImage: liquidGlassImage ?? icon.image)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(
+                    width: liquidGlassImage == nil ? icon.size : icon.systemBarImageSize,
+                    height: liquidGlassImage == nil ? icon.size : icon.systemBarImageSize
+                )
+                .foregroundStyle(systemBarIconTint(icon))
+        }
+        .accessibilityIdentifierIfPresent(icon.accessibilityIdentifier)
+        .overlay(
+            AnchorViewResolver { view in
+                anchor.wrappedValue = view
+                icon.onResolveAnchorView?(view)
+            }
+        )
     }
 }
 
@@ -263,6 +458,53 @@ private struct LottieIconView: View {
     }
 }
 
+/// Plays the animation as images, as the tab bar does: glass glitches over a live animation view.
+private struct LottieFramesIconView: View {
+    let resource: LottieResource
+    let isOn: Bool
+    let side: CGFloat
+    let contentSide: CGFloat
+
+    @Environment(\.displayScale) private var displayScale
+    @State private var playbackStart: Date?
+
+    var body: some View {
+        // Ready on first draw, which draws one frame: no empty circle, and a tap finds its playback.
+        let frames = TKLottieFrames.frames(
+            resource,
+            size: CGSize(width: side, height: side),
+            contentSize: CGSize(width: contentSide, height: contentSide),
+            scale: displayScale,
+            colors: .original
+        )
+        TimelineView(.animation(minimumInterval: nil, paused: playbackStart == nil)) { context in
+            if let frames {
+                Image(uiImage: frames.image(at: frameIndex(at: context.date, of: frames)))
+                    .resizable()
+            }
+        }
+        .frame(width: side, height: side)
+        .allowsHitTesting(false)
+        .task(id: playbackStart) {
+            guard let playbackStart else { return }
+            let remaining = (frames?.duration ?? 0) - Date().timeIntervalSince(playbackStart)
+            if remaining > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+            }
+            guard !Task.isCancelled else { return }
+            self.playbackStart = nil
+        }
+        .onChange(of: isOn) { newValue in
+            playbackStart = newValue ? Date() : nil
+        }
+    }
+
+    private func frameIndex(at date: Date, of frames: TKLottieFrames) -> Int {
+        guard let playbackStart else { return isOn ? frames.count - 1 : 0 }
+        return Int(date.timeIntervalSince(playbackStart) * frames.framerate)
+    }
+}
+
 public extension DefaultModalCardHeader {
     enum Height {
         case compact
@@ -293,6 +535,12 @@ public extension DefaultModalCardHeader {
         public var lottie: Lottie?
         public var onTap: (_ sourceView: UIView?) -> Void
         public var onResolveAnchorView: ((UIView) -> Void)?
+        /// Drawn at 28 pt on liquid glass, as the design system's header buttons are; without it the glass
+        /// button keeps `image` at `size`.
+        public var liquidGlassImage: UIImage?
+        /// The system bar's size for `liquidGlassImage`, for a glyph that fills its 28 pt canvas more than the
+        /// outline icons do, so it looks as heavy as them.
+        public var systemBarImageSize: CGFloat
 
         public init(
             image: UIImage,
@@ -301,6 +549,8 @@ public extension DefaultModalCardHeader {
             accessibilityIdentifier: String? = nil,
             tintColor: TKColor = .buttonSecondaryForeground,
             lottie: Lottie? = nil,
+            liquidGlassImage: UIImage? = nil,
+            systemBarImageSize: CGFloat = 28,
             onTap: @escaping (_ sourceView: UIView?) -> Void,
             onResolveAnchorView: ((UIView) -> Void)? = nil
         ) {
@@ -310,8 +560,10 @@ public extension DefaultModalCardHeader {
             self.accessibilityIdentifier = accessibilityIdentifier
             self.tintColor = tintColor
             self.lottie = lottie
+            self.liquidGlassImage = liquidGlassImage
             self.onTap = onTap
             self.onResolveAnchorView = onResolveAnchorView
+            self.systemBarImageSize = systemBarImageSize
         }
 
         public static func close(
@@ -323,6 +575,7 @@ public extension DefaultModalCardHeader {
                 size: 16,
                 padding: 8,
                 accessibilityIdentifier: accessibilityIdentifier,
+                liquidGlassImage: .TKUIKit.Icons.Size28.xmarkOutline,
                 onTap: onTap
             )
         }
@@ -336,6 +589,7 @@ public extension DefaultModalCardHeader {
                 size: 16,
                 padding: 8,
                 accessibilityIdentifier: accessibilityIdentifier,
+                liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                 onTap: onTap
             )
         }
@@ -481,20 +735,54 @@ public extension DefaultModalCardHeader {
 
 extension DefaultModalCardHeader {
     enum Layout {
-        static let horizontalInset: CGFloat = 16
-        static let titleTopPaddingRegular: CGFloat = 18
-        static let titleTopPaddingCompact: CGFloat = 8
         static let subtitleElementsPadding: CGFloat = 4
-        static let subtitleAccentImageSize: CGFloat = 16
+        static let subtitleAccentImageSize: CGFloat = 12
         static let subtitleAccentImageLeading: CGFloat = 4
         static let subtitleAccentImageTrailing: CGFloat = 4
         static let titleTrailingIconSpacing: CGFloat = 4
 
-        static let iconTopPadding: CGFloat = 16
-        static let trailingIconsSpacing: CGFloat = 12
         static let textButtonHeight: CGFloat = 32
         static let textButtonHorizontalPadding: CGFloat = 12
         static let minHeight: CGFloat = 64
+
+        /// The title is centred on the buttons' row in both variants. The glass row keeps the header at the
+        /// 64 pt its callers lay content under (Figma's 70 has 8 pt below the buttons, this has 2). In a header
+        /// with a minimum height, a glass title that wraps past it keeps Figma's 8 pt below; one line still fits.
+        struct Metrics {
+            var horizontalInset: CGFloat
+            var buttonsTopPadding: CGFloat
+            var titleTopPaddingRegular: CGFloat
+            var titleTopPaddingCompact: CGFloat
+            var titleBottomPadding: CGFloat
+            var trailingButtonsSpacing: CGFloat
+
+            static let regular = Metrics(
+                horizontalInset: 16,
+                buttonsTopPadding: 16,
+                titleTopPaddingRegular: 18,
+                titleTopPaddingCompact: 8,
+                titleBottomPadding: 0,
+                trailingButtonsSpacing: 12
+            )
+
+            static let liquidGlass = Metrics(
+                horizontalInset: 14,
+                buttonsTopPadding: 14,
+                titleTopPaddingRegular: 24,
+                titleTopPaddingCompact: 14,
+                titleBottomPadding: 8,
+                trailingButtonsSpacing: 8
+            )
+        }
+
+        enum LiquidGlass {
+            static let buttonSide: CGFloat = 44
+            static let iconSide: CGFloat = 28
+            /// A button's glass sits inside a 48 pt slot.
+            static let buttonInset: CGFloat = 2
+            static let textButtonHorizontalPadding: CGFloat = 16
+            static let tintOpacity: CGFloat = 0.8
+        }
     }
 }
 
@@ -506,5 +794,24 @@ private extension View {
         } else {
             self
         }
+    }
+}
+
+private struct TKModalCardHeaderStaysInCardKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+public extension EnvironmentValues {
+    var tkModalCardHeaderStaysInCard: Bool {
+        get { self[TKModalCardHeaderStaysInCardKey.self] }
+        set { self[TKModalCardHeaderStaysInCardKey.self] = newValue }
+    }
+}
+
+public extension View {
+    /// Keeps `DefaultModalCardHeader`s drawn as cards in a navigation stack under liquid glass, for a screen
+    /// that shows headers as content rather than as its own header, such as a catalog of them.
+    func tkModalCardHeaderStaysInCard() -> some View {
+        environment(\.tkModalCardHeaderStaysInCard, true)
     }
 }

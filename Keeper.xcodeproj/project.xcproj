@@ -1,0 +1,810 @@
+{
+  "default-configuration": "KeeperDebug",
+  "configurations": [
+    { "name": "KeeperDebug", "file": "Configurations/KeeperDebug.xcconfig" },
+    { "name": "KeeperDevDebug", "file": "Configurations/KeeperDevDebug.xcconfig" },
+    { "name": "KeeperDevRelease", "file": "Configurations/KeeperDevRelease.xcconfig" },
+    { "name": "KeeperRelease", "file": "Configurations/KeeperRelease.xcconfig" },
+    { "name": "KeeperUKDebug", "file": "Configurations/KeeperUK.xcconfig" },
+    { "name": "KeeperUKRelease", "file": "Configurations/KeeperUK.xcconfig" },
+  ],
+  "localizations": {
+    "development": "en",
+    "supported": [
+      "Base",
+      "de",
+      "es",
+      "id",
+      "ru",
+      "tr",
+      "uk",
+      "uz",
+      "zh-Hans",
+    ],
+  },
+  "packages": [
+    {
+      "kind": "remote",
+      "repository": "https://github.com/firebase/firebase-ios-sdk",
+      "version": {
+        "up-to-next-major-version": "12.8.0",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/linkrunner-labs/linkrunner-ios.git",
+      "version": {
+        "up-to-next-major-version": "4.1.0",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/BranchMetrics/ios-branch-sdk-spm",
+      "version": {
+        "up-to-next-major-version": "3.14.2",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/AppsFlyerSDK/AppsFlyerFramework",
+      "version": {
+        "up-to-next-major-version": "7.0.4",
+      },
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/AppModules/WalletExtensions",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/AppModules/WidgetUI",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/TKUIKit",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/TKCore",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/KeeperCore",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/AppModules/Stories",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/App",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/TKCoordinator",
+    }, {
+      "kind": "local",
+      "path": "LocalPackages/TKScreenKit",
+    },
+  ],
+  "files": [
+    {
+      "kind": "group",
+      "path": "LocalPackages",
+      "children": [
+        { "path": "TKBase" },
+        {
+          "kind": "group",
+          "path": "AppModules",
+          "children": [
+            { "path": "AppUI" },
+            { "path": "Perps" },
+            { "path": "MoonPay" },
+            { "path": "WalletExtensions" },
+            { "path": "WidgetUI" },
+            { "path": "SignRaw" },
+            { "path": "Stories" },
+          ],
+        },
+        { "path": "Ledger" },
+        { "path": "App" },
+        { "path": "KeeperCore" },
+        { "path": "TKCoordinator" },
+        { "path": "TKScreenKit" },
+        { "path": "TKUIKit" },
+        { "path": "TKCore" },
+        { "path": "TronSwift" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "Keeper",
+      "children": [
+        { "path": "AppDelegate.swift", "target-membership": [ "Keeper/compile-sources" ] },
+        { "path": "CampaignAttributionService.swift", "target-membership": [ "Keeper/compile-sources" ] },
+        { "path": "SceneDelegate.swift", "target-membership": [ "Keeper/compile-sources" ] },
+        {
+          "kind": "group",
+          "path": "Resources",
+          "children": [
+            { "path": "Assets.xcassets", "target-membership": [ "Keeper/resources" ] },
+            {
+              "kind": "variant-group",
+              "name": "LaunchScreen.storyboard",
+              "target-membership": [
+                "Keeper/resources",
+              ],
+              "children": [
+                {
+                  "path": "Base.lproj/LaunchScreen.storyboard",
+                }, {
+                  "path": "ru.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "tr.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "uz.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "id.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "uk.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "zh-Hans.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "de.lproj/LaunchScreen.strings",
+                }, {
+                  "path": "es.lproj/LaunchScreen.strings",
+                },
+              ],
+            },
+            { "path": "Info.plist" },
+            { "path": "FlagsOverride.json", "target-membership": [ "Keeper/resources" ] },
+          ],
+        },
+      ],
+    }, {
+      "kind": "group",
+      "path": "KeeperWidget",
+      "children": [
+        {
+          "kind": "group",
+          "path": "Extensions",
+          "children": [
+            { "path": "WidgetConfiguration+ContentMargins.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "View+WidgetBackground.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+          ],
+        }, {
+          "kind": "group",
+          "path": "TransactionLiveActivity",
+          "children": [
+            { "path": "TransactionLiveActivityWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "TransactionLiveActivityViews.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+          ],
+        },
+        { "path": "../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityAttributes.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityPresentation.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityCounterparties.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/LiveActivity/TransactionLiveActivityIcons.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/Widget/WalletWidgetSnapshot.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/Widget/WalletWidgetLink.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "../LocalPackages/App/Sources/App/Shared/Widget/PriceWidgetSnapshot.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        {
+          "kind": "group",
+          "path": "RateWidget",
+          "children": [
+            {
+              "kind": "group",
+              "path": "Intents",
+              "children": [
+                {
+                  "kind": "variant-group",
+                  "name": "RateWidget.intentdefinition",
+                  "target-membership": [
+                    { "build-phase": "Keeper/compile-sources", "code-generation-visibility": "private" },
+                    { "build-phase": "KeeperWidgetExtension/compile-sources", "code-generation-visibility": "private" },
+                    "KeeperIntents/compile-sources",
+                  ],
+                  "children": [
+                    {
+                      "path": "Base.lproj/RateWidget.intentdefinition",
+                    }, {
+                      "path": "en.lproj/RateWidget.strings",
+                    }, {
+                      "path": "zh-Hans.lproj/RateWidget.strings",
+                    }, {
+                      "path": "de.lproj/RateWidget.strings",
+                    }, {
+                      "path": "id.lproj/RateWidget.strings",
+                    }, {
+                      "path": "ru.lproj/RateWidget.strings",
+                    }, {
+                      "path": "tr.lproj/RateWidget.strings",
+                    }, {
+                      "path": "uk.lproj/RateWidget.strings",
+                    }, {
+                      "path": "uz.lproj/RateWidget.strings",
+                    }, {
+                      "path": "es.lproj/RateWidget.strings",
+                    },
+                  ],
+                },
+              ],
+            },
+            { "path": "RateChartWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "RateWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "RateWidgetEntry.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "RateWidgetTimelineProvider.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "RateWidgetConfigurationIntent.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "PriceWidgetLoader.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+          ],
+        }, {
+          "kind": "group",
+          "path": "WatchlistWidget",
+          "children": [
+            { "path": "WatchlistWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+          ],
+        }, {
+          "kind": "group",
+          "path": "BalanceWidget",
+          "children": [
+            { "path": "BalanceWidgetEntry.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "ActionsWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "BalanceWidgetConfigurationIntent.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            {
+              "kind": "variant-group",
+              "name": "BalanceWidget.strings",
+              "target-membership": [
+                "KeeperWidgetExtension/resources",
+              ],
+              "children": [
+                {
+                  "path": "en.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "de.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "es.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "id.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "ru.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "tr.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "uk.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "uz.lproj/BalanceWidget.strings",
+                }, {
+                  "path": "zh-Hans.lproj/BalanceWidget.strings",
+                },
+              ],
+            },
+            { "path": "BalanceWidgetTimelineProvider.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+            { "path": "BalanceWidget.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+          ],
+        },
+        { "path": "KeeperWidgetBundle.swift", "target-membership": [ "KeeperWidgetExtension/compile-sources" ] },
+        { "path": "Assets.xcassets", "target-membership": [ "KeeperWidgetExtension/resources" ] },
+        { "path": "Info.plist" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "Configurations",
+      "children": [
+        {
+          "kind": "group",
+          "path": "Entitlements",
+          "children": [
+            { "path": "Keeper.entitlements" },
+            { "path": "KeeperWidgetExtension.entitlements" },
+            { "path": "KeeperNotificationService.entitlements" },
+          ],
+        },
+        { "path": "KeeperRelease.xcconfig" },
+        { "path": "KeeperDebug.xcconfig" },
+        { "path": "KeeperDevDebug.xcconfig" },
+        { "path": "KeeperDevRelease.xcconfig" },
+        { "path": "KeeperUK.xcconfig" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "KeeperIntents",
+      "children": [
+        { "path": "KeeperIntents.entitlements" },
+        {
+          "path": "IntentHandler.swift",
+          "target-membership": [
+            "KeeperWidgetExtension/compile-sources",
+            "KeeperIntents/compile-sources",
+          ],
+        },
+        { "path": "Info.plist" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "KeeperNotificationService",
+      "children": [
+        { "path": "NotificationService.swift", "target-membership": [ "KeeperNotificationService/compile-sources" ] },
+        { "path": "Info.plist" },
+      ],
+    }, {
+      "kind": "group",
+      "name": "Frameworks",
+      "children": [
+        { "path": "<SDK>/System/Library/Frameworks/WidgetKit.framework", "target-membership": [ "KeeperWidgetExtension/frameworks" ] },
+        { "path": "<SDK>/System/Library/Frameworks/SwiftUI.framework", "target-membership": [ "KeeperWidgetExtension/frameworks" ] },
+        { "path": "<SDK>/System/Library/Frameworks/Intents.framework", "target-membership": [ "KeeperIntents/frameworks" ] },
+      ],
+    }, {
+      "kind": "group",
+      "name": "Products",
+      "children": [
+        { "path": "<PRODUCTS>/Keeper.app", "id": "7DB8FB622A1BCC92005B4B11", "type": "wrapper.application", "index": false },
+        { "path": "<PRODUCTS>/KeeperWidgetExtension.appex", "id": "7D3F25DA2AC19417002DF1B7", "type": "wrapper.app-extension", "index": false, "target-membership": [ { "build-phase": "Keeper/copy/Embed Foundation Extensions", "header-preservation": "remove-on-copy" } ] },
+        { "path": "<PRODUCTS>/KeeperIntents.appex", "id": "7DDBBFEB2ACCA10E00F811A5", "type": "wrapper.app-extension", "index": false, "target-membership": [ { "build-phase": "Keeper/copy/Embed Foundation Extensions", "header-preservation": "remove-on-copy" } ] },
+        { "path": "<PRODUCTS>/KeeperNotificationService.appex", "id": "DC3BA2BA5CFB2899B6EE7B6C", "type": "wrapper.app-extension", "index": false, "target-membership": [ { "build-phase": "Keeper/copy/Embed Foundation Extensions", "header-preservation": "remove-on-copy" } ] },
+      ],
+    },
+  ],
+  "targets": [
+    {
+      "name": "Keeper",
+      "id": "7DB8FB612A1BCC92005B4B11",
+      "product": "Products/Keeper.app",
+      "product-type": "application",
+      "dependencies": [
+        "KeeperWidgetExtension",
+        "KeeperIntents",
+        "KeeperNotificationService",
+      ],
+      "build-phases": [
+        {
+          "kind": "script",
+          "name": "Setup Hooks",
+          "log-environment-variables": true,
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": [
+            "set -e",
+            "",
+            "if [ -n \"$CI\" ]; then",
+            "    exit 0",
+            "fi",
+            "",
+            "make hooks -C \"${SRCROOT}\"",
+            "",
+          ],
+        }, {
+          "kind": "script",
+          "name": "SwiftLint",
+          "log-environment-variables": true,
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": [
+            "set -e",
+            "",
+            "TOOL=\"${SRCROOT}/scripts/tools/tool.sh\"",
+            "",
+            "if ! \"$TOOL\" swiftlint --version >/dev/null 2>&1; then",
+            "    echo \"warning: pinned SwiftLint not installed, skipping lint. Install it with: make setup\"",
+            "    exit 0",
+            "fi",
+            "",
+            "\"$TOOL\" swiftlint lint --config \"${SRCROOT}/.swiftlint.yml\"",
+            "",
+          ],
+        },
+        "compile-sources",
+        "frameworks",
+        "resources",
+        {
+          "kind": "copy",
+          "name": "Embed Frameworks",
+          "bundle-base-path": "frameworks-directory",
+        }, {
+          "kind": "copy",
+          "name": "Embed Foundation Extensions",
+          "bundle-base-path": "plugins-directory",
+        }, {
+          "kind": "script",
+          "name": "Link KeeperResources to the widget's copy",
+          "log-environment-variables": true,
+          "input-paths": [
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/KeeperResources_KeeperResources.bundle",
+            "$(TARGET_BUILD_DIR)/$(PLUGINS_FOLDER_PATH)/KeeperWidgetExtension.appex",
+          ],
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": [
+            "set -e",
+            "case \"${CONFIGURATION}\" in",
+            "    *Release) ;;",
+            "    *) exit 0 ;;",
+            "esac",
+            "",
+            "# WidgetKit reads fonts (UIAppFonts) and images out of process, so the widget keeps",
+            "# the real bundle. The app and intents share it through a relative symlink.",
+            "# Without the widget's bundle, keep the app's copy.",
+            "name=KeeperResources_KeeperResources.bundle",
+            "target=\"PlugIns/KeeperWidgetExtension.appex/$name\"",
+            "cd \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\" || exit 1",
+            "[ -d \"$target\" ] || exit 0",
+            "rm -rf \"$name\"",
+            "ln -s \"$target\" \"$name\"",
+            "",
+          ],
+        }, {
+          "kind": "script",
+          "name": "Firebase plist",
+          "log-environment-variables": true,
+          "input-paths": [
+            "$(SRCROOT)/scripts/firebase/copy_google_service_info.sh",
+            "$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/Keeper/GoogleService-Info.plist",
+            "$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/KeeperDev/GoogleService-Info.plist",
+            "$(PROJECT_DIR)/$(TARGET_NAME)/Resources/Firebase/KeeperUK/GoogleService-Info.plist",
+          ],
+          "output-paths": [
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+          ],
+          "shell": "/bin/sh",
+          "script": [
+            "set -e",
+            "",
+            "\"${SRCROOT}/scripts/firebase/copy_google_service_info.sh\"",
+            "",
+          ],
+        }, {
+          "kind": "script",
+          "name": "Crashlytics+dSYM",
+          "log-environment-variables": true,
+          "input-paths": [
+            "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+            "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+            "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+            "$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+          ],
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": [
+            "set -e",
+            "",
+            "case \"${CONFIGURATION}\" in",
+            "    *Release) ;;",
+            "    *) exit 0 ;;",
+            "esac",
+            "",
+            "SCRIPT_DIR=\"${CLONED_SOURCE_PACKAGES_DIR:-${BUILD_DIR%/Build/*}/SourcePackages}\"",
+            "if [ ! -x \"${SCRIPT_DIR}/checkouts/firebase-ios-sdk/Crashlytics/run\" ]; then",
+            "  SCRIPT_DIR=\"${BUILD_DIR%/Build/*}/SourcePackages\"",
+            "fi",
+            "",
+            "\"${SCRIPT_DIR}/checkouts/firebase-ios-sdk/Crashlytics/run\"",
+            "",
+          ],
+        },
+      ],
+      "package-product-members": [
+        {
+          "product-name": "KeeperCore",
+          "build-phase": { "build-phase": "copy/Embed Frameworks", "code-sign-on-copy": true },
+        }, {
+          "product-name": "KeeperCore",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "TKBase",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "TKUIKit",
+          "build-phase": { "build-phase": "copy/Embed Frameworks", "code-sign-on-copy": true },
+        }, {
+          "product-name": "TKUIKit",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "App",
+          "product-name": "App",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Stories",
+          "product-name": "TKStories",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "TKCoordinator",
+          "product-name": "TKCoordinator",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "TKCore",
+          "product-name": "TKCore",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "TKScreenKit",
+          "product-name": "TKScreenKit",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "ios-branch-sdk-spm",
+          "product-name": "BranchSDK",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "linkrunner-ios",
+          "product-name": "LinkrunnerKitStatic",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "AppsFlyerFramework",
+          "product-name": "AppsFlyerLib",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "${ICON_NAME}",
+        "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+        "CODE_SIGN_ENTITLEMENTS": "Configurations/Entitlements/Keeper.entitlements",
+        "CODE_SIGN_IDENTITY": "Apple Development",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "$(BUILD_NUMBER)",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "Keeper/Resources/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "$(BUNDLE_DISPLAY_NAME)",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
+        "INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription": "Keeper uses Bluetooth to connect your Ledger Nano X, Stax, Flex or Nano Gen5",
+        "INFOPLIST_KEY_NSCameraUsageDescription": "Keeper uses camera to scan QR codes",
+        "INFOPLIST_KEY_NSFaceIDUsageDescription": "Keeper uses biometric authentication to authorize transactions",
+        "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Microphone access is required for identity verification.",
+        "INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription": "Keeper saves images to your photo library",
+        "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
+        "INFOPLIST_KEY_UILaunchStoryboardName": "LaunchScreen",
+        "INFOPLIST_KEY_UIStatusBarStyle": "UIStatusBarStyleLightContent",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations": "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/Frameworks",
+        ],
+        "MARKETING_VERSION": "$(APP_VERSION)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "$(PRODUCT_BUNDLE_IDENTIFIER)",
+        "PRODUCT_NAME": "$(BUNDLE_DISPLAY_NAME)",
+        "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
+        "SUPPORTS_MACCATALYST": "NO",
+        "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1",
+      },
+    }, {
+      "name": "KeeperWidgetExtension",
+      "id": "7D3F25D92AC19417002DF1B7",
+      "product": "Products/KeeperWidgetExtension.appex",
+      "product-type": "app-extension",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+        {
+          "kind": "copy",
+          "name": "Embed Frameworks",
+          "bundle-base-path": "frameworks-directory",
+        },
+      ],
+      "package-product-members": [
+        {
+          "product-name": "KeeperCore",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "TKBase",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "TKUIKit",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "WalletExtensions",
+          "product-name": "WalletExtensions",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "WidgetUI",
+          "product-name": "WidgetUI",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+        "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+        "ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME": "WidgetBackground",
+        "CODE_SIGN_ENTITLEMENTS": "Configurations/Entitlements/KeeperWidgetExtension.entitlements",
+        "CODE_SIGN_IDENTITY": "Apple Development",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "$(BUILD_NUMBER)",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "KeeperWidget/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "KeeperWidget",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/Frameworks",
+          "@executable_path/../../Frameworks",
+        ],
+        "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+        "MARKETING_VERSION": "$(APP_VERSION)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SKIP_INSTALL": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    }, {
+      "name": "KeeperIntents",
+      "id": "7DDBBFEA2ACCA10E00F811A5",
+      "product": "Products/KeeperIntents.appex",
+      "product-type": "app-extension",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+        {
+          "kind": "copy",
+          "name": "Embed Frameworks",
+          "bundle-base-path": "frameworks-directory",
+        }, {
+          "kind": "script",
+          "name": "Drop shared TKUIKit resources",
+          "log-environment-variables": true,
+          "input-paths": [
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/KeeperResources_KeeperResources.bundle",
+          ],
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": [
+            "# Keeper.app holds a copy of this bundle, next to the shared TKUIKit framework;",
+            "# SwiftPM still copies it into every product that links TKUIKit. KeeperResourcesBundle finds",
+            "# the app's copy from this extension, so this one is dropped. The widget keeps its own: WidgetKit",
+            "# draws its fonts (UIAppFonts) and images out of process, from the widget's bundle.",
+            "rm -rf \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/KeeperResources_KeeperResources.bundle\"",
+            "",
+          ],
+        },
+      ],
+      "package-product-members": [
+        {
+          "product-name": "KeeperCore",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "TKBase",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "WalletExtensions",
+          "product-name": "WalletExtensions",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+        "CODE_SIGN_ENTITLEMENTS": "KeeperIntents/KeeperIntents.entitlements",
+        "CODE_SIGN_IDENTITY": "Apple Development",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "$(BUILD_NUMBER)",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "KeeperIntents/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "KeeperIntents",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/Frameworks",
+          "@executable_path/../../Frameworks",
+        ],
+        "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+        "MARKETING_VERSION": "$(APP_VERSION)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SKIP_INSTALL": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    }, {
+      "name": "KeeperNotificationService",
+      "id": "4E4E7E85DDF8EAAE78DE2027",
+      "product": "Products/KeeperNotificationService.appex",
+      "product-type": "app-extension",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+      ],
+      "package-product-members": [
+        {
+          "product-name": "KeeperCore",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "firebase-ios-sdk",
+          "product-name": "FirebaseMessaging",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+        "CODE_SIGN_ENTITLEMENTS": "Configurations/Entitlements/KeeperNotificationService.entitlements",
+        "CODE_SIGN_IDENTITY": "Apple Development",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "$(BUILD_NUMBER)",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "KeeperNotificationService/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "KeeperNotificationService",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/Frameworks",
+          "@executable_path/../../Frameworks",
+        ],
+        "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+        "MARKETING_VERSION": "$(APP_VERSION)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "$(NOTIFICATION_SERVICE_PRODUCT_BUNDLE_IDENTIFIER)",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SKIP_INSTALL": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    },
+  ],
+  "build-settings": {
+    "ALWAYS_SEARCH_USER_PATHS": "NO",
+    "CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED": "YES",
+    "CLANG_ENABLE_OBJC_WEAK": "YES",
+    "CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING": "YES",
+    "CLANG_WARN_BOOL_CONVERSION": "YES",
+    "CLANG_WARN_COMMA": "YES",
+    "CLANG_WARN_CONSTANT_CONVERSION": "YES",
+    "CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS": "YES",
+    "CLANG_WARN_EMPTY_BODY": "YES",
+    "CLANG_WARN_ENUM_CONVERSION": "YES",
+    "CLANG_WARN_INFINITE_RECURSION": "YES",
+    "CLANG_WARN_INT_CONVERSION": "YES",
+    "CLANG_WARN_NON_LITERAL_NULL_CONVERSION": "YES",
+    "CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF": "YES",
+    "CLANG_WARN_OBJC_LITERAL_CONVERSION": "YES",
+    "CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER": "YES",
+    "CLANG_WARN_RANGE_LOOP_ANALYSIS": "YES",
+    "CLANG_WARN_STRICT_PROTOTYPES": "YES",
+    "CLANG_WARN_SUSPICIOUS_MOVE": "YES",
+    "CLANG_WARN_UNREACHABLE_CODE": "YES",
+    "CLANG_WARN__DUPLICATE_METHOD_MATCH": "YES",
+    "COPY_PHASE_STRIP": "NO",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperDebug]": "dwarf",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperDevDebug]": "dwarf",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperDevRelease]": "dwarf-with-dsym",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperRelease]": "dwarf-with-dsym",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperUKDebug]": "dwarf",
+    "DEBUG_INFORMATION_FORMAT[config=KeeperUKRelease]": "dwarf-with-dsym",
+    "DEVELOPMENT_TEAM": "CT523DK2KC",
+    "ENABLE_STRICT_OBJC_MSGSEND": "YES",
+    "ENABLE_TESTABILITY[config=KeeperDebug]": "YES",
+    "ENABLE_TESTABILITY[config=KeeperDevDebug]": "YES",
+    "ENABLE_TESTABILITY[config=KeeperUKDebug]": "YES",
+    "GCC_NO_COMMON_BLOCKS": "YES",
+    "GCC_PREPROCESSOR_DEFINITIONS[config=KeeperDebug]": [
+      "DEBUG=1",
+      "$(inherited)",
+    ],
+    "GCC_PREPROCESSOR_DEFINITIONS[config=KeeperDevDebug]": [
+      "DEBUG=1",
+      "$(inherited)",
+    ],
+    "GCC_PREPROCESSOR_DEFINITIONS[config=KeeperUKDebug]": [
+      "DEBUG=1",
+      "$(inherited)",
+    ],
+    "GCC_WARN_64_TO_32_BIT_CONVERSION": "YES",
+    "GCC_WARN_ABOUT_RETURN_TYPE": "YES_ERROR",
+    "GCC_WARN_UNDECLARED_SELECTOR": "YES",
+    "GCC_WARN_UNINITIALIZED_AUTOS": "YES_AGGRESSIVE",
+    "GCC_WARN_UNUSED_FUNCTION": "YES",
+    "GCC_WARN_UNUSED_VARIABLE": "YES",
+    "IPHONEOS_DEPLOYMENT_TARGET": "15.0",
+    "ONLY_ACTIVE_ARCH[config=KeeperDebug]": "YES",
+    "ONLY_ACTIVE_ARCH[config=KeeperDevDebug]": "YES",
+    "ONLY_ACTIVE_ARCH[config=KeeperUKDebug]": "YES",
+    "SDKROOT": "iphoneos",
+    "STRING_CATALOG_GENERATE_SYMBOLS": "YES",
+    "SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=KeeperDebug]": "DEBUG",
+    "SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=KeeperDevDebug]": "DEBUG",
+    "SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=KeeperUKDebug]": "DEBUG",
+    "SWIFT_COMPILATION_MODE[config=KeeperDevRelease]": "wholemodule",
+    "SWIFT_COMPILATION_MODE[config=KeeperRelease]": "wholemodule",
+    "SWIFT_COMPILATION_MODE[config=KeeperUKRelease]": "wholemodule",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperDebug]": "-Onone",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperDevDebug]": "-Onone",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperDevRelease]": "-O",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperRelease]": "-O",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperUKDebug]": "-Onone",
+    "SWIFT_OPTIMIZATION_LEVEL[config=KeeperUKRelease]": "-O",
+    "VALIDATE_PRODUCT[config=KeeperDevRelease]": "YES",
+    "VALIDATE_PRODUCT[config=KeeperRelease]": "YES",
+    "VALIDATE_PRODUCT[config=KeeperUKRelease]": "YES",
+  },
+  "last-upgrade": "27.3",
+  "last-swift-update": "15.0",
+}

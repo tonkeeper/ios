@@ -12,7 +12,7 @@ struct WalletConnectSolanaSigningUtilities {
     func signMessage(
         _ message: String,
         client: CryptoKitClient,
-        cryptoWallet: CryptoWallet
+        cryptoWallet: MnemonicWallet
     ) async throws(WalletConnectSigningError) -> String {
         let response = try await signedFields(
             message,
@@ -29,7 +29,7 @@ struct WalletConnectSolanaSigningUtilities {
     func signTransaction(
         _ transaction: String,
         client: CryptoKitClient,
-        cryptoWallet: CryptoWallet
+        cryptoWallet: MnemonicWallet
     ) async throws(WalletConnectSigningError) -> WalletConnectSolanaSignedTransaction {
         let response = try await signedFields(
             transaction,
@@ -89,7 +89,7 @@ private extension WalletConnectSolanaSigningUtilities {
         _ message: String,
         messageType: ChainKit.MessageType,
         client: CryptoKitClient,
-        cryptoWallet: CryptoWallet
+        cryptoWallet: MnemonicWallet
     ) async throws(WalletConnectSigningError) -> [String: String] {
         let json = try await messageSigning.sign(
             client: client,

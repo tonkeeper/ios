@@ -176,6 +176,15 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         withdrawal.stage = .rejected
         operation.details = .withdraw(withdrawal)
         XCTAssertEqual(TransactionLiveActivitySnapshot(funding: operation).status, .failed)
+        withdrawal.stage = .unknown
+        operation.details = .withdraw(withdrawal)
+        XCTAssertEqual(TransactionLiveActivitySnapshot(funding: operation).status, .pending)
+        withdrawal.failureReason = PerpsWithdrawService.resignRequiredReason
+        operation.details = .withdraw(withdrawal)
+        XCTAssertEqual(TransactionLiveActivitySnapshot(funding: operation).status, .failed)
+        withdrawal.stage = .unconfirmed
+        operation.details = .withdraw(withdrawal)
+        XCTAssertEqual(TransactionLiveActivitySnapshot(funding: operation).status, .failed)
     }
 
     func test_perpsDepositShowsBothNetworksCurrenciesAndDeclaredCredit() {
@@ -264,6 +273,25 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         XCTAssertEqual(incoming.destination?.currency, "BTC")
     }
 
+    func test_receiveHidesTheZeroPlaceholderButKeepsASmallAmount() {
+        let receive = { (amount: String) in
+            self.snapshot(self.activity(
+                id: "eth:\(amount)",
+                status: .confirmed,
+                type: .receive,
+                chain: .eth,
+                direction: .incoming,
+                inToken: self.asset("ETH", chain: .eth),
+                inAmount: amount
+            ))
+        }
+
+        XCTAssertNil(receive("0").destination?.amount)
+        XCTAssertNil(receive("0.0").destination?.amount)
+        XCTAssertEqual(receive("400000").destination?.amount, "0.0004")
+        XCTAssertEqual(receive("0.0004").destination?.amount, "0.0004")
+    }
+
     func test_BTCBridgeTracksEitherLegWithoutConfusingDestinationReceive() {
         let pending = snapshot(activity(
             id: "ton:source",
@@ -293,9 +321,10 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         ))
 
         XCTAssertEqual(pending.id, "swap:ton:source")
-        XCTAssertEqual(pending.title, TKLocales.LiveActivity.Stage.receiving("BTC"))
-        XCTAssertEqual(pending.stage, .init(index: 3, count: 4))
+        XCTAssertEqual(pending.title, TKLocales.LiveActivity.Stage.movingTo(MultichainChain.btc.shortDisplayTitle))
+        XCTAssertEqual(pending.stage, .init(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.arrivingOn(MultichainChain.btc.shortDisplayTitle)))
         XCTAssertNil(completedSwap.stage)
+        XCTAssertEqual(completedSwap.steps, 3)
         XCTAssertEqual(pending.chain, "BTC")
         XCTAssertEqual(pending.detail, "TON → BTC")
         XCTAssertEqual(
@@ -320,8 +349,8 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
             transactionIds: ["ton:source", "TRX:destination"]
         ))
 
-        XCTAssertEqual(swap.stage, .init(index: 3, count: 4))
-        XCTAssertEqual(swap.title, TKLocales.LiveActivity.Stage.receiving("USDT"))
+        XCTAssertEqual(swap.stage, .init(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.arrivingOn("TRON")))
+        XCTAssertEqual(swap.title, TKLocales.LiveActivity.Stage.movingTo("TRON"))
         XCTAssertNotNil(TransactionLiveActivitySelection.matching("swap:tron:destination", in: [swap]))
     }
 
@@ -329,8 +358,8 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         let swap = snapshot(activity(id: "ton:source", status: .pending, type: .swap, toChain: .btc))
 
         XCTAssertEqual(swap.id, "swap:ton:source")
-        XCTAssertEqual(swap.title, TKLocales.LiveActivity.Stage.movingTo("BTC"))
-        XCTAssertEqual(swap.stage, .init(index: 2, count: 4))
+        XCTAssertEqual(swap.title, TKLocales.LiveActivity.Stage.movingTo(MultichainChain.btc.shortDisplayTitle))
+        XCTAssertEqual(swap.stage, .init(index: 2, count: 3, title: TKLocales.LiveActivity.Stage.sending))
         XCTAssertEqual(swap.chain, "BTC")
         XCTAssertEqual(swap.detail, "TON → BTC")
         XCTAssertEqual(swap.source?.network, "TON")
@@ -372,7 +401,6 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         let sendState = TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: metaData)
         XCTAssertEqual(sendState.kind, .send)
         XCTAssertEqual(sendState.wallet?.name, "Savings")
-        XCTAssertEqual(sendState.wallet?.emoji, "⭐️")
         XCTAssertEqual(sendState.counterpartyAddress, "UQabcdefghijklmnopqrstuvwxyz0123456789")
 
         let receive = snapshot(activity(
@@ -386,12 +414,6 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         XCTAssertEqual(receiveState.kind, .receive)
         XCTAssertEqual(receiveState.counterpartyAddress, "0x1234567890123456789012345678901234567890")
         XCTAssertEqual(receiveState.wallet?.name, "Savings")
-
-        let iconState = TransactionLiveActivityMonitor.contentState(
-            for: send,
-            walletMetaData: WalletMetaData(label: "Wallet", tintColor: .SteelGray, icon: .icon(.wallet))
-        )
-        XCTAssertEqual(iconState.wallet?.icon, "wallet")
     }
 
     func test_ownWalletCounterpartyIsNamedAndAnExternalOneIsAnAddress() throws {
@@ -424,8 +446,17 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
 
         let send = snapshot(activity(id: "send", status: .pending, toAddress: savingsAddress.toString()))
         let state = TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: shown.metaData)
-        XCTAssertEqual(TransactionLiveActivityPresentation(state: state, isStale: false, counterparty: label).subtitle, "TON · Savings")
-        XCTAssertEqual(TransactionLiveActivityPresentation(state: state, isStale: false).subtitle, "TON · " + TransactionLiveActivityCounterparties.shortened(savingsAddress.toString()))
+        XCTAssertEqual(
+            TransactionLiveActivityPresentation(state: state, isStale: false, counterparty: label).subtitle,
+            TKLocales.LiveActivity.onNetwork(TKLocales.LiveActivity.to("Savings"), "TON")
+        )
+        XCTAssertEqual(
+            TransactionLiveActivityPresentation(state: state, isStale: false).subtitle,
+            TKLocales.LiveActivity.onNetwork(
+                TKLocales.LiveActivity.to(TransactionLiveActivityCounterparties.shortened(savingsAddress.toString())),
+                "TON"
+            )
+        )
         XCTAssertNil(
             TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: shown.metaData, hidesAmounts: true)
                 .counterpartyAddress
@@ -480,8 +511,14 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         ))
         let metaData = WalletMetaData(label: "Savings", tintColor: .SteelGray, icon: .emoji("⭐️"))
 
-        let shown = TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: metaData)
-        let hidden = TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: metaData, hidesAmounts: true)
+        let shown = TransactionLiveActivityMonitor.contentState(for: send, walletMetaData: metaData, fiat: "$5.00", icon: "ton.png")
+        let hidden = TransactionLiveActivityMonitor.contentState(
+            for: send,
+            walletMetaData: metaData,
+            hidesAmounts: true,
+            fiat: "$5.00",
+            icon: "ton.png"
+        )
 
         XCTAssertNotNil(shown.source?.amount)
         XCTAssertNotNil(shown.counterpartyAddress)
@@ -490,11 +527,17 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
         XCTAssertNil(hidden.counterpartyAddress)
         XCTAssertEqual(hidden.source?.currency, "TON")
         XCTAssertEqual(hidden.title, shown.title)
+        XCTAssertNil(hidden.fiat)
+        XCTAssertTrue(hidden.isRedacted)
+        XCTAssertFalse(shown.isRedacted)
+        XCTAssertEqual(hidden.icon, "ton.png")
 
         let redacted = TransactionLiveActivityMonitor.redactedState(from: shown)
         XCTAssertNil(redacted.source?.amount)
         XCTAssertNil(redacted.destination?.amount)
         XCTAssertNil(redacted.counterpartyAddress)
+        XCTAssertNil(redacted.fiat)
+        XCTAssertTrue(redacted.isRedacted)
         XCTAssertEqual(redacted.status, shown.status)
         XCTAssertEqual(redacted.updatedAt, shown.updatedAt)
         XCTAssertEqual(redacted, TransactionLiveActivityMonitor.redactedState(from: redacted))
@@ -536,6 +579,104 @@ final class TransactionLiveActivitySelectionTests: XCTestCase {
             batterySettings: BatterySettings(),
             multichain: .multichain(MultichainWalletState(walletId: id, addresses: addresses))
         )
+    }
+
+    func test_queueCountsEveryOtherPendingOperationOnce() {
+        let shown = snapshot(activity(id: "ton:shown", status: .pending))
+        let snapshots = [
+            shown,
+            snapshot(activity(id: "ton:shown", status: .pending)),
+            snapshot(activity(id: "ton:other", status: .pending)),
+            snapshot(activity(id: "ton:other", status: .pending)),
+            snapshot(activity(id: "ton:swap", status: .pending, type: .bridge, toChain: .tron, transactionIds: ["ton:swap", "tron:leg"])),
+            snapshot(activity(id: "tron:leg", status: .pending, chain: .tron, direction: .incoming)),
+            snapshot(activity(id: "ton:done", status: .confirmed)),
+            snapshot(activity(id: "ton:spam", status: .pending, isSpam: true)),
+            snapshot(activity(id: "ton:old", status: .pending, date: Date().addingTimeInterval(-9 * 60 * 60))),
+        ]
+
+        XCTAssertEqual(TransactionLiveActivitySelection.queuedCount(in: snapshots, besides: shown), 2)
+        XCTAssertEqual(TransactionLiveActivitySelection.queuedCount(in: [shown], besides: shown), 0)
+    }
+
+    func test_queueCountsAChainOfOverlappingCopiesOnce() {
+        let shown = snapshot(activity(id: "ton:shown", status: .pending))
+        let now = Date()
+        let snapshots = [
+            shown,
+            snapshot(activity(id: "ton:x", status: .pending, date: now)),
+            snapshot(activity(id: "ton:x", status: .pending, date: now.addingTimeInterval(-1), transactionIds: ["ton:x", "ton:y"])),
+            snapshot(activity(id: "ton:y", status: .pending, date: now.addingTimeInterval(-2))),
+        ]
+
+        XCTAssertEqual(TransactionLiveActivitySelection.queuedCount(in: snapshots, besides: shown), 1)
+    }
+
+    func test_partialPassKeepsTheShownCountAndCountsNoOtherTransaction() {
+        var shown = TransactionLiveActivityMonitor.contentState(
+            for: snapshot(activity(id: "ton:source", status: .pending)),
+            walletMetaData: WalletMetaData(label: "Main", tintColor: .SteelGray, icon: .icon(.wallet))
+        )
+        shown.queuedCount = 2
+        let swap = snapshot(activity(id: "ton:source", status: .pending, type: .swap, transactionIds: ["ton:source"]))
+        let other = snapshot(activity(id: "ton:other", status: .pending))
+        let count = { (snapshot: TransactionLiveActivitySnapshot, countsQueue: Bool) in
+            TransactionLiveActivitySelection.queuedCount(
+                for: snapshot,
+                in: [swap, other],
+                countsQueue: countsQueue,
+                shown: shown
+            )
+        }
+
+        XCTAssertEqual(count(swap, false), 2)
+        XCTAssertNil(count(other, false))
+        XCTAssertEqual(count(other, true), 1)
+    }
+
+    func test_onlyProgressMakesAStaleActivityFresh() {
+        let state = TransactionLiveActivityMonitor.contentState(
+            for: snapshot(activity(id: "ton:a", status: .pending, outToken: asset("TON", chain: .ton), outAmount: "1")),
+            walletMetaData: WalletMetaData(label: "Main", tintColor: .SteelGray, icon: .icon(.wallet))
+        )
+        var decorated = state
+        decorated.updatedAt = state.updatedAt.addingTimeInterval(60)
+        decorated.fiat = "$1.00"
+        decorated.icon = "ton.png"
+        decorated.queuedCount = 1
+        decorated.wallet = .init(name: "Savings")
+        var settled = state
+        settled.status = .confirmed
+        var staged = state
+        staged.stage = .init(index: 2, count: 3, title: "Sending")
+
+        XCTAssertFalse(TransactionLiveActivityMonitor.changesProgress(from: state, to: decorated))
+        XCTAssertTrue(TransactionLiveActivityMonitor.changesProgress(from: state, to: settled))
+        XCTAssertTrue(TransactionLiveActivityMonitor.changesProgress(from: state, to: staged))
+    }
+
+    func test_fiatIsPricedInThePersonsCurrency() throws {
+        let eur = try XCTUnwrap(Currency(code: "EUR"))
+        let usdt = [Rates.Rate(currency: eur, rate: 0.9, diff24h: nil), Rates.Rate(currency: .USD, rate: 1.0, diff24h: nil)]
+        let ton = [Rates.Rate(currency: eur, rate: 3, diff24h: nil)]
+        let trx = ["TRX": [Rates.Rate(currency: eur, rate: 0.25, diff24h: nil)]]
+        func price(_ value: TransactionLiveActivityValue, in currency: Currency, usdtRates: [Rates.Rate]? = nil) -> Decimal? {
+            TransactionLiveActivityMonitor.fiatAmount(
+                value,
+                currency: currency,
+                tonRates: ton,
+                usdtRates: usdtRates ?? usdt,
+                jettonRates: trx
+            )
+        }
+
+        XCTAssertEqual(price(.usd(10), in: .USD, usdtRates: []), 10)
+        XCTAssertEqual(price(.usd(10), in: eur), 9)
+        XCTAssertNil(price(.usd(10), in: eur, usdtRates: [usdt[0]]))
+        XCTAssertEqual(price(.ton(2), in: eur), 6)
+        XCTAssertEqual(price(.usdt(2), in: eur), 1.8)
+        XCTAssertEqual(price(.trx(4), in: eur), 1)
+        XCTAssertNil(price(.jetton(address: "0:abc", amount: 1), in: eur))
     }
 
     private func snapshot(_ activity: MultichainActivity) -> TransactionLiveActivitySnapshot {

@@ -1,3 +1,4 @@
+import Kingfisher
 import SwiftUI
 
 public enum AssetAvatarViewImageSource: Sendable, Equatable {
@@ -378,4 +379,21 @@ private var sampleSizesAndColors: [(AssetAvatarView.Size, Color)] {
         }
     }
     .debugPreview()
+}
+
+public extension AssetAvatarView {
+    /// Reads and decodes the cached avatar images into the memory cache on background queues. Without it, the first
+    /// frame that shows the avatars reads and decodes them on the main thread.
+    static func prefetch(_ imageSources: [AssetAvatarViewImageSource], size: Size = .small) {
+        let imageSize = size.configuration.imageSize
+        let processor = TKRemoteImageProcessor.make(
+            downsampleSize: CGSize(width: imageSize, height: imageSize),
+            displayScale: UIScreen.main.scale
+        )
+        let sources = imageSources.compactMap { imageSource -> Source? in
+            guard case let .url(url?, _) = imageSource else { return nil }
+            return DappIconSource(url: url).source
+        }
+        ImagePrefetcher(sources: sources, options: [.processor(processor), .alsoPrefetchToMemory, .backgroundDecode]).start()
+    }
 }

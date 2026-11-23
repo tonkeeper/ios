@@ -54,6 +54,7 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
                 syncWallet: { _, _ in },
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -113,6 +114,7 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
                     )
                 },
                 syncWallet: { _, _ in },
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -126,7 +128,7 @@ final class MultichainCreateMnemonicClassificationTests: XCTestCase {
                     MultichainWalletState(
                         walletId: "derived",
                         addresses: [.init(chain: .eth, address: "0xderived")],
-                        syncState: .pending
+                        syncState: .synced
                     )
                 ),
             ]

@@ -25,14 +25,14 @@ let package = Package(
         .package(url: "https://github.com/tonkeeper/swift-secp256k1", revision: "6c50e65ec9959d9ab0039df9ffc31707ad19c01b"),
         .package(url: "https://github.com/tonkeeper/CryptoSwift", revision: "1d31a1ffb6043655f3faba9d160db67b2e547e49"),
         .package(url: "https://github.com/attaswift/BigInt", exact: "5.3.0"),
-        .package(path: "../TKLogging"),
+        .package(path: "../TKBase"),
     ],
     targets: [
         .target(
             name: "TronSwiftAPI",
             dependencies: [
                 .byName(name: "TronSwift"),
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
             ],
 
             swiftSettings: [
@@ -45,7 +45,7 @@ let package = Package(
                 .product(name: "secp256k1", package: "swift-secp256k1"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
                 .product(name: "BigInt", package: "BigInt"),
-                .product(name: "TKLogging", package: "TKLogging"),
+                .product(name: "TKBase", package: "TKBase"),
                 .byName(name: "TKCryptoKit"),
             ],
 

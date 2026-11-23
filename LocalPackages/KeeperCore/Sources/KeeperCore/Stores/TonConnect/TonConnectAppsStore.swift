@@ -1,4 +1,5 @@
 import Foundation
+import TKLogging
 import TonSwift
 
 @frozen public enum TonConnectAppsStoreEvent {
@@ -239,12 +240,14 @@ public final class TonConnectAppsStore {
 
         try? tonConnectService.disconnectApp(app, wallet: wallet)
         deleteConnectionMetadata(wallet: wallet, apps: removedApps)
+        sendDisconnectEvents(apps: removedApps)
         notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
     }
 
     public func deleteConnectedAppSession(wallet: Wallet, app: TonConnectApp) {
         try? tonConnectService.disconnectApp(app.clientId, wallet: wallet)
         connectionMetadataStore.deleteConnection(wallet: wallet, clientId: app.clientId)
+        sendDisconnectEvents(apps: [app])
         notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
     }
 
@@ -302,6 +305,21 @@ private extension TonConnectAppsStore {
                 wallet: wallet,
                 clientId: app.clientId
             )
+        }
+    }
+
+    func sendDisconnectEvents(apps: [TonConnectApp]) {
+        let remoteApps = apps.filter { $0.connectionType != .bridge }
+        guard !remoteApps.isEmpty else { return }
+
+        Task { [tonConnectService] in
+            for app in remoteApps {
+                do {
+                    try await tonConnectService.sendDisconnectEvent(app: app)
+                } catch {
+                    Log.w("failed to send Ton Connect disconnect event due to error: \(error)")
+                }
+            }
         }
     }
 

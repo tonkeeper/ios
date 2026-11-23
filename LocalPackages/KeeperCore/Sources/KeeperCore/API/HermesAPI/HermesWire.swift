@@ -23,6 +23,7 @@ struct HermesSocketFactory: @unchecked Sendable {
 }
 
 enum HermesChannel {
+    static let login = "login"
     static let ping = "ping"
     static let subscribe = "subscribeCandleFeed"
     static let unsubscribe = "unsubscribeCandleFeed"
@@ -30,6 +31,8 @@ enum HermesChannel {
 }
 
 enum HermesMessageName {
+    static let login = "loginRequest"
+    static let loginResponse = "loginResponse"
     static let ping = "ping"
     static let subscribe = "subscribeCandleFeedRequest"
     static let subscribeResponse = "subscribeCandleFeedResponse"
@@ -37,6 +40,11 @@ enum HermesMessageName {
     static let candlesPush = "candlesFeedMessage"
     static let errorResponse = "errorResponse"
     static let errorMessage = "errorMessage"
+}
+
+enum HermesErrorCode {
+    static let invalidCredentials = "invalid.credentials"
+    static let alreadyAuthenticated = "already.authenticated"
 }
 
 struct HermesOutboundEnvelope<Payload: Encodable>: Encodable {

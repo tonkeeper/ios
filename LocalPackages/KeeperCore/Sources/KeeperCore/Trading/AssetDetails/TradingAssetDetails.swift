@@ -14,6 +14,7 @@ public struct TradingAssetDetails: Equatable, Sendable {
     public var primaryActionTitle: String
     public var infoSource: TradingAssetInfoSource
     public var perpMarket: TradingAssetPerpMarket?
+    public var swapAggregators: Set<MultichainSwapAggregator>?
 }
 
 public struct TradingAssetPerpMarket: Equatable, Sendable {
@@ -29,7 +30,8 @@ public struct TradingAssetPerpMarket: Equatable, Sendable {
 extension TradingAssetDetails {
     init(
         response: Components.Schemas.AssetDetailsResponse,
-        currency: Currency
+        currency: Currency,
+        signedPerpSymbols: [Int64: String]? = nil
     ) {
         self.init(
             id: response.asset.id,
@@ -104,8 +106,11 @@ extension TradingAssetDetails {
             infoSource: TradingAssetInfoSource(api: response.info_source),
             perpMarket: response.asset.perp_markets?
                 .lazy
-                .compactMap(TradingAssetPerpMarket.init(link:))
-                .first
+                .compactMap { TradingAssetPerpMarket(link: $0, signedSymbols: signedPerpSymbols) }
+                .first,
+            swapAggregators: response.capabilities?.details?.swap?.aggregators.map {
+                Set($0.compactMap(MultichainSwapAggregator.init(rawValue:)))
+            }
         )
     }
 }
@@ -120,8 +125,10 @@ extension TradingAssetInfoSource {
 }
 
 private extension TradingAssetPerpMarket {
-    init?(link: Components.Schemas.PerpMarketLink) {
-        guard let marketId = PerpsMarketAssetID.marketId(assetId: link.id) else {
+    init?(link: Components.Schemas.PerpMarketLink, signedSymbols: [Int64: String]?) {
+        guard let marketId = PerpsMarketAssetID.marketId(assetId: link.id),
+              signedSymbols.map({ Int64(link.market_index) == marketId && $0[marketId] == link.symbol }) ?? true
+        else {
             return nil
         }
         self.init(marketId: marketId, maxLeverage: link.max_leverage)

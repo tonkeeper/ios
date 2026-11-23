@@ -1,6 +1,7 @@
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKFeatureFlags
 import TKUIKit
 
 @MainActor
@@ -11,7 +12,13 @@ struct MainModule {
     }
 
     func createMainCoordinator() -> MainCoordinator {
-        let tabBarController = TKTabBarController()
+        let configuration = dependencies.keeperCoreMainAssembly.configurationAssembly.configuration
+        let isLiquidGlassEnabled = configuration.featureEnabled(.liquidGlassEnabled)
+        // Picked up again here so the sheets switch together with the tab bar once the boot config lands.
+        TKLiquidGlass.isFeatureEnabled = isLiquidGlassEnabled
+        let tabBarController = TKTabBarController(
+            isLiquidGlassEnabled: isLiquidGlassEnabled
+        )
         let router = TabBarControllerRouter(rootViewController: tabBarController)
         router.transitionAnimator = { fromIndex, toIndex in
             TKTabBarTransitionAnimator(fromIndex: fromIndex, toIndex: toIndex)

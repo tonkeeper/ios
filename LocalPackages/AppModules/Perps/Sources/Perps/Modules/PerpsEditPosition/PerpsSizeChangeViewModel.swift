@@ -15,6 +15,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     @Published private(set) var sizeMode: SizeDisplayMode = .usd
     @Published private(set) var availableBalance: Double?
     @Published private(set) var livePrice: Double?
+    @Published private(set) var limits: PerpsSizeChangeLimits?
 
     let marketId: Int64
     let direction: PerpsSizeChangeDirection
@@ -24,12 +25,14 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     var onReview: (() -> Void)?
     var onOpenAutoClose: ((PerpsAutoCloseSheetContext) -> Void)?
 
-    private let session: PerpsSizeChangeSession
+    let session: PerpsSizeChangeSession
     private let summary: PerpsPositionSummary
     private let displayPrice: Double
     private let sizeDecimals: Int
     private let accountStore: any PerpsAccountStoring
     private let priceFeed: PerpsMarketPriceFeed
+    private let loadLimits: @Sendable () async -> PerpsSizeChangeLimits?
+    private var limitsTask: Task<Void, Never>?
     private var didAppear = false
     private var sessionCancellable: AnyCancellable?
 
@@ -42,6 +45,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         sizeDecimals: Int,
         accountStore: any PerpsAccountStoring,
         marketsStore: any PerpsMarketsStoring,
+        loadLimits: @escaping @Sendable () async -> PerpsSizeChangeLimits?,
         format: PerpsFormatting
     ) {
         self.format = format
@@ -52,6 +56,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         self.displayPrice = displayPrice
         self.sizeDecimals = sizeDecimals
         self.accountStore = accountStore
+        self.loadLimits = loadLimits
         priceFeed = PerpsMarketPriceFeed(marketId: summary.marketId, store: marketsStore)
         sessionCancellable = session.objectWillChange.sink { [weak self] in
             self?.objectWillChange.send()
@@ -65,30 +70,26 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         session.amountText
     }
 
-    var restingTriggerOrders: [PerpsTriggerOrderSummary] {
-        session.restingTriggerOrders
-    }
-
-    var intent: PerpsSizeChangeIntent {
-        session.intent
-    }
-
     var isLoading: Bool {
         session.phase == .preparing
     }
 
     var titleText: String {
-        let sideText = summary.side == .long ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short
-        let position = "\(sideText) \(summary.symbol)"
-        switch direction {
-        case .add: return TKLocales.Perps.EditPosition.addTitle(position)
-        case .reduce: return TKLocales.Perps.EditPosition.reduceTitle(position)
+        Self.titleText(direction: direction, side: summary.side, symbol: summary.symbol)
+    }
+
+    nonisolated static func titleText(direction: PerpsSizeChangeDirection, side: PerpsTradeSide, symbol: String) -> String {
+        switch (direction, side) {
+        case (.add, .long): TKLocales.Perps.EditPosition.addTitleLong(symbol)
+        case (.add, .short): TKLocales.Perps.EditPosition.addTitleShort(symbol)
+        case (.reduce, .long): TKLocales.Perps.EditPosition.reduceTitleLong(symbol)
+        case (.reduce, .short): TKLocales.Perps.EditPosition.reduceTitleShort(symbol)
         }
     }
 
     var priceText: String {
         guard currentPrice > 0 else { return "—" }
-        return format.usd(currentPrice)
+        return format.price(currentPrice)
     }
 
     var isPriceTappable: Bool {
@@ -100,25 +101,30 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     }
 
     var sizeText: String? {
+        let hidden = format.hiddenBalanceText
         let deltaUsd = sizeDeltaUsd
         switch sizeMode {
         case .usd:
-            guard deltaUsd > 0 else { return format.usd(summary.notionalUsd) }
-            return "\(format.usd(summary.notionalUsd)) → \(format.usd(newValue(old: summary.notionalUsd, delta: deltaUsd)))"
+            let oldText = format.balance(summary.notionalUsd)
+            guard deltaUsd > 0 else { return oldText }
+            return "\(oldText) → \(format.balance(newValue(old: summary.notionalUsd, delta: deltaUsd)))"
         case .token:
-            guard currentPrice > 0 else { return format.usd(summary.notionalUsd) }
-            let oldText = format.token(summary.baseSize, symbol: summary.symbol, decimals: sizeDecimals)
+            guard currentPrice > 0 else { return format.balance(summary.notionalUsd) }
+            let oldText = hidden ?? format.token(summary.baseSize, symbol: summary.symbol, decimals: sizeDecimals)
             let deltaBase = baseDelta
             guard deltaBase > 0 else { return oldText }
             let newBase = newValue(old: summary.baseSize, delta: deltaBase)
-            return "\(oldText) → \(format.token(newBase, symbol: summary.symbol, decimals: sizeDecimals))"
+            return "\(oldText) → \(hidden ?? format.token(newBase, symbol: summary.symbol, decimals: sizeDecimals))"
         }
     }
 
     var balanceRow: PerpsAmountFormBalanceRow? {
-        guard direction == .add else { return nil }
+        guard direction == .add else {
+            return PerpsAmountFormBalanceRow(balanceText: format.balance(summary.marginUsd), onMax: nil)
+        }
         return PerpsAmountFormBalanceRow(
-            balanceText: availableBalance.map { format.usd($0) },
+            balanceText: availableBalance.map { format.balance($0) },
+            errorText: amountIssueText,
             onMax: { [weak self] in self?.setMax() },
             onDeposit: { [weak self] in self?.onDeposit?() }
         )
@@ -140,24 +146,28 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
                 id: "autoClose",
                 title: TKLocales.Perps.OpenPosition.autoClose,
                 value: autoCloseText ?? TKLocales.Perps.OpenPosition.set,
-                valueColor: autoCloseText == nil ? .textAccent : .textPrimary,
-                action: { [weak self] in self?.openAutoClose() }
+                valueColor: !canEditAutoClose ? .textTertiary : autoCloseText == nil ? .textAccent : .textPrimary,
+                action: canEditAutoClose ? { [weak self] in self?.openAutoClose() } : nil
             ),
         ].compactMap { $0 }
     }
 
+    private var canEditAutoClose: Bool {
+        accountStore.marketExtras(marketId: marketId)?.flags.canEditAutoClose ?? true
+    }
+
     var warningText: String? {
-        if exceedsReduceMargin {
-            return TKLocales.Perps.EditPosition.reduceExceedsMargin(format.usd(summary.marginUsd))
+        if direction == .reduce, let amountIssueText {
+            return amountIssueText
         }
         return session.reviewWarningText
     }
 
     var isReviewEnabled: Bool {
-        guard marginDeltaUsd > 0 else { return false }
+        guard marginDeltaUsd > 0, amountIssueText == nil else { return false }
         switch direction {
         case .add: return isAccountReady
-        case .reduce: return !exceedsReduceMargin
+        case .reduce: return true
         }
     }
 
@@ -167,6 +177,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         priceFeed.subscribe()
         applyStoreState()
         applyLivePrice()
+        reloadLimits()
     }
 
     func onDisappear() {
@@ -254,9 +265,16 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         PerpsDecimalInput.double(amountText) ?? 0
     }
 
+    private var closesWholePosition: Bool {
+        direction == .reduce && PerpsSizeChangeIntent.closesWholePosition(
+            marginDeltaUsd: marginDeltaUsd,
+            positionMarginUsd: summary.marginUsd
+        )
+    }
+
     private var sizeDeltaUsd: Double {
         if direction == .reduce {
-            return summary.marginUsd > 0 ? summary.notionalUsd * marginDeltaUsd / summary.marginUsd : 0
+            return summary.baseSize > 0 ? summary.notionalUsd * baseDelta / summary.baseSize : 0
         }
         return marginDeltaUsd * (summary.effectiveLeverage ?? 0)
     }
@@ -268,6 +286,7 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
             guard currentPrice > 0 else { return 0 }
             delta = Decimal(marginDeltaUsd) * Decimal(summary.effectiveLeverage ?? 0) / Decimal(currentPrice)
         case .reduce:
+            if closesWholePosition { return summary.baseSize }
             guard summary.marginUsd > 0 else { return 0 }
             delta = Decimal(summary.baseSize) * Decimal(marginDeltaUsd) / Decimal(summary.marginUsd)
         }
@@ -277,8 +296,40 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
         return NSDecimalNumber(decimal: stepped).doubleValue
     }
 
-    private var exceedsReduceMargin: Bool {
-        direction == .reduce && marginDeltaUsd > 0 && marginDeltaUsd >= summary.marginUsd
+    private var amountIssueText: String? {
+        switch direction {
+        case .add:
+            guard marginDeltaUsd > 0 else { return nil }
+            if let availableBalance, marginDeltaUsd > availableBalance {
+                return TKLocales.Perps.OpenPosition.insufficientFunds
+            }
+            if let maxAddUsd = limits?.maxAddUsd, marginDeltaUsd > maxAddUsd {
+                return TKLocales.Perps.EditPosition.maximumMargin(format.balance(maxAddUsd))
+            }
+            return nil
+        case .reduce:
+            if allowsOnlyFullClose {
+                return TKLocales.Perps.EditPosition.reduceOnlyFull
+            }
+            guard marginDeltaUsd > 0, !closesWholePosition else { return nil }
+            if marginDeltaUsd >= summary.marginUsd {
+                return TKLocales.Perps.EditPosition.reduceExceedsMargin(format.balance(summary.marginUsd))
+            }
+            if let minReduceUsd = limits?.minReduceUsd, marginDeltaUsd < minReduceUsd {
+                return TKLocales.Perps.OpenPosition.minimumMargin(format.usd(minReduceUsd))
+            }
+            if let maxReduceUsd = limits?.maxReduceUsd, marginDeltaUsd > maxReduceUsd {
+                return TKLocales.Perps.EditPosition.reduceExceedsMargin(format.balance(maxReduceUsd))
+            }
+            return nil
+        }
+    }
+
+    private var allowsOnlyFullClose: Bool {
+        guard let limits else { return false }
+        guard let minReduceUsd = limits.minReduceUsd else { return true }
+        if let maxReduceUsd = limits.maxReduceUsd, minReduceUsd > maxReduceUsd { return true }
+        return minReduceUsd >= summary.marginUsd
     }
 
     private func newValue(old: Double, delta: Double) -> Double {
@@ -304,7 +355,16 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
 
     private func setMax() {
         guard let availableBalance, availableBalance > 0 else { return }
-        session.setAmount(PerpsDecimalInput.usdText(availableBalance))
+        session.setAmount(PerpsDecimalInput.usdText(min(availableBalance, limits?.maxAddUsd ?? availableBalance)))
+    }
+
+    private func reloadLimits() {
+        limitsTask?.cancel()
+        limitsTask = Task { [weak self, loadLimits] in
+            let limits = await loadLimits()
+            guard !Task.isCancelled, let self, let limits else { return }
+            self.limits = limits
+        }
     }
 
     private func observeStore() {
@@ -320,11 +380,18 @@ final class PerpsSizeChangeViewModel: ObservableObject, PerpsAmountFormViewModel
     }
 
     private func applyStoreState() {
+        let balance: Double?
         switch accountStore.currentWalletState() {
         case .unresolved, .resolving, .unbound, .inactive:
-            availableBalance = nil
+            balance = nil
         case let .active(value):
-            availableBalance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0
+            balance = PerpsMarketMath.optionalDouble(value.availableBalance) ?? 0
+        }
+        if balance != availableBalance {
+            availableBalance = balance
+            if limitsTask != nil {
+                reloadLimits()
+            }
         }
         let orders = accountStore.marketExtras(marketId: marketId)?.triggerOrders ?? []
         session.updateRestingTriggerOrders(orders)

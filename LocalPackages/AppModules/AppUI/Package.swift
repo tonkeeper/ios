@@ -13,20 +13,14 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../TKUIKit"),
-        .package(path: "../../TKLocalize"),
-        .package(path: "../../TKAppInfo"),
-        .package(path: "../../TKLogging"),
-        .package(url: "https://github.com/airbnb/lottie-spm.git", exact: "4.6.0"),
+        .package(path: "../../TKBase"),
     ],
     targets: [
         .target(
             name: "AppUI",
             dependencies: [
                 .product(name: "TKUIKit", package: "TKUIKit"),
-                .product(name: "TKLocalize", package: "TKLocalize"),
-                .product(name: "TKAppInfo", package: "TKAppInfo"),
-                .product(name: "TKLogging", package: "TKLogging"),
-                .product(name: "Lottie", package: "lottie-spm"),
+                .product(name: "TKBase", package: "TKBase"),
             ],
             resources: [.process("Resources")],
             swiftSettings: [

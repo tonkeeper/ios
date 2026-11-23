@@ -56,9 +56,11 @@ private extension WatchOnlyWalletAddressInputViewController {
         var configuration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
         configuration.content.title = .plainString(TKLocales.Actions.paste)
         configuration.action = { [weak self] in
-            guard let pasteboardString = UIPasteboard.general.string else { return }
-            self?.customView.textField.text = pasteboardString
-            self?.viewModel.text = pasteboardString
+            Task { @MainActor [weak self] in
+                guard let pasteboardString = await UIPasteboard.general.readString() else { return }
+                self?.customView.textField.text = pasteboardString
+                self?.viewModel.text = pasteboardString
+            }
         }
         customView.addressPasteButton.configuration = configuration
     }

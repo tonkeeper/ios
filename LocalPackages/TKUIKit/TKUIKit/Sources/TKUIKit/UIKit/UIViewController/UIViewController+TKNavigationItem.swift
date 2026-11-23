@@ -14,11 +14,19 @@ public extension UIViewController {
     }
 
     func setupLeftCloseButton(_ action: @escaping () -> Void) {
+        if TKLiquidGlass.isEnabled {
+            navigationItem.leftBarButtonItem = .liquidGlass(image: .TKUIKit.Icons.Size28.xmarkOutline, action: action)
+            return
+        }
         let closeButton = createCloseButton(action)
         navigationItem.leftBarButtonItem = .customView(closeButton, pinnedTo: .leading)
     }
 
     func setupRightCloseButton(_ action: @escaping () -> Void) {
+        if TKLiquidGlass.isEnabled {
+            navigationItem.rightBarButtonItem = .liquidGlass(image: .TKUIKit.Icons.Size28.xmarkOutline, action: action)
+            return
+        }
         let closeButton = createCloseButton(action)
         navigationItem.rightBarButtonItem = .customView(closeButton, pinnedTo: .trailing)
     }
@@ -40,6 +48,10 @@ public extension UIViewController {
 
 public extension UINavigationItem {
     func setupBackButton(action: @escaping () -> Void) {
+        if TKLiquidGlass.isEnabled {
+            leftBarButtonItem = .liquidGlass(image: .TKUIKit.Icons.Size28.chevronLeft, action: action)
+            return
+        }
         let backButton = TKUIHeaderIconButton()
         backButton.configure(
             model: TKUIHeaderButtonIconContentView.Model(
@@ -54,6 +66,10 @@ public extension UINavigationItem {
     }
 
     func setupSwipeDown(action: @escaping () -> Void) {
+        if TKLiquidGlass.isEnabled {
+            leftBarButtonItem = .liquidGlass(image: .TKUIKit.Icons.Size28.chevronDown, action: action)
+            return
+        }
         let backButton = TKUIHeaderIconButton()
         backButton.configure(
             model: TKUIHeaderButtonIconContentView.Model(
@@ -65,5 +81,15 @@ public extension UINavigationItem {
 
         backButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
         leftBarButtonItem = .customView(backButton, pinnedTo: .leading)
+    }
+}
+
+private extension UIBarButtonItem {
+    /// A plain system item, so on iOS 26 the bar draws it in its own glass circle, as in the wallet
+    /// navigation bar.
+    static func liquidGlass(image: UIImage, action: @escaping () -> Void) -> UIBarButtonItem {
+        let item = UIBarButtonItem(image: image, primaryAction: UIAction { _ in action() })
+        item.tintColor = .Icon.primary
+        return item
     }
 }

@@ -29,6 +29,12 @@ final class WalletInfoLoader {
 
                 let notificationId: String = .notificationIdPrefix + activeWallet.id
 
+                // WalletTg has no plugins.
+                guard !activeWallet.isWalletTg else {
+                    await internalNotificationsStore.removeNotificationById(notificationId, persistant: false)
+                    return
+                }
+
                 let info = try await walletService.loadWallet(network: activeWallet.network, address: activeWallet.address)
 
                 try Task.checkCancellation()

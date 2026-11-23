@@ -18,7 +18,7 @@ public struct EarnDepositSuccess: Codable, JSONEncodable, Hashable {
     public var isExternalWebView: Int = 1
     /** The provider of the page the event comes from, always vaults.fyi. The client sets it on every event the page sends; the page need not send it, and a value it sends is replaced.  */
     public var eventProvider: String = "vaults.fyi"
-    /** A vault as the Asset ID of its share token, `{chain}/mainnet/erc20/{address}`, lowercase — e.g. `base/mainnet/erc20/0xc1256ae5ff1cf2719d4937adb3bbccab2e00a2ca` — so the chain is in the id and the address can be looked up in an explorer. The chain and the address come from the page's `/earn/{network}/{vaultId}` route; the chain is the AssetChain value of the vaults.fyi network (`mainnet` is eth, `arbitrum` arb, `bsc` bnb).  */
+    /** A vault as the Asset ID of its share token, `{chain}/mainnet/{type}/{address}`, lowercase — e.g. `base/mainnet/erc20/0xc1256ae5ff1cf2719d4937adb3bbccab2e00a2ca` — so the chain is in the id and the address can be looked up in an explorer. The chain and the address come from the page's `/earn/{network}/{vaultId}` route; the chain is the AssetChain value of the vaults.fyi network (`mainnet` is eth, `arbitrum` arb, `base` and `bsc` keep their names), and the type is the chain's token standard as in docs/ASSET_ID.md (`bep20` on bsc, `erc20` on the others).  */
     public var vaultId: String
     /** The amount deposited. */
     public var amountUsd: Double

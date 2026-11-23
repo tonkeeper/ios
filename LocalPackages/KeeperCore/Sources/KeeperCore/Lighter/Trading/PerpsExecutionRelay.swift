@@ -4,33 +4,21 @@ import PerpsModels
 import TKLogging
 
 final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
-    private let api: PerpsAPI
-    private let nonceCoordinator: PerpsNonceCoordinator
-    private let persistSignedStep: ((PerpsSignedStep) async throws -> Void)?
-    private let persistState: ((PerpsSignedStep, PerpsPendingStepState) async throws -> Void)?
+    private let lane: PerpsSubmitLane
+    private let logContext = PerpsOperationLog.context
+    private let persistState: (PerpsSignedStep, PerpsPendingStepState) async throws -> Void
     /// The execution reports a refusal by kind only, so the one that asks for a new
     /// integrator approval is kept here for the caller.
     private(set) var integratorNotApproved = false
+    private(set) var sendRefused = false
+    private var refusedSteps = Set<String>()
+    private var nonceToReuse: Int64?
 
     init(
-        api: PerpsAPI,
-        nonceCoordinator: PerpsNonceCoordinator,
-        persist: @escaping (PerpsSignedStep) async throws -> Void
-    ) {
-        self.api = api
-        self.nonceCoordinator = nonceCoordinator
-        persistSignedStep = persist
-        persistState = nil
-    }
-
-    init(
-        api: PerpsAPI,
-        nonceCoordinator: PerpsNonceCoordinator,
+        lane: PerpsSubmitLane,
         persistState: @escaping (PerpsSignedStep, PerpsPendingStepState) async throws -> Void
     ) {
-        self.api = api
-        self.nonceCoordinator = nonceCoordinator
-        persistSignedStep = nil
+        self.lane = lane
         self.persistState = persistState
     }
 
@@ -43,23 +31,13 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (PerpsExecutionNonce?, Error?) -> Void
     ) {
         Task {
-            do {
-                let nonce = try await nonceCoordinator.next(
-                    scope: .init(
-                        environment: scope.environment,
-                        accountIndex: scope.accountIndex,
-                        apiKeyIndex: LighterAuth.shared.API_KEY_INDEX,
-                        chainId: scope.chainId
-                    )
-                ) { [api] in
-                    try await api.nextNonce(
-                        walletId: scope.walletId,
-                        apiKeyIndex: Int(LighterAuth.shared.API_KEY_INDEX)
-                    ).nonce
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "nextNonce", "wallet_id": scope.walletId, "account_index": String(scope.accountIndex)]) { _, new in new }) {
+                do {
+                    let nonce = try await lane.nextNonce(walletId: scope.walletId)
+                    completionHandler(PerpsExecutionNonce(value: nonce), nil)
+                } catch {
+                    completionHandler(nil, executionNSError(error))
                 }
-                completionHandler(PerpsExecutionNonce(value: nonce), nil)
-            } catch {
-                completionHandler(nil, executionNSError(error))
             }
         }
     }
@@ -69,23 +47,19 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (Error?) -> Void
     ) {
         Task {
-            do {
-                try await nonceCoordinator.resync(
-                    scope: .init(
-                        environment: scope.environment,
-                        accountIndex: scope.accountIndex,
-                        apiKeyIndex: LighterAuth.shared.API_KEY_INDEX,
-                        chainId: scope.chainId
-                    )
-                ) { [api] in
-                    try await api.nextNonce(
-                        walletId: scope.walletId,
-                        apiKeyIndex: Int(LighterAuth.shared.API_KEY_INDEX)
-                    ).nonce
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "resyncNonce", "wallet_id": scope.walletId, "account_index": String(scope.accountIndex)]) { _, new in new }) {
+                do {
+                    if let nonce = nonceToReuse {
+                        nonceToReuse = nil
+                        try await lane.reuseNonce(nonce)
+                        PerpsOperationLog.event("nonce", outcome: "reused", source: "client", fields: ["nonce": String(nonce)])
+                    } else {
+                        try await lane.resyncNonce(walletId: scope.walletId)
+                    }
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(executionNSError(error))
                 }
-                completionHandler(nil)
-            } catch {
-                completionHandler(executionNSError(error))
             }
         }
     }
@@ -95,15 +69,13 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (Error?) -> Void
     ) {
         Task {
-            do {
-                if let persistSignedStep {
-                    try await persistSignedStep(step)
-                } else if let persistState {
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "persistSigned", "step_id": step.stepId, "attempt_id": step.attemptId, "nonce": String(step.nonce), "tx_type": String(step.txType), "l2_tx_hash": step.txHash]) { _, new in new }) {
+                do {
                     try await persistState(step, .signed)
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(executionNSError(error))
                 }
-                completionHandler(nil)
-            } catch {
-                completionHandler(executionNSError(error))
             }
         }
     }
@@ -113,13 +85,13 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (Error?) -> Void
     ) {
         Task {
-            do {
-                if let persistState {
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "markStepSending", "step_id": step.stepId, "attempt_id": step.attemptId, "nonce": String(step.nonce), "tx_type": String(step.txType), "l2_tx_hash": step.txHash]) { _, new in new }) {
+                do {
                     try await persistState(step, .sending)
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(executionNSError(error))
                 }
-                completionHandler(nil)
-            } catch {
-                completionHandler(executionNSError(error))
             }
         }
     }
@@ -129,13 +101,13 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (Error?) -> Void
     ) {
         Task {
-            do {
-                if let persistState {
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "markStepAccepted", "step_id": step.stepId, "attempt_id": step.attemptId, "nonce": String(step.nonce), "tx_type": String(step.txType), "l2_tx_hash": step.txHash]) { _, new in new }) {
+                do {
                     try await persistState(step, .accepted)
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(executionNSError(error))
                 }
-                completionHandler(nil)
-            } catch {
-                completionHandler(executionNSError(error))
             }
         }
     }
@@ -145,13 +117,13 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (Error?) -> Void
     ) {
         Task {
-            do {
-                if let persistState {
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "markStepUnknown", "step_id": step.stepId, "attempt_id": step.attemptId, "nonce": String(step.nonce), "tx_type": String(step.txType), "l2_tx_hash": step.txHash]) { _, new in new }) {
+                do {
                     try await persistState(step, .unknown)
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(executionNSError(error))
                 }
-                completionHandler(nil)
-            } catch {
-                completionHandler(executionNSError(error))
             }
         }
     }
@@ -161,21 +133,65 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
         completionHandler: @escaping (PerpsSubmissionOutcome?, Error?) -> Void
     ) {
         Task {
-            do {
-                try await submit(step: step)
-                completionHandler(.accepted, nil)
-            } catch let error as PerpsAPIError where error.isResignRequired {
-                completionHandler(.resignrequired, nil)
-            } catch {
-                if (error as? PerpsAPIError)?.isIntegratorNotApproved == true {
-                    integratorNotApproved = true
+            await PerpsOperationLog.withContext(fields: logContext.merging(["delegate_stage": "submit", "step_id": step.stepId, "attempt_id": step.attemptId, "nonce": String(step.nonce), "tx_type": String(step.txType), "l2_tx_hash": step.txHash]) { _, new in new }) {
+                do {
+                    try await lane.send(
+                        walletId: step.scope.walletId,
+                        txType: step.txType,
+                        txInfo: step.txInfo,
+                        txHash: step.txHash,
+                        nonce: step.nonce
+                    )
+                    completionHandler(.accepted, nil)
+                } catch let error as PerpsAPIError where error.isResignRequired {
+                    PerpsOperationLog.event("nonce", outcome: "resign_required", source: "lighter", error: error)
+                    guard refusedSteps.contains(step.stepId) else {
+                        refusedSteps.insert(step.stepId)
+                        nonceToReuse = step.nonce
+                        completionHandler(.resignrequired, nil)
+                        return
+                    }
+                    await lane.forgetNonce()
+                    do {
+                        try await persistState(step, .unknown)
+                    } catch {
+                        PerpsOperationLog.event("journal", outcome: "failed", error: error)
+                    }
+                    completionHandler(nil, executionNSError(PerpsTradingError.submitUnknown))
+                } catch {
+                    if (error as? PerpsAPIError)?.isIntegratorNotApproved == true {
+                        integratorNotApproved = true
+                    }
+                    let mapped = PerpsTradingErrorMapper.map(error)
+                    let isRetry = refusedSteps.contains(step.stepId)
+                    if Self.leavesNonceUnconsumed(error), !isRetry {
+                        sendRefused = true
+                        await lane.returnUnconsumedNonce(step.nonce)
+                    } else if Self.isAmbiguous(mapped) {
+                        do {
+                            try await persistState(step, .unknown)
+                        } catch {
+                            PerpsOperationLog.event("journal", outcome: "failed", error: error)
+                        }
+                    }
+                    if isRetry, Self.leavesNonceUnconsumed(error) {
+                        await lane.forgetNonce()
+                    }
+                    completionHandler(nil, executionNSError(error))
                 }
-                let mapped = PerpsTradingErrorMapper.map(error)
-                if Self.isAmbiguous(mapped), let persistState {
-                    try? await persistState(step, .unknown)
-                }
-                completionHandler(nil, executionNSError(error))
             }
+        }
+    }
+
+    static func leavesNonceUnconsumed(_ error: Error) -> Bool {
+        switch error as? PerpsAPIError {
+        case let .badStatus(failure):
+            return (failure.code != nil && (400 ..< 500).contains(failure.httpStatus))
+                || failure.code == "region_check_unavailable"
+        case .unauthorized:
+            return true
+        default:
+            return false
         }
     }
 
@@ -187,32 +203,9 @@ final class PerpsExecutionRelay: NSObject, PerpsExecutionDelegate {
              .activationRequired, .activationCanceled, .regionUnavailable, .tradingUnavailable, .validation,
              .invalidAutoClose, .invalidAmount, .conflictingPosition, .exceedsPosition, .nothingToChange,
              .insufficientBalance, .insufficientLiquidity, .slippageExceeded, .positionNotFound, .orderNotFound,
-             .immediateLiquidationRisk, .operationInProgress, .stalePreparedTransaction, .deviceClockSkew,
-             .submitUnknown:
+             .orderFilledBeforeCancel, .immediateLiquidationRisk, .operationInProgress, .stalePreparedTransaction,
+             .deviceClockSkew, .submitUnknown:
             return false
-        }
-    }
-
-    func submitPersisted(
-        walletId: String,
-        txType: Int32,
-        txInfo: String,
-        expectedTxHash: String
-    ) async throws {
-        let response = try await api.sendTransactions(
-            walletId: walletId,
-            transactions: [.init(tx_type: txType, tx_info: txInfo)]
-        )
-        Log.perps.i("recovery send wallet=\(walletId) txType=\(txType) expected=\(expectedTxHash) → \(response.transactions.map { "\($0.tx_type):\($0.tx_hash)" })")
-        let responseHash = Self.normalizedHash(response.transactions.first?.tx_hash ?? "")
-        let expectedHash = Self.normalizedHash(expectedTxHash)
-        guard response.transactions.count == 1,
-              response.transactions[0].tx_type == txType,
-              !responseHash.isEmpty,
-              !expectedHash.isEmpty,
-              responseHash == expectedHash
-        else {
-            throw PerpsTradingError.protocolFailure("send response does not match the submitted transaction")
         }
     }
 }
@@ -225,26 +218,9 @@ extension PerpsExecutionRelay {
 }
 
 private extension PerpsExecutionRelay {
-    func submit(step: PerpsSignedStep) async throws {
-        let response = try await api.sendTransactions(
-            walletId: step.scope.walletId,
-            transactions: [.init(tx_type: step.txType, tx_info: step.txInfo)]
-        )
-        Log.perps.i("send step=\(step.stepId) wallet=\(step.scope.walletId) nonce=\(step.nonce) txType=\(step.txType) expected=\(step.txHash) → \(response.transactions.map { "\($0.tx_type):\($0.tx_hash)" })")
-        let responseHash = Self.normalizedHash(response.transactions.first?.tx_hash ?? "")
-        let expectedHash = Self.normalizedHash(step.txHash)
-        guard response.transactions.count == 1,
-              response.transactions[0].tx_type == step.txType,
-              !responseHash.isEmpty,
-              !expectedHash.isEmpty,
-              responseHash == expectedHash
-        else {
-            throw PerpsTradingError.protocolFailure("send response does not match the submitted transaction")
-        }
-    }
-
     func executionNSError(_ error: Error) -> NSError {
         let mapped = PerpsTradingErrorMapper.map(error)
+        PerpsOperationLog.event("execution_delegate", outcome: "failed", source: mapped.operationLogSource, error: error, fields: mapped.operationLogFields)
         let execution = PerpsExecutionException(
             kind: Self.executionErrorKind(mapped),
             message: String(describing: mapped)
@@ -278,7 +254,7 @@ private extension PerpsExecutionRelay {
         case .nothingToChange: return .nothingtochange
         case .insufficientBalance: return .insufficientbalance
         case .insufficientLiquidity, .slippageExceeded: return .insufficientliquidity
-        case .positionNotFound, .orderNotFound: return .positionnotfound
+        case .positionNotFound, .orderNotFound, .orderFilledBeforeCancel: return .positionnotfound
         case .immediateLiquidationRisk: return .immediateliquidationrisk
         case .protocolFailure: return .protocolfailure
         case .operationInProgress: return .operationinprogress

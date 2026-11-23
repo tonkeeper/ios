@@ -42,6 +42,13 @@ extension MultichainRaffleBanner {
     }
 }
 
+extension MultichainRaffleLeaderboard {
+    init?(api: MultichainAPI.Components.Schemas.RaffleLeaderboard) {
+        guard let points = Decimal(string: api.points, locale: Locale(identifier: "en_US_POSIX")) else { return nil }
+        self.init(points: points)
+    }
+}
+
 extension MultichainRaffleBenefitCard {
     init(api: MultichainAPI.Components.Schemas.RaffleBenefitCard) {
         self.init(
@@ -179,6 +186,7 @@ extension MultichainRaffle {
             cta: cta,
             progress: api.progress.map { MultichainRaffleProgress(api: $0) },
             banner: api.banner.flatMap { MultichainRaffleBanner(api: $0) },
+            leaderboard: api.leaderboard.flatMap { MultichainRaffleLeaderboard(api: $0) },
             stories: (api.stories ?? []).map { MultichainRaffleStory(api: $0) }
         )
     }

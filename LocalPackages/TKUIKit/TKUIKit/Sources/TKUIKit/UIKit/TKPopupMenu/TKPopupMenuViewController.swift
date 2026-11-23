@@ -3,9 +3,23 @@ import UIKit
 final class TKPopupMenuViewController: UIViewController {
     var didTapToDismiss: (() -> Void)?
     var didSelectItem: (() -> Void)?
+    var didChangeContainerSize: (() -> Void)?
 
-    private let menuView = TKPopupMenuView()
+    private var containerSize: CGSize?
+
+    private let isLiquidGlass = TKLiquidGlass.isEnabled
+    private let menuView: TKPopupMenuView
     private let dismissView = UIView()
+
+    init() {
+        menuView = TKPopupMenuView(isLiquidGlass: isLiquidGlass)
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -16,7 +30,14 @@ final class TKPopupMenuViewController: UIViewController {
         view.addSubview(menuView)
 
         menuView.didSelectItem = { [weak self] in
-            self?.didSelectItem?()
+            guard let self else { return }
+            // The design system's menu plays Selection on a tap.
+            if isLiquidGlass {
+                UISelectionFeedbackGenerator().selectionChanged()
+            } else {
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            }
+            didSelectItem?()
         }
 
         let dismissGesture = UITapGestureRecognizer(
@@ -29,6 +50,10 @@ final class TKPopupMenuViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         dismissView.frame = view.bounds
+
+        guard let containerSize, containerSize != view.bounds.size else { return }
+        self.containerSize = nil
+        didChangeContainerSize?()
     }
 
     func showMenu(
@@ -41,6 +66,8 @@ final class TKPopupMenuViewController: UIViewController {
         isSelectable: Bool = true,
         duration: TimeInterval
     ) {
+        containerSize = view.bounds.size
+
         let menuViewItems = items.map { item in
             TKPopupMenuItemView.Model(
                 title: item.title,
@@ -62,6 +89,8 @@ final class TKPopupMenuViewController: UIViewController {
         if let selectedIndex { menuView.selectItem(index: selectedIndex) }
 
         menuView.layoutIfNeeded()
+        // Glass items stand clear of the menu's sides; the room for their content stays the same.
+        let maximumWidth = maximumWidth + menuView.itemsSideInsets
         let contentSize = menuView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
         let resolvedMinimumWidth = min(maximumWidth, max(0, minimumWidth))
         let menuSize = CGSize(
@@ -102,7 +131,7 @@ final class TKPopupMenuViewController: UIViewController {
         let finalTransformation = CGAffineTransform(scaleX: 1, y: 1)
 
         menuView.frame = frame
-        menuView.alpha = .hideAlpha
+        menuView.setAppearance(isShown: false, hiddenAlpha: .hideAlpha)
         menuView.transform = initialTransformation
 
         UIView.animate(
@@ -113,11 +142,12 @@ final class TKPopupMenuViewController: UIViewController {
             options: [.curveEaseInOut, .allowUserInteraction]
         ) {
             self.menuView.transform = finalTransformation
-            self.menuView.alpha = 1
+            self.menuView.setAppearance(isShown: true, hiddenAlpha: .hideAlpha)
         }
     }
 
     func hideMenu(duration: TimeInterval, completion: @escaping () -> Void) {
+        menuView.prepareToHide()
         let finalTransform = CGAffineTransform(scaleX: 0.9, y: 0.9)
         UIView.animate(
             withDuration: duration,
@@ -127,7 +157,7 @@ final class TKPopupMenuViewController: UIViewController {
             options: [.curveEaseInOut, .allowUserInteraction]
         ) {
             self.menuView.transform = finalTransform
-            self.menuView.alpha = 0
+            self.menuView.setAppearance(isShown: false, hiddenAlpha: 0)
         } completion: { _ in
             completion()
         }

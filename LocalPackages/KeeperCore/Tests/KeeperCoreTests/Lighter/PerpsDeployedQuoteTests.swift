@@ -27,6 +27,7 @@ final class PerpsDeployedQuoteTests: XCTestCase {
         let read = try PerpsDepositQuoteReader.read(
             quote,
             request: request,
+            security: KeyRegistrationFixture.security,
             now: quote.expires_at.addingTimeInterval(-10)
         )
 
@@ -43,7 +44,7 @@ final class PerpsDeployedQuoteTests: XCTestCase {
                     with: "\"to\":\"0xdac17f958d2ee523a2206206994597c13d831ec7\""
                 ).utf8))
 
-        let read = try PerpsDepositQuoteReader.read(quote, request: request, now: quote.expires_at.addingTimeInterval(-10))
+        let read = try PerpsDepositQuoteReader.read(quote, request: request, security: KeyRegistrationFixture.security, now: quote.expires_at.addingTimeInterval(-10))
 
         XCTAssertEqual(read.payloads.map(\.kind), [.main, .main])
     }
@@ -53,7 +54,7 @@ final class PerpsDeployedQuoteTests: XCTestCase {
                 .replacingOccurrences(of: "\"version\":1}]}", with: "\"version\":2}]}").utf8))
 
         XCTAssertThrowsError(
-            try PerpsDepositQuoteReader.read(quote, request: request, now: quote.expires_at.addingTimeInterval(-10))
+            try PerpsDepositQuoteReader.read(quote, request: request, security: KeyRegistrationFixture.security, now: quote.expires_at.addingTimeInterval(-10))
         ) { error in
             XCTAssertEqual(error as? PerpsDepositQuoteError, .malformedOperation(quote.operation.id))
         }

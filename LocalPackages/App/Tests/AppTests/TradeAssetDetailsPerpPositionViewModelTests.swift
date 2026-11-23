@@ -3,6 +3,7 @@ import Combine
 @testable import KeeperCore
 @testable import Perps
 import PerpsModels
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -23,6 +24,41 @@ final class TradeAssetDetailsPerpPositionViewModelTests: XCTestCase {
         }
         guard case let .position(row) = viewModel.state else { return XCTFail("expected position") }
         XCTAssertEqual(row.valueText, PerpsFormatting.live.usd(20.5))
+        viewModel.didDisappear()
+    }
+
+    @MainActor
+    func test_hiddenBalances_maskThePositionRow_andFollowTheToggle() async {
+        let reader = PerpPositionAccountReaderStub()
+        reader.statusResult = .account(accountIndex: 7)
+        reader.portfolioResult = PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [.test(marketId: 3, symbol: "GRAM", marginUsd: 20, unrealizedPnlUsd: 0.5)]
+        )
+        let appSettingsStore = AppSettingsStore(
+            keeperInfoStore: KeeperInfoStore(keeperInfoRepository: PerpPositionKeeperInfoRepositoryStub())
+        )
+        let viewModel = TradeAssetDetailsPerpPositionViewModel(
+            accountStore: PerpsAccountStore(service: reader, wallet: .perpPositionTest()),
+            appSettingsStore: appSettingsStore
+        )
+        viewModel.setMarket(3, iconURL: nil)
+        await expectState(viewModel, description: "position shown") {
+            if case let .position(row) = $0 { return row.valueText == PerpsFormatting.live.usd(20.5) }
+            return false
+        }
+
+        var state = appSettingsStore.getState()
+        state.isSecureMode = true
+        appSettingsStore.setStateNotifying(state, event: { .didUpdateIsSecureMode(isSecureMode: $0.isSecureMode) })
+
+        await expectState(viewModel, description: "position masked") {
+            if case let .position(row) = $0 { return row.valueText == .secureModeValueShort }
+            return false
+        }
+        guard case let .position(row) = viewModel.state else { return XCTFail("expected position") }
+        XCTAssertEqual(row.pnlText, .secureModeValueShort)
+        XCTAssertNil(row.isPnlPositive)
         viewModel.didDisappear()
     }
 
@@ -58,20 +94,19 @@ final class TradeAssetDetailsPerpPositionViewModelTests: XCTestCase {
             availableBalance: "100",
             positions: [.test(marketId: 3, symbol: "ETH")]
         )
-        reader.portfolioDelayNanoseconds = 100_000_000
+        let portfolioHold = TestGate()
+        reader.portfolioHold = portfolioHold
         let viewModel = TradeAssetDetailsPerpPositionViewModel(
             accountStore: PerpsAccountStore(service: reader, wallet: .perpPositionTest())
         )
         var states: [TradeAssetDetailsPerpPositionViewModel.State] = []
-        let shown = expectation(description: "position shown")
-        let cancellable = viewModel.$state.sink { state in
-            states.append(state)
-            if case .position = state { shown.fulfill() }
-        }
+        let cancellable = viewModel.$state.sink { states.append($0) }
 
         viewModel.didAppear()
         viewModel.setMarket(3, iconURL: nil)
-        await fulfillment(of: [shown], timeout: 2)
+        await waitUntil(viewModel) { states.contains(.loading) }
+        await portfolioHold.open()
+        await waitUntil(viewModel) { states.contains { if case .position = $0 { true } else { false } } }
 
         XCTAssertTrue(states.contains(.loading))
         XCTAssertFalse(states.contains(.noPosition))
@@ -326,7 +361,18 @@ private extension TradeAssetDetailsPerpPositionViewModelTests {
     }
 }
 
-private final class PerpPositionAccountStoreStub: PerpsAccountStoring {
+private struct PerpPositionKeeperInfoRepositoryStub: KeeperInfoRepository {
+    struct NoKeeperInfo: Error {}
+
+    func getKeeperInfo() throws -> KeeperInfo {
+        throw NoKeeperInfo()
+    }
+
+    func saveKeeperInfo(_: KeeperInfo) throws {}
+    func removeKeeperInfo() throws {}
+}
+
+final class PerpPositionAccountStoreStub: PerpsAccountStoring {
     var state: PerpsWalletAccountState
     private(set) var resolveCount = 0
     private(set) var refreshCount = 0
@@ -366,25 +412,11 @@ private final class PerpPositionAccountStoreStub: PerpsAccountStoring {
         .flat
     }
 
-    func matchingPosition(marketId _: Int64) -> PerpsPositionSummary? {
-        nil
-    }
-
-    func beginOpening(_: PerpsOpeningDescriptor) {}
-    func beginClosing(marketId _: Int64) {}
-    func beginAdjusting(marketId _: Int64, direction _: PerpsSizeChangeDirection, baseSizeBefore _: Double) {}
-    func beginAdjustingMargin(
-        marketId _: Int64,
-        direction _: PerpsMarginChangeDirection,
-        allocatedMarginBefore _: Double,
-        amountUsd _: Double
-    ) {}
-    func clearPending(marketId _: Int64) {}
     func marketExtras(marketId _: Int64) -> PerpsMarketExtras? {
         nil
     }
 
-    func loadMarketExtras(marketId _: Int64, clearingPending _: Bool) {}
+    func loadMarketExtras(marketId _: Int64) {}
     func releaseMarketExtras(marketId _: Int64) {}
     func subscribePositions(cadence _: PerpsPositionsCadence) {
         subscribeCount += 1
@@ -408,16 +440,14 @@ private extension PerpsAccount {
 private final class PerpPositionAccountReaderStub: PerpsAccountReading, @unchecked Sendable {
     var statusResult: PerpsAccountStatus = .unknown
     var portfolioResult: PerpsAccountSnapshot?
-    var portfolioDelayNanoseconds: UInt64 = 0
+    var portfolioHold: TestGate?
 
     func status(wallet _: Wallet) async -> PerpsAccountStatus {
         statusResult
     }
 
     func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
-        if portfolioDelayNanoseconds > 0 {
-            try? await Task.sleep(nanoseconds: portfolioDelayNanoseconds)
-        }
+        try? await portfolioHold?.wait()
         return portfolioResult
     }
 

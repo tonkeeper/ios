@@ -1,5 +1,6 @@
 @testable import App
 import KeeperCore
+import TKUIKit
 import UIKit
 import XCTest
 
@@ -150,6 +151,26 @@ final class SendAmountTextFieldFormatterTests: XCTestCase {
             formatter.unformatString("12\u{202F}345,67"),
             "12345\(separator)67"
         )
+    }
+
+    @MainActor
+    func testNumPadGroupsTheIntegerPartWithSpaces() {
+        TKNumPadView.isEnabled = true
+        defer { TKNumPadView.isEnabled = false }
+        let formatter = makeFormatter()
+        let textField = UITextField()
+        let separator = AmountFormatter.Configuration.defaultLocale.decimalSeparator ?? "."
+
+        for character in ["1", "2", "3", "4", separator, "5"] {
+            apply(formatter, to: textField, replacement: character)
+        }
+        XCTAssertEqual(textField.text, "1 234\(separator)5")
+
+        apply(formatter, to: textField, replacement: "", range: NSRange(location: 2, length: 1))
+        XCTAssertEqual(textField.text, "134\(separator)5")
+
+        apply(formatter, to: textField, replacement: "98", range: NSRange(location: 0, length: 0))
+        XCTAssertEqual(textField.text, "98 134\(separator)5")
     }
 
     @MainActor

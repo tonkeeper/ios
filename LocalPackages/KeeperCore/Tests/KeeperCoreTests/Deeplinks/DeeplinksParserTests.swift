@@ -108,6 +108,21 @@ final class DeeplinksParserTests: XCTestCase {
         XCTAssertEqual(parsedDeeplink, Deeplink.staking)
     }
 
+    func testPerpsMarketTickerUniversalLinkParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "https://app.keeperwallet.com/perps/market/ANT"), .perps(.marketSymbol("ANT")))
+        XCTAssertEqual(try parser.parse(string: "https://app.keeperwallet.com/perps/market/10902"), .perps(.market(id: 10902)))
+    }
+
+    func testLoyaltyReferralLinkParsing() throws {
+        let expected = Deeplink.loyalty(referralCode: "Ab-9_x")
+
+        XCTAssertEqual(try parser.parse(string: "tonkeeper://loyalty?referral_code=Ab-9_x"), expected)
+        XCTAssertEqual(try parser.parse(string: "https://app.tonkeeper.com/loyalty?referral_code=Ab-9_x"), expected)
+        XCTAssertEqual(try parser.parse(string: "https://app.keeperwallet.com/loyalty?referral_code=Ab-9_x"), expected)
+        XCTAssertEqual(try parser.parse(string: "https://app.keeperwallet.com/r/Ab-9_x"), expected)
+        XCTAssertEqual(try parser.parse(string: "https://app.keeperwallet.com/r/Ab-9_x/?utm_source=x"), expected)
+    }
+
     func testSwapTonDeeplinkParsing() throws {
         let string = "ton://swap?ft=TON&tt=FNZ"
         let swapData = Deeplink.SwapData(
@@ -342,6 +357,14 @@ final class DeeplinksParserTests: XCTestCase {
 
     func testAddWalletTonkeeperDeeplinkParsing() throws {
         XCTAssertEqual(try parser.parse(string: "tonkeeper://add-wallet"), .addWallet)
+    }
+
+    func testEarnVaultLinkParsing() throws {
+        let vaultId = "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"
+        let vault = Deeplink.earn(.vault(network: "base", vaultId: vaultId))
+
+        XCTAssertEqual(try parser.parse(string: "tonkeeper://earn?network=base&vault=\(vaultId)"), vault)
+        XCTAssertEqual(try parser.parse(string: "https://app.tonkeeper.com/earn?network=base&vault=\(vaultId)"), vault)
     }
 
     func testDepositUniversalLinkParsing() throws {

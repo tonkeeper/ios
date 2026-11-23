@@ -5,7 +5,9 @@ import MultichainAPI
 import OpenAPIRuntime
 import StreamURLSessionTransport
 import SwapAPI
+import TKEarnAPI
 import TKPerpsAPI
+import TKTonstakersAPI
 import TonAPI
 import TonConnectAPI
 import TonStreamingAPIV2
@@ -20,6 +22,8 @@ public final class APIAssembly {
     /// from concurrent tasks and `lazy var` is not atomic, so a first access from two threads would
     /// build two sessions and release one from under a live task.
     private let urlSession: URLSession
+    /// Risk valuation is optional and must not hold confirmation behind the ordinary 60 s timeout.
+    private let riskRatesURLSession: URLSession
 
     /// An SSE connection idles between events, so minutes rather than the ordinary 60 s.
     /// `timeoutIntervalForResource` keeps its 7-day default: it cannot be overridden per request.
@@ -49,6 +53,12 @@ public final class APIAssembly {
         let streamingUrlSession = URLSession(configuration: streamingConfiguration)
 
         self.urlSession = urlSession
+        let riskRatesConfiguration = URLSessionConfiguration.ephemeral
+        riskRatesConfiguration.timeoutIntervalForRequest = 2
+        riskRatesConfiguration.timeoutIntervalForResource = 2
+        riskRatesConfiguration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        riskRatesConfiguration.urlCache = nil
+        riskRatesURLSession = URLSession(configuration: riskRatesConfiguration)
         self.streamingUrlSession = streamingUrlSession
         apiTransport = URLSessionTransport(urlSession: urlSession)
         streamingTransport = StreamURLSessionTransport(urlSession: streamingUrlSession)
@@ -76,6 +86,14 @@ public final class APIAssembly {
         urlSession: urlSession,
         configuration: configurationAssembly.configuration
     )
+
+    var riskRatesAPI: API {
+        API(
+            hostProvider: tonApiHostProvider,
+            urlSession: riskRatesURLSession,
+            configuration: configurationAssembly.configuration
+        )
+    }
 
     public lazy var pushNotificationsAPI: PushNotificationsAPI = PushNotificationsAPI(urlSession: .shared)
 
@@ -264,6 +282,52 @@ public final class APIAssembly {
             urlSession: urlSession,
             middlewares: middlewares
         )
+    }
+
+    func earnAPIClient(userAgent: String? = nil) async -> TKEarnAPI.Client {
+        TKEarnAPI.Client(
+            host: await configurationAssembly.configuration.keeperEarnHost(network: .mainnet),
+            urlSession: urlSession,
+            middlewares: [
+                UserAgentHeaderMiddleware(userAgent: userAgent),
+                FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+            ]
+        )
+    }
+
+    func walletAuthEarnAPIClient(
+        deviceJWT: String?,
+        walletId: String,
+        walletAuthToken: String?,
+        recovery: MultichainWalletAuthDependencies?,
+        userAgent: String? = nil
+    ) async -> TKEarnAPI.Client {
+        var middlewares: [any ClientMiddleware] = [
+            UserAgentHeaderMiddleware(userAgent: userAgent),
+            FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+        ]
+        middlewares.append(
+            contentsOf: WalletAuthClientMiddlewares.make(
+                deviceJWT: deviceJWT,
+                walletId: walletId,
+                walletAuthToken: walletAuthToken,
+                recovery: recovery
+            )
+        )
+        return TKEarnAPI.Client(
+            host: await configurationAssembly.configuration.keeperEarnHost(network: .mainnet),
+            urlSession: urlSession,
+            middlewares: middlewares
+        )
+    }
+
+    /// Tonstakers' own public API, not proxied by Tonkeeper: the user agent is all it gets.
+    func tonstakersAPI(userAgent: String? = nil) -> TonstakersAPI {
+        let client = TKTonstakersAPI.Client(
+            urlSession: urlSession,
+            middlewares: [UserAgentHeaderMiddleware(userAgent: userAgent)]
+        )
+        return TonstakersAPIImplementation(makeClient: { client })
     }
 
     private actor TonConnectAPIClientWrapper {

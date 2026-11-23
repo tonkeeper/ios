@@ -1,5 +1,6 @@
 import ChainKit
 import Foundation
+import PerpsModels
 import TKPerpsAPI
 
 /// The trading key named on each deposit quote (`change_pub_key`).
@@ -27,7 +28,7 @@ struct PerpsKeyRegistration: Sendable, Equatable {
         .init(account_index: Self.ownAccountIndex, api_key_index: apiKeyIndex, pub_key: publicKey)
     }
 
-    /// The call into Lighter's gateway that registers the key, as the owner makes it.
+    /// The call into Lighter's changePubKey contract that registers the key, as the owner makes it.
     var calldata: String {
         func word(_ value: Int64) -> String {
             let hex = String(value, radix: 16)
@@ -56,6 +57,11 @@ struct PerpsKeyRegistrationPreview: Sendable, Equatable {
     let operation: PerpsDepositOperation
     let delegationPayloadId: String?
     let executePayloadId: String
+    /// The signed block the preview was read against; the quote signed for it answers to the same one.
+    let security: PerpsSecurityConfig
+    var estimatedDurationSeconds: Int? = nil
+    var providerFees: PerpsDepositProviderFees? = nil
+    var accountUninitialized: Bool? = nil
 
     /// The preview's operation, signed, as the next quote takes it beside the registration.
     /// `signed` is ChainKit's signed payloads by id, each as the JSON it writes — that JSON is
@@ -152,16 +158,20 @@ extension PerpsDepositQuoteReader {
     /// Refuses a preview the wallet must not sign. The delegation outlives the deposit — the
     /// address runs the delegate's code until it authorizes another — and `Execute` lets anyone
     /// holding it run its calls as the account, so both are read down to the bytes signed: the
-    /// one delegate this client was built for, and the one call that registers this key.
+    /// one delegate the backend signed in `security`, and the one call that registers this key.
     static func readPreview(
         _ quote: Components.Schemas.DepositQuote,
         request: Components.Schemas.DepositQuoteRequest,
         registration: PerpsKeyRegistration,
+        security: PerpsSecurityConfig,
         now: Date
     ) throws(PerpsDepositQuoteError) -> PerpsKeyRegistrationPreview {
         let checked = try terms(of: quote, request: request, now: now)
         guard quote.preview else {
             throw PerpsDepositQuoteError.unexpectedPreview(false)
+        }
+        guard security.delegatesOnEthereum else {
+            throw PerpsDepositQuoteError.malformedKeyRegistration("hermes_delegate.chains")
         }
         // Paid from Ethereum, the payment would spend the nonce a delegation signed ahead is for,
         // so the payment delegates the address itself — the one it pays from and credits.
@@ -188,13 +198,13 @@ extension PerpsDepositQuoteReader {
         }
         if let authorization {
             guard authorization.chainId == 1,
-                  authorization.address.display.lowercased() == PerpsDepositCalldata.hermesDelegate,
+                  authorization.address.display.lowercased() == security.hermesDelegate,
                   (Int64(authorization.nonce.description) ?? -1) >= 0
             else {
                 throw PerpsDepositQuoteError.malformedKeyRegistration("authorization")
             }
         }
-        try readExecute(execute.typedData, owner: request.destination_address, registration: registration, now: now)
+        try readExecute(execute.typedData, owner: request.destination_address, registration: registration, security: security, now: now)
         return PerpsKeyRegistrationPreview(
             quoteId: quote.quote_id,
             expiresAt: quote.expires_at,
@@ -206,7 +216,11 @@ extension PerpsDepositQuoteReader {
             registration: registration,
             operation: operation,
             delegationPayloadId: authorizationPayload?.id,
-            executePayloadId: executePayload.id
+            executePayloadId: executePayload.id,
+            security: security,
+            estimatedDurationSeconds: quote.estimated_duration_seconds.map(Int.init),
+            providerFees: quote.providerFees,
+            accountUninitialized: quote.account_uninitialized
         )
     }
 
@@ -215,44 +229,69 @@ extension PerpsDepositQuoteReader {
         _ typedData: String,
         owner: String,
         registration: PerpsKeyRegistration,
+        security: PerpsSecurityConfig,
         now: Date
     ) throws(PerpsDepositQuoteError) {
+        guard UniqueKeyJSON.isWellFormed(typedData) else {
+            throw PerpsDepositQuoteError.malformedKeyRegistration("execute document keys")
+        }
         guard let document = try? JSONDecoder().decode(Components.Schemas.HermesExecuteTypedData.self, from: Data(typedData.utf8)) else {
             throw PerpsDepositQuoteError.malformedKeyRegistration("execute document")
         }
-        var types = document.types.additionalProperties
-        if let declared = types.removeValue(forKey: "EIP712Domain"), declared != domainType {
-            throw PerpsDepositQuoteError.malformedKeyRegistration("execute domain type")
-        }
-        guard document.primaryType == "Execute", types == executeTypes else {
-            throw PerpsDepositQuoteError.malformedKeyRegistration("execute types")
-        }
-        let domain = document.domain
-        let salt = "0x" + String(repeating: "0", count: 24) + PerpsDepositCalldata.hermesDelegate.dropFirst(2)
-        guard domain.name == "Hermes",
-              domain.version == "v1.0.0",
-              domain.chainId == 1,
-              domain.verifyingContract.lowercased() == owner.lowercased(),
-              domain.salt.lowercased() == salt
-        else {
-            throw PerpsDepositQuoteError.malformedKeyRegistration("execute domain")
+        if let fault = hermesEnvelopeFault(of: document, chainId: 1, owner: owner, delegate: security.hermesDelegate, now: now) {
+            throw PerpsDepositQuoteError.malformedKeyRegistration("execute \(fault.rawValue)")
         }
         let message = document.message
         guard message.mode.lowercased() == signedBatchMode,
               message.calls.count == 1,
               let call = message.calls.first,
-              call.target.lowercased() == PerpsDepositCalldata.gatewayAddress,
+              call.target.lowercased() == security.changePubKeyContract,
               call.value == "0",
               call.data.lowercased() == registration.calldata
         else {
             throw PerpsDepositQuoteError.malformedKeyRegistration("execute call")
         }
+    }
+
+    enum HermesEnvelopeFault: String {
+        case domainType = "domain type"
+        case types
+        case domain
+        case nonceOrDeadline = "nonce or deadline"
+    }
+
+    static func hermesEnvelopeFault(
+        of document: Components.Schemas.HermesExecuteTypedData,
+        chainId: Int64,
+        owner: String,
+        delegate: String,
+        now: Date
+    ) -> HermesEnvelopeFault? {
+        var types = document.types.additionalProperties
+        if let declared = types.removeValue(forKey: "EIP712Domain"), declared != domainType {
+            return .domainType
+        }
+        guard document.primaryType == "Execute", types == executeTypes else {
+            return .types
+        }
+        let domain = document.domain
+        let salt = "0x" + String(repeating: "0", count: 24) + delegate.lowercased().dropFirst(2)
+        guard domain.name == "Hermes",
+              domain.version == "v1.0.0",
+              domain.chainId == chainId,
+              domain.verifyingContract.lowercased() == owner.lowercased(),
+              domain.salt.lowercased() == salt
+        else {
+            return .domain
+        }
+        let message = document.message
         guard (Int64(message.nonce) ?? -1) >= 0,
               let deadline = Int64(message.deadline),
               TimeInterval(deadline) > now.timeIntervalSince1970,
               TimeInterval(deadline) <= now.timeIntervalSince1970 + longestExecuteDeadline
         else {
-            throw PerpsDepositQuoteError.malformedKeyRegistration("execute nonce or deadline")
+            return .nonceOrDeadline
         }
+        return nil
     }
 }

@@ -1,9 +1,0 @@
-appId: com.jbig.tonkeeper
----
-- assertVisible: Link domain
-- tapOn: Link domain
-- assertVisible: Confirm
-- tapOn: Confirm
-- runFlow: ../../password/enter_password.yaml
-- waitForAnimationToEnd:
-    timeout: 5000

@@ -9,6 +9,8 @@ struct WalletContainerTopBarModel {
     }
 
     let walletButton: WalletButtonConfig
+    /// Nil for the default wallet colour.
+    let walletButtonColor: UIColor?
     let walletButtonAction: () -> Void
     let scanButton: IconButton
     let historyButton: IconButton
@@ -97,6 +99,7 @@ struct WalletContainerTopBarView: View {
                         action: model.scanButton.action
                     )
                 )
+                .accessibilityIdentifier("wallet_scan")
 
                 Spacer(minLength: 0)
 
@@ -107,6 +110,7 @@ struct WalletContainerTopBarView: View {
                         action: model.historyButton.action
                     )
                 )
+                .accessibilityIdentifier("wallet_history")
                 .overlay {
                     AnchorViewResolver { view in
                         state.resolveHistoryButtonAnchorView(view)
@@ -121,6 +125,7 @@ struct WalletContainerTopBarView: View {
                         action: model.settingsButton.action
                     )
                 )
+                .accessibilityIdentifier("wallet_settings")
             }
             .padding(.horizontal, Layout.buttonsHorizontalInset)
 
@@ -129,6 +134,7 @@ struct WalletContainerTopBarView: View {
                 haptic: .none,
                 action: model.walletButtonAction
             )
+            .accessibilityIdentifier("wallet_picker")
             .padding(.horizontal, Layout.walletButtonHorizontalInset)
             .overlay {
                 AnchorViewResolver { view in

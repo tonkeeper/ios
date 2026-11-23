@@ -1,4 +1,4 @@
-@preconcurrency import ReownWalletKit
+@preconcurrency import WalletConnectSign
 
 @WalletConnectActor
 final class WalletConnectNetworkConnectionStatusProvider: Sendable {

@@ -6,6 +6,7 @@ import PerpsModels
 struct PerpsHistoryFeed {
     let multichainService: MultichainService
     let wallet: Wallet
+    let events: PerpsHistoryEvents
 
     func recent(marketId: Int64, limit: Int) async throws -> [PerpsHistoryEvent] {
         guard let state = wallet.multichainWalletState else { return [] }
@@ -21,14 +22,52 @@ struct PerpsHistoryFeed {
             hideDust: nil
         )
         return page.activities
-            .compactMap(PerpsHistoryEvent.init(activity:))
+            .compactMap(events.event(from:))
             .filter { $0.marketId == marketId }
     }
 }
 
-public extension PerpsHistoryEvent {
+public struct PerpsHistoryEvents {
+    private let showsLoyaltyReward: () -> Bool
+    private let observeLoyalty: (_ observer: AnyObject, _ onChange: @escaping () -> Void) -> Void
+
+    init(
+        showsLoyaltyReward: @escaping () -> Bool,
+        observeLoyalty: @escaping (_ observer: AnyObject, _ onChange: @escaping () -> Void) -> Void = { _, _ in }
+    ) {
+        self.showsLoyaltyReward = showsLoyaltyReward
+        self.observeLoyalty = observeLoyalty
+    }
+
+    init(wallet: Wallet, loyaltyStore: LoyaltyStore, walletsStore: WalletsStore) {
+        self.init(
+            showsLoyaltyReward: {
+                loyaltyStore.entry(for: walletsStore.getWallet(id: wallet.id) ?? wallet).showsSection
+            },
+            observeLoyalty: { observer, onChange in
+                loyaltyStore.addObserver(observer) { _, _ in onChange() }
+            }
+        )
+    }
+
+    public func event(from activity: MultichainActivity) -> PerpsHistoryEvent? {
+        PerpsHistoryEvent(activity: activity, showsLoyaltyReward: showsLoyaltyReward())
+    }
+
+    func observeChanges(by observer: AnyObject, onChange: @escaping () -> Void) {
+        var wasShown = showsLoyaltyReward()
+        observeLoyalty(observer) { [showsLoyaltyReward] in
+            let isShown = showsLoyaltyReward()
+            guard isShown != wasShown else { return }
+            wasShown = isShown
+            onChange()
+        }
+    }
+}
+
+extension PerpsHistoryEvent {
     /// `nil` for anything that is not a position event: deposits, withdrawals, other chains.
-    init?(activity: MultichainActivity) {
+    init?(activity: MultichainActivity, showsLoyaltyReward: Bool) {
         let kind: Kind
         switch activity.activityType {
         case .perpsPositionOpened:
@@ -63,7 +102,8 @@ public extension PerpsHistoryEvent {
             pnlPercent: perps?.resultPercent,
             fundingUsd: activity.activityType == .perpsPositionClosed ? perps?.fundingUsd : nil,
             feeUsd: activity.feeAmountUsd,
-            fee: Self.fee(activity)
+            fee: Self.fee(activity),
+            loyaltyReward: showsLoyaltyReward ? perps?.loyaltyReward : nil
         )
     }
 }

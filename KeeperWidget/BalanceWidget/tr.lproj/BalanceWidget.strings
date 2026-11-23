@@ -1,0 +1,4 @@
+// The widget configuration (App Intents) looks these up in the extension, not in TKLocalize.
+"Wallet Balance" = "Cüzdan Bakiyesi";
+"Wallet" = "Cüzdan";
+"Active Wallet" = "Aktif cüzdan";

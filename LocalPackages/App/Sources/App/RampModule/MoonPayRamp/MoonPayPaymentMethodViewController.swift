@@ -29,7 +29,9 @@ struct MoonPayPaymentMethodContent: View {
         MoonPayPaymentMethodView(
             state: viewModel.screenState,
             onSelect: viewModel.select,
+            onMenuAction: { viewModel.menuAction(rowID: $0, itemID: $1) },
             onCryptoDeposit: viewModel.cryptoDeposit,
+            onProviderTap: viewModel.tapProvider,
             onBack: viewModel.back,
             onClose: viewModel.close
         )

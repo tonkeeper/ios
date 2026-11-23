@@ -8,7 +8,7 @@ final class SendV3AmountInputView: UIView {
 
     lazy var textInputControl: TKTextInputTextFieldControl = {
         let textInputControl = TKTextInputTextFieldControl()
-        textInputControl.keyboardType = .decimalPad
+        textInputControl.tkNumPadAmountKeyboard()
         return textInputControl
     }()
 

@@ -1,6 +1,7 @@
 import Foundation
 @testable import KeeperCore
 import MultichainAPI
+import SwapAPI
 import TKBatteryAPI
 import TKPerpsAPI
 import TKTradingAPI
@@ -55,6 +56,27 @@ final class GeneratedAPIContractTests: XCTestCase {
         XCTAssertEqual(
             try JSONSerialization.jsonObject(with: data) as? NSDictionary,
             try JSONSerialization.jsonObject(with: encoded) as? NSDictionary
+        )
+    }
+
+    /// A payload or fee type the spec does not list yet is chain-kit's to read, not the decoder's to refuse.
+    func test_aSwapOperationRetainsWhatTheSpecDoesNotList() throws {
+        let operation = #"""
+        {"id":"route","payloads":[{"id":"p","type":"future/payload","chain_id":"ton/mainnet","version":1,
+         "fee":{"type":"value","asset_id":"ton/mainnet/coin","data":{"amount":"1"}},"meta":{"value":"1"},"extra":[1,"keep"]}]}
+        """#
+        let data = Data(#"""
+        {"route_id":"route","aggregator":"omniston","validation_status":"validated","date_expire":"2026-11-02T15:50:28Z",
+         "human_summary":{"action":"Swap on TON","spend_asset":"ton/mainnet/coin","spend_amount":"1","receive_asset":"ton/mainnet/coin"},
+         "operation":\#(operation)}
+        """#.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let prepared = try decoder.decode(SwapAPI.Components.Schemas.CrossSwapPrepareV3.self, from: data)
+
+        XCTAssertEqual(
+            try JSONSerialization.jsonObject(with: Data(operation.utf8)) as? NSDictionary,
+            try JSONSerialization.jsonObject(with: JSONEncoder().encode(prepared.operation)) as? NSDictionary
         )
     }
 }

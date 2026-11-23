@@ -46,11 +46,11 @@ public struct OpTerminal: Codable, JSONEncodable, Hashable {
     public var durationMs: Double
     /** End time in milliseconds since Unix epoch. */
     public var finishedAtMs: Int
-    /** Set when outcome is fail; error code if available. */
+    /** Set when outcome is fail; error code if available. A multichain Ledger also sets it on a cancel declined on the device (the device's status word). */
     public var errorCode: Int?
     /** Set when outcome is fail; human-readable error message. */
     public var errorMessage: String?
-    /** Set when outcome is fail; normalized error category for grouping. */
+    /** Set when outcome is fail; normalized error category for grouping. A multichain Ledger also sets it on a cancel declined on the device (`ledger_user_refused`). */
     public var errorType: String?
     /** Set when outcome = {fail,cancel}. Stage where the operation ended. When outcome is fail, stage where failure occurred (e.g. emulate, broadcast). When outcome is cancel, stage where user cancelled.  */
     public var stage: String?

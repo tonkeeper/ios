@@ -76,6 +76,22 @@ public struct WalletMigrationPrepareResult: Sendable {
         batteryTransactions?.isEmpty == false
     }
 
+    public var validUntil: Date? {
+        (transactions + (batteryTransactions ?? [])).compactMap(\.validUntil).min()
+    }
+
+    public func refreshedIfExpiring(
+        at now: Date = Date(),
+        reprepare: () async throws -> WalletMigrationPrepareResult
+    ) async throws -> WalletMigrationPrepareResult {
+        if let validUntil, validUntil.timeIntervalSince(now) >= Self.signingMargin {
+            return self
+        }
+        return try await reprepare()
+    }
+
+    private static let signingMargin: TimeInterval = 60
+
     public var transactionsForDisplay: [WalletMigrationPreparedTransaction] {
         hasTransactions ? transactions : batteryTransactions ?? []
     }
@@ -289,6 +305,7 @@ public struct WalletMigrationPreparedTransaction: Sendable {
     public let totalFees: UInt64
     public let totalEquivalent: Double?
     public let sponsored: Bool
+    public let validUntil: Date?
 
     public init(
         seqno: Int,
@@ -298,7 +315,8 @@ public struct WalletMigrationPreparedTransaction: Sendable {
         event: AccountEvent,
         totalFees: UInt64 = 0,
         totalEquivalent: Double?,
-        sponsored: Bool = false
+        sponsored: Bool = false,
+        validUntil: Date? = nil
     ) {
         self.seqno = seqno
         self.boc = boc
@@ -308,6 +326,7 @@ public struct WalletMigrationPreparedTransaction: Sendable {
         self.totalFees = totalFees
         self.totalEquivalent = totalEquivalent
         self.sponsored = sponsored
+        self.validUntil = validUntil
     }
 
     public var networkFeeNano: UInt64 {

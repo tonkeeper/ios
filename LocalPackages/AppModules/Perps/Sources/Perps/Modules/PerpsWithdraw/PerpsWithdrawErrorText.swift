@@ -9,8 +9,16 @@ enum PerpsWithdrawErrorText {
             TKLocales.Perps.WithdrawForm.minimum(usdc)
         case .quoteExpired:
             TKLocales.Perps.DepositForm.quoteExpired
+        case .withdrawalRateLimited:
+            TKLocales.Perps.WithdrawForm.rateLimited
         case .canceled:
             nil
+        case .serviceUnavailable:
+            TKLocales.Perps.Error.serverUnavailable
+        case .notSent:
+            TKLocales.Perps.WithdrawForm.notSent
+        case .inFlight:
+            TKLocales.Perps.WithdrawForm.inFlight
         case .failed:
             TKLocales.Perps.WithdrawForm.failed
         }

@@ -39,12 +39,14 @@ public struct RateConverter {
         amount: BigUInt,
         amountFractionLength: Int,
         rate: NSDecimalNumber,
-        targetFractionLength: Int
+        targetFractionLength: Int,
+        roundingMode: NSDecimalNumber.RoundingMode = .plain
     ) -> BigUInt {
         convertByScaling(
             amount: amount,
             amountFractionLength: amountFractionLength,
-            targetFractionLength: targetFractionLength
+            targetFractionLength: targetFractionLength,
+            roundingMode: roundingMode
         ) { amountMajor in
             amountMajor.multiplying(by: rate)
         }
@@ -55,6 +57,7 @@ public struct RateConverter {
         amountFractionLength: Int,
         rate: Rates.Rate
     ) -> BigUInt {
+        guard !rate.rate.isNaN, rate.rate > 0 else { return 0 }
         let amountDecimalNumber = NSDecimalNumber(string: String(amount))
         let rateDecimalNumber = NSDecimalNumber(decimal: rate.rate)
         let converted = amountDecimalNumber.dividing(by: rateDecimalNumber)
@@ -72,12 +75,15 @@ public struct RateConverter {
         amount: BigUInt,
         amountFractionLength: Int,
         rate: NSDecimalNumber,
-        targetFractionLength: Int
+        targetFractionLength: Int,
+        roundingMode: NSDecimalNumber.RoundingMode = .plain
     ) -> BigUInt {
-        convertByScaling(
+        guard rate != .notANumber, rate.compare(NSDecimalNumber.zero) == .orderedDescending else { return 0 }
+        return convertByScaling(
             amount: amount,
             amountFractionLength: amountFractionLength,
-            targetFractionLength: targetFractionLength
+            targetFractionLength: targetFractionLength,
+            roundingMode: roundingMode
         ) { amountMajor in
             amountMajor.dividing(by: rate)
         }
@@ -117,13 +123,14 @@ public struct RateConverter {
         amount: BigUInt,
         amountFractionLength: Int,
         targetFractionLength: Int,
+        roundingMode: NSDecimalNumber.RoundingMode,
         transform: (NSDecimalNumber) -> NSDecimalNumber
     ) -> BigUInt {
         let amountMajor = NSDecimalNumber(string: String(amount))
             .multiplying(byPowerOf10: Int16(-amountFractionLength))
         let convertedMajor = transform(amountMajor)
         let convertedScaled = convertedMajor.multiplying(byPowerOf10: Int16(targetFractionLength))
-        let rounded = convertedScaled.rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour)
+        let rounded = convertedScaled.rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour(roundingMode: roundingMode))
         guard rounded.compare(NSDecimalNumber.zero) != .orderedAscending,
               let result = BigUInt(rounded.stringValue)
         else {
@@ -135,8 +142,12 @@ public struct RateConverter {
 
 private extension NSDecimalNumberHandler {
     static var roundBehaviour: NSDecimalNumberHandler {
-        return NSDecimalNumberHandler(
-            roundingMode: .plain,
+        roundBehaviour(roundingMode: .plain)
+    }
+
+    static func roundBehaviour(roundingMode: NSDecimalNumber.RoundingMode) -> NSDecimalNumberHandler {
+        NSDecimalNumberHandler(
+            roundingMode: roundingMode,
             scale: 0,
             raiseOnExactness: false,
             raiseOnOverflow: false,

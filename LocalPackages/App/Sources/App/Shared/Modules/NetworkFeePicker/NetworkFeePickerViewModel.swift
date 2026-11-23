@@ -75,6 +75,7 @@ struct NetworkFeePickerItem: Identifiable {
     let leading: Leading
     let text: Text
     let isDisabled: Bool
+    let warning: String?
     let actionTitle: String?
     let isSelected: Bool
 
@@ -83,6 +84,7 @@ struct NetworkFeePickerItem: Identifiable {
         leading: Leading,
         text: Text,
         isDisabled: Bool = false,
+        warning: String? = nil,
         actionTitle: String? = nil,
         isSelected: Bool = false
     ) {
@@ -90,6 +92,7 @@ struct NetworkFeePickerItem: Identifiable {
         self.leading = leading
         self.text = text
         self.isDisabled = isDisabled
+        self.warning = warning
         self.actionTitle = actionTitle
         self.isSelected = isSelected
     }

@@ -1,26 +1,18 @@
 import BigInt
 import Foundation
 import KeeperCore
-import TKLocalize
 
 /// Min/max checks for the deposit amount, mirroring `InsertAmountViewModel`
 /// (`+Validation`, `+Configuration`): limits come from the merchant quote, falling back to the
 /// provider limits of the payment method; `min` rounds down and `max` rounds up in smallest units.
 struct RampLimitsEvaluator {
     enum Violation: Equatable {
-        case belowMin(message: String)
-        case aboveMax(message: String)
-
-        var message: String {
-            switch self {
-            case let .belowMin(message), let .aboveMax(message):
-                message
-            }
-        }
+        /// The limit in the currency, such as 20 for €20.
+        case belowMin(Decimal)
+        case aboveMax(Decimal)
     }
 
     let fractionalDigits: Int
-    let currencyCode: String
     let providers: [OnRampProvider]
     let merchantIds: [String]
     let quotes: InsertAmountQuotesState?
@@ -100,10 +92,10 @@ struct RampLimitsEvaluator {
         }
 
         if let min, amount < smallestUnits(min, roundingMode: .down) {
-            return .belowMin(message: TKLocales.Ramp.ProviderPicker.minAmount(NSDecimalNumber(value: min).stringValue, currencyCode))
+            return .belowMin(Decimal(min))
         }
         if let max, amount > smallestUnits(max, roundingMode: .up) {
-            return .aboveMax(message: TKLocales.Ramp.ProviderPicker.maxAmount(NSDecimalNumber(value: max).stringValue, currencyCode))
+            return .aboveMax(Decimal(max))
         }
         return nil
     }

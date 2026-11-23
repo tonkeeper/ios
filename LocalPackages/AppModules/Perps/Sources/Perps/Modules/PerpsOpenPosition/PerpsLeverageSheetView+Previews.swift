@@ -7,7 +7,7 @@ private final class PerpsLeverageSheetPreviewViewModel: PerpsLeverageSheetViewMo
     let maxLeverage = 40
 
     var leverageText: String {
-        "\(Int(leverage))x"
+        "\(Int(leverage))⨯"
     }
 
     var liquidationText: String? {

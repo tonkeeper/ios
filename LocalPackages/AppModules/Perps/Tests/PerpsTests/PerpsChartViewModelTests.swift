@@ -1,5 +1,6 @@
 @testable import Perps
 import PerpsModels
+import TKTestSupport
 import XCTest
 
 final class PerpsChartViewModelTests: XCTestCase {
@@ -11,12 +12,12 @@ final class PerpsChartViewModelTests: XCTestCase {
 
         viewModel.onAppear()
 
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
         XCTAssertEqual(viewModel.candles.count, 3)
         XCTAssertEqual(viewModel.snapshot?.timeframe, .h1)
 
         fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 5))
-        await waitUntil { viewModel.candles.count == 5 }
+        await waitUntil(viewModel) { viewModel.candles.count == 5 }
 
         viewModel.onDisappear()
         XCTAssertEqual(fake.cancelCount, 1)
@@ -30,7 +31,7 @@ final class PerpsChartViewModelTests: XCTestCase {
 
         viewModel.onAppear()
 
-        await waitUntil { viewModel.loadingState == .empty }
+        await waitUntil(viewModel) { viewModel.loadingState == .empty }
         XCTAssertTrue(viewModel.candles.isEmpty)
         viewModel.loadOlderCandles()
         XCTAssertEqual(fake.loadOlderCallCount, 0)
@@ -42,14 +43,14 @@ final class PerpsChartViewModelTests: XCTestCase {
         let fake = ChartProvidingFake()
         let viewModel = makeViewModel(service: fake, loadTimeout: 0.1)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .failed }
+        await waitUntil(viewModel) { viewModel.loadingState == .failed }
         XCTAssertNil(viewModel.snapshot)
         XCTAssertNil(viewModel.selectedCandle)
 
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 2), for: .h1)
         viewModel.retry()
 
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
         XCTAssertEqual(viewModel.candles.count, 2)
         viewModel.onDisappear()
     }
@@ -61,11 +62,11 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .d1, count: 5), for: .d1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectTimeframe(.d1)
 
-        await waitUntil { viewModel.snapshot?.timeframe == .d1 }
+        await waitUntil(viewModel) { viewModel.snapshot?.timeframe == .d1 }
         XCTAssertEqual(viewModel.timeframe, .d1)
         XCTAssertEqual(viewModel.candles.count, 5)
         viewModel.onDisappear()
@@ -77,7 +78,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 1), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
         let subscribesAfterAppear = fake.subscribeCount
 
         viewModel.selectTimeframe(.h1)
@@ -92,17 +93,17 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake, timeframe: .h1, loadTimeout: 0.1)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectTimeframe(.h4)
         fake.emitFailure()
 
-        await waitUntil { viewModel.timeframe == .h1 && viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.timeframe == .h1 && viewModel.loadingState == .ready }
         XCTAssertEqual(viewModel.snapshot?.timeframe, .h1)
 
         viewModel.selectTimeframe(.h4)
 
-        await waitUntil { viewModel.timeframe == .h1 && viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.timeframe == .h1 && viewModel.loadingState == .ready }
         XCTAssertEqual(viewModel.snapshot?.timeframe, .h1)
         XCTAssertEqual(viewModel.candles.count, 3, "selector and chart stay in sync after failure or timeout")
         viewModel.onDisappear()
@@ -114,7 +115,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 1), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
         let subscribes = fake.subscribeCount
 
         XCTAssertEqual(viewModel.mode, .candle)
@@ -132,7 +133,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectCandle(atTime: Date(timeIntervalSince1970: 2000))
         fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 5))
@@ -150,7 +151,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectCandle(atTime: Date(timeIntervalSince1970: 2000))
         fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 5))
@@ -167,13 +168,13 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.onDisappear()
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
         fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 5))
-        await waitUntil { viewModel.candles.count == 5 }
+        await waitUntil(viewModel) { viewModel.candles.count == 5 }
 
         fake.emitStaleUpdate(makeSnapshot(timeframe: .h1, count: 99))
         await drainLiveHop()
@@ -187,12 +188,67 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         fake.emitReconnecting()
 
-        await waitUntil { viewModel.loadingState == .reconnecting }
+        await waitUntil(viewModel) { viewModel.loadingState == .reconnecting }
         XCTAssertEqual(viewModel.candles.count, 3, "last good candles stay on screen while reconnecting")
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_restart_liveOnlyFrame_extendsLoadedTimelineOrHoldsItUntilHistory() async {
+        let fake = ChartProvidingFake()
+        fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 2, isLiveOnly: true), for: .h1)
+        let viewModel = makeViewModel(service: fake)
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
+        XCTAssertEqual(viewModel.candles.count, 2, "with nothing loaded yet the live candles are shown")
+
+        fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 500))
+        await waitUntil(viewModel) { viewModel.candles.count == 500 }
+
+        viewModel.onDisappear()
+        fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 2, firstIndex: 499, isLiveOnly: true), for: .h1)
+        viewModel.onAppear()
+
+        await waitUntil(viewModel) { viewModel.candles.count == 501 }
+        XCTAssertEqual(viewModel.loadingState, .ready, "live candles overlapping the loaded tail extend it")
+        XCTAssertEqual(viewModel.candles.first?.openedAt.timeIntervalSince1970, 1000)
+        viewModel.loadOlderCandles()
+        XCTAssertEqual(fake.loadOlderCallCount, 0, "the session cannot page a timeline it does not hold")
+
+        viewModel.onDisappear()
+        fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 2, firstIndex: 520, isLiveOnly: true), for: .h1)
+        viewModel.onAppear()
+
+        await waitUntil(viewModel) { viewModel.loadingState == .reconnecting }
+        XCTAssertEqual(viewModel.candles.count, 501, "live candles after a gap do not replace the loaded timeline")
+        viewModel.loadOlderCandles()
+        XCTAssertEqual(fake.loadOlderCallCount, 0)
+
+        fake.emitUpdate(makeSnapshot(timeframe: .h1, count: 522))
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
+        XCTAssertEqual(viewModel.candles.count, 522)
+        XCTAssertEqual(fake.loadOlderCallCount, 1, "the left-edge request made during the hold runs once history arrives")
+        viewModel.onDisappear()
+    }
+
+    @MainActor
+    func test_restart_afterEmptyHistory_showsLiveOnlyFrame() async {
+        let fake = ChartProvidingFake()
+        fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 0), for: .h1)
+        let viewModel = makeViewModel(service: fake)
+        viewModel.onAppear()
+        await waitUntil(viewModel) { viewModel.loadingState == .empty }
+
+        viewModel.onDisappear()
+        fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 2, isLiveOnly: true), for: .h1)
+        viewModel.onAppear()
+
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
+        XCTAssertEqual(viewModel.candles.count, 2)
         viewModel.onDisappear()
     }
 
@@ -202,11 +258,11 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         fake.emitFailure()
 
-        await waitUntil { viewModel.loadingState == .failed }
+        await waitUntil(viewModel) { viewModel.loadingState == .failed }
         XCTAssertEqual(viewModel.candles.count, 3)
         viewModel.onDisappear()
     }
@@ -218,7 +274,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.deferNextPage(.loaded)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.loadOlderCandles()
         viewModel.loadOlderCandles()
@@ -244,18 +300,18 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.deferNextPage(.noMore)
         let viewModel = makeViewModel(service: fake, timeframe: .h1)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.loadOlderCandles()
-        await waitUntil { fake.loadOlderCallCount == 1 }
+        await waitUntil(fake.changes) { fake.loadOlderCallCount == 1 }
 
         viewModel.selectTimeframe(.d1)
-        await waitUntil { viewModel.snapshot?.timeframe == .d1 }
+        await waitUntil(viewModel) { viewModel.snapshot?.timeframe == .d1 }
         fake.completeDeferredPage()
         await drainLiveHop()
 
         viewModel.loadOlderCandles()
-        await waitUntil { fake.loadOlderCallCount == 2 }
+        await waitUntil(fake.changes) { fake.loadOlderCallCount == 2 }
         viewModel.onDisappear()
     }
 
@@ -266,7 +322,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setNextPage(.noMore)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.loadOlderCandles()
         XCTAssertEqual(fake.loadOlderCallCount, 1)
@@ -277,9 +333,9 @@ final class PerpsChartViewModelTests: XCTestCase {
         viewModel.onDisappear()
         fake.setNextPage(.loaded)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await drainLiveHop()
         viewModel.loadOlderCandles()
-        await waitUntil { fake.loadOlderCallCount == 2 }
+        await waitUntil(fake.changes) { fake.loadOlderCallCount == 2 }
         viewModel.onDisappear()
     }
 
@@ -289,7 +345,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         fake.setInitialFrame(makeSnapshot(timeframe: .h1, count: 3), for: .h1)
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectCandle(atTime: Date(timeIntervalSince1970: 2000))
         XCTAssertEqual(viewModel.selectedCandle?.openedAt.timeIntervalSince1970, 2000)
@@ -319,7 +375,7 @@ final class PerpsChartViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(service: fake)
         viewModel.onAppear()
-        await waitUntil { viewModel.loadingState == .ready }
+        await waitUntil(viewModel) { viewModel.loadingState == .ready }
 
         viewModel.selectCandle(atTime: Date(timeIntervalSince1970: 3000), baselineTime: Date(timeIntervalSince1970: 2000))
         XCTAssertEqual(viewModel.selectedChange?.amount, 5)
@@ -348,8 +404,14 @@ private extension PerpsChartViewModelTests {
         PerpsChartViewModel(marketId: 1, service: service, format: PerpsFormatting.test, timeframe: timeframe, loadTimeout: loadTimeout)
     }
 
-    func makeSnapshot(timeframe: PerpsChartTimeframe, count: Int, priceDecimals: Int = 2) -> PerpsChartSnapshot {
-        let candles = (0 ..< count).map { index in
+    func makeSnapshot(
+        timeframe: PerpsChartTimeframe,
+        count: Int,
+        priceDecimals: Int = 2,
+        firstIndex: Int = 0,
+        isLiveOnly: Bool = false
+    ) -> PerpsChartSnapshot {
+        let candles = (firstIndex ..< firstIndex + count).map { index in
             PerpsChartCandle(
                 openedAt: Date(timeIntervalSince1970: TimeInterval((index + 1) * 1000)),
                 open: 1, high: 2, low: 0.5, close: 1.5, volume: 100
@@ -359,26 +421,14 @@ private extension PerpsChartViewModelTests {
             marketId: 1,
             timeframe: timeframe,
             candles: candles,
-            priceDecimals: priceDecimals
+            priceDecimals: priceDecimals,
+            isLiveOnly: isLiveOnly
         )
     }
 
     @MainActor
     func drainLiveHop() async {
         await Task { @MainActor in }.value
-    }
-
-    func waitUntil(
-        timeout: TimeInterval = 2,
-        intervalNanoseconds: UInt64 = 10_000_000,
-        condition: @escaping () async -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if await condition() { return }
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-        }
-        XCTFail("Timed out waiting for condition")
     }
 }
 
@@ -392,6 +442,7 @@ private final class ChartProvidingFake: PerpsChartProviding, @unchecked Sendable
     private var _onFailed: (@Sendable () -> Void)?
     private var _staleOnUpdate: (@Sendable (PerpsChartSnapshot) -> Void)?
     private var _loadOlderCallCount = 0
+    let changes = TestSignal()
     private var _nextPage: PerpsChartPage = .loaded
     private var _nextDeferredPage: PerpsChartPage?
     private var _deferredPage: PerpsChartPage?
@@ -454,6 +505,7 @@ private final class ChartProvidingFake: PerpsChartProviding, @unchecked Sendable
             },
             onLoadOlder: { [weak self] _, onLoaded in
                 guard let self else { return }
+                defer { self.changes.send() }
                 self.lock.lock()
                 self._loadOlderCallCount += 1
                 if let deferredPage = self._nextDeferredPage {

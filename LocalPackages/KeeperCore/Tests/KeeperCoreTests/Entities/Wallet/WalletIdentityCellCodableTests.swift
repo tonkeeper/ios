@@ -87,13 +87,60 @@ extension WalletIdentityCellCodableTests {
         let decodedWalletKind: WalletKind = try slice.loadType()
 
         // THEN
-        guard case let .Watchonly(decodedResolvableAddress) = decodedWalletKind,
+        guard case let .Watchonly(decodedResolvableAddress, decodedContractVersion) = decodedWalletKind,
               case let .Resolved(decodedAddress) = decodedResolvableAddress,
-              decodedAddress == address
+              decodedAddress == address,
+              decodedContractVersion == nil
         else {
             XCTFail()
             return
         }
+    }
+
+    func test_wallet_kind_watchonly_without_version_keeps_the_stored_layout() throws {
+        let resolvableAddress = ResolvableAddress.Resolved(
+            Address.mock(workchain: 0, seed: "testWatchonlyStoredLayout")
+        )
+        let storedLayout = Builder()
+        try storedLayout.store(uint: 2, bits: 5)
+        try resolvableAddress.storeTo(builder: storedLayout)
+
+        let encoded = Builder()
+        try WalletKind.Watchonly(resolvableAddress).storeTo(builder: encoded)
+        let decoded: WalletKind = try Slice(bits: storedLayout.bitstring()).loadType()
+
+        XCTAssertEqual(encoded.bitstring().toBinary(), storedLayout.bitstring().toBinary())
+        XCTAssertEqual(decoded, .Watchonly(resolvableAddress, nil))
+    }
+
+    func test_wallet_kind_watchonly_with_version_coding() throws {
+        let resolvableAddress = ResolvableAddress.Domain(
+            "wallet.ton",
+            Address.mock(workchain: 0, seed: "testWatchonlyVersionCoding")
+        )
+        let identity = WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress, .walletTg))
+
+        let builder = Builder()
+        try identity.kind.storeTo(builder: builder)
+        let decodedKind: WalletKind = try Slice(bits: builder.bitstring()).loadType()
+        let decodedIdentity = try JSONDecoder().decode(
+            [WalletIdentity].self,
+            from: JSONEncoder().encode([identity])
+        )
+
+        XCTAssertEqual(decodedKind, .Watchonly(resolvableAddress, .walletTg))
+        XCTAssertEqual(decodedIdentity, [identity])
+    }
+
+    func test_wallet_kind_watchonly_version_is_part_of_the_identity() throws {
+        let resolvableAddress = ResolvableAddress.Resolved(
+            Address.mock(workchain: 0, seed: "testWatchonlyVersionIdentity")
+        )
+        let plain = WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress))
+        let telegram = WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress, .walletTg))
+
+        XCTAssertNotEqual(plain, telegram)
+        XCTAssertNotEqual(try plain.identifier().string, try telegram.identifier().string)
     }
 
     func test_wallet_kind_external_coding() throws {

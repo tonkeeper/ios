@@ -16,6 +16,21 @@ enum WalletMigrationTransactionSigner {
         }
     }
 
+    static func validUntil(preparedBodyBOC: String, wallet: Wallet) throws -> UInt64 {
+        let slice = try Cell.fromBase64(src: preparedBodyBOC.fixBase64()).beginParse()
+        switch try wallet.contractVersion {
+        case .v5R1:
+            try slice.skip(32 + 32)
+        case .v5Beta:
+            try slice.skip(32 + 80)
+        case .v3R1, .v3R2, .v4R1, .v4R2:
+            try slice.skip(32)
+        case .walletTg:
+            throw Error.failedToParseBody
+        }
+        return try slice.loadUint(bits: 32)
+    }
+
     static func signAndBuildExternalMessageBOC(
         transaction: WalletMigrationPreparedTransaction,
         wallet: Wallet,
@@ -88,6 +103,8 @@ enum WalletMigrationTransactionSigner {
             return try buildV5R1UnsignedBody(preparedSlice: preparedSlice, messages: messages, seqno: seqno)
         case .v4R1, .v4R2:
             return try buildV4UnsignedBody(preparedSlice: preparedSlice, messages: messages, seqno: seqno)
+        case .walletTg:
+            throw Error.failedToParseBody
         default:
             return try buildV3UnsignedBody(preparedSlice: preparedSlice, messages: messages, seqno: seqno)
         }
@@ -119,13 +136,13 @@ enum WalletMigrationTransactionSigner {
         seqno: UInt64
     ) throws -> Cell {
         let opcode = try preparedSlice.loadUint(bits: 32)
-        let walletId = try preparedSlice.loadInt(bits: 32)
+        let walletId = try preparedSlice.loadBits(80)
         let validUntil = try preparedSlice.loadUint(bits: 32)
         _ = try preparedSlice.loadUint(bits: 32)
 
         let signingMessage = try Builder()
             .store(uint: opcode, bits: 32)
-            .store(int: walletId, bits: 32)
+            .store(bits: walletId)
             .store(uint: validUntil, bits: 32)
             .store(uint: seqno, bits: 32)
             .store(storeV5BetaOutListExtended(messages: messages))

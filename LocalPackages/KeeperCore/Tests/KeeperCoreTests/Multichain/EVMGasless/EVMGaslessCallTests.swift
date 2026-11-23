@@ -4,6 +4,8 @@ import XCTest
 
 final class EVMGaslessCallTests: XCTestCase {
     private let sender = GaslessFixtures.sender
+    private let solanaSender = "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT"
+    private let solanaRecipient = "HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH"
 
     func test_aCoinTransferIsTheCallItself() throws {
         let amount = BigUInt("100000000000000")
@@ -69,8 +71,69 @@ final class EVMGaslessCallTests: XCTestCase {
         XCTAssertNil(usdtTransfer(amount: 1, recipient: "0x0eE3CdEE4f010BF6c49aF86E9e67ef2bc80a50"))
     }
 
+    /// The relayer asks a Solana transfer as ChainKit's `PayloadMetaSolanaMain`: lamports or an SPL mint's
+    /// base units to the recipient wallet, with the memo as text.
+    func test_aSolTransferIsAskedAsMainWithItsMemo() throws {
+        let call = try XCTUnwrap(EVMGaslessCall.transfer(
+            chain: .sol,
+            sender: solanaSender,
+            assetId: "sol/mainnet/coin",
+            recipient: solanaRecipient,
+            amount: 1000,
+            memo: "hi"
+        ))
+        let payload = try call.payload()
+
+        XCTAssertEqual(payload._type, "main")
+        XCTAssertEqual(payload.chain_id, "sol/mainnet")
+        XCTAssertEqual(
+            payload.meta.additionalProperties.value.mapValues { $0 as? String },
+            ["to": solanaRecipient, "value": "1000", "memo": "hi"]
+        )
+    }
+
+    func test_anSPLTransferNamesItsMintAndAnEmptyMemoIsLeftOut() throws {
+        let mint = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+        let call = try XCTUnwrap(EVMGaslessCall.transfer(
+            chain: .sol,
+            sender: solanaSender,
+            assetId: "sol/mainnet/spl/\(mint)",
+            recipient: solanaRecipient,
+            amount: 1_000_000,
+            memo: ""
+        ))
+
+        XCTAssertEqual(
+            try call.payload().meta.additionalProperties.value.mapValues { $0 as? String },
+            ["to": solanaRecipient, "value": "1000000", "token": mint]
+        )
+    }
+
+    func test_aSolanaAssetThatIsNotAnSPLTokenHasNoGaslessCall() {
+        XCTAssertNil(EVMGaslessCall.transfer(
+            chain: .sol,
+            sender: solanaSender,
+            assetId: "sol/mainnet/nft/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            recipient: solanaRecipient,
+            amount: 1
+        ))
+    }
+
+    func test_aSolanaRoutesTransactionIsAskedAsPrebuild() throws {
+        let payload = try EVMGaslessCall.solanaSwap(sender: solanaSender, transaction: "AQ==").payload()
+
+        XCTAssertEqual(payload._type, "prebuild")
+        XCTAssertEqual(payload.chain_id, "sol/mainnet")
+        XCTAssertEqual(payload.meta.additionalProperties.value.mapValues { $0 as? String }, ["data": "AQ=="])
+    }
+
+    func test_theRelayerHandsSolanaBackAsABuiltTransaction() {
+        XCTAssertEqual(BatteryEVMGaslessRelayer.relayedTypes(on: "sol/mainnet"), [.prebuild])
+        XCTAssertEqual(BatteryEVMGaslessRelayer.relayedTypes(on: "eth/mainnet"), MultichainRelayedOperation.relayedTypes)
+    }
+
     func test_theCallIsDescribedAsOneMainPayload() throws {
-        let payload = try XCTUnwrap(usdtTransfer(amount: 1_000_000)).payload
+        let payload = try XCTUnwrap(usdtTransfer(amount: 1_000_000)).payload()
 
         XCTAssertEqual(payload.id, "p_01")
         XCTAssertEqual(payload._type, "main")

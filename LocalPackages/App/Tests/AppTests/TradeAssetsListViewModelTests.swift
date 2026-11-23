@@ -2,19 +2,21 @@
 @testable import KeeperCore
 import TKCore
 import TKLocalize
+import TKTestSupport
 import XCTest
 
 final class TradeAssetsListViewModelTests: XCTestCase {
     @MainActor
     func test_updateSearchText_debouncesActivationAndLoadsOnlyFinalQuery() async {
         let service = TradingAssetsListServiceSpy()
+        let initialLoad = TestGate()
         await service.setLoadPlans([
             .success(
                 snapshot(
                     ids: ["ton"],
                     nextCursor: nil
                 ),
-                delayNanoseconds: 1_000_000_000
+                hold: initialLoad
             ),
             .success(
                 snapshot(
@@ -24,10 +26,17 @@ final class TradeAssetsListViewModelTests: XCTestCase {
             ),
         ])
 
-        let viewModel = makeViewModel(assetsListService: service)
+        let debounce = TestGate()
+        var debounces: [UInt64] = []
+        let debounceEntered = TestSignal()
+        let viewModel = makeViewModel(assetsListService: service, debounce: {
+            debounces.append($0)
+            debounceEntered.send()
+            try await debounce.wait()
+        })
 
         viewModel.loadIfNeeded()
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 1
         }
 
@@ -35,11 +44,13 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         viewModel.updateSearchText("bt")
         viewModel.updateSearchText("btc")
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        await waitUntil(debounceEntered) { debounces.count == 3 }
+        XCTAssertEqual(debounces, Array(repeating: 300_000_000, count: 3))
         let requestsBeforeDebounce = await service.loadRequests()
         XCTAssertEqual(requestsBeforeDebounce.count, 1)
 
-        await waitUntil {
+        await debounce.open()
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 2
         }
 
@@ -48,11 +59,10 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         XCTAssertFalse(loadRequests.contains(.init(query: "b", category: .all)))
         XCTAssertFalse(loadRequests.contains(.init(query: "bt", category: .all)))
 
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["btc"]
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["btc"]
         }
+        await initialLoad.open()
     }
 
     @MainActor
@@ -82,7 +92,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         let viewModel = makeViewModel(assetsListService: service)
 
         viewModel.loadIfNeeded()
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 1
         }
 
@@ -91,7 +101,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.searchText, "ton")
 
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 2
         }
 
@@ -99,15 +109,13 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         XCTAssertEqual(loadRequests.last, .init(query: "ton", category: .stocks))
         XCTAssertFalse(loadRequests.contains(.init(query: "ton", category: .all)))
 
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["aaplx"]
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["aaplx"]
         }
 
         viewModel.selectCategory(.all)
 
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 3
         }
         let requestsAfterSwitchingBack = await service.loadRequests()
@@ -144,10 +152,8 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         let viewModel = makeViewModel(assetsListService: service)
 
         viewModel.loadIfNeeded()
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).count == 6
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).count == 6
         }
 
         let firstAsset = try? XCTUnwrap(currentAssets(in: viewModel.currentQueryViewModel).first)
@@ -157,7 +163,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
 
         viewModel.loadNextPageIfNeeded(currentAsset: firstAsset)
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertFalse(isLoadingMore(viewModel.currentQueryViewModel))
         let loadNextPageRequests = await service.loadNextPageRequests()
         XCTAssertTrue(loadNextPageRequests.isEmpty)
     }
@@ -178,18 +184,15 @@ final class TradeAssetsListViewModelTests: XCTestCase {
                 snapshot(
                     ids: ["7"],
                     nextCursor: nil
-                ),
-                delayNanoseconds: 500_000_000
+                )
             ),
         ])
 
         let viewModel = makeViewModel(assetsListService: service)
 
         viewModel.loadIfNeeded()
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).count == 6
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).count == 6
         }
 
         let lastAsset = try? XCTUnwrap(currentAssets(in: viewModel.currentQueryViewModel).last)
@@ -200,15 +203,11 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         viewModel.loadNextPageIfNeeded(currentAsset: lastAsset)
         viewModel.loadNextPageIfNeeded(currentAsset: lastAsset)
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["1", "2", "3", "4", "5", "6", "7"]
+        }
         let loadNextPageRequests = await service.loadNextPageRequests()
         XCTAssertEqual(loadNextPageRequests.count, 1)
-
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["1", "2", "3", "4", "5", "6", "7"]
-            }
-        }
     }
 
     @MainActor
@@ -231,7 +230,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         let viewModel = makeViewModel(assetsListService: service)
 
         viewModel.loadIfNeeded()
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 1
         }
 
@@ -240,7 +239,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
 
         viewModel.selectCategory(.stocks)
 
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.loadRequests().count == 2
         }
 
@@ -270,10 +269,8 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         let viewModel = makeViewModel(assetsListService: service)
 
         viewModel.loadIfNeeded()
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["ton"]
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["ton"]
         }
 
         await viewModel.refresh()
@@ -285,6 +282,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
     @MainActor
     func test_refresh_waitsForLoadTaskCompletion() async {
         let service = TradingAssetsListServiceSpy()
+        let refreshLoad = TestGate()
         await service.setLoadPlans([
             .success(
                 snapshot(
@@ -297,33 +295,30 @@ final class TradeAssetsListViewModelTests: XCTestCase {
                     ids: ["btc"],
                     nextCursor: nil
                 ),
-                delayNanoseconds: 300_000_000
+                hold: refreshLoad
             ),
         ])
 
         let viewModel = makeViewModel(assetsListService: service)
-        let probe = CompletionProbe()
-
         viewModel.loadIfNeeded()
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["ton"]
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).map(\.id) == ["ton"]
         }
 
-        Task {
+        var refreshed = false
+        let refresh = Task {
             await viewModel.refresh()
-            await probe.markCompleted()
+            refreshed = true
         }
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        let isCompletedEarly = await probe.isCompleted()
-        XCTAssertFalse(isCompletedEarly)
+        await waitUntil(service.changes) {
+            await service.loadRequests().count == 2
+        }
+        XCTAssertFalse(refreshed)
         XCTAssertTrue(isRefreshing(viewModel.currentQueryViewModel))
 
-        await waitUntil {
-            await probe.isCompleted()
-        }
+        await refreshLoad.open()
+        await refresh.value
 
         XCTAssertEqual(currentAssets(in: viewModel.currentQueryViewModel).map(\.id), ["btc"])
     }
@@ -350,10 +345,8 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         )
 
         viewModel.loadIfNeeded()
-        await waitUntil {
-            await MainActor.run {
-                self.currentAssets(in: viewModel.currentQueryViewModel).count == 1
-            }
+        await waitUntil(viewModel.currentQueryViewModel) {
+            self.currentAssets(in: viewModel.currentQueryViewModel).count == 1
         }
 
         let asset = try? XCTUnwrap(currentAssets(in: viewModel.currentQueryViewModel).first)
@@ -411,7 +404,8 @@ private extension TradeAssetsListViewModelTests {
     @MainActor
     func makeViewModel(
         assetsListService: TradingAssetsListService,
-        onOpenAssetDetails: @escaping (TradingAsset) -> Void = { _ in }
+        onOpenAssetDetails: @escaping (TradingAsset) -> Void = { _ in },
+        debounce: @escaping @MainActor (UInt64) async throws -> Void = { _ in }
     ) -> TradeAssetsListViewModel {
         let formattersAssembly = FormattersAssembly()
 
@@ -428,7 +422,8 @@ private extension TradeAssetsListViewModelTests {
             signedAmountFormatter: formattersAssembly.signedAmountFormatter,
             selectedCategory: .all,
             onBack: {},
-            onOpenAssetDetails: onOpenAssetDetails
+            onOpenAssetDetails: onOpenAssetDetails,
+            debounce: debounce
         )
     }
 
@@ -452,6 +447,14 @@ private extension TradeAssetsListViewModelTests {
         case .idle, .loaded, .refreshing, .loadingMore:
             return nil
         }
+    }
+
+    @MainActor
+    func isLoadingMore(_ queryViewModel: TradeAssetsListQueryViewModel) -> Bool {
+        if case .loadingMore = queryViewModel.state {
+            return true
+        }
+        return false
     }
 
     @MainActor
@@ -507,27 +510,11 @@ private extension TradeAssetsListViewModelTests {
             verification: verification
         )
     }
-
-    func waitUntil(
-        timeout: TimeInterval = 2,
-        intervalNanoseconds: UInt64 = 10_000_000,
-        condition: @escaping () async -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-
-        while Date() < deadline {
-            if await condition() {
-                return
-            }
-
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-        }
-
-        XCTFail("Timed out waiting for condition")
-    }
 }
 
 private actor TradingAssetsListServiceSpy: TradingAssetsListService {
+    nonisolated let changes = TestSignal()
+
     struct Request: Hashable {
         let query: String?
         let category: TradingAssetCategory
@@ -535,25 +522,25 @@ private actor TradingAssetsListServiceSpy: TradingAssetsListService {
 
     struct Plan {
         let result: Result<TradingAssetListSnapshot, TradingAssetsListServiceFailure>
-        let delayNanoseconds: UInt64
+        let hold: TestGate?
 
         static func success(
             _ snapshot: TradingAssetListSnapshot,
-            delayNanoseconds: UInt64 = 0
+            hold: TestGate? = nil
         ) -> Plan {
             Plan(
                 result: .success(snapshot),
-                delayNanoseconds: delayNanoseconds
+                hold: hold
             )
         }
 
         static func failure(
             _ error: TradingAssetsListServiceFailure,
-            delayNanoseconds: UInt64 = 0
+            hold: TestGate? = nil
         ) -> Plan {
             Plan(
                 result: .failure(error),
-                delayNanoseconds: delayNanoseconds
+                hold: hold
             )
         }
     }
@@ -586,6 +573,7 @@ private actor TradingAssetsListServiceSpy: TradingAssetsListService {
     ) async throws(TradingAssetsListServiceFailure) -> TradingAssetListSnapshot {
         let request = Request(query: query, category: category)
         recordedLoadRequests.append(request)
+        changes.send()
 
         let plan = loadPlanQueue.removeFirst()
         let snapshot = try await execute(plan: plan, request: request)
@@ -599,6 +587,7 @@ private actor TradingAssetsListServiceSpy: TradingAssetsListService {
     ) async throws(TradingAssetsListServiceFailure) -> TradingAssetListSnapshot? {
         let request = Request(query: query, category: category)
         recordedLoadNextPageRequests.append(request)
+        changes.send()
 
         guard !loadNextPagePlanQueue.isEmpty else {
             return nil
@@ -633,9 +622,9 @@ private actor TradingAssetsListServiceSpy: TradingAssetsListService {
         plan: Plan,
         request: Request
     ) async throws(TradingAssetsListServiceFailure) -> TradingAssetListSnapshot {
-        if plan.delayNanoseconds > 0 {
+        if let hold = plan.hold {
             do {
-                try await Task.sleep(nanoseconds: plan.delayNanoseconds)
+                try await hold.wait()
             } catch {
                 recordedCanceledLoadRequests.append(request)
                 throw .networkError
@@ -648,17 +637,5 @@ private actor TradingAssetsListServiceSpy: TradingAssetsListService {
         case let .failure(error):
             throw error
         }
-    }
-}
-
-private actor CompletionProbe {
-    private var completed = false
-
-    func markCompleted() {
-        completed = true
-    }
-
-    func isCompleted() -> Bool {
-        completed
     }
 }

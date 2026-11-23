@@ -69,6 +69,23 @@ final class WalletConnectSessionProposalApprovableNamespacesTests: XCTestCase {
 
         XCTAssertTrue(proposal.canBeApproved(wallet: makeWallet()))
     }
+
+    func testTheFirstWalletThatCanApproveIsPreferred() {
+        let proposal = makeProposal(namespaces: [
+            makeNamespace(key: "eip155", chains: [.eth], methods: [.personalSign]),
+        ])
+        let withoutEthereum = makeWallet(id: "tron-only", addresses: [MultichainWalletAddress(chain: .tron, address: "TRON")])
+
+        XCTAssertEqual(proposal.preferredWallet(among: [withoutEthereum, makeWallet()])?.id, "wallet")
+    }
+
+    func testWithoutAWalletThatCanApproveTheFirstOneIsKept() {
+        let proposal = makeProposal(namespaces: [
+            makeNamespace(key: "tron", chains: [.tron], methods: [.tronSignTransaction], isRequired: true),
+        ])
+
+        XCTAssertEqual(proposal.preferredWallet(among: [makeWallet(), makeWallet(id: "other")])?.id, "wallet")
+    }
 }
 
 private extension WalletConnectSessionProposalApprovableNamespacesTests {
@@ -103,9 +120,15 @@ private extension WalletConnectSessionProposalApprovableNamespacesTests {
         )
     }
 
-    func makeWallet() -> Wallet {
+    func makeWallet(
+        id: String = "wallet",
+        addresses: [MultichainWalletAddress] = [
+            MultichainWalletAddress(chain: .ton, address: "ton-v4r2", type: .tonV4R2),
+            MultichainWalletAddress(chain: .eth, address: "0xabc"),
+        ]
+    ) -> Wallet {
         Wallet(
-            id: "wallet",
+            id: id,
             identity: WalletIdentity(
                 network: .mainnet,
                 kind: .Regular(
@@ -123,10 +146,7 @@ private extension WalletConnectSessionProposalApprovableNamespacesTests {
             multichain: .multichain(
                 MultichainWalletState(
                     walletId: "multichain-wallet",
-                    addresses: [
-                        MultichainWalletAddress(chain: .ton, address: "ton-v4r2", type: .tonV4R2),
-                        MultichainWalletAddress(chain: .eth, address: "0xabc"),
-                    ],
+                    addresses: addresses,
                     syncState: .synced
                 )
             )

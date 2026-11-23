@@ -24,7 +24,7 @@ struct TradePerpsShelfView: View {
                         imageSource: .url(market.iconURL),
                         changeText: market.changeText,
                         changeColor: market.changeColor,
-                        titleTag: .tag(text: market.leverage),
+                        titleTag: market.leverageTag,
                         height: Layout.itemHeight
                     ) {
                         onOpenMarket(market.id)

@@ -352,6 +352,7 @@ private extension PasscodeInputCoordinator {
 }
 
 extension PasscodeInputCoordinator {
+    @discardableResult
     static func present<ParentRouterViewController: UIViewController>(
         parentCoordinator: Coordinator,
         parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
@@ -361,7 +362,7 @@ extension PasscodeInputCoordinator {
         reason: PasscodeReason? = nil,
         onCancel: @escaping () -> Void,
         onInput: @escaping (String) -> Void
-    ) {
+    ) -> @MainActor (Bool) -> Void {
         present(
             parentCoordinator: parentCoordinator,
             parentRouter: parentRouter,
@@ -376,6 +377,7 @@ extension PasscodeInputCoordinator {
         )
     }
 
+    @discardableResult
     static func present<ParentRouterViewController: UIViewController>(
         parentCoordinator: Coordinator,
         parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
@@ -383,9 +385,10 @@ extension PasscodeInputCoordinator {
         securityStore: SecurityStore,
         analyticsProvider: AnalyticsProvider? = nil,
         reason: PasscodeReason? = nil,
+        waitForTransitions: @escaping ModalTransitionWaiter.Wait = ModalTransitionWaiter.wait,
         onCancel: @escaping () -> Void,
         onInput: @escaping (String) -> Void
-    ) {
+    ) -> @MainActor (Bool) -> Void {
         let navigationController = TKNavigationController()
         navigationController.configureTransparentAppearance()
         navigationController.modalPresentationStyle = .fullScreen
@@ -412,19 +415,39 @@ extension PasscodeInputCoordinator {
             )
         )
 
-        coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
-            fromViewController.dismiss(animated: true) {
-                parentCoordinator?.removeChild(coordinator)
+        var passcode: String?
+        var isAnswering = false
+        var isFinished = false
+        let finish = { [weak coordinator, weak parentCoordinator, weak navigationController] in
+            guard !isFinished else { return }
+            isFinished = true
+            navigationController?.didDismiss = nil
+            coordinator?.didCancel = nil
+            coordinator?.didInputPasscode = nil
+            parentCoordinator?.removeChild(coordinator)
+            if let passcode {
+                onInput(passcode)
+            } else {
                 onCancel()
             }
         }
-
-        coordinator.didInputPasscode = { [weak coordinator, weak parentCoordinator] passcode in
-            fromViewController.dismiss(animated: true) {
-                parentCoordinator?.removeChild(coordinator)
-                onInput(passcode)
+        let answer = { [weak fromViewController] (input: String?) in
+            guard !isAnswering, !isFinished else { return }
+            isAnswering = true
+            passcode = input
+            guard let fromViewController else {
+                finish()
+                return
             }
+            fromViewController.dismiss(animated: true, completion: finish)
         }
+        // An expired request can dismiss the entire stack without a passcode button being tapped.
+        navigationController.didDismiss = {
+            guard !isAnswering else { return }
+            finish()
+        }
+        coordinator.didCancel = { answer(nil) }
+        coordinator.didInputPasscode = { answer($0) }
 
         parentCoordinator.addChild(coordinator)
         coordinator.start()
@@ -433,6 +456,29 @@ extension PasscodeInputCoordinator {
             navigationController,
             animated: true
         )
+        return { [weak fromViewController, weak navigationController] dismiss in
+            guard !isFinished else { return }
+            passcode = nil
+            guard dismiss else {
+                finish()
+                return
+            }
+            isAnswering = true
+            Task { @MainActor in
+                guard let fromViewController else {
+                    finish()
+                    return
+                }
+                await ModalTransitionWaiter.perform(from: fromViewController, wait: waitForTransitions) {
+                    guard !isFinished else { return }
+                    guard let navigationController, fromViewController.presentedViewController === navigationController else {
+                        finish()
+                        return
+                    }
+                    fromViewController.dismiss(animated: false, completion: finish)
+                }
+            }
+        }
     }
 }
 
@@ -443,7 +489,8 @@ extension PasscodeInputCoordinator {
         mnemonicAccess: MnemonicAccess,
         securityStore: SecurityStore,
         analyticsProvider: AnalyticsProvider? = nil,
-        reason: PasscodeReason? = nil
+        reason: PasscodeReason? = nil,
+        dismissOnCancellation: Bool = true
     ) async -> String? {
         await getPasscode(
             parentCoordinator: parentCoordinator,
@@ -453,7 +500,8 @@ extension PasscodeInputCoordinator {
             ),
             securityStore: securityStore,
             analyticsProvider: analyticsProvider,
-            reason: reason
+            reason: reason,
+            dismissOnCancellation: dismissOnCancellation
         )
     }
 
@@ -463,25 +511,64 @@ extension PasscodeInputCoordinator {
         validator: PasscodeInputValidator,
         securityStore: SecurityStore,
         analyticsProvider: AnalyticsProvider? = nil,
-        reason: PasscodeReason? = nil
+        reason: PasscodeReason? = nil,
+        dismissOnCancellation: Bool = true,
+        waitForTransitions: @escaping ModalTransitionWaiter.Wait = ModalTransitionWaiter.wait
     ) async -> String? {
-        return await Task { @MainActor in
+        let cancellation = PasscodeInputCancellation()
+        return await withTaskCancellationHandler {
+            guard !Task.isCancelled else { return nil }
             return await withCheckedContinuation { continuation in
-                PasscodeInputCoordinator.present(
+                let cancel = PasscodeInputCoordinator.present(
                     parentCoordinator: parentCoordinator,
                     parentRouter: parentRouter,
                     validator: validator,
                     securityStore: securityStore,
                     analyticsProvider: analyticsProvider,
                     reason: reason,
+                    waitForTransitions: waitForTransitions,
                     onCancel: {
+                        cancellation.complete()
                         continuation.resume(returning: nil)
                     },
                     onInput: {
+                        cancellation.complete()
                         continuation.resume(returning: $0)
                     }
                 )
+                cancellation.install { cancel(dismissOnCancellation) }
             }
-        }.value
+        } onCancel: {
+            Task { @MainActor in cancellation.cancel() }
+        }
+    }
+}
+
+@MainActor
+private final class PasscodeInputCancellation {
+    private var action: (() -> Void)?
+    private var isCancelled = false
+    private var isCompleted = false
+
+    func install(_ action: @escaping () -> Void) {
+        guard !isCompleted else { return }
+        if isCancelled {
+            action()
+        } else {
+            self.action = action
+        }
+    }
+
+    func cancel() {
+        guard !isCompleted else { return }
+        isCancelled = true
+        let action = action
+        self.action = nil
+        action?()
+    }
+
+    func complete() {
+        isCompleted = true
+        action = nil
     }
 }

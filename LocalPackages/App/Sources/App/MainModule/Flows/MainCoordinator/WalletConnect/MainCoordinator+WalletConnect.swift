@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import OperationReviewModels
 import TKCoordinator
 import TKLocalize
 import TKLogging
@@ -143,8 +144,10 @@ private extension MainCoordinator {
         case let .sessionRequest(request):
             await handleWalletConnectRequest(request)
         case let .sessionRequestExpired(topic, requestId):
-            dismissExpiredWalletConnectRequest(id: requestId, topic: topic)
-            showWalletConnectError("Request expired")
+            let submissionWasNotified = dismissExpiredWalletConnectRequest(id: requestId, topic: topic)
+            if !submissionWasNotified {
+                showWalletConnectError(TKLocales.WalletConnect.Error.requestExpired)
+            }
         case .sessionSettled:
             break
         case let .sessionDeleted(topic):
@@ -241,7 +244,10 @@ private extension MainCoordinator {
 
         let wallet: Wallet
         let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-        guard let multichainWallet = walletsStore.preferredMultichainWallet else {
+        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+        guard let multichainWallet = proposal.preferredWallet(
+            among: walletsStore.walletConnectCandidates(isEligible: configuration.isMultichainDappsAvailable)
+        ) else {
             Log.walletConnect.w(
                 "proposal presentation skipped: multichain wallet missing",
                 error: WalletConnectPresentationError.multichainWalletMissing,
@@ -338,7 +344,7 @@ private extension MainCoordinator {
             return false
         }
 
-        guard case .regular = wallet.kind else {
+        guard wallet.kind == .regular || wallet.kind == .ledger else {
             rejectWalletConnectRequest(
                 id: request.id,
                 topic: request.topic,
@@ -349,14 +355,18 @@ private extension MainCoordinator {
             return false
         }
 
+        var shouldHandleDeliveredRequestResponse = false
         let walletConnectRequest = WalletConnectRequest(
             request: request,
             wallet: wallet,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
+            didDeliverResponse: { [weak self] in
+                guard shouldHandleDeliveredRequestResponse else { return }
+                self?.handleDeliveredWalletConnectResponse(dapp: request.dapp, source: request.source)
+            },
             router: ViewControllerRouter(rootViewController: router.rootViewController)
         )
-        var shouldHandleDeliveredRequestResponse = false
 
         walletConnectRequest.didReject = {
             do {
@@ -371,21 +381,16 @@ private extension MainCoordinator {
                 throw error
             }
         }
-        walletConnectRequest.didApprove = { [weak self] approvalState in
+        walletConnectRequest.didApprove = { [weak self] approvalState, evmFee, consent in
             guard let self else { return }
             try await self.approveWalletConnectRequest(
                 request,
                 wallet: wallet,
-                approvalState: approvalState
+                approvalState: approvalState,
+                evmFee: evmFee,
+                consent: consent
             )
             shouldHandleDeliveredRequestResponse = true
-        }
-        walletConnectRequest.didDeliverResponse = { [weak self] in
-            guard shouldHandleDeliveredRequestResponse else { return }
-            self?.handleDeliveredWalletConnectResponse(
-                dapp: request.dapp,
-                source: request.source
-            )
         }
         walletConnectRequest.didFinish = { [weak self] coordinator in
             self?.walletConnectState.requestCoordinators[key] = nil
@@ -402,7 +407,9 @@ private extension MainCoordinator {
     func approveWalletConnectRequest(
         _ request: WalletConnectSessionRequest,
         wallet: Wallet,
-        approvalState: WalletConnectRequestApprovalState
+        approvalState: WalletConnectRequestApprovalState,
+        evmFee: WalletConnectEVMFee?,
+        consent: OperationConsent
     ) async throws {
         let service = await keeperCoreMainAssembly.walletConnectAssembly.walletConnectService
 
@@ -413,10 +420,20 @@ private extension MainCoordinator {
             do {
                 response = try await signWalletConnectRequest(
                     request,
-                    wallet: wallet
+                    wallet: wallet,
+                    evmFee: evmFee,
+                    consent: consent
                 )
                 approvalState.cacheResponse(response)
             } catch {
+                if error == .requestEndedAfterBroadcast {
+                    Log.walletConnect.w(
+                        "request ended after broadcast",
+                        error: error,
+                        extraInfo: walletConnectRequestLogInfo(request)
+                    )
+                    throw WalletConnectResponseError.requestExpiredAfterBroadcast(id: request.id)
+                }
                 Log.walletConnect.w(
                     "request signing failed",
                     error: error,
@@ -450,24 +467,33 @@ private extension MainCoordinator {
                 result: response
             )
         } catch {
+            let responseError = approvalState.deliveryError(error, method: request.method, requestId: request.id)
             Log.walletConnect.w(
                 "request approval delivery failed",
-                error: error,
+                error: responseError,
                 extraInfo: walletConnectRequestLogInfo(request)
             )
-            if error.isRetryableDeliveryFailure {
-                throw WalletConnectRequestDeliveryRetryError.approve(error)
+            if responseError.isRetryableDeliveryFailure {
+                throw WalletConnectRequestDeliveryRetryError.approve(responseError)
             }
-            throw error
+            throw responseError
         }
     }
 
     func signWalletConnectRequest(
         _ request: WalletConnectSessionRequest,
-        wallet: Wallet
+        wallet: Wallet,
+        evmFee: WalletConnectEVMFee?,
+        consent: OperationConsent
     ) async throws(WalletConnectSigningError) -> WalletConnectResponseValue {
         let signingService = keeperCoreMainAssembly.walletConnectAssembly.walletConnectSigningService
-        let passcodeProvider: () async -> String? = { [weak self] in
+        let device = LedgerDeviceSigner.signer(
+            for: wallet,
+            unavailableTitle: TKLocales.LedgerSteps.dappsUnavailable,
+            coreAssembly: coreAssembly,
+            presenter: { [weak self] in self?.router.rootViewController }
+        )
+        let signer: MultichainTransferSigner = device.map { .device($0) } ?? .mnemonic(passcodeProvider: { [weak self] in
             guard let self else { return nil }
             return await PasscodeInputCoordinator.getPasscode(
                 parentCoordinator: self,
@@ -475,14 +501,20 @@ private extension MainCoordinator {
                 mnemonicAccess: self.keeperCoreMainAssembly.mnemonicAccess,
                 securityStore: self.keeperCoreMainAssembly.storesAssembly.securityStore,
                 analyticsProvider: self.coreAssembly.analyticsProvider,
-                reason: .dappRequest
+                reason: .dappRequest,
+                // The request host dismisses the passcode with the rest of its stack.
+                dismissOnCancellation: false
             )
-        }
+        })
+        let service = await keeperCoreMainAssembly.walletConnectAssembly.walletConnectService
 
         return try await signingService.sign(
-            passcodeProvider: passcodeProvider,
+            signer: signer,
             wallet: wallet,
-            request: request
+            request: request,
+            evmFee: evmFee,
+            consent: consent,
+            isPending: { await service.hasPendingRequest(id: request.id, topic: request.topic) }
         )
     }
 
@@ -514,26 +546,27 @@ private extension MainCoordinator {
     }
 
     @MainActor
-    func dismissExpiredWalletConnectRequest(id: String, topic: String) {
+    @discardableResult
+    func dismissExpiredWalletConnectRequest(id: String, topic: String) -> Bool {
         let key = WalletConnectRequestKey(id: id, topic: topic)
         let presentationKey = WalletConnectPresentationKey.request(key)
 
         if walletConnectState.presentationQueue.removeQueued(presentationKey) {
-            return
+            return false
         }
 
         guard walletConnectState.presentationQueue.isActive(presentationKey) else {
-            return
+            return false
         }
 
         guard let coordinator = walletConnectState.requestCoordinators[key] else {
             finishWalletConnectPresentation(key: presentationKey)
-            return
+            return false
         }
         guard coordinator.matchesRequest(id: id, topic: topic) else {
-            return
+            return false
         }
-        coordinator.dismissAfterRequestExpired()
+        return coordinator.dismissAfterRequestExpired()
     }
 
     @MainActor
@@ -679,16 +712,11 @@ private func walletConnectRequestLogInfo(
 }
 
 private extension WalletsStore {
-    /// Seeds the proposal screen, whose own wallet picker is restricted to multichain wallets and
-    /// falls back the same way. A pairing normally starts while a multichain wallet is active; the
-    /// fallback only covers the wallet being switched between pairing and the proposal arriving.
-    var preferredMultichainWallet: Wallet? {
-        if let activeWallet = try? activeWallet,
-           activeWallet.isMultichain
-        {
-            return activeWallet
-        }
-
-        return wallets.first(where: \.isMultichain)
+    /// The wallets the proposal screen may start on, the active one first; its own wallet picker is restricted to the
+    /// wallets `isEligible` lets in. A pairing normally starts while such a wallet is active; the others cover the
+    /// wallet being switched between pairing and the proposal arriving, and a multichain Ledger without the dApp's
+    /// networks.
+    func walletConnectCandidates(isEligible: (Wallet) -> Bool) -> [Wallet] {
+        ([try? activeWallet].compactMap { $0 } + wallets).filter(isEligible)
     }
 }

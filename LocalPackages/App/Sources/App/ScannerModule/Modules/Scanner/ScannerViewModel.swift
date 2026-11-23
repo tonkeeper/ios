@@ -7,8 +7,9 @@ import UIKit
 import URKit
 
 protocol ScannerViewModuleOutput: AnyObject {
-    var didScanDeeplink: ((Deeplink) -> Void)? { get set }
-    var didScanUR: ((UR) throws -> Void)? { get set }
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)? { get set }
+    var didScanDeeplink: ((ScannedDeeplink) -> Void)? { get set }
+    var didScanUR: ((UR) throws -> Bool)? { get set }
     var didFailScan: ((String?, Bool) -> Void)? { get set }
 }
 
@@ -21,6 +22,7 @@ protocol ScannerViewModel: AnyObject {
     func viewDidLoad()
     func viewDidAppear()
     func viewDidDisappear()
+    func applicationDidBecomeActive()
     func didTapSettingsButton()
     func didTapFlashlightButton(isToggled: Bool)
     func processImageFromGallery(_ image: UIImage)
@@ -29,6 +31,12 @@ protocol ScannerViewModel: AnyObject {
 enum ScannerState {
     case video(layer: AVCaptureVideoPreviewLayer)
     case permissionDenied
+}
+
+enum ScannerCameraState: Sendable {
+    case running
+    case permissionDenied
+    case failed
 }
 
 enum ScannerError: Swift.Error {
@@ -51,8 +59,10 @@ struct ScannerUIConfiguration {
 final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerViewModuleOutput {
     // MARK: - ScannerViewModuleOutput
 
-    var didScanDeeplink: ((Deeplink) -> Void)?
-    var didScanUR: ((UR) throws -> Void)?
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)?
+
+    var didScanDeeplink: ((ScannedDeeplink) -> Void)?
+    var didScanUR: ((UR) throws -> Bool)?
     var didFailScan: ((String?, Bool) -> Void)?
 
     // MARK: - ScannerViewModel
@@ -64,23 +74,33 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
 
     func viewDidLoad() {
         setup()
+        analyticsSession?.logOpen()
     }
 
     func viewDidAppear() {
-        isViewVisible = true
+        let appearance = visibility.appear()
+        refreshCameraAuthorization()
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            isVisible = true
+            sessionViewAppearance = appearance
+            captureLifecycle.appear()
             startSessionIfNeeded()
         }
     }
 
+    func applicationDidBecomeActive() {
+        guard isViewVisible else { return }
+        refreshCameraAuthorization()
+        sessionQueue.async { [weak self] in
+            self?.startSessionIfNeeded()
+        }
+    }
+
     func viewDidDisappear() {
-        isViewVisible = false
+        visibility.disappear()
         sessionQueue.async { [weak self] in
             guard let self else { return }
-            isVisible = false
-            guard captureSession.isRunning else { return }
+            captureLifecycle.disappear()
             captureSession.stopRunning()
         }
     }
@@ -109,32 +129,44 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
 
     /// Accessed only on `sessionQueue`.
     private var isSessionReady = false
-    private var isVisible = false
-    private var sessionRun = 0
+    private var captureLifecycle = ScannerCaptureLifecycle()
+    private var sessionViewAppearance = 0
 
     /// Accessed only on the main queue.
-    private var isViewVisible = false
+    private var visibility = ScannerViewVisibility()
+    private var isViewVisible: Bool {
+        visibility.isVisible
+    }
+
+    private var cameraSetup = ScannerCameraSetupState()
+    private var isShowingCameraUnavailable = false
+    private var previewLayer: AVCaptureVideoPreviewLayer?
 
     /// Accessed only on `metadataOutputQueue`.
     private var didHandleScan = false
     private var scannedSessionRun = 0
+    private var scannedViewAppearance = 0
+    private var lastRejectedCameraUR: UR?
 
     // MARK: - Dependencies
 
     private let urlOpener: URLOpener
     private let scannerController: ScannerController
     private let uiConfiguration: ScannerUIConfiguration
+    private let analyticsSession: ScanAnalyticsSession?
 
     // MARK: - Init
 
     init(
         urlOpener: URLOpener,
         scannerController: ScannerController,
-        uiConfiguration: ScannerUIConfiguration
+        uiConfiguration: ScannerUIConfiguration,
+        analyticsSession: ScanAnalyticsSession?
     ) {
         self.urlOpener = urlOpener
         self.scannerController = scannerController
         self.uiConfiguration = uiConfiguration
+        self.analyticsSession = analyticsSession
     }
 }
 
@@ -146,6 +178,7 @@ extension ScannerViewModelImplementation {
             }.value
             await MainActor.run {
                 guard let stringValue else {
+                    self.analyticsSession?.logNoCode()
                     self.didFailScan?(TKLocales.Scanner.invalidLink, false)
                     return
                 }
@@ -188,16 +221,18 @@ private extension ScannerViewModelImplementation {
     }
 
     func setupScanner() {
+        guard cameraSetup.beginConfiguration() else { return }
         sessionQueue.async { [weak self] in
             guard let self else { return }
             do {
                 try configureSession()
             } catch {
-                handlePermissionDenied()
+                handlePermissionDenied(cameraState: .failed)
                 return
             }
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
+                cameraSetup.didConfigure()
                 setupPreview()
                 sessionQueue.async { [weak self] in
                     guard let self else { return }
@@ -221,8 +256,22 @@ private extension ScannerViewModelImplementation {
         }
     }
 
-    func handlePermissionDenied() {
+    func refreshCameraAuthorization() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            setupScanner()
+        case .denied, .restricted:
+            handlePermissionDenied()
+        default:
+            break
+        }
+    }
+
+    func handlePermissionDenied(cameraState: ScannerCameraState = .permissionDenied) {
         Task { @MainActor in
+            if cameraState == .failed { cameraSetup.didFailConfiguration() }
+            isShowingCameraUnavailable = true
+            didUpdateCameraState?(cameraState)
             didUpdateState?(.permissionDenied)
         }
     }
@@ -252,35 +301,70 @@ private extension ScannerViewModelImplementation {
     }
 
     func setupPreview() {
-        let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            handlePermissionDenied()
+            return
+        }
+        let previewLayer = previewLayer ?? AVCaptureVideoPreviewLayer(session: captureSession)
+        self.previewLayer = previewLayer
+        isShowingCameraUnavailable = false
         previewLayer.videoGravity = .resizeAspectFill
         didUpdateState?(.video(layer: previewLayer))
     }
 
     func startSessionIfNeeded() {
         guard isSessionReady,
-              isVisible,
-              !captureSession.isRunning,
-              AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+              AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
+              let run = captureLifecycle.beginRun(isRunning: captureSession.isRunning)
         else { return }
-        sessionRun += 1
-        let run = sessionRun
         metadataOutputQueue.sync {
-            didHandleScan = false
+            if scannedSessionRun != run {
+                scannerController.resetURDecoding()
+                didHandleScan = false
+                lastRejectedCameraUR = nil
+            }
             scannedSessionRun = run
+            scannedViewAppearance = sessionViewAppearance
         }
-        captureSession.startRunning()
+        if !captureSession.isRunning {
+            captureSession.startRunning()
+        }
+        let cameraState: ScannerCameraState = captureSession.isRunning ? .running : .failed
+        Task { @MainActor [weak self] in
+            guard let self, isViewVisible else { return }
+            guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+                handlePermissionDenied()
+                return
+            }
+            if cameraState == .running, isShowingCameraUnavailable { setupPreview() }
+            didUpdateCameraState?(cameraState)
+        }
     }
 
-    func finishScan(run: Int, deliver: @escaping () -> Void) {
+    func finishScan(run: Int, appearance: Int, retryRejectedUR: UR? = nil, deliver: @escaping () -> Bool) {
         sessionQueue.async { [weak self] in
-            guard let self, run == sessionRun, isVisible else { return }
-            if captureSession.isRunning {
+            guard let self, captureLifecycle.consumeScan(run: run) else { return }
+            if retryRejectedUR == nil, captureSession.isRunning {
                 captureSession.stopRunning()
             }
             DispatchQueue.main.async { [weak self] in
-                guard let self, isViewVisible else { return }
-                deliver()
+                guard let self, visibility.allowsDelivery(appearance: appearance) else { return }
+                let accepted = deliver()
+                sessionQueue.async { [weak self] in
+                    guard let self else { return }
+                    let shouldStop = captureLifecycle.completeScan(run: run, accepted: accepted)
+                    if let retryRejectedUR {
+                        if shouldStop, captureSession.isRunning {
+                            captureSession.stopRunning()
+                        } else if !accepted {
+                            metadataOutputQueue.async { [weak self] in
+                                guard let self, scannedSessionRun == run else { return }
+                                lastRejectedCameraUR = retryRejectedUR
+                                didHandleScan = false
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -302,18 +386,29 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
             if didScanDeeplink != nil {
                 let deeplink = try scannerController.handleScannedQRCode(stringValue)
                 didHandleScan = true
-                finishScan(run: scannedSessionRun) { [weak self] in
+                finishScan(run: scannedSessionRun, appearance: scannedViewAppearance) { [weak self] in
+                    guard let self, let didScanDeeplink else { return false }
                     UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                    self?.didScanDeeplink?(deeplink)
+                    didScanDeeplink(scannedDeeplink(deeplink, code: stringValue, input: .camera))
+                    return true
                 }
             } else if didScanUR != nil {
                 let ur = try scannerController.handleScannedQRCodeUR(stringValue)
+                guard ur != lastRejectedCameraUR else { return }
                 didHandleScan = true
-                finishScan(run: scannedSessionRun) { [weak self] in
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                finishScan(run: scannedSessionRun, appearance: scannedViewAppearance, retryRejectedUR: ur) { [weak self] in
+                    guard let self, let didScanUR else { return false }
                     do {
-                        try self?.didScanUR?(ur)
-                    } catch {}
+                        guard try didScanUR(ur) else {
+                            reportURRejection(shouldDismiss: true)
+                            return false
+                        }
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                        return true
+                    } catch {
+                        reportURRejection(shouldDismiss: true)
+                        return false
+                    }
                 }
             }
             return
@@ -321,8 +416,11 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
             return
         } catch {
             didHandleScan = true
-            finishScan(run: scannedSessionRun) { [weak self] in
-                self?.didFailScan?(error.localizedDescription, true)
+            finishScan(run: scannedSessionRun, appearance: scannedViewAppearance) { [weak self] in
+                guard let self else { return false }
+                analyticsSession?.logError(code: stringValue, input: .camera, rejection: ScanRejection(error: error))
+                didFailScan?(error.localizedDescription, true)
+                return false
             }
             return
         }
@@ -336,23 +434,36 @@ private extension ScannerViewModelImplementation {
                 let deeplink = try scannerController.handleScannedQRCode(stringValue)
                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 DispatchQueue.main.async {
-                    self.didScanDeeplink?(deeplink)
+                    self.didScanDeeplink?(self.scannedDeeplink(deeplink, code: stringValue, input: .gallery))
                 }
             } else if didScanUR != nil {
-                let ur = try scannerController.handleScannedQRCodeUR(stringValue)
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                let ur = try ScannerURDecoder().decode(stringValue)
                 DispatchQueue.main.async {
                     do {
-                        try self.didScanUR?(ur)
+                        guard try self.didScanUR?(ur) == true else {
+                            self.reportURRejection(shouldDismiss: false)
+                            return
+                        }
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     } catch {
-                        self.didFailScan?(TKLocales.Scanner.invalidLink, false)
+                        self.reportURRejection(shouldDismiss: false)
                     }
                 }
             }
         } catch {
             DispatchQueue.main.async {
-                self.didFailScan?(TKLocales.Scanner.invalidLink, false)
+                self.analyticsSession?.logError(code: stringValue, input: .gallery, rejection: ScanRejection(error: error))
+                self.reportURRejection(shouldDismiss: false)
             }
         }
+    }
+
+    func scannedDeeplink(_ deeplink: Deeplink, code: String, input: ScanInput) -> ScannedDeeplink {
+        ScannedDeeplink(deeplink: deeplink, code: code, input: input, session: analyticsSession)
+    }
+
+    func reportURRejection(shouldDismiss: Bool) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        didFailScan?(TKLocales.Scanner.invalidLink, shouldDismiss)
     }
 }
