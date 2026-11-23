@@ -11,7 +11,8 @@ Shared definitions live in `shared/api/` (`api/` in the public mirror),
 and platform-only definitions live in `ios/scripts/apigen/schemas/`.
 The public mirror keeps `scripts/apigen/schemas/` at its root.
 All clients use the pinned `swift-openapi-generator`. Change generator
-configuration rather than generated sources.
+configuration rather than generated sources. `ios/scripts/apigen/configs/<api>.yaml`
+filters each client to the operations the app calls; add an operation there first.
 
 `TonStreamingAPIV2`, `EventSource` and `StreamURLSessionTransport` contain vendored
 sources from [`tonkeeper/ton-api-swift` 0.8.0](https://github.com/tonkeeper/ton-api-swift/tree/716f7491aaa909bd4bcea23b1bd02f18e7de3e3c):

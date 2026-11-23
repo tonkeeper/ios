@@ -12,6 +12,7 @@ public struct BatterySwiftUIViewConfig: Hashable {
     public enum State: Hashable {
         case fill(CGFloat)
         case emptyTinted
+        case emptyGreen
         case empty
         /// Charges taken back by a refund left the service balance below zero.
         case negative
@@ -41,15 +42,19 @@ public struct BatterySwiftUIViewConfig: Hashable {
     public var size: Size
     public var state: State
     public var padding: Padding
+    /// The battery is known to be empty, so the wallet header hints that it can be tapped.
+    public var showsHint: Bool
 
     public init(
         size: Size,
         state: State = .empty,
-        padding: Padding = .zero
+        padding: Padding = .zero,
+        showsHint: Bool = false
     ) {
         self.size = size
         self.state = state
         self.padding = padding
+        self.showsHint = showsHint
     }
 }
 
@@ -136,7 +141,7 @@ private extension BatterySwiftUIView {
         switch config.state {
         case let .fill(fill):
             config.size.fillMaximumHeight * min(1, max(fill, 0.2))
-        case .emptyTinted, .empty, .negative:
+        case .emptyTinted, .emptyGreen, .empty, .negative:
             0
         }
     }
@@ -195,7 +200,7 @@ private extension BatterySwiftUIViewConfig.Size {
         case .size34:
             CGSize(width: 9, height: 13)
         case .size44:
-            CGSize(width: 9, height: 13)
+            CGSize(width: 14, height: 20)
         case .size52:
             .zero
         case .size128:
@@ -254,7 +259,7 @@ private extension BatterySwiftUIViewConfig.State {
         switch self {
         case .fill:
             0
-        case .emptyTinted, .empty, .negative:
+        case .emptyTinted, .emptyGreen, .empty, .negative:
             1
         }
     }
@@ -265,6 +270,8 @@ private extension BatterySwiftUIViewConfig.State {
             .clear
         case .emptyTinted:
             palette.accent.blue
+        case .emptyGreen:
+            palette.accent.green
         case .empty:
             palette.icon.secondary
         case .negative:
@@ -276,7 +283,7 @@ private extension BatterySwiftUIViewConfig.State {
         switch self {
         case .fill:
             1
-        case .emptyTinted, .empty, .negative:
+        case .emptyTinted, .emptyGreen, .empty, .negative:
             0
         }
     }
@@ -285,7 +292,7 @@ private extension BatterySwiftUIViewConfig.State {
         switch self {
         case let .fill(fill):
             fill <= 0.1 ? palette.accent.orange : palette.accent.blue
-        case .emptyTinted, .empty, .negative:
+        case .emptyTinted, .emptyGreen, .empty, .negative:
             palette.accent.orange
         }
     }

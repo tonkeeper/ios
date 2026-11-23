@@ -35,7 +35,8 @@ struct MultichainFeeSelection {
             TransactionConfirmationModel.ExtraOption(
                 type: option.type,
                 value: option.value,
-                isInsufficient: isInsufficient(option.value, balances: balances)
+                isInsufficient: option.isAvailable && isInsufficient(option.value, balances: balances),
+                isAvailable: option.isAvailable
             )
         }
     }
@@ -83,7 +84,7 @@ struct MultichainFeeSelection {
             case .tonJetton:
                 // Wallet must hold the emulated fee plus the forward amount attached to the jetton message.
                 requiredTonBalance = amount + balances.jettonForwardAmount
-            case .chainKit, .evm:
+            case .chainKit, .evm, .tonCoin:
                 requiredTonBalance = amount
             }
             return balances.ton.map { $0 < requiredTonBalance } ?? false
@@ -97,7 +98,7 @@ struct MultichainFeeSelection {
                 // Gasless fee is deducted from the transferred jetton, so it must be
                 // smaller than the amount being sent (mirrors the engine's own guard).
                 return feeAmount >= transferAmount
-            case .chainKit, .evm:
+            case .chainKit, .evm, .tonCoin:
                 return false
             }
 

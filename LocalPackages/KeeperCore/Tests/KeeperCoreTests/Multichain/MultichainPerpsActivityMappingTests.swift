@@ -89,6 +89,20 @@ final class MultichainPerpsActivityMappingTests: XCTestCase {
         XCTAssertNil(perps.fundingUsd)
     }
 
+    func test_readsTheOhmsRewardWithoutPaddingZeros() throws {
+        XCTAssertEqual(try reward(["asset": "OHM", "amount": "1000"]), "1000")
+        XCTAssertEqual(try reward(["asset": "OHM", "amount": "12.000000"]), "12")
+        XCTAssertEqual(try reward(["asset": "OHM", "amount": "1234.56", "boost": "200"]), "1234.56")
+    }
+
+    func test_dropsARewardThatIsNotAPositiveOhmsAmount() throws {
+        XCTAssertNil(try reward(nil))
+        XCTAssertNil(try reward(["asset": "OHM", "amount": "0"]))
+        XCTAssertNil(try reward(["asset": "OHM", "amount": "-5"]))
+        XCTAssertNil(try reward(["asset": "USDC", "amount": "11"]))
+        XCTAssertNil(try reward(["asset": "OHM"]))
+    }
+
     func test_mapsUnknownActivityTypeWithoutDroppingTheRow() throws {
         let activity = try XCTUnwrap(MultichainActivity(api: Self.makeActivity(
             activityType: "perps.something_new",
@@ -119,6 +133,32 @@ final class MultichainPerpsActivityMappingTests: XCTestCase {
             chain: "near",
             perps: nil
         )))
+    }
+
+    func test_withoutAPrimaryExplorerLink_takesTheFirstLinkTheBackendHas() throws {
+        var api = try Self.makeActivity(activityType: "perps.balance_withdrawal", chain: "lighter", perps: nil)
+        api.tx_ids = ["lighter:0xabc", "eth:0xdef"]
+        api.explorer_urls = [.init(tx_id: "eth:0xdef", chain: .eth, url: "https://eth.blockscout.com/tx/0xdef")]
+        let withdrawal = try XCTUnwrap(MultichainActivity(api: api))
+        XCTAssertEqual(withdrawal.explorerURL?.absoluteString, "https://eth.blockscout.com/tx/0xdef")
+        XCTAssertEqual(withdrawal.explorerTxId, "eth:0xdef")
+
+        api.explorer_url = "https://explorer.example/tx/0xabc"
+        let primary = try XCTUnwrap(MultichainActivity(api: api))
+        XCTAssertEqual(primary.explorerURL?.absoluteString, "https://explorer.example/tx/0xabc")
+        XCTAssertNil(primary.explorerTxId)
+    }
+
+    private func reward(_ reward: [String: String]?) throws -> String? {
+        var perps: [String: (any Sendable)?] = ["symbol": "BTC", "side": "long"]
+        if let reward {
+            perps["reward"] = reward
+        }
+        return try MultichainActivity(api: Self.makeActivity(
+            activityType: "perps.position_opened",
+            chain: "lighter",
+            perps: perps
+        ))?.perps?.loyaltyReward
     }
 
     private static func makeActivity(

@@ -367,6 +367,10 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
         throw .connectionError(underlying: nil)
     }
 
+    func getWalletAsset(walletId _: String, assetId _: String, currencies _: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord? {
+        nil
+    }
+
     func saveWalletAssetsFilters(
         walletId _: String,
         changes _: [MultichainAssetFilterChange]
@@ -415,6 +419,10 @@ private final class MultichainAssetActivitiesClientAPIStub: MultichainClientAPI 
     }
 
     func getWalletRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
+        throw .connectionError(underlying: nil)
+    }
+
+    func getWalletPerpsRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
         throw .connectionError(underlying: nil)
     }
 }

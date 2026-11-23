@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import TKLogging
 import TonSwift
 import TronSwift
 import TronSwiftAPI
@@ -48,6 +49,12 @@ public protocol WalletMigrationExecutionService {
         tronSignHandler: @escaping (TronSwift.TxID, Wallet) async throws(TronTransferSignError) -> TronSwift.SignedTxID,
         allowSkipInsufficient: Bool
     ) async throws(WalletMigrationExecutionError)
+
+    func migrateBattery(
+        from sourceWallet: Wallet,
+        to destinationWallet: Wallet,
+        proof: BatteryMigrationProof
+    ) async -> Bool
 }
 
 final class WalletMigrationExecutionServiceImplementation: WalletMigrationExecutionService {
@@ -201,6 +208,32 @@ final class WalletMigrationExecutionServiceImplementation: WalletMigrationExecut
             throw WalletMigrationExecutionError.sendFailed(
                 message: "Timed out waiting for battery pending_transactions to clear"
             )
+        }
+    }
+
+    func migrateBattery(
+        from sourceWallet: Wallet,
+        to destinationWallet: Wallet,
+        proof: BatteryMigrationProof
+    ) async -> Bool {
+        do {
+            let balance = try await batteryService.loadBatteryBalance(wallet: sourceWallet)
+            guard !balance.isBalanceZero, !balance.isBalanceNegative else {
+                return false
+            }
+            _ = try await batteryIdleWaiter.wait(wallet: sourceWallet)
+            let migration = try await batteryService.migrateBattery(
+                from: sourceWallet,
+                to: destinationWallet,
+                proof: proof
+            )
+            Log.migration.i("battery migrated", extraInfo: [
+                "charges": "\(migration.moved_charges)",
+            ])
+            return true
+        } catch {
+            Log.migration.w("battery migration failed", error: error)
+            return false
         }
     }
 

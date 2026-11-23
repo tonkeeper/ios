@@ -69,14 +69,43 @@ public extension StackingPoolInfo.Implementation {
         }
     }
 
-    /// TON held back while a withdrawal runs and returned afterwards.
+    /// TON held back while a withdrawal runs and returned afterwards, except what Whales keeps as its fee.
     var temporaryReserve: BigUInt {
-        1_000_000_000
+        withdrawalFee
     }
 
-    /// Minimum TON balance to start a withdrawal: the temporary reserve plus a margin for the network fee.
-    var withdrawalRequiredBalance: BigUInt {
-        temporaryReserve + Self.networkFeeMargin
+    /// Whales keeps its withdrawal fee out of the reserve and returns only the rest.
+    var keepsWithdrawalFee: Bool {
+        if case .whales = type {
+            return true
+        }
+        return false
+    }
+
+    /// TON left in the wallet by a max deposit, so the user can pay for withdrawing it later.
+    var depositMinRemaining: BigUInt {
+        switch self.type {
+        case .whales:
+            // Requesting the withdrawal and collecting it: 0.2 TON each plus fees.
+            return BigUInt(integerLiteral: 410_000_000)
+        case .liquidTF, .tf:
+            return temporaryReserve + Self.networkFeeMargin
+        }
+    }
+
+    /// Minimum TON balance to start a withdrawal: the temporary reserve plus the emulated network fee,
+    /// or an estimate of it while the emulation is missing.
+    func withdrawalRequiredBalance(networkFee: BigUInt?) -> BigUInt {
+        temporaryReserve + (networkFee ?? withdrawalNetworkFeeEstimate)
+    }
+
+    private var withdrawalNetworkFeeEstimate: BigUInt {
+        switch self.type {
+        case .whales:
+            return 10_000_000
+        case .liquidTF, .tf:
+            return Self.networkFeeMargin
+        }
     }
 
     static var networkFeeMargin: BigUInt {

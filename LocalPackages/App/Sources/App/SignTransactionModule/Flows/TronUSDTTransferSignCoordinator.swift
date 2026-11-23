@@ -17,14 +17,17 @@ final class TronUSDTTransferSignCoordinator: RouterCoordinator<ViewControllerRou
     private let txID: TronSwift.TxID
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let passcodeHandoff: TronTransferPasscodeHandoff?
 
     init(
         router: ViewControllerRouter,
         wallet: Wallet,
         txID: TronSwift.TxID,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly
+        coreAssembly: TKCore.CoreAssembly,
+        passcodeHandoff: TronTransferPasscodeHandoff? = nil
     ) {
+        self.passcodeHandoff = passcodeHandoff
         self.wallet = wallet
         self.txID = txID
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
@@ -68,6 +71,15 @@ final class TronUSDTTransferSignCoordinator: RouterCoordinator<ViewControllerRou
 
 private extension TronUSDTTransferSignCoordinator {
     func handleSign() {
+        if let passcode = passcodeHandoff?.currentOperationPasscode {
+            sign(passcode: passcode, reusesCurrentOperation: true)
+            return
+        }
+        passcodeHandoff?.discard()
+        requestPasscode()
+    }
+
+    func requestPasscode() {
         PasscodeInputCoordinator.present(
             parentCoordinator: self,
             parentRouter: router,
@@ -78,34 +90,41 @@ private extension TronUSDTTransferSignCoordinator {
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
-            onInput: { [weak self, wallet, keeperCoreMainAssembly, txID] passcode in
-                guard let self else { return }
-                Task {
-                    do {
-                        let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(
-                            wallet: wallet,
-                            passcode: passcode
-                        )
-                        let privateKey: TronSwift.PrivateKey
-                        if wallet.isMultichain, mnemonic.type == .bip39 {
-                            let privateKeyData = try keeperCoreMainAssembly.multichainAssembly.chainKitService
-                                .tronPrivateKey(mnemonic: mnemonic.mnemonicWords.joined(separator: " "))
-                            privateKey = TronSwift.PrivateKey(data: privateKeyData, chainCode: Data())
-                        } else {
-                            privateKey = try TonTron.derivedKeyPair(
-                                tonMnemonic: mnemonic.mnemonicWords,
-                                index: 0
-                            ).privateKey
-                        }
-                        let signer = Signer()
-
-                        let signed = try signer.sign(hash: txID, privateKey: privateKey)
-                        self.didSign?(signed)
-                    } catch {
-                        self.didFail?(error)
-                    }
-                }
+            onInput: { [weak self] passcode in
+                self?.sign(passcode: passcode)
             }
         )
+    }
+
+    func sign(passcode: String, reusesCurrentOperation: Bool = false) {
+        let wallet = wallet
+        let keeperCoreMainAssembly = keeperCoreMainAssembly
+        let txID = txID
+        Task {
+            do {
+                let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(
+                    wallet: wallet,
+                    passcode: passcode
+                )
+                let privateKey: TronSwift.PrivateKey
+                if wallet.isMultichain, mnemonic.type == .bip39 {
+                    let privateKeyData = try keeperCoreMainAssembly.multichainAssembly.chainKitService
+                        .tronPrivateKey(mnemonic: mnemonic.mnemonicWords.joined(separator: " "))
+                    privateKey = TronSwift.PrivateKey(data: privateKeyData, chainCode: Data())
+                } else {
+                    privateKey = try TonTron.derivedKeyPair(
+                        tonMnemonic: mnemonic.mnemonicWords,
+                        index: 0
+                    ).privateKey
+                }
+                if !reusesCurrentOperation {
+                    passcodeHandoff?.store(passcode)
+                }
+                let signed = try Signer().sign(hash: txID, privateKey: privateKey)
+                didSign?(signed)
+            } catch {
+                didFail?(error)
+            }
+        }
     }
 }

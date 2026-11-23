@@ -1,6 +1,7 @@
 @testable import App
 import Foundation
 import Stories
+import TKStories
 import UIKit
 import XCTest
 
@@ -211,7 +212,7 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
         XCTAssertEqual(completionCount, 1)
     }
 
-    func test_requiredStoryCannotBeClosedAndItsButtonRunsTheActionInsteadOfThePayload() async throws {
+    func test_requiredStoryButtonRunsTheActionInsteadOfThePayload() async throws {
         var routedDeeplinks = [String]()
         controller.deeplinkAction = { routedDeeplinks.append($0) }
         var finishedStoryIds = [String]()
@@ -221,7 +222,7 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
         try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
 
         XCTAssertEqual(presenter.presentedStoryIds, ["perps"])
-        XCTAssertEqual(presenter.presentedClosableFlags, [false])
+        XCTAssertEqual(presenter.presentedModes, [.required])
         XCTAssertEqual(actionCount, 0)
 
         presenter.tapLastPageButton(payload: "tonkeeper://perps")
@@ -241,6 +242,20 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
 
         XCTAssertEqual(actionCount, 0)
         XCTAssertEqual(finishedStoryIds, [])
+    }
+
+    func test_closedRequiredStoryRunsNoActionAndPresentsAgainOnTheNextRequest() async throws {
+        var finishedStoryIds = [String]()
+        controller.didFinishStory = { finishedStoryIds.append($0) }
+        var actionCount = 0
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) { actionCount += 1 }
+
+        XCTAssertEqual(actionCount, 0)
+        XCTAssertEqual(finishedStoryIds, [])
+        XCTAssertEqual(presenter.presentedStoryIds, ["perps", "perps"])
     }
 
     func test_requiredStoryOnScreenTakesTheLatestActionInsteadOfPresentingAgain() async throws {
@@ -268,7 +283,7 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
         XCTAssertEqual(presenter.presentedStoryIds, [])
     }
 
-    func test_closableStoriesReportFinishingThroughTheirLastPageButton() async throws {
+    func test_regularStoriesReportFinishingThroughTheirLastPageButton() async throws {
         var finishedStoryIds = [String]()
         controller.didFinishStory = { finishedStoryIds.append($0) }
 
@@ -284,6 +299,70 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
 
         XCTAssertEqual(finishedStoryIds, ["perps", "intro"])
         XCTAssertEqual(didComplete, false)
+    }
+
+    func test_onlyRequiredAndOptedInStoriesIgnoreTheStoriesFlag() async throws {
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) {}
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.handleDeeplinkStory(
+            storyId: "perps",
+            walletId: nil,
+            mode: .withoutLastPageButton,
+            ignoresStoriesFlag: true
+        )
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.handleDeeplinkStory(storyId: "promo", walletId: nil)
+        presenter.dismissCurrent(reason: .closed)
+        start(storyIDs: ["intro"]) { _ in }
+        await settle()
+
+        XCTAssertEqual(presenter.presentedIgnoresStoriesFlag, [true, true, false, false])
+    }
+
+    func test_consentPageAndCloseAlertStayInTheRequiredStory() async throws {
+        loader.pageCount = 3
+        controller.consentStoryId = "perps"
+        controller.consentCloseAlert = {
+            StoriesCloseAlertModel(title: "Skip the intro?", markdownMessage: "", skipTitle: "", continueTitle: "")
+        }
+
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) {}
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.handleDeeplinkStory(storyId: "perps", walletId: nil)
+        presenter.dismissCurrent(reason: .closed)
+        try await controller.handleDeeplinkStory(storyId: "promo", walletId: nil)
+        presenter.dismissCurrent(reason: .closed)
+        controller.presentBootConfigurationStories(
+            stories: [Stories.Story(id: "perps", pages: pages(3), isAutoShow: true)],
+            didPresentStory: { _ in },
+            completion: { _ in }
+        )
+        await settle()
+
+        XCTAssertEqual(presenter.presentedStoryIds, ["perps", "perps", "promo", "perps"])
+        XCTAssertEqual(presenter.presentedPageCounts, [3, 2, 3, 2])
+        XCTAssertEqual(presenter.presentedCloseAlertTitles, ["Skip the intro?", nil, nil, nil])
+    }
+
+    func test_consentStoryFinishesOnlyThroughTheRequiredStory() async throws {
+        var finishedStoryIds = [String]()
+        controller.didFinishStory = { finishedStoryIds.append($0) }
+        controller.consentStoryId = "perps"
+        loader.pageCount = 2
+
+        try await controller.handleDeeplinkStory(storyId: "perps", walletId: nil)
+        presenter.dismissCurrent(reason: .lastPageButton)
+        controller.presentBootConfigurationStories(
+            stories: [Stories.Story(id: "perps", pages: pages(2), isAutoShow: true)],
+            didPresentStory: { _ in },
+            completion: { _ in }
+        )
+        await settle()
+        await dismissCurrent(reason: .lastPageButton)
+        try await controller.presentRequiredStory(storyId: "perps", walletId: nil) {}
+        presenter.dismissCurrent(reason: .lastPageButton)
+
+        XCTAssertEqual(finishedStoryIds, ["perps"])
     }
 
     func test_refusedRequiredStoryThrows() async {
@@ -310,6 +389,10 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
         storyIDs.map { Stories.Story(id: $0, pages: [], isAutoShow: true) }
     }
 
+    private func pages(_ count: Int) -> [Stories.Story.Page] {
+        Array(repeating: Stories.Story.Page(title: "", description: "", image: nil, button: nil), count: count)
+    }
+
     private func dismissCurrent(reason: Stories.StoriesPresenter.DismissReason) async {
         presenter.dismissCurrent(reason: reason)
         await settle()
@@ -332,7 +415,10 @@ final class BootConfigurationStoriesQueueTests: XCTestCase {
 private final class SpyBootStoryPresenter: RaffleStoryPresenting {
     var canPresent = true
     private(set) var presentedStoryIds: [String] = []
-    private(set) var presentedClosableFlags: [Bool] = []
+    private(set) var presentedModes: [Stories.StoriesPresenter.Mode] = []
+    private(set) var presentedIgnoresStoriesFlag: [Bool] = []
+    private(set) var presentedPageCounts: [Int] = []
+    private(set) var presentedCloseAlertTitles: [String?] = []
     private(set) var dismissCurrentStoryCallCount = 0
     private var onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
     private var deeplinkAction: ((String) -> Void)?
@@ -341,14 +427,19 @@ private final class SpyBootStoryPresenter: RaffleStoryPresenting {
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
-        isClosable: Bool,
+        mode: Stories.StoriesPresenter.Mode,
+        ignoresStoriesFlag: Bool,
+        closeAlert: StoriesCloseAlertModel?,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?
     ) -> Bool {
         guard canPresent else { return false }
         presentedStoryIds.append(story.id)
-        presentedClosableFlags.append(isClosable)
+        presentedModes.append(mode)
+        presentedIgnoresStoriesFlag.append(ignoresStoriesFlag)
+        presentedPageCounts.append(story.pages.count)
+        presentedCloseAlertTitles.append(closeAlert?.title)
         self.onDismiss = onDismiss
         self.deeplinkAction = deeplinkAction
         return true
@@ -376,6 +467,7 @@ private final class StubBootStoriesLoader: BootConfigurationStoriesLoading {
     var configurationStoryIDs: [String] = []
     var autoShowStoryIDs = Set<String>()
     var isConfigurationLoadingSuspended = false
+    var pageCount = 0
     private(set) var autoplayStoriesCallCount = 0
     private var configurationContinuation: CheckedContinuation<Void, Never>?
 
@@ -399,7 +491,10 @@ private final class StubBootStoriesLoader: BootConfigurationStoriesLoading {
         .success(
             Stories.Story(
                 id: storyId,
-                pages: [],
+                pages: Array(
+                    repeating: Stories.Story.Page(title: "", description: "", image: nil, button: nil),
+                    count: pageCount
+                ),
                 isAutoShow: autoShowStoryIDs.contains(storyId)
             )
         )

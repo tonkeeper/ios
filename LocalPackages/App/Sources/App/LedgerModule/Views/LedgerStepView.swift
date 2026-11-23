@@ -6,11 +6,14 @@ final class LedgerStepView: TKView, ConfigurableView {
         case idle
         case inProgress
         case done
+        case failed
+        case skipped
     }
 
     private let stateIndicatorView = IndicatorView()
     private let contentView = UIView()
     private let contentLabel = UILabel()
+    private let captionLabel = UILabel()
     private let linkButton = LinkButton()
 
     override func setup() {
@@ -19,9 +22,11 @@ final class LedgerStepView: TKView, ConfigurableView {
         addSubview(stateIndicatorView)
         addSubview(contentView)
         contentView.addSubview(contentLabel)
+        contentView.addSubview(captionLabel)
         contentView.addSubview(linkButton)
 
         contentLabel.numberOfLines = 0
+        captionLabel.numberOfLines = 0
 
         stateIndicatorView.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -43,34 +48,43 @@ final class LedgerStepView: TKView, ConfigurableView {
             make.left.top.right.equalTo(contentView)
         }
 
+        captionLabel.snp.makeConstraints { make in
+            make.left.right.equalTo(contentView)
+            make.top.equalTo(contentLabel.snp.bottom)
+        }
+
         linkButton.snp.makeConstraints { make in
             make.left.bottom.right.equalTo(contentView)
-            make.top.equalTo(contentLabel.snp.bottom)
+            make.top.equalTo(captionLabel.snp.bottom)
         }
     }
 
     final class Model {
         let content: String
+        let caption: String?
         let linkButton: LinkButton.Model?
         let state: State
 
         init(
             content: String,
+            caption: String? = nil,
             linkButton: LinkButton.Model?,
             state: State
         ) {
             self.content = content
+            self.caption = caption
             self.linkButton = linkButton
             self.state = state
         }
     }
 
     func configure(model: Model) {
-        configure(content: model.content, linkButton: model.linkButton, state: model.state)
+        configure(content: model.content, caption: model.caption, linkButton: model.linkButton, state: model.state)
     }
 
     private func configure(
         content: String,
+        caption: String?,
         linkButton: LinkButton.Model?,
         state: State
     ) {
@@ -82,11 +96,21 @@ final class LedgerStepView: TKView, ConfigurableView {
             contentColor = .Text.primary
         case .done:
             contentColor = .Accent.green
+        case .failed:
+            contentColor = .Accent.red
+        case .skipped:
+            contentColor = .Text.secondary
         }
 
         contentLabel.attributedText = content.withTextStyle(
             .body2,
             color: contentColor,
+            alignment: .left,
+            lineBreakMode: .byWordWrapping
+        )
+        captionLabel.attributedText = caption?.withTextStyle(
+            .body2,
+            color: .Text.secondary,
             alignment: .left,
             lineBreakMode: .byWordWrapping
         )
@@ -155,6 +179,16 @@ private extension LedgerStepView {
                 loaderAlpha = 1
                 iconAlpha = 0
                 iconImage = nil
+            case .failed:
+                iconColor = .Accent.red
+                loaderAlpha = 0
+                iconAlpha = 1
+                iconImage = .TKUIKit.Icons.Size16.exclamationMarkCircle
+            case .skipped:
+                iconColor = .Icon.tertiary
+                loaderAlpha = 0
+                iconAlpha = 1
+                iconImage = .TKUIKit.Icons.Size16.minus
             }
 
             loaderView.alpha = loaderAlpha

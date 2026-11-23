@@ -15,6 +15,8 @@ excluded:
   - LocalPackages/KeeperCore/Packages/TKPerpsAPI/Sources/TKPerpsAPI
   - LocalPackages/KeeperCore/Packages/TKBatteryAPI/Sources/TKBatteryAPI
   - LocalPackages/KeeperCore/Packages/TKKandelabrAPI/Sources/TKKandelabrAPI
+  - LocalPackages/KeeperCore/Packages/TKEarnAPI/Sources/TKEarnAPI
+  - LocalPackages/KeeperCore/Packages/TKTonstakersAPI/Sources/TKTonstakersAPI
   - LocalPackages/KeeperCore/Packages/TKTonkeeperAPI/Sources/TKTonkeeperAPI
   - LocalPackages/KeeperCore/Packages/MultichainAPI/Sources/MultichainAPI
   - LocalPackages/KeeperCore/Packages/SwapAPI/Sources/SwapAPI
@@ -52,6 +54,20 @@ custom_rules:
     message: "Subclassing UIHostingController is forbidden; subclass TKHostingController instead."
     severity: warning
 
+  no_sync_pasteboard_read:
+    name: "No synchronous pasteboard read"
+    # A read waits for the paste permission alert and for the source device, so on the main thread it hangs the UI.
+    regex: '\bUIPasteboard\.general\.(string|strings|url|urls|image|images|color|colors|items|itemProviders)\b(?!\s*=[^=])'
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+      - string
+    message: "Read the pasteboard with `await UIPasteboard.general.readString()` (TKUIKit), off the main thread."
+    severity: warning
+
   prefer_tk_remote_image:
     name: "Prefer TKRemoteImage"
     # `TKRemoteImage` is the single sanctioned KFImage host; its definition file is excluded.
@@ -74,9 +90,6 @@ custom_rules:
     # `WalletConnectUtils`/`CryptoSwift` are non-failable and yield empty or padded bytes. Which one
     # wins is decided by overload resolution at the call site. Use `Data(strictHex:)`.
     regex: '\bData\(hex:'
-    # The APDU response is decoded with an explicit even-length guard; `TonTransport` cannot see
-    # `KeeperCoreComponents`.
-    excluded: ".*/BleTransport\\+Ext\\.swift"
     excluded_match_kinds:
       - comment
       - comment.mark
@@ -131,3 +144,57 @@ custom_rules:
     regex: '^\s*public (indirect )?enum '
     message: "Mark KeeperCore public enums @frozen: KeeperCore is built with library evolution."
     severity: error
+  no_time_based_wait_in_tests:
+    name: "No time-based wait in tests"
+    # A test that waits for time is slow when the time is long and flaky when it is short.
+    # Wait for the event: `waitUntil` and `TestGate` from TKTestSupport, an expectation fulfilled
+    # by the change, or a sleep injected into the code under test.
+    included: ".*/Tests/.*\\.swift"
+    # Tests written before this rule. Migrate a file, then remove its line.
+    excluded:
+      - "/Tests/AppTests/BootConfigurationStoriesQueueTests\\.swift$"
+      - "/Tests/AppTests/DappNativeBridgeHostGateTests\\.swift$"
+      - "/Tests/AppTests/FakePerpsTradingService\\.swift$"
+      - "/Tests/AppTests/LedgerNetworksViewControllerTests\\.swift$"
+      - "/Tests/AppTests/LedgerStepsTests\\.swift$"
+      - "/Tests/AppTests/MultichainHistoryViewModelTests\\.swift$"
+      - "/Tests/AppTests/MultichainSwapStatusTrackerTests\\.swift$"
+      - "/Tests/AppTests/MultichainWalletPerpsSectionViewModelTests\\.swift$"
+      - "/Tests/AppTests/OperationConsentPresenterTests\\.swift$"
+      - "/Tests/AppTests/PerpsAssetPageViewModelTests\\.swift$"
+      - "/Tests/AppTests/PerpsSearchViewModelTests\\.swift$"
+      - "/Tests/AppTests/PerpsTradeConfirmViewModelTests\\.swift$"
+      - "/Tests/AppTests/PerpsViewModelTests\\.swift$"
+      - "/Tests/AppTests/QRCodeViewSnapshotRenderer\\.swift$"
+      - "/Tests/AppTests/TokenPickerV2ChainFilterTests\\.swift$"
+      - "/Tests/KeeperCoreTests/BackgroundUpdate/BackgroundUpdateLifecycleTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsAccountStatusMappingTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsAccountStorePositionsCadenceTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsAccountStoreRecoveryTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsIntegratorApprovalTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsLiveFeedTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsMarkedTicksTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsReadOnlyTokenRefreshTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsSubmitLaneTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Lighter/PerpsTradingRecoveryTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Loaders/Balance/BalanceRefreshThrottleTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Loaders/HistoryPaginationLoaderThrottlingTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Loaders/WalletScopedLoaderTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Multichain/MultichainRealtimeManagerTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Perps/HermesSocketHubTests\\.swift$"
+      - "/Tests/KeeperCoreTests/Perps/LivePrices/PerpsMarketsLivePricesTests\\.swift$"
+      - "/Tests/KeeperCoreTests/WalletConnect/WalletConnectServiceTests\\.swift$"
+      - "/Tests/PerpsTests/PerpsScreenLifecycleTests\\.swift$"
+      - "/Tests/PerpsTests/PerpsTradeRunnerTests\\.swift$"
+      - "/Tests/TKCoreTests/AptabaseQueueClientTests\\.swift$"
+      - "/Tests/TKCoreTests/TooltipsServiceReachabilityTests\\.swift$"
+      - "/Tests/TKUIKitTests/QRCodeGestureRecognizerTests\\.swift$"
+    regex: '\b(Task|Thread)\.sleep\(|\busleep\(|\bRunLoop\.(main|current)\.run\(|\.isInverted\s*=\s*true|\.asyncAfter\(|\.wait\(timeout:'
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+    message: "Tests wait for events, not time: use TKTestSupport `waitUntil`/`TestGate`, an expectation or an injected sleep."
+    severity: warning

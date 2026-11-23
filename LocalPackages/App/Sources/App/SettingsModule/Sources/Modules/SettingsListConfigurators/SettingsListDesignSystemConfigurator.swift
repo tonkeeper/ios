@@ -16,6 +16,7 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
     var didSelectChartPreviews: (() -> Void)?
     var didSelectCircularLoaderPreviews: (() -> Void)?
     var didSelectColorsPreviews: (() -> Void)?
+    var didSelectConfirmSliderPreviews: (() -> Void)?
     var didUpdateState: ((SettingsListState) -> Void)?
 
     var title: String {
@@ -43,6 +44,7 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
                             .listItem(createChartPreviewsItem()),
                             .listItem(createCircularLoaderPreviewsItem()),
                             .listItem(createColorsPreviewsItem()),
+                            .listItem(createConfirmSliderPreviewsItem()),
                         ],
                         header: SettingsListSectionHeader(
                             title: "Components"
@@ -188,6 +190,15 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
         }
     }
 
+    private func createConfirmSliderPreviewsItem() -> SettingsListItem {
+        createNavigationItem(
+            title: "Confirm Slider",
+            id: .designSystemConfirmSliderPreviewsItemIdentifier
+        ) { [weak self] in
+            self?.didSelectConfirmSliderPreviews?()
+        }
+    }
+
     private func createNavigationItem(
         title: String,
         id: String,
@@ -220,4 +231,5 @@ private extension String {
     static let designSystemChartPreviewsItemIdentifier = "designSystemChartPreviewsItemIdentifier"
     static let designSystemCircularLoaderPreviewsItemIdentifier = "designSystemCircularLoaderPreviewsItemIdentifier"
     static let designSystemColorsPreviewsItemIdentifier = "designSystemColorsPreviewsItemIdentifier"
+    static let designSystemConfirmSliderPreviewsItemIdentifier = "designSystemConfirmSliderPreviewsItemIdentifier"
 }

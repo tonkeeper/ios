@@ -140,7 +140,7 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
             redSession?.finish(
                 outcome: .fail,
                 error: error,
-                stage: "send"
+                stage: error.transactionConfirmationStage
             )
             redSession = nil
         }
@@ -151,7 +151,7 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
             else { return }
             self?.showInsufficientFundsPopup(
                 requiredAmount: requiredAmount,
-                reservedAmount: pool.implementation.temporaryReserve,
+                implementation: pool.implementation,
                 balance: balance
             )
         }
@@ -167,7 +167,11 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
 }
 
 private extension StakingConfirmationCoordinator {
-    func showInsufficientFundsPopup(requiredAmount: BigUInt, reservedAmount: BigUInt, balance: BigUInt) {
+    func showInsufficientFundsPopup(
+        requiredAmount: BigUInt,
+        implementation: StackingPoolInfo.Implementation,
+        balance: BigUInt
+    ) {
         let amountFormatter = keeperCoreMainAssembly.formattersAssembly.amountFormatter
         let token = TonToken.ton
         let requiredFormatted = amountFormatter.format(
@@ -176,7 +180,7 @@ private extension StakingConfirmationCoordinator {
             accessory: .tokenSymbol(token.symbol)
         )
         let reservedFormatted = amountFormatter.format(
-            amount: reservedAmount,
+            amount: implementation.temporaryReserve,
             fractionDigits: token.fractionDigits,
             accessory: .tokenSymbol(token.symbol)
         )
@@ -200,7 +204,9 @@ private extension StakingConfirmationCoordinator {
             .insufficientTokenConfiguration(
                 walletLabel: nil,
                 caption: TKLocales.InsufficientFunds.actionRequired(requiredFormatted, balanceFormatted),
-                footnote: TKLocales.InsufficientFunds.unstakeReserved(reservedFormatted),
+                footnote: implementation.keepsWithdrawalFee
+                    ? TKLocales.TransactionConfirmation.TemporaryReserve.whalesUnstakeHint(reservedFormatted)
+                    : TKLocales.InsufficientFunds.unstakeReserved(reservedFormatted),
                 tokenSymbol: token.symbol,
                 tokenFractionalDigits: token.fractionDigits,
                 required: requiredAmount,

@@ -60,7 +60,7 @@ final class LighterCredentialsStore {
         try keychainVault.setIfAbsent(key, query: query(item: .l2PrivateKey))
     }
 
-    func keepTradingKey(cryptoWallet: CryptoWallet) async throws {
+    func keepTradingKey(cryptoWallet: MnemonicWallet) async throws {
         guard try loadL2PrivateKey() == nil else { return }
         let mediator = CompositePerpetualMediator().getAccountMediator(chain: .lighter)
         let key: KotlinByteArray = try await bridgeKotlin { completion in

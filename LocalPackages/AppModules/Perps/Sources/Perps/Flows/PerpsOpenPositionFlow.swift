@@ -4,48 +4,38 @@ import PerpsModels
 
 @MainActor
 public final class PerpsOpenPositionFlow: ObservableObject {
-    public enum Phase: Equatable {
-        case idle
-        case composing(marketId: Int64)
-        case submitting(PerpsOpeningDescriptor)
-    }
-
-    @Published public private(set) var phase: Phase = .idle
+    @Published public private(set) var composingMarketId: Int64?
+    @Published private var submitting: [Int64: PerpsOpeningDescriptor] = [:]
 
     public init() {}
 
-    public var activeTrade: PerpsOpeningDescriptor? {
-        if case let .submitting(descriptor) = phase { descriptor } else { nil }
-    }
-
-    public var isSubmitting: Bool {
-        activeTrade != nil
+    public func activeTrade(marketId: Int64) -> PerpsOpeningDescriptor? {
+        submitting[marketId]
     }
 
     public func begin(marketId: Int64) -> Bool {
-        guard case .idle = phase else { return false }
-        phase = .composing(marketId: marketId)
+        guard composingMarketId == nil, submitting[marketId] == nil else { return false }
+        composingMarketId = marketId
         return true
     }
 
     public func close() {
-        guard case .composing = phase else { return }
-        phase = .idle
+        composingMarketId = nil
     }
 
     public func beginSubmitting(_ descriptor: PerpsOpeningDescriptor) -> Bool {
-        guard case .composing(descriptor.marketId) = phase else { return false }
-        phase = .submitting(descriptor)
+        guard composingMarketId == descriptor.marketId else { return false }
+        composingMarketId = nil
+        submitting[descriptor.marketId] = descriptor
         return true
     }
 
-    public func finishSubmitting() {
-        guard case .submitting = phase else { return }
-        phase = .idle
+    public func finishSubmitting(marketId: Int64) {
+        submitting[marketId] = nil
     }
 
-    public func cancelSubmitting() {
-        guard case let .submitting(descriptor) = phase else { return }
-        phase = .composing(marketId: descriptor.marketId)
+    public func cancelSubmitting(marketId: Int64) {
+        guard submitting.removeValue(forKey: marketId) != nil else { return }
+        composingMarketId = marketId
     }
 }

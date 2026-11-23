@@ -35,12 +35,6 @@ final class PerpsSizeChangeIntentAutoCloseTests: XCTestCase {
         XCTAssertEqual(PerpsAutoCloseUpdate(desired: otherLegs, resting: nil), .replace(otherLegs))
     }
 
-    func test_applyingUpdateProducesAbsoluteDesiredState() {
-        XCTAssertEqual(PerpsAutoCloseUpdate.unchanged.applying(to: legs), legs)
-        XCTAssertNil(PerpsAutoCloseUpdate.clear.applying(to: legs))
-        XCTAssertEqual(PerpsAutoCloseUpdate.replace(otherLegs).applying(to: legs), otherLegs)
-    }
-
     func test_intentCanonicalizesEmptyReplacementToClear() {
         let intent = PerpsSizeChangeIntent(
             marketId: 1,
@@ -50,6 +44,5 @@ final class PerpsSizeChangeIntentAutoCloseTests: XCTestCase {
         )
 
         XCTAssertEqual(intent.autoCloseUpdate, .clear)
-        XCTAssertNil(PerpsAutoCloseUpdate.replace(empty).applying(to: legs))
     }
 }

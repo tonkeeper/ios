@@ -43,6 +43,7 @@ struct PerpsChartPeriodRow: View {
         }
         .buttonStyle(TKTapAnimationButtonStyle())
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityIdentifier("perps_chart_timeframe_\(value.displayLabel)")
     }
 
     private var modeToggle: some View {
@@ -67,6 +68,7 @@ struct PerpsChartPeriodRow: View {
         }
         .buttonStyle(TKTapAnimationButtonStyle())
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityIdentifier("perps_chart_mode_\(value == .candle ? "candle" : "line")")
     }
 
     private var selectedTabBackground: TKColor {

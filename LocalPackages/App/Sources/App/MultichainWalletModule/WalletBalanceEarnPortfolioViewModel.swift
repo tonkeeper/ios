@@ -1,83 +1,103 @@
 import AppUI
+import Combine
 import Foundation
 import KeeperCore
 import TKCore
-import TKLogging
 
+/// Renders the wallet's Earn portfolio from the store the balance loads fill, so the section
+/// refreshes whenever the wallet balance does and never loads on its own.
 @MainActor
 final class WalletBalanceEarnPortfolioViewModel: ObservableObject {
     enum State: Equatable {
-        case noEVMAccount
+        /// Earn is off, or the wallet has no synced multichain wallet to ask about.
+        case disabled
         case loading
         case empty
         case positions(EarnPortfolioSectionState)
         case unavailable
     }
 
-    @Published private(set) var state: State = .noEVMAccount
+    @Published private(set) var state: State = .disabled
 
     var onSelectPosition: ((EarnPosition) -> Void)?
     var onOpenCatalog: (() -> Void)?
 
-    private var address: String?
-    private let repository: EarnPortfolioRepository
-    private let mapper: ([EarnPosition], Bool) -> EarnPortfolioSectionState
+    private var wallet: Wallet
+    private let isEnabled: Bool
+    private let store: EarnPortfolioStore
+    private let balanceLoader: BalanceLoader
+    /// Renders amounts as the display settings stand when it is called, secure mode included.
+    private let mapper: (EarnPortfolio, Bool) -> EarnPortfolioSectionState
     private let analyticsProvider: AnalyticsProvider
-    private let freshnessModel = BalanceFreshnessModel()
-    private var positions: [EarnPosition]?
-    private var loadTask: Task<Void, Never>?
-    private var isActive = true
+    private let limitModel: WalletSectionLimitModel
+    private var limitSubscription: AnyCancellable?
+    private var portfolio: EarnPortfolio?
     private var isPositionsViewReported = false
 
     init(
-        address: String?,
-        repository: EarnPortfolioRepository,
-        mapper: @escaping ([EarnPosition], Bool) -> EarnPortfolioSectionState,
-        analyticsProvider: AnalyticsProvider
+        wallet: Wallet,
+        isEnabled: Bool,
+        store: EarnPortfolioStore,
+        balanceLoader: BalanceLoader,
+        appSettingsStore: AppSettingsStore,
+        mapper: @escaping (EarnPortfolio, Bool) -> EarnPortfolioSectionState,
+        analyticsProvider: AnalyticsProvider,
+        limitModel: WalletSectionLimitModel
     ) {
-        self.address = address
-        self.repository = repository
+        self.wallet = wallet
+        self.isEnabled = isEnabled
+        self.store = store
+        self.balanceLoader = balanceLoader
         self.mapper = mapper
         self.analyticsProvider = analyticsProvider
-        restoreCachedPositions()
-        freshnessModel.onNeedsRefresh = { [weak self] in
-            self?.reload()
+        self.limitModel = limitModel
+
+        limitSubscription = limitModel.limitChanges.sink { [weak self] _ in
+            self?.update()
         }
+
+        store.addObserver(self) { observer, event in
+            switch event {
+            case let .didUpdatePortfolio(wallet):
+                Task { @MainActor in
+                    guard observer.wallet == wallet else { return }
+                    observer.update()
+                }
+            }
+        }
+        appSettingsStore.addObserver(self) { observer, event in
+            guard case .didUpdateIsSecureMode = event else { return }
+            Task { @MainActor in
+                observer.update()
+            }
+        }
+        update()
     }
 
-    func adopt(address: String?) {
-        guard self.address != address else { return }
-        self.address = address
-        loadTask?.cancel()
-        loadTask = nil
-        restoreCachedPositions()
-        reload()
+    /// A wallet can finish syncing its multichain wallet after the screen opened. A balance run in
+    /// flight read it before that and loaded nothing for it, so the change is reported the way a
+    /// streamed one is: at a priority that earns a run of its own after that one.
+    func adopt(wallet: Wallet) {
+        guard self.wallet == wallet else { return }
+        let previousEarnWalletId = self.wallet.earnWalletId
+        self.wallet = wallet
+        update()
+        guard state == .loading, wallet.earnWalletId != previousEarnWalletId else { return }
+        reload(priority: .background)
     }
 
-    func setActive(_ isActive: Bool) {
-        self.isActive = isActive
-        guard !isActive else { return }
-        freshnessModel.didDisappear()
-        loadTask?.cancel()
-        loadTask = nil
-    }
-
-    func didAppear() {
-        freshnessModel.didAppear()
-    }
-
-    func didDisappear() {
-        freshnessModel.didDisappear()
+    func reload() {
+        reload(priority: .userInitiated)
     }
 
     func positionsDidAppear() {
-        guard !isPositionsViewReported, let positions, !positions.isEmpty else { return }
+        guard !isPositionsViewReported, let portfolio, !portfolio.positions.isEmpty else { return }
         isPositionsViewReported = true
         analyticsProvider.log(
             EarnEntryView(
                 from: .earnYourVaults,
-                vaultsCount: positions.count,
-                balanceUsd: NSDecimalNumber(decimal: positions.reduce(0) { $0 + $1.balanceUsd }).doubleValue
+                vaultsCount: portfolio.positions.count,
+                balanceUsd: portfolio.totalFiat[Currency.USD.code].map { NSDecimalNumber(decimal: $0).doubleValue }
             )
         )
     }
@@ -86,68 +106,43 @@ final class WalletBalanceEarnPortfolioViewModel: ObservableObject {
         isPositionsViewReported = false
     }
 
-    func refresh() async {
-        guard let address else { return }
-        await startLoad(address: address).value
-    }
-
-    func reload() {
-        guard let address, isActive else { return }
-        startLoad(address: address)
-    }
-
     func openCatalog() {
         onOpenCatalog?()
     }
 
+    func selectLimit(_ limit: WalletSectionLimit) {
+        limitModel.select(limit)
+    }
+
     func selectRow(id: String) {
-        guard let position = positions?.first(where: { $0.rowId == id }) else { return }
+        guard let position = portfolio?.positions.first(where: { $0.rowId == id }) else { return }
         onSelectPosition?(position)
     }
 
-    private func restoreCachedPositions() {
-        if let address, let cached = repository.cachedPositions(address: address) {
-            positions = cached
-            state = Self.state(for: cached, isStale: false, mapper: mapper)
-        } else {
-            positions = nil
-            state = address == nil ? .noEVMAccount : .loading
+    private func reload(priority: BalanceRefreshPriority) {
+        Task { [balanceLoader, wallet] in
+            await balanceLoader.reloadBalance(wallet: wallet, priority: priority)
         }
     }
 
-    @discardableResult
-    private func startLoad(address: String) -> Task<Void, Never> {
-        loadTask?.cancel()
-        let task = Task { [weak self] in
-            guard let self else { return }
-            await self.load(address: address)
+    private func update() {
+        guard isEnabled, wallet.earnWalletId != nil else {
+            portfolio = nil
+            state = .disabled
+            return
         }
-        loadTask = task
-        return task
-    }
-
-    private func load(address: String) async {
-        do {
-            let positions = try await repository.loadPositions(address: address)
-            guard !Task.isCancelled, address == self.address else { return }
-            self.positions = positions
-            state = Self.state(for: positions, isStale: false, mapper: mapper)
-        } catch {
-            guard !Task.isCancelled, address == self.address else { return }
-            Log.w("earn positions load failed", extraInfo: ["address": address, "error": "\(error)"])
-            if let positions {
-                state = Self.state(for: positions, isStale: true, mapper: mapper)
-            } else {
-                state = .unavailable
-            }
+        switch store.portfolioState(wallet: wallet) {
+        case .none:
+            portfolio = nil
+            state = .loading
+        case .unavailable:
+            portfolio = nil
+            state = .unavailable
+        case let .loaded(portfolio, isStale):
+            self.portfolio = portfolio
+            state = portfolio.positions.isEmpty
+                ? .empty
+                : .positions(mapper(portfolio, isStale).limited(to: limitModel.limit))
         }
-    }
-
-    private static func state(
-        for positions: [EarnPosition],
-        isStale: Bool,
-        mapper: ([EarnPosition], Bool) -> EarnPortfolioSectionState
-    ) -> State {
-        positions.isEmpty ? .empty : .positions(mapper(positions, isStale))
     }
 }

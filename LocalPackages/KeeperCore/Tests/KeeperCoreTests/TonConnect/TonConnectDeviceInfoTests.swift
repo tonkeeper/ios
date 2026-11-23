@@ -3,16 +3,24 @@ import XCTest
 
 final class TonConnectDeviceInfoTests: XCTestCase {
     func testAdvertisesSignMessageWhenSupported() throws {
-        let deviceInfo = TonConnect.DeviceInfo(maxMessages: 255, appVersion: "1.0", isSignMessageSupported: true)
+        let deviceInfo = TonConnect.DeviceInfo(maxMessages: 255, appVersion: "1.0", isSignMessageSupported: true, isSignDataSupported: true)
 
         let signMessage = try XCTUnwrap(feature(named: "SignMessage", in: deviceInfo))
         XCTAssertEqual(signMessage["maxMessages"] as? Int, 255)
+        XCTAssertNotNil(try feature(named: "SignData", in: deviceInfo))
     }
 
     func testOmitsSignMessageWhenUnsupported() throws {
-        let deviceInfo = TonConnect.DeviceInfo(maxMessages: 4, appVersion: "1.0", isSignMessageSupported: false)
+        let deviceInfo = TonConnect.DeviceInfo(maxMessages: 4, appVersion: "1.0", isSignMessageSupported: false, isSignDataSupported: true)
 
         XCTAssertNil(try feature(named: "SignMessage", in: deviceInfo))
+        XCTAssertNotNil(try feature(named: "SendTransaction", in: deviceInfo))
+    }
+
+    func testOmitsSignDataWhenTheWalletCannotSignIt() throws {
+        let deviceInfo = TonConnect.DeviceInfo(maxMessages: 4, appVersion: "1.0", isSignMessageSupported: false, isSignDataSupported: false)
+
+        XCTAssertNil(try feature(named: "SignData", in: deviceInfo))
         XCTAssertNotNil(try feature(named: "SendTransaction", in: deviceInfo))
     }
 

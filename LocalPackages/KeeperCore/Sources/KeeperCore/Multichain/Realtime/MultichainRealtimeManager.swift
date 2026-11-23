@@ -2,54 +2,49 @@ import Foundation
 import TKLogging
 
 private let supportedEnvelopeVersion = 1
-private let eventBalanceHint = "balance.hint"
-private let eventActivityHint = "activity.hint"
-private let hintDebounceNanoseconds: UInt64 = 400_000_000
-
-struct MultichainRealtimeEnvelope: Decodable, Equatable {
-    let version: Int
-    let event: String
-    let walletId: String
-    let seq: Int64
-
-    enum CodingKeys: String, CodingKey {
-        case version = "v"
-        case event
-        case walletId = "wallet_id"
-        case seq
-    }
-}
+/// A shorter outage is unlikely to have missed events. The backend can re-establish a subscription every few
+/// seconds, and a resync on each would reload every wallet surface (Android: `RESYNC_MIN_GAP`).
+private let resyncMinimumGap: TimeInterval = 15
 
 public final class MultichainRealtimeManager {
     private let walletsStore: WalletsStore
     private let endpointProvider: () -> URL
     private let transport: MultichainRealtimeTransport
+    private let uptime: () -> TimeInterval
 
-    private let balanceChangeObservers = LockedObserverStore<String>()
-    private let historyInvalidationObservers = LockedObserverStore<String>()
     private let subscriptionObservers = LockedObserverStore<String?>()
 
-    private let syncQueue = DispatchQueue(label: "com.tonkeeper.multichain.realtime.manager")
+    private let syncQueue: DispatchQueue
     private let subscriptionLock = NSLock()
-    private var appliedSeq = [String: Int64]()
+    private let walletHints: MultichainWalletHints
+    private let perps: PerpsRealtimeChannel
+    private let eventHandlers: [MultichainRealtimeEventHandler]
     private var isForeground = false
     private var isDisabledByBackend = false
     private var didStart = false
-    private var balanceHintTask: Task<Void, Never>?
-    private var activityHintTask: Task<Void, Never>?
     private var connectedWalletId: String?
     private var connectedEndpoint: URL?
     private var connectionID = UUID()
     private var subscribedWalletId: String?
+    private var unsubscribedAt = [String: TimeInterval]()
 
     init(
         walletsStore: WalletsStore,
         transport: MultichainRealtimeTransport,
-        endpointProvider: @escaping () -> URL
+        endpointProvider: @escaping () -> URL,
+        uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
         self.walletsStore = walletsStore
         self.transport = transport
         self.endpointProvider = endpointProvider
+        self.uptime = uptime
+        let syncQueue = DispatchQueue(label: "com.tonkeeper.multichain.realtime.manager")
+        let walletHints = MultichainWalletHints()
+        let perps = PerpsRealtimeChannel(queue: syncQueue, transport: transport)
+        self.syncQueue = syncQueue
+        self.walletHints = walletHints
+        self.perps = perps
+        eventHandlers = [walletHints, perps]
     }
 
     /// Delivery is not bound to an executor; observers enter their own isolation domain.
@@ -57,9 +52,7 @@ public final class MultichainRealtimeManager {
         _ observer: T,
         closure: @escaping (T, String) -> Void
     ) {
-        balanceChangeObservers.add(observer) { observer, walletId in
-            closure(observer, walletId)
-        }
+        walletHints.addBalanceChangeObserver(observer, closure: closure)
     }
 
     /// Delivery is not bound to an executor; observers enter their own isolation domain.
@@ -67,9 +60,7 @@ public final class MultichainRealtimeManager {
         _ observer: T,
         closure: @escaping (T, String) -> Void
     ) {
-        historyInvalidationObservers.add(observer) { observer, walletId in
-            closure(observer, walletId)
-        }
+        walletHints.addHistoryInvalidationObserver(observer, closure: closure)
     }
 
     public func addSubscriptionObserver<T: AnyObject>(
@@ -79,6 +70,10 @@ public final class MultichainRealtimeManager {
         subscriptionObservers.add(observer) { observer, walletId in
             closure(observer, walletId)
         }
+    }
+
+    func perpsSignals(walletId: String) -> AsyncStream<PerpsRealtimeSignal> {
+        perps.signals(walletId: walletId)
     }
 
     public func isSubscribed(walletId: String) -> Bool {
@@ -139,6 +134,9 @@ public final class MultichainRealtimeManager {
         let walletId = desiredWalletId()
         let endpoint = walletId.map { _ in endpointProvider() }
         guard walletId != connectedWalletId || endpoint != connectedEndpoint else { return }
+        Log.multichain.i(
+            "Realtime target: \(walletId.map { "wallet:\(walletLogId($0))" } ?? "none") foreground:\(isForeground) disabledByBackend:\(isDisabledByBackend)"
+        )
         if connectedWalletId != nil {
             transport.disconnect()
         }
@@ -146,8 +144,8 @@ public final class MultichainRealtimeManager {
         connectedWalletId = walletId
         connectedEndpoint = endpoint
         setSubscribedWalletId(nil)
-        balanceHintTask?.cancel()
-        activityHintTask?.cancel()
+        perps.connectionChanged(walletId: walletId)
+        walletHints.cancelPending()
 
         if let walletId, let endpoint {
             let connectionID = self.connectionID
@@ -180,15 +178,20 @@ public final class MultichainRealtimeManager {
         switch signal {
         case let .subscribed(walletId, resubscribed):
             setSubscribedWalletId(walletId)
-            if resubscribed {
+            if resubscribed, missedEventsLikely(walletId: walletId) {
                 resync(walletId: walletId)
             }
         case let .unsubscribed(walletId):
             if isSubscribed(walletId: walletId) {
+                unsubscribedAt[walletId] = uptime()
                 setSubscribedWalletId(nil)
             }
         case let .publication(walletId, payload):
             handlePublication(walletId: walletId, payload: payload)
+        case let .perpsSubscribed(walletId, recovered):
+            perps.subscribed(walletId: walletId, recovered: recovered)
+        case let .perpsUnsubscribed(walletId):
+            perps.unsubscribed(walletId: walletId)
         }
     }
 
@@ -201,10 +204,14 @@ public final class MultichainRealtimeManager {
         subscriptionObservers.notify(walletId)
     }
 
+    private func missedEventsLikely(walletId: String) -> Bool {
+        guard let since = unsubscribedAt[walletId] else { return true }
+        return uptime() - since >= resyncMinimumGap
+    }
+
     private func resync(walletId: String) {
-        Log.multichain.d("Realtime resync after reconnect: \(walletId)")
-        scheduleBalanceHint(walletId: walletId)
-        scheduleActivityHint(walletId: walletId)
+        Log.multichain.i("Realtime resync after reconnect: wallet:\(walletLogId(walletId))")
+        walletHints.resync(walletId: walletId)
     }
 
     private func handlePublication(walletId: String, payload: Data) {
@@ -212,53 +219,20 @@ public final class MultichainRealtimeManager {
         guard envelope.version == supportedEnvelopeVersion,
               envelope.walletId == walletId
         else {
-            Log.multichain.d(
-                "Realtime event dropped: v=\(envelope.version) event=\(envelope.event) wallet=\(envelope.walletId) expected=\(walletId) seq=\(envelope.seq)"
+            Log.multichain.w(
+                "Realtime event dropped: v=\(envelope.version) event=\(envelope.event) wallet=\(walletLogId(envelope.walletId)) expected=\(walletLogId(walletId)) seq=\(envelope.seq)"
             )
             return
         }
 
-        Log.multichain.d(
-            "Realtime event: \(envelope.event) wallet:\(envelope.walletId) seq:\(envelope.seq)"
+        Log.multichain.i(
+            "Realtime event: \(envelope.event) wallet:\(walletLogId(envelope.walletId)) seq:\(envelope.seq)"
         )
 
-        switch envelope.event {
-        case eventBalanceHint:
-            guard markApplied(envelope) else { return }
-            scheduleBalanceHint(walletId: envelope.walletId)
-        case eventActivityHint:
-            guard markApplied(envelope) else { return }
-            scheduleActivityHint(walletId: envelope.walletId)
-        default:
-            Log.multichain.d("Realtime event ignored: \(envelope.event)")
+        for handler in eventHandlers where handler.accept(envelope, payload: payload) {
+            return
         }
-    }
-
-    private func scheduleBalanceHint(walletId: String) {
-        balanceHintTask?.cancel()
-        balanceHintTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: hintDebounceNanoseconds)
-            guard !Task.isCancelled else { return }
-            self?.balanceChangeObservers.notify(walletId)
-        }
-    }
-
-    private func scheduleActivityHint(walletId: String) {
-        activityHintTask?.cancel()
-        activityHintTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: hintDebounceNanoseconds)
-            guard !Task.isCancelled else { return }
-            self?.historyInvalidationObservers.notify(walletId)
-        }
-    }
-
-    private func markApplied(_ envelope: MultichainRealtimeEnvelope) -> Bool {
-        let key = "\(envelope.walletId):\(envelope.event)"
-        if let previous = appliedSeq[key], envelope.seq <= previous {
-            return false
-        }
-        appliedSeq[key] = envelope.seq
-        return true
+        Log.multichain.i("Realtime event ignored: \(envelope.event)")
     }
 
     private func parseEnvelope(_ payload: Data) -> MultichainRealtimeEnvelope? {

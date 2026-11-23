@@ -22,32 +22,38 @@ final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let recipientResolver: RecipientResolver
-    private let presentationStyle: HistoryPresentationStyle
+    private let closeAction: (() -> Void)?
 
     init(
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         recipientResolver: RecipientResolver,
-        presentationStyle: HistoryPresentationStyle
+        closeAction: (() -> Void)?
     ) {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.recipientResolver = recipientResolver
-        self.presentationStyle = presentationStyle
+        self.closeAction = closeAction
         super.init(router: router)
     }
 
     override func start() {
-        openHistory()
+        start(animated: true)
+    }
+}
+
+extension HistoryCoordinator: HistoryStarting {
+    func start(animated: Bool) {
+        openHistory(animated: animated)
     }
 }
 
 private extension HistoryCoordinator {
-    func openHistory() {
+    func openHistory(animated: Bool) {
         let module = HistoryContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
 
-        module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly, presentationStyle] wallet in
+        module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly, closeAction] wallet in
             let listModule = HistoryListAssembly.module(
                 wallet: wallet,
                 paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
@@ -57,6 +63,7 @@ private extension HistoryCoordinator {
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
                 historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
                 filter: .all,
+                screenRenderID: .history,
                 emptyViewProvider: { filter in
                     switch filter {
                     case .all:
@@ -95,11 +102,9 @@ private extension HistoryCoordinator {
             )
 
             let historyModule = HistoryAssembly.module(
-                wallet: wallet,
                 historyListViewController: listModule.view,
                 historyListModuleInput: listModule.input,
-                keeperCoreMainAssembly: keeperCoreMainAssembly,
-                presentationStyle: presentationStyle
+                closeAction: closeAction
             )
 
             weak let historyModuleInput = historyModule.input
@@ -128,7 +133,7 @@ private extension HistoryCoordinator {
             module.view.historyViewController = historyModule.view
         }
 
-        router.push(viewController: module.view, animated: true)
+        router.push(viewController: module.view, animated: animated)
     }
 
     func openSpamHistory(wallet: Wallet) {

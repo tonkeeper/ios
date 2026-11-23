@@ -84,6 +84,11 @@ extension DappOpenAnalyticsSession {
         state = .failed
     }
 
+    func logPageEvent(name: String, params: [String: Any], provider: String) {
+        let params = params.merging(["isExternalWebView": 1, "eventProvider": provider]) { _, origin in origin }
+        analyticsProvider.log(event: .Dapp.track(event: name, params: params), utm: context.utm)
+    }
+
     func millisecondsSinceClick() -> Int64 {
         Int64((now().timeIntervalSince(clickDate) * 1000).rounded())
     }

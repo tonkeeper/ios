@@ -1,10 +1,132 @@
 @testable import KeeperCore
 import KeeperCoreSensitive
+import TKTestSupport
 import TonSwift
 import XCTest
 
 final class MultichainWalletEnricherTests: XCTestCase {
-    func test_enrichMissingWallets_loadsMnemonicsInSingleBatchAndSavesPendingState() async {
+    func test_legacyBatteryProofIsPreparedAfterRegistrationBeforeWalletSwitchesIdentity() async {
+        let wallet = makeWallet(id: "legacy")
+        let persistence = MultichainPersistenceSpy()
+        let sync = MultichainSyncSpy()
+        var migrated = false
+        var resumed = false
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: syncedState,
+            syncSpy: sync,
+            persistenceSpy: persistence,
+            prepareBatteryMigration: { source, destination, mnemonic in
+                XCTAssertEqual(sync.syncedStates.count, 1)
+                XCTAssertTrue(persistence.savedWalletIds.isEmpty)
+                XCTAssertNil(source.multichain)
+                XCTAssertEqual(source.identity, wallet.identity)
+                XCTAssertEqual(destination.id, wallet.id)
+                XCTAssertEqual(destination.identity, wallet.identity)
+                XCTAssertEqual(destination.multichainWalletState?.walletId, self.syncedState.walletId)
+                XCTAssertEqual(destination.multichainWalletState?.syncState, .synced)
+                XCTAssertEqual(mnemonic.type, .bip39)
+                migrated = true
+            },
+            resumeBatteryMigrations: {
+                XCTAssertTrue(migrated)
+                XCTAssertEqual(persistence.savedWalletIds, [wallet.id])
+                resumed = true
+            }
+        )
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertTrue(migrated)
+        XCTAssertTrue(resumed)
+        XCTAssertEqual(persistence.savedWalletIds, [wallet.id])
+        XCTAssertEqual(persistence.savedMultichainWallets.first, .multichain(syncedState))
+    }
+
+    func test_batteryFailureDoesNotStopLegacyWalletEnrichment() async {
+        let wallet = makeWallet(id: "legacy")
+        let persistence = MultichainPersistenceSpy()
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: syncedState,
+            syncSpy: MultichainSyncSpy(),
+            persistenceSpy: persistence,
+            prepareBatteryMigration: { _, _, _ in throw BatteryAuthorizationError.unavailable }
+        )
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertEqual(persistence.savedWalletIds, [wallet.id])
+        XCTAssertEqual(persistence.savedMultichainWallets.first, .multichain(syncedState))
+    }
+
+    func test_failedLegacyRegistrationKeepsPendingAddressesForSyncWithoutMigratingBattery() async {
+        let wallet = makeWallet(id: "legacy")
+        let derived = MultichainWalletState(walletId: "new-wallet", addresses: syncedState.addresses)
+        let persistence = MultichainPersistenceSpy()
+        let enricher = makeEnricher(
+            wallets: [wallet],
+            derived: derived,
+            syncSpy: MultichainSyncSpy(results: [.failure(.apiError(message: "offline"))]),
+            persistenceSpy: persistence,
+            prepareBatteryMigration: { _, _, _ in XCTFail("An unregistered destination must not receive the battery") }
+        )
+
+        await enricher.enrichMissingWallets(passcode: "1234")
+
+        XCTAssertEqual(persistence.savedWalletIds, [wallet.id])
+        XCTAssertEqual(persistence.savedMultichainWallets.first, .multichain(.init(
+            walletId: derived.walletId,
+            addresses: derived.addresses,
+            syncState: .pending
+        )))
+    }
+
+    func test_addingNetworksToMultichainWalletDoesNotMigrateBattery() async {
+        for state in [MultichainWalletSyncState.pending, .failed, .synced] {
+            let wallet = makeWallet(
+                id: "existing",
+                multichain: .multichain(.init(walletId: syncedState.walletId, addresses: syncedState.addresses, syncState: state))
+            )
+            let persistence = MultichainPersistenceSpy()
+            let enricher = makeEnricher(
+                wallets: [wallet],
+                derived: .init(walletId: syncedState.walletId, addresses: syncedState.addresses + [makeAddress(chain: .btc, address: "bc1new", type: .btcP2WPKH)]),
+                syncSpy: MultichainSyncSpy(),
+                persistenceSpy: persistence,
+                prepareBatteryMigration: { _, _, _ in XCTFail("An existing wallet-id battery must not be migrated") }
+            )
+
+            await enricher.enrichMissingWallets(passcode: "1234")
+
+            XCTAssertEqual(persistence.savedWalletIds, [wallet.id])
+        }
+    }
+
+    func test_cancellingProofPreparationKeepsLegacyStateForNextAttempt() async {
+        let enteredMigration = TestGate()
+        let holdMigration = TestGate()
+        let persistence = MultichainPersistenceSpy()
+        let enricher = makeEnricher(
+            wallets: [makeWallet(id: "legacy")],
+            derived: syncedState,
+            syncSpy: MultichainSyncSpy(),
+            persistenceSpy: persistence,
+            prepareBatteryMigration: { _, _, _ in
+                await enteredMigration.open()
+                try await holdMigration.wait()
+            }
+        )
+        let task = Task { await enricher.enrichMissingWallets(passcode: "1234") }
+        try? await enteredMigration.wait()
+
+        task.cancel()
+        await task.value
+
+        XCTAssertTrue(persistence.savedWalletIds.isEmpty)
+    }
+
+    func test_enrichMissingWallets_loadsMnemonicsInSingleBatchAndRegistersLegacyWallet() async {
         let firstWallet = makeWallet(id: "first-wallet")
         let secondWallet = makeWallet(
             id: "second-wallet",
@@ -55,6 +177,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     )
                 },
                 syncWallet: syncSpy.sync,
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -79,7 +202,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                             self.makeAddress(chain: .eth, address: "0xderived"),
                             self.makeAddress(chain: .btc, address: "bc1derived", type: .btcP2WPKH),
                         ],
-                        syncState: .pending
+                        syncState: .synced
                     )
                 ),
                 .multichain(
@@ -94,7 +217,8 @@ final class MultichainWalletEnricherTests: XCTestCase {
                 ),
             ]
         )
-        XCTAssertTrue(syncSpy.syncedStates.isEmpty, "A wallet the backend does not know yet is left to the sync controller")
+        XCTAssertEqual(syncSpy.syncedStates.count, 1)
+        XCTAssertEqual(syncSpy.syncedStates.first?.walletId, "derived-wallet-id")
     }
 
     func test_enrichMissingWallets_registersSyncedWalletBeforeSavingItsNewChains() async {
@@ -225,6 +349,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
                 syncWallet: MultichainSyncSpy().sync,
+                prepareBatteryMigration: { _, _, _ in XCTFail("TON mnemonics must not migrate the battery") },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -266,6 +391,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     )
                 },
                 syncWallet: MultichainSyncSpy().sync,
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: persistenceSpy.saveWallet
             )
         )
@@ -278,13 +404,15 @@ final class MultichainWalletEnricherTests: XCTestCase {
                 .multichain(
                     MultichainWalletState(
                         walletId: "derived-wallet-id",
-                        addresses: [self.makeAddress(chain: .ton, address: "ton-v4", type: .tonV4R2)]
+                        addresses: [self.makeAddress(chain: .ton, address: "ton-v4", type: .tonV4R2)],
+                        syncState: .synced
                     )
                 ),
                 .multichain(
                     MultichainWalletState(
                         walletId: "derived-wallet-id",
-                        addresses: [self.makeAddress(chain: .ton, address: "ton-v5", type: .tonV5R1)]
+                        addresses: [self.makeAddress(chain: .ton, address: "ton-v5", type: .tonV5R1)],
+                        syncState: .synced
                     )
                 ),
             ]
@@ -312,6 +440,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
                 syncWallet: MultichainSyncSpy().sync,
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: { _, _ in }
             )
         )
@@ -339,6 +468,7 @@ final class MultichainWalletEnricherTests: XCTestCase {
                     return MultichainWalletState(walletId: "unexpected", addresses: [])
                 },
                 syncWallet: MultichainSyncSpy().sync,
+                prepareBatteryMigration: { _, _, _ in },
                 saveWallet: { _, _ in }
             )
         )
@@ -406,7 +536,9 @@ private extension MultichainWalletEnricherTests {
         wallets: [Wallet],
         derived: MultichainWalletState,
         syncSpy: MultichainSyncSpy,
-        persistenceSpy: MultichainPersistenceSpy
+        persistenceSpy: MultichainPersistenceSpy,
+        prepareBatteryMigration: @escaping (Wallet, Wallet, CoreMnemonic) async throws -> Void = { _, _, _ in },
+        resumeBatteryMigrations: @escaping () async -> Void = {}
     ) -> MultichainWalletEnricherImplementation {
         MultichainWalletEnricherImplementation(
             dependencies: MultichainWalletEnricherDependencies(
@@ -419,7 +551,9 @@ private extension MultichainWalletEnricherTests {
                 },
                 deriveWallet: { _ in derived },
                 syncWallet: syncSpy.sync,
-                saveWallet: persistenceSpy.saveWallet
+                prepareBatteryMigration: prepareBatteryMigration,
+                saveWallet: persistenceSpy.saveWallet,
+                resumeBatteryMigrations: resumeBatteryMigrations
             ),
             sleep: { _ in }
         )

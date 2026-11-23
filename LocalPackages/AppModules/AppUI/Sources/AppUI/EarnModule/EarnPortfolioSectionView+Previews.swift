@@ -7,7 +7,21 @@ import TKUIKit
         state: .preview,
         onOpenCatalog: {},
         onSelectRow: { _ in },
-        onRetry: {}
+        onRetry: {},
+        onSelectLimit: { _ in }
+    )
+    .background(.backgroundPage)
+    .tkPreviewTheme(.deepBlue)
+}
+
+@available(iOS 17.0, *)
+#Preview("Earn portfolio, over limit", traits: .fixedLayout(width: 390, height: 360)) {
+    EarnPortfolioSectionView(
+        state: .previewOverLimit,
+        onOpenCatalog: {},
+        onSelectRow: { _ in },
+        onRetry: {},
+        onSelectLimit: { _ in }
     )
     .background(.backgroundPage)
     .tkPreviewTheme(.deepBlue)
@@ -19,7 +33,8 @@ import TKUIKit
         state: .previewStale,
         onOpenCatalog: {},
         onSelectRow: { _ in },
-        onRetry: {}
+        onRetry: {},
+        onSelectLimit: { _ in }
     )
     .background(.backgroundPage)
     .tkPreviewTheme(.deepBlue)
@@ -37,42 +52,42 @@ private extension EarnPortfolioSectionState {
         totalBalance: "$1 230.54",
         isStale: false,
         rows: [
-            AssetBalanceRowCellContent(
-                id: "mainnet/0x1",
-                title: "USDT",
-                badge: "ETHEREUM",
-                displayMode: .includingMarketData(
-                    marketCap: "Morpho",
-                    price: "$120.54",
-                    change: .init(text: "+$0.50", isPositive: true),
-                    showsPin: false
-                ),
-                avatarImageSource: .image(
-                    .TKUIKit.Icons.Size44.currencyUsdt,
-                    chainIcon: .TKUIKit.Icons.Size20.ethChain
-                )
-            ),
-            AssetBalanceRowCellContent(
-                id: "mainnet/0x2",
-                title: "USDT",
-                badge: "ETHEREUM",
-                displayMode: .includingMarketData(
-                    marketCap: "Aave",
-                    price: "$1 110",
-                    change: .init(text: "+$20.4", isPositive: true),
-                    showsPin: false
-                ),
-                avatarImageSource: .image(
-                    .TKUIKit.Icons.Size44.currencyUsdt,
-                    chainIcon: .TKUIKit.Icons.Size20.ethChain
-                )
-            ),
+            previewRow(id: "mainnet/0x1", protocolName: "Morpho", price: "$120.54", change: "+$0.50"),
+            previewRow(id: "mainnet/0x2", protocolName: "Aave", price: "$1 110", change: "+$20.4"),
         ]
     )
+
+    static let previewOverLimit = EarnPortfolioSectionState(
+        totalBalance: preview.totalBalance,
+        isStale: false,
+        rows: preview.rows + [
+            previewRow(id: "mainnet/0x3", protocolName: "Compound", price: "$540.20", change: "+$8.12"),
+            previewRow(id: "mainnet/0x4", protocolName: "Euler", price: "$1.03", change: "+$0.03"),
+        ]
+    )
+    .limited(to: .top3)
 
     static let previewStale = EarnPortfolioSectionState(
         totalBalance: preview.totalBalance,
         isStale: true,
         rows: preview.rows
     )
+
+    static func previewRow(id: String, protocolName: String, price: String, change: String) -> AssetBalanceRowCellContent {
+        AssetBalanceRowCellContent(
+            id: id,
+            title: "USDT",
+            badge: "ETHEREUM",
+            displayMode: .includingMarketData(
+                marketCap: protocolName,
+                price: price,
+                change: .init(text: change, isPositive: true),
+                showsPin: false
+            ),
+            avatarImageSource: .image(
+                .TKUIKit.Icons.Size44.currencyUsdt,
+                chainIcon: .TKUIKit.Icons.Size20.ethChain
+            )
+        )
+    }
 }

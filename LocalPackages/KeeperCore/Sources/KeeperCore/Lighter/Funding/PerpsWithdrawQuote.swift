@@ -7,6 +7,7 @@ import TKPerpsAPI
     case mismatch(String)
     case malformed(String)
     case unsafeTransfer
+    case notRelayAccount
     case overspend
 }
 
@@ -23,6 +24,22 @@ struct PerpsWithdrawQuote: Sendable, Equatable {
     let transferUnits: Int64
     let feeUnits: Int64
     let memo: Data
+    var estimatedDurationSeconds: Int? = nil
+
+    /// Basis points a renewed quote may pay out below the shown one and still be sent unasked.
+    static let renewalToleranceBps: BigUInt = 25
+
+    var debitUnits: BigUInt {
+        BigUInt(transferUnits) + BigUInt(feeUnits)
+    }
+
+    /// Compares the floors, as the confirmation shows the floor.
+    func isAcceptableRenewal(of shown: PerpsWithdrawQuote) -> Bool {
+        guard let renewed = BigUInt(minimumOutputUnits, radix: 10),
+              let shown = BigUInt(shown.minimumOutputUnits, radix: 10)
+        else { return false }
+        return renewed * 10000 >= shown * (10000 - Self.renewalToleranceBps)
+    }
 }
 
 enum PerpsWithdrawQuoteReader {
@@ -30,9 +47,12 @@ enum PerpsWithdrawQuoteReader {
         _ quote: Components.Schemas.WithdrawQuote,
         request: Components.Schemas.WithdrawQuoteRequest,
         accountIndex: Int64,
-        now: Date
+        relayAccounts: Set<Int64>,
+        requestedAt: Date
     ) throws -> PerpsWithdrawQuote {
-        guard quote.expires_at > now else { throw PerpsWithdrawQuoteError.expired }
+        // Timed from the request on this device's clock, which may be off from the server's.
+        let lifetime = quote.expires_at.timeIntervalSince(quote.created_at)
+        guard lifetime > 0 else { throw PerpsWithdrawQuoteError.expired }
         guard quote.input.asset_id.lowercased() == PerpsFundingAssetId.usdcEthereum,
               quote.input.amount == request.amount,
               quote.input.account_index == accountIndex
@@ -59,9 +79,9 @@ enum PerpsWithdrawQuoteReader {
         guard meta.asset_index == 3,
               meta.from_route_type == 0,
               meta.to_route_type == 0,
-              meta.to_account_index > 0,
               meta.to_account_index != accountIndex
         else { throw PerpsWithdrawQuoteError.unsafeTransfer }
+        guard relayAccounts.contains(meta.to_account_index) else { throw PerpsWithdrawQuoteError.notRelayAccount }
         let amount = try units(meta.amount, "transfer amount")
         let fee = try units(meta.usdc_fee, "transfer fee")
         guard amount > 0, amount + fee <= budget,
@@ -77,7 +97,7 @@ enum PerpsWithdrawQuoteReader {
         let memo = Data(bytes)
         return PerpsWithdrawQuote(
             quoteId: quote.quote_id,
-            expiresAt: quote.expires_at,
+            expiresAt: requestedAt.addingTimeInterval(lifetime),
             executionId: executionId,
             destinationAssetId: request.destination_asset,
             recipient: request.recipient_address,
@@ -87,7 +107,8 @@ enum PerpsWithdrawQuoteReader {
             toAccountIndex: meta.to_account_index,
             transferUnits: amountInt,
             feeUnits: feeInt,
-            memo: memo
+            memo: memo,
+            estimatedDurationSeconds: quote.estimated_duration_seconds.map(Int.init)
         )
     }
 

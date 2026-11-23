@@ -1,12 +1,11 @@
 import ChainKit
 @testable import KeeperCore
-import PerpsModels
 import TKPerpsAPI
 import XCTest
 
 final class PerpsOpenMinimumMarginTests: XCTestCase {
     func testTheMinimumPricesTheMarginFractionTheWayThePlannerRoundsIt() throws {
-        let rules = try PerpsPlannerMapping.rules(
+        let rules = try PerpsPlannerMapping.rulesSignedAsServed(
             market: Components.Schemas.Market(
                 market_index: 1,
                 symbol: "BTC",

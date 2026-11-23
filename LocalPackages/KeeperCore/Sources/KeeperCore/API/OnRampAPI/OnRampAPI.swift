@@ -145,7 +145,7 @@ final class OnRampAPIImplementation: OnRampAPI {
                 crypto_currency: data.cryptoCurrency,
                 network: data.network,
                 fiat_currency: data.fiatCurrency,
-                amount: data.amount.map { Double($0) }
+                amount: data.amount.map { NSDecimalNumber(decimal: $0).doubleValue }
             )
         )
         let input = SwapAPI.Operations.createP2PSession.Input(body: body)

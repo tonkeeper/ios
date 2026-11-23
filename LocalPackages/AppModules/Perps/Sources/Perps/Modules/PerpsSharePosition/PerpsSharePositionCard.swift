@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -97,7 +98,7 @@ struct PerpsSharePositionCard: View {
     private var stats: some View {
         HStack(alignment: .top, spacing: Layout.statSpacing) {
             stat(label: TKLocales.Perps.Asset.entry, value: model.entryText)
-            stat(label: TKLocales.Perps.Asset.current, value: model.currentText)
+            stat(label: model.currentLabel, value: model.currentText)
             stat(label: TKLocales.Perps.Asset.date, value: model.dateText)
         }
     }
@@ -145,11 +146,17 @@ private extension PerpsSharePositionCard {
 }
 
 public struct PerpsSharePositionView: View {
-    let model: PerpsSharePositionCardModel
-    let onShare: () -> Void
+    @State private var model: PerpsSharePositionCardModel
+    let updates: AnyPublisher<PerpsSharePositionCardModel, Never>
+    let onShare: (PerpsSharePositionCardModel) -> Void
 
-    public init(model: PerpsSharePositionCardModel, onShare: @escaping () -> Void) {
-        self.model = model
+    public init(
+        model: PerpsSharePositionCardModel,
+        updates: AnyPublisher<PerpsSharePositionCardModel, Never>,
+        onShare: @escaping (PerpsSharePositionCardModel) -> Void
+    ) {
+        _model = State(initialValue: model)
+        self.updates = updates
         self.onShare = onShare
     }
 
@@ -162,11 +169,12 @@ public struct PerpsSharePositionView: View {
                 layoutMode: .fill,
                 appearance: .secondary,
                 icon: shareIcon,
-                action: onShare
+                action: { onShare(model) }
             ))
         }
         .padding(.horizontal, Layout.horizontalInset)
         .padding(.bottom, Layout.bottomInset)
+        .onReceive(updates) { model = $0 }
     }
 
     private var shareIcon: ButtonView.Icon {

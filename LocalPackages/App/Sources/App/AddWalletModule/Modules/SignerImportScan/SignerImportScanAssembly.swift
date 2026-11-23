@@ -21,7 +21,8 @@ struct SignerImportScanAssembly {
                 title: TKLocales.Scanner.title,
                 subtitle: TKLocales.Signer.Scan.subtitle,
                 isFlashlightVisible: true
-            )
+            ),
+            analyticsSession: nil
         )
 
         let viewModel = SignerImportScanViewModelImplementation(

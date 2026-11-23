@@ -21,7 +21,7 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/schemas/BindAccountRequest`.
         public struct BindAccountRequest: Codable, Hashable, Sendable {
-            /// Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
+            /// Unix seconds, signed inside the EIP-712 message. A signature past it is refused with 400 signature_expired; this bounds a replay of an intercepted signature. Not capped: a far one lets a retry reuse the signature. Travels with signature: one without the other is a 400.
             ///
             /// - Remark: Generated from `#/components/schemas/BindAccountRequest/deadline`.
             public var deadline: Swift.Int64?
@@ -38,7 +38,7 @@ extension Components {
             /// Creates a new `BindAccountRequest`.
             ///
             /// - Parameters:
-            ///   - deadline: Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
+            ///   - deadline: Unix seconds, signed inside the EIP-712 message. A signature past it is refused with 400 signature_expired; this bounds a replay of an intercepted signature. Not capped: a far one lets a retry reuse the signature. Travels with signature: one without the other is a 400.
             ///   - signature: EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
             ///   - proof: The wallet's consent to this binding, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.account.bind.v1") | LP(wallet_id) | LP(l1_address), in the same length-prefixed framing the other writes use. l1_address is lowercase with its 0x and is named here and nowhere in the body.
             public init(
@@ -165,180 +165,6 @@ extension Components {
                 case expires_at
             }
         }
-        /// What travels with a Lighter read-only token: a label to remember it by, this wallet's consent to storing it, and the proof of its L1 address when it has none recorded yet. The token itself is in the X-Lighter-Auth header, and its account index and expiry are read out of it rather than declared here.
-        ///
-        /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest`.
-        public struct SaveRoTokenRequest: Codable, Hashable, Sendable {
-            /// Optional client-supplied label for the token.
-            ///
-            /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest/name`.
-            public var name: Swift.String?
-            /// When the client says the token was issued. Recorded and forwarded to Argus, whose event schema carries the field; nothing here depends on it, because a read-only token states no issue time of its own and this cannot be checked.
-            ///
-            /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest/issued_at`.
-            public var issued_at: Foundation.Date
-            /// Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
-            ///
-            /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest/deadline`.
-            public var deadline: Swift.Int64?
-            /// EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form of a signature is refused so one proof has one encoding.
-            /// Read only while the wallet has proved no L1 address yet, which for most callers happened before their first deposit, on POST /account/bind. Send it when you can: the client cannot tell when it is needed, and missing when it is answers 400 address_proof_required.
-            ///
-            /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest/signature`.
-            public var signature: Swift.String?
-            /// The wallet's consent to storing this token, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.rotoken.store.v1") | LP(wallet_id) | LP(l1_address) | LP(token_hash) | LP(name) | LP(issued_at), in the same length-prefixed framing custodial-battery uses for its send proof. token_hash is sha256 of the X-Lighter-Auth value in lowercase hex — the token is named by its hash, never signed as itself; name is what this body carries, empty string when omitted; issued_at is unix nanoseconds in decimal, because it is kept and forwarded at that precision; l1_address is lowercase with its 0x.
-            /// Note that l1_address is named here and nowhere in the body. signature only proves that somebody holds the key to an address; this is the wallet saying which address is its own. Both are needed while the wallet has none recorded: without this one an EIP-712 signature captured anywhere could bind the wallet to a stranger's Lighter account.
-            /// Required on every stored token, not only the first, and absent answers 401 operation_proof_required. Requires a format 2 wallet_id, which every multichain wallet has.
-            ///
-            /// - Remark: Generated from `#/components/schemas/SaveRoTokenRequest/proof`.
-            public var proof: Swift.String
-            /// Creates a new `SaveRoTokenRequest`.
-            ///
-            /// - Parameters:
-            ///   - name: Optional client-supplied label for the token.
-            ///   - issued_at: When the client says the token was issued. Recorded and forwarded to Argus, whose event schema carries the field; nothing here depends on it, because a read-only token states no issue time of its own and this cannot be checked.
-            ///   - deadline: Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
-            ///   - signature: EIP-712 signature over LinkWallet(string walletId,uint64 deadline), under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form of a signature is refused so one proof has one encoding.
-            ///   - proof: The wallet's consent to storing this token, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.rotoken.store.v1") | LP(wallet_id) | LP(l1_address) | LP(token_hash) | LP(name) | LP(issued_at), in the same length-prefixed framing custodial-battery uses for its send proof. token_hash is sha256 of the X-Lighter-Auth value in lowercase hex — the token is named by its hash, never signed as itself; name is what this body carries, empty string when omitted; issued_at is unix nanoseconds in decimal, because it is kept and forwarded at that precision; l1_address is lowercase with its 0x.
-            public init(
-                name: Swift.String? = nil,
-                issued_at: Foundation.Date,
-                deadline: Swift.Int64? = nil,
-                signature: Swift.String? = nil,
-                proof: Swift.String
-            ) {
-                self.name = name
-                self.issued_at = issued_at
-                self.deadline = deadline
-                self.signature = signature
-                self.proof = proof
-            }
-            public enum CodingKeys: String, CodingKey {
-                case name
-                case issued_at
-                case deadline
-                case signature
-                case proof
-            }
-        }
-        /// Business meaning of a submitted transaction. These values belong to the Argus event vocabulary shared with the poc service, which is why they are UPPER_SNAKE rather than following this API's other enums; they are matched byte for byte on the far side.
-        /// Lighter's own numeric transaction type cannot stand in for this: closing a position is the same CreateOrder as opening one (reduce-only), and adding and removing margin share a single UpdateMargin. Only the caller knows which it meant.
-        ///
-        /// - Remark: Generated from `#/components/schemas/TransactionType`.
-        @frozen public enum TransactionType: String, Codable, Hashable, Sendable, CaseIterable {
-            case POSITION_CLOSE = "POSITION_CLOSE"
-            case POSITION_PARTIAL_CLOSE = "POSITION_PARTIAL_CLOSE"
-            case POSITION_LIQUIDATION = "POSITION_LIQUIDATION"
-            case POSITION_PARTIAL_LIQUIDATION = "POSITION_PARTIAL_LIQUIDATION"
-            case ORDER_CREATE = "ORDER_CREATE"
-            case ORDER_CREATE_INTENT = "ORDER_CREATE_INTENT"
-            case ORDER_CANCEL = "ORDER_CANCEL"
-            case SET_LEVERAGE = "SET_LEVERAGE"
-            case MAIN_TO_SUB_TRANSFER = "MAIN_TO_SUB_TRANSFER"
-            case POSITION_MARGIN_ADD = "POSITION_MARGIN_ADD"
-            case POSITION_MARGIN_REMOVE = "POSITION_MARGIN_REMOVE"
-            case AUTO_CLOSE_TRIGGERED = "AUTO_CLOSE_TRIGGERED"
-            case AUTO_CLOSE_CANCELED = "AUTO_CLOSE_CANCELED"
-            case WITHDRAWAL = "WITHDRAWAL"
-            case unknown
-            public init(from decoder: any Decoder) throws {
-                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
-            }
-        }
-        /// One signed transaction that Lighter accepted.
-        ///
-        /// - Remark: Generated from `#/components/schemas/ReportedTransaction`.
-        public struct ReportedTransaction: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ReportedTransaction/type`.
-            public var _type: Components.Schemas.TransactionType
-            /// Lighter transaction hash, computed client-side from the signed transaction and therefore known before the venue replies. It becomes the event_id consumers deduplicate on, so the same submission must always be reported under the same hash.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportedTransaction/tx_hash`.
-            public var tx_hash: Swift.String
-            /// Creates a new `ReportedTransaction`.
-            ///
-            /// - Parameters:
-            ///   - _type:
-            ///   - tx_hash: Lighter transaction hash, computed client-side from the signed transaction and therefore known before the venue replies. It becomes the event_id consumers deduplicate on, so the same submission must always be reported under the same hash.
-            public init(
-                _type: Components.Schemas.TransactionType,
-                tx_hash: Swift.String
-            ) {
-                self._type = _type
-                self.tx_hash = tx_hash
-            }
-            public enum CodingKeys: String, CodingKey {
-                case _type = "type"
-                case tx_hash
-            }
-        }
-        /// One user action, which may have taken more than one transaction: opening a position that also changes leverage is a SET_LEVERAGE followed by an ORDER_CREATE.
-        ///
-        /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest`.
-        public struct ReportTransactionsRequest: Codable, Hashable, Sendable {
-            /// Opaque client-side identifier grouping the transactions of one action. Never parsed here and not forwarded — the event stream has no field for it — so it serves our own log lines and support: the same action retried should reuse the same value.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/operation_id`.
-            public var operation_id: Swift.String?
-            /// When the client submitted the transactions to Lighter.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/submitted_at`.
-            public var submitted_at: Foundation.Date
-            /// In submission order. The order matters to consumers, which see one event per entry: a leverage change that preceded an order must precede it here too.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/transactions`.
-            public var transactions: [Components.Schemas.ReportedTransaction]
-            /// Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/deadline`.
-            public var deadline: Swift.Int64?
-            /// EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
-            /// Read only while the wallet has proved no address yet; sign it in the same vault unlock as the trade being reported, so the user confirms once. Missing when it is needed answers 400 address_proof_required.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/signature`.
-            public var signature: Swift.String?
-            /// The wallet's consent to this report, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.transactions.report.v1") | LP(wallet_id) | LP(l1_address) | LP(submitted_at) | LP(type) | LP(tx_hash) | ..., one length-prefixed pair per entry in the order they appear in transactions, and submitted_at as unix nanoseconds in decimal. The same length-prefixed framing custodial-battery uses for its send proof.
-            /// Nanoseconds because that is the precision the events carry: submitted_at reaches consumers whole, as the event's timestamp and its event_time header, and a proof over whole seconds would leave the sub-second part free to change.
-            /// Everything that reaches a consumer is inside it: the entries, their order, and the time the events carry. Nothing else in the body is signed -- operation_id never leaves this service.
-            /// l1_address is named here and nowhere in the body, lowercase with its 0x, because a first report binds the wallet to an address exactly as POST /account/bind does. signature only proves that somebody holds the key to an address; this is the wallet saying which address is its own, without which a signature captured anywhere could attach a stranger's Lighter account to this wallet.
-            /// Separate from signature, which proves an address; this proves an operation. It is what an access token cannot forge, since the key behind the wallet is not in it: a captured request cannot be turned into a report of different transactions.
-            /// Required, and absent answers 401 operation_proof_required. Requires a format 2 wallet_id, which every multichain wallet has.
-            ///
-            /// - Remark: Generated from `#/components/schemas/ReportTransactionsRequest/proof`.
-            public var proof: Swift.String
-            /// Creates a new `ReportTransactionsRequest`.
-            ///
-            /// - Parameters:
-            ///   - operation_id: Opaque client-side identifier grouping the transactions of one action. Never parsed here and not forwarded — the event stream has no field for it — so it serves our own log lines and support: the same action retried should reuse the same value.
-            ///   - submitted_at: When the client submitted the transactions to Lighter.
-            ///   - transactions: In submission order. The order matters to consumers, which see one event per entry: a leverage change that preceded an order must precede it here too.
-            ///   - deadline: Unix seconds, signed inside the EIP-712 message. Not checked against the clock: a device clock running behind would otherwise refuse every bind, and the signature binds nothing without the operation proof. Travels with signature: one without the other is a 400.
-            ///   - signature: EIP-712 signature proving this wallet's L1 address, over LinkWallet(string walletId,uint64 deadline) under domain {name: TonkeeperPerps, version: "1", chainId: 1} with no verifyingContract. Encoded as 65 bytes of r‖s‖v hex; v may be 27/28 or 0/1, and the high-s form is refused.
-            ///   - proof: The wallet's consent to this report, signed with its own root key: hex of a 65-byte recoverable secp256k1 signature (R | S | V) over LP("perps.transactions.report.v1") | LP(wallet_id) | LP(l1_address) | LP(submitted_at) | LP(type) | LP(tx_hash) | ..., one length-prefixed pair per entry in the order they appear in transactions, and submitted_at as unix nanoseconds in decimal. The same length-prefixed framing custodial-battery uses for its send proof.
-            public init(
-                operation_id: Swift.String? = nil,
-                submitted_at: Foundation.Date,
-                transactions: [Components.Schemas.ReportedTransaction],
-                deadline: Swift.Int64? = nil,
-                signature: Swift.String? = nil,
-                proof: Swift.String
-            ) {
-                self.operation_id = operation_id
-                self.submitted_at = submitted_at
-                self.transactions = transactions
-                self.deadline = deadline
-                self.signature = signature
-                self.proof = proof
-            }
-            public enum CodingKeys: String, CodingKey {
-                case operation_id
-                case submitted_at
-                case transactions
-                case deadline
-                case signature
-                case proof
-            }
-        }
         /// One transaction as the client signed it.
         ///
         /// - Remark: Generated from `#/components/schemas/SignedTransaction`.
@@ -374,15 +200,25 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/SendTransactionsRequest/transactions`.
             public var transactions: [Components.Schemas.SignedTransaction]
+            /// The client's id of the operation the request carries out. A withdrawal sent with it is stored with it and names it in the push that completes it, so the client can match that push to its own record.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SendTransactionsRequest/operation_id`.
+            public var operation_id: Swift.String?
             /// Creates a new `SendTransactionsRequest`.
             ///
             /// - Parameters:
             ///   - transactions: In submission order. Lighter caps a batch at fifty and answers one as a whole, so a refusal refuses all of them. More than fifty is refused here as batch_not_accepted.
-            public init(transactions: [Components.Schemas.SignedTransaction]) {
+            ///   - operation_id: The client's id of the operation the request carries out. A withdrawal sent with it is stored with it and names it in the push that completes it, so the client can match that push to its own record.
+            public init(
+                transactions: [Components.Schemas.SignedTransaction],
+                operation_id: Swift.String? = nil
+            ) {
                 self.transactions = transactions
+                self.operation_id = operation_id
             }
             public enum CodingKeys: String, CodingKey {
                 case transactions
+                case operation_id
             }
         }
         /// - Remark: Generated from `#/components/schemas/SentTransaction`.
@@ -839,6 +675,14 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Integrator/approval_ttl_ms`.
             public var approval_ttl_ms: Swift.Int64
+            /// Lighter's own taker fee for the caller's account tier, in millionths, charged on top of integrator_taker_fee. For display only, never signed. Read from Lighter's fee table for the last tier this service saw, without volume or staking discounts. Absent while the tier is not known.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/venue_taker_fee`.
+            public var venue_taker_fee: Swift.Int?
+            /// Lighter's own maker fee for the caller's account tier, as venue_taker_fee.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Integrator/venue_maker_fee`.
+            public var venue_maker_fee: Swift.Int?
             /// Creates a new `Integrator`.
             ///
             /// - Parameters:
@@ -850,6 +694,8 @@ extension Components {
             ///   - max_spot_taker_fee: Always zero -- this service does not trade spot.
             ///   - max_spot_maker_fee: Always zero.
             ///   - approval_ttl_ms: How far ahead of now the approval_expiry signed into ApproveIntegrator should sit, in milliseconds. Zero alongside a zero account index means there is nothing to approve.
+            ///   - venue_taker_fee: Lighter's own taker fee for the caller's account tier, in millionths, charged on top of integrator_taker_fee. For display only, never signed. Read from Lighter's fee table for the last tier this service saw, without volume or staking discounts. Absent while the tier is not known.
+            ///   - venue_maker_fee: Lighter's own maker fee for the caller's account tier, as venue_taker_fee.
             public init(
                 integrator_account_index: Swift.Int64,
                 integrator_taker_fee: Swift.Int,
@@ -858,7 +704,9 @@ extension Components {
                 max_perps_maker_fee: Swift.Int,
                 max_spot_taker_fee: Swift.Int,
                 max_spot_maker_fee: Swift.Int,
-                approval_ttl_ms: Swift.Int64
+                approval_ttl_ms: Swift.Int64,
+                venue_taker_fee: Swift.Int? = nil,
+                venue_maker_fee: Swift.Int? = nil
             ) {
                 self.integrator_account_index = integrator_account_index
                 self.integrator_taker_fee = integrator_taker_fee
@@ -868,6 +716,8 @@ extension Components {
                 self.max_spot_taker_fee = max_spot_taker_fee
                 self.max_spot_maker_fee = max_spot_maker_fee
                 self.approval_ttl_ms = approval_ttl_ms
+                self.venue_taker_fee = venue_taker_fee
+                self.venue_maker_fee = venue_maker_fee
             }
             public enum CodingKeys: String, CodingKey {
                 case integrator_account_index
@@ -878,6 +728,8 @@ extension Components {
                 case max_spot_taker_fee
                 case max_spot_maker_fee
                 case approval_ttl_ms
+                case venue_taker_fee
+                case venue_maker_fee
             }
         }
         /// A perpetual market and its live stats. All monetary/price/size fields are human-unit decimal strings; the *_decimals fields tell the client how to scale those values back into integer units when building/signing a tx.
@@ -1325,6 +1177,126 @@ extension Components {
                 case projected_roi_pct
             }
         }
+        /// A take-profit or stop-loss that waits for its order to fill. It has no size: it closes what the order filled.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg`.
+        public struct OrderAutoCloseLeg: Codable, Hashable, Sendable {
+            /// Lighter's number for the leg. Use it with `market_index` to cancel or change the leg.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/order_index`.
+            public var order_index: Swift.Int64?
+            /// Number chosen by whoever created the leg. Zero if nobody chose one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/client_order_index`.
+            public var client_order_index: Swift.Int64?
+            /// Price that fires the leg.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/trigger_price`.
+            public var trigger_price: Swift.String?
+            /// Price that Lighter keeps with the trigger. A market leg has it too.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/price`.
+            public var price: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/order_type`.
+            public var order_type: Components.Schemas.OrderType?
+            /// Expiry as a unix timestamp in seconds; null means good-till-cancel.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OrderAutoCloseLeg/valid_to`.
+            public var valid_to: Swift.Int64?
+            /// Creates a new `OrderAutoCloseLeg`.
+            ///
+            /// - Parameters:
+            ///   - order_index: Lighter's number for the leg. Use it with `market_index` to cancel or change the leg.
+            ///   - client_order_index: Number chosen by whoever created the leg. Zero if nobody chose one.
+            ///   - trigger_price: Price that fires the leg.
+            ///   - price: Price that Lighter keeps with the trigger. A market leg has it too.
+            ///   - order_type:
+            ///   - valid_to: Expiry as a unix timestamp in seconds; null means good-till-cancel.
+            public init(
+                order_index: Swift.Int64? = nil,
+                client_order_index: Swift.Int64? = nil,
+                trigger_price: Swift.String? = nil,
+                price: Swift.String? = nil,
+                order_type: Components.Schemas.OrderType? = nil,
+                valid_to: Swift.Int64? = nil
+            ) {
+                self.order_index = order_index
+                self.client_order_index = client_order_index
+                self.trigger_price = trigger_price
+                self.price = price
+                self.order_type = order_type
+                self.valid_to = valid_to
+            }
+            public enum CodingKeys: String, CodingKey {
+                case order_index
+                case client_order_index
+                case trigger_price
+                case price
+                case order_type
+                case valid_to
+            }
+        }
+        /// Take-profit and stop-loss placed with an order. A leg is null if the order has none.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OrderAutoClose`.
+        public struct OrderAutoClose: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OrderAutoClose/take_profit`.
+            public struct take_profitPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/OrderAutoClose/take_profit/value1`.
+                public var value1: Components.Schemas.OrderAutoCloseLeg
+                /// Creates a new `take_profitPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.OrderAutoCloseLeg) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/OrderAutoClose/take_profit`.
+            public var take_profit: Components.Schemas.OrderAutoClose.take_profitPayload?
+            /// - Remark: Generated from `#/components/schemas/OrderAutoClose/stop_loss`.
+            public struct stop_lossPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/OrderAutoClose/stop_loss/value1`.
+                public var value1: Components.Schemas.OrderAutoCloseLeg
+                /// Creates a new `stop_lossPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.OrderAutoCloseLeg) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/OrderAutoClose/stop_loss`.
+            public var stop_loss: Components.Schemas.OrderAutoClose.stop_lossPayload?
+            /// Creates a new `OrderAutoClose`.
+            ///
+            /// - Parameters:
+            ///   - take_profit:
+            ///   - stop_loss:
+            public init(
+                take_profit: Components.Schemas.OrderAutoClose.take_profitPayload? = nil,
+                stop_loss: Components.Schemas.OrderAutoClose.stop_lossPayload? = nil
+            ) {
+                self.take_profit = take_profit
+                self.stop_loss = stop_loss
+            }
+            public enum CodingKeys: String, CodingKey {
+                case take_profit
+                case stop_loss
+            }
+        }
         /// The take-profit and stop-loss legs attached to a position. A leg is null when the position has none of that kind.
         ///
         /// - Remark: Generated from `#/components/schemas/PositionAutoClose`.
@@ -1420,25 +1392,106 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/OpenPositionDetail/auto_close`.
             public var auto_close: Components.Schemas.OpenPositionDetail.auto_closePayload?
+            /// What a market close of the whole position gives now. Null if the book is unavailable or too thin.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OpenPositionDetail/close_estimate`.
+            public struct close_estimatePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/OpenPositionDetail/close_estimate/value1`.
+                public var value1: Components.Schemas.PositionCloseEstimate
+                /// Creates a new `close_estimatePayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.PositionCloseEstimate) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                }
+            }
+            /// What a market close of the whole position gives now. Null if the book is unavailable or too thin.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OpenPositionDetail/close_estimate`.
+            public var close_estimate: Components.Schemas.OpenPositionDetail.close_estimatePayload?
             /// Creates a new `OpenPositionDetail`.
             ///
             /// - Parameters:
             ///   - position:
             ///   - auto_close_known: Whether the legs were read. False means they were not: the wallet has stored no read-only token, the stored one expired, or it could not be decrypted. A client must not read a null auto_close as "none" while this is false -- offering to set a take-profit over an existing one would replace it.
             ///   - auto_close: The legs, or null when there are none -- or when auto_close_known is false.
+            ///   - close_estimate: What a market close of the whole position gives now. Null if the book is unavailable or too thin.
             public init(
                 position: Components.Schemas.OpenPosition? = nil,
                 auto_close_known: Swift.Bool? = nil,
-                auto_close: Components.Schemas.OpenPositionDetail.auto_closePayload? = nil
+                auto_close: Components.Schemas.OpenPositionDetail.auto_closePayload? = nil,
+                close_estimate: Components.Schemas.OpenPositionDetail.close_estimatePayload? = nil
             ) {
                 self.position = position
                 self.auto_close_known = auto_close_known
                 self.auto_close = auto_close
+                self.close_estimate = close_estimate
             }
             public enum CodingKeys: String, CodingKey {
                 case position
                 case auto_close_known
                 case auto_close
+                case close_estimate
+            }
+        }
+        /// A market close of the whole position at the live book: a long sells to the bids, a short buys from the asks. This is what the user gets. The position's unrealized_pnl and roi_pct use the mark (the mid on RWA markets), like Lighter, so they differ by about half the spread. Money is in USDC.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate`.
+        public struct PositionCloseEstimate: Codable, Hashable, Sendable {
+            /// Average fill price for the whole size, rounded to the market's price decimals. pnl uses the exact price.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate/price`.
+            public var price: Swift.String
+            /// (price - avg_entry_price) x size for a long, (avg_entry_price - price) x size for a short, minus the fee.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate/pnl`.
+            public var pnl: Swift.String
+            /// pnl as a percent of the position margin, cut to two decimals. Empty if the margin is zero.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate/roi_pct`.
+            public var roi_pct: Swift.String
+            /// Our integrator taker fee, price x size x fee rate. Lighter's own fee is not included, it is zero on the standard tier.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate/fee`.
+            public var fee: Swift.String
+            /// margin + pnl, what goes back to the account.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionCloseEstimate/receive`.
+            public var receive: Swift.String
+            /// Creates a new `PositionCloseEstimate`.
+            ///
+            /// - Parameters:
+            ///   - price: Average fill price for the whole size, rounded to the market's price decimals. pnl uses the exact price.
+            ///   - pnl: (price - avg_entry_price) x size for a long, (avg_entry_price - price) x size for a short, minus the fee.
+            ///   - roi_pct: pnl as a percent of the position margin, cut to two decimals. Empty if the margin is zero.
+            ///   - fee: Our integrator taker fee, price x size x fee rate. Lighter's own fee is not included, it is zero on the standard tier.
+            ///   - receive: margin + pnl, what goes back to the account.
+            public init(
+                price: Swift.String,
+                pnl: Swift.String,
+                roi_pct: Swift.String,
+                fee: Swift.String,
+                receive: Swift.String
+            ) {
+                self.price = price
+                self.pnl = pnl
+                self.roi_pct = roi_pct
+                self.fee = fee
+                self.receive = receive
+            }
+            public enum CodingKeys: String, CodingKey {
+                case price
+                case pnl
+                case roi_pct
+                case fee
+                case receive
             }
         }
         /// The caller's open positions. An object rather than a bare array so aggregates or a cursor can be added later without breaking clients.
@@ -1883,6 +1936,30 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/PositionEpisode/close_reason`.
             public var close_reason: Components.Schemas.PositionEpisode.close_reasonPayload?
+            /// The position as this service counts it from the fills it recorded, for a client that wants to show it before its next portfolio read. Only on an open episode this service saw open (open_seen true); absent otherwise. It lags the venue while fills are still arriving, so compare `size` with what the order filled before trusting it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/position`.
+            public struct positionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PositionEpisode/position/value1`.
+                public var value1: Components.Schemas.EpisodePosition
+                /// Creates a new `positionPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.EpisodePosition) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                }
+            }
+            /// The position as this service counts it from the fills it recorded, for a client that wants to show it before its next portfolio read. Only on an open episode this service saw open (open_seen true); absent otherwise. It lags the venue while fills are still arriving, so compare `size` with what the order filled before trusting it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionEpisode/position`.
+            public var position: Components.Schemas.PositionEpisode.positionPayload?
             /// Creates a new `PositionEpisode`.
             ///
             /// - Parameters:
@@ -1892,13 +1969,15 @@ extension Components {
             ///   - open_seen: false when this service adopted the episode mid-flight: the first fill it saw already found a position, so opened_at is that fill's time and not when the position opened. A client should not present it as an opening time when this is false.
             ///   - closed_at: Null while the episode is open.
             ///   - close_reason: What ended it. `fill` is an ordinary close and `liquidation` a fill the venue marked as one. `event` is every close with no fill of ours behind it -- an auto-deleverage, or one whose fill this service never saw: the venue reported the position gone without saying why, and this does not claim to know either. Treat the set as open-ended; a later release may name a reason `event` covers today.
+            ///   - position: The position as this service counts it from the fills it recorded, for a client that wants to show it before its next portfolio read. Only on an open episode this service saw open (open_seen true); absent otherwise. It lags the venue while fills are still arriving, so compare `size` with what the order filled before trusting it.
             public init(
                 episode_id: Swift.String,
                 side: Components.Schemas.PositionSide,
                 opened_at: Foundation.Date,
                 open_seen: Swift.Bool,
                 closed_at: Foundation.Date? = nil,
-                close_reason: Components.Schemas.PositionEpisode.close_reasonPayload? = nil
+                close_reason: Components.Schemas.PositionEpisode.close_reasonPayload? = nil,
+                position: Components.Schemas.PositionEpisode.positionPayload? = nil
             ) {
                 self.episode_id = episode_id
                 self.side = side
@@ -1906,6 +1985,7 @@ extension Components {
                 self.open_seen = open_seen
                 self.closed_at = closed_at
                 self.close_reason = close_reason
+                self.position = position
             }
             public enum CodingKeys: String, CodingKey {
                 case episode_id
@@ -1914,6 +1994,88 @@ extension Components {
                 case open_seen
                 case closed_at
                 case close_reason
+                case position
+            }
+        }
+        /// Size and entry from this service's own fills, with no venue read behind them. Mark, PnL and the liquidation price need the venue and stay with the portfolio.
+        ///
+        /// - Remark: Generated from `#/components/schemas/EpisodePosition`.
+        public struct EpisodePosition: Codable, Hashable, Sendable {
+            /// Base units the episode holds, unsigned; the side is the episode's.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/size`.
+            public var size: Swift.String
+            /// What the held size cost, per unit.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/avg_entry_price`.
+            public var avg_entry_price: Swift.String
+            /// From the initial margin fraction of the latest fill. Absent when that fill carried none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/leverage`.
+            public var leverage: Swift.Int?
+            /// From the venue's last position event, and only while that event is for the size counted here. Absent for a mode this service does not know, and allocated_margin with it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/margin_mode`.
+            public struct margin_modePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EpisodePosition/margin_mode/value1`.
+                public var value1: Components.Schemas.MarginMode
+                /// Creates a new `margin_modePayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.MarginMode) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// From the venue's last position event, and only while that event is for the size counted here. Absent for a mode this service does not know, and allocated_margin with it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/margin_mode`.
+            public var margin_mode: Components.Schemas.EpisodePosition.margin_modePayload?
+            /// Margin an isolated position holds, from the venue's last position event. Absent until that event is for the size counted here.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/allocated_margin`.
+            public var allocated_margin: Swift.String?
+            /// Lighter's trade id of the latest fill counted, so a client can tell an older count from a newer one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EpisodePosition/last_trade_id`.
+            public var last_trade_id: Swift.String
+            /// Creates a new `EpisodePosition`.
+            ///
+            /// - Parameters:
+            ///   - size: Base units the episode holds, unsigned; the side is the episode's.
+            ///   - avg_entry_price: What the held size cost, per unit.
+            ///   - leverage: From the initial margin fraction of the latest fill. Absent when that fill carried none.
+            ///   - margin_mode: From the venue's last position event, and only while that event is for the size counted here. Absent for a mode this service does not know, and allocated_margin with it.
+            ///   - allocated_margin: Margin an isolated position holds, from the venue's last position event. Absent until that event is for the size counted here.
+            ///   - last_trade_id: Lighter's trade id of the latest fill counted, so a client can tell an older count from a newer one.
+            public init(
+                size: Swift.String,
+                avg_entry_price: Swift.String,
+                leverage: Swift.Int? = nil,
+                margin_mode: Components.Schemas.EpisodePosition.margin_modePayload? = nil,
+                allocated_margin: Swift.String? = nil,
+                last_trade_id: Swift.String
+            ) {
+                self.size = size
+                self.avg_entry_price = avg_entry_price
+                self.leverage = leverage
+                self.margin_mode = margin_mode
+                self.allocated_margin = allocated_margin
+                self.last_trade_id = last_trade_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case size
+                case avg_entry_price
+                case leverage
+                case margin_mode
+                case allocated_margin
+                case last_trade_id
             }
         }
         /// What the venue said about one order, as this service recorded it.
@@ -1924,6 +2086,10 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/PositionStateOrder/order_index`.
             public var order_index: Swift.Int64
+            /// The client's number for the order. Absent if there is none. In the realtime snapshot the client finds its own order by it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PositionStateOrder/client_order_index`.
+            public var client_order_index: Swift.Int64?
             /// The venue's own word for what kind of order it was, e.g. `market`, `take-profit`, `stop-loss`, `liquidation`.
             ///
             /// - Remark: Generated from `#/components/schemas/PositionStateOrder/kind`.
@@ -1948,6 +2114,7 @@ extension Components {
             ///
             /// - Parameters:
             ///   - order_index: Lighter's own number for the order. A cancel or a modify is addressed by `market_index` plus this.
+            ///   - client_order_index: The client's number for the order. Absent if there is none. In the realtime snapshot the client finds its own order by it.
             ///   - kind: The venue's own word for what kind of order it was, e.g. `market`, `take-profit`, `stop-loss`, `liquidation`.
             ///   - status: The venue's own word, passed through unmapped -- Lighter does not document the set of values it uses, and mapping them by guess would report a state nobody established. An order still working carries something other than `filled` or `canceled`.
             ///   - filled_base: What the venue says was filled, in base units. Zero for an order still resting in the book.
@@ -1955,6 +2122,7 @@ extension Components {
             ///   - recorded_at: This service's own clock: when the order was first written here, not when the venue created it. An order can rest in the book for twenty minutes before an event brings it.
             public init(
                 order_index: Swift.Int64,
+                client_order_index: Swift.Int64? = nil,
                 kind: Swift.String? = nil,
                 status: Swift.String,
                 filled_base: Swift.String? = nil,
@@ -1962,6 +2130,7 @@ extension Components {
                 recorded_at: Foundation.Date? = nil
             ) {
                 self.order_index = order_index
+                self.client_order_index = client_order_index
                 self.kind = kind
                 self.status = status
                 self.filled_base = filled_base
@@ -1970,6 +2139,7 @@ extension Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case order_index
+                case client_order_index
                 case kind
                 case status
                 case filled_base
@@ -2076,6 +2246,30 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Order/roi`.
             public var roi: Swift.String?
+            /// Take-profit and stop-loss placed with this order. They wait for the order to fill, then protect the new position. Null if there are none or the order is not on the book.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Order/auto_close`.
+            public struct auto_closePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Order/auto_close/value1`.
+                public var value1: Components.Schemas.OrderAutoClose
+                /// Creates a new `auto_closePayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                public init(value1: Components.Schemas.OrderAutoClose) {
+                    self.value1 = value1
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                }
+            }
+            /// Take-profit and stop-loss placed with this order. They wait for the order to fill, then protect the new position. Null if there are none or the order is not on the book.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Order/auto_close`.
+            public var auto_close: Components.Schemas.Order.auto_closePayload?
             /// Fee breakdown, null if not yet known. Always null today: nothing populates it, so a client must not rely on it. Lighter reports per-order fees and this service does not map them yet.
             ///
             /// - Remark: Generated from `#/components/schemas/Order/fees`.
@@ -2129,6 +2323,7 @@ extension Components {
             ///   - expires_at:
             ///   - pnl: Realized PnL attributed to this order (close orders), null otherwise.
             ///   - roi: Return on investment as a decimal string, null if not applicable.
+            ///   - auto_close: Take-profit and stop-loss placed with this order. They wait for the order to fill, then protect the new position. Null if there are none or the order is not on the book.
             ///   - fees: Fee breakdown, null if not yet known. Always null today: nothing populates it, so a client must not rely on it. Lighter reports per-order fees and this service does not map them yet.
             ///   - sort_ts: Sort timestamp used for keyset pagination and poll ranking.
             public init(
@@ -2154,6 +2349,7 @@ extension Components {
                 expires_at: Foundation.Date? = nil,
                 pnl: Swift.String? = nil,
                 roi: Swift.String? = nil,
+                auto_close: Components.Schemas.Order.auto_closePayload? = nil,
                 fees: Components.Schemas.Order.feesPayload? = nil,
                 sort_ts: Foundation.Date? = nil
             ) {
@@ -2179,6 +2375,7 @@ extension Components {
                 self.expires_at = expires_at
                 self.pnl = pnl
                 self.roi = roi
+                self.auto_close = auto_close
                 self.fees = fees
                 self.sort_ts = sort_ts
             }
@@ -2205,6 +2402,7 @@ extension Components {
                 case expires_at
                 case pnl
                 case roi
+                case auto_close
                 case fees
                 case sort_ts
             }
@@ -2450,7 +2648,7 @@ extension Components {
                 case sort_ts
             }
         }
-        /// Perps asset details payload for a single market. Only open_orders needs a read-only token, and this service reads it from its own store rather than from the caller: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. Without a usable token open_orders is empty, and two fields derived from it go with it -- flags.cancel_enabled is false and position.auto_close is null, since the TP/SL legs are themselves open orders.
+        /// Perps asset details payload for a single market. Only open_orders needs a read-only token, and this service reads it from its own store rather than from the caller: the position, its PnL and the balance all come from the account snapshot, which Lighter serves by account index and which needs no token. The balance still needs the orders, since it nets out the margin they reserve. So a wallet with an account but no usable token gets no screen: it is answered 400 readonly_token_unavailable (see the endpoint).
         ///
         /// - Remark: Generated from `#/components/schemas/TradingScreen`.
         public struct TradingScreen: Codable, Hashable, Sendable {
@@ -2559,31 +2757,6 @@ extension Components {
                 case flags
             }
         }
-        /// Payload for the portfolio screen.
-        ///
-        /// - Remark: Generated from `#/components/schemas/PortfolioScreen`.
-        public struct PortfolioScreen: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/PortfolioScreen/balance`.
-            public var balance: Components.Schemas.Balance?
-            /// - Remark: Generated from `#/components/schemas/PortfolioScreen/positions`.
-            public var positions: [Components.Schemas.Position]?
-            /// Creates a new `PortfolioScreen`.
-            ///
-            /// - Parameters:
-            ///   - balance:
-            ///   - positions:
-            public init(
-                balance: Components.Schemas.Balance? = nil,
-                positions: [Components.Schemas.Position]? = nil
-            ) {
-                self.balance = balance
-                self.positions = positions
-            }
-            public enum CodingKeys: String, CodingKey {
-                case balance
-                case positions
-            }
-        }
         /// Balance, open positions and resting orders in one payload. The two sections are independent: a position is what the account holds, an order is what it is waiting for.
         ///
         /// - Remark: Generated from `#/components/schemas/Portfolio`.
@@ -2592,20 +2765,20 @@ extension Components {
             public var balance: Components.Schemas.Balance?
             /// - Remark: Generated from `#/components/schemas/Portfolio/positions`.
             public var positions: [Components.Schemas.OpenPosition]?
-            /// Orders resting on the book, across every market. Take-profit and stop-loss legs are not among them.
+            /// Orders resting on the book, across every market. Take-profit and stop-loss legs are not among them. A position's legs come with the position. An unfilled order's legs come in its auto_close.
             ///
             /// - Remark: Generated from `#/components/schemas/Portfolio/open_orders`.
-            public var open_orders: [Components.Schemas.Order]?
+            public var open_orders: [Components.Schemas.PortfolioOrder]?
             /// Creates a new `Portfolio`.
             ///
             /// - Parameters:
             ///   - balance:
             ///   - positions:
-            ///   - open_orders: Orders resting on the book, across every market. Take-profit and stop-loss legs are not among them.
+            ///   - open_orders: Orders resting on the book, across every market. Take-profit and stop-loss legs are not among them. A position's legs come with the position. An unfilled order's legs come in its auto_close.
             public init(
                 balance: Components.Schemas.Balance? = nil,
                 positions: [Components.Schemas.OpenPosition]? = nil,
-                open_orders: [Components.Schemas.Order]? = nil
+                open_orders: [Components.Schemas.PortfolioOrder]? = nil
             ) {
                 self.balance = balance
                 self.positions = positions
@@ -2615,6 +2788,62 @@ extension Components {
                 case balance
                 case positions
                 case open_orders
+            }
+        }
+        /// A resting order with the caller's leverage and the margin the order needs.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PortfolioOrder`.
+        public struct PortfolioOrder: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PortfolioOrder/value1`.
+            public var value1: Components.Schemas.Order
+            /// - Remark: Generated from `#/components/schemas/PortfolioOrder/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// Caller's leverage on this market now, not when the order was placed. Lighter keeps one leverage per market, not per order. Falls back to the market default. Absent when unknown.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PortfolioOrder/value2/leverage`.
+                public var leverage: Swift.Int?
+                /// Margin this order needs on its own, in quote units: the unfilled size at the limit price times the account's initial margin fraction on this market. leverage is that fraction rounded to a whole number, so dividing by leverage can differ a little in the last digits. Other orders and the position on the same market are not counted, so Lighter may hold less: a buy and a sell on one market hold margin for one side only, and an order that closes a position holds none. The real total is already taken out of available_balance. This is not the amount typed in the order form: the form sizes the order at the mark price. Absent for a reduce-only order and when the leverage is unknown.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PortfolioOrder/value2/margin`.
+                public var margin: Swift.String?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - leverage: Caller's leverage on this market now, not when the order was placed. Lighter keeps one leverage per market, not per order. Falls back to the market default. Absent when unknown.
+                ///   - margin: Margin this order needs on its own, in quote units: the unfilled size at the limit price times the account's initial margin fraction on this market. leverage is that fraction rounded to a whole number, so dividing by leverage can differ a little in the last digits. Other orders and the position on the same market are not counted, so Lighter may hold less: a buy and a sell on one market hold margin for one side only, and an order that closes a position holds none. The real total is already taken out of available_balance. This is not the amount typed in the order form: the form sizes the order at the mark price. Absent for a reduce-only order and when the leverage is unknown.
+                public init(
+                    leverage: Swift.Int? = nil,
+                    margin: Swift.String? = nil
+                ) {
+                    self.leverage = leverage
+                    self.margin = margin
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case leverage
+                    case margin
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PortfolioOrder/value2`.
+            public var value2: Components.Schemas.PortfolioOrder.Value2Payload
+            /// Creates a new `PortfolioOrder`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.Order,
+                value2: Components.Schemas.PortfolioOrder.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
             }
         }
         /// The caller's resting orders. An object rather than a bare array so aggregates or a cursor can be added later without breaking clients.
@@ -2801,6 +3030,11 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/OpenDepositRequest/l1_tx_hash`.
             public var l1_tx_hash: Swift.String?
+            /// Optional. The transaction the wallet signed on the source chain, for a deposit sent with execution_id. Send it whenever the wallet already has it: with the first call if the transaction is signed by then, or by repeating this call with the same operation_id once it is. A repeat with another value replaces the stored one, so a transaction signed again can be named again. It is never part of the terms, so it never makes a 409.
+            /// For a `funxyz` deposit it is the bridge's transfer this deposit takes, and the only one: the transfer must also fit the quote (chain, token, amount, time). Until the bridge reports it the deposit waits, and expires like any unpaid one if it never does, so a wrong hash is not matched to another transfer. Other deposits of the address do not take a transfer named here. Without it the deposit is matched by chain, token, amount and time. Kept as sent, never parsed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OpenDepositRequest/source_tx_hash`.
+            public var source_tx_hash: Swift.String?
             /// Creates a new `OpenDepositRequest`.
             ///
             /// - Parameters:
@@ -2809,18 +3043,21 @@ extension Components {
             ///   - amount: What was sent, as a decimal string, at most 6 decimal places and not below the gateway's 1 USDC floor — less than that is accepted by the contract and then never credited. Kept as declared: Lighter records only what arrives, so this is the only copy of what was meant, and "expected N, got M" can be answered from nowhere else.
             ///   - execution_id: The swap this deposit is funded by: tracking.execution_id from POST /funding/quote. Required when l1_tx_hash is absent. Send it before broadcasting the source transaction: this service follows the swap by it, takes the Ethereum hash once the aggregator delivers, and confirms the deposit by that hash from then on. A swap that fails, is refunded or is never paid closes the deposit as failed, refunded or expired. While this service cannot reach swaps-backend by configuration, a deposit named by execution_id alone is refused with 503 rather than recorded and left to expire.
             ///   - l1_tx_hash: The Ethereum transaction that called Lighter's gateway. Required when execution_id is absent, which is a direct deposit: the wallet signs the gateway call itself and knows its hash before broadcasting. Lighter resolves it to the credit, the amount and the account index, without a read-only token, which a first deposit could not have anyway since the account does not exist yet.
+            ///   - source_tx_hash: Optional. The transaction the wallet signed on the source chain, for a deposit sent with execution_id. Send it whenever the wallet already has it: with the first call if the transaction is signed by then, or by repeating this call with the same operation_id once it is. A repeat with another value replaces the stored one, so a transaction signed again can be named again. It is never part of the terms, so it never makes a 409.
             public init(
                 operation_id: Swift.String,
                 asset_id: Swift.String,
                 amount: Swift.String,
                 execution_id: Swift.String? = nil,
-                l1_tx_hash: Swift.String? = nil
+                l1_tx_hash: Swift.String? = nil,
+                source_tx_hash: Swift.String? = nil
             ) {
                 self.operation_id = operation_id
                 self.asset_id = asset_id
                 self.amount = amount
                 self.execution_id = execution_id
                 self.l1_tx_hash = l1_tx_hash
+                self.source_tx_hash = source_tx_hash
             }
             public enum CodingKeys: String, CodingKey {
                 case operation_id
@@ -2828,6 +3065,7 @@ extension Components {
                 case amount
                 case execution_id
                 case l1_tx_hash
+                case source_tx_hash
             }
         }
         /// One recorded deposit.
@@ -2873,6 +3111,26 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Deposit/status`.
             public var status: Components.Schemas.Deposit.statusPayload?
+            /// Where a pending deposit is now. Present only while status is pending; once it is not, status says how the deposit ended.
+            /// - sending: the money has not left the wallet yet, or the provider has not seen it. - converting: the provider is swapping it to USDC on Ethereum. - adding: the money is sent to Lighter, and Lighter has not credited it yet.
+            /// Steps only move forward and can be skipped. A deposit in USDC has no swap, so it goes from sending to adding. It can also skip a step that passed between two checks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Deposit/pending_step`.
+            @frozen public enum pending_stepPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case sending = "sending"
+                case converting = "converting"
+                case adding = "adding"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// Where a pending deposit is now. Present only while status is pending; once it is not, status says how the deposit ended.
+            /// - sending: the money has not left the wallet yet, or the provider has not seen it. - converting: the provider is swapping it to USDC on Ethereum. - adding: the money is sent to Lighter, and Lighter has not credited it yet.
+            /// Steps only move forward and can be skipped. A deposit in USDC has no swap, so it goes from sending to adding. It can also skip a step that passed between two checks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Deposit/pending_step`.
+            public var pending_step: Components.Schemas.Deposit.pending_stepPayload?
             /// The network and token the funds were sent as; echoed from the request.
             ///
             /// - Remark: Generated from `#/components/schemas/Deposit/asset_id`.
@@ -2906,6 +3164,7 @@ extension Components {
             /// - Parameters:
             ///   - deposit_id: Identifies this deposit when polling its progress. A random UUID, so it cannot be guessed from an address or a sequence, but it is not what authorises the poll -- that is the wallet the deposit belongs to, see the GET operation. Worth persisting alongside whatever the client calls the attempt, and not fatal to lose, since posting the same transaction again returns the same id rather than a second deposit.
             ///   - status: pending until the deposit ends; every other value is final.
+            ///   - pending_step: Where a pending deposit is now. Present only while status is pending; once it is not, status says how the deposit ended.
             ///   - asset_id: The network and token the funds were sent as; echoed from the request.
             ///   - amount: What the caller declared, echoed back. Compare with credited_amount.
             ///   - credited_amount: What Lighter actually credited, once it has. Absent while the deposit is pending, and also on the rare credit confirmed without an amount — where the only signal was an account appearing, which proves an arrival but not its size.
@@ -2916,6 +3175,7 @@ extension Components {
             public init(
                 deposit_id: Swift.String? = nil,
                 status: Components.Schemas.Deposit.statusPayload? = nil,
+                pending_step: Components.Schemas.Deposit.pending_stepPayload? = nil,
                 asset_id: Swift.String? = nil,
                 amount: Swift.String? = nil,
                 credited_amount: Swift.String? = nil,
@@ -2926,6 +3186,7 @@ extension Components {
             ) {
                 self.deposit_id = deposit_id
                 self.status = status
+                self.pending_step = pending_step
                 self.asset_id = asset_id
                 self.amount = amount
                 self.credited_amount = credited_amount
@@ -2937,6 +3198,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case deposit_id
                 case status
+                case pending_step
                 case asset_id
                 case amount
                 case credited_amount
@@ -3438,6 +3700,10 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/DepositQuote/slippage_bps`.
             public var slippage_bps: Swift.Int?
+            /// The provider's fees on this deposit, in US dollars: most of why output.amount is worth less than the input. The rest is the swap's rate and the slippage allowance, and input.amount is a budget that is rarely spent to the last unit. The source chain's own network fee is not among them: it is paid on top, on the payload's `fee` where the quote states one. Absent when the provider states none -- `direct` and `funxyz` deposits take nothing.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuote/fees`.
+            public var fees: [Components.Schemas.DepositQuoteFee]?
             /// - Remark: Generated from `#/components/schemas/DepositQuote/operation`.
             public var operation: Components.Schemas.DepositOperation
             /// - Remark: Generated from `#/components/schemas/DepositQuote/tracking`.
@@ -3464,6 +3730,7 @@ extension Components {
             ///   - input:
             ///   - output:
             ///   - slippage_bps: The slippage the quote allowed for, in basis points. It applies to the source side: the deposit itself is exact.
+            ///   - fees: The provider's fees on this deposit, in US dollars: most of why output.amount is worth less than the input. The rest is the swap's rate and the slippage allowance, and input.amount is a budget that is rarely spent to the last unit. The source chain's own network fee is not among them: it is paid on top, on the payload's `fee` where the quote states one. Absent when the provider states none -- `direct` and `funxyz` deposits take nothing.
             ///   - operation:
             ///   - tracking:
             ///   - preview: True on a change_pub_key preview: the quote prices the deposit, and its operation is the two signatures to make (eip7702/authorization, eip7821/hermes/delegate) -- nothing to broadcast. They go back in change_pub_key of the same request, whose answer is the quote to send. False on every quote to send.
@@ -3477,6 +3744,7 @@ extension Components {
                 input: Components.Schemas.DepositQuoteInput,
                 output: Components.Schemas.DepositQuoteOutput,
                 slippage_bps: Swift.Int? = nil,
+                fees: [Components.Schemas.DepositQuoteFee]? = nil,
                 operation: Components.Schemas.DepositOperation,
                 tracking: Components.Schemas.QuoteTracking? = nil,
                 preview: Swift.Bool,
@@ -3490,6 +3758,7 @@ extension Components {
                 self.input = input
                 self.output = output
                 self.slippage_bps = slippage_bps
+                self.fees = fees
                 self.operation = operation
                 self.tracking = tracking
                 self.preview = preview
@@ -3504,11 +3773,39 @@ extension Components {
                 case input
                 case output
                 case slippage_bps
+                case fees
                 case operation
                 case tracking
                 case preview
                 case account_uninitialized
                 case estimated_duration_seconds
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DepositQuoteFee`.
+        public struct DepositQuoteFee: Codable, Hashable, Sendable {
+            /// `destination_gas` is the Ethereum gas of delivering the USDC and calling Lighter's gateway -- it does not grow with the amount, so it is most of a small deposit's cost; `provider` is the aggregator's own fee. Deliberately not an enum: show an unknown type under a generic label.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteFee/type`.
+            public var _type: Swift.String
+            /// The fee in US dollars, a decimal string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DepositQuoteFee/amount_usd`.
+            public var amount_usd: Swift.String
+            /// Creates a new `DepositQuoteFee`.
+            ///
+            /// - Parameters:
+            ///   - _type: `destination_gas` is the Ethereum gas of delivering the USDC and calling Lighter's gateway -- it does not grow with the amount, so it is most of a small deposit's cost; `provider` is the aggregator's own fee. Deliberately not an enum: show an unknown type under a generic label.
+            ///   - amount_usd: The fee in US dollars, a decimal string.
+            public init(
+                _type: Swift.String,
+                amount_usd: Swift.String
+            ) {
+                self._type = _type
+                self.amount_usd = amount_usd
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+                case amount_usd
             }
         }
         /// What leaves, echoed from the request. Named like the output beside it -- the two sides of a quote describe the same three things, so they carry the same three field names.
@@ -3560,7 +3857,7 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/amount`.
             public var amount: Swift.String
-            /// Equal to amount: the deposit is exact.
+            /// Equal to amount: the least that is credited.
             ///
             /// - Remark: Generated from `#/components/schemas/DepositQuoteOutput/min_amount`.
             public var min_amount: Swift.String
@@ -3573,7 +3870,7 @@ extension Components {
             /// - Parameters:
             ///   - asset_id: What arrives, always USDC on Ethereum.
             ///   - amount: What is deposited, in USDC's smallest unit (6 decimals).
-            ///   - min_amount: Equal to amount: the deposit is exact.
+            ///   - min_amount: Equal to amount: the least that is credited.
             ///   - address: The Ethereum address whose Lighter account is credited. The request's destination_address, echoed.
             public init(
                 asset_id: Swift.String,
@@ -4135,6 +4432,146 @@ extension Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case data
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecordClientMetricsRequest`.
+        public struct RecordClientMetricsRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecordClientMetricsRequest/metrics`.
+            public var metrics: [Components.Schemas.ClientMetric]
+            /// Creates a new `RecordClientMetricsRequest`.
+            ///
+            /// - Parameters:
+            ///   - metrics:
+            public init(metrics: [Components.Schemas.ClientMetric]) {
+                self.metrics = metrics
+            }
+            public enum CodingKeys: String, CodingKey {
+                case metrics
+            }
+        }
+        /// One measurement. `type` says what was measured and which fields it has.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClientMetric`.
+        @frozen public enum ClientMetric: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ClientMetric/ClientMetricPositionClose`.
+            case position_close(Components.Schemas.ClientMetricPositionClose)
+            /// - Remark: Generated from `#/components/schemas/ClientMetric/ClientMetricPositionOpen`.
+            case position_open(Components.Schemas.ClientMetricPositionOpen)
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                let discriminator = try container.decode(
+                    Swift.String.self,
+                    forKey: ._type
+                )
+                switch discriminator {
+                case "position_close":
+                    self = .position_close(try .init(from: decoder))
+                case "position_open":
+                    self = .position_open(try .init(from: decoder))
+                default:
+                    throw Swift.DecodingError.unknownOneOfDiscriminator(
+                        discriminatorKey: CodingKeys._type,
+                        discriminatorValue: discriminator,
+                        codingPath: decoder.codingPath
+                    )
+                }
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .position_close(value):
+                    try value.encode(to: encoder)
+                case let .position_open(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// How long the user waited for a position to open.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClientMetricPositionOpen`.
+        public struct ClientMetricPositionOpen: Codable, Hashable, Sendable {
+            /// Unique per wallet, set by the client; a UUID is enough. Letters, digits, `_` and `-` only. An entry with an id the wallet already sent is skipped.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionOpen/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionOpen/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case position_open = "position_open"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionOpen/type`.
+            public var _type: Components.Schemas.ClientMetricPositionOpen._typePayload
+            /// From the press of the button to the result on screen, by the client's own timer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionOpen/duration_ms`.
+            public var duration_ms: Swift.Int64
+            /// Creates a new `ClientMetricPositionOpen`.
+            ///
+            /// - Parameters:
+            ///   - id: Unique per wallet, set by the client; a UUID is enough. Letters, digits, `_` and `-` only. An entry with an id the wallet already sent is skipped.
+            ///   - _type:
+            ///   - duration_ms: From the press of the button to the result on screen, by the client's own timer.
+            public init(
+                id: Swift.String,
+                _type: Components.Schemas.ClientMetricPositionOpen._typePayload,
+                duration_ms: Swift.Int64
+            ) {
+                self.id = id
+                self._type = _type
+                self.duration_ms = duration_ms
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case _type = "type"
+                case duration_ms
+            }
+        }
+        /// How long the user waited for a position to close.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClientMetricPositionClose`.
+        public struct ClientMetricPositionClose: Codable, Hashable, Sendable {
+            /// Unique per wallet, set by the client; a UUID is enough. Letters, digits, `_` and `-` only. An entry with an id the wallet already sent is skipped.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionClose/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionClose/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case position_close = "position_close"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionClose/type`.
+            public var _type: Components.Schemas.ClientMetricPositionClose._typePayload
+            /// From the press of the button to the result on screen, by the client's own timer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ClientMetricPositionClose/duration_ms`.
+            public var duration_ms: Swift.Int64
+            /// Creates a new `ClientMetricPositionClose`.
+            ///
+            /// - Parameters:
+            ///   - id: Unique per wallet, set by the client; a UUID is enough. Letters, digits, `_` and `-` only. An entry with an id the wallet already sent is skipped.
+            ///   - _type:
+            ///   - duration_ms: From the press of the button to the result on screen, by the client's own timer.
+            public init(
+                id: Swift.String,
+                _type: Components.Schemas.ClientMetricPositionClose._typePayload,
+                duration_ms: Swift.Int64
+            ) {
+                self.id = id
+                self._type = _type
+                self.duration_ms = duration_ms
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case _type = "type"
+                case duration_ms
             }
         }
         /// The network fee the wallet should expect for this payload, with `type` saying how it is priced, `asset_id` what pays it, and `data` the numbers that pricing has. Absent when the quote knows no fee -- a direct quote, or a chain whose fee the wallet estimates itself.

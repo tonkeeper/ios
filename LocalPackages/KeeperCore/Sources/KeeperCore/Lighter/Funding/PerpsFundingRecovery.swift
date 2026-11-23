@@ -9,10 +9,12 @@ actor PerpsFundingRecovery {
     private let environment: String
     private let journal: PerpsPendingJournal
     private let api: PerpsAPI
+    private let submitLanes: PerpsSubmitLanes
     private let delivery: (any PerpsDepositDelivery)?
     private(set) var heldDeposits = Set<String>()
     private let registrar: PerpsDepositRegistrar
     private let sleep: @Sendable (UInt64) async throws -> Void
+    private let awaitChange: @Sendable (UInt64) async -> Bool
     private let executionTime: @Sendable (String) async throws -> Int64?
 
     private var state: PerpsFundingState = .unresolved
@@ -26,7 +28,7 @@ actor PerpsFundingRecovery {
     private var drivenOperationWaiters = [CheckedContinuation<Void, Never>]()
     private var refreshRequested = false
     private var task: Task<Void, Never>?
-    private var sleepTask: Task<Void, Error>?
+    private var sleepTask: Task<Bool, Error>?
 
     init(
         walletId: String?,
@@ -34,8 +36,10 @@ actor PerpsFundingRecovery {
         environment: String,
         journal: PerpsPendingJournal,
         api: PerpsAPI,
+        submitLanes: PerpsSubmitLanes,
         delivery: (any PerpsDepositDelivery)? = nil,
         sleep: @escaping @Sendable (UInt64) async throws -> Void = { try await Task.sleep(nanoseconds: $0) },
+        awaitChange: (@Sendable (UInt64) async -> Bool)? = nil,
         executionTime: @escaping @Sendable (String) async throws -> Int64? = PerpsFundingRecovery.lighterExecutionTime
     ) {
         self.walletId = walletId
@@ -43,9 +47,14 @@ actor PerpsFundingRecovery {
         self.environment = environment
         self.journal = journal
         self.api = api
+        self.submitLanes = submitLanes
         self.delivery = delivery
         registrar = PerpsDepositRegistrar(api: api, journal: journal)
         self.sleep = sleep
+        self.awaitChange = awaitChange ?? { delay in
+            try? await sleep(delay)
+            return false
+        }
         self.executionTime = executionTime
     }
 
@@ -116,6 +125,7 @@ actor PerpsFundingRecovery {
     /// A withdrawal waits on the venue and on another chain; asking more often gains nothing.
     static let withdrawPollNanoseconds: UInt64 = 30_000_000_000
     private static let withdrawalPageLimit = 5
+    private static let expiryGraceMillis: Int64 = 60000
 
     static func pollDelayNanoseconds(afterFailures failures: Int) -> UInt64 {
         min(5_000_000_000 << UInt64(min(max(failures, 0), 4)), 30_000_000_000)
@@ -123,7 +133,8 @@ actor PerpsFundingRecovery {
 
     private func startIfNeeded() {
         guard task == nil, !enabledObservers.isEmpty else { return }
-        task = Task { await run() }
+        // A refresh from inside a payment step must not lend its log context to every later pass.
+        task = Task { await PerpsOperationLog.$context.withValue([:]) { await run() } }
     }
 
     private func stopIfUnused() {
@@ -152,14 +163,23 @@ actor PerpsFundingRecovery {
             let delay = result.onlyWithdrawals
                 ? Self.withdrawPollNanoseconds
                 : Self.pollDelayNanoseconds(afterFailures: failures)
-            let sleeper = Task { [sleep] in try await sleep(delay) }
+            let sleeper = Task { [sleep, awaitChange] in
+                guard result.awaitsChange else {
+                    try await sleep(delay)
+                    return false
+                }
+                return await awaitChange(delay)
+            }
             sleepTask = sleeper
-            try? await sleeper.value
+            let changed = (try? await sleeper.value) ?? false
             sleepTask = nil
+            if changed {
+                lastWithdrawPoll.removeAll()
+            }
         }
     }
 
-    private func recoverPass() async -> (shouldPoll: Bool, failed: Bool, onlyWithdrawals: Bool) {
+    private func recoverPass() async -> (shouldPoll: Bool, failed: Bool, onlyWithdrawals: Bool, awaitsChange: Bool) {
         var operations: [PerpsPendingFundingOperation]
         let fundingIntact: Bool
         do {
@@ -172,9 +192,10 @@ actor PerpsFundingRecovery {
             }
             try Task.checkCancellation()
         } catch {
-            guard !Task.isCancelled else { return (false, false, false) }
+            guard !Task.isCancelled else { return (false, false, false, false) }
+            PerpsOperationLog.event("recovery_journal", outcome: "failed", error: error, fields: ["wallet_id": walletId ?? "none"])
             publish(.unavailable(lastKnown: state.operations))
-            return (true, true, false)
+            return (true, true, false, false)
         }
         // Records the journal had to set aside make whatever it still holds a partial list:
         // it is followed, but not presented as the whole of this wallet's funding.
@@ -187,6 +208,7 @@ actor PerpsFundingRecovery {
         }
         var shouldPoll = false
         var pollsDeposits = false
+        var registers = false
         var failed = false
         for index in operations.indices {
             // A released hold or a new operation makes this pass's snapshot stale.
@@ -210,12 +232,14 @@ actor PerpsFundingRecovery {
                     guard let delivery, let deposit = operation.deposit, let transmission = deposit.transmission,
                           let chain = PerpsDepositService.fundingChain(assetId: deposit.sourceAsset.assetId)
                     else { continue }
-                    if transmission.expiresAt <= Date() {
+                    // A relayed payment has nothing to broadcast, so it need not wait for its quote to lapse.
+                    let relayed = deposit.relayAttempted == true
+                    if relayed || transmission.expiresAt <= Date() {
                         let mainId = try transmission.operation.parsed().payloads.last?.id
                         let main = transmission.steps.last { $0.payloadId == mainId }
                         let expired = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: operation.revision) { stored in
                             guard var deposit = stored.deposit else { return }
-                            deposit.stage = main?.broadcastAttempted == true ? (deposit.registration == nil ? .needsAuthorization : .registrationPending) : .failed
+                            deposit.stage = relayed || main?.broadcastAttempted == true ? (deposit.registration == nil ? .needsAuthorization : .registrationPending) : .failed
                             stored.details = .deposit(deposit)
                         }
                         // A main payload that may be on chain still owes the backend its registration.
@@ -260,7 +284,8 @@ actor PerpsFundingRecovery {
                         updated = try await registrar.register(operation: operation)
                     }
                 case .registeredPending:
-                    updated = try await registrar.refresh(operation: operation)
+                    let named = try await registrar.nameSourceTransaction(operation: operation)
+                    updated = named == operation ? try await registrar.refresh(operation: operation) : named
                 default:
                     continue
                 }
@@ -270,12 +295,11 @@ actor PerpsFundingRecovery {
                 if updated.deposit?.stage == .registeredPending || updated.deposit?.stage == .registrationPending {
                     shouldPoll = true
                     pollsDeposits = true
+                    registers = registers || updated.deposit?.stage == .registrationPending
                 }
             } catch {
                 guard !Task.isCancelled else { break }
-                if let withdraw = operation.withdraw {
-                    Log.perps.w("Withdraw recovery failed op=\(operation.operationId) stage=\(withdraw.stage.rawValue)", error: error)
-                }
+                PerpsOperationLog.event("recovery", outcome: "failed", error: error, fields: operation.operationLogFields.merging(["retry": String(Self.canRetry(error))]) { _, new in new })
                 if Self.canRetry(error) {
                     shouldPoll = true
                     failed = true
@@ -286,7 +310,7 @@ actor PerpsFundingRecovery {
                 }
             }
         }
-        return (shouldPoll, failed, !pollsDeposits && !failed)
+        return (shouldPoll, failed, !pollsDeposits && !failed, !failed && !registers)
     }
 
     private func finishDriving() {
@@ -299,57 +323,82 @@ actor PerpsFundingRecovery {
     private func refreshWithdraw(
         _ operation: PerpsPendingFundingOperation
     ) async throws -> (operation: PerpsPendingFundingOperation, shouldPoll: Bool) {
-        guard let withdraw = operation.withdraw, !withdraw.stage.isOutcome else { return (operation, false) }
-        if heldWithdrawals.contains(operation.operationId) { return (operation, true) }
-        let now = Date()
-        if let last = lastWithdrawPoll[operation.operationId], now.timeIntervalSince(last) < 30 {
-            return (operation, true)
-        }
-        lastWithdrawPoll[operation.operationId] = now
-        let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
-        let age = nowMillis - operation.updatedAtMillis
-        let isPastVerdictWindow = nowMillis - operation.createdAtMillis >= Self.verdictWindowMillis
-        switch withdraw.stage {
-        case .signed, .sending, .unknown:
-            if withdraw.stage != .unknown, age < 30000 { return (operation, true) }
-            if let executionId = withdraw.executionId {
-                if withdraw.stage != .signed, let status = try await relayVerdict(of: operation, executionId: executionId) {
-                    return try await applyWithdrawStatus(status, to: operation)
-                }
-            } else if let item = try await directWithdrawal(of: operation, withdraw: withdraw) {
-                return try await applyDirectWithdrawal(item, to: operation)
+        return try await PerpsOperationLog.step("withdraw_status", source: "backend", fields: operation.operationLogFields, quiet: true) {
+            guard let withdraw = operation.withdraw, !withdraw.stage.isOutcome else { return (operation, false) }
+            if heldWithdrawals.contains(operation.operationId) { return (operation, true) }
+            let now = Date()
+            if let last = lastWithdrawPoll[operation.operationId], now.timeIntervalSince(last) < 30 {
+                return (operation, true)
             }
-            if age >= 30000, let step = withdraw.steps.last,
-               step.transactionExpiryUnixMs > nowMillis,
-               withdraw.quoteExpiresAtMillis.map({ $0 > nowMillis }) ?? true
-            {
-                let nextNonce = try? await api.nextNonce(walletId: operation.walletId, apiKeyIndex: Int(withdraw.apiKeyIndex))
-                guard let nextNonce, withdraw.noncePassed(accountIndex: nextNonce.account_index, nextNonce: nextNonce.nonce) else {
-                    return try await replayWithdraw(operation, step: step)
-                }
-                Log.perps.i("Withdraw nonce spent, not replaying op=\(operation.operationId) stepNonce=\(step.nonce) nextNonce=\(nextNonce.nonce)")
-            }
-            guard isPastVerdictWindow else { return (operation, true) }
-            return try await markUnconfirmed(operation, reason: "l2_unverified")
-        case .accepted:
-            if let executionId = withdraw.executionId,
-               let status = try await relayVerdict(of: operation, executionId: executionId)
-            {
-                return try await applyWithdrawStatus(status, to: operation)
-            }
-            guard isPastVerdictWindow else { return (operation, true) }
-            return try await markUnconfirmed(operation, reason: "l1_unverified")
-        case .awaitingL1:
-            guard withdraw.executionId == nil else { return (operation, false) }
-            if let item = try await directWithdrawal(of: operation, withdraw: withdraw) {
-                if Self.verdict(of: item) != nil || withdraw.withdrawalId == nil {
+            lastWithdrawPoll[operation.operationId] = now
+            let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
+            let age = nowMillis - operation.updatedAtMillis
+            let isPastVerdictWindow = nowMillis - operation.createdAtMillis >= Self.verdictWindowMillis
+            switch withdraw.stage {
+            case .signed, .sending, .unknown:
+                if withdraw.stage != .unknown, age < 30000 { return (operation, true) }
+                if let executionId = withdraw.executionId {
+                    if withdraw.stage != .signed, let status = try await relayVerdict(of: operation, executionId: executionId) {
+                        return try await applyWithdrawStatus(status, to: operation)
+                    }
+                } else if let item = try await directWithdrawal(of: operation, withdraw: withdraw) {
                     return try await applyDirectWithdrawal(item, to: operation)
                 }
+                // The user was told a withdrawal refused for its nonce was not sent, so it never goes out again.
+                if age >= 30000, withdraw.failureReason != PerpsWithdrawService.resignRequiredReason, let step = withdraw.steps.last,
+                   step.transactionExpiryUnixMs > PerpsServerClock.shared.signingNowUnixMs(deviceNowUnixMs: nowMillis),
+                   withdraw.quoteExpiresAtMillis.map({ $0 > nowMillis }) ?? true
+                {
+                    let lane = await submitLanes.lane(for: PerpsAccountSession(accountIndex: withdraw.accountIndex, apiKeyIndex: withdraw.apiKeyIndex))
+                    let replayed = try await lane.run { () async throws -> (operation: PerpsPendingFundingOperation, shouldPoll: Bool)? in
+                        let nextNonce: Components.Schemas.NextNonce?
+                        do {
+                            nextNonce = try await api.nextNonce(walletId: operation.walletId, apiKeyIndex: Int(withdraw.apiKeyIndex))
+                        } catch {
+                            PerpsOperationLog.event("nonce", outcome: "unavailable", source: "backend", error: error, fields: operation.operationLogFields)
+                            nextNonce = nil
+                        }
+                        guard let nextNonce, withdraw.noncePassed(accountIndex: nextNonce.account_index, nextNonce: nextNonce.nonce) else {
+                            return try await replayWithdraw(operation, step: step, lane: lane)
+                        }
+                        PerpsOperationLog.event("replay", outcome: "nonce_consumed", source: "lighter", fields: operation.operationLogFields.merging(["step_nonce": String(step.nonce), "next_nonce": String(nextNonce.nonce)]) { _, new in new })
+                        return nil
+                    }
+                    if let replayed { return replayed }
+                }
+                if withdraw.failureReason == PerpsWithdrawService.resignRequiredReason,
+                   let step = withdraw.steps.last,
+                   let trustedServerNowMillis = PerpsServerClock.shared.trustedServerNowUnixMs(deviceNowUnixMs: nowMillis),
+                   trustedServerNowMillis > step.transactionExpiryUnixMs + Self.expiryGraceMillis,
+                   let nextNonce = try? await api.nextNonce(walletId: operation.walletId, apiKeyIndex: Int(withdraw.apiKeyIndex)),
+                   nextNonce.account_index == withdraw.accountIndex,
+                   !withdraw.noncePassed(accountIndex: nextNonce.account_index, nextNonce: nextNonce.nonce)
+                {
+                    PerpsOperationLog.event("replay", outcome: "expired", source: "backend", fields: operation.operationLogFields.merging(["step_nonce": String(step.nonce), "next_nonce": String(nextNonce.nonce)]) { _, new in new })
+                    return try await markRejected(operation, reason: "expired")
+                }
+                guard isPastVerdictWindow else { return (operation, true) }
+                return try await markUnconfirmed(operation, reason: "l2_unverified")
+            case .accepted:
+                if let executionId = withdraw.executionId,
+                   let status = try await relayVerdict(of: operation, executionId: executionId)
+                {
+                    return try await applyWithdrawStatus(status, to: operation)
+                }
+                guard isPastVerdictWindow else { return (operation, true) }
+                return try await markUnconfirmed(operation, reason: "l1_unverified")
+            case .awaitingL1:
+                guard withdraw.executionId == nil else { return (operation, false) }
+                if let item = try await directWithdrawal(of: operation, withdraw: withdraw) {
+                    if Self.verdict(of: item) != nil || withdraw.withdrawalId == nil {
+                        return try await applyDirectWithdrawal(item, to: operation)
+                    }
+                }
+                guard isPastVerdictWindow else { return (operation, true) }
+                return try await markUnconfirmed(operation, reason: "l1_unverified")
+            case .reviewed, .settled, .unconfirmed, .rejected:
+                return (operation, false)
             }
-            guard isPastVerdictWindow else { return (operation, true) }
-            return try await markUnconfirmed(operation, reason: "l1_unverified")
-        case .reviewed, .settled, .unconfirmed, .rejected:
-            return (operation, false)
         }
     }
 
@@ -394,7 +443,8 @@ actor PerpsFundingRecovery {
 
     private func replayWithdraw(
         _ operation: PerpsPendingFundingOperation,
-        step: PerpsPendingSignedStep
+        step: PerpsPendingSignedStep,
+        lane: PerpsSubmitLane
     ) async throws -> (operation: PerpsPendingFundingOperation, shouldPoll: Bool) {
         let sending = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: operation.revision) { current in
             guard var value = current.withdraw else { return }
@@ -403,23 +453,17 @@ actor PerpsFundingRecovery {
             current.details = .withdraw(value)
         }
         do {
-            let response = try await api.sendTransactions(
-                walletId: operation.walletId,
-                transactions: [.init(tx_type: step.txType, tx_info: step.txInfo)]
-            )
-            guard response.transactions.count == 1,
-                  response.transactions[0].tx_type == step.txType,
-                  !PerpsExecutionRelay.normalizedHash(step.txHash).isEmpty,
-                  PerpsExecutionRelay.normalizedHash(response.transactions[0].tx_hash) == PerpsExecutionRelay.normalizedHash(step.txHash)
-            else { throw PerpsWithdrawServiceError.sendUnknown }
+            try await lane.send(walletId: operation.walletId, txType: step.txType, txInfo: step.txInfo, txHash: step.txHash, nonce: step.nonce, operationId: operation.operationId)
             let accepted = try await journal.updateFunding(operationId: sending.operationId, expectedRevision: sending.revision) { current in
                 guard var value = current.withdraw else { return }
                 value.stage = value.executionId == nil ? .awaitingL1 : .accepted
                 value.steps[value.steps.count - 1] = step.withState(.accepted)
+                value.failureReason = nil
                 current.details = .withdraw(value)
             }
             return (accepted, true)
         } catch {
+            PerpsOperationLog.event("replay", outcome: "unknown", source: "lighter", error: error, fields: operation.operationLogFields)
             let unknown = try await journal.updateFunding(operationId: sending.operationId, expectedRevision: sending.revision) { current in
                 guard var value = current.withdraw else { return }
                 value.stage = .unknown
@@ -462,7 +506,7 @@ actor PerpsFundingRecovery {
                     executedAt = try await executionTime(hash)
                 } catch {
                     try Task.checkCancellation()
-                    Log.perps.w("Withdraw L2 execution time unavailable op=\(operation.operationId)", error: error)
+                    PerpsOperationLog.event("execution_lookup", outcome: "unavailable", source: "lighter", error: error, fields: operation.operationLogFields)
                 }
                 try Task.checkCancellation()
                 withdrawalExecutionTimes[hash] = executedAt
@@ -555,7 +599,21 @@ actor PerpsFundingRecovery {
     ) async throws -> (operation: PerpsPendingFundingOperation, shouldPoll: Bool) {
         let updated = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: operation.revision) { current in
             guard var value = current.withdraw else { return }
+            // A refusal keeps its reason, so it still reads as not sent.
+            if !value.isRefusedForNonce { value.failureReason = reason }
             value.stage = .unconfirmed
+            current.details = .withdraw(value)
+        }
+        return (updated, false)
+    }
+
+    private func markRejected(
+        _ operation: PerpsPendingFundingOperation,
+        reason: String
+    ) async throws -> (operation: PerpsPendingFundingOperation, shouldPoll: Bool) {
+        let updated = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: operation.revision) { current in
+            guard var value = current.withdraw else { return }
+            value.stage = .rejected
             value.failureReason = reason
             current.details = .withdraw(value)
         }

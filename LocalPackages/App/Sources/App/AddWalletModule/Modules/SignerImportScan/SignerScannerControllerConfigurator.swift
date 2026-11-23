@@ -8,7 +8,7 @@ struct SignerScannerControllerConfigurator: ScannerControllerConfigurator {
     }
 
     private let deeplinkParser: DeeplinkParser
-    private let urDecoder = URDecoder()
+    private let urDecoder = ScannerURDecoder()
 
     init(deeplinkParser: DeeplinkParser) {
         self.deeplinkParser = deeplinkParser
@@ -26,11 +26,10 @@ struct SignerScannerControllerConfigurator: ScannerControllerConfigurator {
     }
 
     func handleQRCodeUR(_ qrCode: String) throws -> UR {
-        urDecoder.receivePart(qrCode)
+        try urDecoder.decode(qrCode)
+    }
 
-        guard let result = urDecoder.result else {
-            throw URError.noResult
-        }
-        return try result.get()
+    func resetURDecoding() {
+        urDecoder.reset()
     }
 }

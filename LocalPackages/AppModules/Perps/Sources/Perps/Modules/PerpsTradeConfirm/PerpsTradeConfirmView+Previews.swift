@@ -26,7 +26,7 @@ private final class PerpsTradeConfirmPreviewViewModel: PerpsTradeConfirmViewMode
 private let previewRows = [
     PerpsTradeConfirmRow(id: .youPay, title: "You pay", value: "$20.00", subValue: nil),
     PerpsTradeConfirmRow(id: .entry, title: "Entry price", value: "$66,021.17", subValue: nil),
-    PerpsTradeConfirmRow(id: .leverage, title: "Leverage", value: "27x", subValue: nil),
+    PerpsTradeConfirmRow(id: .leverage, title: "Leverage", value: "27⨯", subValue: nil),
     PerpsTradeConfirmRow(
         id: .liquidation,
         title: "Liquidation price",
@@ -35,7 +35,7 @@ private let previewRows = [
         tone: .negative
     ),
     PerpsTradeConfirmRow(id: .size, title: "Size", value: "$540.00", subValue: "0.008 BTC"),
-    PerpsTradeConfirmRow(id: .fee, title: "Fee", value: "$0.14", subValue: "≈ 0.14 USD", tone: .tertiary),
+    PerpsTradeConfirmRow(id: .fee, title: "Fee", value: "0.095%", subValue: nil),
     PerpsTradeConfirmRow(
         id: .autoClose,
         title: "Auto close",

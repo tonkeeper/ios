@@ -60,11 +60,31 @@ final class PerpsMarketsLivePricesTests: XCTestCase {
         await client.emit([("AAA/USD", "1"), ("BBB/USD", "2")])
         await fulfillment(of: [updated], timeout: 2)
 
-        let retained = expectationForPriceUpdate(store) { state in
-            state.price(marketId: 2) == 2 && state.price(marketId: 1) == 1
+        subscription.set(marketIds: [1])
+        await waitForTickers(client, toEqual: ["AAA/USD"])
+        let retainedPrice = await store.price(marketId: 2)
+        XCTAssertEqual(retainedPrice, 2)
+    }
+
+    func test_interestChangeWithoutNewPrices_publishesNothing() async {
+        let client = ClientFake()
+        let store = makeStore(client: client)
+        let subscription = store.makePriceInterest()
+        let loaded = expectationForPriceUpdate(store) {
+            if case .loaded = $0 { return true }
+            return false
         }
         subscription.set(marketIds: [1])
-        await fulfillment(of: [retained], timeout: 2)
+        await waitForTickers(client, toEqual: ["AAA/USD"])
+        await fulfillment(of: [loaded], timeout: 2)
+
+        let republished = expectationForPriceUpdate(store) { _ in true }
+        republished.isInverted = true
+        subscription.set(marketIds: [1, 2])
+        await waitForTickers(client, toEqual: ["AAA/USD", "BBB/USD"])
+        subscription.set(marketIds: [2])
+        await waitForTickers(client, toEqual: ["BBB/USD"])
+        await fulfillment(of: [republished], timeout: 0.3)
     }
 
     func test_lastSubscriptionCleared_cancelsWatch_andRetainsLastPrice() async {
@@ -78,9 +98,12 @@ final class PerpsMarketsLivePricesTests: XCTestCase {
         await client.emit([("AAA/USD", "1")])
         await fulfillment(of: [updated], timeout: 2)
 
-        let retained = expectationForPriceUpdate(store) { $0.price(marketId: 1) == 1 }
+        let cancelled = expectation(description: "watch cancelled")
+        client.onCancel = { cancelled.fulfill() }
         subscription.clear()
-        await fulfillment(of: [retained], timeout: 2)
+        await fulfillment(of: [cancelled], timeout: 2)
+        let retainedPrice = await store.price(marketId: 1)
+        XCTAssertEqual(retainedPrice, 1)
         XCTAssertEqual(client.cancelCount, 1)
     }
 
@@ -229,6 +252,7 @@ private final class ClientFake: HermesMarkPricesStreaming, @unchecked Sendable {
     private(set) var cancelCount = 0
     private var _watchCount = 0
     var onSetTickers: (([String]) -> Void)?
+    var onCancel: (() -> Void)?
 
     var latestTickers: [String]? {
         lock.withLock { tickersLog.last }
@@ -263,7 +287,11 @@ private final class ClientFake: HermesMarkPricesStreaming, @unchecked Sendable {
             },
             onCancel: { [weak self] in
                 guard let self else { return }
-                self.lock.withLock { self.cancelCount += 1 }
+                let callback = self.lock.withLock { () -> (() -> Void)? in
+                    self.cancelCount += 1
+                    return self.onCancel
+                }
+                callback?()
             }
         )
     }

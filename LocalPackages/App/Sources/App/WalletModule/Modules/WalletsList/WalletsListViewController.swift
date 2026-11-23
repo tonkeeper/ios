@@ -141,7 +141,15 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
         }
 
         let listButtonFooterRegistration = TKListCollectionViewButtonFooterViewRegistration.registration()
+        let titleHeaderRegistration = UICollectionView.SupplementaryRegistration<TKReusableContainerView>(
+            elementKind: .titleHeaderElementKind
+        ) { [weak self] supplementaryView, _, _ in
+            supplementaryView.setContentView(self?.titleDescriptionView)
+        }
         dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
+            if elementKind == .titleHeaderElementKind {
+                return collectionView.dequeueConfiguredReusableSupplementary(using: titleHeaderRegistration, for: indexPath)
+            }
             guard let snapshot = self?.dataSource.snapshot() else { return nil }
             let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
             switch elementKind {
@@ -172,9 +180,25 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
         return dataSource
     }()
 
+    private lazy var titleDescriptionView: TKTitleDescriptionView? = viewModel.contentTitle.map { model in
+        let view = TKTitleDescriptionView(size: .medium)
+        view.padding = Layout.titleDescriptionPadding
+        view.configure(model: model)
+        return view
+    }
+
     private var layout: UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.scrollDirection = .vertical
+        if titleDescriptionView != nil {
+            configuration.boundarySupplementaryItems = [
+                NSCollectionLayoutBoundarySupplementaryItem(
+                    layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(80)),
+                    elementKind: .titleHeaderElementKind,
+                    alignment: .top
+                ),
+            ]
+        }
 
         return UICollectionViewCompositionalLayout(
             sectionProvider: { [weak dataSource] sectionIndex, _ in
@@ -368,5 +392,10 @@ extension WalletsListViewController: UICollectionViewDelegate {
 private extension WalletsListViewController {
     enum Layout {
         static let raffleBannerHeight: CGFloat = 90
+        static let titleDescriptionPadding = NSDirectionalEdgeInsets(top: 0, leading: 40, bottom: 16, trailing: 40)
     }
+}
+
+private extension String {
+    static let titleHeaderElementKind = "WalletsListTitleHeader"
 }

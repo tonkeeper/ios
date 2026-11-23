@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import OperationReviewModels
 import TKCore
 import TKLocalize
 import TKLogging
@@ -8,16 +9,22 @@ import UIKit
 @MainActor
 final class MultichainSwapConfirmationViewModel: ObservableObject {
     @Published private(set) var display: MultichainSwapConfirmationDisplay
-    @Published private(set) var executionState: MultichainSwapConfirmationExecutionState = .idle
-    @Published private(set) var isUnlimitedApprovalEnabled = false
-    @Published private(set) var selectedSlippageBps: Int
-    @Published private(set) var sliderResetToken: Int = 0
-    @Published private(set) var circularProgressRestartToken: Int = 0
-    /// Why the last quote refresh failed. Until a new quote arrives the swipe gives way to it and a
-    /// retry, and the quote stops refreshing on its own.
-    @Published private(set) var quoteFailureMessage: String?
+    @Published private(set) var executionState: MultichainSwapConfirmationExecutionState = .idle {
+        didSet { updateSwapInFlight() }
+    }
 
-    let confirmationRefreshDuration: TimeInterval = 45
+    @Published private(set) var selectedSlippageBps: Int {
+        didSet { onSlippageChange(selectedSlippageBps) }
+    }
+
+    /// The swap screen's quote: the countdown both show while it is ready, and why it failed otherwise.
+    /// A failure takes the confirm button's place until a new quote arrives.
+    @Published private(set) var quoteStatus: MultichainSwapConfirmationQuoteStatus
+
+    @Published private var pendingSwap: PendingSwap? {
+        didSet { updateSwapInFlight() }
+    }
+
     private(set) var slippageOptions: [Int]
 
     var onRequestSlippageSelection: ((UIView) -> Void)?
@@ -27,51 +34,88 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
     private let amountFormatter: AmountFormatter
     private let priceImpactResolver: MultichainSwapConfirmationPriceImpactResolver
     private let displayMaker: MultichainSwapConfirmationDisplayMaker
-    private let refreshModel: MultichainSwapConfirmationRefreshModel
+    let refreshModel: MultichainSwapConfirmationRefreshModel
     private let executor: MultichainSwapConfirmationExecutor
     private let logInfoMaker: MultichainSwapConfirmationLogInfoMaker
-    private let onBack: () -> Void
-    private let onClose: () -> Void
-    private let onSwipeConfirm: () -> Void
-    private let onExecutionCompleted: (MultichainSwapConfirmationInput, MultichainSwapFeeMethod) -> Void
-    private let onExecutionFailed: (String) -> Void
+    private let swapAnalytics: MultichainSwapAnalytics?
+    private let onConfirm: () -> Void
+    private let onPriceChanged: (_ message: String) -> Void
+    private let onConfirmUnavailable: () -> Void
+    private let onSwapInFlightChange: (Bool) -> Void
+    private let onRefreshQuote: () -> Void
+    private let onQuoteRecovered: (MultichainSwapConfirmationQuoteState) -> Void
+    private let onSlippageChange: (Int) -> Void
+    private let onFeeMethodChange: (MultichainSwapFeeMethod?) -> Void
+    private let onExecutionCompleted: (MultichainSwapConfirmationInput, MultichainSwapFeeMethod, MultichainSwapExecutionResult) -> Void
+    private let onExecutionFailed: (_ message: String, _ canRetry: Bool) -> Void
+    private let onExecutionCanceled: () -> Void
     private let onPreparationFailed: (String) -> Void
     private let onInsufficientNativeFee: (MultichainNativeFeeShortage) -> Void
-    private let onFeeCalculationStarted: (MultichainSwapConfirmationRefreshReason) -> Void
     private let onOpenFeePicker: (NetworkFeePickerPresentation) -> Void
     private let onRefillBattery: (@escaping () -> Void) -> Void
     private let onBatteryFeeShortage: (MultichainNativeFeeShortage) -> Void
     private let onDepositNativeFee: (MultichainAssetDetails) -> Void
-    private var pickedFeeMethod: MultichainSwapFeeMethod?
-    /// What the in-flight send is paying with, held until its outcome is known: a failure has to
-    /// judge a retry against the method that was actually sent, not the one on screen by then.
-    private var sentFeeMethod: MultichainSwapFeeMethod?
+    private var pickedFeeMethod: MultichainSwapFeeMethod? {
+        didSet { onFeeMethodChange(pickedFeeMethod) }
+    }
+
     /// What the last plan that priced this swap would have paid with, or `nil` if none of its methods
     /// could pay. Outlives the plan so a failed refresh cannot flash a shortage the relayer covers.
     private var lastCoveringFeeMethod: MultichainSwapFeeMethod?
-    private var isRetryUnsafe = false
+    /// A relayed send whose outcome is unknown: this confirmation sends nothing more.
+    private(set) var isRetryUnsafe = false
     private var executionPlan: MultichainSwapExecutionPlan?
     private var nativeFeeShortageForFeeDisplay: MultichainNativeFeeShortage?
-    private var slippageRollbackState: SlippageRollbackState?
-    private var confirmedSwap: ConfirmedSwap?
+
+    /// The route the user agreed to swap at, as it was priced then.
+    private var priceImpactAcceptedRoute: MultichainSwapRoute?
+    /// The swap screen counted the tap that started the swap as swap_click. A swap it could not send straight to
+    /// the passcode goes on in the pricing details, and their first Swap tap continues it without counting another.
+    private var isSwapClickCounted = false
+
+    /// Why this confirmation asked the swap screen for a new quote, until that quote arrives.
+    private var requestedRefreshReason: MultichainSwapConfirmationRefreshReason?
+    /// A swap the user started is on its way: waiting for its plan, behind the price impact warning, or
+    /// being sent. The swap screen holds its quote meanwhile, so a refresh cannot race the send.
+    private var isSwapInFlight = false {
+        didSet {
+            if isSwapInFlight != oldValue {
+                onSwapInFlightChange(isSwapInFlight)
+            }
+        }
+    }
 
     init(
         swapWallet: MultichainSwapWallet,
         confirmationInput: MultichainSwapConfirmationInput,
+        quoteRefreshCycle: MultichainSwapQuoteRefreshCycle,
         amountFormatter: AmountFormatter,
         executionService: MultichainSwapExecutionService,
+        planProvider: MultichainSwapPlanProvider? = nil,
         multichainSwapService: MultichainSwapService,
         isSwapKitEnabled: Bool = false,
         slippageService: (any MultichainSwapSlippageService)? = nil,
         routeRecovery: MultichainSwapRouteRecovery = .default,
-        onBack: @escaping () -> Void = {},
-        onClose: @escaping () -> Void = {},
-        onSwipeConfirm: @escaping () -> Void = {},
-        onExecutionCompleted: @escaping (MultichainSwapConfirmationInput, MultichainSwapFeeMethod) -> Void = { _, _ in },
-        onExecutionFailed: @escaping (String) -> Void = { _ in },
+        displayCurrency: Currency = .USD,
+        walletAsset: @escaping (_ assetId: String) -> MultichainAsset? = { _ in nil },
+        swapAnalytics: MultichainSwapAnalytics? = nil,
+        onConfirm: @escaping () -> Void = {},
+        onPriceChanged: @escaping (_ message: String) -> Void = { _ in },
+        onConfirmUnavailable: @escaping () -> Void = {},
+        onSwapInFlightChange: @escaping (Bool) -> Void = { _ in },
+        onRefreshQuote: @escaping () -> Void = {},
+        onQuoteRecovered: @escaping (MultichainSwapConfirmationQuoteState) -> Void = { _ in },
+        onSlippageChange: @escaping (Int) -> Void = { _ in },
+        onFeeMethodChange: @escaping (MultichainSwapFeeMethod?) -> Void = { _ in },
+        onExecutionCompleted: @escaping (
+            MultichainSwapConfirmationInput,
+            MultichainSwapFeeMethod,
+            MultichainSwapExecutionResult
+        ) -> Void = { _, _, _ in },
+        onExecutionFailed: @escaping (_ message: String, _ canRetry: Bool) -> Void = { _, _ in },
+        onExecutionCanceled: @escaping () -> Void = {},
         onPreparationFailed: @escaping (String) -> Void = { _ in },
         onInsufficientNativeFee: @escaping (MultichainNativeFeeShortage) -> Void = { _ in },
-        onFeeCalculationStarted: @escaping (MultichainSwapConfirmationRefreshReason) -> Void = { _ in },
         onOpenFeePicker: @escaping (NetworkFeePickerPresentation) -> Void = { _ in },
         onRefillBattery: @escaping (@escaping () -> Void) -> Void = { _ in },
         onBatteryFeeShortage: @escaping (MultichainNativeFeeShortage) -> Void = { _ in },
@@ -79,10 +123,13 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
     ) {
         self.swapWallet = swapWallet
         self.input = confirmationInput
+        self.quoteStatus = .ready(quoteRefreshCycle)
         self.amountFormatter = amountFormatter
         let priceImpactResolver = MultichainSwapConfirmationPriceImpactResolver()
         let displayMaker = MultichainSwapConfirmationDisplayMaker(
-            amountFormatter: amountFormatter
+            amountFormatter: amountFormatter,
+            displayCurrency: displayCurrency,
+            walletAsset: walletAsset
         )
         let logInfoMaker = MultichainSwapConfirmationLogInfoMaker(
             priceImpactResolver: priceImpactResolver
@@ -97,7 +144,10 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
                     isSwapKitEnabled: isSwapKitEnabled
                 )
             ),
-            executionService: executionService,
+            planProvider: planProvider ?? MultichainSwapPlanProvider(
+                swapWallet: swapWallet,
+                executionService: executionService
+            ),
             routeRecovery: routeRecovery,
             logInfoMaker: logInfoMaker
         )
@@ -105,6 +155,7 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
             executionService: executionService
         )
         self.logInfoMaker = logInfoMaker
+        self.swapAnalytics = swapAnalytics
         let resolvedSlippageService: any MultichainSwapSlippageService
         if let slippageService {
             resolvedSlippageService = slippageService
@@ -116,31 +167,33 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
             )
         }
         self.slippageOptions = resolvedSlippageService.optionsBps
-        let selectedSlippageBps = resolvedSlippageService.initialSelectedBps(
-            route: confirmationInput.quoteState.route
-        )
+        let selectedSlippageBps = confirmationInput.userInput.slippageBps
         self.selectedSlippageBps = selectedSlippageBps
+        self.pickedFeeMethod = confirmationInput.userInput.feeMethod
         self.display = displayMaker.make(
             input: confirmationInput,
             networkFees: nil,
             selectedSlippageBps: selectedSlippageBps
         )
-        self.onBack = onBack
-        self.onClose = onClose
-        self.onSwipeConfirm = onSwipeConfirm
+        self.onConfirm = onConfirm
+        self.onPriceChanged = onPriceChanged
+        self.onConfirmUnavailable = onConfirmUnavailable
+        self.onSwapInFlightChange = onSwapInFlightChange
+        self.onRefreshQuote = onRefreshQuote
+        self.onQuoteRecovered = onQuoteRecovered
+        self.onSlippageChange = onSlippageChange
+        self.onFeeMethodChange = onFeeMethodChange
         self.onExecutionCompleted = onExecutionCompleted
         self.onExecutionFailed = onExecutionFailed
+        self.onExecutionCanceled = onExecutionCanceled
         self.onPreparationFailed = onPreparationFailed
         self.onInsufficientNativeFee = onInsufficientNativeFee
-        self.onFeeCalculationStarted = onFeeCalculationStarted
         self.onOpenFeePicker = onOpenFeePicker
         self.onRefillBattery = onRefillBattery
         self.onBatteryFeeShortage = onBatteryFeeShortage
         self.onDepositNativeFee = onDepositNativeFee
         refreshModel.onQuoteStateChange = { [weak self] quoteState in
             guard let self else { return }
-            quoteFailureMessage = nil
-            slippageRollbackState = nil
             input = MultichainSwapConfirmationInput(
                 userInput: input.userInput,
                 quoteState: quoteState
@@ -148,10 +201,19 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
             executionPlan = nil
             nativeFeeShortageForFeeDisplay = nil
             updateDisplay()
+            onQuoteRecovered(quoteState)
         }
         refreshModel.onExecutionPlanChange = { [weak self] executionPlan in
             guard let self else { return }
             self.executionPlan = executionPlan
+            // The backend may price a route again when it builds its operation: what is shown, asked
+            // about and reported is what that operation receives.
+            if let route = executionPlan?.preparedRoute, route.routeId == input.quoteState.route.routeId {
+                input = MultichainSwapConfirmationInput(
+                    userInput: input.userInput,
+                    quoteState: MultichainSwapConfirmationQuoteState(quote: input.quoteState.quote, route: route)
+                )
+            }
             if let executionPlan {
                 // Only a plan that genuinely no longer offers the picked method may drop it. A
                 // refresh that produced no plan at all knows nothing about what can pay, and
@@ -169,20 +231,13 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
                     executionState = .idle
                 }
             }
-            if executionPlan?.requiresApproval != true {
-                isUnlimitedApprovalEnabled = false
-            }
             updateDisplay()
-            notifyBatteryFeeShortageIfNeeded()
+            if executionPlan != nil {
+                resolvePendingConfirm()
+            }
         }
         refreshModel.onPreparationFailure = { [weak self] reason, failure in
             self?.applyPreparationFailure(failure, reason: reason)
-        }
-        refreshModel.onQuoteRefreshFailed = { [weak self] reason, message in
-            self?.handleQuoteRefreshFailure(reason: reason, message: message)
-        }
-        refreshModel.onRefreshCycleCompleted = { [weak self] in
-            self?.circularProgressRestartToken += 1
         }
         Log.multichainSwap.i(
             "confirmation view model initialized",
@@ -198,24 +253,64 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         priceImpactSeverity.requiresConfirmation
     }
 
-    var showsUnlimitedApprovalToggle: Bool {
-        executionPlan?.requiresApproval == true
+    /// The user agreed to swap at the price impact of the route now shown, so the swap goes on without
+    /// the warning, such as from the sheet that a plan unable to pay opens after it. A new route asks
+    /// again, and so does the same one priced worse, as the operation prepared for it can be.
+    var isPriceImpactAccepted: Bool {
+        let route = input.quoteState.route
+        guard let accepted = priceImpactAcceptedRoute, accepted.routeId == route.routeId else {
+            return false
+        }
+        return (route.valueDifferenceBps ?? 0) >= (accepted.valueDifferenceBps ?? 0)
     }
 
+    func acceptPriceImpact() {
+        priceImpactAcceptedRoute = input.quoteState.route
+    }
+
+    /// A Swap tap waiting for its plan would otherwise go on to the passcode with the quote the new
+    /// slippage brings, which nobody tapped Swap for.
     var canSelectSlippage: Bool {
-        slippageOptions.count > 1 && executionState.isConfirmEnabled
+        slippageOptions.count > 1 && executionState.isConfirmEnabled && !isConfirmPending
     }
 
-    var canChangeApprovalMode: Bool {
-        showsUnlimitedApprovalToggle && executionState.isConfirmEnabled
+    /// Follows the swap screen's Swap button: on while the quote is ready, also before its plan is
+    /// prepared and when nothing can pay the fee. A tap meanwhile waits for the plan, or opens the way
+    /// to pay the fee.
+    var isSwapEnabled: Bool {
+        guard case .ready = quoteStatus, !isRetryUnsafe else {
+            return false
+        }
+        switch executionState {
+        case .idle, .executionFailed:
+            return true
+        case .executing, .completed, .preparationFailed:
+            return false
+        }
     }
 
+    /// A tap confirms right away: the quote's plan is prepared and can pay.
     var isConfirmEnabled: Bool {
-        executionState.isConfirmEnabled
-            && quoteFailureMessage == nil
-            && executionPlan != nil
-            && !isRetryUnsafe
-            && selectedFeeOption?.isInsufficient != true
+        isSwapEnabled && executionPlan != nil && selectedFeeOption?.isInsufficient != true
+    }
+
+    /// Nothing can pay the fee, so a Swap tap opens the ways to pay it: Swap looks blocked meanwhile.
+    var isFeeUnpaid: Bool {
+        unpaidFee != nil
+    }
+
+    var isConfirmPending: Bool {
+        if case .awaitingPlan = pendingSwap {
+            return true
+        }
+        return false
+    }
+
+    var quoteFailureMessage: String? {
+        guard case let .failed(message) = quoteStatus else {
+            return nil
+        }
+        return message
     }
 
     var currentConfirmationInput: MultichainSwapConfirmationInput {
@@ -235,60 +330,106 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         )
     }
 
-    func openFeeMethodPicker() {
-        let options = executionPlan?.feeOptions ?? []
-        guard display.canPickFeeMethod, !options.isEmpty else {
+    /// The selection stays on a battery that cannot pay only when nothing else can, so a top-up is
+    /// what moves the swap on.
+    var requiresBatteryTopUp: Bool {
+        guard let selectedFeeOption else {
+            return false
+        }
+        return selectedFeeOption.method.isBattery && selectedFeeOption.isInsufficient
+    }
+
+    func topUpBattery() {
+        guard requiresBatteryTopUp, executionState.isConfirmEnabled else {
             return
         }
-        let selectedMethod = selectedFeeOption?.method
-        // A swap prices each method at most once, so the method identifies its row: a position would
-        // resolve against whichever list the picker was built from rather than what was tapped.
-        let items = options.map { option in
-            NetworkFeePickerItem(
-                id: option.method.id,
-                leading: option.extraType.networkFeePickerLeading,
-                text: .titled(
-                    title: option.extraType.networkFeePickerTitle,
-                    subtitle: option.feeValueText(amountFormatter: amountFormatter)
-                ),
-                isDisabled: option.isInsufficient,
-                actionTitle: option.isInsufficient ? TKLocales.FeeMethodPicker.deposit : nil,
-                isSelected: option.method == selectedMethod
-            )
+        refillBattery()
+    }
+
+    /// The fee row opens the picker, or, for the only method and one unable to pay, its refill straight away: a
+    /// picker of one method would only lead there.
+    func tapFeeMethod() {
+        let options = executionPlan?.feeOptions ?? []
+        guard options.count <= 1 else {
+            openFeeMethodPicker(options: options)
+            return
         }
-        onOpenFeePicker(
-            NetworkFeePickerPresentation(
-                configuration: NetworkFeePickerConfiguration(
-                    title: TKLocales.FeeMethodPicker.title,
-                    subtitle: TKLocales.FeeMethodPicker.subtitle
-                ),
-                dataSource: StaticNetworkFeePickerDataSource(items: items),
-                didSelectItem: { [weak self] item, _ in
-                    guard let self,
-                          let method = MultichainSwapFeeMethod(id: item.id),
-                          let option = options.first(where: { $0.method == method })
-                    else {
-                        return
-                    }
-                    selectFeeOption(option)
-                }
-            )
+        guard display.isNetworkFeeShortage, executionState.isConfirmEnabled else {
+            return
+        }
+        if let nativeFeeShortageForFeeDisplay {
+            onDepositNativeFee(nativeFeeShortageForFeeDisplay.asset)
+        } else if let option = options.first {
+            requestFeeRefill(for: option)
+        }
+    }
+
+    func prepareExecutionPlan() {
+        refreshModel.refreshExecutionPlan(
+            input: input,
+            selectedSlippageBps: selectedSlippageBps,
+            reason: .initial
         )
     }
 
-    func viewDidLoad() {
-        onFeeCalculationStarted(.initial)
-        refreshModel.loadInitialExecutionPlan(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps
-        )
+    func updateQuote(_ update: MultichainSwapConfirmationQuoteUpdate) {
+        // The swap screen holds its quote while a swap is sent, and a sent swap keeps the one it used.
+        guard executionState != .executing, executionState != .completed else {
+            return
+        }
+        switch update {
+        case .loading:
+            quoteStatus = .loading
+        case let .ready(input, quoteRefreshCycle):
+            let isShownQuote: Bool = {
+                guard case .ready = quoteStatus else { return false }
+                return input.quoteState.quote.quoteId == self.input.quoteState.quote.quoteId
+                    && input.quoteState.route.routeId == self.input.quoteState.route.routeId
+            }()
+            quoteStatus = .ready(quoteRefreshCycle)
+            // Only the countdown restarts for a quote already shown, such as a route this confirmation
+            // recovered coming back from the swap screen.
+            guard !isShownQuote else {
+                return
+            }
+            self.input = input
+            executionPlan = nil
+            nativeFeeShortageForFeeDisplay = nil
+            updateDisplay()
+            let reason = requestedRefreshReason ?? .timer
+            requestedRefreshReason = nil
+            // The route was just quoted: a stale one here is a failure rather than a reason to ask again.
+            refreshModel.refreshExecutionPlan(
+                input: input,
+                selectedSlippageBps: selectedSlippageBps,
+                reason: reason,
+                recoversStaleRoute: false
+            )
+        case let .failed(failure):
+            requestedRefreshReason = nil
+            refreshModel.cancel()
+            executionPlan = nil
+            quoteStatus = .failed(failure.message)
+            updateDisplay()
+            Log.multichainSwap.w(
+                "confirmation locked after the swap screen's quote failed",
+                extraInfo: confirmationLogInfo()
+            )
+            resolvePendingConfirm()
+        }
+    }
+
+    /// For a swap started from the swap screen: confirms the first plan that arrives, opens the way to
+    /// pay a fee nothing can pay, or hands it to `onConfirmUnavailable` when it cannot be confirmed.
+    func confirmWhenReady() {
+        isSwapClickCounted = true
+        awaitPlan()
     }
 
     func refreshFeeCalculationAfterDeposit() {
         guard executionState != .executing, executionState != .completed else {
             return
         }
-        onFeeCalculationStarted(.feeDeposit)
         refreshModel.refreshExecutionPlan(
             input: input,
             selectedSlippageBps: selectedSlippageBps,
@@ -296,80 +437,56 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         )
     }
 
-    func back() {
-        onBack()
-    }
-
-    func close() {
-        onClose()
-    }
-
-    func confirmSwipe() {
-        guard isConfirmEnabled else {
+    /// The Swap button of the pricing details. A swap that starts here sends its own swap_click; the swap screen
+    /// sends one for a swap it started, also when that swap goes on here.
+    func confirm() {
+        guard !isConfirmPending else {
+            return
+        }
+        guard isSwapEnabled else {
             Log.multichainSwap.i(
-                "confirmation swipe ignored while execution plan is not ready",
+                "confirmation ignored while the quote is not ready",
                 extraInfo: confirmationLogInfo()
             )
-            sliderResetToken += 1
+            return
+        }
+        // The pricing details can stay open past the deadline of the operation `/v3` built, which no quote
+        // refresh follows: such a plan would only fail as expired, so the tap waits for the route prepared again.
+        if let expiresAt = executionPlan?.expiresAt, expiresAt <= Date() {
+            executionPlan = nil
+            updateDisplay()
+        }
+        if let unpaidFee {
+            reportUnpaidFee(unpaidFee)
             return
         }
         guard let executionPlan else {
-            sliderResetToken += 1
+            logSwapClick()
+            awaitPlan()
+            // Waiting holds the swap screen's quote, so no new quote would bring a plan: one that is not on
+            // its way, such as after a preparation that ended without one, is asked for here.
+            if !refreshModel.isPreparing {
+                refreshModel.refreshExecutionPlan(
+                    input: input,
+                    selectedSlippageBps: selectedSlippageBps,
+                    reason: .swapTap
+                )
+            }
             return
         }
-        // A price impact warning stands between the swipe and the send, and the quote keeps
-        // refreshing behind it. Pin what the row showed: the swap is sent with the plan and the fee
-        // method the user agreed to, or not at all.
-        confirmedSwap = ConfirmedSwap(
-            input: input,
-            executionPlan: executionPlan,
-            feeMethod: selectedFeeMethod,
-            isUnlimitedApprovalEnabled: isUnlimitedApprovalEnabled
-        )
-        refreshModel.cancel()
-        Log.multichainSwap.i(
-            "confirmation swipe accepted",
-            extraInfo: confirmationLogInfo(
-                additional: [
-                    "requiresPriceImpactWarning": requiresPriceImpactWarning ? "true" : "false",
-                    "feeMethod": "\(selectedFeeMethod)",
-                ]
-            )
-        )
-        onSwipeConfirm()
-    }
-
-    func notifyCircularProgressCompleted() {
-        guard confirmedSwap == nil, quoteFailureMessage == nil else {
+        guard isConfirmEnabled else {
             return
         }
-        switch executionState {
-        case .executing, .completed:
-            return
-        case .idle, .preparationFailed, .executionFailed:
-            break
-        }
-        onFeeCalculationStarted(.timer)
-        refreshModel.refreshQuote(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: .timer
-        )
+        logSwapClick()
+        pinAndConfirm(executionPlan)
     }
 
     func retryQuote() {
-        guard quoteFailureMessage != nil else {
+        guard case .failed = quoteStatus else {
             return
         }
-        quoteFailureMessage = nil
-        executionPlan = nil
-        updateDisplay()
-        onFeeCalculationStarted(.retry)
-        refreshModel.refreshQuote(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: .retry
-        )
+        quoteStatus = .loading
+        requestFreshQuote(reason: .retry)
     }
 
     func requestSlippageSelection(sourceView: UIView) {
@@ -394,34 +511,14 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         guard selectedSlippageBps != bps else {
             return
         }
-        let rollbackState = slippageRollbackState ?? SlippageRollbackState(
-            input: input,
-            executionPlan: executionPlan,
-            selectedSlippageBps: selectedSlippageBps
-        )
-        if bps == rollbackState.selectedSlippageBps {
-            refreshModel.cancel()
-            slippageRollbackState = nil
-            input = rollbackState.input
-            executionPlan = rollbackState.executionPlan
-            selectedSlippageBps = rollbackState.selectedSlippageBps
-            sliderResetToken += 1
-            updateDisplay()
-            return
-        }
-        slippageRollbackState = rollbackState
+        // Reported through `onSlippageChange`: the swap screen asks for the quote with it.
+        requestedRefreshReason = .slippageChanged
+        refreshModel.cancel()
         selectedSlippageBps = bps
-        quoteFailureMessage = nil
+        quoteStatus = .loading
         executionPlan = nil
         nativeFeeShortageForFeeDisplay = nil
-        sliderResetToken += 1
         updateDisplay()
-        onFeeCalculationStarted(.slippageChanged)
-        refreshModel.refreshQuote(
-            input: input,
-            selectedSlippageBps: bps,
-            reason: .slippageChanged
-        )
     }
 
     func selectFeeOption(_ option: MultichainSwapFeeOption) {
@@ -440,39 +537,13 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         updateDisplay()
     }
 
-    func setUnlimitedApprovalEnabled(_ isEnabled: Bool) {
-        guard canChangeApprovalMode else {
-            Log.multichainSwap.i(
-                "approval mode change ignored while confirmation is locked",
-                extraInfo: confirmationLogInfo()
-            )
-            return
-        }
-        isUnlimitedApprovalEnabled = isEnabled
+    /// Backing out of the confirmation drops the swap that is pinned or still waits for its plan, and with
+    /// it the hold on the swap screen's quote, which refreshes at once if its countdown ran out meanwhile.
+    func cancelConfirm() {
+        pendingSwap = nil
     }
 
-    /// Backing out of the confirmation releases what the swipe pinned. The pin also held the quote,
-    /// so the cycle restarts here rather than a full period later: a freshly reset ring must not sit
-    /// above a route that kept ageing while the warning was open.
-    func resetConfirmSlider() {
-        let wasConfirmed = confirmedSwap != nil
-        confirmedSwap = nil
-        sliderResetToken += 1
-        guard wasConfirmed else {
-            return
-        }
-        circularProgressRestartToken += 1
-        onFeeCalculationStarted(.timer)
-        refreshModel.refreshQuote(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: .timer
-        )
-    }
-
-    func execute(
-        passcodeProvider: @escaping () async -> String?
-    ) {
+    func execute(signer: MultichainTransferSigner, consent: OperationConsent) {
         guard executionState != .executing else {
             Log.multichainSwap.i(
                 "execution request ignored while already executing",
@@ -480,15 +551,16 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
             )
             return
         }
-        guard let confirmed = confirmedSwap else {
+        guard case let .confirmed(confirmed) = pendingSwap else {
             Log.multichainSwap.i(
                 "execution skipped: no confirmed swap to send",
                 extraInfo: confirmationLogInfo()
             )
-            sliderResetToken += 1
             return
         }
-        confirmedSwap = nil
+        // Executing before the pin is dropped, so the swap never stops being in flight in between.
+        executionState = .executing
+        pendingSwap = nil
         Log.multichainSwap.i(
             "execution requested from confirmation",
             extraInfo: confirmationLogInfo(
@@ -497,29 +569,110 @@ final class MultichainSwapConfirmationViewModel: ObservableObject {
         )
         refreshModel.cancel()
         isRetryUnsafe = false
-        sentFeeMethod = confirmed.feeMethod
-        executionState = .executing
+        swapAnalytics?.logConfirm(confirmed.input, feeMethod: confirmed.feeMethod)
         Task { [weak self] in
             guard let self else { return }
             let result = await executor.execute(
-                passcodeProvider: passcodeProvider,
+                signer: signer,
                 swapWallet: swapWallet,
                 input: confirmed.input,
                 executionPlan: confirmed.executionPlan,
-                isUnlimitedApprovalEnabled: confirmed.isUnlimitedApprovalEnabled,
-                feeMethod: confirmed.feeMethod
+                feeMethod: confirmed.feeMethod,
+                consent: consent
             )
             switch result {
             case let .success(result):
                 self.applyExecutionResult(result, confirmed: confirmed)
             case let .failure(failure):
-                self.applyExecutionFailure(failure)
+                self.applyExecutionFailure(failure, confirmed: confirmed)
             }
         }
     }
 }
 
 private extension MultichainSwapConfirmationViewModel {
+    /// The plan answers a tap that waited for it: the way to pay a fee nothing pays, the sheet when the swap
+    /// cannot go on, else the passcode, asked about first when a route recovered meanwhile prices the swap
+    /// worse than the one tapped for.
+    func resolvePendingConfirm() {
+        guard case let .awaitingPlan(tappedRoute) = pendingSwap else {
+            return
+        }
+        if isSwapEnabled, let unpaidFee {
+            pendingSwap = nil
+            reportUnpaidFee(unpaidFee)
+            return
+        }
+        guard let executionPlan, isConfirmEnabled else {
+            pendingSwap = nil
+            onConfirmUnavailable()
+            return
+        }
+        pin(executionPlan)
+        guard let priceChange = displayMaker.priceChange(from: tappedRoute, to: input) else {
+            onConfirm()
+            return
+        }
+        Log.multichainSwap.w(
+            "recovered route priced the swap worse than the tapped one",
+            extraInfo: confirmationLogInfo(additional: ["tappedRouteId": tappedRoute.routeId])
+        )
+        onPriceChanged(priceChange)
+    }
+
+    func pinAndConfirm(_ executionPlan: MultichainSwapExecutionPlan) {
+        pin(executionPlan)
+        onConfirm()
+    }
+
+    func awaitPlan() {
+        pendingSwap = .awaitingPlan(tappedRoute: input.quoteState.route)
+        if executionPlan != nil {
+            resolvePendingConfirm()
+        }
+    }
+
+    func logSwapClick() {
+        guard !isSwapClickCounted else {
+            isSwapClickCounted = false
+            return
+        }
+        swapAnalytics?.logClick(input)
+    }
+
+    /// A warning can stand between the tap and the send. Pin what the rows showed: the swap is sent with
+    /// the plan and the fee method the user agreed to, or not at all.
+    func pin(_ executionPlan: MultichainSwapExecutionPlan) {
+        pendingSwap = .confirmed(
+            ConfirmedSwap(
+                input: input,
+                executionPlan: executionPlan,
+                feeMethod: selectedFeeMethod
+            )
+        )
+        refreshModel.cancel()
+        Log.multichainSwap.i(
+            "confirmation accepted",
+            extraInfo: confirmationLogInfo(
+                additional: [
+                    "requiresPriceImpactWarning": requiresPriceImpactWarning ? "true" : "false",
+                    "feeMethod": "\(selectedFeeMethod)",
+                ]
+            )
+        )
+    }
+
+    func requestFreshQuote(reason: MultichainSwapConfirmationRefreshReason) {
+        requestedRefreshReason = reason
+        onRefreshQuote()
+    }
+
+    func updateSwapInFlight() {
+        isSwapInFlight = pendingSwap != nil
+            || executionState == .executing
+            || executionState == .completed
+    }
+
     func updateDisplay() {
         display = displayMaker.make(
             input: input,
@@ -541,34 +694,89 @@ private extension MultichainSwapConfirmationViewModel {
         return option.method.isRelayed && !option.isInsufficient
     }
 
-    /// The fee row can only say the chain's coin is short. When a relayer could pay instead, the
-    /// screen has to name that way out, so the same guard that shows the deposit popup shows this one.
-    func notifyBatteryFeeShortageIfNeeded() {
+    /// What a Swap tap opens when nothing can pay the fee: the battery's refill beside the deposit of the
+    /// chain's coin where the plan offers the battery, else the deposit alone. A shortage the chain's coin
+    /// ran into outranks the plan priced before it. `nil` while something pays, and when only a battery
+    /// top-up could, which the confirm button offers itself.
+    var unpaidFee: UnpaidFee? {
+        if let nativeFeeShortageForFeeDisplay {
+            return .nativeCoin(nativeFeeShortageForFeeDisplay)
+        }
         guard let feeOptions = executionPlan?.feeOptions,
               !feeOptions.contains(where: { !$0.isInsufficient }),
-              feeOptions.contains(where: { $0.method.isBattery }),
-              let nativeOption = feeOptions.first(where: { $0.method == .native }),
-              case let .native(fees, _) = nativeOption.cost,
-              let nativeFee = fees.first
+              let nativeFee = feeOptions.first(where: { $0.method == .native })?.feeAmounts?.first
         else {
-            return
+            return nil
         }
-        onBatteryFeeShortage(
-            MultichainNativeFeeShortage(
-                asset: nativeFee.asset,
-                requiredAmount: nativeFee.fee
+        let shortage = executionPlan?.nativeFeeShortage ?? MultichainNativeFeeShortage(asset: nativeFee.asset, requiredAmount: nativeFee.amount)
+        return feeOptions.contains(where: { $0.method.isBattery }) ? .battery(shortage) : .nativeCoin(shortage)
+    }
+
+    func reportUnpaidFee(_ unpaidFee: UnpaidFee) {
+        switch unpaidFee {
+        case let .battery(shortage):
+            onBatteryFeeShortage(shortage)
+        case let .nativeCoin(shortage):
+            onInsufficientNativeFee(shortage)
+        }
+    }
+
+    func openFeeMethodPicker(options: [MultichainSwapFeeOption]) {
+        let selectedMethod = selectedFeeOption?.method
+        // A swap prices each method at most once, so the method identifies its row: a position would
+        // resolve against whichever list the picker was built from rather than what was tapped.
+        let items = options.map { option in
+            let isShortBattery = option.isInsufficient && option.method.isBattery
+            // An unpriced battery may hold charges, so it is not told short of them.
+            let lacksCharges = if case .batteryCharges(_, _, isInsufficient: true) = option.cost { true } else { false }
+            return NetworkFeePickerItem(
+                id: option.method.id,
+                leading: option.extraType.networkFeePickerLeading,
+                text: .titled(
+                    title: option.extraType.feeRowMethodTitle,
+                    subtitle: displayMaker.feePickerSubtitle(option, input: input)
+                ),
+                isDisabled: option.isInsufficient,
+                warning: lacksCharges ? TKLocales.FeeMethodPicker.notEnough : nil,
+                actionTitle: option.isInsufficient
+                    ? (isShortBattery ? TKLocales.FeeMethodPicker.topUp : TKLocales.FeeMethodPicker.deposit)
+                    : nil,
+                // A short battery leads to its top-up, so its row is not marked as the pick.
+                isSelected: option.method == selectedMethod && !isShortBattery
+            )
+        }
+        onOpenFeePicker(
+            NetworkFeePickerPresentation(
+                configuration: NetworkFeePickerConfiguration(
+                    title: TKLocales.FeeMethodPicker.title,
+                    subtitle: TKLocales.FeeMethodPicker.subtitle
+                ),
+                dataSource: StaticNetworkFeePickerDataSource(items: items),
+                didSelectItem: { [weak self] item, _ in
+                    guard let self,
+                          let method = MultichainSwapFeeMethod(id: item.id),
+                          let option = options.first(where: { $0.method == method })
+                    else {
+                        return
+                    }
+                    selectFeeOption(option)
+                }
             )
         )
     }
 
     func requestFeeRefill(for option: MultichainSwapFeeOption) {
         guard let asset = option.depositAsset else {
-            onRefillBattery { [weak self] in
-                self?.refreshFeeCalculationAfterDeposit()
-            }
+            refillBattery()
             return
         }
         onDepositNativeFee(asset)
+    }
+
+    func refillBattery() {
+        onRefillBattery { [weak self] in
+            self?.refreshFeeCalculationAfterDeposit()
+        }
     }
 
     var networkFeesForDisplay: [MultichainTransactionEmulationResult]? {
@@ -592,35 +800,39 @@ private extension MultichainSwapConfirmationViewModel {
 
     func applyExecutionResult(_ result: MultichainSwapExecutionResult, confirmed: ConfirmedSwap) {
         executionState = .completed
-        sentFeeMethod = nil
         Log.multichainSwap.i(
             "execution completed in confirmation",
             extraInfo: confirmationLogInfo(additional: ["txHash": result.txHash ?? "none"])
         )
-        onExecutionCompleted(confirmed.input, confirmed.feeMethod)
+        swapAnalytics?.logSuccess(confirmed.input, feeMethod: confirmed.feeMethod)
+        onExecutionCompleted(confirmed.input, confirmed.feeMethod, result)
     }
 
-    func applyExecutionFailure(_ failure: MultichainSwapExecutionFailure) {
-        let sentMethod = sentFeeMethod
-        sentFeeMethod = nil
-        circularProgressRestartToken += 1
+    func applyExecutionFailure(_ failure: MultichainSwapExecutionFailure, confirmed: ConfirmedSwap) {
+        if failure != .canceled {
+            swapAnalytics?.logFailure(confirmed.input, feeMethod: confirmed.feeMethod, failure: failure)
+        }
         if case let .insufficientNativeFee(shortage) = failure {
+            executionState = .idle
             applyInsufficientNativeFee(shortage, stage: "execution")
+            if let unpaidFee {
+                reportUnpaidFee(unpaidFee)
+            }
             return
         }
         guard let message = failure.confirmationUserMessage else {
             executionState = .idle
-            sliderResetToken += 1
             Log.multichainSwap.i(
                 "execution canceled in confirmation",
                 extraInfo: confirmationLogInfo()
             )
+            onExecutionCanceled()
             return
         }
-        executionState = .executionFailed(message)
         // A relayed swap whose outcome is unknown must not be re-armed: signing again would send a
         // second, equally valid message once the first one lands and moves the seqno.
-        isRetryUnsafe = sentMethod?.isRelayed == true && failure.isBroadcastOutcomeUnknown
+        isRetryUnsafe = confirmed.feeMethod.isRelayed && failure.isBroadcastOutcomeUnknown
+        executionState = .executionFailed(message)
         Log.multichainSwap.w(
             "execution failed in confirmation",
             error: failure,
@@ -628,21 +840,16 @@ private extension MultichainSwapConfirmationViewModel {
                 additional: ["retryUnsafe": isRetryUnsafe ? "true" : "false"]
             )
         )
-        onExecutionFailed(message)
-        guard !isRetryUnsafe else {
-            return
+        // Asked before the failure is reported: without the sheet the report ends the confirmation, and a
+        // request made after it would reach nobody.
+        if !isRetryUnsafe {
+            requestFreshQuote(reason: .executionFailed)
         }
-        sliderResetToken += 1
-        onFeeCalculationStarted(.executionFailed)
-        refreshModel.refreshQuote(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: .executionFailed
-        )
+        onExecutionFailed(message, !isRetryUnsafe)
     }
 
-    /// Without a plan the screen has nothing to confirm and nothing to offer: the fee stays unpriced
-    /// and the swipe locked. A shortage of the chain's coin is the exception, since the screen offers
+    /// Without a plan the sheet has nothing to confirm and nothing to offer: the fee stays unpriced and
+    /// the confirm button locked. A shortage of the chain's coin is the exception, since a Swap tap opens
     /// the deposit that clears it; any other failure goes back to the swap screen, which quotes afresh.
     func applyPreparationFailure(
         _ failure: MultichainSwapExecutionFailure,
@@ -650,11 +857,12 @@ private extension MultichainSwapConfirmationViewModel {
     ) {
         if case let .insufficientNativeFee(shortage) = failure {
             applyInsufficientNativeFee(shortage, stage: reason.logValue)
+            resolvePendingConfirm()
             return
         }
+        pendingSwap = nil
         guard let message = failure.confirmationUserMessage else { return }
         executionState = .preparationFailed(message)
-        sliderResetToken += 1
         Log.multichainSwap.w(
             "swap preparation failed in confirmation",
             error: failure,
@@ -670,8 +878,6 @@ private extension MultichainSwapConfirmationViewModel {
             return
         }
         nativeFeeShortageForFeeDisplay = shortage
-        executionState = .preparationFailed(TKLocales.MultichainSwap.Screen.Confirm.Error.insufficientBalance)
-        sliderResetToken += 1
         updateDisplay()
         Log.multichainSwap.w(
             "swap failed because native fee is insufficient",
@@ -680,38 +886,44 @@ private extension MultichainSwapConfirmationViewModel {
                 "stage": stage,
             ])
         )
-        onInsufficientNativeFee(shortage)
-    }
-
-    /// A quote that failed to refresh is no longer one the swipe may confirm, and neither is the plan
-    /// a slippage pick could roll back to.
-    func handleQuoteRefreshFailure(
-        reason: MultichainSwapConfirmationRefreshReason,
-        message: String?
-    ) {
-        executionPlan = nil
-        slippageRollbackState = nil
-        quoteFailureMessage = message ?? TKLocales.MultichainSwap.ProviderError.unknown
-        updateDisplay()
-        Log.multichainSwap.w(
-            "confirmation swipe locked after quote refresh failed",
-            extraInfo: confirmationLogInfo(additional: [
-                "reason": reason.logValue,
-            ])
-        )
     }
 }
 
-/// What the user agreed to when the slider landed, held until the swap is sent or abandoned.
+/// A swap the user started, until it is sent or abandoned.
+private enum PendingSwap {
+    /// Tapped before the plan that answers whether it can be confirmed, at the route then on screen.
+    case awaitingPlan(tappedRoute: MultichainSwapRoute)
+    case confirmed(ConfirmedSwap)
+}
+
+/// What a Swap tap opens when nothing can pay the fee.
+private enum UnpaidFee {
+    /// A battery refill could pay it, as could a deposit of the chain's coin.
+    case battery(MultichainNativeFeeShortage)
+    /// Only a deposit of the chain's coin could.
+    case nativeCoin(MultichainNativeFeeShortage)
+}
+
+/// What the user agreed to when they confirmed.
 private struct ConfirmedSwap {
     let input: MultichainSwapConfirmationInput
     let executionPlan: MultichainSwapExecutionPlan
     let feeMethod: MultichainSwapFeeMethod
-    let isUnlimitedApprovalEnabled: Bool
 }
 
-private struct SlippageRollbackState {
-    let input: MultichainSwapConfirmationInput
-    let executionPlan: MultichainSwapExecutionPlan?
-    let selectedSlippageBps: Int
+private extension MultichainSwapConfirmationQuoteFailure {
+    var message: String {
+        switch self {
+        case .quote(.unavailable):
+            TKLocales.MultichainSwap.ProviderError.unknown
+        case .quote(.pairUnavailable):
+            TKLocales.NativeSwap.Quote.Rate.pairUnavailable
+        case .quote(.walletScreened):
+            TKLocales.MultichainSwap.ProviderError.walletScreened
+        case .quote(.offline):
+            TKLocales.MultichainSwap.Screen.Confirm.Error.networkError
+        case .insufficientBalance:
+            TKLocales.InsufficientFunds.insufficientBalance
+        }
+    }
 }

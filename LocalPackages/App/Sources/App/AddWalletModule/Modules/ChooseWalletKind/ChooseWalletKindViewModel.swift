@@ -25,6 +25,12 @@ struct ChooseWalletKindRow: Identifiable {
 enum ChooseWalletKindIcon {
     case ton
     case multichain
+    case telegram
+}
+
+struct ChooseWalletKindOption {
+    let kind: ImportWalletKind
+    let preview: ImportWalletKindPreview
 }
 
 @MainActor
@@ -36,32 +42,26 @@ final class ChooseWalletKindViewModel: ObservableObject, ChooseWalletKindModuleO
 
     var didSelectKind: ((ImportWalletKind) -> Void)?
 
-    private let tonPreview: ImportWalletKindPreview
-    private let multichainPreview: ImportWalletKindPreview
-
     init(
-        tonPreview: ImportWalletKindPreview,
-        multichainPreview: ImportWalletKindPreview,
+        options: [ChooseWalletKindOption],
         amountFormatter: AmountFormatter,
         currency: Currency
     ) {
-        self.tonPreview = tonPreview
-        self.multichainPreview = multichainPreview
-        self.selectedKind = Self.defaultKind(ton: tonPreview, multichain: multichainPreview)
-        self.rows = [
+        self.selectedKind = Self.defaultKind(options: options)
+        self.rows = options.map { option in
             Self.makeRow(
-                kind: .ton,
-                preview: tonPreview,
+                kind: option.kind,
+                preview: option.preview,
                 amountFormatter: amountFormatter,
                 currency: currency
-            ),
-            Self.makeRow(
-                kind: .multichain,
-                preview: multichainPreview,
-                amountFormatter: amountFormatter,
-                currency: currency
-            ),
-        ]
+            )
+        }
+    }
+
+    var description: String {
+        rows.count > 2
+            ? TKLocales.ChooseWalletKind.descriptionThree
+            : TKLocales.ChooseWalletKind.description
     }
 
     func selectKind(_ kind: ImportWalletKind) {
@@ -91,14 +91,17 @@ final class ChooseWalletKindViewModel: ObservableObject, ChooseWalletKindModuleO
 }
 
 private extension ChooseWalletKindViewModel {
-    static func defaultKind(
-        ton: ImportWalletKindPreview,
-        multichain: ImportWalletKindPreview
-    ) -> ImportWalletKind {
-        if multichain.fiatTotal > ton.fiatTotal {
+    static func defaultKind(options: [ChooseWalletKindOption]) -> ImportWalletKind {
+        if options.contains(where: { $0.kind == .telegram }) {
+            return .telegram
+        }
+        let preview: (ImportWalletKind) -> ImportWalletKindPreview = { kind in
+            options.first { $0.kind == kind }?.preview ?? .empty
+        }
+        if preview(.multichain).fiatTotal > preview(.ton).fiatTotal {
             return .multichain
         }
-        return .ton
+        return options.contains { $0.kind == .ton } ? .ton : options.first?.kind ?? .ton
     }
 
     static func makeRow(
@@ -116,6 +119,9 @@ private extension ChooseWalletKindViewModel {
         case .multichain:
             title = TKLocales.ChooseWalletKind.multichainWallet
             icon = .multichain
+        case .telegram:
+            title = TKLocales.ChooseWalletKind.telegramWallet
+            icon = .telegram
         }
 
         let subtitle: String

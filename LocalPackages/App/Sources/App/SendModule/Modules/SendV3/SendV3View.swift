@@ -14,7 +14,7 @@ final class SendV3View: UIView {
         stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
             top: 0,
             leading: 16,
-            bottom: 16,
+            bottom: 0,
             trailing: 16
         )
         return stackView
@@ -56,8 +56,31 @@ final class SendV3View: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func layoutSubviews() {
+        let scrollViewHeight = scrollView.bounds.height
+        super.layoutSubviews()
+        if scrollView.bounds.height < scrollViewHeight {
+            revealActiveTextField(animated: false)
+        }
+    }
+
+    private var textFields: [TKTextField] {
+        [recipientTextField, amountInputView.amountTextField, commentInputView.commentTextField]
+    }
+
+    private func revealActiveTextField(animated: Bool) {
+        guard let textField = textFields.first(where: \.isActive) else { return }
+        scrollView.scrollRectToVisible(textField.convert(textField.bounds, to: scrollView), animated: animated)
+    }
+
     private func setup() {
         scrollView.delaysContentTouches = false
+
+        for textField in textFields {
+            textField.didBeginEditing = { [weak self] in
+                self?.revealActiveTextField(animated: true)
+            }
+        }
 
         recipientTextField.rightItems = [
             TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
@@ -87,11 +110,16 @@ final class SendV3View: UIView {
         stackView.addArrangedSubview(recipientDescriptionContainer)
         stackView.addArrangedSubview(amountInputView)
         stackView.addArrangedSubview(commentInputView)
-        stackView.addArrangedSubview(continueButton)
+        addSubview(continueButton)
 
         scrollView.snp.makeConstraints { make in
-            make.edges.equalTo(self)
-            make.width.equalTo(self)
+            make.top.left.right.equalTo(self)
+            make.bottom.equalTo(continueButton.snp.top).offset(-16)
+        }
+
+        continueButton.snp.makeConstraints { make in
+            make.left.right.equalTo(self).inset(16)
+            make.bottom.equalTo(keyboardLayoutGuide.snp.top).offset(-16)
         }
 
         stackView.snp.makeConstraints { make in

@@ -178,9 +178,10 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
         var pasteButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .medium)
         pasteButtonConfiguration.content.title = .plainString(pasteButtonTitle)
         pasteButtonConfiguration.action = { [weak self] in
-            guard UIPasteboard.general.hasStrings,
-                  let string = UIPasteboard.general.string else { return }
-            _ = self?.shouldPaste(text: string, index: 0)
+            Task { @MainActor [weak self] in
+                guard UIPasteboard.general.hasStrings, let string = await UIPasteboard.general.readString() else { return }
+                _ = self?.shouldPaste(text: string, index: 0)
+            }
         }
         didUpdatePasteButton?(pasteButtonConfiguration)
     }

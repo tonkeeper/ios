@@ -2,9 +2,42 @@ import SwiftUI
 import TKUIKit
 
 private extension MoonPayPaymentMethodViewState {
+    static let cardMenu: [MenuItem] = [
+        .init(id: "remove", title: "Remove", icon: .TKUIKit.Icons.Size28.trashBin),
+    ]
+
     static let mock = MoonPayPaymentMethodViewState(
         title: "Payment method",
+        provider: .init(caption: "via", name: "MoonPay", isSwitchable: true),
         sections: [
+            .init(
+                id: "saved",
+                title: "Saved",
+                rows: [
+                    .init(
+                        id: "card:1",
+                        title: "Debit card",
+                        subtitle: "Visa •••• 4148",
+                        iconURL: nil,
+                        savedCard: MoonPaySavedCardIcon(brand: "Visa", last4: "4148"),
+                        badge: "Last used",
+                        subtitleSuffix: .init(text: "Exp. 10/28", style: .neutral),
+                        trailing: .none,
+                        menu: cardMenu
+                    ),
+                    .init(
+                        id: "card:2",
+                        title: "Debit card",
+                        subtitle: "Mastercard •••• 7482",
+                        iconURL: nil,
+                        savedCard: MoonPaySavedCardIcon(brand: "Mastercard", last4: "7482"),
+                        subtitleSuffix: .init(text: "Expired 11/24", style: .error),
+                        isEnabled: false,
+                        trailing: .none,
+                        menu: cardMenu
+                    ),
+                ]
+            ),
             .init(
                 id: "cash",
                 title: "Cash",
@@ -71,5 +104,22 @@ private extension MoonPayPaymentMethodViewState {
 @available(iOS 17.0, *)
 #Preview("Payment method") {
     MoonPayPaymentMethodView(state: .mock, onSelect: { _ in }, onClose: {})
+        .tkPreviewTheme(.deepBlue)
+}
+
+// A lone tappable card is drawn in the group's single-cell mode, which pads the cell itself.
+@available(iOS 17.0, *)
+#Preview("One saved card") {
+    var state = MoonPayPaymentMethodViewState.mock
+    state.sections[0].rows = Array(state.sections[0].rows.prefix(1))
+    return MoonPayPaymentMethodView(state: state, onSelect: { _ in }, onClose: {})
+        .tkPreviewTheme(.deepBlue)
+}
+
+@available(iOS 17.0, *)
+#Preview("Loading another provider") {
+    var state = MoonPayPaymentMethodViewState.mock
+    state.isLoading = true
+    return MoonPayPaymentMethodView(state: state, onSelect: { _ in }, onClose: {})
         .tkPreviewTheme(.deepBlue)
 }

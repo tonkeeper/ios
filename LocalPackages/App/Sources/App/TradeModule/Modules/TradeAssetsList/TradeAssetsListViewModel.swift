@@ -23,6 +23,7 @@ final class TradeAssetsListViewModel: ObservableObject {
     private let analyticsSource: TradeFlowAnalyticsSource
     private let onBack: () -> Void
     private let onOpenAssetDetails: (TradingAsset) -> Void
+    private let debounce: @MainActor (_ nanoseconds: UInt64) async throws -> Void
 
     private var activateQueryTask: Task<Void, Never>?
     private var hasLoaded = false
@@ -36,13 +37,15 @@ final class TradeAssetsListViewModel: ObservableObject {
         signedAmountFormatter: AmountFormatter,
         selectedCategory: TradingAssetCategory,
         onBack: @escaping () -> Void,
-        onOpenAssetDetails: @escaping (TradingAsset) -> Void
+        onOpenAssetDetails: @escaping (TradingAsset) -> Void,
+        debounce: @escaping @MainActor (_ nanoseconds: UInt64) async throws -> Void = { try await Task.sleep(nanoseconds: $0) }
     ) {
         self.analyticsProvider = analyticsProvider
         self.analyticsSource = analyticsSource
         self.selectedCategory = selectedCategory
         self.onBack = onBack
         self.onOpenAssetDetails = onOpenAssetDetails
+        self.debounce = debounce
 
         let categoryViewModels = Dictionary(
             uniqueKeysWithValues: TradingAssetCategory.allCases.map { category in
@@ -167,9 +170,9 @@ private extension TradeAssetsListViewModel {
         let query = normalizedSearchText
         let category = selectedCategory
 
-        activateQueryTask = Task { [weak self] in
+        activateQueryTask = Task { [weak self, debounce] in
             if delay > 0 {
-                try? await Task.sleep(nanoseconds: delay)
+                try? await debounce(delay)
             }
             guard !Task.isCancelled else { return }
             self?.activateQuery(

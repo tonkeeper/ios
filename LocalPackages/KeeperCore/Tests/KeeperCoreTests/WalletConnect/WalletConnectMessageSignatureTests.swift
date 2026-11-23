@@ -66,7 +66,8 @@ final class WalletConnectMessageSignatureTests: XCTestCase {
                 isLogging: false,
                 logger: nil,
                 userAgent: nil,
-                sessionProvider: nil
+                sessionProvider: nil,
+                nodeManifestHost: nil
             )
         )
     )
@@ -85,6 +86,26 @@ final class WalletConnectMessageSignatureTests: XCTestCase {
 
             assertPlainRecoveryId(signature, chain: chain)
         }
+    }
+
+    func testTypedDataWithRepeatedKeysIsSignedAsTheWalletValidatedIt() async throws {
+        let repeated = typedData
+            .replacingOccurrences(of: #""chainId": 1,"#, with: #""chainId": 1, "chainId": 8453,"#)
+            .replacingOccurrences(
+                of: #""spender": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","#,
+                with: #""spender": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "spender": "0xcccccccccccccccccccccccccccccccccccccccc","#
+            )
+        XCTAssertNotEqual(repeated, typedData)
+        let paramsJSON = try String(decoding: JSONEncoder().encode(["0x9858effd232b4033e47d90003d41ec34ecaeda94", repeated]), as: UTF8.self)
+
+        let payload = try WalletConnectEthSignTypedDataV4Parser().parse(chain: .eth, paramsJSON: paramsJSON)
+        guard case let .signMessage(message) = payload else {
+            return XCTFail("Expected sign message payload")
+        }
+
+        let signature = try await sign(message.message, kind: .typedDataV4, chain: .eth)
+        let validatedSignature = try await sign(typedData, kind: .typedDataV4, chain: .eth)
+        XCTAssertEqual(signature, validatedSignature)
     }
 
     func testPersonalSignSignatureCarriesAnEip191RecoveryId() async throws {
@@ -183,7 +204,7 @@ final class WalletConnectMessageSignatureTests: XCTestCase {
         }
     }
 
-    private func solanaPublicKey(_ cryptoWallet: CryptoWallet) -> Data {
+    private func solanaPublicKey(_ cryptoWallet: MnemonicWallet) -> Data {
         cryptoWallet.getPublicKey(chain: MultichainChain.sol.asChainKitChain).defaultData.asData
     }
 

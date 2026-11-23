@@ -148,6 +148,7 @@ extension MultichainRampCoordinator {
         )
 
         module.output.didSelectAsset = { [weak self] asset in
+            self?.logDepositClickFiatAsset(asset.asset.assetId)
             self?.openPaymentMethod(asset: asset, preferredFiat: preferredFiat)
         }
 
@@ -248,8 +249,6 @@ extension MultichainRampCoordinator {
         pickerModule.output.didTapClose = { [weak self] in
             self?.finishFlow()
         }
-        pickerModule.view.setupBackButton()
-
         navigationController.pushViewController(pickerModule.view, animated: true)
     }
 }
@@ -262,7 +261,7 @@ extension MultichainRampCoordinator {
             options.insert(AddFundsOption.buyWithFiat.rawValue)
         }
         coreAssembly.analyticsProvider.log(
-            DepositStarted(from: entrySource, walletMode: .multi, availableOptions: options),
+            DepositStarted(from: entrySource, walletMode: .multi, depositScreen: .addFunds, availableOptions: options),
             utm: utm
         )
     }
@@ -281,13 +280,27 @@ extension MultichainRampCoordinator {
         logDepositOptionClick(option)
     }
 
+    func logDepositClickFiatAsset(_ assetId: String) {
+        guard flow == .deposit else { return }
+        coreAssembly.analyticsProvider.log(
+            DepositClickFiatAsset(
+                from: entrySource,
+                addFundsOption: loggedAddFundsOption ?? .buyWithFiat,
+                depositScreen: .addFunds,
+                buyAsset: assetId
+            ),
+            utm: utm
+        )
+    }
+
     func logDepositContinueToP2pMarket() {
         guard flow == .deposit else { return }
         coreAssembly.analyticsProvider.log(
             DepositContinueToP2pMarket(
                 from: entrySource,
                 walletMode: .multi,
-                addFundsOption: loggedAddFundsOption ?? .buyWithFiat
+                addFundsOption: loggedAddFundsOption ?? .buyWithFiat,
+                depositScreen: .addFunds
             ),
             utm: utm
         )
@@ -305,11 +318,11 @@ extension MultichainRampCoordinator {
                 from: entrySource,
                 walletMode: .multi,
                 addFundsOption: loggedAddFundsOption ?? .buyWithFiat,
+                depositScreen: .addFunds,
                 buyAsset: assetId,
                 sellAsset: currencyCode,
                 paymentMethod: paymentMethod,
                 providerName: context.providerName,
-                amount: NSDecimalNumber(decimal: context.amount).floatValue,
                 txId: context.txId
             ),
             utm: utm

@@ -10,20 +10,22 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User imported an existing wallet successfully */
+/** User imported an existing wallet successfully. pairing_entry records the pairing entry path when known; Signer deeplink and app QR scanner entries can reach success without wallet_import_signer_scanned.  */
 public struct WalletImportSuccess: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_success"
     public var walletMode: WalletMode
     public var walletSource: WalletSource
     public var from: AddWalletSource
+    public var pairingEntry: PairingEntry?
     public var ledgerModel: LedgerModel?
 
-    public init(eventName: String = "wallet_import_success", walletMode: WalletMode, walletSource: WalletSource, from: AddWalletSource, ledgerModel: LedgerModel? = nil) {
+    public init(eventName: String = "wallet_import_success", walletMode: WalletMode, walletSource: WalletSource, from: AddWalletSource, pairingEntry: PairingEntry? = nil, ledgerModel: LedgerModel? = nil) {
         self.eventName = eventName
         self.walletMode = walletMode
         self.walletSource = walletSource
         self.from = from
+        self.pairingEntry = pairingEntry
         self.ledgerModel = ledgerModel
     }
 
@@ -32,6 +34,7 @@ public struct WalletImportSuccess: Codable, JSONEncodable, Hashable {
         case walletMode = "wallet_mode"
         case walletSource = "wallet_source"
         case from
+        case pairingEntry = "pairing_entry"
         case ledgerModel = "ledger_model"
     }
 
@@ -43,6 +46,7 @@ public struct WalletImportSuccess: Codable, JSONEncodable, Hashable {
         try container.encode(walletMode, forKey: .walletMode)
         try container.encode(walletSource, forKey: .walletSource)
         try container.encode(from, forKey: .from)
+        try container.encodeIfPresent(pairingEntry, forKey: .pairingEntry)
         try container.encodeIfPresent(ledgerModel, forKey: .ledgerModel)
     }
 }

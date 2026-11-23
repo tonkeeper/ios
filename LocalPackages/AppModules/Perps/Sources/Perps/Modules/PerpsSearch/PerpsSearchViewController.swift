@@ -6,6 +6,12 @@ public final class PerpsSearchViewController<ViewModel: PerpsSearchViewModeling>
     private let viewModel: ViewModel
     private let hostingController: TKHostingController<PerpsSearchView<ViewModel>>
 
+    /// The SwiftUI header hands its buttons and title to the navigation item of the hosting controller,
+    /// while the bar shows this controller's one.
+    override public var navigationItem: UINavigationItem {
+        TKLiquidGlass.isEnabled ? hostingController.navigationItem : super.navigationItem
+    }
+
     public init(viewModel: ViewModel) {
         self.viewModel = viewModel
         self.hostingController = TKHostingController(content: PerpsSearchView(viewModel: viewModel))
@@ -41,7 +47,8 @@ public final class PerpsSearchViewController<ViewModel: PerpsSearchViewModeling>
 
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: animated)
+        tkUpdateNavigationBarForHeader(animated: animated)
+        viewModel.setVisible(true)
     }
 
     override public func viewDidAppear(_ animated: Bool) {
@@ -51,6 +58,7 @@ public final class PerpsSearchViewController<ViewModel: PerpsSearchViewModeling>
 
     override public func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        viewModel.setVisible(false)
         if isMovingFromParent {
             viewModel.onDisappear()
         }

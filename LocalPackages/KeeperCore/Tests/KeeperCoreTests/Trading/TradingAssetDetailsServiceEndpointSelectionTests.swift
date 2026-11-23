@@ -41,7 +41,8 @@ private extension TradingAssetDetailsServiceEndpointSelectionTests {
         TradingAssetDetailsServiceImplementation(
             api: api,
             cache: InMemoryKeyedCache<String, TradingAssetDetails>(),
-            requestContextProvider: TradingRequestContextProviderStub()
+            requestContextProvider: TradingRequestContextProviderStub(),
+            signedPerpSymbols: { nil }
         )
     }
 

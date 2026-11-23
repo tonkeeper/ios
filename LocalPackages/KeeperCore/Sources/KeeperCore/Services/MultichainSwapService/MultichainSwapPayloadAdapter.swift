@@ -574,7 +574,33 @@ private extension MultichainSwapPayloadAdapter {
                 return nil
             }
             return .evm(EVMSwapRelay(chain: sourceChain, call: call))
-        case .btc, .sol:
+        case .sol:
+            // A deposit route is a transfer to its address; a route's own transaction goes to the relayer
+            // as built, which pays for it in place of the wallet. swaps.xyz types a deposit `solana_tx` too.
+            guard payload.preparedPayloadType == .altVmDeposit || payload.preparedPayloadType == .solanaTransaction,
+                  tradePayload.messages.count == 1,
+                  let message = tradePayload.messages.first
+            else {
+                return nil
+            }
+            if let transaction = message.data {
+                guard payload.preparedPayloadType == .solanaTransaction else {
+                    return nil
+                }
+                return .solana(EVMSwapRelay(chain: .sol, call: .solanaSwap(sender: sender, transaction: transaction)))
+            }
+            guard let call = EVMGaslessCall.swap(
+                chain: .sol,
+                sender: sender,
+                assetId: sourceAsset.asset.assetId,
+                to: message.to.display,
+                amount: message.amount,
+                data: nil
+            ) else {
+                return nil
+            }
+            return .solana(EVMSwapRelay(chain: .sol, call: call))
+        case .btc:
             return nil
         }
     }

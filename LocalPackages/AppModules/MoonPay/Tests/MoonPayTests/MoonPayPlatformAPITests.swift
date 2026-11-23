@@ -82,6 +82,61 @@ final class MoonPayPlatformAPITests: XCTestCase {
         XCTAssertNil(quote.challengeURL)
     }
 
+    func testQuoteKeepsReadableDisclosuresAndMarksMalformedOnesUnreadable() throws {
+        func quote(_ disclosures: String) throws -> MoonPayBuyQuote {
+            try JSONDecoder().decode(MoonPayBuyQuote.self, from: Data("""
+            {"source":{"amount":"100","asset":{"code":"USD"}},"destination":{"amount":"1","asset":{"code":"USDT"}},
+            "signature":"s"\(disclosures)}
+            """.utf8))
+        }
+
+        let mixed = try quote(#","paymentDisclosures":[{"id":"eea-crypto-asset-risk","version":2},{"version":"1"}]"#)
+        XCTAssertEqual(mixed.paymentDisclosures, [
+            .init(id: "eea-crypto-asset-risk", version: "2"),
+            .unreadable,
+        ])
+        XCTAssertEqual(try quote(##","paymentDisclosures":"eea""##).paymentDisclosures, [.unreadable])
+        XCTAssertEqual(try quote(#","paymentDisclosures":[]"#).paymentDisclosures, [])
+        XCTAssertNil(try quote("").paymentDisclosures)
+        XCTAssertNil(try quote(#","paymentDisclosures":null"#).paymentDisclosures)
+    }
+
+    func testQuoteLifetimeUsesTheServerClockNotTheDeviceClock() async throws {
+        // The server says it is 2026-03-27 12:29:50 and the quote expires 10 s later, whatever this device's clock says.
+        _ = StubURLProtocol.respond(
+            status: 200,
+            body: #"{"data":{"source":{"asset":{"code":"USD"}},"destination":{"asset":{"code":"TON"}},"executable":true,"signature":"s","expiresAt":"2026-03-27T12:30:00.000Z"}}"#,
+            headers: ["Date": "Fri, 27 Mar 2026 12:29:50 GMT"]
+        )
+
+        let quote = try await api.buyQuote(accessToken: "acc_1", request: quoteRequest())
+
+        let lifetime = try XCTUnwrap(quote.lifetime)
+        XCTAssertEqual(lifetime, 10, accuracy: 1)
+        let serverNow = try XCTUnwrap(MoonPayJSONCoding.parseISO8601("2026-03-27T12:29:50.000Z"))
+        let offset = try XCTUnwrap(quote.serverClockOffset)
+        XCTAssertEqual(offset, serverNow.timeIntervalSinceNow, accuracy: 1)
+    }
+
+    func testQuoteLifetimeWithoutServerTimeIsUnknownWhenTheDeviceClockIsOff() async throws {
+        _ = StubURLProtocol.respond(
+            status: 200,
+            body: #"{"data":{"source":{"asset":{"code":"USD"}},"destination":{"asset":{"code":"TON"}},"executable":true,"signature":"s","expiresAt":"2026-03-27T12:30:00.000Z"}}"#
+        )
+
+        let quote = try await api.buyQuote(accessToken: "acc_1", request: quoteRequest())
+
+        XCTAssertNil(quote.lifetime)
+    }
+
+    private func quoteRequest() -> MoonPayBuyQuoteRequest {
+        MoonPayBuyQuoteRequest(
+            source: MoonPayMoney(amount: "1", asset: MoonPayAsset(code: "usd")),
+            destination: MoonPayMoney(asset: MoonPayAsset(code: "ton")),
+            wallet: MoonPayWalletReference(address: "0x1")
+        )
+    }
+
     func testQuoteChallengeURL() async throws {
         _ = StubURLProtocol.respond(status: 200, body: #"{"data":{"source":{"asset":{"code":"USD"}},"destination":{"asset":{"code":"TON"}},"executable":false,"signature":"s","challenge":{"url":"https://platform.moonpay.com/platform/v1/challenge?challengeToken=t"}}}"#)
         let quote = try await api.buyQuote(accessToken: "acc", request: MoonPayBuyQuoteRequest(
@@ -143,6 +198,31 @@ final class MoonPayPlatformAPITests: XCTestCase {
         XCTAssertEqual(transaction.failedStage?.failureReason, "three_ds_failure")
     }
 
+    func testTransactionsSendsBearerGETWithStartDateAndDecodesList() async throws {
+        let recorded = StubURLProtocol.respond(status: 200, body: #"""
+        {"data":[
+            {"id":"txn_2","status":"pending","createdAt":"2026-11-04T16:20:05.123Z","paymentMethod":{"type":"apple_pay"}},
+            {"id":"txn_1","status":"completed"}
+        ],"pageInfo":{"nextCursor":null}}
+        """#)
+        let startDate = try XCTUnwrap(MoonPayJSONCoding.parseISO8601("2026-11-04T16:20:00.000Z"))
+
+        let transactions = try await api.transactions(accessToken: "acc_1", startDate: startDate, limit: 10)
+
+        let request = try XCTUnwrap(recorded.request)
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://api.moonpay.dev/platform/v1/transactions?startDate=2026-11-04T16:20:00.000Z&limit=10"
+        )
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer acc_1")
+        XCTAssertEqual(transactions.map(\.id), ["txn_2", "txn_1"])
+        XCTAssertEqual(transactions.first?.createdAt, MoonPayJSONCoding.parseISO8601("2026-11-04T16:20:05.123Z"))
+        XCTAssertNil(transactions.last?.createdAt)
+        XCTAssertEqual(transactions.first?.paymentMethodType, "apple_pay")
+        XCTAssertNil(transactions.last?.paymentMethodType)
+    }
+
     func testPaymentMethodsSendsBearerGETAndDecodesDocumentedResponse() async throws {
         let recorded = StubURLProtocol.respond(status: 200, body: #"""
         {"data":{
@@ -194,6 +274,36 @@ final class MoonPayPlatformAPITests: XCTestCase {
         XCTAssertFalse(methods.configs[0].isActive)
         XCTAssertTrue(methods.configs[0].supportsBuy)
         XCTAssertEqual(methods.stored, [])
+    }
+
+    func testDeletePaymentMethodSendsBearerDELETEAndAcceptsEmptyResponse() async throws {
+        let recorded = StubURLProtocol.respond(status: 204, body: "")
+
+        try await api.deletePaymentMethod(accessToken: "acc_1", id: "pm_1")
+
+        XCTAssertEqual(recorded.request?.httpMethod, "DELETE")
+        XCTAssertEqual(recorded.request?.url?.absoluteString, "https://api.moonpay.dev/platform/v1/payment-methods/pm_1")
+        XCTAssertEqual(recorded.request?.value(forHTTPHeaderField: "Authorization"), "Bearer acc_1")
+    }
+
+    func testDeletePaymentMethodEncodesTheIDOnce() async throws {
+        let recorded = StubURLProtocol.respond(status: 204, body: "")
+
+        try await api.deletePaymentMethod(accessToken: "acc_1", id: "pm 1")
+
+        XCTAssertEqual(recorded.request?.url?.absoluteString, "https://api.moonpay.dev/platform/v1/payment-methods/pm%201")
+    }
+
+    func testDeletePaymentMethodReportsHTTPError() async {
+        _ = StubURLProtocol.respond(status: 404, body: #"{"code":"not_found","message":"Not found"}"#)
+        do {
+            try await api.deletePaymentMethod(accessToken: "acc_1", id: "pm_1")
+            XCTFail("expected an error")
+        } catch let MoonPayAPIError.http(status, _) {
+            XCTAssertEqual(status, 404)
+        } catch {
+            XCTFail("unexpected error \(error)")
+        }
     }
 
     func testHTTPErrorCarriesServerBody() async {
@@ -293,9 +403,11 @@ final class RecordedRequest {
 
 final class StubURLProtocol: URLProtocol {
     static var handler: ((URLRequest, Data?) -> (Int, Data))?
+    static var extraHeaders: [String: String] = [:]
 
-    static func respond(status: Int, body: String) -> RecordedRequest {
+    static func respond(status: Int, body: String, headers: [String: String] = [:]) -> RecordedRequest {
         let recorded = RecordedRequest()
+        extraHeaders = headers
         handler = { request, bodyData in
             recorded.request = request
             recorded.body = bodyData
@@ -318,7 +430,7 @@ final class StubURLProtocol: URLProtocol {
             return
         }
         let (status, body) = handler(request, Self.bodyData(of: request))
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"].merging(Self.extraHeaders) { $1 })!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: body)
         client?.urlProtocolDidFinishLoading(self)

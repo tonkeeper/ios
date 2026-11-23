@@ -92,6 +92,8 @@ public protocol TonConnectService {
         app: TonConnectApp
     ) async throws
 
+    func sendDisconnectEvent(app: TonConnectApp) async throws
+
     func getLastEventId() throws -> String
     func saveLastEventId(_ lastEventId: String) throws
     func loadManifest(url: URL) async throws -> TonConnectManifest
@@ -389,6 +391,23 @@ final class TonConnectServiceImplementation: TonConnectService {
                 id: appRequest.id,
                 clientId: app.clientId
             )
+
+        _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
+            query: .init(
+                client_id: sessionCrypto.sessionId,
+                to: app.clientId,
+                ttl: 300
+            ),
+            body: .plainText(.init(stringLiteral: body))
+        )
+    }
+
+    func sendDisconnectEvent(app: TonConnectApp) async throws {
+        let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+        let body = try TonConnectResponseBuilder.buildDisconnectEvent(
+            sessionCrypto: sessionCrypto,
+            clientId: app.clientId
+        )
 
         _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
             query: .init(

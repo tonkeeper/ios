@@ -84,11 +84,16 @@ public final class StoriesPresentationController: UIPresentationController {
             updatePresentedViewOriginY(0, animated: true)
             updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
         case .ended:
-            if progress > 0.5 || velocity.y > 900 {
+            let isClosing = progress > 0.5 || velocity.y > 900
+            let storiesViewController = presentedViewController as? StoriesViewController
+            if isClosing, storiesViewController?.didTapClose == nil {
                 presentedViewController.dismiss(animated: true)
-            } else {
-                updatePresentedViewOriginY(0, animated: true)
-                updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
+                return
+            }
+            updatePresentedViewOriginY(0, animated: true)
+            updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
+            if isClosing {
+                storiesViewController?.close()
             }
         default: break
         }
@@ -120,10 +125,6 @@ public final class StoriesPresentationController: UIPresentationController {
 }
 
 extension StoriesPresentationController: UIGestureRecognizerDelegate {
-    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        !presentedViewController.isModalInPresentation
-    }
-
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }

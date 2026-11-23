@@ -19,10 +19,16 @@ public struct RNMnemonicsVault {
     }
 
     private let keychainVault: TKKeychainVault
+    let encryption: MnemonicsEncryptionParams
     private let logger = LogDomain.mnemonicStorage
 
     public init(keychainVault: TKKeychainVault) {
+        self.init(keychainVault: keychainVault, encryption: .production)
+    }
+
+    init(keychainVault: TKKeychainVault, encryption: MnemonicsEncryptionParams) {
         self.keychainVault = keychainVault
+        self.encryption = encryption
     }
 
     public func hasMnemonics() -> Bool {
@@ -216,18 +222,18 @@ private extension RNMnemonicsVault {
         let ct = try await ScryptHashBox.encrypt(
             data: data,
             salt: salt,
-            N: MnemonicsEncryptionParams.N,
-            r: MnemonicsEncryptionParams.r,
-            p: MnemonicsEncryptionParams.p,
+            N: encryption.N,
+            r: encryption.r,
+            p: encryption.p,
             password: password,
             dkLen: MnemonicsEncryptionParams.passwordKeyLength
         )
 
         return EncryptedMnemonics(
             kind: "encrypted-scrypt-tweetnacl",
-            N: MnemonicsEncryptionParams.N,
-            r: MnemonicsEncryptionParams.r,
-            p: MnemonicsEncryptionParams.p,
+            N: encryption.N,
+            r: encryption.r,
+            p: encryption.p,
             salt: salt.toHexString(),
             ct: ct
         )

@@ -28,7 +28,12 @@ struct StakingBalanceDetailsAssembly {
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-            configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+            configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
+            stakingRewardsService: keeperCoreMainAssembly.servicesAssembly.stakingRewardsService(),
+            rewardRowMapper: StakingRewardRowMapper(
+                amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+            )
         )
 
         let viewController = StakingBalanceDetailsViewController(viewModel: viewModel)

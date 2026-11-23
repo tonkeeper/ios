@@ -33,19 +33,45 @@ public struct ConfirmActionView: View {
                 .padding(.bottom, Layout.spacing)
             }
             .tkImmediateButtonPresses()
-            ConfirmActionBar(state: state.action)
+            actionBar
                 .frame(height: ConfirmActionBar.height)
                 .padding(.horizontal, Layout.inset)
         }
         .background(.backgroundPage)
     }
 
+    @ViewBuilder
+    private var actionBar: some View {
+        let action = state.action
+        if TKLiquidGlass.isEnabled, case .slider = action.kind {
+            TKConfirmSlider(
+                appearance: TKConfirmSlider.Appearance(action.appearance),
+                isEnabled: action.isEnabled,
+                process: TKActionBarProcess(action.process),
+                resetToken: action.resetToken,
+                handleAccessibilityIdentifier: action.accessibilityIdentifier,
+                onDragBegan: action.onSwipeBegan,
+                onDragAbandoned: action.onSwipeAbandoned,
+                onConfirm: action.onConfirm
+            )
+        } else {
+            ConfirmActionBar(state: action)
+        }
+    }
+
     private var navBar: some View {
         DefaultModalCardHeader(config: .init(
             leftIcon: onBack.map { onBack in
-                .init(image: .TKUIKit.Icons.Size16.chevronLeft, size: 16, padding: 8, onTap: { _ in onBack() })
+                .init(
+                    image: .TKUIKit.Icons.Size16.chevronLeft,
+                    size: 16,
+                    padding: 8,
+                    accessibilityIdentifier: "confirm_back",
+                    liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
+                    onTap: { _ in onBack() }
+                )
             },
-            rightIcon: .close { _ in onClose() }
+            rightIcon: .close(accessibilityIdentifier: "confirm_close") { _ in onClose() }
         ))
     }
 
@@ -94,7 +120,7 @@ public struct ConfirmActionView: View {
     private func titleText(_ title: String) -> Text {
         let text = Text(title).foregroundColor(palette.text.primary)
         guard let suffix = state.titleSuffix else { return text }
-        return text + Text(" \(suffix)").foregroundColor(palette.text.tertiary)
+        return text + Text(" · \(suffix)").foregroundColor(palette.text.tertiary)
     }
 
     private var rowsCard: some View {
@@ -129,11 +155,20 @@ public struct ConfirmActionView: View {
 struct ConfirmActionRowView: View {
     @Environment(\.tkPalette) private var palette
     let row: ConfirmActionRow
+    var verticalPadding = Layout.rowVerticalPadding
 
     var body: some View {
         switch row.interaction {
         case .none:
-            content(showsChevron: false)
+            if let hint = row.titleHint {
+                HintButton(configuration: Self.titleHintConfiguration) { direction in
+                    TKHintTextView(text: hint, position: direction)
+                } label: {
+                    content(showsChevron: false)
+                }
+            } else {
+                content(showsChevron: false)
+            }
         case let .tap(action, showsChevron):
             Button(action: action) { content(showsChevron: showsChevron) }
                 .buttonStyle(.plain)
@@ -149,19 +184,27 @@ struct ConfirmActionRowView: View {
     }
 
     private func content(showsChevron: Bool) -> some View {
-        HStack(alignment: .top, spacing: Layout.rowSpacing) {
-            title
-                .layoutPriority(1)
-            Spacer(minLength: 0)
-            value
-            if showsChevron {
-                SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
-                    .foregroundStyle(.iconTertiary)
-                    .padding(.top, Layout.chevronTopPadding)
+        VStack(alignment: .trailing, spacing: Layout.subtitleSpacing) {
+            HStack(alignment: .top, spacing: Layout.rowSpacing) {
+                title
+                    .layoutPriority(1)
+                Spacer(minLength: 0)
+                value
+                if showsChevron {
+                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
+                        .foregroundStyle(.iconTertiary)
+                        .padding(.top, Layout.chevronTopPadding)
+                }
+            }
+            if let note = row.note {
+                Text(note)
+                    .textStyle(.body2)
+                    .foregroundStyle(.textSecondary)
+                    .multilineTextAlignment(.trailing)
             }
         }
         .padding(.horizontal, Layout.inset)
-        .padding(.vertical, Layout.rowVerticalPadding)
+        .padding(.vertical, verticalPadding)
         .contentShape(Rectangle())
     }
 
@@ -172,15 +215,28 @@ struct ConfirmActionRowView: View {
             .foregroundStyle(.textSecondary)
             .lineLimit(1)
         if let hint = row.titleHint {
+            let icon = SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.informationCircle)
+                .renderingMode(.template)
+                .foregroundStyle(.iconSecondary)
             HStack(spacing: Layout.titleHintSpacing) {
                 titleText
-                HintButton(configuration: Self.titleHintConfiguration) { direction in
-                    TKHintTextView(text: hint, position: direction)
-                } label: {
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.informationCircle)
-                        .renderingMode(.template)
-                        .foregroundStyle(.iconSecondary)
+                // A row with nothing else to do opens the hint wherever it is tapped.
+                if case .none = row.interaction {
+                    icon.hintAnchor()
+                } else {
+                    HintButton(configuration: Self.titleHintConfiguration) { direction in
+                        TKHintTextView(text: hint, position: direction)
+                    } label: {
+                        icon
+                    }
                 }
+            }
+        } else if let titleIcon = row.titleIcon {
+            HStack(spacing: Layout.titleIconSpacing) {
+                titleText
+                SwiftUI.Image(uiImage: titleIcon)
+                    .renderingMode(.template)
+                    .foregroundStyle(.iconTertiary)
             }
         } else {
             titleText
@@ -217,15 +273,27 @@ struct ConfirmActionRowView: View {
                     .foregroundStyle(.textPrimary)
                     .lineLimit(1)
             }
-        case let .feeOption(text, token, showsPicker):
+        case let .amount(text, icon):
             HStack(spacing: Layout.pickerSpacing) {
-                feeText(text, token: token)
+                Text(text)
                     .textStyle(.label1)
+                    .foregroundStyle(.textPrimary)
                     .lineLimit(1)
-                if showsPicker {
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.switch)
-                        .renderingMode(.template)
-                        .foregroundStyle(.textAccent)
+                SwiftUI.Image(uiImage: icon)
+                    .resizable()
+                    .frame(width: Layout.amountIconSize, height: Layout.amountIconSize)
+            }
+        case let .feeOption(text, token, showsPicker, subtitle, isShortage):
+            valueStack(subtitle: subtitle, subtitleColor: isShortage ? .accentRed : .textSecondary) {
+                HStack(spacing: Layout.pickerSpacing) {
+                    feeText(text, token: token)
+                        .textStyle(.label1)
+                        .lineLimit(1)
+                    if showsPicker {
+                        SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.switch)
+                            .renderingMode(.template)
+                            .foregroundStyle(.textAccent)
+                    }
                 }
             }
         case let .unavailable(text, retryTitle, retry):
@@ -251,13 +319,17 @@ struct ConfirmActionRowView: View {
         }
     }
 
-    private func valueStack(subtitle: String?, @ViewBuilder top: () -> some View) -> some View {
+    private func valueStack(
+        subtitle: String?,
+        subtitleColor: TKColor = .textSecondary,
+        @ViewBuilder top: () -> some View
+    ) -> some View {
         VStack(alignment: .trailing, spacing: Layout.subtitleSpacing) {
             top()
             if let subtitle {
                 Text(subtitle)
                     .textStyle(.body2)
-                    .foregroundStyle(.textSecondary)
+                    .foregroundStyle(subtitleColor)
                     .multilineTextAlignment(.trailing)
             }
         }
@@ -317,9 +389,22 @@ private enum Layout {
     static let noticeTopPadding: CGFloat = 12
     static let walletIconSpacing: CGFloat = 4
     static let titleHintSpacing: CGFloat = 4
+    static let titleIconSpacing: CGFloat = 6
+    static let amountIconSize: CGFloat = 16
     static let pickerSpacing: CGFloat = 4
     static let shimmerWidth: CGFloat = 80
     static let shimmerHeight: CGFloat = 20
     static let shimmerTopPadding: CGFloat = 2
     static let shimmerCornerRadius: CGFloat = 8
+}
+
+private extension TKActionBarProcess {
+    init(_ process: ConfirmActionBarState.Process) {
+        switch process {
+        case .idle: self = .idle
+        case .processing: self = .processing
+        case .success: self = .success
+        case .failed: self = .failure
+        }
+    }
 }

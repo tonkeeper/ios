@@ -19,6 +19,8 @@ public struct MultichainSwapProviderError: Sendable, Hashable {
     case assetNotSupported = "asset_not_supported"
     case minAmountNotMet = "min_amount_not_met"
     case countryBlocked = "country_blocked"
+    case walletScreened = "wallet_screened"
+    case insufficientBalance = "insufficient_balance"
     case providerUnavailable = "provider_unavailable"
     case providerError = "provider_error"
 }
@@ -30,6 +32,10 @@ public extension MultichainSwapProviderError {
 
     var isNoRoute: Bool {
         errorCode == .noRoute
+    }
+
+    var isWalletScreened: Bool {
+        errorCode == .walletScreened
     }
 }
 

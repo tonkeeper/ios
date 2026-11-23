@@ -33,6 +33,7 @@ final class EarnDappAnalyticsTests: XCTestCase {
             .signer(.failedToCalculateFee(reason: "rpc")),
             .signer(.mnemonic(reason: "locked")),
             .signer(.failedToSend(reason: "insufficient funds")),
+            .signer(.requestEndedAfterBroadcast),
             .unexpectedResponse,
         ]
 
@@ -45,12 +46,13 @@ final class EarnDappAnalyticsTests: XCTestCase {
             spy.events.map { $0.args["error_code"] as? String },
             [
                 "no_account", "invalid_params", "chain_mismatch", "failed_to_calculate_fee", "mnemonic", "failed_to_send",
+                "request_ended_after_broadcast",
                 "unexpected_response",
             ]
         )
         XCTAssertEqual(
             spy.events.map { $0.args["error_message"] as? String },
-            [nil, "missing domain", nil, "rpc", "locked", "insufficient funds", nil]
+            [nil, "missing domain", nil, "rpc", "locked", "insufficient funds", nil, nil]
         )
         XCTAssertEqual(spy.events.first?.args["method"] as? String, "sign_typed_data")
         XCTAssertNil(spy.events.first?.args["vault_id"])

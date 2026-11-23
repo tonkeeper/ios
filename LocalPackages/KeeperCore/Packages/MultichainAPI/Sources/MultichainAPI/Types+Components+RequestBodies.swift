@@ -12,28 +12,6 @@ public import struct Foundation.Date
 extension Components {
     /// Types generated from the `#/components/requestBodies` section of the OpenAPI document.
     public enum RequestBodies {
-        /// - Remark: Generated from `#/components/requestBodies/WalletReindex`.
-        @frozen public enum WalletReindex: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/requestBodies/WalletReindex/json`.
-            public struct jsonPayload: Codable, Hashable, Sendable {
-                /// Chains to reindex. Omit or leave empty to reindex all chains on which the wallet has accounts.
-                ///
-                /// - Remark: Generated from `#/components/requestBodies/WalletReindex/json/chains`.
-                public var chains: [Components.Schemas.Chain]?
-                /// Creates a new `jsonPayload`.
-                ///
-                /// - Parameters:
-                ///   - chains: Chains to reindex. Omit or leave empty to reindex all chains on which the wallet has accounts.
-                public init(chains: [Components.Schemas.Chain]? = nil) {
-                    self.chains = chains
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case chains
-                }
-            }
-            /// - Remark: Generated from `#/components/requestBodies/WalletReindex/content/application\/json`.
-            case json(Components.RequestBodies.WalletReindex.jsonPayload)
-        }
         /// - Remark: Generated from `#/components/requestBodies/BroadcastTx`.
         @frozen public enum BroadcastTx: Sendable, Hashable {
             /// - Remark: Generated from `#/components/requestBodies/BroadcastTx/json`.
@@ -321,33 +299,140 @@ extension Components {
             /// - Remark: Generated from `#/components/requestBodies/DeviceBindingsRequest/content/application\/json`.
             case json(Components.RequestBodies.DeviceBindingsRequest.jsonPayload)
         }
-        /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect`.
-        @frozen public enum AuthIntrospect: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json`.
+        /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister`.
+        @frozen public enum LiveActivityRegister: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json`.
             public struct jsonPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json/device_id`.
-                public var device_id: Swift.String
-                /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json/wallet_id`.
-                public var wallet_id: Swift.String?
+                /// ActivityKit Activity.id
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/activity_id`.
+                public var activity_id: Swift.String
+                /// ActivityKit update token of this activity, hex
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/push_token`.
+                public var push_token: Swift.String
+                /// The wallet the activity shows; bound to the device
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/wallet_id`.
+                public var wallet_id: Swift.String
+                /// The activity's current ContentState as the app encodes it; transactionId names the shown transaction
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/content_state`.
+                public struct content_statePayload: Codable, Hashable, Sendable {
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `content_statePayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
+                        self.additionalProperties = additionalProperties
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// The activity's current ContentState as the app encodes it; transactionId names the shown transaction
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/content_state`.
+                public var content_state: Components.RequestBodies.LiveActivityRegister.jsonPayload.content_statePayload
+                /// The final state's title for each outcome, in the app's language
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/final_titles`.
+                public struct final_titlesPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/final_titles/confirmed`.
+                    public var confirmed: Swift.String
+                    /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/final_titles/failed`.
+                    public var failed: Swift.String
+                    /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/final_titles/dropped`.
+                    public var dropped: Swift.String
+                    /// Creates a new `final_titlesPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - confirmed:
+                    ///   - failed:
+                    ///   - dropped:
+                    public init(
+                        confirmed: Swift.String,
+                        failed: Swift.String,
+                        dropped: Swift.String
+                    ) {
+                        self.confirmed = confirmed
+                        self.failed = failed
+                        self.dropped = dropped
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case confirmed
+                        case failed
+                        case dropped
+                    }
+                }
+                /// The final state's title for each outcome, in the app's language
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/final_titles`.
+                public var final_titles: Components.RequestBodies.LiveActivityRegister.jsonPayload.final_titlesPayload
+                /// The final update's alert body; its title is the final title
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/json/alert_body`.
+                public var alert_body: Swift.String?
                 /// Creates a new `jsonPayload`.
                 ///
                 /// - Parameters:
-                ///   - device_id:
-                ///   - wallet_id:
+                ///   - activity_id: ActivityKit Activity.id
+                ///   - push_token: ActivityKit update token of this activity, hex
+                ///   - wallet_id: The wallet the activity shows; bound to the device
+                ///   - content_state: The activity's current ContentState as the app encodes it; transactionId names the shown transaction
+                ///   - final_titles: The final state's title for each outcome, in the app's language
+                ///   - alert_body: The final update's alert body; its title is the final title
                 public init(
-                    device_id: Swift.String,
-                    wallet_id: Swift.String? = nil
+                    activity_id: Swift.String,
+                    push_token: Swift.String,
+                    wallet_id: Swift.String,
+                    content_state: Components.RequestBodies.LiveActivityRegister.jsonPayload.content_statePayload,
+                    final_titles: Components.RequestBodies.LiveActivityRegister.jsonPayload.final_titlesPayload,
+                    alert_body: Swift.String? = nil
                 ) {
-                    self.device_id = device_id
+                    self.activity_id = activity_id
+                    self.push_token = push_token
                     self.wallet_id = wallet_id
+                    self.content_state = content_state
+                    self.final_titles = final_titles
+                    self.alert_body = alert_body
                 }
                 public enum CodingKeys: String, CodingKey {
-                    case device_id
+                    case activity_id
+                    case push_token
                     case wallet_id
+                    case content_state
+                    case final_titles
+                    case alert_body
                 }
             }
-            /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/content/application\/json`.
-            case json(Components.RequestBodies.AuthIntrospect.jsonPayload)
+            /// - Remark: Generated from `#/components/requestBodies/LiveActivityRegister/content/application\/json`.
+            case json(Components.RequestBodies.LiveActivityRegister.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/LiveActivityUnregister`.
+        @frozen public enum LiveActivityUnregister: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/LiveActivityUnregister/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/LiveActivityUnregister/json/activity_id`.
+                public var activity_id: Swift.String
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - activity_id:
+                public init(activity_id: Swift.String) {
+                    self.activity_id = activity_id
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case activity_id
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/LiveActivityUnregister/content/application\/json`.
+            case json(Components.RequestBodies.LiveActivityUnregister.jsonPayload)
         }
         /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe`.
         @frozen public enum WalletPushSubscribe: Sendable, Hashable {

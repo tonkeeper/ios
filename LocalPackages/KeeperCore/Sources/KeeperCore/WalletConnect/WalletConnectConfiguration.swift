@@ -1,5 +1,5 @@
 import Foundation
-import ReownWalletKit
+import WalletConnectSign
 
 struct WalletConnectConfiguration {
     var projectId: String

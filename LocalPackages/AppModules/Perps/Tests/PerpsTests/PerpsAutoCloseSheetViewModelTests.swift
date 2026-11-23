@@ -1,6 +1,7 @@
 @testable import Perps
 import PerpsModels
 import TKLocalize
+import TKTestSupport
 import XCTest
 
 @MainActor
@@ -15,7 +16,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         priceDecimals: Int = 2,
         draft: PerpsAutoClose? = nil,
         roiInput: PerpsAutoCloseROIInput = .none,
-        inputMemory: PerpsAutoCloseInputMemory.Slot? = nil
+        inputMemory: PerpsTradeInputMemory.Slot? = nil
     ) -> PerpsAutoCloseSheetViewModel {
         PerpsAutoCloseSheetViewModel(
             context: PerpsAutoCloseSheetContext(
@@ -172,21 +173,79 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isValid)
     }
 
-    func test_long_stopLossBeyondLiquidationWarnsWithoutBlockingSet() {
-        // A manually entered SL at/below liquidation can never trigger, but the venue
-        // takes it: the sheet says so and leaves Set alive.
+    func test_long_stopLossBeyondLiquidation_blocksSetUntilCleared() {
         let viewModel = makeViewModel(side: .long, entry: 100, leverage: 10, liquidation: 90)
+        viewModel.setTakeProfitPrice("110")
         viewModel.setStopLossPrice("85")
-        XCTAssertTrue(viewModel.isApplyEnabled)
-        XCTAssertFalse(viewModel.isValid)
+        XCTAssertFalse(viewModel.isApplyEnabled)
         XCTAssertEqual(
             viewModel.stopLossWarningText,
-            "The Stop Loss value must be above the liquidation price (\(PerpsFormatting.test.usd(90)))."
+            "Liquidation comes first at \(PerpsFormatting.test.price(90)). Set stop loss above it."
         )
-        // A SL between liquidation and entry is fine.
-        viewModel.setStopLossPrice("95")
-        XCTAssertTrue(viewModel.isValid)
+        viewModel.setStopLossPrice("90")
+        XCTAssertFalse(viewModel.isApplyEnabled)
+        viewModel.setStopLossPrice("90.01")
+        XCTAssertTrue(viewModel.isApplyEnabled)
+        viewModel.setStopLossPrice("85")
+        viewModel.setStopLossPrice("")
         XCTAssertNil(viewModel.stopLossWarningText)
+        XCTAssertTrue(viewModel.isApplyEnabled)
+    }
+
+    func test_stopLossNearLiquidation_warnsButKeepsSetEnabled() {
+        func nearText(_ liquidation: Double) -> String {
+            "The Stop Loss value is close to the liquidation price (\(PerpsFormatting.test.price(liquidation))) and may not execute."
+        }
+        let long = makeViewModel(side: .long, entry: 100, leverage: 10, liquidation: 90)
+        long.setStopLossPrice("90.9")
+        XCTAssertEqual(long.stopLossWarningText, nearText(90))
+        XCTAssertTrue(long.isApplyEnabled)
+        long.setStopLossPrice("91")
+        XCTAssertNil(long.stopLossWarningText)
+
+        let short = makeViewModel(side: .short, entry: 100, leverage: 10, liquidation: 110)
+        short.setStopLossPrice("109.5")
+        XCTAssertEqual(short.stopLossWarningText, nearText(110))
+        XCTAssertTrue(short.isApplyEnabled)
+    }
+
+    func test_short_stopLossBeyondLiquidation_blocksSet() {
+        let viewModel = makeViewModel(side: .short, entry: 100, leverage: 10, liquidation: 110)
+        viewModel.setStopLossPrice("110")
+        XCTAssertFalse(viewModel.isApplyEnabled)
+        XCTAssertEqual(
+            viewModel.stopLossWarningText,
+            "Liquidation comes first at \(PerpsFormatting.test.price(110)). Set stop loss below it."
+        )
+        viewModel.setStopLossPrice("105")
+        XCTAssertTrue(viewModel.isApplyEnabled)
+    }
+
+    func test_stopLossTypedAsROIBeyondLiquidation_blocksSet() {
+        // −150% at 10x is a 15% move: 100 → 85, past the 90 liquidation.
+        let viewModel = makeViewModel(side: .long, entry: 100, leverage: 10, liquidation: 90)
+        viewModel.setStopLossPercent("150")
+        XCTAssertFalse(viewModel.isApplyEnabled)
+        XCTAssertNotNil(viewModel.stopLossWarningText)
+    }
+
+    func test_liveSheet_restingStopLossBeyondLiquidation_blocksSetUntilCleared() {
+        let viewModel = makeViewModel(side: .long, entry: 100, leverage: 10, liquidation: 90, draft: PerpsAutoClose(
+            takeProfit: PerpsAutoCloseTrigger(triggerPrice: 110),
+            stopLoss: PerpsAutoCloseTrigger(triggerPrice: 85)
+        ))
+        viewModel.onApply = .submit { _ in .finished }
+        XCTAssertFalse(viewModel.isApplyEnabled)
+        viewModel.setStopLossPrice("")
+        XCTAssertTrue(viewModel.isApplyEnabled)
+    }
+
+    func test_liquidationCaption_showsOnlyAKnownLiquidation() {
+        XCTAssertEqual(
+            makeViewModel(side: .long, liquidation: 90).stopLossLiquidationText,
+            "Liquidation at \(PerpsFormatting.test.price(90))"
+        )
+        XCTAssertNil(makeViewModel(side: .long, liquidation: nil).stopLossLiquidationText)
     }
 
     // MARK: - Apply
@@ -229,7 +288,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         // Re-entry while in flight is a no-op.
         viewModel.apply()
 
-        await waitUntil { !viewModel.isSubmitting }
+        await waitUntil(viewModel) { !viewModel.isSubmitting }
         XCTAssertEqual(submitCallCount, 1, "re-entry while in flight must be a no-op")
         XCTAssertEqual(viewModel.submitErrorText, "boom")
         XCTAssertEqual(submitted??.takeProfit?.triggerPrice, 110)
@@ -241,7 +300,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         // The owner closed the sheet, or the user backed out of the passcode.
         viewModel.onApply = .submit { _ in .finished }
         viewModel.apply()
-        await waitUntil { !viewModel.isSubmitting }
+        await waitUntil(viewModel) { !viewModel.isSubmitting }
         XCTAssertNil(viewModel.submitErrorText, "a finished submit must not render an inline warning")
     }
 
@@ -258,7 +317,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         }
         XCTAssertTrue(viewModel.isApplyEnabled, "clearing resting legs is a legitimate Set")
         viewModel.apply()
-        await waitUntil { !viewModel.isSubmitting }
+        await waitUntil(viewModel) { !viewModel.isSubmitting }
         XCTAssertEqual(submitted, PerpsAutoClose?.none, "emptied fields over resting legs mean clearing — the handler must see a nil target")
     }
 
@@ -401,7 +460,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         let roiInput = PerpsAutoCloseROIInput(takeProfit: PerpsAutoCloseROI(sign: .plus, text: "1.23"))
         // On 100.05 the typed 1.23% would name 100.2, not the leg's 100.1.
         let moved = makeViewModel(side: .long, entry: 100.05, priceDecimals: 1, draft: draft, roiInput: roiInput)
-        XCTAssertEqual(moved.takeProfitPercentText, "0.5")
+        XCTAssertEqual(moved.takeProfitPercentText, "0.49")
 
         var emitted: PerpsAutoCloseROIInput?
         moved.onApply = .draft { _, roiInput in emitted = roiInput }
@@ -420,13 +479,13 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
     }
 
     func test_inputMemory_restoresTheTypedROI_andForgetsALegRetypedAsAPrice() {
-        let slot = PerpsAutoCloseInputMemory().slot(accountIndex: 7, marketId: 1)
+        let slot = PerpsTradeInputMemory().slot(accountIndex: 7, marketId: 1)
         let first = makeViewModel(side: .long, entry: 100, priceDecimals: 1, inputMemory: slot)
         first.setTakeProfitPercent("1.23")
         first.setStopLossPrice("99")
         first.onApply = .submit { _ in .finished }
         first.apply()
-        XCTAssertEqual(slot.input, PerpsAutoCloseROIInput(takeProfit: PerpsAutoCloseROI(sign: .plus, text: "1.23")))
+        XCTAssertEqual(slot.autoCloseInput, PerpsAutoCloseROIInput(takeProfit: PerpsAutoCloseROI(sign: .plus, text: "1.23")))
 
         let resting = PerpsAutoClose(
             takeProfit: PerpsAutoCloseTrigger(triggerPrice: 100.1),
@@ -439,7 +498,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         reopened.setTakeProfitPrice("100.2")
         reopened.onApply = .submit { _ in .finished }
         reopened.apply()
-        XCTAssertEqual(slot.input, .none)
+        XCTAssertEqual(slot.autoCloseInput, .none)
     }
 
     func test_resolving_rederivesOnlyTheLegsTypedAsROI() {
@@ -455,12 +514,12 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
     }
 
     func test_inputMemory_keepsUntouchedLegsWhenAnotherSheetUsesADifferentBase() {
-        let slot = PerpsAutoCloseInputMemory().slot(accountIndex: 7, marketId: 1)
+        let slot = PerpsTradeInputMemory().slot(accountIndex: 7, marketId: 1)
         let input = PerpsAutoCloseROIInput(
             takeProfit: PerpsAutoCloseROI(sign: .plus, text: "10"),
             stopLoss: PerpsAutoCloseROI(sign: .minus, text: "20")
         )
-        slot.remember(input)
+        slot.rememberAutoCloseInput(input)
         let draft = PerpsAutoClose(
             takeProfit: PerpsAutoCloseTrigger(triggerPrice: 101),
             stopLoss: PerpsAutoCloseTrigger(triggerPrice: 98)
@@ -469,26 +528,26 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         XCTAssertEqual(sheet.roiInput, .none)
         sheet.onApply = .draft { _, _ in }
         sheet.apply()
-        XCTAssertEqual(slot.input, input)
+        XCTAssertEqual(slot.autoCloseInput, input)
 
         sheet.setTakeProfitPrice("102")
         sheet.apply()
-        XCTAssertEqual(slot.input, PerpsAutoCloseROIInput(stopLoss: input.stopLoss))
+        XCTAssertEqual(slot.autoCloseInput, PerpsAutoCloseROIInput(stopLoss: input.stopLoss))
 
         sheet.setStopLossPercent("")
         sheet.apply()
-        XCTAssertEqual(slot.input, .none)
+        XCTAssertEqual(slot.autoCloseInput, .none)
     }
 
     func test_inputMemory_settingANewLegPreservesAnUntouchedMissingLeg() {
-        let slot = PerpsAutoCloseInputMemory().slot(accountIndex: 7, marketId: 1)
+        let slot = PerpsTradeInputMemory().slot(accountIndex: 7, marketId: 1)
         let tp = PerpsAutoCloseROI(sign: .plus, text: "1.23")
-        slot.remember(PerpsAutoCloseROIInput(takeProfit: tp))
+        slot.rememberAutoCloseInput(PerpsAutoCloseROIInput(takeProfit: tp))
         let sheet = makeViewModel(side: .long, entry: 200, inputMemory: slot)
         sheet.setStopLossPercent("10")
         sheet.onApply = .draft { _, _ in }
         sheet.apply()
-        XCTAssertEqual(slot.input, PerpsAutoCloseROIInput(
+        XCTAssertEqual(slot.autoCloseInput, PerpsAutoCloseROIInput(
             takeProfit: tp,
             stopLoss: PerpsAutoCloseROI(sign: .minus, text: "10")
         ))
@@ -542,7 +601,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
             intent: intent, sizeDecimals: 6, priceDecimals: 2,
             review: PerpsOpenOrderReview(
                 symbol: "BTC", marginUsd: 100, entryPrice: 100, liquidationPrice: nil,
-                notionalUsd: 1000, baseSize: 10, estimatedFeeUsd: nil, liquidationUnavailableReason: nil
+                notionalUsd: 1000, baseSize: 10, estimatedFeeUsd: nil, feeRatePercent: nil, liquidationUnavailableReason: nil
             )
         )
         let oldSheet = context.autoCloseSheetContext(referencePrice: 120, roiInput: input)
@@ -551,7 +610,7 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
 
         context.review = PerpsOpenOrderReview(
             symbol: "BTC", marginUsd: 100, entryPrice: 125, liquidationPrice: nil,
-            notionalUsd: 1000, baseSize: 8, estimatedFeeUsd: nil, liquidationUnavailableReason: nil
+            notionalUsd: 1000, baseSize: 8, estimatedFeeUsd: nil, feeRatePercent: nil, liquidationUnavailableReason: nil
         )
         let refreshed = context.autoCloseSheetContext(referencePrice: 125.5, roiInput: input)
         let sheet = PerpsAutoCloseSheetViewModel(context: refreshed, format: PerpsFormatting.test)
@@ -560,16 +619,10 @@ final class PerpsAutoCloseSheetViewModelTests: XCTestCase {
         XCTAssertEqual(sheet.takeProfitPrice, 126.25)
         XCTAssertEqual(sheet.takeProfitExpectedText, TKLocales.Perps.OpenPosition.expectedProfit(PerpsFormatting.test.signedUsd(10)))
     }
+}
 
-    private func waitUntil(
-        timeout: TimeInterval = 2,
-        intervalNanoseconds: UInt64 = 5_000_000,
-        condition: @escaping () -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return }
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-        }
+private extension PerpsAutoCloseSheetViewModel {
+    var isValid: Bool {
+        takeProfitWarningText == nil && stopLossWarningText == nil
     }
 }

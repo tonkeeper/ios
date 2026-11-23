@@ -54,6 +54,7 @@ private extension LedgerConnectViewController {
     func setupBindings() {
         viewModel.didUpdateModel = { [weak self] model in
             self?.customView.configure(model: model)
+            self?.didUpdateHeight?()
         }
 
         viewModel.didShowTurnOnBluetoothAlert = { [weak self] in
@@ -61,6 +62,9 @@ private extension LedgerConnectViewController {
         }
         viewModel.didShowBluetoothAuthorisationAlert = { [weak self] in
             self?.showBluetoothAuthorisationAlert()
+        }
+        viewModel.didShowPairingRemovedAlert = { [weak self] retry in
+            self?.showPairingRemovedAlert(retry: retry)
         }
     }
 
@@ -93,6 +97,18 @@ private extension LedgerConnectViewController {
             }
         }))
         alertController.addAction(UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel))
+        self.present(alertController, animated: true)
+    }
+
+    func showPairingRemovedAlert(retry: @escaping () -> Void) {
+        let alertController = UIAlertController(
+            title: TKLocales.Bluetooth.PairingRemovedAlert.title,
+            message: TKLocales.Bluetooth.PairingRemovedAlert.message,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: TKLocales.Actions.ok, style: .default, handler: { _ in
+            retry()
+        }))
         self.present(alertController, animated: true)
     }
 }

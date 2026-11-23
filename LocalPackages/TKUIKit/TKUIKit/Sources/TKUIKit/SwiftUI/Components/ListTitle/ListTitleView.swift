@@ -3,10 +3,19 @@ import UIKit
 
 public struct ListTitleView: View {
     public var config: Config
+    private let titleTextStyle: TKTextStyle
+    /// Receives the view behind the title, for a tooltip to point at.
+    private let onResolveTitleAnchor: ((UIView) -> Void)?
     @State private var accessoryAnchorView: UIView?
 
-    public init(config: Config) {
+    public init(
+        config: Config,
+        titleTextStyle: TKTextStyle = .label1,
+        onResolveTitleAnchor: ((UIView) -> Void)? = nil
+    ) {
         self.config = config
+        self.titleTextStyle = titleTextStyle
+        self.onResolveTitleAnchor = onResolveTitleAnchor
     }
 
     public var body: some View {
@@ -23,6 +32,7 @@ public struct ListTitleView: View {
                     title,
                     action: titleAction
                 )
+                .background(titleAnchorResolver)
 
                 Spacer(minLength: 0)
 
@@ -71,9 +81,16 @@ public struct ListTitleView: View {
         }
     }
 
+    @ViewBuilder
+    private var titleAnchorResolver: some View {
+        if let onResolveTitleAnchor {
+            AnchorViewResolver(onResolveView: onResolveTitleAnchor)
+        }
+    }
+
     private func titleText(_ title: String) -> some View {
         Text(title)
-            .textStyle(.label1)
+            .textStyle(titleTextStyle)
             .foregroundStyle(.textPrimary)
     }
 

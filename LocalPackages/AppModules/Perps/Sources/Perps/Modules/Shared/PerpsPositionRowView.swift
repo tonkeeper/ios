@@ -10,6 +10,7 @@ public struct PerpsPositionRowView: View {
     private let valueText: String
     private let detailText: String
     private let detailColor: TKColor
+    private var subtitleText: String?
 
     public init(position: PerpsPositionRowItem) {
         symbol = position.symbol
@@ -25,31 +26,41 @@ public struct PerpsPositionRowView: View {
     init(order: PerpsLimitOrderRowItem) {
         symbol = order.symbol
         iconURL = order.iconURL
-        leverageText = nil
+        leverageText = order.leverageText
         sideText = order.sideText
         isLong = order.isLong
         valueText = order.valueText
         detailText = order.limitText
         detailColor = .textSecondary
+        subtitleText = order.autoCloseText
     }
 
     public var body: some View {
         HStack(spacing: 0) {
             icon
 
-            HStack(spacing: 0) {
-                Text(symbol)
-                    .textStyle(.label1)
-                    .foregroundStyle(.textPrimary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                if let leverage = leverageText {
-                    TKTagSwiftUIView(config: .tag(text: leverage))
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 0) {
+                    Text(symbol)
+                        .textStyle(.label1)
+                        .foregroundStyle(.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if let leverage = leverageText {
+                        TKTagSwiftUIView(config: .tag(text: leverage))
+                    }
+                    TKTagSwiftUIView(config: .accentTag(
+                        text: sideText,
+                        accent: isLong ? .accentGreen : .accentRed
+                    ))
                 }
-                TKTagSwiftUIView(config: .accentTag(
-                    text: sideText,
-                    accent: isLong ? .accentGreen : .accentRed
-                ))
+                if let subtitleText {
+                    Text(subtitleText)
+                        .textStyle(.body2)
+                        .foregroundStyle(.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
             .padding(.leading, Layout.cellPadding)
 

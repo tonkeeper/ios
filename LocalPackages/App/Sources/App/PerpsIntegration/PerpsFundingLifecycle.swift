@@ -1,5 +1,6 @@
 import Foundation
 import TKCore
+import TKLogging
 
 @MainActor
 final class PerpsFundingLifecycle: AppStateTrackerObserver, ReachabilityTrackerObserver {
@@ -7,6 +8,7 @@ final class PerpsFundingLifecycle: AppStateTrackerObserver, ReachabilityTrackerO
     private let continuation: AsyncStream<Bool>.Continuation
     private let appState: AppStateTracker
     private let reachability: ReachabilityTracker
+    private var lastPublished: Bool?
 
     init(appState: AppStateTracker, reachability: ReachabilityTracker) {
         self.appState = appState
@@ -32,6 +34,11 @@ final class PerpsFundingLifecycle: AppStateTrackerObserver, ReachabilityTrackerO
     }
 
     private func publish() {
-        continuation.yield(appState.state != .background && reachability.state == .connected)
+        let enabled = appState.state != .background && reachability.state == .connected
+        if lastPublished != enabled {
+            PerpsOperationLog.event("lifecycle", outcome: enabled ? "active" : "paused", fields: ["app_state": String(describing: appState.state), "reachability": String(describing: reachability.state)])
+            lastPublished = enabled
+        }
+        continuation.yield(enabled)
     }
 }

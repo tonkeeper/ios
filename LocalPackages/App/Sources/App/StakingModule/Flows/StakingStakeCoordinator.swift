@@ -71,10 +71,6 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
             stakingDepositInputAPYModule.input.setInputAmount($0)
         }
 
-        module.view.setupRightCloseButton { [weak self] in
-            self?.didFinish?(self)
-        }
-
         module.output.didConfirm = { [weak self] item in
             guard let self else { return }
             Task {

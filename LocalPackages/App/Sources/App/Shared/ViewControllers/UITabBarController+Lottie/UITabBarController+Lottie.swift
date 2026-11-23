@@ -1,4 +1,5 @@
 import ObjectiveC.runtime
+import TKUIKit
 import UIKit
 
 private var lottieControllerKey: UInt8 = 0
@@ -15,13 +16,19 @@ extension UITabBarController {
     }
 
     func configureAnimatedTabBarItems(items: [LottieResourceConvertible]) {
-        if let lottieController {
-            lottieController.uninstall()
+        lottieController?.uninstall()
+        lottieController = nil
+        guard let tabBarController = self as? TKTabBarController else { return }
+
+        tabBarController.didChangeStyle = { [weak tabBarController] _ in
+            tabBarController?.configureAnimatedTabBarItems(items: items)
         }
-        let lottieController = DefaultLottieTabBarController(
-            tabBarController: self,
-            items: items
-        )
+        let lottieController: LottieTabBarControlling? = switch tabBarController.style {
+        case .custom:
+            DefaultLottieTabBarController(tabBarController: tabBarController, items: items)
+        case .systemHorizontal, .systemVertical:
+            ItemImageLottieTabBarController(tabBarController: tabBarController, items: items)
+        }
         self.lottieController = lottieController?.denyingTapOnSelectedItem()
     }
 

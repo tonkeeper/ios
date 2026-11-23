@@ -79,4 +79,13 @@ extension BatteryAPI {
         }
         return .rejected(status: status, code: error.code, message: error.message)
     }
+
+    /// `/message` refuses in the format older than gasless 2.0, where `error-key` is the machine-readable
+    /// reason. A 401 stays generic for the same reason as above.
+    static func messageRejection(status: Int, message: String, key: String?) -> ApiError {
+        guard status != 401, let key, !key.isEmpty else {
+            return .badStatus(status: status, message: message)
+        }
+        return .rejected(status: status, code: key, message: message)
+    }
 }

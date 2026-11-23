@@ -26,7 +26,8 @@ enum TonConnectResponseBuilder {
                 device: .init(
                     maxMessages: wallet.contract.maxMessages,
                     appVersion: keeperVersion,
-                    isSignMessageSupported: isSignMessageSupported
+                    isSignMessageSupported: isSignMessageSupported,
+                    isSignDataSupported: wallet.isTonConnectSignDataAvailable
                 )
             )
         )
@@ -73,7 +74,8 @@ enum TonConnectResponseBuilder {
                 device: .init(
                     maxMessages: wallet.contract.maxMessages,
                     appVersion: keeperVersion,
-                    isSignMessageSupported: isSignMessageSupported
+                    isSignMessageSupported: isSignMessageSupported,
+                    isSignDataSupported: wallet.isTonConnectSignDataAvailable
                 )
             )
         )
@@ -144,16 +146,38 @@ enum TonConnectResponseBuilder {
         )
     }
 
+    static func buildDisconnectEvent(
+        sessionCrypto: TonConnectSessionCrypto,
+        clientId: String
+    ) throws -> String {
+        try encrypt(
+            JSONEncoder().encode(TonConnect.DisconnectEvent()),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
+        )
+    }
+
     private static func encrypt(
         _ response: TonConnect.SendResponse,
         sessionCrypto: TonConnectSessionCrypto,
         clientId: String
     ) throws -> String {
-        let responseData = try JSONEncoder().encode(response)
+        try encrypt(
+            JSONEncoder().encode(response),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
+        )
+    }
+
+    private static func encrypt(
+        _ message: Data,
+        sessionCrypto: TonConnectSessionCrypto,
+        clientId: String
+    ) throws -> String {
         guard let receiverPublicKey = Data(strictHex: clientId) else { return "" }
 
         return try sessionCrypto.encrypt(
-            message: responseData,
+            message: message,
             receiverPublicKey: receiverPublicKey
         ).base64EncodedString()
     }

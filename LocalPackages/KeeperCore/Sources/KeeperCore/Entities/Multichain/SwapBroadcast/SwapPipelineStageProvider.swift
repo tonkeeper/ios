@@ -28,8 +28,7 @@ protocol SwapPipelineStageProvider {
         mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: (any Fee)?,
-        mainFee: any Fee,
-        approvalMode: MultichainSwapApprovalMode
+        mainFee: any Fee
     ) -> SwapApprovalTransaction?
 
     func nonce(
@@ -38,8 +37,8 @@ protocol SwapPipelineStageProvider {
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> BignumBigInteger
 
-    func unlockSigningWallet(
-        passcodeProvider: @escaping () async -> String?,
+    func signingWallet(
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet
     ) async throws(MultichainSwapExecutionFailure) -> SwapSigningWallet
 
@@ -125,15 +124,13 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
         mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: (any Fee)?,
-        mainFee: any Fee,
-        approvalMode: MultichainSwapApprovalMode
+        mainFee: any Fee
     ) -> SwapApprovalTransaction? {
         approvalResolver.resolveApprovalTransaction(
             mainTransactions: mainTransactions,
             approvalData: approvalData,
             approvalFee: approvalFee,
-            mainFee: mainFee,
-            approvalMode: approvalMode
+            mainFee: mainFee
         )
     }
 
@@ -149,14 +146,19 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
         )
     }
 
-    func unlockSigningWallet(
-        passcodeProvider: @escaping () async -> String?,
+    func signingWallet(
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet
     ) async throws(MultichainSwapExecutionFailure) -> SwapSigningWallet {
-        try await walletUnlocker.unlockSigningWallet(
-            passcodeProvider: passcodeProvider,
-            swapWallet: swapWallet
-        )
+        switch signer {
+        case let .mnemonic(passcodeProvider):
+            return try await walletUnlocker.unlockSigningWallet(
+                passcodeProvider: passcodeProvider,
+                swapWallet: swapWallet
+            )
+        case let .device(device):
+            return .device(device, swapWallet: swapWallet)
+        }
     }
 
     func signAndBroadcast(
@@ -176,7 +178,7 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
             )
         }
         let mediator = client.blockchain.getMediator(network: networkType)
-        let signingOutput = try await transactionSigner.signAndEncode(
+        let signingOutputs = try await transactionSigner.signAndEncode(
             mediator: mediator,
             transactions: transactions,
             fee: fee,
@@ -185,11 +187,51 @@ final class SwapPipelineStageProviderImplementation: SwapPipelineStageProvider {
             wallet: wallet,
             payloadId: payloadId
         )
-        return try await transactionBroadcaster.broadcast(
-            mediator: mediator,
-            account: account,
-            signingOutput: signingOutput,
-            payloadId: payloadId
+        return try await Self.broadcastInOrder(
+            signingOutputs,
+            payloadId: payloadId,
+            waitForNonce: { (offset: Int) async throws(MultichainSwapExecutionFailure) in
+                try await nonceProvider.waitForNonce(
+                    nonce.add(other: BignumBigInteger.Companion.shared.parseString(string: "\(offset)", base: 10)),
+                    mediator: mediator,
+                    account: account,
+                    payloadId: payloadId
+                )
+            },
+            broadcast: { (signingOutput: KotlinByteArray) async throws(MultichainSwapExecutionFailure) -> String in
+                try await transactionBroadcaster.broadcast(
+                    mediator: mediator,
+                    account: account,
+                    signingOutput: signingOutput,
+                    payloadId: payloadId
+                )
+            }
         )
+    }
+
+    /// Sends `outputs` in order and returns the hash of the last one. Each one after the first waits until the
+    /// account's nonce has moved `offset` past the one they were signed from: a TON wallet takes a seqno only once the
+    /// one before it has landed.
+    static func broadcastInOrder<Output>(
+        _ outputs: [Output],
+        payloadId: String,
+        waitForNonce: (_ offset: Int) async throws(MultichainSwapExecutionFailure) -> Void,
+        broadcast: (Output) async throws(MultichainSwapExecutionFailure) -> String
+    ) async throws(MultichainSwapExecutionFailure) -> String {
+        var txHash: String?
+        for (offset, output) in outputs.enumerated() {
+            if offset > 0 {
+                try await waitForNonce(offset)
+            }
+            txHash = try await broadcast(output)
+        }
+        guard let txHash else {
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .unknown,
+                reason: "empty or nil swap signing outputs"
+            )
+        }
+        return txHash
     }
 }

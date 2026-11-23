@@ -22,6 +22,7 @@ public struct MultichainTransactionDetailsView: View {
     public var body: some View {
         VStack(spacing: 0) {
             hero
+            rewardRow
             detailsList
             transactionButton
             actionButton
@@ -138,21 +139,7 @@ private extension MultichainTransactionDetailsView {
                 .foregroundStyle(.textSecondary)
                 .lineLimit(1)
 
-            CircularLoader(
-                mode: .indeterminate,
-                preset: .custom(
-                    CircularLoaderConfiguration(
-                        lineWidth: Layout.pendingLoaderLineWidth,
-                        progressColor: palette.icon.secondary,
-                        trackColor: palette.icon.secondary.opacity(Layout.pendingLoaderTrackOpacity),
-                        size: CGSize(
-                            width: Layout.pendingLoaderSize,
-                            height: Layout.pendingLoaderSize
-                        ),
-                        contentPadding: 0
-                    )
-                )
-            )
+            MultichainTransactionPendingLoader()
         }
     }
 
@@ -178,17 +165,34 @@ private extension MultichainTransactionDetailsView {
                 size: .extraLarge,
                 chainIconPosition: .trailing
             )
-        case let .nft(asset):
+        case let .nft(asset, isSecureMode):
             AssetAvatarView(
                 imageSource: asset.imageSource,
                 size: .extraLarge,
                 shape: .rectangle(cornerRadius: Layout.nftImageCornerRadius)
             )
+            .overlay {
+                if isSecureMode {
+                    TKSecureBlurViewRepresentable()
+                        .clipShape(RoundedRectangle(cornerRadius: Layout.nftImageCornerRadius, style: .continuous))
+                }
+            }
         case let .swap(left, right):
             SwapAssetAvatarView(
                 left: left,
                 right: right
             )
+        }
+    }
+
+    @ViewBuilder
+    var rewardRow: some View {
+        if let row = model.rewardRow {
+            ConfirmActionRowView(row: row, verticalPadding: Layout.rewardRowVerticalPadding)
+                .background(.backgroundContent)
+                .clipShape(RoundedRectangle(cornerRadius: Layout.detailsCornerRadius, style: .continuous))
+                .padding(.horizontal, Layout.detailsHorizontalPadding)
+                .padding(.bottom, Layout.detailsBottomPadding)
         }
     }
 
@@ -267,14 +271,31 @@ private extension MultichainTransactionDetailsView {
         static let heroBottomPadding: CGFloat = 31
         static let pendingStatusSpacing: CGFloat = 6
         static let tagsTopPadding: CGFloat = 15
-        static let pendingLoaderSize: CGFloat = 14
-        static let pendingLoaderLineWidth: CGFloat = 2
-        static let pendingLoaderTrackOpacity: Double = 0.32
         static let detailsHorizontalPadding: CGFloat = 16
         static let detailsBottomPadding: CGFloat = 16
         static let detailsCornerRadius: CGFloat = 16
+        static let rewardRowVerticalPadding: CGFloat = 16
         static let transactionButtonTopPadding: CGFloat = 16
         static let transactionButtonBottomPadding: CGFloat = 19
+    }
+}
+
+struct MultichainTransactionPendingLoader: View {
+    @Environment(\.tkPalette) private var palette
+
+    var body: some View {
+        CircularLoader(
+            mode: .indeterminate,
+            preset: .custom(
+                CircularLoaderConfiguration(
+                    lineWidth: 2,
+                    progressColor: palette.icon.secondary,
+                    trackColor: palette.icon.secondary.opacity(0.32),
+                    size: CGSize(width: 14, height: 14),
+                    contentPadding: 0
+                )
+            )
+        )
     }
 }
 

@@ -1,4 +1,3 @@
-import Kingfisher
 import SnapKit
 import TKUIKit
 import UIKit

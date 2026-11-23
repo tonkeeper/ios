@@ -83,7 +83,7 @@ private extension LegacyPairMultichainSwapDefaultAssetsService {
             prices[currency.code.lowercased()] = NSDecimalNumber(decimal: holding.price).doubleValue
         }
         return MultichainAsset(
-            asset: MultichainAssetDetails(assetInfo: details.assetInfo),
+            asset: MultichainAssetDetails(assetInfo: details.assetInfo, swapAggregators: details.swapAggregators),
             price: MultichainAssetPrice(
                 prices: prices,
                 diff24h: [:],

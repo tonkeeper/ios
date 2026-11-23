@@ -1,6 +1,7 @@
 import BigInt
 import ChainKit
 import Foundation
+import OperationReviewModels
 import TKLogging
 
 public protocol MultichainSwapExecutionService {
@@ -11,36 +12,51 @@ public protocol MultichainSwapExecutionService {
         route: MultichainSwapRoute
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionPlan
 
+    /// `spendLimit` is the most of `sourceAsset` the user agreed to sell, in its base units, and
+    /// `consent` answers what the review of a relayed swap asks. The chain's own coin uses neither.
     func execute(
-        passcodeProvider: @escaping () async -> String?,
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
-        approvalMode: MultichainSwapApprovalMode,
-        feeMethod: MultichainSwapFeeMethod
+        feeMethod: MultichainSwapFeeMethod,
+        spendLimit: BigUInt,
+        consent: OperationConsent
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult
 }
 
 final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutionService {
     private let swapService: MultichainSwapService
+    let swapAPI: MultichainSwapAPI
     private let swapPipeline: ChainKitSwapPipeline
+    let operationSteps: MultichainSwapOperationSteps
     private let pendingTransactionsService: PendingTransactionsService
-    private let feeMethodResolver: MultichainSwapFeeMethodResolver
-    private let now: () -> Date
+    let feeMethodResolver: MultichainSwapFeeMethodResolver
+    let gate: OperationGate
+    let now: () -> Date
+    private let batteryPaymentPreparation: BatteryPaymentPreparation
 
     init(
         swapService: MultichainSwapService,
+        swapAPI: MultichainSwapAPI,
         swapPipeline: ChainKitSwapPipeline,
+        operationSteps: MultichainSwapOperationSteps,
         pendingTransactionsService: PendingTransactionsService,
         feeMethodResolver: MultichainSwapFeeMethodResolver,
-        now: @escaping () -> Date = Date.init
+        gate: OperationGate,
+        now: @escaping () -> Date = Date.init,
+        batteryPaymentPreparation: BatteryPaymentPreparation = BatteryPaymentPreparation()
     ) {
         self.swapService = swapService
+        self.swapAPI = swapAPI
         self.swapPipeline = swapPipeline
+        self.operationSteps = operationSteps
         self.pendingTransactionsService = pendingTransactionsService
         self.feeMethodResolver = feeMethodResolver
+        self.gate = gate
         self.now = now
+        self.batteryPaymentPreparation = batteryPaymentPreparation
     }
 
     func prepareExecutionPlan(
@@ -69,6 +85,15 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
                 extraInfo: routeInfo()
             )
             throw error
+        }
+        if route.apiVersion == .v3 {
+            return try await operationPlan(
+                swapWallet: swapWallet,
+                sourceAsset: sourceAsset,
+                destinationAsset: destinationAsset,
+                route: route,
+                aggregator: aggregator
+            )
         }
         let preparedPayloads: [MultichainSwapPreparedPayload]
         var providerRouteId = route.providerRouteId
@@ -134,15 +159,7 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             nativeFees: aggregated,
             isNativeInsufficient: preparation.nativeFeeShortage != nil
         )
-        // A relayed method the wallet is only short of charges or GRAM for is not a dead end: the
-        // picker is the only place either can be bought, so the plan has to exist for the screen to
-        // offer it at all. Only a swap left with the chain's own coin has nowhere else to go.
-        let isFeePayable = feeOptions.contains { !$0.isInsufficient }
-        let isRelayedFeeRefillable = feeOptions.contains { $0.method.isRelayed }
-        if let nativeFeeShortage = preparation.nativeFeeShortage,
-           !isFeePayable,
-           !isRelayedFeeRefillable
-        {
+        if let nativeFeeShortage = preparation.nativeFeeShortage, Self.isDeadEnd(feeOptions) {
             let error = MultichainSwapExecutionFailure.insufficientNativeFee(shortage: nativeFeeShortage)
             Log.multichainSwap.w(
                 "swap preparation failed: no fee method can pay",
@@ -169,19 +186,39 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             feeOptions: feeOptions,
             payloadFees: preparation.payloadFees,
             batteryPayload: preparation.batteryPayload,
-            spentSourceAmount: spentSourceAmount
+            spentSourceAmount: spentSourceAmount,
+            sourceAmount: route.sourceAmount
         )
     }
 
     func execute(
-        passcodeProvider: @escaping () async -> String?,
+        signer originalSigner: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
-        approvalMode: MultichainSwapApprovalMode,
-        feeMethod: MultichainSwapFeeMethod
+        feeMethod: MultichainSwapFeeMethod,
+        spendLimit: BigUInt,
+        consent: OperationConsent
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult {
+        let signer: MultichainTransferSigner
+        do {
+            let requiredCharges: Int?
+            if case let .batteryCharges(count, _, _) = executionPlan.feeOptions.first(where: { $0.method == feeMethod })?.cost {
+                requiredCharges = count
+            } else {
+                requiredCharges = nil
+            }
+            let prepared = feeMethod.isBattery
+                ? try await batteryPaymentPreparation.prepare(wallet: swapWallet.wallet, signer: originalSigner, requiredCharges: requiredCharges)
+                : nil
+            signer = prepared?.signer ?? originalSigner
+        } catch is CancellationError {
+            throw .canceled
+        } catch {
+            Log.multichainSwap.w("battery migration failed before swap", error: error)
+            throw .preparationFailed(kind: .networkError, reason: error.logDescription)
+        }
         func planInfo(_ additional: [String: String] = [:]) -> [String: String] {
             Self.executionPlanLogInfo(
                 executionPlan: executionPlan,
@@ -191,10 +228,27 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
             )
         }
         Log.multichainSwap.i("execution started", extraInfo: planInfo())
+        let routePayloads: MultichainSwapRoutePayloads
+        switch executionPlan.signs {
+        case let .payloads(signed):
+            routePayloads = signed
+        case let .operation(operation):
+            return try await executeOperation(
+                operation,
+                signer: signer,
+                swapWallet: swapWallet,
+                sourceAsset: sourceAsset,
+                destinationAsset: destinationAsset,
+                executionPlan: executionPlan,
+                feeMethod: feeMethod,
+                spendLimit: spendLimit,
+                consent: consent
+            )
+        }
         let payloads: MultichainSwapRoutePayloads
         do {
             payloads = try validatedPayloads(
-                executionPlan.payloads.all,
+                routePayloads.all,
                 routeId: executionPlan.routeId
             )
         } catch {
@@ -213,12 +267,20 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
         switch feeMethod {
         case .battery, .gram, .token:
             return try await executeWithRelayedFee(
-                passcodeProvider: passcodeProvider,
+                signer: signer,
                 swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 executionPlan: executionPlan,
-                feeMethod: feeMethod
+                relayed: RelayedPayload(
+                    id: payloads.main.payloadId,
+                    type: payloads.main.payloadType,
+                    expiresAt: payloads.main.dateExpire,
+                    isHeldBeforeTheReview: false
+                ),
+                feeMethod: feeMethod,
+                spendLimit: spendLimit,
+                consent: consent
             )
         case .native:
             break
@@ -226,14 +288,13 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
 
         do {
             let broadcast = try await swapPipeline.executeSwapPayloads(
-                passcodeProvider: passcodeProvider,
+                signer: signer,
                 swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
                 destinationAsset: destinationAsset,
                 payloads: payloads,
                 payloadFees: executionPlan.payloadFees,
-                provider: executionPlan.provider,
-                approvalMode: approvalMode
+                provider: executionPlan.provider
             )
             let result = MultichainSwapExecutionResult(
                 routeId: executionPlan.routeId,
@@ -273,16 +334,40 @@ final class MultichainSwapExecutionServiceImplementation: MultichainSwapExecutio
 }
 
 extension MultichainSwapExecutionServiceImplementation {
+    /// The payload of a swap its relayer carries, as the swap's result names it, and the deadline
+    /// nothing of it is relayed past.
+    struct RelayedPayload {
+        let id: String
+        let type: String
+        let expiresAt: Date
+        /// `/v3` found its operation's deadline live a moment before the engine prepared it, so a lapse
+        /// since is the route's: it stops the swap before the review. `/v2` leaves one its engine
+        /// prepared past to the relayer.
+        let isHeldBeforeTheReview: Bool
+    }
+
+    /// A relayed method the wallet is only short of charges or GRAM for is not a dead end: the
+    /// picker is the only place either can be bought, so the plan has to exist for the screen to
+    /// offer it at all. Only a swap left with the chain's own coin has nowhere else to go.
+    static func isDeadEnd(_ feeOptions: [MultichainSwapFeeOption]) -> Bool {
+        !feeOptions.contains { !$0.isInsufficient || $0.method.isRelayed }
+    }
+
     /// Sends the swap through the relayer instead of the chain's own broadcast. A relayed method that
     /// cannot be honoured fails the send rather than falling back: the user confirmed paying with it,
-    /// and paying with something else is a different transaction.
+    /// and paying with something else is a different transaction. What the engine prepared is
+    /// reviewed, held to `spendLimit` of the source asset, to a token fee and to the address its route
+    /// runs through: before it is signed when the review asks, beside its signature when it only logs.
     func executeWithRelayedFee(
-        passcodeProvider: @escaping () async -> String?,
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
-        feeMethod: MultichainSwapFeeMethod
+        relayed: RelayedPayload,
+        feeMethod: MultichainSwapFeeMethod,
+        spendLimit: BigUInt,
+        consent: OperationConsent
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult {
         func planInfo(_ additional: [String: String] = [:]) -> [String: String] {
             Self.executionPlanLogInfo(
@@ -305,28 +390,57 @@ extension MultichainSwapExecutionServiceImplementation {
             )
             throw error
         }
-        let mainPayload = executionPlan.payloads.main
-        let txHash = try await engine.send(
+        let prepared = try await engine.prepare(
             context: MultichainSwapFeeContext(
                 swapWallet: swapWallet,
                 sourceAsset: sourceAsset,
-                payloadId: mainPayload.payloadId,
+                payloadId: relayed.id,
                 requiresApproval: executionPlan.requiresApproval,
                 payload: relayedSend.payload,
                 spentSourceAmount: executionPlan.spentSourceAmount
             ),
-            confirmed: relayedSend.confirmed,
-            passcodeProvider: passcodeProvider
+            confirmed: relayedSend.confirmed
         )
+        // The user can read the review past either deadline, so one that was live before it must
+        // still be live after it. One the device's clock had passed already is the relayer's to
+        // judge: a clock running ahead must not fail every reviewed swap.
+        let payloadWasLive = relayed.expiresAt > now()
+        let relayWasLive = !prepared.isExpired(at: now())
+        guard payloadWasLive || !relayed.isHeldBeforeTheReview else {
+            let error = MultichainSwapExecutionFailure.payloadExpired(payloadId: relayed.id)
+            Log.multichainSwap.w("execution rejected: relayed swap expired while it was prepared", error: error, extraInfo: planInfo())
+            throw error
+        }
+        do throws(OperationRefusal) {
+            try await gate.clear(relayedSend.presentation, consent: consent) {
+                try await prepared.signables(.send(spendLimit, of: sourceAsset.asset, to: relayedSend.recipient, fee: relayedSend.tokenFee))
+            }
+        } catch .declined {
+            Log.multichainSwap.i("execution declined in review", extraInfo: planInfo())
+            throw .canceled
+        } catch {
+            let failure = MultichainSwapExecutionFailure.internal(reason: "the relayed swap could not be reviewed: \(error)")
+            Log.multichainSwap.w("execution rejected: unreviewable relayed swap", error: failure, extraInfo: planInfo())
+            throw failure
+        }
+        let payloadLapsed = payloadWasLive && relayed.expiresAt <= now()
+        let relayLapsed = relayWasLive && prepared.isExpired(at: now())
+        guard !payloadLapsed, !relayLapsed else {
+            let error = MultichainSwapExecutionFailure.payloadExpired(payloadId: relayed.id)
+            Log.multichainSwap.w("execution rejected: relayed swap expired while it was reviewed", error: error, extraInfo: planInfo())
+            throw error
+        }
+        guard !Task.isCancelled else { throw .canceled }
+        let txHash = try await prepared.send(signer)
         let result = MultichainSwapExecutionResult(
             routeId: executionPlan.routeId,
             txHash: txHash,
             broadcastedPayloads: txHash.map { txHash in
                 [
                     MultichainSwapBroadcastedPayload(
-                        payloadId: mainPayload.payloadId,
-                        kind: mainPayload.kind,
-                        payloadType: mainPayload.payloadType,
+                        payloadId: relayed.id,
+                        kind: "main",
+                        payloadType: relayed.type,
                         txHash: txHash
                     ),
                 ]
@@ -387,6 +501,8 @@ extension MultichainSwapExecutionServiceImplementation {
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: sourceAsset.asset.assetId,
                         toAssetId: destinationAsset.asset.assetId,
+                        fromAddress: swapWallet.address(for: sourceChain),
+                        fromAmount: executionPlan.sourceAmount,
                         quote: .init(
                             aggregator: executionPlan.aggregator.rawValue,
                             routeId: executionPlan.routeId,

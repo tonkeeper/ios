@@ -3,6 +3,7 @@ import BigInt
 import Foundation
 import KeeperCore
 import PerpsModels
+import TKCore
 import TKLocalize
 import TKLogging
 import TronSwift
@@ -50,6 +51,12 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
     private let tronAPI: TronUSDTAPI
     private let perpsAssembly: PerpsAssembly
     private let realtimeManager: MultichainRealtimeManager
+    private let analyticsProvider: AnalyticsProvider
+    private let pushRegistrar: TransactionLiveActivityPushRegistrar?
+    private let currencyStore: CurrencyStore
+    private let tonRatesStore: TonRatesStore
+    private let amountFormatter: AmountFormatter
+    private let iconStore: TransactionLiveActivityIconStore
 
     private var isForeground = false
     /// Held after leaving the foreground while an activity is pending: the system gives about 30 s,
@@ -69,6 +76,9 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
     private var storedCounterparties: TransactionLiveActivityCounterparties?
     /// The journal drops a trading operation once it settles and keeps no verdict.
     private var settledTrading: [String: (settlement: PerpsTradingSettlement, receivedAt: Date)] = [:]
+    /// The last mark price a trade was seen at while pending: its outcome keeps that price instead of
+    /// following the market.
+    private var tradePrices: [String: Double] = [:]
     private var announcedIds: Set<String> = []
 
     init(
@@ -79,15 +89,27 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         tronAPI: TronUSDTAPI,
         perpsAssembly: PerpsAssembly,
         backgroundUpdate: BackgroundUpdate,
-        realtimeManager: MultichainRealtimeManager
+        realtimeManager: MultichainRealtimeManager,
+        analyticsProvider: AnalyticsProvider,
+        pushRegistrar: TransactionLiveActivityPushRegistrar?,
+        currencyStore: CurrencyStore,
+        tonRatesStore: TonRatesStore,
+        amountFormatter: AmountFormatter,
+        iconStore: TransactionLiveActivityIconStore
     ) {
         self.walletsStore = walletsStore
+        self.pushRegistrar = pushRegistrar
+        self.currencyStore = currencyStore
+        self.tonRatesStore = tonRatesStore
+        self.amountFormatter = amountFormatter
+        self.iconStore = iconStore
         self.appSettingsStore = appSettingsStore
         self.multichainService = multichainService
         self.historyService = historyService
         self.tronAPI = tronAPI
         self.perpsAssembly = perpsAssembly
         self.realtimeManager = realtimeManager
+        self.analyticsProvider = analyticsProvider
         startedIds = Self.loadStartedIds(from: .standard)
         let (events, continuation) = AsyncStream.makeStream(of: Event.self)
         eventContinuation = continuation
@@ -111,6 +133,9 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         }
         backgroundUpdate.addEventObserver(self) { _, wallet, _ in
             continuation.yield(.tonHistoryInvalidated(walletId: wallet.id))
+        }
+        iconStore.onSave = {
+            continuation.yield(.refresh(after: 0))
         }
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: .transactionSendNotification, object: nil, queue: nil) { _ in
@@ -143,6 +168,9 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             for await activity in Activity<TransactionLiveActivityAttributes>.activityUpdates {
                 self?.adopt(activity)
             }
+        }
+        for activity in Activity<TransactionLiveActivityAttributes>.activities {
+            pushRegistrar?.track(activity)
         }
     }
 
@@ -241,6 +269,12 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         endBackgroundTime()
     }
 
+    private func tradePrice(operationId: String, current: Double?, isSettled: Bool) -> Double? {
+        let price = isSettled ? tradePrices[operationId] ?? current : current ?? tradePrices[operationId]
+        tradePrices[operationId] = price
+        return price
+    }
+
     private func recordSettlement(_ settlement: PerpsTradingSettlement) {
         let now = Date()
         settledTrading = settledTrading.filter { now.timeIntervalSince($0.value.receivedAt) < 60 * 60 }
@@ -308,6 +342,17 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         for activity in Activity<TransactionLiveActivityAttributes>.activities {
             let content = activity.content
             let redacted = Self.redactedState(from: activity.transactionState)
+            if let pushRegistrar, activity.activityState == .active || activity.activityState == .stale {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .sortedKeys
+                if let contentState = try? encoder.encode(redacted) {
+                    pushRegistrar.redactContent(
+                        contentState,
+                        alertBody: Self.alertTexts(for: redacted, walletId: activity.attributes.walletId).body,
+                        activityId: activity.id
+                    )
+                }
+            }
             guard redacted != content.state else { continue }
             switch activity.activityState {
             case .active, .stale:
@@ -324,6 +369,7 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
     /// An activity surviving an app restart still counts as started, so dismissing it does not
     /// start it again while the same transaction is pending.
     private func adopt(_ activity: Activity<TransactionLiveActivityAttributes>) {
+        pushRegistrar?.track(activity)
         let key = Self.key(walletId: activity.attributes.walletId, transactionId: activity.transactionState.transactionId)
         guard startedIds[key] == nil else { return }
         startedIds[key] = Date()
@@ -352,7 +398,13 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         let mocks = TransactionLiveActivityMock.snapshots()
         if !mocks.isEmpty {
             // Mocks need no network, so they are answered first: a start has to land while the app is in front.
-            await reconcile(mocks, perpsLoaded: false, walletId: wallet.id, walletMetaData: wallet.metaData)
+            await reconcile(
+                mocks,
+                perpsLoaded: false,
+                walletId: wallet.id,
+                walletMetaData: wallet.metaData,
+                countsQueue: true
+            )
             guard isCurrent(walletId: walletId) else { return }
         }
         var snapshots = mocks
@@ -362,20 +414,35 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             let scope = perpsAssembly.walletScope(for: wallet)
             for (settlement, _) in settledTrading.values where settlement.action.walletId == wallet.id {
                 let symbol = await scope.marketSymbol(marketId: settlement.action.marketId)
+                let market = await perpsAssembly.marketsStore.snapshot(marketId: settlement.action.marketId)
                 snapshots.append(TransactionLiveActivitySnapshot(
                     trading: settlement.action,
                     marketSymbol: symbol,
+                    marketIcon: market?.iconURL,
+                    markPrice: tradePrice(
+                        operationId: settlement.action.operationId,
+                        current: market?.price,
+                        isSettled: true
+                    ),
                     status: settlement.succeeded ? .confirmed : .failed
                 ))
             }
             do {
                 let operations = try await scope.pendingActivityOperations()
                 for trading in operations.trading where trading.walletId == wallet.id
-                    && !(trading.signedSteps?.isEmpty ?? true)
+                    && settledTrading[trading.operationId] == nil && !(trading.signedSteps?.isEmpty ?? true)
                 {
                     let symbol = await scope.marketSymbol(marketId: trading.marketId)
-                    snapshots.append(TransactionLiveActivitySnapshot(trading: trading, marketSymbol: symbol))
+                    let market = await perpsAssembly.marketsStore.snapshot(marketId: trading.marketId)
+                    snapshots.append(TransactionLiveActivitySnapshot(
+                        trading: trading,
+                        marketSymbol: symbol,
+                        marketIcon: market?.iconURL,
+                        markPrice: tradePrice(operationId: trading.operationId, current: market?.price, isSettled: false)
+                    ))
                 }
+                let tradeIds = Set(operations.trading.map(\.operationId)).union(settledTrading.keys)
+                tradePrices = tradePrices.filter { tradeIds.contains($0.key) }
                 snapshots += operations.funding
                     .filter { $0.walletId == state.walletId && !$0.isBeforeSideEffect }
                     .map { TransactionLiveActivitySnapshot(funding: $0) }
@@ -434,6 +501,8 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             perpsLoaded: perpsLoaded,
             walletId: wallet.id,
             walletMetaData: wallet.metaData,
+            countsQueue: (perpsLoaded || wallet.multichainWalletState == nil) && multichainLoad.isComplete
+                && loads.ton.isComplete && loads.tron.isComplete,
             judgesAbsence: judgesAbsence,
             finalization: finalization
         )
@@ -546,15 +615,18 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
 
     /// - Parameter startPending: Whether the snapshots are complete enough to pick the transaction to show
     ///   next. A partial outcome waits for the full pass, or is finalized when this refresh exits.
+    /// - Parameter countsQueue: Whether every source loaded, so the other pending operations can be counted.
     private func reconcile(
         _ snapshots: [TransactionLiveActivitySnapshot],
         perpsLoaded: Bool,
         walletId: String,
         walletMetaData: WalletMetaData,
         startPending: Bool = true,
+        countsQueue: Bool = false,
         judgesAbsence: Bool = false,
         finalization: TransactionLiveActivityRefreshFinalization? = nil
     ) async {
+        defer { syncPushRegistration(with: snapshots) }
         let hidesAmounts = appSettingsStore.getState().isSecureMode
         let current = Self.currentActivity
         let previousIds = startedIds
@@ -572,7 +644,19 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             ? TransactionLiveActivitySelection.nextPending(in: snapshots, excluding: Set(startedIds.keys), walletId: walletId)
             : nil
         let state = { (snapshot: TransactionLiveActivitySnapshot) in
-            Self.contentState(for: snapshot, walletMetaData: walletMetaData, hidesAmounts: hidesAmounts)
+            Self.contentState(
+                for: snapshot,
+                walletMetaData: walletMetaData,
+                hidesAmounts: hidesAmounts,
+                fiat: self.fiat(for: snapshot.value),
+                icon: self.iconStore.fileName(for: snapshot.icon),
+                queuedCount: TransactionLiveActivitySelection.queuedCount(
+                    for: snapshot,
+                    in: snapshots,
+                    countsQueue: countsQueue,
+                    shown: current?.transactionState
+                )
+            )
         }
 
         guard let current else {
@@ -593,14 +677,14 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         case .stay:
             return
         case let .follow(snapshot):
-            let unchangedState = Self.contentState(
-                for: snapshot,
-                walletMetaData: walletMetaData,
-                hidesAmounts: hidesAmounts,
-                updatedAt: currentState.updatedAt
-            )
-            if unchangedState != currentState {
-                await current.update(Self.content(for: state(snapshot)))
+            let followed = state(snapshot)
+            var unchanged = followed
+            unchanged.updatedAt = currentState.updatedAt
+            guard unchanged != currentState else { return }
+            if Self.changesProgress(from: currentState, to: followed) {
+                await current.update(Self.content(for: followed))
+            } else {
+                await current.update(ActivityContent(state: unchanged, staleDate: current.content.staleDate))
             }
         case let .replace(snapshot):
             await show(snapshot, state: state(snapshot), on: current, walletId: walletId)
@@ -640,20 +724,22 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         }
         guard isForeground, isCurrent(walletId: walletId), Self.currentActivity == nil else { return }
         do {
-            // Backend does not send ActivityKit updates yet. Restore .token and token registration with that API.
-            _ = try Activity.request(
+            let activity = try Self.requestActivity(
                 attributes: TransactionLiveActivityAttributes(walletId: walletId),
                 content: Self.content(for: state),
-                pushType: nil
+                withPushToken: pushRegistrar != nil
             )
+            pushRegistrar?.track(activity)
             startedIds[Self.key(walletId: walletId, transactionId: snapshot.id)] = Date()
             persistStartedIds()
+            analyticsProvider.log(LiveActivityStart(operation: LiveActivityOperation(state)))
         } catch {
             Log.e("Live Activity request failed: \(error)")
         }
     }
 
     /// The transaction it takes over from is not brought back: it goes on in history and in its push.
+    /// Each transaction the activity starts showing counts as a start, as one `request` opens.
     private func show(
         _ snapshot: TransactionLiveActivitySnapshot,
         state: TransactionLiveActivityAttributes.ContentState,
@@ -667,6 +753,7 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         startedIds[Self.key(walletId: walletId, transactionId: snapshot.id)] = Date()
         persistStartedIds()
         await activity.update(Self.content(for: state))
+        analyticsProvider.log(LiveActivityStart(operation: LiveActivityOperation(state)))
     }
 
     /// The island drops an ended activity at once and the app is not on screen in the background, so
@@ -686,7 +773,7 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         case .pending, .unknown: nil
         }
         if isForeground {
-            if let feedback {
+            if let feedback, Self.claimsOutcomeHaptic(transactionId: state.transactionId) {
                 UINotificationFeedbackGenerator().notificationOccurred(feedback)
             }
             return
@@ -718,16 +805,69 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         for state: TransactionLiveActivityAttributes.ContentState,
         walletId: String
     ) -> AlertConfiguration {
+        let texts = alertTexts(for: state, walletId: walletId)
+        // Interpolated, the text is an argument: a token symbol is neither a lookup key nor a format.
+        return AlertConfiguration(
+            title: LocalizedStringResource("\(texts.title)"),
+            body: LocalizedStringResource("\(texts.body)"),
+            sound: .default
+        )
+    }
+
+    private static func alertTexts(
+        for state: TransactionLiveActivityAttributes.ContentState,
+        walletId: String
+    ) -> (title: String, body: String) {
         let counterparties = TransactionLiveActivityCounterparties.load()
         let presentation = TransactionLiveActivityPresentation(state: state, isStale: false) {
             counterparties.label(for: $0, shownWalletId: walletId)
         }
-        // Interpolated, the text is an argument: a token symbol is neither a lookup key nor a format.
-        return AlertConfiguration(
-            title: LocalizedStringResource("\(presentation.title)"),
-            body: LocalizedStringResource("\(presentation.amount?.text ?? presentation.subtitle ?? "")"),
-            sound: .default
+        return (presentation.title, presentation.amount?.text ?? presentation.subtitle ?? "")
+    }
+
+    /// The server learns what the activity shows only while its operation is pending. Without the operation's
+    /// history entry the final titles are unknown, so the last registration stays until a pass finds it.
+    private func syncPushRegistration(with snapshots: [TransactionLiveActivitySnapshot]) {
+        guard let pushRegistrar, let activity = Self.currentActivity else { return }
+        let state = appSettingsStore.getState().isSecureMode
+            ? Self.redactedState(from: activity.transactionState)
+            : activity.transactionState
+        guard state.status == .pending else {
+            pushRegistrar.contentChanged(nil, activityId: activity.id)
+            return
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let snapshot = TransactionLiveActivitySelection.matching(state.transactionId, in: snapshots),
+              let walletId = walletsStore.getWallet(id: activity.attributes.walletId)?.multichainWalletState?.walletId,
+              let contentState = try? encoder.encode(state)
+        else { return }
+        let confirmed = Self.settledState(from: state, status: .confirmed, title: snapshot.confirmedTitle)
+        pushRegistrar.contentChanged(
+            .init(
+                walletId: walletId,
+                contentState: contentState,
+                finalTitles: snapshot.finalTitles,
+                alertBody: Self.alertTexts(for: confirmed, walletId: activity.attributes.walletId).body
+            ),
+            activityId: activity.id
         )
+    }
+
+    /// An activity that fails to get a push token is still shown: the app brings it to its outcome itself.
+    private static func requestActivity(
+        attributes: TransactionLiveActivityAttributes,
+        content: ActivityContent<TransactionLiveActivityAttributes.ContentState>,
+        withPushToken: Bool
+    ) throws -> Activity<TransactionLiveActivityAttributes> {
+        if withPushToken {
+            do {
+                return try Activity.request(attributes: attributes, content: content, pushType: .token)
+            } catch {
+                Log.w("Live Activity push: request with a push token failed", error: error)
+            }
+        }
+        return try Activity.request(attributes: attributes, content: content, pushType: nil)
     }
 
     /// The widget names an own-wallet counterparty from this copy, which also serves pushed states.
@@ -766,10 +906,32 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             && (try? walletsStore.activeWallet.id) == walletId
     }
 
+    static func endAll() {
+        let activities = Activity<TransactionLiveActivityAttributes>.activities
+        guard !activities.isEmpty else { return }
+        // Ended by the app, not dismissed by the person: the transaction starts again once the flag is back on.
+        var startedIds = loadStartedIds(from: .standard)
+        for activity in activities where activity.activityState == .active || activity.activityState == .stale {
+            startedIds[key(walletId: activity.attributes.walletId, transactionId: activity.transactionState.transactionId)] = nil
+        }
+        UserDefaults.standard.set(startedIds, forKey: startedIdsKey)
+        Task {
+            for activity in activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
     private static var currentActivity: Activity<TransactionLiveActivityAttributes>? {
         Activity<TransactionLiveActivityAttributes>.activities.first {
             $0.activityState == .active || $0.activityState == .stale
         }
+    }
+
+    private static func claimsOutcomeHaptic(transactionId: String) -> Bool {
+        let prefix = TransactionLiveActivitySelection.exchangePrefix
+        guard transactionId.hasPrefix(prefix) else { return true }
+        return SwapOutcomeHaptic.claim(transactionIds: [String(transactionId.dropFirst(prefix.count))])
     }
 
     private static func key(walletId: String, transactionId: String) -> String {
@@ -794,12 +956,11 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
         for snapshot: TransactionLiveActivitySnapshot,
         walletMetaData: WalletMetaData,
         hidesAmounts: Bool = false,
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        fiat: String? = nil,
+        icon: String? = nil,
+        queuedCount: Int? = nil
     ) -> TransactionLiveActivityAttributes.ContentState {
-        let (emoji, icon): (String?, String?) = switch walletMetaData.icon {
-        case let .emoji(value): (value, nil)
-        case let .icon(image): (nil, image.rawValue)
-        }
         let state = TransactionLiveActivityAttributes.ContentState(
             transactionId: snapshot.id,
             chain: snapshot.chain,
@@ -810,10 +971,14 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
             source: snapshot.source,
             destination: snapshot.destination,
             kind: snapshot.kind,
-            wallet: .init(name: walletMetaData.label, emoji: emoji, icon: icon),
+            wallet: .init(name: walletMetaData.label),
             counterpartyAddress: snapshot.counterpartyAddress,
             stage: snapshot.stage,
-            perpsMarketId: snapshot.perpsMarketId
+            perpsMarketId: snapshot.perpsMarketId,
+            steps: snapshot.steps,
+            fiat: fiat,
+            icon: icon,
+            queuedCount: queuedCount
         )
         return hidesAmounts ? redactedState(from: state) : state
     }
@@ -821,48 +986,118 @@ final class TransactionLiveActivityMonitor: TransactionLiveActivityMonitoring {
     nonisolated static func redactedState(
         from state: TransactionLiveActivityAttributes.ContentState
     ) -> TransactionLiveActivityAttributes.ContentState {
-        .init(
-            transactionId: state.transactionId,
-            chain: state.chain,
-            detail: state.detail,
-            status: state.status,
-            title: state.title,
-            updatedAt: state.updatedAt,
-            source: state.source.map { .init(network: $0.network, currency: $0.currency, amount: nil) },
-            destination: state.destination.map { .init(network: $0.network, currency: $0.currency, amount: nil) },
-            kind: state.kind,
-            wallet: state.wallet,
-            counterpartyAddress: nil,
-            stage: state.stage,
-            perpsMarketId: state.perpsMarketId
-        )
+        var redacted = state
+        redacted.source = state.source.map { .init(network: $0.network, currency: $0.currency, amount: nil) }
+        redacted.destination = state.destination.map { .init(network: $0.network, currency: $0.currency, amount: nil) }
+        redacted.counterpartyAddress = nil
+        redacted.fiat = nil
+        redacted.isRedacted = true
+        return redacted
     }
 
     private static func unknownState(
         from state: TransactionLiveActivityAttributes.ContentState
     ) -> TransactionLiveActivityAttributes.ContentState {
-        .init(
-            transactionId: state.transactionId,
-            chain: state.chain,
-            detail: state.detail,
-            status: .unknown,
-            title: TKLocales.LiveActivity.statusMayHaveChanged,
-            updatedAt: Date(),
-            source: state.source,
-            destination: state.destination,
-            kind: state.kind,
-            wallet: state.wallet,
-            counterpartyAddress: state.counterpartyAddress,
-            stage: nil,
-            perpsMarketId: state.perpsMarketId
-        )
+        settledState(from: state, status: .unknown, title: TKLocales.LiveActivity.statusUnknown)
+    }
+
+    /// The outcome changes only the status and the title, as the server changes them too.
+    nonisolated static func settledState(
+        from state: TransactionLiveActivityAttributes.ContentState,
+        status: TransactionLiveActivityAttributes.ContentState.Status,
+        title: String
+    ) -> TransactionLiveActivityAttributes.ContentState {
+        var settled = state
+        settled.status = status
+        settled.title = title
+        settled.updatedAt = Date()
+        settled.stage = nil
+        return settled
+    }
+
+    /// A new logo, price, queue or wallet name changes nothing about the transaction itself, so it
+    /// must not make a stale activity fresh.
+    nonisolated static func changesProgress(
+        from old: TransactionLiveActivityAttributes.ContentState,
+        to new: TransactionLiveActivityAttributes.ContentState
+    ) -> Bool {
+        func progress(_ state: TransactionLiveActivityAttributes.ContentState) -> TransactionLiveActivityAttributes.ContentState {
+            var state = state
+            state.updatedAt = .distantPast
+            state.fiat = nil
+            state.icon = nil
+            state.queuedCount = nil
+            state.wallet = nil
+            return state
+        }
+        return progress(old) != progress(new)
+    }
+
+    private func fiat(for value: TransactionLiveActivityValue?) -> String? {
+        let currency = currencyStore.getState()
+        let rates = tonRatesStore.getState()
+        guard let value, let amount = Self.fiatAmount(
+            value,
+            currency: currency,
+            tonRates: rates.tonRates,
+            usdtRates: rates.usdtRates,
+            jettonRates: rates.jettonRates
+        ), amount > 0 else {
+            return nil
+        }
+        return amountFormatter.format(decimal: amount, accessory: .fiat(currency), style: .fiatBalance)
+    }
+
+    nonisolated static func fiatAmount(
+        _ value: TransactionLiveActivityValue,
+        currency: Currency,
+        tonRates: [Rates.Rate],
+        usdtRates: [Rates.Rate],
+        jettonRates: [String: [Rates.Rate]]
+    ) -> Decimal? {
+        func rate(_ rates: [Rates.Rate]?) -> Decimal? {
+            rates?.first { $0.currency == currency }?.rate
+        }
+        switch value {
+        case let .usd(amount):
+            guard currency != .USD else { return amount }
+            // The balance loads no rates of the dollar itself, but loads USDT's in both currencies.
+            guard let target = rate(usdtRates),
+                  let dollar = usdtRates.first(where: { $0.currency == .USD })?.rate, dollar > 0
+            else { return nil }
+            return amount * target / dollar
+        case let .ton(amount):
+            return rate(tonRates).map { amount * $0 }
+        case let .usdt(amount):
+            return rate(usdtRates).map { amount * $0 }
+        case let .trx(amount):
+            let trx = jettonRates.first { $0.key.caseInsensitiveCompare(TRX.symbol) == .orderedSame }?.value
+            return rate(trx).map { amount * $0 }
+        case let .jetton(address, amount):
+            return rate(jettonRates[address]).map { amount * $0 }
+        }
     }
 
     private static func content(
         for state: TransactionLiveActivityAttributes.ContentState
     ) -> ActivityContent<TransactionLiveActivityAttributes.ContentState> {
-        ActivityContent(state: state, staleDate: state.status == .pending ? Date().addingTimeInterval(5 * 60) : nil)
+        ActivityContent(
+            state: state,
+            staleDate: state.status == .pending
+                ? Date().addingTimeInterval(TransactionLiveActivityPresentation.staleInterval)
+                : nil
+        )
     }
+}
+
+/// An amount the monitor prices in the person's currency when it builds the state.
+enum TransactionLiveActivityValue: Equatable {
+    case usd(Decimal)
+    case ton(Decimal)
+    case usdt(Decimal)
+    case trx(Decimal)
+    /// Priced only for the jettons whose rates the balance loads.
+    case jetton(address: String, amount: Decimal)
 }
 
 @available(iOS 16.2, *)
@@ -871,6 +1106,9 @@ struct TransactionLiveActivitySnapshot {
     typealias Leg = TransactionLiveActivityAttributes.ContentState.Leg
     typealias Kind = TransactionLiveActivityAttributes.ContentState.Kind
     typealias Stage = TransactionLiveActivityAttributes.ContentState.Stage
+
+    /// A multi-stage operation shows this many segments whatever stage the journal is at.
+    static let stageCount = 3
 
     let id: String
     let matchingIds: Set<String>
@@ -881,8 +1119,12 @@ struct TransactionLiveActivitySnapshot {
     let date: Date
     let status: Status
     let title: String
-    /// Set only while a multi-stage operation is pending; `title` then names the stage.
+    /// Names the outcomes the server puts in the activity when the app is not running.
+    private let presentation: MultichainActivityPresentationKind?
+    /// Set only while a multi-stage operation is pending.
     let stage: Stage?
+    /// Kept after the outcome, which the server sends without a stage.
+    let steps: Int?
     let chain: String
     let detail: String?
     let source: Leg?
@@ -892,9 +1134,25 @@ struct TransactionLiveActivitySnapshot {
     let isSpam: Bool
     let historyEntry: TransactionLiveActivityHistoryEntry?
     private(set) var perpsMarketId: Int64?
+    /// What the shown amount is worth, for a transfer or a trade.
+    private(set) var value: TransactionLiveActivityValue?
+    /// The logo of the token the shown amount is in.
+    private(set) var icon: TransactionLiveActivityIconSource?
+
+    var confirmedTitle: String {
+        Self.title(.confirmed, presentation)
+    }
+
+    var finalTitles: MultichainLiveActivityRegistration.FinalTitles {
+        .init(
+            confirmed: confirmedTitle,
+            failed: Self.title(.failed, presentation),
+            dropped: Self.title(.dropped, presentation)
+        )
+    }
 
     init(broadcast transaction: MultichainPendingTransaction, date: Date = Date()) {
-        let transactionId = Self.normalizedId(transaction.txHash, chain: transaction.chain)
+        let transactionId = MultichainTransactionID.normalized(transaction.txHash, chain: transaction.chain)
         let isExchange: Bool
         if case .swap = transaction.activityType {
             isExchange = true
@@ -915,10 +1173,12 @@ struct TransactionLiveActivitySnapshot {
         let staged = destinationChain.flatMap { destination in
             destination == transaction.chain
                 ? nil
-                : Self.crossChainStage(to: destination, currency: nil, isIndexed: false, isArriving: false)
+                : Self.crossChainStage(to: destination, isIndexed: false, isArriving: false)
         }
         stage = staged?.stage
-        title = staged?.title ?? Self.title(.pending, isExchange ? .swap : transaction.activityType == .send ? .send : nil)
+        steps = staged.map { _ in Self.stageCount }
+        presentation = isExchange ? .swap : transaction.activityType == .send ? .send : nil
+        title = staged?.title ?? Self.title(.pending, presentation)
         let network = transaction.chain.rawValue.uppercased()
         chain = network
         detail = nil
@@ -934,7 +1194,7 @@ struct TransactionLiveActivitySnapshot {
         let isExchange = activity.activityType == .swap || activity.activityType == .bridge
         let transactionIds = activity.txIds
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .map { Self.normalizedId($0, chain: activity.fromChain ?? activity.toChain) }
+            .map { MultichainTransactionID.normalized($0, chain: activity.fromChain ?? activity.toChain) }
         let identifiers = isExchange ? transactionIds.map { TransactionLiveActivitySelection.exchangePrefix + $0 } : transactionIds
         guard let firstId = identifiers.first else { return nil }
         id = firstId
@@ -957,10 +1217,14 @@ struct TransactionLiveActivitySnapshot {
             currency: destinationToken?.symbol,
             amount: Self.compactAmount(activity.inAmount, decimals: destinationToken?.decimals)
         )
+        let presentation: MultichainActivityPresentationKind =
+            isExchange && activity.outToken != nil && activity.inToken != nil
+                ? .swap : MultichainActivityPresentationKind(activity: activity)
+        self.presentation = presentation
         kind = if isExchange {
             .swap
         } else if activity.activityType.isPerps {
-            .other
+            Self.perpsKind(presentation)
         } else {
             switch activity.direction {
             case .incoming: .receive
@@ -971,8 +1235,13 @@ struct TransactionLiveActivitySnapshot {
         counterpartyAddress = switch kind {
         case .send: activity.toAddress
         case .receive: activity.fromAddress
-        case .swap, .other: nil
+        case .swap, .deposit, .withdrawal, .open, .close, .other: nil
         }
+        let shown = kind == .send
+            ? (token: sourceToken, usd: activity.outToken != nil ? activity.outAmountUsd : activity.inAmountUsd)
+            : (token: destinationToken, usd: activity.inToken != nil ? activity.inAmountUsd : activity.outAmountUsd)
+        value = isExchange ? nil : shown.usd.flatMap { $0.isFinite ? .usd(Decimal($0)) : nil }
+        icon = shown.token.flatMap(Self.icon(for:))
         chain = (isExchange || activity.direction == .incoming
             ? activity.toChain ?? activity.fromChain
             : activity.fromChain ?? activity.toChain)?.rawValue.uppercased() ?? ""
@@ -985,9 +1254,6 @@ struct TransactionLiveActivitySnapshot {
         } else {
             detail = activity.perps?.symbol ?? (activity.direction == .incoming ? activity.inToken?.symbol : nil)
         }
-        let presentation: MultichainActivityPresentationKind =
-            isExchange && activity.outToken != nil && activity.inToken != nil
-                ? .swap : MultichainActivityPresentationKind(activity: activity)
         status = switch activity.status {
         case .pending: .pending
         case .confirmed: .confirmed
@@ -999,7 +1265,6 @@ struct TransactionLiveActivitySnapshot {
         {
             Self.crossChainStage(
                 to: toChain,
-                currency: destinationToken?.symbol,
                 isIndexed: true,
                 isArriving: transactionIds.contains { $0.hasPrefix("\(toChain.rawValue):") }
             )
@@ -1007,6 +1272,7 @@ struct TransactionLiveActivitySnapshot {
             nil
         }
         stage = staged?.stage
+        steps = isExchange && !sameChain ? Self.stageCount : nil
         title = staged?.title ?? Self.title(status, presentation)
         historyEntry = .multichain(activity)
     }
@@ -1016,7 +1282,7 @@ struct TransactionLiveActivitySnapshot {
             if case .jettonSwap = action.type { return true }
             return false
         }
-        let transactionId = Self.normalizedId(event.eventId, chain: .ton)
+        let transactionId = MultichainTransactionID.normalized(event.eventId, chain: .ton)
         id = isSwap ? TransactionLiveActivitySelection.exchangePrefix + transactionId : transactionId
         matchingIds = [id]
         transactionIds = [transactionId]
@@ -1039,8 +1305,10 @@ struct TransactionLiveActivitySnapshot {
         } else {
             nil
         }
+        self.presentation = presentation
         title = Self.title(status, presentation)
         stage = nil
+        steps = nil
         kind = switch presentation {
         case .send: .send
         case .receive: .receive
@@ -1072,14 +1340,16 @@ struct TransactionLiveActivitySnapshot {
         }
         let legs = primaryAction.flatMap { Self.tonLegs($0, isIncoming: false) }
             ?? event.actions.compactMap { Self.tonLegs($0, isIncoming: incoming && !outgoing) }.first
-        (source, destination) = legs
-            ?? (Leg(network: "TON", currency: nil, amount: nil), Leg(network: "TON", currency: nil, amount: nil))
+        source = legs?.source ?? Leg(network: "TON", currency: nil, amount: nil)
+        destination = legs?.destination ?? Leg(network: "TON", currency: nil, amount: nil)
+        value = isSwap ? nil : legs?.token.value
+        icon = legs?.token.icon
         isSpam = event.isScam
         historyEntry = .ton(event)
     }
 
     init(transaction: TronTransaction, walletAddress: TronSwift.Address? = nil) {
-        id = Self.normalizedId(transaction.txID, chain: .tron)
+        id = MultichainTransactionID.normalized(transaction.txID, chain: .tron)
         matchingIds = [id]
         transactionIds = [id]
         isExchange = false
@@ -1088,11 +1358,16 @@ struct TransactionLiveActivitySnapshot {
         let presentation: MultichainActivityPresentationKind? = walletAddress.map {
             transaction.getTransactionType(address: $0) == .receive ? .receive : .send
         }
+        self.presentation = presentation
         title = Self.title(status, presentation)
         stage = nil
+        steps = nil
         chain = "TRON"
         detail = transaction.token == .usdt ? "USDT" : "TRX"
         let amount = Self.compactAmount(transaction.amount, decimals: transaction.token.fractionDigits)
+        let decimal = Self.decimal(transaction.amount, decimals: transaction.token.fractionDigits)
+        value = decimal.map { transaction.token == .usdt ? .usdt($0) : .trx($0) }
+        icon = transaction.token == .usdt ? .usdt : .trx
         let isReceive = walletAddress.map { transaction.getTransactionType(address: $0) == .receive } ?? false
         kind = walletAddress == nil ? .other : isReceive ? .receive : .send
         counterpartyAddress = walletAddress == nil ? nil
@@ -1103,9 +1378,12 @@ struct TransactionLiveActivitySnapshot {
         historyEntry = .tron(transaction)
     }
 
+    /// `markPrice` in USD prices the traded size.
     init(
         trading: PerpsPendingTradingAction,
         marketSymbol: String? = nil,
+        marketIcon: URL? = nil,
+        markPrice: Double? = nil,
         status: Status = .pending
     ) {
         id = "perps-trading:\(trading.operationId.lowercased())"
@@ -1116,24 +1394,32 @@ struct TransactionLiveActivitySnapshot {
         self.status = status
         let side = MultichainPerpsSide(rawValue: trading.side.rawValue)
         stage = nil
-        title = switch trading.payload {
-        case .open: Self.title(status, .perpsOpened(side))
-        case .close: Self.title(status, .perpsClosed(side))
-        case .sizeChange, .marginChange, .autoCloseChange, .limitOrderChange: Self.title(status, nil)
+        steps = nil
+        let presentation: MultichainActivityPresentationKind? = switch trading.payload {
+        case .open: .perpsOpened(side)
+        case .close: .perpsClosed(side)
+        case .sizeChange, .marginChange, .autoCloseChange, .limitOrderChange, .autoCloseRebase: nil
         }
+        self.presentation = presentation
+        title = Self.title(status, presentation)
         chain = "PERPS"
         detail = marketSymbol
         source = nil
-        let amount: String?
-        if case .open = trading.payload,
-           let size = trading.expectedBaseSize, size.isFinite, size > 0
-        {
-            amount = AmountFormatter().format(decimal: Decimal(size), style: .compact)
-        } else {
-            amount = nil
+        let size: Double? = switch trading.payload {
+        case .open, .close: trading.expectedBaseSize.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
+        case .sizeChange, .marginChange, .autoCloseChange, .limitOrderChange, .autoCloseRebase: nil
         }
+        let amount = size.map { AmountFormatter().format(decimal: Decimal($0), style: .compact) }
         destination = Leg(network: "PERPS", currency: marketSymbol, amount: amount)
-        kind = .other
+        if let size, let markPrice, markPrice.isFinite, markPrice > 0 {
+            value = .usd(Decimal(size * markPrice))
+        }
+        icon = marketIcon.map { .url($0) }
+        kind = switch trading.payload {
+        case .open: .open
+        case .close: .close
+        case .sizeChange, .marginChange, .autoCloseChange, .limitOrderChange, .autoCloseRebase: .other
+        }
         counterpartyAddress = nil
         isSpam = false
         historyEntry = nil
@@ -1166,18 +1452,21 @@ struct TransactionLiveActivitySnapshot {
                 amount: Self.compactAmount(withdraw.amountUnits, decimals: 6)
             )
             destination = Leg(network: withdraw.chainId == 1 ? "ETH" : nil, currency: "USDC", amount: nil)
+            value = Self.decimal(withdraw.amountUnits, decimals: 6).map { .usd($0) }
         } else {
             source = nil
             destination = nil
         }
-        kind = .other
+        icon = (funding.deposit?.targetAsset.assetId ?? funding.withdraw?.destinationAssetId).map { .asset(id: $0) }
+        kind = funding.kind == .deposit ? .deposit : .withdrawal
+        steps = Self.stageCount
         counterpartyAddress = nil
         isSpam = false
         historyEntry = nil
         if funding.deposit?.stage == .credited || funding.withdraw?.stage == .settled {
             status = .confirmed
         } else if funding.deposit?.stage == .failed || funding.deposit?.stage == .refunded
-            || funding.withdraw?.stage == .rejected
+            || funding.withdraw?.stage == .rejected || funding.withdraw?.isRefusedForNonce == true
         {
             status = .failed
         } else if funding.isStalled {
@@ -1185,23 +1474,23 @@ struct TransactionLiveActivitySnapshot {
         } else {
             status = .pending
         }
-        let staged = status == .pending ? Self.fundingStage(funding) : nil
-        stage = staged?.stage
-        title = staged?.title ?? Self.title(status, funding.kind == .deposit ? .perpsDeposit : .perpsWithdrawal)
+        presentation = funding.kind == .deposit ? .perpsDeposit : .perpsWithdrawal
+        stage = status == .pending ? Self.fundingStage(funding) : nil
+        title = Self.title(status, presentation)
     }
 
-    /// The ring moves on every stage the journal records; the title names only the few a person tells apart.
-    private static func fundingStage(_ funding: PerpsPendingFundingOperation) -> (stage: Stage, title: String)? {
+    /// The bar moves on every stage the journal records; the stage title names only the few a person tells apart.
+    private static func fundingStage(_ funding: PerpsPendingFundingOperation) -> Stage? {
         if let deposit = funding.deposit {
-            let isConverted = deposit.route == .crosschainSwap
+            let isTracked = deposit.route == .crosschainSwap
             let sending = TKLocales.LiveActivity.Stage.sendingFromWallet
-            // The backend reports a sent deposit only as pending: for a converted one that wait is the conversion.
+            // The backend reports a sent deposit only as pending: for an aggregator fill that wait is the conversion.
             let arriving: String
-            if isConverted {
+            if !deposit.skipsConversion {
                 let target = deposit.targetAsset
                 arriving = target.symbol == deposit.sourceAsset.symbol
                     ? TKLocales.LiveActivity.Stage.movingTo(
-                        MultichainChain(assetId: target.assetId)?.rawValue.uppercased() ?? target.symbol
+                        MultichainChain(assetId: target.assetId)?.shortDisplayTitle ?? target.symbol
                     )
                     : TKLocales.LiveActivity.Stage.convertingTo(target.symbol)
             } else {
@@ -1212,7 +1501,7 @@ struct TransactionLiveActivitySnapshot {
                 (1, sending)
             case .awaitingDelivery, .readyForGateway, .approvalPending, .gatewaySigned, .gatewaySending,
                  .gatewayUnknown:
-                isConverted ? (2, arriving) : (1, sending)
+                isTracked ? (2, arriving) : (1, sending)
             case .registrationPending, .needsAuthorization:
                 (2, arriving)
             case .registeredPending:
@@ -1220,35 +1509,53 @@ struct TransactionLiveActivitySnapshot {
             case .draft, .preparing, .credited, .unconfirmed, .failed, .refunded:
                 nil
             }
-            return step.map { (Stage(index: $0.index, count: 4), $0.title) }
+            return step.map { Stage(index: $0.index, count: stageCount, title: $0.title) }
         }
         let step: (index: Int, title: String)? = switch funding.withdraw?.stage {
-        case .signed:
+        case .signed, .sending, .unknown:
             (1, TKLocales.LiveActivity.Stage.sendingRequest)
-        case .sending, .unknown:
-            (2, TKLocales.LiveActivity.Stage.sendingRequest)
         case .accepted:
-            (3, TKLocales.LiveActivity.Stage.processingWithdrawal)
+            (2, TKLocales.LiveActivity.Stage.processingWithdrawal)
         case .awaitingL1:
-            (4, TKLocales.LiveActivity.Stage.sendingToWallet)
+            (3, TKLocales.LiveActivity.Stage.sendingToWallet)
         case .reviewed, .settled, .unconfirmed, .rejected, nil:
             nil
         }
-        return step.map { (Stage(index: $0.index, count: 5), $0.title) }
+        return step.map { Stage(index: $0.index, count: stageCount, title: $0.title) }
     }
 
     /// Until its destination transaction shows up a cross-chain exchange is on its way there; then it arrives.
-    /// The ring also moves once the history knows the source transaction.
+    /// The bar also moves once the history knows the source transaction.
     private static func crossChainStage(
         to chain: MultichainChain,
-        currency: String?,
         isIndexed: Bool,
         isArriving: Bool
     ) -> (stage: Stage, title: String) {
-        let network = chain.rawValue.uppercased()
-        return isArriving
-            ? (Stage(index: 3, count: 4), TKLocales.LiveActivity.Stage.receiving(currency ?? network))
-            : (Stage(index: isIndexed ? 2 : 1, count: 4), TKLocales.LiveActivity.Stage.movingTo(network))
+        let network = chain.shortDisplayTitle
+        let stage = isArriving
+            ? Stage(index: 3, count: stageCount, title: TKLocales.LiveActivity.Stage.arrivingOn(network))
+            : Stage(index: isIndexed ? 2 : 1, count: stageCount, title: TKLocales.LiveActivity.Stage.sending)
+        return (stage, TKLocales.LiveActivity.Stage.movingTo(network))
+    }
+
+    /// The app carries the logos of the most common assets, so they need no download.
+    private static func icon(for token: MultichainAssetDetails) -> TransactionLiveActivityIconSource? {
+        switch token.assetId {
+        case "ton/mainnet/coin": .ton
+        case "tron/mainnet/coin": .trx
+        case "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": .usdt
+        default: URL(string: token.image).map { .url($0) }
+        }
+    }
+
+    private static func perpsKind(_ presentation: MultichainActivityPresentationKind) -> Kind {
+        switch presentation {
+        case .perpsDeposit: .deposit
+        case .perpsWithdrawal: .withdrawal
+        case .perpsOpened: .open
+        case .perpsClosed: .close
+        default: .other
+        }
     }
 
     /// Every kind names its own outcome: "Sending" ends as "Sent", "Opening long" as "Long opened".
@@ -1275,26 +1582,38 @@ struct TransactionLiveActivitySnapshot {
             case let presentation?: presentation.title
             case nil: TKLocales.Result.success
             }
-        case .failed: TKLocales.State.failed
-        case .dropped: TKLocales.LiveActivity.dropped
-        case .unknown: TKLocales.LiveActivity.statusMayHaveChanged
+        case .failed:
+            if case .swap = presentation { TKLocales.LiveActivity.swapFailed } else { TKLocales.State.failed }
+        case .dropped:
+            if case .receive = presentation { TKLocales.LiveActivity.notReceived } else { TKLocales.LiveActivity.dropped }
+        case .unknown: TKLocales.LiveActivity.statusUnknown
         }
     }
 
-    private static func tonLegs(_ action: AccountEventAction, isIncoming: Bool) -> (Leg, Leg)? {
+    private typealias TonToken = (icon: TransactionLiveActivityIconSource?, value: TransactionLiveActivityValue?)
+
+    /// The token is the one the shown amount is in: the received one of a swap.
+    private static func tonLegs(
+        _ action: AccountEventAction,
+        isIncoming: Bool
+    ) -> (source: Leg, destination: Leg, token: TonToken)? {
         switch action.type {
         case let .tonTransfer(transfer):
-            let amount = compactAmount(BigUInt(transfer.amount.magnitude), decimals: 9)
+            let units = BigUInt(transfer.amount.magnitude)
+            let amount = compactAmount(units, decimals: 9)
             return (
                 Leg(network: "TON", currency: "TON", amount: isIncoming ? nil : amount),
-                Leg(network: "TON", currency: "TON", amount: isIncoming ? amount : nil)
+                Leg(network: "TON", currency: "TON", amount: isIncoming ? amount : nil),
+                (.ton, decimal(units, decimals: 9).map { .ton($0) })
             )
         case let .jettonTransfer(transfer):
             let token = transfer.jettonInfo
-            let formatted = compactAmount(token.scaledAmount(transfer.amount), decimals: token.fractionDigits)
+            let units = token.scaledAmount(transfer.amount)
+            let formatted = compactAmount(units, decimals: token.fractionDigits)
             return (
                 Leg(network: "TON", currency: token.symbol, amount: isIncoming ? nil : formatted),
-                Leg(network: "TON", currency: token.symbol, amount: isIncoming ? formatted : nil)
+                Leg(network: "TON", currency: token.symbol, amount: isIncoming ? formatted : nil),
+                tonToken(token, amount: decimal(units, decimals: token.fractionDigits))
             )
         case let .jettonSwap(swap):
             let sent: (String?, String?)?
@@ -1306,20 +1625,40 @@ struct TransactionLiveActivitySnapshot {
                 sent = nil
             }
             let received: (String?, String?)?
+            let receivedIcon: TransactionLiveActivityIconSource?
             if let tonOut = swap.tonOut {
                 received = ("TON", compactAmount(BigUInt(tonOut.magnitude), decimals: 9))
+                receivedIcon = .ton
             } else if let token = swap.jettonInfoOut {
                 received = (token.symbol, compactAmount(token.scaledAmount(swap.amountOut), decimals: token.fractionDigits))
+                receivedIcon = tonToken(token, amount: nil).icon
             } else {
                 received = nil
+                receivedIcon = nil
             }
             return (
                 Leg(network: "TON", currency: sent?.0, amount: sent?.1),
-                Leg(network: "TON", currency: received?.0, amount: received?.1)
+                Leg(network: "TON", currency: received?.0, amount: received?.1),
+                (receivedIcon, nil)
             )
         default:
             return nil
         }
+    }
+
+    private static func tonToken(_ token: JettonInfo, amount: Decimal?) -> TonToken {
+        guard token.address != JettonMasterAddress.tonUSDT else {
+            return (.usdt, amount.map { .usdt($0) })
+        }
+        return (token.imageURL.map { .url($0) }, amount.map { .jetton(address: token.address.toRaw(), amount: $0) })
+    }
+
+    private static func decimal(_ units: BigUInt, decimals: Int) -> Decimal? {
+        Decimal(string: units.description).map { $0 / pow(10, decimals) }
+    }
+
+    private static func decimal(_ units: String, decimals: Int) -> Decimal? {
+        BigUInt(units).flatMap { decimal($0, decimals: decimals) }
     }
 
     private static func compactAmount(_ raw: String?, decimals: Int?) -> String? {
@@ -1330,26 +1669,17 @@ struct TransactionLiveActivitySnapshot {
         return raw.contains(".") ? compactDeclaredAmount(raw) : nil
     }
 
+    /// A zero is the backend's placeholder for a transfer whose amount it did not index, so it shows no amount.
     private static func compactAmount(_ amount: BigUInt, decimals: Int?) -> String? {
-        guard let decimals else { return nil }
+        guard let decimals, amount > 0 else { return nil }
         return AmountFormatter().format(amount: amount, fractionDigits: decimals, style: .compact)
     }
 
     private static func compactDeclaredAmount(_ raw: String?) -> String? {
-        guard let raw, let amount = Decimal(string: raw, locale: Locale(identifier: "en_US_POSIX")) else {
+        guard let raw, let amount = Decimal(string: raw, locale: Locale(identifier: "en_US_POSIX")), amount > 0 else {
             return nil
         }
         return AmountFormatter().format(decimal: amount, style: .compact)
-    }
-
-    private static func normalizedId(_ raw: String, chain: MultichainChain?) -> String {
-        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if let separator = value.firstIndex(of: ":"),
-           let prefix = MultichainChain(assetIdChain: String(value[..<separator]))
-        {
-            return prefix.rawValue + value[separator...]
-        }
-        return "\(chain?.rawValue ?? "multichain"):\(value)"
     }
 }
 
@@ -1419,18 +1749,54 @@ enum TransactionLiveActivitySelection {
         excluding startedIds: Set<String> = [],
         walletId: String = ""
     ) -> TransactionLiveActivitySnapshot? {
+        startable(in: snapshots)
+            .filter { !$0.matchingIds.contains { startedIds.contains("\(walletId):\($0)") } }
+            .max(by: { $0.date < $1.date })
+    }
+
+    /// The other operations still pending, the dismissed ones too. Every source reports its own copy
+    /// of an operation, so copies that share an id count once.
+    static func queuedCount(
+        in snapshots: [TransactionLiveActivitySnapshot],
+        besides shown: TransactionLiveActivitySnapshot
+    ) -> Int {
+        var counted = shown.matchingIds.union(shown.transactionIds)
+        var count = 0
+        for snapshot in startable(in: snapshots).sorted(by: { $0.date > $1.date }) {
+            let ids = snapshot.matchingIds.union(snapshot.transactionIds)
+            guard ids.isDisjoint(with: counted) else {
+                counted.formUnion(ids)
+                continue
+            }
+            counted.formUnion(ids)
+            count += 1
+        }
+        return count
+    }
+
+    /// Only a pass that loaded every source can count the queue. Another one keeps the count of the
+    /// transaction the activity shows, and gives another transaction no count until a full pass.
+    static func queuedCount(
+        for snapshot: TransactionLiveActivitySnapshot,
+        in snapshots: [TransactionLiveActivitySnapshot],
+        countsQueue: Bool,
+        shown: TransactionLiveActivityAttributes.ContentState?
+    ) -> Int? {
+        if countsQueue { return queuedCount(in: snapshots, besides: snapshot) }
+        guard let shown, matching(shown.transactionId, in: [snapshot]) != nil else { return nil }
+        return shown.queuedCount
+    }
+
+    private static func startable(in snapshots: [TransactionLiveActivitySnapshot]) -> [TransactionLiveActivitySnapshot] {
         let earliestStart = Date().addingTimeInterval(-startWindow)
         let terminalIds = Set(snapshots.filter { $0.status != .pending }.flatMap(\.matchingIds))
         // The leg of a known exchange is shown as the exchange, never as a transfer of its own.
         let exchangeLegs = Set(snapshots.filter(\.isExchange).flatMap(\.transactionIds))
-        return snapshots
-            .filter {
-                $0.status == .pending && $0.date >= earliestStart && !$0.isSpam
-                    && $0.matchingIds.isDisjoint(with: terminalIds)
-                    && ($0.isExchange || $0.transactionIds.isDisjoint(with: exchangeLegs))
-                    && !$0.matchingIds.contains { startedIds.contains("\(walletId):\($0)") }
-            }
-            .max(by: { $0.date < $1.date })
+        return snapshots.filter {
+            $0.status == .pending && $0.date >= earliestStart && !$0.isSpam
+                && $0.matchingIds.isDisjoint(with: terminalIds)
+                && ($0.isExchange || $0.transactionIds.isDisjoint(with: exchangeLegs))
+        }
     }
 
     static func chain(of id: String) -> String? {

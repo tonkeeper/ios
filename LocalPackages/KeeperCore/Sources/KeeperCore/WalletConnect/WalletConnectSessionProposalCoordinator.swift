@@ -1,6 +1,6 @@
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 @WalletConnectActor
 final class WalletConnectSessionProposalCoordinator: Sendable {
@@ -60,7 +60,7 @@ final class WalletConnectSessionProposalCoordinator: Sendable {
         let pendingProposal = try requirePendingProposalForApproval(id: id)
         let proposal = pendingProposal.domain(namespaceBuilder: namespaceBuilder)
 
-        guard case .regular = wallet.kind else {
+        guard wallet.kind == .regular || wallet.kind == .ledger else {
             try await rejectInvalidProposal(
                 id: id,
                 proposal: proposal,

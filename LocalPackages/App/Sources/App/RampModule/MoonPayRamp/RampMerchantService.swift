@@ -1,17 +1,27 @@
 import Foundation
 import KeeperCore
-import TKLocalize
-
-extension RampPaymentMethodRow {
-    // TODO: replace with the backend field once `OnrampPaymentMethod` returns a subtitle.
-    var subtitle: String {
-        TKLocales.Ramp.Moonpay.PaymentMethod.instant
-    }
-}
 
 struct RampMerchantMethods {
     let detail: OnRampAssetDetail
     let rows: [RampPaymentMethodRow]
+}
+
+/// A merchant the ramp can buy through, with the payment methods it takes for the asset and currency.
+struct RampMerchantProvider: Equatable {
+    let id: String
+    let title: String
+    let imageURL: URL?
+    let methodTitles: [String]
+
+    var isMoonPay: Bool {
+        Self.isMoonPay(merchantId: id)
+    }
+
+    /// MoonPay's widget sold through our backend; the native MoonPay takes its place once the
+    /// customer has signed in to it.
+    static func isMoonPay(merchantId: String) -> Bool {
+        merchantId.lowercased().contains("moonpay")
+    }
 }
 
 struct RampMerchantsContext {
@@ -55,6 +65,69 @@ struct RampMerchantService {
             walletId: wallet.multichainWalletId
         )
         return RampMerchantMethods(detail: detail, rows: RampPaymentMethodRow.rows(from: detail, fiat: fiat))
+    }
+
+    func providers(asset: MultichainAsset, fiat: String) async throws -> [RampMerchantProvider] {
+        let detail = try await methods(asset: asset, fiat: fiat).detail
+        let ids = Self.merchantIds(in: detail, fiat: fiat)
+        guard !ids.isEmpty else { return [] }
+        let merchants = try await quoteService(detail: detail).loadMerchants(providerIds: ids)
+        return Self.providers(detail: detail, merchants: merchants, fiat: fiat)
+    }
+
+    /// P2P is a payment method of its own, not a provider to buy through.
+    static func providers(
+        detail: OnRampAssetDetail,
+        merchants: [OnRampMerchantInfo],
+        fiat: String
+    ) -> [RampMerchantProvider] {
+        let methods = detail.paymentMethods.filter { !$0.isP2P }
+        return merchants.filter { !$0.isP2P }.compactMap { merchant in
+            let titles = methods
+                .filter { method in method.providers.contains { $0.merchantId == merchant.id && $0.fiat == fiat } }
+                .map(\.name)
+            guard !titles.isEmpty else { return nil }
+            return RampMerchantProvider(
+                id: merchant.id,
+                title: merchant.title,
+                imageURL: URL(string: merchant.image),
+                methodTitles: titles
+            )
+        }
+    }
+
+    /// The payment method types the merchant takes for the currency.
+    static func methodTypes(of merchantId: String, in detail: OnRampAssetDetail, fiat: String) -> Set<String> {
+        Set(detail.paymentMethods
+            .filter { method in method.providers.contains { $0.merchantId == merchantId && $0.fiat == fiat } }
+            .map(\.type))
+    }
+
+    /// The payment method types MoonPay's widget takes for the currency: MoonPay's methods as far as
+    /// they are known before the sign-in to the native MoonPay.
+    static func moonPayWidgetMethodTypes(in detail: OnRampAssetDetail, fiat: String) -> Set<String> {
+        Set(detail.paymentMethods
+            .filter { method in
+                method.providers.contains { $0.fiat == fiat && RampMerchantProvider.isMoonPay(merchantId: $0.merchantId) }
+            }
+            .map(\.type))
+    }
+
+    /// Unknown methods (nil) are not taken: the sign-in is offered only where the backend says
+    /// MoonPay sells.
+    static func moonPayWidgetTakes(methodType: String?, among widgetTypes: Set<String>?) -> Bool {
+        guard let methodType, let widgetTypes else { return false }
+        return widgetTypes.contains(methodType)
+    }
+
+    private static func merchantIds(in detail: OnRampAssetDetail, fiat: String) -> [String] {
+        var seen = Set<String>()
+        return detail.paymentMethods
+            .filter { !$0.isP2P }
+            .flatMap(\.providers)
+            .filter { $0.fiat == fiat }
+            .map(\.merchantId)
+            .filter { seen.insert($0).inserted }
     }
 
     func merchants(detail: OnRampAssetDetail, methodType: String, fiat: String) async throws -> RampMerchantsContext {

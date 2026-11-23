@@ -149,6 +149,9 @@ struct WalletBalanceListMapper {
                 title = TKLocales.FinishSetup.biometryUnavailable
                 icon = .TKUIKit.Icons.Size28.faceId
             }
+        case .failure(.faceIDDenied):
+            title = TKLocales.FinishSetup.setupBiometry(String.faceID)
+            icon = .TKUIKit.Icons.Size28.faceId
         case .failure:
             title = TKLocales.FinishSetup.biometryUnavailable
             icon = .TKUIKit.Icons.Size28.faceId

@@ -68,10 +68,12 @@ public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Even
         return state
     }
 
+    /// `persists: false` keeps a partial portfolio out of the disk cache, so the next launch restores the last full one.
     public func setPortfolio(
         _ portfolio: MultichainPortfolio,
         wallet: Wallet,
-        requestToken: UInt64? = nil
+        requestToken: UInt64? = nil,
+        persists: Bool = true
     ) {
         let requestToken = requestToken ?? makeRequestToken()
         updateState { [weak self] state in
@@ -82,7 +84,9 @@ public final class MultichainPortfolioStore: Store<MultichainPortfolioStore.Even
             }
             var updatedState = state
             updatedState[wallet] = portfolio
-            self.save(portfolio, wallet: wallet)
+            if persists {
+                self.save(portfolio, wallet: wallet)
+            }
             return StateUpdate(newState: updatedState)
         } completion: { [weak self] _ in
             guard let self,

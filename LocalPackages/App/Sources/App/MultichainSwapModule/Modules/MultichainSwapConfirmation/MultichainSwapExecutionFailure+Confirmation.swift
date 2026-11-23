@@ -27,7 +27,8 @@ extension MultichainSwapExecutionFailure {
              let .preparationFailed(kind, _),
              let .nonceFailed(_, kind, _),
              let .signingFailed(_, kind, _),
-             let .broadcastFailed(_, kind, _):
+             let .broadcastFailed(_, kind, _),
+             let .broadcastRefused(_, kind, _):
             return kind.confirmationUserMessage
         case .missingWalletAddress,
              .invalidPayload:
@@ -73,6 +74,8 @@ extension MultichainSwapExecutionErrorKind {
             return TKLocales.MultichainSwap.Screen.Confirm.Error.badResponse
         case .providerUnavailable:
             return TKLocales.MultichainSwap.ProviderError.providerUnavailable
+        case .walletScreened:
+            return TKLocales.MultichainSwap.ProviderError.walletScreened
         case .bitcoinError:
             return TKLocales.MultichainSwap.Screen.Confirm.Error.bitcoinError
         case .memPoolConflict:

@@ -2,11 +2,12 @@ import Foundation
 
 /// The only formatting the perps screens cannot do themselves: fiat and percent glyphs
 /// come out of `ChainKit`, which the feature package must not reach. Everything built on
-/// top of these six primitives — signs, symbols, leverage suffixes, dates — is plain
+/// top of these primitives — signs, symbols, leverage suffixes, dates — is plain
 /// Foundation and stays in the feature.
 public protocol PerpsAmountFormatting {
     func usdCompact(_ value: Decimal) -> String
-    func usdExact(_ value: Decimal) -> String
+    func usdFixed(_ value: Decimal, fractionDigits: Int) -> String
+    func fixed(_ value: Decimal, fractionDigits: Int) -> String
     func signedPercent(_ value: Decimal) -> String
     func fundingExact(_ value: Decimal) -> String
     func exact(_ value: Decimal) -> String

@@ -29,14 +29,14 @@ final class EarnTransactionSentTests: XCTestCase {
             TransactionSent(
                 wallet: wallet,
                 evmTransaction: transaction(data: "0x", value: "0xde0b6b3a7640000"),
-                chain: .bnb,
+                chain: .bsc,
                 origin: TransactionOrigin(initiatedBy: .evmInjected, dappUrl: "vaults.fyi")
             )
         )
 
         XCTAssertEqual(event.category, .transfer)
         XCTAssertEqual(event.categoryDetail, .coin)
-        XCTAssertEqual(event.asset, "bnb/mainnet/coin")
+        XCTAssertEqual(event.asset, "bsc/mainnet/coin")
         XCTAssertEqual(event.amount, 1)
     }
 }

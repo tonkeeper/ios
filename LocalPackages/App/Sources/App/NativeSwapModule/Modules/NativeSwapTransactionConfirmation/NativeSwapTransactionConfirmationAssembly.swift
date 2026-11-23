@@ -12,7 +12,8 @@ enum NativeSwapTransactionConfirmationAssembly {
         model: NativeSwapTransactionConfirmationModel,
         transactionConfirmationController: TransactionConfirmationController,
         keeperCoreAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly
+        coreAssembly: TKCore.CoreAssembly,
+        isEmulationEnabled: Bool
     ) -> NativeSwapTransactionConfirmation {
         let viewModel = NativeSwapTransactionConfirmationViewModelImplementation(
             wallet: wallet,
@@ -27,7 +28,8 @@ enum NativeSwapTransactionConfirmationAssembly {
             batteryCalculation: keeperCoreAssembly.batteryAssembly.batteryCalculation,
             configurationAssembly: keeperCoreAssembly.configurationAssembly,
             configuration: keeperCoreAssembly.configurationAssembly.configuration,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsProvider: coreAssembly.analyticsProvider,
+            isEmulationEnabled: isEmulationEnabled
         )
 
         let viewController = NativeSwapTransactionConfirmationViewController(

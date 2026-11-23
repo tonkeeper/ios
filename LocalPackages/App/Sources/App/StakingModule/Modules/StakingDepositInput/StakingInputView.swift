@@ -33,7 +33,7 @@ final class StakingInputView: TKView {
         return stackView
     }()
 
-    let continueButton = TKButton(
+    private let continueButton = TKButton(
         configuration: .actionButtonConfiguration(
             category: .primary,
             size: .large
@@ -49,6 +49,15 @@ final class StakingInputView: TKView {
         view.snp.makeConstraints { make in
             make.edges.equalTo(amountInputContainer)
         }
+    }
+
+    func setupContinueButton(action: @escaping () -> Void) {
+        continueButton.configuration.action = action
+    }
+
+    func updateContinueButton(title: String, isEnabled: Bool) {
+        continueButton.configuration.content.title = .plainString(title)
+        continueButton.isEnabled = isEnabled
     }
 
     func setDetailsView(_ view: UIView) {
@@ -67,6 +76,7 @@ final class StakingInputView: TKView {
         detailsViewContainer.padding.top = 0
         detailsViewContainer.setViews([detailsContainer])
 
+        continueButton.accessibilityIdentifier = .continueAccessibilityIdentifier
         continueButtonContainer.setViews([continueButton])
         continueButtonContainer.padding.top = 16
         continueButtonContainer.padding.left = 16
@@ -107,4 +117,8 @@ final class StakingInputView: TKView {
 
 private extension CGFloat {
     static let contentPadding: CGFloat = 16
+}
+
+private extension String {
+    static let continueAccessibilityIdentifier = "staking_deposit_continue"
 }

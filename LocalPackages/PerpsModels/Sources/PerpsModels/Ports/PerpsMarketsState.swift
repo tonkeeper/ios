@@ -34,7 +34,7 @@ public struct PerpsMarkets: Equatable, Sendable {
     }
 }
 
-public enum PerpsMarketsState {
+public enum PerpsMarketsState: Equatable {
     case idle
     case loading
     case loaded(PerpsMarkets)
@@ -49,10 +49,6 @@ public enum PerpsMarketsState {
         guard case let .loaded(markets) = self else { return nil }
         return markets.price(marketId: marketId)
     }
-}
-
-public extension PerpsMarketsState {
-    typealias Markets = PerpsMarkets
 }
 
 public enum PerpsMarketDetailsState: Equatable {

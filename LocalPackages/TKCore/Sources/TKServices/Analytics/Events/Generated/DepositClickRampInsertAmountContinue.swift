@@ -10,43 +10,45 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User tapped \&quot;Continue\&quot; on the ramp insert amount screen */
+/** User tapped \&quot;Continue\&quot; on the ramp insert amount screen, or on \&quot;Buy crypto\&quot;. Sent on every tap the screen accepts, except on \&quot;Buy crypto\&quot; with P2P, which has no provider and sends deposit_continue_to_p2p_market only.  */
 public struct DepositClickRampInsertAmountContinue: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "deposit_click_ramp_insert_amount_continue"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Carried from deposit_view_fiat_payment_method */
     public var sellAsset: String
     /** Carried from deposit_click_fiat_payment_method */
     public var paymentMethod: String
-    /** Carried from deposit_view_ramp_insert_amount */
+    /** The provider of the offer at the \"Continue\" tap. On the Add Funds flow it is the one picked before the amount screen, the same as in deposit_view_ramp_insert_amount. On \"Buy crypto\" the app picks the offer for the current asset, payment method and amount, so it can differ from the provider of deposit_view_ramp_insert_amount (sent once per opening); split a funnel by provider from this event on, not from the view.  */
     public var providerName: String
-    /** Amount the user entered */
-    public var amount: Float
+    public var providerMode: RampProviderMode?
 
-    public init(eventName: String = "deposit_click_ramp_insert_amount_continue", from: RampSource, addFundsOption: AddFundsOption, buyAsset: String, sellAsset: String, paymentMethod: String, providerName: String, amount: Float) {
+    public init(eventName: String = "deposit_click_ramp_insert_amount_continue", from: RampSource, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, buyAsset: String, sellAsset: String, paymentMethod: String, providerName: String, providerMode: RampProviderMode? = nil) {
         self.eventName = eventName
         self.from = from
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.buyAsset = buyAsset
         self.sellAsset = sellAsset
         self.paymentMethod = paymentMethod
         self.providerName = providerName
-        self.amount = amount
+        self.providerMode = providerMode
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case from
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case buyAsset = "buy_asset"
         case sellAsset = "sell_asset"
         case paymentMethod = "payment_method"
         case providerName = "provider_name"
-        case amount
+        case providerMode = "provider_mode"
     }
 
     // Encodable protocol methods
@@ -56,11 +58,12 @@ public struct DepositClickRampInsertAmountContinue: Codable, JSONEncodable, Hash
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(buyAsset, forKey: .buyAsset)
         try container.encode(sellAsset, forKey: .sellAsset)
         try container.encode(paymentMethod, forKey: .paymentMethod)
         try container.encode(providerName, forKey: .providerName)
-        try container.encode(amount, forKey: .amount)
+        try container.encodeIfPresent(providerMode, forKey: .providerMode)
     }
 }
 

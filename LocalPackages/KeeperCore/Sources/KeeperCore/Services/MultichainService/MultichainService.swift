@@ -81,6 +81,26 @@ public protocol MultichainService {
         showAll: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage
+    /// Calls `onFirstPage` with the first page when more pages follow, before it loads them.
+    func getAllWalletAssets(
+        state: MultichainWalletState,
+        currencies: [String],
+        capabilities: [MultichainAssetCapability]?,
+        chain: MultichainChain?,
+        search: String?,
+        availableOnly: Bool?,
+        showHidden: Bool?,
+        showAll: Bool?,
+        hideDust: Bool?,
+        onFirstPage: (MultichainWalletAssetsPage) -> Void
+    ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage
+    /// Also an asset the wallet never held or hid: the backend answers with a zero balance or a hidden asset.
+    /// A record of another local wallet that shares the wallet id comes back with a zero balance.
+    func getWalletAssetIncludingUnheld(
+        state: MultichainWalletState,
+        assetId: String,
+        currencies: [String]
+    ) async throws(MultichainServiceError) -> MultichainAsset?
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainServiceError)
     func getWalletActivities(
         state: MultichainWalletState,
@@ -157,6 +177,34 @@ final class MultichainServiceImplementation: MultichainService {
         try await serviceCall(await multichainClientAPI.getWalletSyncStatus(walletId: walletId))
     }
 
+    func getWalletAssetIncludingUnheld(
+        state: MultichainWalletState,
+        assetId: String,
+        currencies: [String]
+    ) async throws(MultichainServiceError) -> MultichainAsset? {
+        guard let record = try await serviceCall(await multichainClientAPI.getWalletAsset(
+            walletId: state.walletId,
+            assetId: assetId,
+            currencies: currencies
+        )) else {
+            return nil
+        }
+        // The backend can answer with the TON account of the other local wallet that shares the wallet id.
+        let asset = if Self.filteringForeignAccounts(in: [record], state: state).isEmpty {
+            MultichainAsset(
+                asset: record.asset.asset,
+                price: record.asset.price,
+                isHidden: record.asset.isHidden,
+                balance: 0,
+                marketCap: record.asset.marketCap
+            )
+        } else {
+            record.asset
+        }
+        return visibilityChangesController.applyingPendingChanges(to: [asset], walletId: state.walletId)
+            .first { $0.asset.assetId.lowercased() == assetId.lowercased() }
+    }
+
     func getWalletAssets(
         state: MultichainWalletState,
         currencies: [String],
@@ -220,6 +268,32 @@ final class MultichainServiceImplementation: MultichainService {
         showAll: Bool?,
         hideDust: Bool?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
+        try await getAllWalletAssets(
+            state: state,
+            currencies: currencies,
+            capabilities: capabilities,
+            chain: chain,
+            search: search,
+            availableOnly: availableOnly,
+            showHidden: showHidden,
+            showAll: showAll,
+            hideDust: hideDust,
+            onFirstPage: { _ in }
+        )
+    }
+
+    func getAllWalletAssets(
+        state: MultichainWalletState,
+        currencies: [String],
+        capabilities: [MultichainAssetCapability]?,
+        chain: MultichainChain?,
+        search: String?,
+        availableOnly: Bool?,
+        showHidden: Bool?,
+        showAll: Bool?,
+        hideDust: Bool?,
+        onFirstPage: (MultichainWalletAssetsPage) -> Void
+    ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         let walletId = state.walletId
         visibilityChangesController.retryPendingChanges(walletId: walletId)
         let fetchToken = visibilityChangesController.beginServerFetch(walletId: walletId)
@@ -227,8 +301,8 @@ final class MultichainServiceImplementation: MultichainService {
         let pages: [MultichainWalletAssetRecordsPage]
         do {
             pages = try await loadAllWalletAssetPages(
-                fetchPage: { (cursor: String?) async throws(MultichainServiceError) in
-                    try await serviceCall(await multichainClientAPI.getWalletAssets(
+                fetchPage: { (cursor: String?) async throws(MultichainServiceError) -> MultichainWalletAssetRecordsPage in
+                    let page = try await serviceCall(await multichainClientAPI.getWalletAssets(
                         walletId: walletId,
                         currencies: currencies,
                         assetIds: nil,
@@ -242,6 +316,18 @@ final class MultichainServiceImplementation: MultichainService {
                         limit: WalletAssetsPagination.pageLimit,
                         cursor: cursor
                     ))
+                    if cursor == nil, page.nextCursor != nil {
+                        onFirstPage(makeWalletAssetsPage(
+                            records: page.records,
+                            state: state,
+                            showHidden: showHidden,
+                            hideDust: hideDust,
+                            nextCursor: page.nextCursor,
+                            fiatPrice: page.fiatPrice,
+                            perpsFiatPrice: page.perpsFiatPrice
+                        ))
+                    }
+                    return page
                 },
                 nextCursor: \.nextCursor
             )
@@ -439,25 +525,13 @@ private extension MultichainServiceImplementation {
     static let dustFiatThreshold = Decimal(sign: .plus, exponent: -2, significand: 1)
 
     static func isDust(_ asset: MultichainAsset) -> Bool {
-        guard let price = price(for: "usd", in: asset.price.prices) else {
+        guard let price = asset.price.value(for: "usd") else {
             return false
         }
         return decimalAmount(
             amount: asset.balance,
             fractionDigits: asset.asset.decimals
         ) * Decimal(price) < dustFiatThreshold
-    }
-
-    static func price(
-        for currencyCode: String,
-        in prices: [String: Double]
-    ) -> Double? {
-        for key in [currencyCode, currencyCode.uppercased(), currencyCode.lowercased()] {
-            if let price = prices[key] {
-                return price
-            }
-        }
-        return prices.first { $0.key.caseInsensitiveCompare(currencyCode) == .orderedSame }?.value
     }
 
     static func decimalAmount(amount: BigUInt, fractionDigits: Int) -> Decimal {
@@ -551,6 +625,31 @@ public extension MultichainService {
             assets: pages.flatMap(\.assets),
             nextCursor: nil,
             fiatPrice: pages.first?.fiatPrice ?? [:]
+        )
+    }
+
+    func getAllWalletAssets(
+        state: MultichainWalletState,
+        currencies: [String],
+        capabilities: [MultichainAssetCapability]?,
+        chain: MultichainChain?,
+        search: String?,
+        availableOnly: Bool?,
+        showHidden: Bool?,
+        showAll: Bool?,
+        hideDust: Bool?,
+        onFirstPage _: (MultichainWalletAssetsPage) -> Void
+    ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
+        try await getAllWalletAssets(
+            state: state,
+            currencies: currencies,
+            capabilities: capabilities,
+            chain: chain,
+            search: search,
+            availableOnly: availableOnly,
+            showHidden: showHidden,
+            showAll: showAll,
+            hideDust: hideDust
         )
     }
 }

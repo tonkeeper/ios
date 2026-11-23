@@ -32,7 +32,6 @@ final class BatteryGaslessModelsTests: XCTestCase {
         XCTAssertEqual(response.estimations.map { $0.fee?.data.amount }, ["18", "115304", "115304"])
         XCTAssertEqual(response.estimations.map(\.available), [true, false, true])
         XCTAssertEqual(response.estimations[1].error?.code, "insufficient_funds")
-        XCTAssertNil(response.estimations[0].asset.chain)
         XCTAssertEqual(response.estimations[2].asset.decimals, 6)
     }
 
@@ -152,9 +151,8 @@ final class BatteryGaslessModelsTests: XCTestCase {
         )
         XCTAssertEqual(config.chains.map(\.payload_types), Array(repeating: ["main"], count: 6))
         XCTAssertEqual(config.chains[1].assets.map(\.symbol), ["BATTERY", "USDC", "USDT"])
-        XCTAssertNil(config.chains[1].assets[0].chain)
         XCTAssertEqual(config.chains[1].assets[2].id, GaslessFixtures.usdtId)
-        XCTAssertEqual(EVMGaslessRelayedChains.relayedEVMChains(in: config), [.eth, .bsc, .arb, .base])
+        XCTAssertEqual(EVMGaslessRelayedChains.relayedEVMChains(in: config), [.eth, .bsc, .arb, .base, .sol])
     }
 
     private func date(_ value: String) -> Date {
@@ -191,7 +189,7 @@ final class BatteryGaslessModelsTests: XCTestCase {
     }
 
     func test_unknownRechargeTypesKeepKnownMethods() throws {
-        let json = #"{"methods":[{"type":"ton","symbol":"TON","decimals":9,"rate":"1","support_gasless":true,"support_recharge":true},{"type":"future-token","symbol":"NEW","decimals":6,"rate":"1","support_gasless":true,"support_recharge":true}]}"#
+        let json = #"{"methods":[{"chain":"ton/mainnet","asset_id":"ton/mainnet/coin","type":"ton","symbol":"TON","decimals":9,"rate":"1","support_gasless":true,"support_recharge":true},{"chain":"ton/mainnet","asset_id":"ton/mainnet/future","type":"future-token","symbol":"NEW","decimals":6,"rate":"1","support_gasless":true,"support_recharge":true}]}"#
         let response = try decoder.decode(Components.Schemas.RechargeMethods.self, from: Data(json.utf8))
 
         XCTAssertEqual(response.methods[1]._type, .unknown)
@@ -356,16 +354,27 @@ enum GaslessFixtures {
         """
     }
 
-    /// `sender` is the account the Hermes document runs on: the signer refuses any other.
+    /// `sender` is the account the Hermes document runs on: the signer refuses any other. A `fee` of
+    /// nil leaves the relayer's fee off its document. Every call sends `value` of the chain's coin.
     static func operation(
         feeAssetId: String = "battery/mainnet",
-        fee: String = "19",
+        fee: String? = "19",
         sender: String = sender,
         userPayloadType: String = "eip7821/hermes/delegate",
         authorizationPayloadType: String = "eip7702/authorization",
-        authorizationMeta: String = authorizationMeta
+        authorizationMeta: String = authorizationMeta,
+        calls: [(target: String, data: String)] = [(usdtContract, usdtTransfer)],
+        value: String = "0",
+        callValues: [String]? = nil,
+        mode: String = "0x0100000000007821000100000000000000000000000000000000000000000000",
+        chainId: Int = 1,
+        deadline: String = "1790762591"
     ) -> String {
-        """
+        let calls = calls.enumerated().map { index, call in
+            #"{ "data": "\#(call.data)", "target": "\#(call.target)", "value": "\#(callValues?[index] ?? value)" }"#
+        }
+        let fee = fee.map { #""fee": { "type": "value", "asset_id": "\#(feeAssetId)", "data": { "amount": "\#($0)" } },"# } ?? ""
+        return """
         {
           "id": "bcef74e1-b940-4142-b7a7-76161850971e",
           "type": "transfer",
@@ -382,23 +391,21 @@ enum GaslessFixtures {
               "type": "\(userPayloadType)",
               "chain_id": "eth/mainnet",
               "version": 1,
-              "fee": { "type": "value", "asset_id": "\(feeAssetId)", "data": { "amount": "\(fee)" } },
+              \(fee)
               "meta": {
                 "digest": "0x25de48f18779d904969b06f9b652810bd8dc33055c6f5774c518b4a1acf98748",
                 "data": {
                   "domain": {
-                    "chainId": 1,
+                    "chainId": \(chainId),
                     "name": "Hermes",
                     "salt": "0x00000000000000000000000024b576bc271823bf9c24be627b4363b9b00191e9",
                     "verifyingContract": "\(sender)",
                     "version": "v1.0.0"
                   },
                   "message": {
-                    "calls": [
-                      { "data": "\(usdtTransfer)", "target": "\(usdtContract)", "value": "0" }
-                    ],
-                    "deadline": "1790762591",
-                    "mode": "0x0100000000007821000100000000000000000000000000000000000000000000",
+                    "calls": [\(calls.joined(separator: ", "))],
+                    "deadline": "\(deadline)",
+                    "mode": "\(mode)",
                     "nonce": "0"
                   },
                   "primaryType": "Execute",
@@ -428,5 +435,19 @@ enum GaslessFixtures {
           ]
         }
         """
+    }
+
+    /// The operation `operation` writes, as the wallet reads it from the relayer.
+    static func relayedOperation(
+        feeAssetId: String = "battery/mainnet",
+        fee: String? = "19",
+        calls: [(target: String, data: String)] = [(usdtContract, usdtTransfer)],
+        value: String = "0",
+        mode: String = "0x0100000000007821000100000000000000000000000000000000000000000000"
+    ) throws -> MultichainRelayedOperation {
+        try MultichainRelayedOperation(
+            id: "bcef74e1-b940-4142-b7a7-76161850971e",
+            json: operation(feeAssetId: feeAssetId, fee: fee, calls: calls, value: value, mode: mode)
+        )
     }
 }

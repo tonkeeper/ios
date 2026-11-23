@@ -16,21 +16,30 @@ protocol MultichainSwapAPI {
         request: MultichainSwapPrepareRouteRequest?,
         walletId: String?
     ) async throws(MultichainSwapAPIError) -> MultichainSwapPrepare
+    /// Routes without payloads, for a wallet the backend registered: each is prepared on its own
+    /// into the operation the wallet signs.
+    func createCrossSwapQuoteV3(
+        request: MultichainSwapQuoteRequest,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote
+    /// The route as a Generic Payload API operation, in the approval mode the backend defaults to:
+    /// `exact`. `MultichainSwapPreparedOperation` reads it.
+    func prepareCrossSwapRouteV3(
+        routeId: String,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> SwapAPI.Components.Schemas.CrossSwapPrepareV3
 }
 
 final class MultichainSwapAPIImplementation: MultichainSwapAPI {
     private let client: SwapAPI.Client
     private let firebaseUserIdProvider: @Sendable () -> String?
-    private let isNewUser: @Sendable () -> Bool
 
     init(
         swapAPIClient: SwapAPI.Client,
-        firebaseUserIdProvider: @escaping @Sendable () -> String?,
-        isNewUser: @escaping @Sendable () -> Bool
+        firebaseUserIdProvider: @escaping @Sendable () -> String?
     ) {
         client = swapAPIClient
         self.firebaseUserIdProvider = firebaseUserIdProvider
-        self.isNewUser = isNewUser
     }
 
     func listCrossSwapAssets(query: MultichainSwapAssetsQuery) async throws(MultichainSwapAPIError) -> [MultichainSwapAsset] {
@@ -87,7 +96,6 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
         let output = try await apiCall(
             await client.createCrossSwapQuote(
                 .init(
-                    query: .init(is_new: isNewUser()),
                     headers: .init(
                         X_hyphen_Wallet_hyphen_ID: walletId,
                         F: firebaseUserIdProvider()
@@ -119,7 +127,6 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
             await client.prepareCrossSwapRoute(
                 .init(
                     path: path,
-                    query: .init(is_new: isNewUser()),
                     headers: .init(
                         X_hyphen_Wallet_hyphen_ID: walletId,
                         F: firebaseUserIdProvider()
@@ -131,6 +138,62 @@ final class MultichainSwapAPIImplementation: MultichainSwapAPI {
         switch output {
         case let .ok(ok):
             return try MultichainSwapPrepare(api: decodeResponse(ok.body.json))
+        case let .badRequest(response):
+            throw try badRequestError(response)
+        case let .notFound(response):
+            throw try notFoundError(response)
+        case let .internalServerError(response):
+            throw try internalServerError(response)
+        case let .undocumented(statusCode, _):
+            throw MultichainSwapAPIError.unknown(statusCode: statusCode)
+        }
+    }
+
+    func createCrossSwapQuoteV3(
+        request: MultichainSwapQuoteRequest,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
+        let output = try await apiCall(
+            await client.createCrossSwapQuoteV3(
+                .init(
+                    headers: .init(
+                        X_hyphen_Wallet_hyphen_ID: walletId,
+                        F: firebaseUserIdProvider()
+                    ),
+                    body: request.swapAPIRequestBodyV3()
+                )
+            )
+        )
+        switch output {
+        case let .ok(ok):
+            return try MultichainSwapQuote(api: decodeResponse(ok.body.json))
+        case let .badRequest(response):
+            throw try badRequestError(response)
+        case let .internalServerError(response):
+            throw try internalServerError(response)
+        case let .undocumented(statusCode, _):
+            throw MultichainSwapAPIError.unknown(statusCode: statusCode)
+        }
+    }
+
+    func prepareCrossSwapRouteV3(
+        routeId: String,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> SwapAPI.Components.Schemas.CrossSwapPrepareV3 {
+        let output = try await apiCall(
+            await client.prepareCrossSwapRouteV3(
+                .init(
+                    path: .init(route_id: routeId),
+                    headers: .init(
+                        X_hyphen_Wallet_hyphen_ID: walletId,
+                        F: firebaseUserIdProvider()
+                    )
+                )
+            )
+        )
+        switch output {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
         case let .badRequest(response):
             throw try badRequestError(response)
         case let .notFound(response):

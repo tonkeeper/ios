@@ -133,6 +133,7 @@ struct PerpsChainIntents {
 
     func restingTriggerOrders(_ context: PerpsMarketContext) -> [PerpsTriggerOrderSummary] {
         context.accountSnapshot.restingOrders.compactMap { order in
+            guard order.positionTied else { return nil }
             let kind: PerpsTriggerOrderSummary.Kind
             if order.category == .takeprofit {
                 kind = .takeProfit

@@ -7,6 +7,8 @@ struct RampPaymentMethodRow: Identifiable, Equatable {
     let title: String
     let image: String
     let isP2P: Bool
+    var subtitle: String?
+    var badge: String?
 
     var id: String {
         type
@@ -29,7 +31,9 @@ extension RampPaymentMethodRow {
                 type: method.type,
                 title: method.name,
                 image: method.image,
-                isP2P: method.isP2P
+                isP2P: method.isP2P,
+                subtitle: method.subtitle,
+                badge: method.badge
             )
         }
     }

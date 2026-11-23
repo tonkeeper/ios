@@ -34,10 +34,12 @@ public struct MultichainSwapAmountCardContent {
     public var amountState: MultichainSwapAmountState
     public var showsQuoteShimmer: Bool
     public var quoteUnavailableText: String?
-    public var insufficientBalance: String?
+    public var exceedsBalance: Bool
     public var balanceText: String?
     public var rateText: String?
     public var showsRateToggleIcon: Bool
+    /// Follows the rate text: how far below the market the amount comes out.
+    public var priceImpact: PriceImpact?
     public var maximumFractionDigits: Int?
     /// Separator the input is normalized to, so typed and formatted amounts agree with the app locale.
     public var decimalSeparator: String
@@ -45,12 +47,11 @@ public struct MultichainSwapAmountCardContent {
     public var focusedField: FocusState<MultichainSwapAmountField?>.Binding
     public var tokenAvatarSource: AssetAvatarViewImageSource
     public var tokenSymbol: String
-    public var maxTitle: String?
 
     public var onTapCard: () -> Void
-    public var onTapMax: () -> Void
     public var onTapRateText: (() -> Void)?
     public var onTapToken: (() -> Void)?
+    public var numPadPresets: [TKNumPadPreset]
 
     public init(
         amount: Binding<String>,
@@ -58,10 +59,11 @@ public struct MultichainSwapAmountCardContent {
         amountState: MultichainSwapAmountState = .editable,
         showsQuoteShimmer: Bool = false,
         quoteUnavailableText: String? = nil,
-        insufficientBalance: String? = nil,
+        exceedsBalance: Bool = false,
         balanceText: String?,
         rateText: String? = nil,
         showsRateToggleIcon: Bool = true,
+        priceImpact: PriceImpact? = nil,
         maximumFractionDigits: Int? = nil,
         decimalSeparator: String = ".",
         field: MultichainSwapAmountField,
@@ -69,39 +71,52 @@ public struct MultichainSwapAmountCardContent {
         tokenAvatarSource: AssetAvatarViewImageSource,
         tokenSymbol: String,
         network: String?,
-        maxTitle: String? = nil,
         onTapCard: @escaping () -> Void,
-        onTapMax: @escaping () -> Void,
         onTapRateText: (() -> Void)? = nil,
-        onTapToken: (() -> Void)?
+        onTapToken: (() -> Void)?,
+        numPadPresets: [TKNumPadPreset] = []
     ) {
         self.amount = amount
         self.amountPrefix = amountPrefix
         self.amountState = amountState
         self.showsQuoteShimmer = showsQuoteShimmer
         self.quoteUnavailableText = quoteUnavailableText
-        self.insufficientBalance = insufficientBalance
+        self.exceedsBalance = exceedsBalance
         self.balanceText = balanceText
         self.rateText = rateText
         self.showsRateToggleIcon = showsRateToggleIcon
+        self.priceImpact = priceImpact
         self.maximumFractionDigits = maximumFractionDigits
         self.decimalSeparator = decimalSeparator
         self.field = field
         self.focusedField = focusedField
         self.tokenAvatarSource = tokenAvatarSource
         self.tokenSymbol = tokenSymbol
-        self.maxTitle = maxTitle
         self.onTapCard = onTapCard
-        self.onTapMax = onTapMax
         self.onTapRateText = onTapRateText
         self.onTapToken = onTapToken
+        self.numPadPresets = numPadPresets
+    }
+}
+
+public extension MultichainSwapAmountCardContent {
+    struct PriceImpact {
+        public var text: String
+        public var color: TKColor
+        public var onTap: () -> Void
+
+        public init(text: String, color: TKColor, onTap: @escaping () -> Void) {
+            self.text = text
+            self.color = color
+            self.onTap = onTap
+        }
     }
 }
 
 public struct MultichainSwapAmountCard: View {
     private let config: MultichainSwapAmountCardConfig
 
-    @State private var lastAmount = ""
+    @State private var lastAmountText: AmountText?
 
     public init(config: MultichainSwapAmountCardConfig) {
         self.config = config
@@ -118,9 +133,7 @@ public struct MultichainSwapAmountCard: View {
         tokenAvatarSource: AssetAvatarViewImageSource,
         tokenSymbol: String,
         network: String?,
-        maxTitle: String? = nil,
         onTapCard: @escaping () -> Void,
-        onTapMax: @escaping () -> Void,
         onTapToken: (() -> Void)?
     ) {
         self.config = .content(
@@ -135,9 +148,7 @@ public struct MultichainSwapAmountCard: View {
                 tokenAvatarSource: tokenAvatarSource,
                 tokenSymbol: tokenSymbol,
                 network: network,
-                maxTitle: maxTitle,
                 onTapCard: onTapCard,
-                onTapMax: onTapMax,
                 onTapToken: onTapToken
             )
         )
@@ -178,7 +189,7 @@ public struct MultichainSwapAmountCard: View {
         )
         .contentShape(Rectangle())
         .onTapGesture {
-            guard content.amountState == .editable else {
+            guard isAmountEditable(content) else {
                 return
             }
             content.onTapCard()
@@ -229,9 +240,9 @@ public struct MultichainSwapAmountCard: View {
     private var headerTitle: String {
         switch config.field {
         case .send:
-            TKLocales.NativeSwap.Field.send
+            TKLocales.MultichainSwap.Details.youSend
         case .receive:
-            TKLocales.NativeSwap.Field.receive
+            TKLocales.MultichainSwap.Details.youReceive
         }
     }
 }
@@ -257,7 +268,7 @@ private extension MultichainSwapAmountCard {
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, Layout.quoteShimmerAmountTopPadding)
-            } else if let quoteUnavailableText = content.quoteUnavailableText {
+            } else if let quoteUnavailableText = content.quoteUnavailableText, !isAmountEditable(content) {
                 Text(quoteUnavailableText)
                     .font(Font(TKTextStyle.num2.font))
                     .foregroundStyle(.textSecondary)
@@ -300,90 +311,77 @@ private extension MultichainSwapAmountCard {
                     height: Layout.shimmerLineHeight
                 )
             } else if let rateText = content.rateText {
-                if let onTapRateText = content.onTapRateText {
-                    Button(action: onTapRateText) {
+                HStack(spacing: Layout.priceImpactSpacing) {
+                    if let onTapRateText = content.onTapRateText {
+                        Button(action: onTapRateText) {
+                            rateTextView(rateText, showsToggleIcon: content.showsRateToggleIcon)
+                        }
+                        .buttonStyle(TKTapAnimationButtonStyle())
+                        .accessibilityIdentifier(accessibilityIdentifier(
+                            for: content.field,
+                            suffix: "amount_mode"
+                        ))
+                    } else {
                         rateTextView(rateText, showsToggleIcon: content.showsRateToggleIcon)
                     }
-                    .buttonStyle(TKTapAnimationButtonStyle())
-                    .accessibilityIdentifier(accessibilityIdentifier(
-                        for: content.field,
-                        suffix: "amount_mode"
-                    ))
-                } else {
-                    rateTextView(rateText, showsToggleIcon: content.showsRateToggleIcon)
+
+                    if let priceImpact = content.priceImpact {
+                        priceImpactButton(priceImpact, field: content.field)
+                    }
                 }
             }
 
             Spacer(minLength: Layout.footerSpacerMinLength)
 
-            if content.balanceText != nil || (content.field == .send && content.maxTitle != nil) {
-                HStack(spacing: Layout.footerTextSpacing) {
-                    if let insufficientBalance = content.insufficientBalance {
-                        Text(insufficientBalance)
-                            .textStyle(.body2)
-                            .foregroundStyle(.accentRed)
-                            .lineLimit(1)
-                    } else if let balanceText = content.balanceText {
-                        Text(balanceText)
-                            .textStyle(.body2)
-                            .foregroundStyle(.textSecondary)
-                            .lineLimit(1)
-                    }
-                    if content.field == .send, let maxTitle = content.maxTitle {
-                        Button(action: content.onTapMax) {
-                            Text(maxTitle)
-                                .textStyle(.label2)
-                                .foregroundStyle(.accentBlue)
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(TKTapAnimationButtonStyle())
-                    }
-                }
-                // The rate text gives way first, so a long fiat value never truncates
-                // or shifts the balance/error text.
-                .layoutPriority(1)
+            if let balanceText = content.balanceText {
+                Text(balanceText)
+                    .textStyle(.body2)
+                    .foregroundStyle(.textSecondary)
+                    .lineLimit(1)
+                    // The rate text gives way first, so a long fiat value never truncates
+                    // or shifts the balance text.
+                    .layoutPriority(1)
             }
         }
         .frame(height: Layout.footerHeight)
     }
 
+    /// An editable field keeps taking input when its quote fails, so the failure is only its placeholder.
     func amountTextField(_ content: MultichainSwapAmountCardContent) -> some View {
-        TextField("0", text: content.amount)
-            .font(Font(TKTextStyle.num2.font))
-            .foregroundStyle(.textPrimary)
-            .tint(.accentBlue)
-            .keyboardType(.decimalPad)
-            .autocorrectionDisabled()
-            .lineLimit(1)
-            .focused(content.focusedField, equals: content.field)
-            .disabled(!isAmountEditable(content))
-            .opacity(content.amountState == .loading ? 0 : 1)
-            .overlay(alignment: .leading) {
-                if content.amountState == .loading {
-                    amountTextShimmer(content)
-                }
+        TKNumPadTextField(
+            content.quoteUnavailableText ?? "0",
+            text: content.amount,
+            font: TKTextStyle.num2.font,
+            color: content.exceedsBalance ? .accentRed : .textPrimary,
+            presets: content.numPadPresets
+        )
+        .tint(.accentBlue)
+        .autocorrectionDisabled()
+        .lineLimit(1)
+        .focused(content.focusedField, equals: content.field)
+        .disabled(!isAmountEditable(content))
+        .opacity(content.amountState == .loading ? 0 : 1)
+        .overlay(alignment: .leading) {
+            if content.amountState == .loading {
+                amountTextShimmer(content)
             }
-            .accessibilityIdentifier(accessibilityIdentifier(
-                for: content.field,
-                suffix: "amount"
-            ))
-            .onAppear {
-                lastAmount = content.amount.wrappedValue
+        }
+        .accessibilityIdentifier(accessibilityIdentifier(
+            for: content.field,
+            suffix: "amount"
+        ))
+        .onAppear {
+            lastAmountText = AmountText(content)
+        }
+        // This `onChange` runs the closure of the previous render, whose `content` still holds the old
+        // format, so the format comes with the new value.
+        .onChange(of: AmountText(content)) { amountText in
+            let normalized = MultichainSwapAmountCard.normalizedAmountText(amountText, previous: lastAmountText)
+            lastAmountText = normalized
+            if normalized.text != amountText.text {
+                content.amount.wrappedValue = normalized.text
             }
-            .onChange(of: content.amount.wrappedValue) { newValue in
-                // Backspacing the auto inserted separator away must not re-add it.
-                let isDeleting = newValue.count < lastAmount.count && lastAmount.hasPrefix(newValue)
-                let normalized = MultichainSwapAmountCard.normalizeDecimalInput(
-                    newValue,
-                    maximumFractionDigits: content.maximumFractionDigits,
-                    decimalSeparator: content.decimalSeparator,
-                    interpretsLeadingZeroAsFractionalShortcut: !isDeleting
-                )
-                lastAmount = normalized
-                if normalized != newValue {
-                    content.amount.wrappedValue = normalized
-                }
-            }
+        }
     }
 
     func accessibilityIdentifier(
@@ -399,7 +397,7 @@ private extension MultichainSwapAmountCard {
     }
 
     func amountTextShimmer(_ content: MultichainSwapAmountCardContent) -> some View {
-        let amountText = content.amount.wrappedValue.isEmpty ? "0" : content.amount.wrappedValue
+        let amountText = content.amount.wrappedValue.isEmpty ? "0" : TKNumPadTextField.displayText(content.amount.wrappedValue)
         return MultichainSwapAmountTextShimmer(text: amountText)
             .allowsHitTesting(false)
     }
@@ -422,6 +420,24 @@ private extension MultichainSwapAmountCard {
         }
     }
 
+    /// Stays whole: the rate text ahead of it gives way first.
+    func priceImpactButton(
+        _ priceImpact: MultichainSwapAmountCardContent.PriceImpact,
+        field: MultichainSwapAmountField
+    ) -> some View {
+        var text = AttributedString(priceImpact.text)
+        text.underlineStyle = Text.LineStyle(pattern: .dot)
+        return Button(action: priceImpact.onTap) {
+            Text(text)
+                .textStyle(.body2)
+                .foregroundStyle(priceImpact.color)
+                .lineLimit(1)
+        }
+        .buttonStyle(TKTapAnimationButtonStyle())
+        .fixedSize()
+        .accessibilityIdentifier(accessibilityIdentifier(for: field, suffix: "price_impact"))
+    }
+
     func shimmerBlock(width: CGFloat, height: CGFloat) -> some View {
         ShimmerSwiftUIView(config: shimmerConfig)
             .frame(width: width, height: height)
@@ -442,7 +458,7 @@ private extension MultichainSwapAmountCard {
     }
 
     func isFocused(content: MultichainSwapAmountCardContent) -> Bool {
-        guard content.amountState == .editable else {
+        guard isAmountEditable(content) else {
             return false
         }
         let focus = content.focusedField.wrappedValue
@@ -465,7 +481,7 @@ private extension MultichainSwapAmountCard {
     }
 
     func isAmountEditable(_ content: MultichainSwapAmountCardContent) -> Bool {
-        content.amountState == .editable && content.field == .send
+        content.amountState == .editable
     }
 
     enum Layout {
@@ -483,11 +499,11 @@ private extension MultichainSwapAmountCard {
         static let footerHeight: CGFloat = 20
         static let footerSpacerMinLength: CGFloat = 8
         static let footerSpacing: CGFloat = 8
-        static let footerTextSpacing: CGFloat = 8
         static let headerHeight: CGFloat = 20
         static let headerSpacing: CGFloat = 4
         static let headerTopPadding: CGFloat = 12
         static let horizontalPadding: CGFloat = 16
+        static let priceImpactSpacing: CGFloat = 4
         static let rateIconSize: CGFloat = 16
         static let rateTextSpacing: CGFloat = 4
         static let quoteShimmerAmountHeight: CGFloat = 36
@@ -507,7 +523,48 @@ private extension MultichainSwapAmountCard {
     }
 }
 
+private extension MultichainSwapAmountCard.AmountText {
+    init(_ content: MultichainSwapAmountCardContent) {
+        self.init(
+            text: content.amount.wrappedValue,
+            maximumFractionDigits: content.maximumFractionDigits,
+            decimalSeparator: content.decimalSeparator
+        )
+    }
+}
+
 extension MultichainSwapAmountCard {
+    /// The amount's text together with the format it is written in.
+    struct AmountText: Equatable {
+        let text: String
+        let maximumFractionDigits: Int?
+        let decimalSeparator: String
+    }
+
+    /// What an amount that changed from `previous` should read. Only an edit in the format the field
+    /// already had is normalized: a text arriving with a new format was set by the screen, and cut to the
+    /// old format it would come back as an edit.
+    static func normalizedAmountText(_ amountText: AmountText, previous: AmountText?) -> AmountText {
+        guard let previous,
+              previous.maximumFractionDigits == amountText.maximumFractionDigits,
+              previous.decimalSeparator == amountText.decimalSeparator
+        else {
+            return amountText
+        }
+        // Backspacing the auto inserted separator away must not re-add it.
+        let isDeleting = amountText.text.count < previous.text.count && previous.text.hasPrefix(amountText.text)
+        return AmountText(
+            text: normalizeDecimalInput(
+                amountText.text,
+                maximumFractionDigits: amountText.maximumFractionDigits,
+                decimalSeparator: amountText.decimalSeparator,
+                interpretsLeadingZeroAsFractionalShortcut: !isDeleting
+            ),
+            maximumFractionDigits: amountText.maximumFractionDigits,
+            decimalSeparator: amountText.decimalSeparator
+        )
+    }
+
     static func normalizeDecimalInput(
         _ raw: String,
         maximumFractionDigits: Int? = nil,
@@ -519,8 +576,8 @@ extension MultichainSwapAmountCard {
         var fraction = ""
         var hasDecimalSeparator = false
 
-        for character in raw where character.isASCII {
-            if character.isNumber {
+        for character in raw {
+            if character.isASCII, character.isNumber {
                 if hasDecimalSeparator {
                     if let maximumFractionDigits, fraction.count >= maximumFractionDigits {
                         continue
@@ -529,7 +586,7 @@ extension MultichainSwapAmountCard {
                 } else {
                     integer.append(character)
                 }
-            } else if character == "." || character == "," {
+            } else if character == "." || character == "," || String(character) == separator {
                 guard maximumFractionDigits != 0, !hasDecimalSeparator else {
                     continue
                 }
@@ -616,12 +673,8 @@ private struct MultichainSwapAmountCardPreview: View {
                         tokenAvatarSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.ethChain),
                         tokenSymbol: "TON",
                         network: "Ethereum",
-                        maxTitle: "MAX",
                         onTapCard: {
                             focusedField = .send
-                        },
-                        onTapMax: {
-                            sendAmount = "12.45"
                         },
                         onTapToken: {}
                     )
@@ -632,7 +685,7 @@ private struct MultichainSwapAmountCardPreview: View {
                 config: .content(
                     MultichainSwapAmountCardContent(
                         amount: $sendAmount,
-                        insufficientBalance: "Insufficient balance",
+                        exceedsBalance: true,
                         balanceText: "Balance: 2 345",
                         rateText: "$ 0.00",
                         maximumFractionDigits: 18,
@@ -641,12 +694,8 @@ private struct MultichainSwapAmountCardPreview: View {
                         tokenAvatarSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.ethChain),
                         tokenSymbol: "TON",
                         network: "Ethereum",
-                        maxTitle: "MAX",
                         onTapCard: {
                             focusedField = .send
-                        },
-                        onTapMax: {
-                            sendAmount = "12.45"
                         },
                         onTapToken: {}
                     )
@@ -665,11 +714,9 @@ private struct MultichainSwapAmountCardPreview: View {
                         tokenAvatarSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.ethChain),
                         tokenSymbol: "ETH\n😭😭😭😭😭😭",
                         network: "Ethereum",
-                        maxTitle: "Max",
                         onTapCard: {
                             focusedField = .send
                         },
-                        onTapMax: {},
                         onTapRateText: {},
                         onTapToken: {}
                     )
@@ -687,8 +734,28 @@ private struct MultichainSwapAmountCardPreview: View {
                 onTapCard: {
                     focusedField = .receive
                 },
-                onTapMax: {},
                 onTapToken: {}
+            )
+
+            MultichainSwapAmountCard(
+                config: .content(
+                    MultichainSwapAmountCardContent(
+                        amount: $receiveAmount,
+                        amountState: .disabled,
+                        balanceText: "Balance: 0",
+                        rateText: "$192.16",
+                        showsRateToggleIcon: false,
+                        priceImpact: .init(text: "(−4%)", color: .accentOrange, onTap: {}),
+                        maximumFractionDigits: 8,
+                        field: .receive,
+                        focusedField: $focusedField,
+                        tokenAvatarSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.ethChain),
+                        tokenSymbol: "BTC",
+                        network: "Bitcoin",
+                        onTapCard: {},
+                        onTapToken: {}
+                    )
+                )
             )
 
             MultichainSwapAmountCard(

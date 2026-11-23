@@ -4,8 +4,10 @@ private struct CellsGroupSingleCellConfigKey: EnvironmentKey {
     static let defaultValue: CellsGroupModifier.Config? = nil
 }
 
-extension EnvironmentValues {
-    var cellsGroupSingleCellConfig: CellsGroupModifier.Config? {
+public extension EnvironmentValues {
+    /// Set when a group holds a single tappable cell: that cell draws the group's background and
+    /// padding itself, so a view laid over the cell has to inset by the padding too.
+    internal(set) var cellsGroupSingleCellConfig: CellsGroupModifier.Config? {
         get { self[CellsGroupSingleCellConfigKey.self] }
         set { self[CellsGroupSingleCellConfigKey.self] = newValue }
     }

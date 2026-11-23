@@ -11,11 +11,11 @@ enum ChainKitOperationError: Error, Equatable {
     case feeUnavailable(payloadId: String, reason: String)
     /// The node refused the payload for want of funds, so it never went out.
     case insufficientFunds(payloadId: String)
-    case nonceUnavailable(String)
+    case nonceUnavailable(String, kind: MultichainSwapExecutionErrorKind = .unknown)
     case staleAuthorization(payloadId: String)
-    case signingFailed(payloadId: String, reason: String)
+    case signingFailed(payloadId: String, reason: String, kind: MultichainSwapExecutionErrorKind = .unknown)
     /// The RPC outcome is ambiguous; signed bytes must be retained for an idempotent retry.
-    case broadcastFailed(payloadId: String, sent: [String], reason: String)
+    case broadcastFailed(payloadId: String, sent: [String], reason: String, kind: MultichainSwapExecutionErrorKind = .unknown)
 }
 
 extension ChainKitOperationError: LoggableError {
@@ -44,6 +44,13 @@ struct ChainKitOperationSender {
     private static let noBlock = BignumBigInteger.Companion.shared.parseString(string: "0", base: 10)
 
     let client: CryptoKitClient
+    private let readNonce: ((ChainKit.Account) async throws -> BignumBigInteger)?
+
+    /// `readNonce` answers for the node in a test; without it the account's chain is asked.
+    init(client: CryptoKitClient, readNonce: ((ChainKit.Account) async throws -> BignumBigInteger)? = nil) {
+        self.client = client
+        self.readNonce = readNonce
+    }
 
     static func parse(id: String, payloads: String) throws -> ChainKit.Operation {
         let result = ChainKit.Operation.Companion.shared.parse(id: id, meta: payloads)
@@ -53,25 +60,66 @@ struct ChainKitOperationSender {
         return operation
     }
 
-    /// The sender as the wallet's multichain state names it: the address the backend quotes
-    /// for, and the coin its fees are paid in.
-    static func account(wallet: Wallet, chain: MultichainChain) throws -> ChainKit.Account {
-        guard let state = wallet.multichainWalletState,
-              let sender = state.walletAddress(for: chain, preferredType: wallet.preferredMultichainAddressType(for: chain)),
-              let address = Address.Companion.shared.from(
-                  value: sender.address,
-                  chain: chain.asChainKitChain,
-                  type: sender.type?.chainKitAddressType ?? .default_
-              )
-        else {
+    /// The sender as the wallet's multichain state names it, the address the backend quotes
+    /// for, holding `asset`: the coin its fees are paid in when `nil`.
+    static func account(wallet: Wallet, chain: MultichainChain, holding asset: MultichainAssetDetails? = nil) throws -> ChainKit.Account {
+        guard let sender = wallet.multichainWalletState?.walletAddress(
+            for: chain,
+            preferredType: wallet.preferredMultichainAddressType(for: chain)
+        ) else {
             throw ChainKitOperationError.unsupportedAccount(chain.rawValue)
         }
+        return try asset.map { try account(of: sender, holding: $0) } ?? account(of: sender, asset: nil)
+    }
+
+    /// The account of the wallet's own TON address holding its coin: the one a multichain wallet
+    /// names, or a legacy wallet's, which no backend knows.
+    static func tonAccount(of wallet: Wallet) throws -> ChainKit.Account {
+        if wallet.isMultichain {
+            return try account(wallet: wallet, chain: .ton)
+        }
+        guard let address = wallet.legacySwapWallet?.walletAddress(for: .ton) else {
+            throw ChainKitOperationError.unsupportedAccount(MultichainChain.ton.rawValue)
+        }
+        return try account(of: address, asset: nil)
+    }
+
+    /// The account of `address` holding `asset`, its chain's coin when `nil`. Built from the
+    /// address that signs and its stored key alone, so a wallet without a multichain state — a
+    /// legacy swap or TRON wallet — has one too.
+    static func account(of address: MultichainWalletAddress, asset: Asset?) throws -> ChainKit.Account {
+        let chain = address.chain.asChainKitChain
+        // The account's chain is its asset's: an asset of another chain would put the address there.
+        guard asset.map({ $0.chain.id == chain.id }) ?? true,
+              let signer = Address.Companion.shared.from(
+                  value: address.address,
+                  chain: chain,
+                  type: address.type?.chainKitAddressType ?? .default_
+              )
+        else {
+            throw ChainKitOperationError.unsupportedAccount(address.chain.rawValue)
+        }
         return ChainKit.Account(
-            address: address,
-            asset: chain.asChainKitChain.toAsset(),
+            address: signer,
+            asset: asset ?? chain.toAsset(),
             derivation: DerivationDefaultPath.shared,
-            publicKey: sender.publicKey?.chainKitPubKey
+            publicKey: address.publicKey?.chainKitPubKey
         )
+    }
+
+    /// The account of `address` holding `asset`, a token or its chain's coin, as the wallet lists it.
+    static func account(of address: MultichainWalletAddress, holding asset: MultichainAssetDetails) throws -> ChainKit.Account {
+        guard let decimals = Int32(exactly: asset.decimals),
+              let held = AssetCompanion.shared.fromString(
+                  assetId: asset.assetId,
+                  name: asset.name,
+                  symbol: asset.symbol,
+                  decimals: decimals
+              )
+        else {
+            throw ChainKitOperationError.unsupportedAccount(asset.assetId)
+        }
+        return try account(of: address, asset: held)
     }
 
     /// One fee per payload; `nil` for a payload the chain cannot price yet — typically a
@@ -87,12 +135,17 @@ struct ChainKitOperationSender {
 
     /// Returns the hashes in the operation's order. The nonce is read once and handed out one
     /// per payload, so no payload waits for the one before it to be mined — unless the chain
-    /// cannot price it until then.
+    /// cannot price it until then. A payload is signed at the fee `fees` holds at its index, the
+    /// one the user confirmed, and priced as it is signed only without one. Given a
+    /// `startingNonce`, the one a dApp asked for, the first payload is signed at it and the chain
+    /// is not asked; a send resumed from `saved` keeps the nonces it signed at.
     func send(
         _ operation: ChainKit.Operation,
         account: ChainKit.Account,
-        wallet: CryptoWallet,
+        wallet: MnemonicWallet,
         expiresAt: Date,
+        fees: [(any Fee)?],
+        startingNonce: BignumBigInteger? = nil,
         saved: [ChainKitSignedTransaction] = [],
         persist: (ChainKitSignedTransaction) async throws -> Void
     ) async throws -> [String] {
@@ -101,11 +154,13 @@ struct ChainKitOperationSender {
         var nonce: BignumBigInteger
         if let first = saved.first {
             nonce = BignumBigInteger.Companion.shared.parseString(string: first.nonce, base: 10)
+        } else if let startingNonce {
+            nonce = startingNonce
         } else {
             nonce = try await self.nonce(of: account, mediator: mediator)
         }
         var hashes = [String]()
-        for payload in operation.payloads {
+        for (index, payload) in operation.payloads.enumerated() {
             var transaction: ChainKitSignedTransaction
             if let stored = saved.first(where: { $0.payloadId == payload.id }) {
                 transaction = stored
@@ -116,21 +171,16 @@ struct ChainKitOperationSender {
                     let current = try await self.nonce(of: account, mediator: mediator)
                     if current.compareTo(other: nonce) > 0 { nonce = current }
                 }
-                let fee: Fee
-                do {
-                    fee = try await self.fee(of: payload, account: account, mediator: mediator)
-                } catch {
-                    guard let previous = hashes.last else { throw error }
-                    try await waitForConfirmation(of: previous, account: account, mediator: mediator, expiresAt: expiresAt)
-                    fee = try await self.fee(of: payload, account: account, mediator: mediator)
-                }
-                try Self.checkDeadline(expiresAt)
-                try Self.checkAuthorization(of: payload, nonce: nonce)
-                let signed = try await sign(payload, account: account, fee: fee, nonce: nonce, wallet: wallet, mediator: mediator)
-                let raw = try JSONDecoder().decode(String.self, from: Data(signed.data.description.utf8))
-                let hash = try Self.transactionHash(of: signed, payloadId: payload.id, mediator: mediator)
-                Log.chainKit.i("Payment signed operation=\(operation.id) payload=\(payload.id) chain=\(account.chain.name) hash=\(hash ?? "unknown")", extraInfo: ["nonce": nonce.description, "fee": fee.amount.description, "fee_asset": fee.asset.id])
-                transaction = ChainKitSignedTransaction(payloadId: payload.id, nonce: nonce.description, data: raw, hash: hash, acknowledged: false)
+                transaction = try await signed(
+                    payload,
+                    of: operation,
+                    account: account,
+                    wallet: wallet,
+                    nonce: nonce,
+                    confirmed: fees.indices.contains(index) ? fees[index] : nil,
+                    after: hashes.last,
+                    expiresAt: expiresAt
+                )
                 try Self.checkDeadline(expiresAt)
                 try await persist(transaction)
                 try Self.checkDeadline(expiresAt)
@@ -155,10 +205,80 @@ struct ChainKitOperationSender {
         return hashes
     }
 
+    /// Signs every payload in the operation's order and sends none: each at the fee `fees` holds at its
+    /// index, or at chain-kit's price without one; the first at `startingNonce`, the one a dApp asked
+    /// for, or else at the account's next, and each next one a nonce later. Nothing is kept, broadcast
+    /// or recorded.
+    func sign(
+        _ operation: ChainKit.Operation,
+        account: ChainKit.Account,
+        wallet: MnemonicWallet,
+        fees: [(any Fee)?],
+        startingNonce: BignumBigInteger? = nil
+    ) async throws -> [ChainKitSignedTransaction] {
+        try Self.verifyKeys(of: account, unlocked: wallet)
+        let mediator = mediator(of: account)
+        var nonce: BignumBigInteger
+        if let startingNonce {
+            nonce = startingNonce
+        } else {
+            nonce = try await self.nonce(of: account, mediator: mediator)
+        }
+        var transactions = [ChainKitSignedTransaction]()
+        for (index, payload) in operation.payloads.enumerated() {
+            try await transactions.append(signed(
+                payload,
+                of: operation,
+                account: account,
+                wallet: wallet,
+                nonce: nonce,
+                confirmed: fees.indices.contains(index) ? fees[index] : nil,
+                after: nil,
+                expiresAt: .distantFuture
+            ))
+            nonce = nonce.inc()
+        }
+        return transactions
+    }
+
+    /// `payload` signed at `nonce` with the `confirmed` fee, or else at the price chain-kit gives it
+    /// now — after `previous` lands when the chain cannot price it before.
+    private func signed(
+        _ payload: Payload,
+        of operation: ChainKit.Operation,
+        account: ChainKit.Account,
+        wallet: MnemonicWallet,
+        nonce: BignumBigInteger,
+        confirmed: (any Fee)?,
+        after previous: String?,
+        expiresAt: Date
+    ) async throws -> ChainKitSignedTransaction {
+        let mediator = mediator(of: account)
+        let fee: Fee
+        if let confirmed {
+            fee = confirmed
+        } else {
+            do {
+                fee = try await self.fee(of: payload, account: account, mediator: mediator)
+            } catch {
+                guard let previous else { throw error }
+                try await waitForConfirmation(of: previous, account: account, mediator: mediator, expiresAt: expiresAt)
+                fee = try await self.fee(of: payload, account: account, mediator: mediator)
+            }
+        }
+        try Self.checkDeadline(expiresAt)
+        try Self.checkAuthorization(of: payload, nonce: nonce)
+        let signed = try await sign(payload, account: account, fee: fee, nonce: nonce, wallet: wallet, mediator: mediator)
+        let raw = try JSONDecoder().decode(String.self, from: Data(signed.data.description.utf8))
+        let hash = try Self.transactionHash(of: signed, payloadId: payload.id, mediator: mediator)
+        Log.chainKit.i("Payment signed operation=\(operation.id) payload=\(payload.id) chain=\(account.chain.name) hash=\(hash ?? "unknown")", extraInfo: ["nonce": nonce.description, "fee": fee.amount.description, "fee_asset": fee.asset.id])
+        return ChainKitSignedTransaction(payloadId: payload.id, nonce: nonce.description, data: raw, hash: hash, acknowledged: false)
+    }
+
     /// Signs every payload as a document a relayer submits — an EIP-7702 authorization, an
     /// EIP-712 `Execute` — so nothing is broadcast and no nonce of the sender's is spent. Each
     /// signed payload is the JSON ChainKit writes for it, by payload id.
-    func signDocuments(_ operation: ChainKit.Operation, account: ChainKit.Account, wallet: CryptoWallet) async throws -> [String: String] {
+    func signDocuments(_ operation: ChainKit.Operation, account: ChainKit.Account, wallet: MnemonicWallet) async throws -> [String: String] {
         let mediator = mediator(of: account)
         // A document is never broadcast: nothing to price, so no round trip to the node.
         let fee = FeeNone(asset: account.asset)
@@ -169,8 +289,16 @@ struct ChainKitOperationSender {
         return signed
     }
 
+    /// A message payload, a dApp's text that never goes on chain, signed with the unlocked keys: nothing
+    /// to price and no nonce to spend. Returns the signature as chain-kit writes it.
+    func signMessage(_ payload: Payload, account: ChainKit.Account, wallet: MnemonicWallet) async throws -> String {
+        try Self.verifyKeys(of: account, unlocked: wallet)
+        let signed = try await sign(payload, account: account, fee: FeeNone(asset: account.asset), nonce: Self.noBlock, wallet: wallet, mediator: mediator(of: account))
+        return try JSONDecoder().decode(String.self, from: Data(signed.data.description.utf8))
+    }
+
     /// TON and Bitcoin derive the sender from the key, so the key is what has to match.
-    static func verifyKeys(of account: ChainKit.Account, unlocked wallet: CryptoWallet) throws {
+    static func verifyKeys(of account: ChainKit.Account, unlocked wallet: MnemonicWallet) throws {
         if let expected = account.publicKey?.defaultHex {
             let unlocked = wallet.getPublicKey(chain: account.chain).defaultHex
             guard unlocked.lowercased() == expected.lowercased() else {
@@ -182,6 +310,21 @@ struct ChainKitOperationSender {
                 throw ChainKitOperationError.keyMismatch(expected: account.addressDisplay, unlocked: unlocked)
             }
         }
+    }
+
+    /// `reviewed` as the unlocked keys sign from it. Its review was read with the key its address
+    /// stored, which the review id carries; where that key is another or missing, the account takes
+    /// the unlocked key once the address is that key's own.
+    static func account(_ reviewed: ChainKit.Account, signedBy wallet: MnemonicWallet) throws -> ChainKit.Account {
+        let key = wallet.getPublicKey(chain: reviewed.chain)
+        if reviewed.publicKey?.defaultHex.lowercased() == key.defaultHex.lowercased() {
+            return reviewed
+        }
+        try verifyKeys(
+            of: ChainKit.Account(address: reviewed.address, asset: reviewed.asset, derivation: reviewed.derivation, publicKey: nil),
+            unlocked: wallet
+        )
+        return ChainKit.Account(address: reviewed.address, asset: reviewed.asset, derivation: reviewed.derivation, publicKey: key)
     }
 
     static func checkAuthorization(of payload: Payload, nonce: BignumBigInteger) throws {
@@ -248,7 +391,12 @@ struct ChainKitOperationSender {
                 return hash as String
             }
             if Self.isInsufficientFunds(result.error) { throw ChainKitOperationError.insufficientFunds(payloadId: payload.id) }
-            throw ChainKitOperationError.broadcastFailed(payloadId: payload.id, sent: [], reason: result.error?.logValue ?? "unknown")
+            throw ChainKitOperationError.broadcastFailed(
+                payloadId: payload.id,
+                sent: [],
+                reason: result.error?.logValue ?? "unknown",
+                kind: ChainKitErrorKindClassifier.kind(nodeError: result.error)
+            )
         } catch {
             Log.chainKit.w("Payment broadcast failed \(context) elapsed_ms=\(started.pretty.msSinceNow)", error: error, extraInfo: diagnostics)
             throw error
@@ -283,6 +431,9 @@ struct ChainKitOperationSender {
     }
 
     private func nonce(of account: ChainKit.Account, mediator: Mediator) async throws -> BignumBigInteger {
+        if let readNonce {
+            return try await readNonce(account)
+        }
         let result: NodeRes<BignumBigInteger>
         do {
             result = try await mediator.account.estimateNonce(account: account)
@@ -290,7 +441,10 @@ struct ChainKitOperationSender {
             throw ChainKitOperationError.nonceUnavailable(error.logDescription)
         }
         guard let nonce = result.getOrNull() else {
-            throw ChainKitOperationError.nonceUnavailable(result.error?.logValue ?? "unknown")
+            throw ChainKitOperationError.nonceUnavailable(
+                result.error?.logValue ?? "unknown",
+                kind: ChainKitErrorKindClassifier.kind(nodeError: result.error)
+            )
         }
         return nonce
     }
@@ -300,7 +454,7 @@ struct ChainKitOperationSender {
         account: ChainKit.Account,
         fee: Fee,
         nonce: BignumBigInteger,
-        wallet: CryptoWallet,
+        wallet: MnemonicWallet,
         mediator: Mediator
     ) async throws -> SignedPayload {
         let result: SignRes<SignedPayload>
@@ -310,7 +464,11 @@ struct ChainKitOperationSender {
             throw ChainKitOperationError.signingFailed(payloadId: payload.id, reason: error.logDescription)
         }
         guard let signed = result.getOrNull() else {
-            throw ChainKitOperationError.signingFailed(payloadId: payload.id, reason: result.error?.logValue ?? "unknown")
+            throw ChainKitOperationError.signingFailed(
+                payloadId: payload.id,
+                reason: result.error?.logValue ?? "unknown",
+                kind: ChainKitErrorKindClassifier.kind(signError: result.error)
+            )
         }
         return signed
     }

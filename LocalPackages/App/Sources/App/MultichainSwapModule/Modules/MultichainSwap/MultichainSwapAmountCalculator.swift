@@ -53,6 +53,27 @@ extension MultichainSwapAmountCalculator {
         )
     }
 
+    /// The amount on the side the user typed into; `nil` until it is a positive amount.
+    func enteredAmount(
+        inputs: MultichainSwapInputs,
+        usdFiatRate: Decimal?
+    ) -> MultichainSwapQuoteAmount? {
+        switch inputs.enteredField {
+        case .send:
+            guard let amount = sourceAmount(inputs: inputs, usdFiatRate: usdFiatRate), amount > 0 else {
+                return nil
+            }
+            return .source(amount)
+        case .receive:
+            guard let amount = parsedReceiveAmount(text: inputs.receiveAmount, asset: inputs.receiveAsset),
+                  amount > 0
+            else {
+                return nil
+            }
+            return .destination(amount)
+        }
+    }
+
     func cryptoAmount(text: String, decimals: Int) -> BigUInt? {
         AmountInputFormatter.amount(
             from: text,
@@ -138,6 +159,27 @@ extension MultichainSwapAmountCalculator {
             accessory: .fiat(displayCurrency),
             style: .fiatBalance
         )
+    }
+
+    func fiatAmount(
+        sourceAmount: BigUInt,
+        asset: MultichainAsset,
+        usdFiatRate: Decimal?,
+        fallbackUsdPrice: Double? = nil
+    ) -> Decimal? {
+        guard sourceAmount > 0 else {
+            return .zero
+        }
+        guard let rate = fiatRates.fiatRate(
+            for: asset,
+            usdFiatRate: usdFiatRate,
+            fallbackUsdPrice: fallbackUsdPrice
+        ),
+            let sourceDecimal = sourceAmount.decimalAmount(decimals: asset.asset.decimals)
+        else {
+            return nil
+        }
+        return sourceDecimal * rate
     }
 }
 
@@ -255,27 +297,6 @@ private extension MultichainSwapAmountCalculator {
 
     func decimalAmount(_ amount: BigUInt, decimals: Int) -> Decimal? {
         amount.decimalAmount(decimals: decimals)
-    }
-
-    func fiatAmount(
-        sourceAmount: BigUInt,
-        asset: MultichainAsset,
-        usdFiatRate: Decimal?,
-        fallbackUsdPrice: Double? = nil
-    ) -> Decimal? {
-        guard sourceAmount > 0 else {
-            return .zero
-        }
-        guard let rate = fiatRates.fiatRate(
-            for: asset,
-            usdFiatRate: usdFiatRate,
-            fallbackUsdPrice: fallbackUsdPrice
-        ),
-            let sourceDecimal = decimalAmount(sourceAmount, decimals: asset.asset.decimals)
-        else {
-            return nil
-        }
-        return sourceDecimal * rate
     }
 
     func baseUnits(decimalAmount: Decimal, decimals: Int) -> BigUInt? {

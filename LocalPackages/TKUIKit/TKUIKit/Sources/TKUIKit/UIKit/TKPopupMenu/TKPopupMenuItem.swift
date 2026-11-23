@@ -9,6 +9,8 @@ public struct TKPopupMenuItem {
     public var footerText: String?
     public var footerActionTitle: String?
     public var footerActionHandler: (() -> Void)?
+    /// A divider under the item. On Liquid Glass it is not used: every item but the last has one,
+    /// as the design system draws the menu.
     public var hasSeparator: Bool
     public var isEnabled: Bool
     public var selectionHandler: (() -> Void)?

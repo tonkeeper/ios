@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Wallet import attempt failed (e.g. invalid recovery phrase). Error fields use the same type/code/message shape as op_terminal for consistent grouping.  */
+/** Wallet import attempt failed (e.g. invalid recovery phrase). Error fields use the same type/code/message shape as op_terminal for consistent grouping. For a multichain Ledger error_type is a LedgerFailureType value (ledger-flow.yaml).  */
 public struct WalletImportError: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_error"

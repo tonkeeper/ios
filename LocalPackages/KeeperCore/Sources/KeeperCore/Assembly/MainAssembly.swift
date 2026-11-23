@@ -32,6 +32,7 @@ public final class MainAssembly {
     public let multichainAssembly: MultichainAssembly
     public let deeplinkParser: DeeplinkParser
     public let walletConnectAssembly: WalletConnectAssembly
+    public let earnAssembly: EarnAssembly
     let tradingAssembly: TradingAssembly
 
     init(
@@ -60,7 +61,8 @@ public final class MainAssembly {
         multichainAssembly: MultichainAssembly,
         tradingAssembly: TradingAssembly,
         deeplinkParser: DeeplinkParser,
-        walletConnectAssembly: WalletConnectAssembly
+        walletConnectAssembly: WalletConnectAssembly,
+        earnAssembly: EarnAssembly
     ) {
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
@@ -95,6 +97,7 @@ public final class MainAssembly {
         self.tradingAssembly = tradingAssembly
         self.deeplinkParser = deeplinkParser
         self.walletConnectAssembly = walletConnectAssembly
+        self.earnAssembly = earnAssembly
     }
 
     public func scannerAssembly() -> ScannerAssembly {
@@ -103,6 +106,31 @@ public final class MainAssembly {
 
     public var mnemonicAccess: MnemonicAccess {
         secureAssembly.mnemonicAccess
+    }
+
+    private var batteryPaymentPreparation: BatteryPaymentPreparation {
+        let controller = multichainAssembly.legacyBatteryMigrationController
+        let access = secureAssembly.mnemonicAccess
+        let charges = BatteryChargesReader(batteryService: batteryAssembly.batteryService(), batteryCalculation: batteryAssembly.batteryCalculation)
+        return BatteryPaymentPreparation(
+            needsMigration: { wallet in try await controller.needsMigration(wallet: JSONEncoder().encode(wallet)) },
+            migrate: { wallet, passcode in
+                let authorization: LegacyBatteryMigrationController.PaymentAuthorization?
+                do {
+                    let mnemonic = try await access.getMnemonic(wallet: wallet, passcode: passcode)
+                    authorization = try await controller.preparePayment(wallet: JSONEncoder().encode(wallet), mnemonic: mnemonic)
+                }
+                if let authorization { try await controller.ensureMigrated(authorization) }
+            },
+            currentCharges: { wallet in await charges.currentCharges(wallet: wallet) }
+        )
+    }
+
+    private var offersBatteryMigration: (Wallet) async -> Bool {
+        { [controller = multichainAssembly.legacyBatteryMigrationController] wallet in
+            guard let data = try? JSONEncoder().encode(wallet) else { return false }
+            return await controller.offersMigration(wallet: data)
+        }
     }
 
     public private(set) lazy var perpsAssembly = PerpsAssembly(
@@ -119,6 +147,29 @@ public final class MainAssembly {
         chainKitClient: multichainAssembly.chainKitClient,
         multichainService: { [servicesAssembly] in
             servicesAssembly.multichainService()
+        },
+        historyEvents: { [loyaltyStore, storesAssembly] wallet in
+            PerpsHistoryEvents(wallet: wallet, loyaltyStore: loyaltyStore, walletsStore: storesAssembly.walletsStore)
+        },
+        swapFeeMethods: { [weak self] in
+            self?.perpsSwapFeeMethodResolver
+        },
+        perpsSignals: { [multichainAssembly] walletId in
+            multichainAssembly.realtimeManager.perpsSignals(walletId: walletId)
+        }
+    )
+
+    public private(set) lazy var loyaltyStore = LoyaltyStore(
+        api: LoyaltyAPI(
+            configuration: configurationAssembly.configuration,
+            urlSession: .shared,
+            authorizationService: batteryAssembly.batteryWebAuthorizationService(),
+            userAgent: appInfoProvider.userAgent
+        ),
+        profilesVault: coreAssembly.fileSystemVault(),
+        bannerHiddenVault: coreAssembly.fileSystemVault(),
+        isEnabled: { [configuration = configurationAssembly.configuration] in
+            configuration.featureEnabled(.loyaltyEnabled)
         }
     )
 
@@ -135,45 +186,59 @@ public final class MainAssembly {
     public private(set) lazy var multichainSwapExecutionService: MultichainSwapExecutionService =
         MultichainSwapExecutionServiceImplementation(
             swapService: servicesAssembly.multichainSwapService(),
+            swapAPI: servicesAssembly.multichainSwapAPI(),
             swapPipeline: multichainAssembly.chainKitSwapPipeline,
+            operationSteps: multichainAssembly.swapOperationSteps,
             pendingTransactionsService: servicesAssembly.pendingTransactionsService(),
-            feeMethodResolver: MultichainSwapFeeMethodResolver(
-                engines: [
-                    MultichainSwapTonBatteryFeeEngine(
-                        transferService: transferAssembly.transferService(),
-                        balanceService: servicesAssembly.balanceService(),
-                        batteryService: batteryAssembly.batteryService(),
-                        batteryCalculation: batteryAssembly.batteryCalculation,
-                        configuration: configurationAssembly.configuration,
-                        chainKitService: multichainAssembly.chainKitService,
-                        mnemonicAccess: secureAssembly.mnemonicAccess
-                    ),
-                    MultichainSwapTronRelayedFeeEngine(
-                        tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
-                        sendService: servicesAssembly.sendService(),
-                        balanceService: servicesAssembly.balanceService(),
-                        batteryService: batteryAssembly.batteryService(),
-                        batteryCalculation: batteryAssembly.batteryCalculation,
-                        configuration: configurationAssembly.configuration,
-                        chainKitService: multichainAssembly.chainKitService,
-                        mnemonicAccess: secureAssembly.mnemonicAccess
-                    ),
-                ] + evmSwapRelayedFeeEngines()
-            )
+            feeMethodResolver: multichainSwapFeeMethodResolver,
+            gate: multichainAssembly.swapGate,
+            batteryPaymentPreparation: batteryPaymentPreparation
         )
 
-    private func evmSwapRelayedFeeEngines() -> [any MultichainSwapRelayedFeeEngine] {
+    private lazy var multichainSwapFeeMethodResolver = makeSwapFeeMethodResolver(offersMigration: offersBatteryMigration)
+    private lazy var perpsSwapFeeMethodResolver = makeSwapFeeMethodResolver(offersMigration: { _ in false })
+
+    private func makeSwapFeeMethodResolver(offersMigration: @escaping (Wallet) async -> Bool) -> MultichainSwapFeeMethodResolver {
+        MultichainSwapFeeMethodResolver(
+            engines: [
+                MultichainSwapTonBatteryFeeEngine(
+                    transferService: transferAssembly.transferService(),
+                    balanceService: servicesAssembly.balanceService(),
+                    batteryService: batteryAssembly.batteryService(),
+                    batteryCalculation: batteryAssembly.batteryCalculation,
+                    configuration: configurationAssembly.configuration,
+                    chainKitService: multichainAssembly.chainKitService,
+                    mnemonicAccess: secureAssembly.mnemonicAccess,
+                    offersBatteryMigration: offersMigration
+                ),
+                MultichainSwapTronRelayedFeeEngine(
+                    tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+                    sendService: servicesAssembly.sendService(),
+                    balanceService: servicesAssembly.balanceService(),
+                    batteryService: batteryAssembly.batteryService(),
+                    batteryCalculation: batteryAssembly.batteryCalculation,
+                    configuration: configurationAssembly.configuration,
+                    chainKitService: multichainAssembly.chainKitService,
+                    mnemonicAccess: secureAssembly.mnemonicAccess,
+                    offersBatteryMigration: offersMigration
+                ),
+            ] + evmSwapRelayedFeeEngines(offersMigration: offersMigration)
+        )
+    }
+
+    private func evmSwapRelayedFeeEngines(offersMigration: @escaping (Wallet) async -> Bool) -> [any MultichainSwapRelayedFeeEngine] {
         let configuration = configurationAssembly.configuration
         let chargesReader = BatteryChargesReader(
             batteryService: batteryAssembly.batteryService(),
-            batteryCalculation: batteryAssembly.batteryCalculation
+            batteryCalculation: batteryAssembly.batteryCalculation,
+            offersMigration: offersMigration
         )
         let balanceProvider = multichainAssembly.multichainAssetBalanceProvider
         let relayer = BatteryEVMGaslessRelayer(service: batteryAssembly.batteryGaslessService())
         let signer = multichainAssembly.relayedOperationSigner
         let relayedChains = evmGaslessRelayedChains
         return MultichainChain.allCases
-            .filter(\.isEVM)
+            .filter { $0.isEVM || $0 == .sol }
             .sorted { $0.rawValue < $1.rawValue }
             .map { chain in
                 MultichainSwapEVMRelayedFeeEngine(
@@ -192,7 +257,9 @@ public final class MainAssembly {
                     },
                     walletTokens: { assetIds, wallet in
                         await balanceProvider.loadAssets(named: assetIds, wallet: wallet)
-                    }
+                    },
+                    currentBatteryCharges: { wallet in await chargesReader.currentCharges(wallet: wallet) },
+                    offersBatteryMigration: offersMigration
                 )
             }
     }
@@ -270,7 +337,11 @@ public final class MainAssembly {
             currencyStore: storesAssembly.currencyStore,
             recipientResolver: loadersAssembly.recipientResolver(),
             amountFormatter: formattersAssembly.amountFormatter,
-            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider
+            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider,
+            accountService: servicesAssembly.accountService(),
+            accountPublicKey: { [apiProvider = apiAssembly.apiProvider] address, network in
+                try await apiProvider.api(network).getAccountPublicKey(address: address)
+            }
         )
     }
 
@@ -370,7 +441,8 @@ public final class MainAssembly {
             tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
             sendService: servicesAssembly.sendService(),
             balanceService: servicesAssembly.balanceService(),
-            configuration: configurationAssembly.configuration
+            configuration: configurationAssembly.configuration,
+            gate: multichainAssembly.sendGate
         )
     }
 
@@ -380,8 +452,9 @@ public final class MainAssembly {
         asset: MultichainAsset,
         amount: BigUInt,
         comment: String?,
+        commentEncryptionKey: String? = nil,
         isMaxAmount: Bool,
-        passcodeProvider: @escaping () async -> String?
+        signer: MultichainTransferSigner
     ) -> MultichainTransactionConfirmationController {
         MultichainTransactionConfirmationController(
             wallet: wallet,
@@ -389,10 +462,14 @@ public final class MainAssembly {
             asset: asset,
             amount: amount,
             comment: comment,
+            commentEncryptionKey: commentEncryptionKey,
             isMaxAmount: isMaxAmount,
             chainKitService: multichainAssembly.chainKitService,
-            passcodeProvider: passcodeProvider,
-            engineResolver: MultichainFeeEngineResolver(relayedEVMChains: batteryRelayedEVMChains),
+            signer: signer,
+            engineResolver: MultichainFeeEngineResolver(
+                relayedEVMChains: batteryRelayedEVMChains,
+                relays: { [configuration = configurationAssembly.configuration] in configuration.relaysGasless(on: $0) }
+            ),
             tonJettonEngineFactory: MultichainTonJettonEngineFactory(
                 api: apiAssembly.api,
                 sendService: servicesAssembly.sendService(),
@@ -411,26 +488,55 @@ public final class MainAssembly {
             batteryService: batteryAssembly.batteryService(),
             batteryCalculation: batteryAssembly.batteryCalculation,
             multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider,
-            evmGaslessFeeEngine: evmGaslessFeeEngine()
+            evmGaslessFeeEngine: evmGaslessFeeEngine(),
+            gate: multichainAssembly.sendGate,
+            offersBatteryMigration: offersBatteryMigration,
+            batteryPaymentPreparation: batteryPaymentPreparation
         )
     }
 
     private lazy var evmGaslessRelayedChains = EVMGaslessRelayedChains(
         loadConfig: { [service = batteryAssembly.batteryGaslessService()] in
             try await service.gaslessConfig()
+        },
+        includes: { [configuration = configurationAssembly.configuration] chain in
+            configuration.relaysGasless(on: chain)
         }
     )
 
-    /// The EVM chains the battery's relayer pays fees on, `nil` until its config has been read.
+    /// The EVM chains and Solana the battery's relayer pays fees on, `nil` until its config has been read.
     public var batteryRelayedEVMChains: @Sendable () async -> Set<MultichainChain>? {
         { [relayedChains = evmGaslessRelayedChains] in await relayedChains.chains() }
+    }
+
+    /// The swaps a wallet's battery would pay for, `nil` unless the battery was read and holds no charges.
+    public func emptyBatterySwapCoverage(swapWallet: MultichainSwapWallet) async -> MultichainSwapBatteryCoverage? {
+        let wallet = swapWallet.wallet
+        let chargesReader = BatteryChargesReader(
+            batteryService: batteryAssembly.batteryService(),
+            batteryCalculation: batteryAssembly.batteryCalculation,
+            offersMigration: offersBatteryMigration
+        )
+        guard await chargesReader.availableCharges(wallet: wallet) == .available(0) else {
+            return nil
+        }
+        let configuration = configurationAssembly.configuration
+        let isBatteryEnabled = await configuration.isBatteryEnable(network: wallet.network)
+        let isBatterySendEnabled = await configuration.isBatterySendEnable(network: wallet.network)
+        return await MultichainSwapBatteryCoverage(
+            swapWallet: swapWallet,
+            isBatteryEnabled: isBatteryEnabled && isBatterySendEnabled,
+            isTRXOnlyRegion: configuration.isTRXOnlyRegion(network: wallet.network),
+            relayedEVMChains: evmGaslessRelayedChains.chains() ?? []
+        )
     }
 
     private func evmGaslessFeeEngine() -> EVMGaslessFeeEngine {
         let configuration = configurationAssembly.configuration
         let chargesReader = BatteryChargesReader(
             batteryService: batteryAssembly.batteryService(),
-            batteryCalculation: batteryAssembly.batteryCalculation
+            batteryCalculation: batteryAssembly.batteryCalculation,
+            offersMigration: offersBatteryMigration
         )
         let balanceProvider = multichainAssembly.multichainAssetBalanceProvider
         return EVMGaslessFeeEngine(
@@ -447,7 +553,10 @@ public final class MainAssembly {
             },
             walletTokens: { assetIds, wallet in
                 await balanceProvider.loadAssets(named: assetIds, wallet: wallet)
-            }
+            },
+            gate: multichainAssembly.sendGate,
+            currentBatteryCharges: { wallet in await chargesReader.currentCharges(wallet: wallet) },
+            offersBatteryMigration: offersBatteryMigration
         )
     }
 
@@ -520,7 +629,8 @@ public final class MainAssembly {
         transferService: TransferService,
         tonConnectService: TonConnectService,
         balanceService: BalanceService,
-        settingsRepository: SettingsRepository
+        settingsRepository: SettingsRepository,
+        isEmulationEnabled: Bool
     ) -> TransactionConfirmationController {
         NativeSwapTransactionConfirmationController(
             wallet: wallet,
@@ -531,7 +641,8 @@ public final class MainAssembly {
             transferService: transferService,
             tonConnectService: tonConnectService,
             balanceService: balanceService,
-            settingsRepository: settingsRepository
+            settingsRepository: settingsRepository,
+            isEmulationEnabled: isEmulationEnabled
         )
     }
 

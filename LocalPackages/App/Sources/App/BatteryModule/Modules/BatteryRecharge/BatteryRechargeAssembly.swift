@@ -8,6 +8,8 @@ struct BatteryRechargeAssembly {
         wallet: Wallet,
         token: TonToken,
         isGift: Bool,
+        selectsCustomAmount: Bool = false,
+        initialOptionID: String? = nil,
         promocodeStore: BatteryPromocodeStore,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
@@ -36,15 +38,19 @@ struct BatteryRechargeAssembly {
                 balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
                 currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+                ratesService: keeperCoreMainAssembly.servicesAssembly.ratesService(),
                 batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
                 configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
                 isGift: isGift
             ),
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+            isSecureMode: { [appSettingsStore = keeperCoreMainAssembly.storesAssembly.appSettingsStore] in appSettingsStore.getState().isSecureMode },
             amountInputModuleInput: amountInputViewModel,
             amountInputModuleOutput: amountInputViewModel,
             promocodeOutput: promocodeViewModel,
-            recipientInputOutput: recipientViewModel
+            recipientInputOutput: recipientViewModel,
+            selectsCustomAmount: selectsCustomAmount,
+            initialOptionID: initialOptionID
         )
 
         let viewController = BatteryRechargeHostingViewController(

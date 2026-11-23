@@ -37,7 +37,8 @@ struct TokenManagementScreen: View {
                 )
             }
         }
-        .ignoresSafeArea(.container, edges: .top)
+        // Under liquid glass the header is the system bar of the sheet's navigation controller, kept clear of.
+        .ignoresSafeArea(.container, edges: TKLiquidGlass.isEnabled ? [] : .top)
         .tkBottomSheet(
             isPresented: $isFiltersPresented,
             header: { dismiss in

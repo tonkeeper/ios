@@ -57,7 +57,10 @@ final class ReceiveViewController: GenericViewViewController<ReceiveUiView>, TKB
             },
             onShare: { [weak viewModel] in
                 viewModel?.shareSelectedAddress()
-            }
+            },
+            onVerify: viewModel.canVerify ? { [weak viewModel] in
+                viewModel?.verifyAddress()
+            } : nil
         )
         setupBindings()
         viewModel.viewDidLoad()

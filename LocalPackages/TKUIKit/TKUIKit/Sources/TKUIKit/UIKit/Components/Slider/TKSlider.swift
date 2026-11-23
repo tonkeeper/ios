@@ -38,6 +38,9 @@ public final class TKSlider: UIView {
     }
 
     public var didConfirm: (() -> Void)?
+    public var didBeginDrag: (() -> Void)?
+    /// The drag ended without confirming.
+    public var didAbandonDrag: (() -> Void)?
     public var progressObserver: ((CGFloat) -> Void)?
 
     public var swipeHandleAccessibilityIdentifier: String? {
@@ -164,6 +167,8 @@ private extension TKSlider {
     @objc
     func panGestureHandler(_ gestureRecognizer: UIPanGestureRecognizer) {
         switch gestureRecognizer.state {
+        case .began:
+            didBeginDrag?()
         case .changed:
             let translation = gestureRecognizer.translation(in: gestureRecognizer.view)
             let minOffset: CGFloat = 0
@@ -178,9 +183,11 @@ private extension TKSlider {
             if isLocked {
                 didConfirm?()
             } else {
+                didAbandonDrag?()
                 resetDragViewPosition()
             }
         case .cancelled:
+            didAbandonDrag?()
             resetDragViewPosition()
         default: break
         }

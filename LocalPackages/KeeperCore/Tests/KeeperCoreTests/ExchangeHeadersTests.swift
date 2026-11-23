@@ -3,7 +3,6 @@ import HTTPTypes
 @testable import KeeperCore
 import OpenAPIRuntime
 import SwapAPI
-import TKFeatureFlags
 import XCTest
 
 /// The backend keys on-ramp provider selection on these two headers, and the generated client only
@@ -14,8 +13,8 @@ final class ExchangeHeadersTests: XCTestCase {
     private static let walletId = "wallet-1"
     private static let quoteRequest = MultichainSwapQuoteRequest(
         sourceAsset: "ton/mainnet/coin",
-        sourceAmount: "1000000000",
         destinationAsset: "eth/mainnet/coin",
+        amount: .source(1_000_000_000),
         senderAddress: "sender",
         recipientAddress: "recipient"
     )
@@ -31,6 +30,7 @@ final class ExchangeHeadersTests: XCTestCase {
         )
 
         try assertHeaders(transport, walletId: Self.walletId, firebaseUserId: Self.firebaseUserId)
+        XCTAssertNil(try queryItems(transport)["is_new"])
     }
 
     /// The asset catalogue declares `F` but no wallet header.
@@ -41,63 +41,32 @@ final class ExchangeHeadersTests: XCTestCase {
         try assertHeaders(transport, walletId: nil, firebaseUserId: Self.firebaseUserId)
     }
 
-    /// The swap backend picks routes by the raffle cohort, so the quote and the selected route carry
-    /// the same `is_new` the raffle, banner and story endpoints receive.
-    func test_createCrossSwapQuote_sendsIsNewQuery() async throws {
+    func test_createCrossSwapQuote_sendsWalletIdAndFirebaseUserId() async throws {
         let transport = RecordingTransport()
-        _ = try? await makeSwapAPI(transport, isNewUser: true).createCrossSwapQuote(
+        _ = try? await makeSwapAPI(transport).createCrossSwapQuote(
             request: Self.quoteRequest,
             walletId: Self.walletId
         )
-        XCTAssertEqual(try queryItems(transport)["is_new"], "true")
 
-        _ = try? await makeSwapAPI(transport, isNewUser: false).createCrossSwapQuote(
+        try assertHeaders(transport, walletId: Self.walletId, firebaseUserId: Self.firebaseUserId)
+        XCTAssertNil(try queryItems(transport)["is_new"])
+    }
+
+    func test_createCrossSwapQuoteV3_sendsWalletIdAndFirebaseUserId() async throws {
+        let transport = RecordingTransport()
+        _ = try? await makeSwapAPI(transport).createCrossSwapQuoteV3(
             request: Self.quoteRequest,
             walletId: Self.walletId
         )
-        XCTAssertEqual(try queryItems(transport)["is_new"], "false")
+
+        try assertHeaders(transport, walletId: Self.walletId, firebaseUserId: Self.firebaseUserId)
     }
 
-    func test_prepareCrossSwapRoute_sendsIsNewQuery() async throws {
+    func test_prepareCrossSwapRouteV3_sendsWalletIdAndFirebaseUserId() async throws {
         let transport = RecordingTransport()
-        _ = try? await makeSwapAPI(transport, isNewUser: true).prepareCrossSwapRoute(
-            routeId: "route",
-            request: nil,
-            walletId: Self.walletId
-        )
-        XCTAssertEqual(try queryItems(transport)["is_new"], "true")
+        _ = try? await makeSwapAPI(transport).prepareCrossSwapRouteV3(routeId: "route", walletId: Self.walletId)
 
-        _ = try? await makeSwapAPI(transport, isNewUser: false).prepareCrossSwapRoute(
-            routeId: "route",
-            request: nil,
-            walletId: Self.walletId
-        )
-        XCTAssertEqual(try queryItems(transport)["is_new"], "false")
-    }
-
-    func test_swapRequestsReadCohortResolvedAfterClientCreation() async throws {
-        let suiteName = "ExchangeHeadersTests.\(UUID().uuidString)"
-        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { userDefaults.removePersistentDomain(forName: suiteName) }
-        let settings = UserDefaultsTKAppSettings(userDefaults: userDefaults)
-        let transport = RecordingTransport()
-        let api = MultichainSwapAPIImplementation(
-            swapAPIClient: makeClient(transport),
-            firebaseUserIdProvider: { Self.firebaseUserId },
-            isNewUser: { settings.raffleIsNewUser ?? false }
-        )
-
-        let cohorts: [Bool?] = [nil, true, false]
-        for cohort in cohorts {
-            settings.raffleIsNewUser = cohort
-            let expected = (cohort ?? false) ? "true" : "false"
-
-            _ = try? await api.createCrossSwapQuote(request: Self.quoteRequest, walletId: Self.walletId)
-            XCTAssertEqual(try queryItems(transport)["is_new"], expected)
-
-            _ = try? await api.prepareCrossSwapRoute(routeId: "route", request: nil, walletId: Self.walletId)
-            XCTAssertEqual(try queryItems(transport)["is_new"], expected)
-        }
+        try assertHeaders(transport, walletId: Self.walletId, firebaseUserId: Self.firebaseUserId)
     }
 
     // MARK: - Multichain ramp
@@ -196,13 +165,11 @@ private extension ExchangeHeadersTests {
 
     func makeSwapAPI(
         _ transport: RecordingTransport,
-        firebaseUserId: String? = firebaseUserId,
-        isNewUser: Bool = false
+        firebaseUserId: String? = firebaseUserId
     ) -> MultichainSwapAPI {
         MultichainSwapAPIImplementation(
             swapAPIClient: makeClient(transport),
-            firebaseUserIdProvider: { firebaseUserId },
-            isNewUser: { isNewUser }
+            firebaseUserIdProvider: { firebaseUserId }
         )
     }
 

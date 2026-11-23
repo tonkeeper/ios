@@ -40,6 +40,7 @@ public final class PerpsViewController<ViewModel: PerpsRootViewModeling>: UIView
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         hideNavigationBar(animated: animated)
+        viewModel.onWillAppear()
     }
 
     override public func viewDidAppear(_ animated: Bool) {

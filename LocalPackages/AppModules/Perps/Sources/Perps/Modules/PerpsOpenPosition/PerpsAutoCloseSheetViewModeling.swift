@@ -12,6 +12,7 @@ public protocol PerpsAutoCloseSheetViewModeling: ObservableObject {
     var stopLossPresets: [Double] { get }
     var takeProfitWarningText: String? { get }
     var stopLossWarningText: String? { get }
+    var stopLossLiquidationText: String? { get }
     var takeProfitExpectedText: String { get }
     var stopLossExpectedText: String { get }
     var submitErrorText: String? { get }

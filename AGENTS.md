@@ -11,16 +11,17 @@
 - `LocalPackages/` — SwiftPM modules:
   - **Domain/infra**: `KeeperCore` (wallet domain: API, controllers, entities), `TKCore` (analytics, Firebase, push, formatters; services live in its `TKServices` target, which must not depend on `KeeperCore`), `TronSwift` (Tron; hosts `TKCryptoKit` tests), `Ledger` (hardware-wallet transport).
   - **Perps**: `PerpsModels` — Foundation-only domain models and store/service ports, shared by `KeeperCore` and `App`; `AppModules/Perps` — the perps feature.
+  - **Operation review**: `OperationReviewModels` — Foundation-only findings of a review of what is about to be signed, and the user's consent to them, for `KeeperCore` and crypto-free UI.
   - **UI**: `TKUIKit` (resources in `../shared/resources`), `TKCoordinator`, `TKScreenKit`, `LightweightCharts` (vendored TradingView fork).
-  - **Support**: `TKLocalize` (generated, see [Localization](#localization)), `TKKeychain`, `TKLogging`, `TKFeatureFlags`, `TKAppInfo`.
-  - `App/` — top-level assembly and coordinators. `AppModules/<Pkg>` — App-only feature packages: `AppUI` (crypto-free product views, see [SwiftUI Previews](#swiftui-previews)), `Perps`, `Stories`, `SignRaw`, `WalletExtensions`, `MoonPay` (depends only on `TKLogging`).
+  - **Support**: `TKLocalize` (generated, see [Localization](#localization)), `TKKeychain`, `TKLogging`, `TKFeatureFlags`, `TKAppInfo`. They, `PerpsModels`, `OperationReviewModels` and vendored `AnyCodable` build as one package, `TKBase`: its `Sources/` link to each module's own folder, so `make spm PKG=TKBase` checks them all.
+  - `App/` — top-level assembly and coordinators. `AppModules/<Pkg>` — App-only feature packages: `AppUI` (crypto-free product views, see [SwiftUI Previews](#swiftui-previews)), `Perps`, `Stories`, `SignRaw`, `WalletExtensions`, `MoonPay` (depends only on `TKBase`).
 - `Configurations/` — `.xcconfig` build settings. `Keeper.xcodeproj/` — the Xcode project.
 
 ## Build and Test
-1. Edited `LocalPackages/<X>` → `make spm PKG=X` (Swift-only type-check; bare package name, also for `AppModules/*` and `KeeperResources`; `QUIET=1` for quiet output).
+1. Edited `LocalPackages/<X>` → `make spm PKG=X` (Swift-only type-check; bare package name, also for `AppModules/*` and `KeeperResources`; `QUIET=1` prints only a failed build's diagnostics).
 2. Edited `App/` or several packages → `make spm PKG=App` or `make spm PKG="TKUIKit TKCore"`. The first run compiles the whole dependency tree.
 3. Before declaring done → `make compile QUIET=1`: catches build-phase, linker and signing issues `make spm` misses; pass/fail is the exit code. Drop `QUIET=1` only to diagnose.
-4. Changed tested logic → the relevant `make test_*`.
+4. Changed tested logic → the relevant `make test_* QUIET=1`: only errors, failed tests and test counts.
 
 Tests run only through `make`, which uses the app-level `Package.resolved`; never `swift test` or `xcodebuild` inside `LocalPackages`.
 ```sh
@@ -29,6 +30,7 @@ make test_keeper_core   # per module: test_tkcore, test_wallet_core, test_core_c
                         # test_tkuikit, test_perps, test_moonpay, test_ledger, test_tron_swift, test_tkcryptokit
 make test_project_scheme SCHEME=WalletCore TEST_ONLY=KeeperCoreTests/TonkeeperDeeplinksParserTests/testActionParsing
 ```
+A new test target goes into `KeeperUnitTests.xcscheme` (`make test_all` and the GitHub unit-test job, `.github/actions/run-unit-tests`) and `KeeperCI.xctestplan` (run by `ci_scripts/ci_post_xcodebuild.sh` after the Xcode Cloud pull-request workflow's Build action of `KeeperCIGate`); a target missing from either is silently not run there.
 
 ## Worktrees
 - Do refactors and features in a worktree under `.claude/worktrees/<name>` (where `EnterWorktree` puts them): `git worktree add .claude/worktrees/<name> -b <branch>`.
@@ -40,6 +42,12 @@ make test_project_scheme SCHEME=WalletCore TEST_ONLY=KeeperCoreTests/TonkeeperDe
   `git worktree remove` leaves the gitignored `ios/build/` behind, so sweep the directory listing, not only `git worktree list`.
 - Firebase config (`Keeper/Resources/Firebase`) is gitignored; `make compile` and the `post-checkout` hook copy it from the main tree. Manually: `make firebase_config`.
 - `make` seeds SwiftPM dependencies from an already-resolved store (`scripts/provision_spm_deps.sh`); re-seed by deleting the store's `workspace-state.json`. `make xcode_derived_data` moves Xcode GUI DerivedData into `build/DerivedData-xcode`.
+
+## Linking
+Each launch loads every embedded framework, so the app embeds only `KeeperCore` (the wallet stack), `TKUIKit` (UI) and `TKBase` (modules both use), plus the binary SDKs.
+- A package product that one of these three links is owned by it. Other targets (`App`, `AppModules/*`, extensions, `TKCore`) import its modules and do not declare it: a second declaring target makes Xcode embed the product as its own `*_PackageProduct.framework`.
+- A new module that both `KeeperCore` and `TKUIKit` need goes into the `TKBase` product.
+- `make compile` fails on any other embedded framework (`scripts/check_embedded_frameworks.sh`).
 
 ## Package Build Settings
 - `Configurations/PackageBuildSettings.xcconfig` holds settings for SwiftPM targets (a project xcconfig never reaches them), applied via `XCODE_XCCONFIG_FILE` by `make` and Xcode Cloud, not by Xcode GUI.
@@ -58,6 +66,7 @@ make test_project_scheme SCHEME=WalletCore TEST_ONLY=KeeperCoreTests/TonkeeperDe
 - Actors are reentrant: state can change across any `await`. Re-check invariants after suspension and never split check-then-act around an `await`.
 - Perform cancel-and-replace inside one isolation domain. Cancellation is cooperative: check `Task.isCancelled` / `Task.checkCancellation()` and verify that a result still belongs to the current operation or scope before applying it.
 - When changing shared mutable state, add focused deterministic tests for non-obvious cases: reentrancy, overlapping operations, cancellation, stale completion. Use TSan selectively when correctness depends on real thread interleaving.
+- Tests wait for events, not for time. Use `waitUntil`, `TestSignal` and `TestGate` from the `TKTestSupport` product of `TKBase`. Make a delay in the code under test a parameter with the production default. swiftlint `no_time_based_wait_in_tests` warns on a sleep or a timed wait in a new test file.
 
 ## State invalidation
 For derived, cached, or asynchronously loaded state:
@@ -125,26 +134,27 @@ import TKUIKit
 
 **Troubleshooting**
 - `JITError: Runtime linking failure` / `Preview not available` → the target reaches the crypto graph.
+- `XCPreviewAgent crashed because <X>.framework is missing` → `TKUIKit` (a dynamic framework) gained an explicitly `.dynamic` dependency; keep its dependencies automatic products (see `LocalPackages/TKUIKit/Package.swift`).
 - `ambiguous use of '__designTimeSelection'` → move the `#Preview` to the sibling file.
 - `file '…/ChainKit.h' has been modified since the module file … was built` → delete `<GUI DerivedData>/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules`.
 - `Conflicting options '-warnings-as-errors' and '-suppress-warnings'` → reproduced only for `AppUI`; don't copy its manifest workaround elsewhere without reproducing.
 
 ## Skills and MCP
 - Linear (skill and MCP server) needs corporate VPN; on a fetch failure suspect VPN. The task id comes from the branch name (`author/task_id/description`).
-- `.githooks/commit-msg` appends the task id to commits — do not add it manually; if it stops, rerun `make hooks`.
+- `.githooks/commit-msg` prefixes the task id to the commit subject — do not add it manually; if it stops, rerun `make hooks`.
 - Run a skill's dependency check (per its README) first; if it fails, explain and continue without the skill. An unavailable MCP server likewise: `make` is the build/test fallback.
-- `tk-qa-verify` runners live in `maestro_ui_tests/tools/`; local-only material (`flows/local/`, `mocks/scenarios/`, `secrets/`) is gitignored.
 - The xcode MCP server needs Xcode 26.3+ with MCP enabled in Settings → Intelligence. Remote servers (figma, linear) need a one-time OAuth login.
 
 ### Xcode MCP tools (only for spot-checks)
-- GUI-bound: open this worktree's project with `xed ios/Keeper.xcodeproj` and take its `tabIdentifier` from `XcodeListWindows`. GUI builds need `make firebase_config` and ignore the `make` build env, so `make` stays the default.
+- GUI-bound: open this worktree's project with `xed ios/Keeper.xcodeproj` and take its `workspaceIdentifier` from `XcodeListWorkspaces` (`tabIdentifier` from `XcodeListWindows` before Xcode 27). GUI builds need `make firebase_config` and ignore the `make` build env, so `make` stays the default.
 - `RenderPreview` — preview snapshot; `sourceFilePath` is a project path (`AppUI/Sources/AppUI/…`), resolve it with `XcodeGlob`.
 - `ExecuteSnippet` (`RunCodeSnippet` on Xcode 27+) — run a Swift snippet in a file's context; same crypto-free constraint as `RenderPreview`.
 - `GetBuildLog` with `severity`/`pattern` filters — errors only.
 
 ## Localization
-- Devs edit keys manually only in `LocalPackages/TKLocalize/Sources/TKLocalize/Resources/Locales/en.lproj/Localizable.strings`.
-- Agents generate the other `*.lproj/Localizable.strings` from the English source.
+- Devs edit keys manually only in `LocalPackages/TKLocalize/Sources/TKLocalize/Resources/Locales/en.lproj/Localizable.strings`, and in `ru.lproj` when the design gives the Russian.
+- The other locales come from the `Translations` workflow (`../.github/workflows/android-locales-translate.yml`): the nightly run on dev translates new and changed keys into a PR, except, once `XCODE_CLOUD_RELEASE_WORKFLOW_ID` is set, keys with the same English as the latest release branch that has `iOS Publish`: it translates them there and they come back with the back-merge. It never overwrites a Russian written by hand, unless its placeholders no longer match the English.
+- Every string goes through `String(format:)`: a percent sign is `%%`, even with no placeholder.
 - Never hand-edit `LocalPackages/TKLocalize/Sources/TKLocalize/TKLocales.swift`; regenerate only via `make locale`.
 - The `locale-sync` skill packages this flow.
 
@@ -154,18 +164,23 @@ import TKUIKit
 - Backends silently drop what they can't accept: keep property keys ≤ 40 chars (Aptabase drops the whole event otherwise) and event names ≤ 60 (≤ 40 if routed to Firebase). Guards: `AnalyticsLimits.sanitizeKeys` at runtime, `make analytics_check` for generated models, swiftlint `no_over_long_analytics_key` and `AnalyticsLimitsTests` for hand-written keys.
 
 ## App Store Release
-- `make appstore_toolings [ACTION=build|whats-new|submit] [VERSION=YY.MM.N] [DRY_RUN=1]`; credentials `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH` in the root `.env`. Release notes come from `scripts/appstore/whats_new.txt`.
-- It prompts before creating, declaring or submitting anything; without a terminal pass `CREATE=1`, `ENCRYPTION_EXEMPT=1` or `YES=1`.
+- `make appstore_toolings [ACTION=info|release|status] [VERSION=YY.MM.N] [DRY_RUN=1]`; credentials `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH` in the root `.env`. Release notes come from `scripts/appstore/whats_new.txt`.
+- `info` on a released or in-review version offers the next one (an editable version if any, else the `scripts/bump_version.sh` rule) and creates it; `VERSION=` picks another. It then attaches the build (`BUILD=<number>`), sets the release type (`RELEASE=manual|auto`) and the phased 7-day rollout (`PHASED=on|off`), and pushes What's New. `release` does the one step the version's state allows: submit to review, publish an approved manual version, or pause / resume / complete a running phased rollout (`ROLLOUT=pause|resume|complete`). Publishing also tags the tip of `release/ios/<ver>` as `ios/<ver>_<build>` and pushes the tag to origin; a tip committed after the build's upload is refused, `COMMIT=<sha>` names the built commit instead.
+- `status` posts the version's state to Slack (`waiting for review`, `1%` … `100%` by phased day); needs `SLACK_BOT_TOKEN` and `SLACK_RELEASES_CHANNEL` in the root `.env`. The `.env` loader and the Slack poster are `../shared/scripts/release_slack.py`, shared with Android's `playstore_toolings`; the public mirror has no `shared/scripts/`, so there `status` is unavailable and the other actions read the credentials from the environment only.
+- Build a release with the `iOS Publish` GitHub workflow (`../.github/workflows/ios-publish.yml`) on `release/ios/<YY.MM.N>`: it checks that `APP_VERSION_COMMON` in `Configurations/common.xcconfig` is the branch's version, that no PR into the branch is open and that every key is translated, then starts the Xcode Cloud Release workflow (`XCODE_CLOUD_RELEASE_WORKFLOW_ID`) through the API. That workflow starts only by hand: set the variable after its start on push is removed. For untranslated keys it starts `Translations` on the branch and fails: merge that PR, then run it again. `skip_inspections` drops the checks; the version still has to be `YY.MM.N`. Branches cut before it have no `iOS Publish`: translate them with `Translations` (branches cut after TK-6566) or the `locale-sync` skill, and start the build in Xcode Cloud.
+- It prompts before creating, declaring, submitting, releasing, changing a rollout or posting; without a terminal pass `CREATE=1`, `ENCRYPTION_EXEMPT=1` or `YES=1` (release options stay as they are unless `RELEASE`/`PHASED` are given).
 
 ## OpenAPI Clients
+- Python schema preparation requires PyYAML, pinned in `scripts/apigen/requirements.txt`. Local `make setup` installs it into `build/apigen-python`, which generation uses automatically; CI may provide it through its active `python3`. For generation without the full setup (including the public mirror), run from the iOS root:
+  ```sh
+  python3 -m venv build/apigen-python
+  build/apigen-python/bin/python3 -m pip install -r scripts/apigen/requirements.txt
+  ```
 - REST clients are generated by `swift-openapi-generator` into `LocalPackages/KeeperCore/Packages/`; never hand-edit them. Add a client through the `APIS` table in `scripts/apigen/generate.sh`.
 - Local schemas: `scripts/apigen/schemas/<name>.yml`; generator settings: `scripts/apigen/configs/<name>.yaml`. After a local schema edit run `make <api>_generate`; `make api_generate` regenerates all, `make api_check` detects stale sources.
 - `OPEN_ENUM_APIS` clients decode unknown string enum values as `.unknown`; handle that case at call sites.
-- TonAPI: `configs/tonapi.yaml` filters operations — add one there before calling it. `TonStreamingAPIV2`, `EventSource` and `StreamURLSessionTransport` are vendored and not regenerated.
-
-## Maestro UI Tests
-- `maestro_ui_tests/README.md` is the map (flows, steps, sharding, CI wiring).
-- `maestro_ui_tests/scripts/api/_api_runtime.js` is stamped into every consumer script between `// >>> api-runtime` markers. After editing it run `make maestro_api_sync`; CI fails on an unsynced copy (`make maestro_api_check`).
+- `NULLABLE_ANY_OF_APIS` specs (OpenAPI 3.1 `anyOf: [<scalar>, null]`, which the generator skips) go through `scripts/apigen/nullable_any_of.py` before generation; the stored schema stays as published.
+- Shared clients use `shared/api/filters/<api>.yaml` as the operation/model allowlist for both platforms; `configs/<api>.yaml` keeps Swift-specific settings. Local-only clients keep their filters in `configs/<api>.yaml` (TonConnect has no config: both operations are used). Before calling a new operation, add it to `filter.operations` and run `make <api>_generate`; a response type needed outside those operations goes under `filter.schemas`. `TonStreamingAPIV2`, `EventSource` and `StreamURLSessionTransport` are vendored and not regenerated.
 
 ## Path Safety
 - No hardcoded absolute paths in scripts or source. Scripts derive the project root as `<git toplevel>/ios` or from `$0`. GitHub Actions prefix paths with `ios/` explicitly: a job-level `working-directory` does not reach composite actions.

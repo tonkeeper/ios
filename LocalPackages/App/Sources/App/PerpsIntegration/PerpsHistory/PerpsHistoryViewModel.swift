@@ -2,6 +2,7 @@ import AppUI
 import Combine
 import Foundation
 import KeeperCore
+import Perps
 import PerpsModels
 import TKLocalize
 
@@ -9,19 +10,23 @@ import TKLocalize
 final class PerpsHistoryViewModel: ObservableObject {
     let query: MultichainHistoryQueryViewModel
     let title: String
+    let depositStatus: PerpsDepositStatusViewModel?
+    let historyEvents: PerpsHistoryEvents
     @Published private(set) var activityToOpen: MultichainActivity?
+    /// Set as details open: an operation opened in progress keeps a Status row until its outcome.
+    var showsFundingStatus = false
 
     private let detailsModelBuilder: MultichainTransactionDetailsModelBuilder
     private let accountStore: (any PerpsAccountStoring)?
-    private let withdrawalOperationId: String?
     private let focusedFundingOperationId: String?
     private var focusedTransactions: Set<String>
-    private var completedFunding: Set<String> = []
+    private var endedFunding: Set<String> = []
     private var focusedActivity: MultichainActivity?
     private var focusObservation: AnyCancellable?
     private var focusRetryTask: Task<Void, Never>?
     private var withdrawalRefreshTask: Task<Void, Never>?
     private let withdrawalRefreshSleep: @MainActor (UInt64) async throws -> Void
+    private let focusRetrySleep: @MainActor (UInt64) async throws -> Void
     private var isVisible = false
     private var withdrawalRefreshStep = 0
     private var withdrawalIsListed = false
@@ -30,18 +35,26 @@ final class PerpsHistoryViewModel: ObservableObject {
         multichainState: MultichainWalletState,
         marketId: Int64?,
         focusedTransactions: Set<String> = [],
-        withdrawalOperationId: String? = nil,
         focusedFundingOperationId: String? = nil,
         accountStore: (any PerpsAccountStoring)? = nil,
+        format: PerpsFormatting? = nil,
+        walletName: String? = nil,
         multichainService: MultichainService,
+        historyEvents: PerpsHistoryEvents,
+        realtimeManager: MultichainRealtimeManager? = nil,
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
+        appSettingsStore: AppSettingsStore,
         withdrawalRefreshSleep: @escaping @MainActor (UInt64) async throws -> Void = {
+            try await Task.sleep(nanoseconds: $0)
+        },
+        focusRetrySleep: @escaping @MainActor (UInt64) async throws -> Void = {
             try await Task.sleep(nanoseconds: $0)
         }
     ) {
         self.title = marketId == nil ? TKLocales.Perps.history : TKLocales.Perps.Asset.transactionHistory
+        self.historyEvents = historyEvents
         self.query = MultichainHistoryQueryViewModel(
             multichainState: multichainState,
             category: marketId.map {
@@ -51,20 +64,34 @@ final class PerpsHistoryViewModel: ObservableObject {
             multichainService: multichainService,
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
-            nftResolver: nftResolver
+            nftResolver: nftResolver,
+            appSettingsStore: appSettingsStore
         )
         self.detailsModelBuilder = MultichainTransactionDetailsModelBuilder(
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
             transactionButtonProvider: MultichainTransactionDetailsModelBuilder.transactionButton,
-            nftProvider: { [nftResolver] in nftResolver.nft(for: $0) }
+            hidesAmounts: { [weak appSettingsStore] in appSettingsStore?.getState().isSecureMode == true },
+            nftProvider: { [nftResolver] in nftResolver.nft(for: $0) },
+            walletName: walletName
         )
         self.accountStore = accountStore
-        self.withdrawalOperationId = withdrawalOperationId
+        if let format, let accountStore {
+            depositStatus = PerpsDepositStatusViewModel(accountStore: accountStore, format: format)
+        } else {
+            depositStatus = nil
+        }
         self.focusedFundingOperationId = focusedFundingOperationId
         self.focusedTransactions = focusedTransactions
         self.withdrawalRefreshSleep = withdrawalRefreshSleep
+        self.focusRetrySleep = focusRetrySleep
         observeFunding()
+        realtimeManager?.addHistoryInvalidationObserver(self) { [walletId = multichainState.walletId] observer, invalidatedWalletId in
+            Task { @MainActor in
+                guard invalidatedWalletId == walletId else { return }
+                await observer.query.refresh()
+            }
+        }
         updateFocusedTransactions()
         guard !self.focusedTransactions.isEmpty || focusedFundingOperationId != nil else { return }
         focusObservation = query.$state.sink { [weak self] state in
@@ -97,7 +124,11 @@ final class PerpsHistoryViewModel: ObservableObject {
     }
 
     func transactionDetailsModel(for activity: MultichainActivity) -> MultichainTransactionDetailsModel {
-        detailsModelBuilder.build(activity: activity)
+        detailsModelBuilder.build(activity: activity, showsFundingStatus: showsFundingStatus)
+    }
+
+    func trackedDeposit(matching activity: MultichainActivity) -> PerpsDepositStatus? {
+        accountStore?.fundingActivity().unfinishedDeposit(listedAs: activity)
     }
 }
 
@@ -109,24 +140,24 @@ private extension PerpsHistoryViewModel {
     func observeFunding() {
         guard let accountStore else { return }
         let activity = accountStore.fundingActivity()
-        completedFunding = activity.completed
+        endedFunding = activity.ended
         accountStore.addChangeObserver(self) { observer in
             Task { @MainActor in observer.fundingDidChange() }
         }
     }
 
     /// A pending deposit or withdrawal row turns final only in a fresh page, and its
-    /// arrival is the moment the store sees the operation complete.
+    /// arrival or failure is the moment the store sees the operation end.
     func fundingDidChange() {
         guard let activity = accountStore?.fundingActivity() else { return }
         let hashesChanged = updateFocusedTransactions()
         resolveFocus(focusedTransactions, in: query.state)
-        let completedWithdrawal = withdrawalOperationId.map { activity.completed.contains($0) } ?? false
-        let completed = activity.completed
-        let arrived = !completed.isSubset(of: completedFunding)
-        completedFunding = completed
-        guard arrived || hashesChanged else {
-            if completedWithdrawal { stopWithdrawalRefreshIfListed() }
+        let endedFocus = focusedFundingOperationId.map { activity.ended.contains($0) } ?? false
+        let ended = activity.ended
+        let justEnded = !ended.isSubset(of: endedFunding)
+        endedFunding = ended
+        guard justEnded || hashesChanged else {
+            if endedFocus { stopWithdrawalRefreshIfListed() }
             return
         }
         focusRetryTask?.cancel()
@@ -138,7 +169,7 @@ private extension PerpsHistoryViewModel {
     }
 
     func startWithdrawalRefreshIfNeeded() {
-        guard withdrawalOperationId != nil || focusedFundingOperationId != nil,
+        guard focusedFundingOperationId != nil,
               isVisible, withdrawalRefreshTask == nil else { return }
         stopWithdrawalRefreshIfListed()
         let start = withdrawalRefreshStep
@@ -162,15 +193,10 @@ private extension PerpsHistoryViewModel {
     }
 
     func stopWithdrawalRefreshIfListed() {
-        guard let operationId = focusedFundingOperationId ?? withdrawalOperationId else { return }
-        let hashes = focusedFundingOperationId != nil ? focusedTransactions : transactions(of: operationId)
-        guard !hashes.isEmpty,
+        guard focusedFundingOperationId != nil,
+              !focusedTransactions.isEmpty,
               query.state.activities.contains(where: { activity in
-                  (focusedFundingOperationId != nil || activity.activityType == .perpsBalanceWithdrawal)
-                      && MultichainHistoryEventTarget.activity(
-                          transactionHashes: hashes,
-                          in: [activity]
-                      ) != nil
+                  MultichainHistoryEventTarget.activity(transactionHashes: focusedTransactions, in: [activity]) != nil
               })
         else { return }
         withdrawalIsListed = true
@@ -208,9 +234,9 @@ private extension PerpsHistoryViewModel {
 
     func retryFocus() {
         guard focusRetryTask == nil else { return }
-        focusRetryTask = Task { [weak self] in
+        focusRetryTask = Task { [weak self, sleep = focusRetrySleep] in
             for delay in [1_000_000_000, 2_000_000_000, 4_000_000_000, 8_000_000_000] as [UInt64] {
-                try? await Task.sleep(nanoseconds: delay)
+                try? await sleep(delay)
                 guard !Task.isCancelled, let self, self.focusObservation != nil else { return }
                 await self.query.refresh()
             }

@@ -174,15 +174,18 @@ private extension WalletConnectProposalScreen {
                 preset: .medium
             )
         case .success:
-            WalletConnectProposalActionResultView(state: .success)
+            TKResultSwiftUIView(state: .success, title: TKLocales.Result.success)
+                .frame(maxWidth: .infinity, minHeight: Layout.resultHeight)
         case .failure:
-            WalletConnectProposalActionResultView(state: .failure)
+            TKResultSwiftUIView(state: .failure, title: TKLocales.Result.failure)
+                .frame(maxWidth: .infinity, minHeight: Layout.resultHeight)
         }
     }
 
     enum Layout {
         static let headerHeight: CGFloat = 64
         static let horizontalPadding: CGFloat = 16
+        static let resultHeight: CGFloat = 56
         static let walletBottomPadding: CGFloat = 16
         static let permissionsBottomPadding: CGFloat = 12
         static let scrollBottomPadding: CGFloat = 165

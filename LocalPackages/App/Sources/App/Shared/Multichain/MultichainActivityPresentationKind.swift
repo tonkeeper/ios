@@ -143,9 +143,9 @@ enum MultichainActivityPresentationKind: Equatable {
         case .perpsStopLoss:
             return TKLocales.MultichainHistory.Perps.stopLossExecuted
         case .perpsDeposit:
-            return TKLocales.Perps.deposit
+            return TKLocales.MultichainHistory.Perps.deposit
         case .perpsWithdrawal:
-            return TKLocales.Perps.withdraw
+            return TKLocales.MultichainHistory.Perps.withdrawal
         }
     }
 

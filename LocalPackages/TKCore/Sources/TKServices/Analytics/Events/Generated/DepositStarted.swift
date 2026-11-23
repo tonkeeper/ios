@@ -10,20 +10,22 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User entered the Add Funds screen */
+/** User entered the Add Funds screen. With the native onramp (the multichain \&quot;Buy crypto\&quot; screen, behind the &#x60;android_moonpay_ramp_enabled&#x60; / &#x60;ios_moonpay_ramp_enabled&#x60; flags) a multichain wallet&#39;s buying opens \&quot;Buy crypto\&quot; directly and skips Add Funds; the event is then sent when \&quot;Buy crypto\&quot; opens, once per opening (not again on rotation or on the way back from its pickers), with &#x60;wallet_mode &#x3D; multi&#x60; and &#x60;available_options &#x3D; [buy_with_fiat]&#x60;. That includes the entries that come with an asset (for example the Buy button of a token&#39;s screen, a top up from a send, a withdrawal, a WalletConnect or TonConnect confirmation, staking or the migration), which sent no deposit_started before. On \&quot;Buy crypto\&quot; it is sent with &#x60;deposit_screen &#x3D; buy_crypto&#x60;.  */
 public struct DepositStarted: Codable, JSONEncodable, Hashable {
 
     public static let availableOptionsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     public var eventName: String = "deposit_started"
     public var from: RampSource
     public var walletMode: WalletMode
+    public var depositScreen: DepositScreen?
     /** Slugs of the options shown to the user on this screen. Use standard identifier slugs from the backend response.  */
     public var availableOptions: Set<String>
 
-    public init(eventName: String = "deposit_started", from: RampSource, walletMode: WalletMode, availableOptions: Set<String>) {
+    public init(eventName: String = "deposit_started", from: RampSource, walletMode: WalletMode, depositScreen: DepositScreen? = nil, availableOptions: Set<String>) {
         self.eventName = eventName
         self.from = from
         self.walletMode = walletMode
+        self.depositScreen = depositScreen
         self.availableOptions = availableOptions
     }
 
@@ -31,6 +33,7 @@ public struct DepositStarted: Codable, JSONEncodable, Hashable {
         case eventName
         case from
         case walletMode = "wallet_mode"
+        case depositScreen = "deposit_screen"
         case availableOptions = "available_options"
     }
 
@@ -41,6 +44,7 @@ public struct DepositStarted: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(walletMode, forKey: .walletMode)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(availableOptions, forKey: .availableOptions)
     }
 }

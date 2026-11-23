@@ -322,15 +322,33 @@ final class TonkeeperDeeplinksParserTests: XCTestCase {
     }
 
     func testRaffleParsing() throws {
-        XCTAssertEqual(try parser.parse(string: "raffle"), Deeplink.raffle)
+        XCTAssertEqual(try parser.parse(string: "raffle"), Deeplink.raffle(id: nil))
     }
 
     func testMysteryRaffleParsing() throws {
-        XCTAssertEqual(try parser.parse(string: "raffle/mystery_raffle"), Deeplink.raffle)
+        XCTAssertEqual(try parser.parse(string: "raffle/mystery_raffle"), Deeplink.raffle(id: "mystery_raffle"))
+    }
+
+    func testDinnerWithTrumpRaffleParsing() throws {
+        XCTAssertEqual(
+            try parser.parse(string: "raffle/dinner_with_trump"),
+            try .dapp(XCTUnwrap(URL(string: "https://trump.keeperwallet.com/")))
+        )
+    }
+
+    func testTrumpMultichainParsing() throws {
+        XCTAssertEqual(
+            try parser.parse(string: "trump-multichain"),
+            try .multichainDapp(XCTUnwrap(URL(string: "https://trump.keeperwallet.com/")))
+        )
+    }
+
+    func testUnknownRaffleIdParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "raffle/unknown"), Deeplink.raffle(id: "unknown"))
     }
 
     func testUnsupportedRafflePathThrows() {
-        XCTAssertThrowsError(try parser.parse(string: "raffle/unknown"))
+        XCTAssertThrowsError(try parser.parse(string: "raffle/unknown/extra"))
     }
 
     func testPerpsParsing() throws {
@@ -338,11 +356,89 @@ final class TonkeeperDeeplinksParserTests: XCTestCase {
         XCTAssertEqual(try parser.parse(string: "perps/market/1"), .perps(.market(id: 1)))
         XCTAssertEqual(try parser.parse(string: "perps/market/1/position"), .perps(.market(id: 1)))
         XCTAssertEqual(try parser.parse(string: "perps/market/1/auto-close?utm_source=push"), .perps(.autoClose(marketId: 1)))
-        XCTAssertThrowsError(try parser.parse(string: "perps/market/GRAM"))
+        XCTAssertEqual(try parser.parse(string: "perps/market/ANT"), .perps(.marketSymbol("ANT")))
+        XCTAssertThrowsError(try parser.parse(string: "perps/market/ANT/auto-close"))
+        XCTAssertThrowsError(try parser.parse(string: "perps/market/AN-T"))
         XCTAssertThrowsError(try parser.parse(string: "perps/positions"))
     }
 
     func testHistoryParsing() throws {
         XCTAssertEqual(try parser.parse(string: "history"), .history)
+    }
+
+    func testLoyaltyParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=Ab-9_x"), .loyalty(referralCode: "Ab-9_x"))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=%20Ab9%20"), .loyalty(referralCode: "Ab9"))
+        XCTAssertEqual(try parser.parse(string: "loyalty"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?ref=Ab9"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty%3Freferral_code%3DAb9"), .loyalty(referralCode: "Ab9"))
+        XCTAssertEqual(try parser.parse(string: "loyalty?utm_content=x%26referral_code%3DAb9"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code%3DAb9"), .loyalty(referralCode: nil))
+        if #available(iOS 17, *) {
+            XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=Ab9&utm_term=a b"), .loyalty(referralCode: "Ab9"))
+        }
+    }
+
+    func testReferralPathParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "r/K7M2QX9P"), .loyalty(referralCode: "K7M2QX9P"))
+        XCTAssertEqual(try parser.parse(string: "r/Ab-9_x?utm_source=x"), .loyalty(referralCode: "Ab-9_x"))
+        XCTAssertEqual(try parser.parse(string: "r"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "r/a.b"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "r/%D0%BA%D0%BE%D0%B4"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "r/\(String(repeating: "a", count: 65))"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "r/Ab9/extra"), .loyalty(referralCode: nil))
+    }
+
+    func testLoyaltyDropsAnInvalidReferralCode() throws {
+        let tooLong = String(repeating: "a", count: 65)
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=\(tooLong)"), .loyalty(referralCode: nil))
+        XCTAssertEqual(
+            try parser.parse(string: "loyalty?referral_code=\(String(repeating: "a", count: 64))"),
+            .loyalty(referralCode: String(repeating: "a", count: 64))
+        )
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code="), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=a.b"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=%D0%BA%D0%BE%D0%B4"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=a%26b"), .loyalty(referralCode: nil))
+        XCTAssertEqual(try parser.parse(string: "loyalty?referral_code=Ab9%23x"), .loyalty(referralCode: nil))
+    }
+
+    func testEarnParsing() throws {
+        XCTAssertEqual(try parser.parse(string: "earn"), .earn(.home))
+        XCTAssertEqual(try parser.parse(string: "earn?utm_source=push"), .earn(.home))
+        XCTAssertEqual(try parser.parse(string: "earn?network=&vault="), .earn(.home))
+    }
+
+    func testEarnVaultParsing() throws {
+        let vaultId = "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"
+
+        XCTAssertEqual(
+            try parser.parse(string: "earn?network=base&vault=\(vaultId)"),
+            .earn(.vault(network: "base", vaultId: vaultId))
+        )
+        XCTAssertEqual(
+            try parser.parse(string: "earn?vault=\(vaultId)-usdc&network=BSC&utm_source=push"),
+            .earn(.vault(network: "bsc", vaultId: "\(vaultId)-usdc"))
+        )
+    }
+
+    func testEarnVaultOutsideTheEarnRoutesThrows() {
+        let vaultId = "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"
+        let links = [
+            "earn?network=optimism&vault=\(vaultId)",
+            "earn?network=eth&vault=\(vaultId)",
+            "earn?network=base&vault=0xc1256Ae5",
+            "earn?network=base&vault=\(vaultId)-",
+            "earn?network=base&vault=\(vaultId)-a%2F..%2F..%2Fswap",
+            "earn?network=base",
+            "earn?network=base&vault=",
+            "earn?vault=\(vaultId)",
+        ]
+
+        for link in links {
+            XCTAssertThrowsError(try parser.parse(string: link), link) { error in
+                XCTAssertEqual(error as? DeeplinkParserError, .invalidParameters, link)
+            }
+        }
     }
 }

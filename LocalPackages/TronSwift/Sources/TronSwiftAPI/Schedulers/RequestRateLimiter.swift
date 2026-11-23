@@ -27,10 +27,12 @@ private extension TimeInterval {
 
 actor RequestRateLimiter {
     private let minIntervalNs: UInt64
+    private let pause: @Sendable (_ nanoseconds: UInt64) async -> Void
     private var nextAllowedUptimeNsByKey = [String: UInt64]()
 
-    init(rps: Double) {
+    init(rps: Double, pause: @escaping @Sendable (_ nanoseconds: UInt64) async -> Void) {
         minIntervalNs = (1 / max(0.001, rps)).nanoseconds
+        self.pause = pause
     }
 }
 
@@ -42,6 +44,6 @@ extension RequestRateLimiter {
         guard scheduledUptimeNanoseconds > now else {
             return
         }
-        try? await Task.sleep(nanoseconds: scheduledUptimeNanoseconds - now)
+        await pause(scheduledUptimeNanoseconds - now)
     }
 }

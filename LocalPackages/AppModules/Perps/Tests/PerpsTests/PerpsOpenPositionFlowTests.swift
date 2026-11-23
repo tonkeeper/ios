@@ -14,10 +14,10 @@ final class PerpsOpenPositionFlowTests: XCTestCase {
         XCTAssertTrue(flow.begin(marketId: 1))
         XCTAssertFalse(flow.begin(marketId: 1))
         XCTAssertFalse(flow.begin(marketId: 2))
-        XCTAssertEqual(flow.phase, .composing(marketId: 1))
+        XCTAssertEqual(flow.composingMarketId, 1)
 
         flow.close()
-        XCTAssertEqual(flow.phase, .idle)
+        XCTAssertNil(flow.composingMarketId)
         XCTAssertTrue(flow.begin(marketId: 2))
     }
 
@@ -27,12 +27,12 @@ final class PerpsOpenPositionFlowTests: XCTestCase {
 
         _ = flow.begin(marketId: 2)
         XCTAssertFalse(flow.beginSubmitting(trade))
-        XCTAssertNil(flow.activeTrade)
+        XCTAssertNil(flow.activeTrade(marketId: 1))
 
         flow.close()
         _ = flow.begin(marketId: 1)
         XCTAssertTrue(flow.beginSubmitting(trade))
-        XCTAssertEqual(flow.activeTrade, trade)
+        XCTAssertEqual(flow.activeTrade(marketId: 1), trade)
         XCTAssertFalse(flow.beginSubmitting(trade))
     }
 
@@ -41,24 +41,24 @@ final class PerpsOpenPositionFlowTests: XCTestCase {
         XCTAssertTrue(flow.begin(marketId: 1))
         XCTAssertTrue(flow.beginSubmitting(trade))
 
-        flow.cancelSubmitting()
+        flow.cancelSubmitting(marketId: 1)
 
-        XCTAssertEqual(flow.phase, .composing(marketId: 1))
+        XCTAssertEqual(flow.composingMarketId, 1)
+        XCTAssertNil(flow.activeTrade(marketId: 1))
         XCTAssertTrue(flow.beginSubmitting(trade))
     }
 
-    func test_submitting_blocksBeginAndClose_untilFinished() {
+    func test_submitting_holdsOnlyItsOwnMarket_untilFinished() {
         let flow = PerpsOpenPositionFlow()
         _ = flow.begin(marketId: 1)
         _ = flow.beginSubmitting(trade)
 
-        flow.close()
-        XCTAssertEqual(flow.phase, .submitting(trade))
         XCTAssertFalse(flow.begin(marketId: 1))
+        XCTAssertTrue(flow.begin(marketId: 2))
+        flow.close()
 
-        flow.finishSubmitting()
-        XCTAssertEqual(flow.phase, .idle)
-        XCTAssertNil(flow.activeTrade)
+        flow.finishSubmitting(marketId: 1)
+        XCTAssertNil(flow.activeTrade(marketId: 1))
         XCTAssertTrue(flow.begin(marketId: 1))
     }
 }

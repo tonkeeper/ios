@@ -13,7 +13,10 @@ struct DappAssembly {
         wallet: Wallet?,
         isSignMessageSupported: Bool,
         explorerURLMatcher: BlockchainExplorerURLMatcher,
+        earnDappMatcher: EarnDappMatcher,
         earnFeaturedVaultsRepository: EarnFeaturedVaultsRepository,
+        authorizationService: BatteryWebAuthorizationService,
+        loyaltyReferralCodeRepository: LoyaltyReferralCodeRepository,
         userAgent: String
     )
         -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput>
@@ -25,7 +28,10 @@ struct DappAssembly {
             wallet: wallet,
             isSignMessageSupported: isSignMessageSupported,
             explorerURLMatcher: explorerURLMatcher,
+            earnDappMatcher: earnDappMatcher,
             earnFeaturedVaultsRepository: earnFeaturedVaultsRepository,
+            authorizationService: authorizationService,
+            loyaltyReferralCodeRepository: loyaltyReferralCodeRepository,
             userAgent: userAgent
         )
 

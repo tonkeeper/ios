@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -42,6 +43,32 @@ private extension StakingBalanceDetailsViewController {
             }
             self?.customView.rewardsViewContainer.isHidden = false
             self?.customView.rewardsView.configure(model: model)
+        }
+
+        viewModel.didUpdateRewardsHistory = { [weak self] state in
+            guard let self else { return }
+            guard let state else {
+                customView.rewardsHistoryView.isHidden = true
+                return
+            }
+            customView.rewardsHistoryView.isHidden = false
+            customView.rewardsHistoryView.setContent {
+                StakingRewardsHistorySectionView(state: state) { [weak self] in
+                    self?.viewModel.didTapRewardsHistoryButton()
+                }
+            }
+        }
+
+        viewModel.didUpdateUpcomingReward = { [weak self] state in
+            guard let self else { return }
+            guard let state else {
+                customView.upcomingRewardView.isHidden = true
+                return
+            }
+            customView.upcomingRewardView.isHidden = false
+            customView.upcomingRewardView.setContent {
+                StakingUpcomingRewardSectionView(state: state)
+            }
         }
 
         viewModel.didUpdateDetailsTitle = { [weak self] model in

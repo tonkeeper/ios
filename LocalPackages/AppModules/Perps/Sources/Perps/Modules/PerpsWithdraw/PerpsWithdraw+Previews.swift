@@ -5,6 +5,10 @@ import TKUIKit
 private let previewDestination = PerpsDepositSource(assetId: "eth/mainnet/erc20/usdc", symbol: "USDC", decimals: 6, network: .ethereum)
 private let previewRelayDestination = PerpsDepositSource(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, network: .ton)
 private let previewBalance = PerpsFundingBalance(amount: "3906.12", usdPrice: 0.9998, iconURL: nil)
+private let previewRelayOption = PerpsDepositSourceOption(
+    source: previewRelayDestination,
+    balance: PerpsFundingBalance(amount: "120.5", usdPrice: 3.2, iconURL: nil)
+)
 
 @MainActor
 private func amountForm(amount: String, available: String?) -> some View {
@@ -12,15 +16,18 @@ private func amountForm(amount: String, available: String?) -> some View {
         config: PerpsFundingAmountConfig(
             title: "Withdraw Perps balance",
             asset: { previewDestination },
-            displayAsset: { balance in
+            displayAsset: { balance, destination in
                 PerpsFundingAssetRow(
                     assetId: previewRelayDestination.assetId,
                     symbol: previewRelayDestination.symbol,
                     network: previewRelayDestination.network,
                     iconURL: balance?.iconURL,
-                    balanceText: nil
+                    balanceText: destination?.balance.flatMap {
+                        PerpsFormatting.preview.fundingBalance($0, symbol: previewRelayDestination.symbol)
+                    }
                 )
             },
+            loadDestination: { previewRelayOption },
             initialUnit: .usd,
             fixedUsdPrice: 1,
             loadBalance: { previewBalance },
@@ -46,7 +53,9 @@ private func confirm(destination: PerpsDepositSource, receiveAmount: String, net
         networkFee: networkFee,
         networkFeeSymbol: "USDC",
         networkFeeUsd: Decimal(string: networkFee),
-        withdrawalDelaySeconds: destination == previewDestination ? 1072 : nil
+        estimatedDurationSeconds: destination == previewDestination ? nil : 120,
+        recipientAddress: destination == previewDestination ? "0x0eE3...508b" : "UQC1...qMJm",
+        provider: "Relay"
     )
     let viewModel = PerpsWithdrawConfirmViewModel(
         reviewed: PerpsReviewedWithdraw(terms: terms) { _ in "preview" },

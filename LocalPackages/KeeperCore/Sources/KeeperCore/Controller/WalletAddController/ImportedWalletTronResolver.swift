@@ -53,7 +53,7 @@ struct ImportedWalletTronResolver {
                 return await legacyBalance(tron: tron) == nil
                     ? .multichainCandidate
                     : .legacy(tron: tron)
-            case .selected(.ton):
+            case .selected(.ton), .selected(.telegram):
                 return .legacy(tron: tron)
             case .selected(.multichain):
                 return .multichainCandidate

@@ -126,10 +126,13 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
             return nil
         }
 
-        let token = chainKitService.walletAuthToken(
+        guard let token = chainKitService.walletAuthToken(
             appPrivateKey: appKey.data,
+            walletId: walletId,
             accessToken: accessToken
-        )
+        ) else {
+            return nil
+        }
         tokens[key] = token
         if appKey.isPersistent {
             store.saveToken(
@@ -204,6 +207,14 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
         }
     }
 
+    /// The durable app key kept for this wallet; an ephemeral lease does not count.
+    func persistentAppKey(walletId: String) -> Data? {
+        guard let key = appKey(walletId: walletId), key.isPersistent else {
+            return nil
+        }
+        return key.data
+    }
+
     func persistAppKey(_ appKey: Data, walletId: String) async {
         guard !walletId.isEmpty, !appKey.isEmpty else { return }
         ephemeralKeys.removeValue(forKey: walletId)
@@ -211,6 +222,14 @@ actor WalletAuthTokenProvider: WalletAuthTokenProviding, WalletAuthEphemeralKeyP
         walletsWithoutAppKey.remove(walletId)
         removeCachedTokens(walletId: walletId)
         store.saveAppKey(appKey, walletId: walletId)
+    }
+
+    /// Keeps a Ledger wallet's app key and the seed it derives from: the wallet's further app keys hang off the seed,
+    /// and without it they would cost another proof on the device.
+    func persistLedgerKeys(seed: Data, appKey: Data, walletId: String) async {
+        await persistAppKey(appKey, walletId: walletId)
+        guard !walletId.isEmpty, !seed.isEmpty else { return }
+        store.saveLedgerSeed(seed, walletId: walletId)
     }
 
     func withEphemeralKey<T: Sendable>(

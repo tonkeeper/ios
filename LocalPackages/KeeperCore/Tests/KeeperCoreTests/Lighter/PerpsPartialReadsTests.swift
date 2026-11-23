@@ -67,6 +67,24 @@ final class PerpsPartialReadsTests: XCTestCase {
         XCTAssertEqual(leg.expiryUnixMs?.int64Value, 1_780_000_000_000)
     }
 
+    func testTheLegsAWaitingLimitCarriesAreCancellableButNotThePositions() throws {
+        let resting = try PerpsPlannerMapping.restingOrders(
+            [PerpsBackendMappingTests.limitWithStopLoss()],
+            rules: makeRules()
+        )
+
+        XCTAssertEqual(resting.map(\.orderIndex), [11, 13])
+        let leg = try XCTUnwrap(resting.last)
+        XCTAssertEqual(leg.clientOrderIndex?.int64Value, 1003)
+        XCTAssertEqual(leg.side, PerpsSide.short_)
+        XCTAssertEqual(leg.category, PerpsOrderCategory.stoploss)
+        XCTAssertEqual(leg.status, PerpsRestingOrderStatus.pending)
+        XCTAssertTrue(leg.reduceOnly)
+        XCTAssertFalse(leg.positionTied)
+        XCTAssertEqual(leg.triggerPrice?.int64Value, 618_000)
+        XCTAssertEqual(leg.expiryUnixMs?.int64Value, 1_795_772_370_000)
+    }
+
     func testAPositionWithoutLegsLeavesTheContextWithNoRestingOrders() throws {
         let resting = try PerpsPlannerMapping.restingOrders(
             autoClose: nil,
@@ -80,7 +98,7 @@ final class PerpsPartialReadsTests: XCTestCase {
 
 private extension PerpsPartialReadsTests {
     func makeRules() throws -> PerpsMarketRules {
-        try PerpsPlannerMapping.rules(
+        try PerpsPlannerMapping.rulesSignedAsServed(
             market: Components.Schemas.Market(
                 market_index: 1,
                 symbol: "BTC",

@@ -50,13 +50,27 @@ final class TonProofTokenServiceImplementation: TonProofTokenService {
     func loadTokensFor(pairs: [WalletPrivateKeyPair]) async {
         for pair in pairs {
             do {
-                let tonProof = try await getTonProof(wallet: pair.wallet, privateKey: pair.privateKey)
-                let token = try await api.getTonProofToken(wallet: pair.wallet, tonProof: tonProof)
-                try tonProofTokenRepository.saveTonProofToken(wallet: pair.wallet, token: token)
+                try await loadTokenFor(pair: pair)
             } catch {
                 continue
             }
         }
+    }
+
+    @discardableResult
+    func loadTokenFor(pair: WalletPrivateKeyPair, shouldKeepToken: (@Sendable () async -> Bool)? = nil) async throws -> String {
+        try Task.checkCancellation()
+        let tonProof = try await getTonProof(wallet: pair.wallet, privateKey: pair.privateKey)
+        try Task.checkCancellation()
+        let token = try await api.getTonProofToken(wallet: pair.wallet, tonProof: tonProof)
+        try Task.checkCancellation()
+        try tonProofTokenRepository.saveTonProofToken(wallet: pair.wallet, token: token)
+        if let shouldKeepToken, !(await shouldKeepToken()) {
+            try tonProofTokenRepository.removeTonProofToken(wallet: pair.wallet, ifMatching: token)
+            throw CancellationError()
+        }
+        try Task.checkCancellation()
+        return token
     }
 
     func getTonProof(wallet: Wallet, privateKey: PrivateKey) async throws -> TonConnect.TonProof {

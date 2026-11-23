@@ -9,6 +9,11 @@ public protocol MultichainSwapService {
         request: MultichainSwapQuoteRequest,
         walletId: String?
     ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote
+    /// Routes the backend prepares, one at a time, into the operation a registered wallet signs.
+    func createCrossSwapQuoteV3(
+        request: MultichainSwapQuoteRequest,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote
     func prepareCrossSwapRoute(
         routeId: String,
         request: MultichainSwapPrepareRouteRequest?,
@@ -44,6 +49,13 @@ final class MultichainSwapServiceImplementation: MultichainSwapService {
         walletId: String?
     ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
         try await multichainSwapAPI.createCrossSwapQuote(request: request, walletId: walletId)
+    }
+
+    func createCrossSwapQuoteV3(
+        request: MultichainSwapQuoteRequest,
+        walletId: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
+        try await multichainSwapAPI.createCrossSwapQuoteV3(request: request, walletId: walletId)
     }
 
     func prepareCrossSwapRoute(

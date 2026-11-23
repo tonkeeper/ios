@@ -72,16 +72,19 @@ public struct PerpsChartSnapshot: Equatable, Sendable {
     public let timeframe: PerpsChartTimeframe
     public let candles: [PerpsChartCandle]
     public let priceDecimals: Int
+    public let isLiveOnly: Bool
 
     public init(
         marketId: Int64,
         timeframe: PerpsChartTimeframe,
         candles: [PerpsChartCandle],
-        priceDecimals: Int
+        priceDecimals: Int,
+        isLiveOnly: Bool = false
     ) {
         self.marketId = marketId
         self.timeframe = timeframe
         self.candles = candles
         self.priceDecimals = priceDecimals
+        self.isLiveOnly = isLiveOnly
     }
 }

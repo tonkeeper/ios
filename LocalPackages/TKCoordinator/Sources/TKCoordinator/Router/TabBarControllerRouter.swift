@@ -1,6 +1,8 @@
 import UIKit
 
 public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBarController> {
+    /// Called before a different tab is shown, ahead of its appearance callbacks.
+    public var willSwitchToItem: ((Int) -> Void)?
     public var didSelectItem: ((Int) -> Void)?
     public var transitionAnimator: ((_ fromIndex: Int, _ toIndex: Int) -> (any UIViewControllerAnimatedTransitioning)?)?
 
@@ -17,6 +19,8 @@ extension TabBarControllerRouter: UITabBarControllerDelegate {
     ) -> Bool {
         if tabBarController.viewControllers?[tabBarController.selectedIndex] == viewController {
             (viewController as? ScrollViewController)?.scrollToTop()
+        } else if let index = tabBarController.viewControllers?.firstIndex(of: viewController) {
+            willSwitchToItem?(index)
         }
         return true
     }

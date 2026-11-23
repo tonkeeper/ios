@@ -5,17 +5,20 @@ final class TradingAssembly {
     private let appInfoProvider: AppInfoProvider
     private let repositoriesAssembly: RepositoriesAssembly
     private let coreAssembly: CoreAssembly
+    private let perpsSecurityConfig: PerpsSecurityConfigRepository
 
     init(
         tradingAPIAssembly: TradingAPIAssembly,
         appInfoProvider: AppInfoProvider,
         repositoriesAssembly: RepositoriesAssembly,
-        coreAssembly: CoreAssembly
+        coreAssembly: CoreAssembly,
+        perpsSecurityConfig: PerpsSecurityConfigRepository
     ) {
         self.tradingAPIAssembly = tradingAPIAssembly
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
         self.coreAssembly = coreAssembly
+        self.perpsSecurityConfig = perpsSecurityConfig
     }
 
     private(set) lazy var shelvesService: TradingShelvesService = TradingShelvesServiceImplementation(
@@ -34,7 +37,8 @@ final class TradingAssembly {
     private(set) lazy var assetDetailsService: TradingAssetDetailsService = TradingAssetDetailsServiceImplementation(
         api: tradingAPIAssembly.api,
         cache: assetDetailsCache,
-        requestContextProvider: requestContextProvider
+        requestContextProvider: requestContextProvider,
+        signedPerpSymbols: { [perpsSecurityConfig] in await perpsSecurityConfig.verified()?.signedSymbols }
     )
 
     private(set) lazy var favoriteAssetsService: TradingFavoriteAssetsService = TradingFavoriteAssetsServiceImplementation(

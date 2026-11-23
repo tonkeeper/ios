@@ -10,19 +10,21 @@ import Foundation
 import AnyCodable
 #endif
 
-/** User selected an asset on the \&quot;Choose asset\&quot; screen */
+/** User selected an asset on the \&quot;Choose asset\&quot; screen. On \&quot;Buy crypto\&quot;: an asset picked in its asset picker.  */
 public struct DepositClickFiatAsset: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "deposit_click_fiat_asset"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
+    public var depositScreen: DepositScreen?
     /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
 
-    public init(eventName: String = "deposit_click_fiat_asset", from: RampSource, addFundsOption: AddFundsOption, buyAsset: String) {
+    public init(eventName: String = "deposit_click_fiat_asset", from: RampSource, addFundsOption: AddFundsOption, depositScreen: DepositScreen? = nil, buyAsset: String) {
         self.eventName = eventName
         self.from = from
         self.addFundsOption = addFundsOption
+        self.depositScreen = depositScreen
         self.buyAsset = buyAsset
     }
 
@@ -30,6 +32,7 @@ public struct DepositClickFiatAsset: Codable, JSONEncodable, Hashable {
         case eventName
         case from
         case addFundsOption = "add_funds_option"
+        case depositScreen = "deposit_screen"
         case buyAsset = "buy_asset"
     }
 
@@ -40,6 +43,7 @@ public struct DepositClickFiatAsset: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(addFundsOption, forKey: .addFundsOption)
+        try container.encodeIfPresent(depositScreen, forKey: .depositScreen)
         try container.encode(buyAsset, forKey: .buyAsset)
     }
 }

@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKLoaderView: UIView {
+public final class TKLoaderView: TKLayerAnimationView {
     public var isLoading = false {
         didSet {
             isLoading ? startAnimation() : stopAnimation()
@@ -32,7 +32,6 @@ public final class TKLoaderView: UIView {
         return animation
     }()
 
-    private var isAnimating = false
     public var size: Size {
         didSet {
             invalidateIntrinsicContentSize()
@@ -52,33 +51,7 @@ public final class TKLoaderView: UIView {
         self.style = style
         super.init(frame: .zero)
         setup()
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(willEnterForeground),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
-
-        if #available(iOS 17.0, *) {
-            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: Self, _: UITraitCollection) in
-                self?.bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
-                self?.topCircleLayer.strokeColor = style.tintColor.cgColor
-            }
-        }
-    }
-
-    deinit {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        startAnimation()
     }
 
     override public var intrinsicContentSize: CGSize {
@@ -112,32 +85,16 @@ public final class TKLoaderView: UIView {
         CATransaction.commit()
     }
 
-    override public func didMoveToWindow() {
-        super.didMoveToWindow()
-        if window == nil {
-            stopAnimation()
-        } else {
-            startAnimation()
-        }
-    }
-
-    public func startAnimation() {
-        isAnimating = true
-        topCircleLayer.removeAnimation(forKey: .rotationAnimationKey)
+    override func addAnimations() {
         topCircleLayer.add(rotationAnimation, forKey: .rotationAnimationKey)
     }
 
-    public func stopAnimation() {
-        isAnimating = false
+    override func removeAnimations() {
         topCircleLayer.removeAnimation(forKey: .rotationAnimationKey)
     }
 
-    override public func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if #unavailable(iOS 17.0) {
-            bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
-            topCircleLayer.strokeColor = style.tintColor.cgColor
-        }
+    override func updateColors() {
+        didUpdateStyle()
     }
 }
 
@@ -150,20 +107,15 @@ private extension TKLoaderView {
         layer.addSublayer(topCircleLayer)
     }
 
-    @objc
-    func willEnterForeground() {
-        guard isAnimating else { return }
-        startAnimation()
-    }
-
     func didUpdateSize() {
         topCircleLayer.lineWidth = size.circleWidth
         bottomCircleLayer.lineWidth = size.circleWidth
     }
 
     func didUpdateStyle() {
-        bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
-        topCircleLayer.strokeColor = style.tintColor.cgColor
+        let tintColor = style.tintColor.resolvedColor(with: traitCollection)
+        bottomCircleLayer.strokeColor = tintColor.withAlphaComponent(0.32).cgColor
+        topCircleLayer.strokeColor = tintColor.cgColor
     }
 }
 
@@ -184,6 +136,7 @@ public extension TKLoaderView {
         case xSmall
         case small
         case medium
+        case large
 
         var side: CGFloat {
             switch self {
@@ -193,6 +146,8 @@ public extension TKLoaderView {
                 return 16
             case .medium:
                 return 24
+            case .large:
+                return 32
             }
         }
 
@@ -204,6 +159,8 @@ public extension TKLoaderView {
                 return 14
             case .medium:
                 return 20
+            case .large:
+                return 29.5
             }
         }
 
@@ -215,6 +172,8 @@ public extension TKLoaderView {
                 return 2
             case .medium:
                 return 3
+            case .large:
+                return 2.5
             }
         }
     }

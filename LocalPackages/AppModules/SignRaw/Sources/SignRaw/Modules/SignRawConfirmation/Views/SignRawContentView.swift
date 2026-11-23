@@ -48,9 +48,13 @@ private extension SignRawContentView {
     }
 
     func setupConstraints() {
-        actionsView.snp.makeConstraints { make in
-            make.edges.equalTo(self)
-        }
+        actionsView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            actionsView.topAnchor.constraint(equalTo: topAnchor),
+            actionsView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            actionsView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            actionsView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
     func didUpdateConfiguration() {

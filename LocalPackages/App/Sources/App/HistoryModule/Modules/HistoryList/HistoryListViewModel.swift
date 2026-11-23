@@ -111,6 +111,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     private let tronEventMapper: TronEventMapper
     private let nftService: NFTService
     private let cacheProvider: HistoryListCacheProvider
+    private let screenRenderID: ScreenRenderID?
 
     // MARK: - Init
 
@@ -128,7 +129,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         tronEventMapper: TronEventMapper,
         nftService: NFTService,
         cacheProvider: HistoryListCacheProvider,
-        filter: HistoryList.Filter = .all
+        filter: HistoryList.Filter = .all,
+        screenRenderID: ScreenRenderID? = nil
     ) {
         self.wallet = wallet
         self.historyLoader = historyLoader
@@ -144,6 +146,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         self.nftService = nftService
         self.cacheProvider = cacheProvider
         self._filter = filter
+        self.screenRenderID = screenRenderID
     }
 
     deinit {
@@ -290,6 +293,15 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         }
     }
 
+    /// Runs after the list update this event queued on the main queue, so the stage is timed from its frame.
+    private func reportScreenRender(_ report: @escaping @MainActor (ScreenRenderTracker, ScreenRenderID, AnyObject) -> Void) {
+        guard let screenRenderID else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            report(ScreenRenderTracker.shared, screenRenderID, self)
+        }
+    }
+
     private func didGetHistoryLoaderEvent(_ event: HistoryPaginationLoader.Event) {
         queue.async { [weak self] in
             guard let self else { return }
@@ -314,12 +326,23 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                     listState = .loading
                 }
                 firstReload = false
+                let hasCachedEvents = !events.isEmpty
+                reportScreenRender { tracker, screen, owner in
+                    tracker.requestStarted(for: screen, from: owner)
+                    if hasCachedEvents {
+                        tracker.contentApplied(.cached, for: screen, from: owner)
+                    }
+                }
             case .initialLoadingFailed:
                 let transactionsManagementState = transactionsManagementStore.state
                 let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
                 let sections = calculateSections(sections: [], events: filteredEvents)
                 update(withEvents: filteredEvents, replacing: true)
                 listState = .content(State.Content(sections: sections), pagination: .none)
+                reportScreenRender { tracker, screen, owner in
+                    tracker.requestFinished(for: screen, from: owner)
+                    tracker.failed(screen, error: .unknown, from: owner)
+                }
             case let .initialLoaded(events, hasMore):
                 let uniqueEvents = uniqueEvents(events)
                 self.events = uniqueEvents
@@ -330,6 +353,10 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                 update(withEvents: filteredEvents, replacing: true)
 
                 listState = .content(State.Content(sections: sections), pagination: hasMore ? .loading : .none)
+                reportScreenRender { tracker, screen, owner in
+                    tracker.requestFinished(for: screen, from: owner)
+                    tracker.contentApplied(.fresh, for: screen, from: owner)
+                }
             case let .pageLoaded(events, hasMore):
                 let filteredEventsPage = uniqueEvents(events, excluding: Set(self.events.map(\.eventId)))
                 self.events += filteredEventsPage
@@ -635,7 +662,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         } else {
             dateFormatter.dateFormat = "LLLL y"
         }
-        return dateFormatter.string(from: date).capitalized
+        return dateFormatter.string(from: date).capitalizedFirst
     }
 
     private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {

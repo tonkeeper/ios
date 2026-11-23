@@ -6,6 +6,7 @@ final class MultichainWalletSyncStatusPoller {
     var onSyncStatusUpdate: (() async -> Void)?
 
     private let multichainService: MultichainService
+    private let defaults: UserDefaults
     private var wallet: Wallet
 
     private var pollingTask: Task<Void, Never>?
@@ -13,10 +14,12 @@ final class MultichainWalletSyncStatusPoller {
 
     init(
         wallet: Wallet,
-        multichainService: MultichainService
+        multichainService: MultichainService,
+        defaults: UserDefaults = .standard
     ) {
         self.wallet = wallet
         self.multichainService = multichainService
+        self.defaults = defaults
     }
 
     deinit {
@@ -42,7 +45,8 @@ final class MultichainWalletSyncStatusPoller {
             return
         }
         let walletId = state.walletId
-        statusTracker.restart(walletIdentifier: walletId)
+        let progressKey = Constants.progressKeyPrefix + walletId
+        statusTracker.restart(walletIdentifier: walletId, persistedProgress: defaults.string(forKey: progressKey))
 
         pollingTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -52,6 +56,7 @@ final class MultichainWalletSyncStatusPoller {
                     let status = try await self.multichainService.getWalletSyncStatus(walletId: walletId)
                     guard !Task.isCancelled else { return }
                     if self.statusTracker.shouldNotify(current: status) {
+                        self.defaults.set(self.statusTracker.observedProgress, forKey: progressKey)
                         await self.onSyncStatusUpdate?()
                     }
                     if !status.requiresPolling {
@@ -68,36 +73,30 @@ final class MultichainWalletSyncStatusPoller {
 }
 
 enum MultichainWalletSyncStatusPolling {
+    /// The asset load before the first status already shows any progress made before it, so the
+    /// first status is compared with the last one seen, kept across launches, not taken as news.
     struct Tracker {
-        private struct ChainProgress: Equatable {
-            let status: MultichainChainSyncStatus.Status
-            let backfill: MultichainChainSyncStatus.Backfill
-        }
-
         private var walletIdentifier: String?
-        private var previousProgress: [MultichainChain: ChainProgress]?
+        private(set) var observedProgress: String?
 
-        mutating func restart(walletIdentifier: String) {
+        mutating func restart(walletIdentifier: String, persistedProgress: String? = nil) {
             guard self.walletIdentifier != walletIdentifier else { return }
             self.walletIdentifier = walletIdentifier
-            previousProgress = nil
+            observedProgress = persistedProgress
         }
 
         mutating func reset() {
             walletIdentifier = nil
-            previousProgress = nil
+            observedProgress = nil
         }
 
         mutating func shouldNotify(current: MultichainWalletSyncStatus) -> Bool {
-            let currentProgress = current.chains.mapValues {
-                ChainProgress(status: $0.status, backfill: $0.backfill)
-            }
-            guard let previousProgress else {
-                self.previousProgress = currentProgress
-                return true
-            }
-            self.previousProgress = currentProgress
-            return previousProgress != currentProgress
+            let currentProgress = current.chains
+                .map { "\($0.key.rawValue):\($0.value.status.rawValue):\($0.value.backfill.rawValue)" }
+                .sorted()
+                .joined(separator: ",")
+            defer { observedProgress = currentProgress }
+            return observedProgress != currentProgress
         }
     }
 }
@@ -105,5 +104,6 @@ enum MultichainWalletSyncStatusPolling {
 private extension MultichainWalletSyncStatusPoller {
     enum Constants {
         static let pollIntervalNanoseconds: UInt64 = 2_000_000_000
+        static let progressKeyPrefix = "multichainWalletSyncProgress."
     }
 }

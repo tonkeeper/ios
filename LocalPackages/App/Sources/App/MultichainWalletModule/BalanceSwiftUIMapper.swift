@@ -55,7 +55,7 @@ enum BalanceSwiftUIMapper {
         batteryBalance: BatteryBalance?,
         configuration: Configuration
     ) -> BatterySwiftUIViewConfig? {
-        guard wallet.kind == .regular else {
+        guard wallet.kind == .regular, !wallet.isWalletTg else {
             return nil
         }
 
@@ -68,7 +68,9 @@ enum BalanceSwiftUIMapper {
             return BatterySwiftUIViewConfig(size: .size34, state: .fill(percents))
         case .some(.negative):
             return BatterySwiftUIViewConfig(size: .size34, state: .negative)
-        case .some(.empty), .none:
+        case .some(.empty):
+            return BatterySwiftUIViewConfig(size: .size34, state: .emptyTinted, showsHint: true)
+        case .none:
             return BatterySwiftUIViewConfig(size: .size34, state: .emptyTinted)
         }
     }

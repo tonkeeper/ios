@@ -1,5 +1,0 @@
-appId: com.jbig.tonkeeper
----
-- tapOn: Browser
-- waitForAnimationToEnd:
-    timeout: 5000

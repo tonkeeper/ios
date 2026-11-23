@@ -1,3 +1,4 @@
+import BigInt
 import KeeperCore
 import TKCoordinator
 import TKCore
@@ -10,14 +11,16 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
     var didRequestDeeplinkHandling: ((String) -> Void)?
     var didRequestOpenMigration: ((@escaping () -> Void) -> Void)?
-    /// Set by hosts that navigate away after a broadcast swap (e.g. to history).
-    /// When unset, a successful swap falls back to `didFinish` and just closes the flow.
+    /// Set by hosts that navigate away after a broadcast swap the status tracker cannot follow (e.g. to
+    /// history). When unset, such a swap falls back to `didFinish` and just closes the flow, as a
+    /// tracked one always does.
     var didSwapSuccessfully: (() -> Void)?
 
     private let swapWallet: MultichainSwapWallet
     private let nativeSwapContext: NativeSwapContext
     private let assetSource: MultichainSwapAssetSource
     private let raffleStore: RaffleStore?
+    private let statusTracker: MultichainSwapStatusTracker?
     private let initiatedBy: InitiatedBy
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -26,12 +29,22 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
 
     private weak var confirmationCoordinator: MultichainSwapConfirmationCoordinator?
     private weak var multichainSwapViewModel: MultichainSwapViewModel?
+    private lazy var planProvider = MultichainSwapPlanProvider(
+        swapWallet: swapWallet,
+        executionService: keeperCoreMainAssembly.multichainSwapExecutionService
+    )
+    private lazy var swapAnalytics = MultichainSwapAnalytics(
+        analyticsProvider: coreAssembly.analyticsProvider,
+        wallet: swapWallet.wallet,
+        utm: nativeSwapContext.utm
+    )
 
     init(
         swapWallet: MultichainSwapWallet,
         nativeSwapContext: NativeSwapContext,
         assetSource: MultichainSwapAssetSource,
         raffleStore: RaffleStore?,
+        statusTracker: MultichainSwapStatusTracker?,
         initiatedBy: InitiatedBy,
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
@@ -43,6 +56,7 @@ final class MultichainSwapCoordinator: RouterCoordinator<NavigationControllerRou
         self.nativeSwapContext = nativeSwapContext
         self.assetSource = assetSource
         self.raffleStore = raffleStore
+        self.statusTracker = statusTracker
         self.initiatedBy = initiatedBy
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
@@ -109,14 +123,24 @@ private extension MultichainSwapCoordinator {
             isAssetSelectionLocked: assetSource.isAssetSelectionLocked,
             displayCurrency: keeperCoreMainAssembly.storesAssembly.currencyStore.state,
             isSwapKitEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.swapKitEnabled),
+            isExactOutputEnabled: keeperCoreMainAssembly.configurationAssembly.configuration
+                .featureEnabled(.swapExactOutputEnabled),
+            isSwapV3Enabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.genericPayloadEnabled),
             raffleStore: raffleStore,
             analyticsProvider: coreAssembly.analyticsProvider,
+            swapAnalytics: swapAnalytics,
+            planProvider: planProvider,
+            batteryPromo: makeBatteryPromo(),
             onClose: { [weak self] in
                 guard let self else { return }
                 didFinish?(self)
             },
-            onContinue: { [weak self] input in
-                self?.openConfirmation(confirmationInput: input)
+            onOpenConfirmation: { [weak self] input, quoteRefreshCycle, phase in
+                self?.openConfirmation(
+                    confirmationInput: input,
+                    quoteRefreshCycle: quoteRefreshCycle,
+                    phase: phase
+                )
             },
             onInitialSelectionUnavailable: {
                 ToastPresenter.showToast(
@@ -125,10 +149,11 @@ private extension MultichainSwapCoordinator {
                     ).withMultichainSwapErrorDuration()
                 )
             },
-            onQuoteProviderError: { message in
-                ToastPresenter.showToast(
-                    configuration: .multichainSwapProviderError(message)
-                )
+            onQuoteProviderError: { [weak self] message in
+                self?.showProviderError(message)
+            },
+            onQuoteOffline: {
+                ToastPresenter.showToast(configuration: .noInternetConnection)
             },
             onTonMaxAmountUnavailable: {
                 ToastPresenter.showToast(
@@ -141,6 +166,14 @@ private extension MultichainSwapCoordinator {
             },
             onOpenRaffle: { [weak self] in
                 self?.openMysteryRaffle()
+            },
+            onOpenPriceImpactInfo: { [weak self] in
+                self?.openPriceImpactInfo()
+            },
+            onRefillBattery: { [weak self] onRecharged in
+                // The keyboard would stay over the battery screen.
+                self?.router.rootViewController.view.endEditing(true)
+                self?.openBattery(onRecharged)
             }
         )
         multichainSwapViewModel = viewModel
@@ -152,6 +185,24 @@ private extension MultichainSwapCoordinator {
         }
         let viewController = MultichainSwapViewController(viewModel: viewModel)
         router.push(viewController: viewController)
+        swapAnalytics.logOpen()
+    }
+
+    func makeBatteryPromo() -> MultichainSwapBatteryPromo {
+        let appSettings = coreAssembly.appSettings
+        return MultichainSwapBatteryPromo(
+            load: { [keeperCoreMainAssembly, swapWallet] in
+                guard !appSettings.isSwapBatteryPromoShown,
+                      let coverage = await keeperCoreMainAssembly.emptyBatterySwapCoverage(swapWallet: swapWallet)
+                else {
+                    return nil
+                }
+                return coverage.covers
+            },
+            markShown: {
+                appSettings.isSwapBatteryPromoShown = true
+            }
+        )
     }
 
     func openMysteryRaffle() {
@@ -162,11 +213,39 @@ private extension MultichainSwapCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentedFromSwapFlow: true,
+            swapStatusTracker: statusTracker,
             openDeeplink: { [weak self] in self?.didRequestDeeplinkHandling?($0) },
             openMigration: { [weak self] onFinish in
                 self?.didRequestOpenMigration?(onFinish) ?? onFinish()
             }
         )
+    }
+
+    /// The keyboard would cover the sheet, so it goes for the sheet's time.
+    func openPriceImpactInfo() {
+        router.rootViewController.view.endEditing(true)
+        let restoreFocus: () -> Void = { [weak self] in
+            self?.multichainSwapViewModel?.requestFocusOnAppear()
+        }
+        let sheet = PopupContentPresenter.present(
+            from: router.rootViewController.topPresentedViewController()
+        ) { dismisser in
+            BulletsInfoPopupView(
+                content: BulletsInfoPopupContent(
+                    title: TKLocales.NativeSwap.Screen.Confirm.PriceImpactAlert.title,
+                    caption: PriceImpactPresentation.message,
+                    captionStyle: .body1,
+                    bullets: [],
+                    primaryButtonTitle: TKLocales.Actions.gotIt
+                ),
+                onPrimaryTap: {
+                    dismisser.dismiss(completion: restoreFocus)
+                }
+            )
+        }
+        sheet.didClose = { _ in
+            restoreFocus()
+        }
     }
 
     func presentSendTokenV2Picker(side: MultichainSwapTokenPickSide) {
@@ -273,12 +352,36 @@ private extension MultichainSwapCoordinator {
         }
     }
 
-    func openConfirmation(confirmationInput: MultichainSwapConfirmationInput) {
+    /// Only a registered wallet's swaps reach the history the tracker reads.
+    func sentSwap(
+        input: MultichainSwapConfirmationInput,
+        result: MultichainSwapExecutionResult
+    ) -> MultichainSwapSentSwap? {
+        guard swapWallet.walletId != nil, let multichainState = swapWallet.wallet.multichainWalletState else {
+            return nil
+        }
+        let userInput = input.userInput
+        return MultichainSwapSentSwap(
+            multichainState: multichainState,
+            txHash: result.txHash,
+            sendAsset: userInput.sendAsset,
+            receiveAsset: userInput.receiveAsset,
+            sendAmount: input.sourceAmount,
+            estimatedReceiveAmount: BigUInt(input.quoteState.route.estimatedDestinationAmount) ?? 0,
+            date: Date()
+        )
+    }
+
+    func openConfirmation(
+        confirmationInput: MultichainSwapConfirmationInput,
+        quoteRefreshCycle: MultichainSwapQuoteRefreshCycle,
+        phase: MultichainSwapConfirmationPhase
+    ) {
         Log.multichainSwap.i(
             "coordinator opening confirmation",
             extraInfo: MultichainSwapConfirmationLogInfoMaker(
                 priceImpactResolver: MultichainSwapConfirmationPriceImpactResolver()
-            ).make(input: confirmationInput)
+            ).make(input: confirmationInput, additional: ["phase": "\(phase)"])
         )
         let coordinator = MultichainSwapConfirmationCoordinator(
             swapWallet: swapWallet,
@@ -288,7 +391,9 @@ private extension MultichainSwapCoordinator {
             coreAssembly: coreAssembly,
             router: router,
             confirmationInput: confirmationInput,
-            rateText: confirmationInput.userInput.rateText,
+            quoteRefreshCycle: quoteRefreshCycle,
+            startingPhase: phase,
+            planProvider: planProvider,
             openBattery: openBattery,
             openFeeDeposit: openFeeDeposit
         )
@@ -297,14 +402,48 @@ private extension MultichainSwapCoordinator {
             self?.removeChild($0)
         }
 
-        coordinator.didClose = { [weak self, weak coordinator] in
-            self?.didFinish?(self)
+        coordinator.didClose = { [weak self, weak coordinator] refocusesAmount in
             self?.removeChild(coordinator)
+            self?.multichainSwapViewModel?.confirmationDidClose(refocusesAmount: refocusesAmount)
         }
 
-        coordinator.didExecuteSuccessfully = { [weak self, weak coordinator] in
+        coordinator.didShowPricingDetails = { [weak self] in
+            self?.multichainSwapViewModel?.confirmationDidShowPricingDetails()
+        }
+
+        coordinator.didChangeSwapInFlight = { [weak self] isInFlight in
+            self?.multichainSwapViewModel?.setQuoteHeld(isInFlight)
+        }
+
+        coordinator.didRequestFreshQuote = { [weak self] in
+            self?.multichainSwapViewModel?.requestFreshQuote()
+        }
+
+        coordinator.didRecoverQuote = { [weak self] quoteState in
+            self?.multichainSwapViewModel?.adoptConfirmationQuote(quoteState)
+        }
+
+        multichainSwapViewModel?.onConfirmationQuoteChange = { [weak coordinator] update in
+            coordinator?.updateQuote(update)
+        }
+
+        coordinator.didChangeSlippage = { [weak self] bps in
+            self?.multichainSwapViewModel?.setSlippageBps(bps)
+        }
+
+        coordinator.didChangeFeeMethod = { [weak self] method in
+            self?.multichainSwapViewModel?.setFeeMethod(method)
+        }
+
+        coordinator.didExecuteSuccessfully = { [weak self, weak coordinator] input, result in
             guard let self else { return }
             removeChild(coordinator)
+            if let statusTracker, let sentSwap = sentSwap(input: input, result: result) {
+                statusTracker.track(sentSwap)
+                didFinish?(self)
+                return
+            }
+            ToastPresenter.showToast(configuration: .confirmed(text: TKLocales.Result.success))
             if let didSwapSuccessfully {
                 didSwapSuccessfully()
             } else {
@@ -312,27 +451,22 @@ private extension MultichainSwapCoordinator {
             }
         }
 
-        coordinator.didTapEdit = { [weak self, weak coordinator] _ in
-            self?.removeChild(coordinator)
-        }
-
-        coordinator.didTapBack = { [weak self, weak coordinator] in
-            self?.removeChild(coordinator)
-        }
-
-        coordinator.didFailPreparation = { [weak self, weak coordinator] in
-            self?.removeChild(coordinator)
-        }
-
-        coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] isInternalPurchasing in
-            self?.didRequestOpenBuySell?(isInternalPurchasing)
-            self?.didFinish?(self)
-            self?.removeChild(coordinator)
+        coordinator.didFailToSend = { [weak self] failure in
+            self?.multichainSwapViewModel?.swapDidFailToSend(failure)
         }
 
         confirmationCoordinator = coordinator
 
         addChild(coordinator)
         coordinator.start(deeplink: nil)
+    }
+}
+
+private extension MultichainSwapCoordinator {
+    /// Every quote repeats the provider's error, so a repeat that updates its toast on screen does not buzz.
+    func showProviderError(_ message: String) {
+        var configuration = ToastPresenter.Configuration.multichainSwapProviderError(message)
+        configuration.playsHaptic = !ToastPresenter.isShowingToast(title: message)
+        ToastPresenter.showToast(configuration: configuration)
     }
 }

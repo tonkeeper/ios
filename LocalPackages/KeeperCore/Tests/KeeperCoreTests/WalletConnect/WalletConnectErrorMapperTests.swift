@@ -1,6 +1,8 @@
 import Foundation
 @testable import KeeperCore
+import TKLocalize
 import TKLogging
+@testable import WalletConnectSign
 import XCTest
 
 final class WalletConnectErrorMapperTests: XCTestCase {
@@ -13,6 +15,14 @@ final class WalletConnectErrorMapperTests: XCTestCase {
             "type=WalletConnectSigningError, case=failedToSign"
         )
         XCTAssertFalse(error.logDescription.contains(reason))
+    }
+
+    func testAReviewFailureTellsTheUserOnlyThatTheTransactionCouldNotBeVerified() {
+        let error = WalletConnectSigningError.unreviewable(reason: #"malformed("the check failed")"#)
+
+        XCTAssertEqual(error.errorDescription, TKLocales.OperationValidation.Finding.unknown)
+        XCTAssertEqual(error.walletConnectRequestRejectionReason, .userRejected)
+        XCTAssertEqual(error.logDescription, "type=WalletConnectSigningError, case=unreviewable")
     }
 
     func testWalletConnectLogDescriptionExcludesSessionIdentifiers() {
@@ -37,6 +47,42 @@ final class WalletConnectErrorMapperTests: XCTestCase {
         }
         XCTAssertTrue(error.isRetryableDeliveryFailure)
         XCTAssertEqual(error.errorDescription, "Check your connection and try again.")
+    }
+
+    func testExpiredSDKRequestMapsToLocalizedExpiry() {
+        let sdkError = SessionResponder.Errors.sessionRequestExpired
+        XCTAssertEqual((sdkError as NSError).domain, "WalletConnectSign.SessionResponder.Errors")
+        XCTAssertEqual((sdkError as NSError).code, 0)
+        let error = WalletConnectResponseErrorMapper.map(
+            sdkError,
+            requestId: "request",
+            topic: "topic"
+        )
+
+        XCTAssertEqual(error, .requestExpired(id: "request"))
+        XCTAssertEqual(error.errorDescription, TKLocales.WalletConnect.Error.requestExpired)
+        XCTAssertFalse(error.isRetryableDeliveryFailure)
+    }
+
+    func testUnrelatedSDKFailuresAreNotReportedAsExpiry() {
+        let cases: [(domain: String, code: Int, requestId: String?)] = [
+            ("WalletConnectSign.SessionResponder.Errors", 1, "request"),
+            ("another.sdk", 0, "request"),
+            ("WalletConnectSign.SessionResponder.Errors", 0, nil),
+        ]
+        for testCase in cases {
+            let error = WalletConnectResponseErrorMapper.map(
+                NSError(
+                    domain: testCase.domain,
+                    code: testCase.code,
+                    userInfo: [NSLocalizedDescriptionKey: "Request expired"]
+                ),
+                requestId: testCase.requestId,
+                topic: "topic"
+            )
+
+            XCTAssertEqual(error, .sdk(message: "Request expired", retryable: false))
+        }
     }
 
     func testResponseRetryableNetworkNSErrorMapsToRetryableSDKError() {

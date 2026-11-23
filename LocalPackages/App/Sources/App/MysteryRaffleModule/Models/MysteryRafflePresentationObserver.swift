@@ -6,20 +6,20 @@ import KeeperCore
 /// `RaffleStore.addObserver` only holds a weak reference to it.
 @MainActor
 final class MysteryRafflePresentationObserver {
-    /// `MysteryRafflePresentation`'s time-derived flags (e.g. `shouldShowMainScreenEntry`)
+    /// `MysteryRafflePresentation`'s time-derived flags (e.g. `shouldShowWalletEntry`)
     /// are computed from `Date()`, so a raffle boundary (start/end/zero-fee window) can
     /// pass with no new `RaffleStore` emission — re-derive on a timer so entry points
     /// don't stay stale for the rest of the session.
     private static let refreshInterval: TimeInterval = 30
 
-    private let onUpdate: (MysteryRafflePresentation?) -> Void
+    private let onUpdate: ([MultichainRaffle]) -> Void
 
     private var raffles: [MultichainRaffle] = []
     private var refreshTimer: Timer?
 
     init(
         raffleStore: RaffleStore?,
-        onUpdate: @escaping (MysteryRafflePresentation?) -> Void
+        onUpdate: @escaping ([MultichainRaffle]) -> Void
     ) {
         self.onUpdate = onUpdate
 
@@ -46,6 +46,6 @@ final class MysteryRafflePresentationObserver {
 
     private func apply(_ raffles: [MultichainRaffle]) {
         self.raffles = raffles
-        onUpdate(MysteryRafflePresentation(raffles: raffles))
+        onUpdate(raffles)
     }
 }

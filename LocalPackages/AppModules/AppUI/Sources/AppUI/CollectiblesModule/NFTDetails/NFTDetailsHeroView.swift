@@ -66,7 +66,7 @@ private extension NFTDetailsHeroView {
             }
 
             if isBlurred {
-                NFTDetailsSecureBlurView()
+                TKSecureBlurViewRepresentable()
             }
         }
     }
@@ -92,14 +92,6 @@ private struct NFTDetailsHeroWidthPreferenceKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
     }
-}
-
-private struct NFTDetailsSecureBlurView: UIViewRepresentable {
-    func makeUIView(context: Context) -> TKSecureBlurView {
-        TKSecureBlurView()
-    }
-
-    func updateUIView(_ uiView: TKSecureBlurView, context: Context) {}
 }
 
 private struct NFTDetailsLottieView: UIViewRepresentable {

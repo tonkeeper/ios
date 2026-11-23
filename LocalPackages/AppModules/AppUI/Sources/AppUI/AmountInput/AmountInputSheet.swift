@@ -17,9 +17,16 @@ public struct AmountInputSheetState {
         public var showsSwitchIcon: Bool
         public var isSwitchEnabled: Bool
         public var isLoading: Bool
+        /// The content stays in place and shimmers, unlike `isLoading`, which swaps the whole pill for a capsule.
+        public var isTextLoading: Bool
         public var showsChevron: Bool
         public var leadingImage: UIImage?
         public var leadingImageURL: URL?
+        /// The network badge on the asset icon, such as TON on USDT (TON).
+        public var leadingChainImage: UIImage?
+        /// The amount in white with a larger asset icon and the switch icon for the picker, as Buy
+        /// crypto's design shows what is received.
+        public var highlightsAmount: Bool
 
         public init(
             text: String,
@@ -27,18 +34,24 @@ public struct AmountInputSheetState {
             showsSwitchIcon: Bool,
             isSwitchEnabled: Bool,
             isLoading: Bool = false,
+            isTextLoading: Bool = false,
             showsChevron: Bool = false,
             leadingImage: UIImage? = nil,
-            leadingImageURL: URL? = nil
+            leadingImageURL: URL? = nil,
+            leadingChainImage: UIImage? = nil,
+            highlightsAmount: Bool = false
         ) {
             self.text = text
             self.symbol = symbol
             self.showsSwitchIcon = showsSwitchIcon
             self.isSwitchEnabled = isSwitchEnabled
             self.isLoading = isLoading
+            self.isTextLoading = isTextLoading
             self.showsChevron = showsChevron
             self.leadingImage = leadingImage
             self.leadingImageURL = leadingImageURL
+            self.leadingChainImage = leadingChainImage
+            self.highlightsAmount = highlightsAmount
         }
     }
 
@@ -56,6 +69,7 @@ public struct AmountInputSheetState {
 
     public struct Balance {
         public var text: String
+        public var isLoading: Bool
         public var isError: Bool
         public var showsMax: Bool
         public var isMaxEnabled: Bool
@@ -66,6 +80,7 @@ public struct AmountInputSheetState {
 
         public init(
             text: String,
+            isLoading: Bool = false,
             isError: Bool = false,
             showsMax: Bool,
             isMaxEnabled: Bool = true,
@@ -75,6 +90,7 @@ public struct AmountInputSheetState {
             actionTitle: String? = nil
         ) {
             self.text = text
+            self.isLoading = isLoading
             self.isError = isError
             self.showsMax = showsMax
             self.isMaxEnabled = isMaxEnabled
@@ -86,8 +102,11 @@ public struct AmountInputSheetState {
     }
 
     public var text: String
+    public var placeholder: String
     /// The value is on its way, as a Max still being priced: the typed row shimmers until it lands.
     public var isTextLoading: Bool
+    /// The value is out of the limits: it is drawn in red, its cursor too.
+    public var isTextError: Bool = false
     /// Drawn before the value, e.g. "$" while typing in dollars.
     public var prefix: String?
     public var symbol: Symbol?
@@ -100,6 +119,7 @@ public struct AmountInputSheetState {
 
     public init(
         text: String,
+        placeholder: String = "0",
         isTextLoading: Bool = false,
         prefix: String? = nil,
         symbol: Symbol?,
@@ -110,6 +130,7 @@ public struct AmountInputSheetState {
         textFieldAccessibilityIdentifier: String? = nil
     ) {
         self.text = text
+        self.placeholder = placeholder
         self.isTextLoading = isTextLoading
         self.prefix = prefix
         self.symbol = symbol
@@ -122,6 +143,9 @@ public struct AmountInputSheetState {
 }
 
 public struct AmountInputSheet: View {
+    @State private var proposedText: String?
+
+    private let cardHeight: CGFloat?
     private let state: AmountInputSheetState
     private let focus: FocusState<Bool>.Binding
     private let onTextChange: (String) -> Void
@@ -131,7 +155,9 @@ public struct AmountInputSheet: View {
     private let onQuickOption: (String) -> Void
     private let onBalanceAction: () -> Void
 
+    /// `cardHeight` replaces the card's base height; quick options and the balance row still add theirs.
     public init(
+        cardHeight: CGFloat? = nil,
         state: AmountInputSheetState,
         focus: FocusState<Bool>.Binding,
         onTextChange: @escaping (String) -> Void,
@@ -141,6 +167,7 @@ public struct AmountInputSheet: View {
         onQuickOption: @escaping (String) -> Void = { _ in },
         onBalanceAction: @escaping () -> Void = {}
     ) {
+        self.cardHeight = cardHeight
         self.state = state
         self.focus = focus
         self.onTextChange = onTextChange
@@ -152,8 +179,8 @@ public struct AmountInputSheet: View {
     }
 
     /// The card's height with and without the balance row, for UIKit hosts that size it by a constraint.
-    public static func height(showsBalance: Bool, showsQuickOptions: Bool = false) -> CGFloat {
-        Layout.cardHeight
+    public static func height(showsBalance: Bool, showsQuickOptions: Bool = false, cardHeight: CGFloat? = nil) -> CGFloat {
+        (cardHeight ?? Layout.cardHeight)
             + (showsQuickOptions ? Layout.quickOptionsBlockHeight : 0)
             + (showsBalance ? Layout.balanceHeight : 0)
     }
@@ -169,7 +196,7 @@ public struct AmountInputSheet: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: Self.height(showsBalance: false, showsQuickOptions: !state.quickOptions.isEmpty))
+            .frame(height: Self.height(showsBalance: false, showsQuickOptions: !state.quickOptions.isEmpty, cardHeight: cardHeight))
             .background(
                 RoundedRectangle(cornerRadius: Layout.cardCornerRadius, style: .continuous)
                     .fill(.backgroundContent)
@@ -197,27 +224,36 @@ private extension AmountInputSheet {
                             .font(Font(Layout.inputFont))
                             .foregroundStyle(.textSecondary)
                     }
-                    TextField("0", text: Binding(get: { state.text }, set: onTextChange))
-                        .font(Font(Layout.inputFont))
-                        .foregroundStyle(.textPrimary)
-                        .tint(.accentBlue)
-                        .keyboardType(.decimalPad)
-                        .autocorrectionDisabled()
-                        .multilineTextAlignment(state.prefix == nil ? .trailing : .leading)
-                        .lineLimit(1)
-                        .minimumScaleFactor(Layout.inputMinimumScaleFactor)
-                        .focused(focus)
-                        .accessibilityIdentifier(state.textFieldAccessibilityIdentifier ?? "")
-                        // UITextField keeps an inset of its own and shrinks the font into what is left of
-                        // the frame, so the field gets that inset on the side away from the text.
-                        .frame(width: inputTextWidth(availableWidth: proxy.size.width) + Layout.textFieldInset)
-                        .padding(state.prefix == nil ? .leading : .trailing, -Layout.textFieldInset)
+                    TKNumPadTextField(
+                        state.placeholder,
+                        text: Binding(
+                            get: { proposedText ?? state.text },
+                            set: {
+                                proposedText = $0
+                                onTextChange($0)
+                            }
+                        ),
+                        font: Layout.inputFont,
+                        color: state.isTextError ? .accentRed : .textPrimary,
+                        alignment: state.prefix == nil ? .trailing : .leading
+                    )
+                    .tint(state.isTextError ? .accentRed : .accentBlue)
+                    .autocorrectionDisabled()
+                    .lineLimit(1)
+                    .focused(focus)
+                    // Reset rejected edits even when the model's value stays unchanged.
+                    .onChange(of: proposedText) { value in
+                        if value != nil { proposedText = nil }
+                    }
+                    .accessibilityIdentifier(state.textFieldAccessibilityIdentifier ?? "")
+                    .frame(width: inputTextWidth(availableWidth: proxy.size.width))
                 }
 
                 if let symbol = state.symbol {
                     inputSymbolView(symbol)
                 }
             }
+            .animation(TKNumPadTextField.layoutAnimation, value: state.text)
             .tkTextShimmer(isActive: state.isTextLoading, dimmingInto: .backgroundContent)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -225,7 +261,7 @@ private extension AmountInputSheet {
     }
 
     func inputTextWidth(availableWidth: CGFloat) -> CGFloat {
-        let displayText = state.text.isEmpty ? "0" : state.text
+        let displayText = state.text.isEmpty ? state.placeholder : TKNumPadTextField.displayText(state.text)
         let symbolWidth: CGFloat = switch state.symbol {
         case .icon: Layout.inputSymbolIconSize.width + Layout.symbolSpacing
         case let .text(symbol): textWidth(symbol, font: TKTextStyle.num2.font) + Layout.symbolSpacing
@@ -264,7 +300,17 @@ private extension AmountInputSheet {
 
     @ViewBuilder
     var convertedButton: some View {
-        if let converted = state.converted {
+        if let converted = state.converted, converted.isLoading, converted.highlightsAmount {
+            // Buy crypto's skeleton: the pill's place, without its border, still opening the picker.
+            Button(action: converted.showsChevron ? onConvertedTap : onToggle) {
+                ShimmerSwiftUIView(config: .init(color: .backgroundContentTint, cornerRadius: .capsule))
+                    .frame(width: Layout.highlightedShimmerSize.width, height: Layout.highlightedShimmerSize.height)
+                    .padding(.vertical, Layout.highlightedShimmerVerticalInset)
+            }
+            .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
+            .disabled(!converted.isSwitchEnabled && !converted.showsChevron)
+            .accessibilityIdentifier("amount_input_converted")
+        } else if let converted = state.converted {
             Button(action: converted.showsChevron ? onConvertedTap : onToggle) {
                 convertedContent(converted)
                     .padding(.vertical, Layout.convertedVerticalPadding)
@@ -276,6 +322,7 @@ private extension AmountInputSheet {
             }
             .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
             .disabled(!converted.isSwitchEnabled && !converted.showsChevron)
+            .accessibilityIdentifier("amount_input_converted")
         }
     }
 
@@ -306,7 +353,7 @@ private extension AmountInputSheet {
                 }
             }
         }
-        .padding(.horizontal, Layout.inputHorizontalMargin)
+        .padding(.horizontal, Layout.quickOptionsHorizontalPadding)
     }
 
     @ViewBuilder
@@ -317,10 +364,11 @@ private extension AmountInputSheet {
         } else {
             HStack(spacing: Layout.symbolSpacing) {
                 convertedLeadingIcon(converted)
+                    .padding(.trailing, converted.highlightsAmount ? Layout.highlightedIconTrailingPadding : 0)
 
                 Text(converted.text)
                     .textStyle(.body1)
-                    .foregroundStyle(.textSecondary)
+                    .foregroundStyle(converted.highlightsAmount ? .textPrimary : .textSecondary)
                     .lineLimit(1)
 
                 switch converted.symbol {
@@ -340,13 +388,15 @@ private extension AmountInputSheet {
                 }
 
                 if converted.showsChevron {
-                    SwiftUI.Image.TKUIKit.Icons.Size16.chevronDown
+                    // Buy crypto's design opens its asset picker with the switch icon.
+                    (converted.highlightsAmount ? SwiftUI.Image.TKUIKit.Icons.Size16.switch : SwiftUI.Image.TKUIKit.Icons.Size16.chevronDown)
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
                         .frame(width: Layout.convertedIconSize, height: Layout.convertedIconSize)
                         .foregroundStyle(.iconSecondary)
-                        .padding(.leading, Layout.switchIconLeadingPadding)
+                        // The design's 4 pt from the ticker is the row's own spacing.
+                        .padding(.leading, converted.highlightsAmount ? 0 : Layout.switchIconLeadingPadding)
                 } else if converted.showsSwitchIcon {
                     SwiftUI.Image.TKUIKit.Icons.Size16.switch
                         .renderingMode(.template)
@@ -357,29 +407,31 @@ private extension AmountInputSheet {
                         .padding(.leading, Layout.switchIconLeadingPadding)
                 }
             }
+            .tkTextShimmer(isActive: converted.isTextLoading)
         }
     }
 
     @ViewBuilder
     func convertedLeadingIcon(_ converted: AmountInputSheetState.Converted) -> some View {
-        if let image = converted.leadingImage {
+        let size = converted.highlightsAmount ? Layout.highlightedIconSize : Layout.convertedIconSize
+        let chainImage = converted.highlightsAmount ? converted.leadingChainImage : nil
+        let configuration = AssetAvatarView.Configuration(
+            imageSize: size,
+            chainIconSize: chainImage == nil ? 0 : Layout.chainIconSize,
+            chainIconPadding: chainImage == nil ? 0 : Layout.chainIconBorder,
+            chainIconOffsetX: chainImage == nil ? 0 : Layout.chainIconOffset,
+            chainIconOffsetY: chainImage == nil ? 0 : Layout.chainIconOffset
+        )
+        if let image = converted.leadingImage, chainImage == nil {
             SwiftUI.Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: Layout.convertedIconSize, height: Layout.convertedIconSize)
+                .frame(width: size, height: size)
                 .clipShape(Circle())
+        } else if let image = converted.leadingImage {
+            AssetAvatarView(imageSource: .image(image, chainIcon: chainImage), configuration: configuration, shape: .circle)
         } else if let url = converted.leadingImageURL {
-            AssetAvatarView(
-                imageSource: .url(url),
-                configuration: AssetAvatarView.Configuration(
-                    imageSize: Layout.convertedIconSize,
-                    chainIconSize: 0,
-                    chainIconPadding: 0,
-                    chainIconOffsetX: 0,
-                    chainIconOffsetY: 0
-                ),
-                shape: .circle
-            )
+            AssetAvatarView(imageSource: .url(url, chainIcon: chainImage), configuration: configuration, shape: .circle)
         }
     }
 
@@ -391,7 +443,9 @@ private extension AmountInputSheet {
 
             Spacer(minLength: 0)
 
-            if balance.isError, let errorHint = balance.errorHint {
+            if balance.isLoading {
+                EmptyView()
+            } else if balance.isError, let errorHint = balance.errorHint {
                 HintButton(configuration: Self.balanceHintConfiguration) { direction in
                     TKHintTextView(text: errorHint, position: direction)
                 } label: {
@@ -407,16 +461,20 @@ private extension AmountInputSheet {
             }
 
             if let actionTitle = balance.actionTitle {
-                Text(" · ")
-                    .textStyle(.body2)
-                    .foregroundStyle(.textSecondary)
+                if !balance.isLoading, !balance.text.isEmpty {
+                    Text(" · ")
+                        .textStyle(.body2)
+                        .foregroundStyle(.textSecondary)
+                }
                 Button(action: onBalanceAction) {
                     Text(actionTitle)
                         .textStyle(.body2)
                         .foregroundStyle(.accentBlue)
                         .lineLimit(1)
+                        .tkTextShimmer(isActive: balance.isLoading)
                 }
                 .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
+                .disabled(balance.isLoading)
                 .fixedSize()
             }
         }
@@ -431,7 +489,7 @@ private extension AmountInputSheet {
 
     @ViewBuilder
     func maxButton(_ balance: AmountInputSheetState.Balance) -> some View {
-        if let hint = balance.maxHint, balance.isMaxEnabled {
+        if let hint = balance.maxHint, balance.isMaxEnabled, !balance.isLoading {
             HintButton(configuration: Self.balanceHintConfiguration, tapAction: onMax) { direction in
                 TKHintTextView(text: hint, position: direction)
             } label: {
@@ -441,8 +499,8 @@ private extension AmountInputSheet {
         } else {
             Button(action: onMax) { maxLabel(balance) }
                 .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
-                .disabled(!balance.isMaxEnabled)
-                .opacity(balance.isMaxEnabled ? 1 : Layout.disabledOpacity)
+                .disabled(!balance.isMaxEnabled || balance.isLoading)
+                .opacity(balance.isMaxEnabled || balance.isLoading ? 1 : Layout.disabledOpacity)
         }
     }
 
@@ -450,6 +508,7 @@ private extension AmountInputSheet {
         Text(TKLocales.Common.Numbers.max)
             .textStyle(.label2)
             .foregroundStyle(balance.isMaxSelected ? .buttonPrimaryForeground : .buttonSecondaryForeground)
+            .tkTextShimmer(isActive: balance.isLoading)
             .padding(.vertical, Layout.maxVerticalPadding)
             .padding(.horizontal, Layout.maxHorizontalPadding)
             .background(
@@ -479,11 +538,9 @@ private enum Layout {
     static let cardCornerRadius: CGFloat = 16
     static let valueSpacing: CGFloat = 8
     static let inputRowHeight: CGFloat = 70
-    static let inputMinimumScaleFactor: CGFloat = 0.5
-    static let inputHorizontalMargin: CGFloat = 16
+    static let inputHorizontalMargin: CGFloat = 4
     static let inputMinimumWidth: CGFloat = 28
     static let caretPadding: CGFloat = 4
-    static let textFieldInset: CGFloat = 14
     static let inputSymbolIconSize = CGSize(width: 28, height: 36)
     static let inputSymbolTextOffset: CGFloat = 5
     static let symbolSpacing: CGFloat = 4
@@ -492,10 +549,22 @@ private enum Layout {
     static let convertedHorizontalPadding: CGFloat = 16
     static let convertedBorderWidth: CGFloat = 1.5
     static let convertedIconSize: CGFloat = 16
+    static let highlightedIconSize: CGFloat = 20
+    static let chainIconSize: CGFloat = 10
+    /// The page shows through this ring around the network badge.
+    static let chainIconBorder: CGFloat = 1
+    /// The badge hangs 1.67 pt past the icon's bottom-right corner, as in the design.
+    static let chainIconOffset: CGFloat = 1.67
+    static let highlightedShimmerSize = CGSize(width: 140, height: 32)
+    /// Keeps the pill's 36 pt height, so nothing below moves when the skeleton gives way.
+    static let highlightedShimmerVerticalInset: CGFloat = 2
+    /// The design's 6 pt from the asset icon to the amount, past the row's 4.
+    static let highlightedIconTrailingPadding: CGFloat = 2
     static let convertedShimmerSize = CGSize(width: 96, height: 24)
     static let switchIconLeadingPadding: CGFloat = 4
     static let quickOptionsTopSpacing: CGFloat = 16
     static let quickOptionsSpacing: CGFloat = 8
+    static let quickOptionsHorizontalPadding: CGFloat = 16
     static let quickOptionHeight: CGFloat = 44
     static let quickOptionsBlockHeight: CGFloat = 32
     static let balanceHeight: CGFloat = 48

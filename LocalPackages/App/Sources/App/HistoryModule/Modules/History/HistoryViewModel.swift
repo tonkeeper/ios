@@ -13,13 +13,10 @@ protocol HistoryModuleInput: AnyObject {
 }
 
 protocol HistoryViewModel: AnyObject {
-    var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
-
     var didUpdateTabs: (([TKTabsView.Item]) -> Void)? { get set }
     var didUpdateTabViewIsHidden: ((Bool) -> Void)? { get set }
     var didUpdateSelectedTab: ((TKTabsView.Item) -> Void)? { get set }
 
-    @MainActor var presentationStyle: HistoryPresentationStyle { get set }
     @MainActor func viewDidLoad()
     @MainActor func close()
 }
@@ -28,38 +25,23 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
     // MARK: - HistoryModuleOutput
 
     var didSelectSpamHistory: (() -> Void)?
-    @MainActor var presentationStyle: HistoryPresentationStyle
+    private let closeAction: (() -> Void)?
 
     // MARK: - HistoryViewModel
 
-    var didUpdateIsConnecting: ((Bool) -> Void)?
     var didUpdateTabs: (([TKTabsView.Item]) -> Void)?
     var didUpdateTabViewIsHidden: ((Bool) -> Void)?
     var didUpdateSelectedTab: ((TKTabsView.Item) -> Void)?
 
-    private let wallet: Wallet
-    private let backgroundUpdate: BackgroundUpdate
     private let historyListModuleInput: HistoryListModuleInput
-    private let configuration: Configuration
     private var tabs: [TKTabsView.Item] = []
-    private var backgroundStateTask: Task<Void, Never>?
 
     init(
-        wallet: Wallet,
-        backgroundUpdate: BackgroundUpdate,
         historyListModuleInput: HistoryListModuleInput,
-        configuration: Configuration,
-        presentationStyle: HistoryPresentationStyle
+        closeAction: (() -> Void)?
     ) {
-        self.wallet = wallet
-        self.backgroundUpdate = backgroundUpdate
         self.historyListModuleInput = historyListModuleInput
-        self.configuration = configuration
-        self.presentationStyle = presentationStyle
-    }
-
-    deinit {
-        backgroundStateTask?.cancel()
+        self.closeAction = closeAction
     }
 
     func setHistoryListState(_ state: HistoryList.State) {
@@ -73,24 +55,6 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
 
     @MainActor func viewDidLoad() {
         setupTabs()
-
-        let walletID = wallet.id
-        didUpdateIsConnecting?(isConnecting(backgroundUpdate.connectionState(walletID: walletID)))
-        backgroundStateTask?.cancel()
-        backgroundStateTask = Task { @MainActor [weak self, backgroundUpdate] in
-            for await update in backgroundUpdate.stateUpdates() {
-                guard let self else { return }
-                guard update.walletID == walletID else { continue }
-                didUpdateIsConnecting?(isConnecting(update.state))
-            }
-        }
-    }
-
-    private func isConnecting(_ backgroundUpdateState: BackgroundUpdateConnectionState) -> Bool {
-        switch backgroundUpdateState {
-        case .connected: return false
-        default: return true
-        }
     }
 
     private func setupTabs() {
@@ -133,7 +97,6 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
     }
 
     @MainActor func close() {
-        backgroundStateTask?.cancel()
-        presentationStyle.closeAction?()
+        closeAction?()
     }
 }

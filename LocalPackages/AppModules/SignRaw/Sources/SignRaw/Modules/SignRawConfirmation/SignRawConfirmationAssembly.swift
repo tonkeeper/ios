@@ -24,13 +24,13 @@ public struct SignRawConfirmationAssembly {
                 sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+                ratesService: keeperCoreMainAssembly.servicesAssembly.signRawRiskRatesService(),
                 currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
                 resultHandler: resultHandler
             ),
             signRawConfirmationMapper: SignRawConfirmationMapper(
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-                currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
                 totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
                 balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
                 nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),

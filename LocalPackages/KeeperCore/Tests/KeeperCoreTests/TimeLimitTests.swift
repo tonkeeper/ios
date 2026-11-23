@@ -1,5 +1,6 @@
 import Foundation
 @testable import KeeperCore
+import TKTestSupport
 import XCTest
 
 final class TimeLimitTests: XCTestCase {
@@ -12,9 +13,12 @@ final class TimeLimitTests: XCTestCase {
     }
 
     func test_withTimeLimit_returnsNil_whenLimitElapsesFirst() async {
-        let value = await withTimeLimit(0.05) {
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            return "finished"
+        let release = TestGate()
+        let value = await limitResult(holding: release) {
+            await withTimeLimit(0.05) {
+                try? await release.wait()
+                return "finished"
+            }
         }
 
         XCTAssertNil(value)
@@ -23,14 +27,34 @@ final class TimeLimitTests: XCTestCase {
     func test_withTimeLimit_leavesOperationRunningUncancelled_whenLimitElapsesFirst() async {
         let outcome = OperationOutcome()
 
-        let value = await withTimeLimit(0.05) {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            await outcome.finish(wasCancelled: Task.isCancelled)
+        let release = TestGate()
+        let value = await limitResult(holding: release) {
+            await withTimeLimit(0.05) {
+                try? await release.wait()
+                await outcome.finish(wasCancelled: Task.isCancelled)
+            }
         }
 
         XCTAssertNil(value)
         let wasCancelled = await outcome.wasCancelled()
         XCTAssertEqual(wasCancelled, false)
+    }
+}
+
+private extension TimeLimitTests {
+    func limitResult<Value: Sendable>(
+        holding release: TestGate,
+        _ limited: @escaping @Sendable () async -> Value?
+    ) async -> Value? {
+        let returned = expectation(description: "the limit returns while the operation is held")
+        let result = Task {
+            let value = await limited()
+            returned.fulfill()
+            return value
+        }
+        await fulfillment(of: [returned], timeout: 1)
+        await release.open()
+        return await result.value
     }
 }
 

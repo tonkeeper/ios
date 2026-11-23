@@ -28,6 +28,7 @@ public struct PerpsTriggerOrderSummary: Equatable, Sendable {
     public let baseAmount: Double
     /// Venue expiry for this armed trigger; zero means unavailable.
     public let expiresAtSeconds: Int64
+    public let projectedROIPercent: Double?
 
     /// Preferred `CancelOrder` identity. SDK-created position-tied triggers must
     /// use their client index because their composite read index is a venue no-op.
@@ -43,7 +44,8 @@ public struct PerpsTriggerOrderSummary: Equatable, Sendable {
         side: PerpsTradeSide,
         triggerPrice: Double,
         baseAmount: Double,
-        expiresAtSeconds: Int64 = 0
+        expiresAtSeconds: Int64 = 0,
+        projectedROIPercent: Double? = nil
     ) {
         self.orderIndex = orderIndex
         self.clientOrderIndex = clientOrderIndex
@@ -52,6 +54,7 @@ public struct PerpsTriggerOrderSummary: Equatable, Sendable {
         self.triggerPrice = triggerPrice
         self.baseAmount = baseAmount
         self.expiresAtSeconds = expiresAtSeconds
+        self.projectedROIPercent = projectedROIPercent
     }
 }
 
@@ -64,6 +67,8 @@ public struct PerpsLimitOrderSummary: Equatable, Sendable {
     public let remainingBaseAmount: Double
     public let filledBaseAmount: Double
     public let expiresAtSeconds: Int64
+    public let autoCloseLegs: [PerpsTriggerOrderSummary]
+    public var isBelowMarketMinimum = false
 
     public init(
         id: String = "",
@@ -73,7 +78,8 @@ public struct PerpsLimitOrderSummary: Equatable, Sendable {
         limitPrice: Double,
         remainingBaseAmount: Double,
         filledBaseAmount: Double = 0,
-        expiresAtSeconds: Int64 = 0
+        expiresAtSeconds: Int64 = 0,
+        autoCloseLegs: [PerpsTriggerOrderSummary] = []
     ) {
         self.id = id
         self.orderIndex = orderIndex
@@ -83,6 +89,7 @@ public struct PerpsLimitOrderSummary: Equatable, Sendable {
         self.remainingBaseAmount = remainingBaseAmount
         self.filledBaseAmount = filledBaseAmount
         self.expiresAtSeconds = expiresAtSeconds
+        self.autoCloseLegs = autoCloseLegs
     }
 }
 
@@ -90,11 +97,21 @@ public struct PerpsPortfolioOrder: Equatable, Sendable {
     public let marketId: Int64
     public let symbol: String
     public let order: PerpsLimitOrderSummary
+    public let marginUsd: Double?
+    public let leverage: Double?
 
-    public init(marketId: Int64, symbol: String, order: PerpsLimitOrderSummary) {
+    public init(
+        marketId: Int64,
+        symbol: String,
+        order: PerpsLimitOrderSummary,
+        marginUsd: Double? = nil,
+        leverage: Double? = nil
+    ) {
         self.marketId = marketId
         self.symbol = symbol
         self.order = order
+        self.marginUsd = marginUsd
+        self.leverage = leverage
     }
 }
 

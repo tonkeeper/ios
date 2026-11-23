@@ -65,4 +65,8 @@ final class CustomizeWalletHostingViewController: TKHostingController<CustomizeW
     func setupHeaderRightCloseButton(_ action: @escaping () -> Void) {
         viewModel.rightHeaderButton = CustomizeWalletViewModel.HeaderButton(icon: .close, action: action)
     }
+
+    func resetContinue() {
+        viewModel.resetContinue()
+    }
 }

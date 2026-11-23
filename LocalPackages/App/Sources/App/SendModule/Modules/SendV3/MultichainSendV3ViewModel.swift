@@ -58,16 +58,67 @@ final class MultichainSendV3ViewModelImplementation: SendV3ViewModel, Multichain
     private var item: MultichainSendItem {
         didSet {
             didUpdateItem()
+            refreshCommentEncryptionKey()
             updateViewState()
         }
     }
 
+    /// The key a GRAM comment to the recipient on screen goes encrypted to, as far as it is read.
+    private enum CommentEncryptionKey {
+        /// No recipient whose key the comment can go encrypted to: another asset, a recipient not yet
+        /// resolved, or a wallet that cannot encrypt.
+        case none
+        case reading(recipient: String, task: Task<Void, Never>)
+        /// The recipient's key, or `nil` when it holds none.
+        case read(recipient: String, key: String?)
+        /// The read failed, so the key is unknown: it is read again on the next refresh.
+        case unread(recipient: String)
+
+        var key: String? {
+            guard case let .read(_, key) = self else {
+                return nil
+            }
+            return key
+        }
+
+        /// Whether the recipient's key is unknown: still being read, or its read failed.
+        var isUnknown: Bool {
+            switch self {
+            case .reading, .unread:
+                true
+            case .none, .read:
+                false
+            }
+        }
+
+        /// Whether `recipient`'s key is read or being read, so that it is not read again.
+        func covers(_ recipient: String) -> Bool {
+            switch self {
+            case let .reading(current, _), let .read(current, _):
+                current == recipient
+            case .none, .unread:
+                false
+            }
+        }
+    }
+
     private var comment: String?
+    /// The switch under a comment that can go encrypted: off until the user turns it on.
+    private var isCommentEncrypted = false
+    private var commentEncryptionKey: CommentEncryptionKey = .none {
+        didSet {
+            if case let .reading(_, task) = oldValue {
+                task.cancel()
+            }
+        }
+    }
+
     private var recipientState: MultichainSendRecipientState = .empty {
         didSet {
             if case let .resolving(_, _, task) = oldValue {
                 task.cancel()
             }
+            refreshCommentEncryptionKey()
             updateViewState()
         }
     }
@@ -126,6 +177,7 @@ final class MultichainSendV3ViewModelImplementation: SendV3ViewModel, Multichain
         didUpdateCurrency?("")
         didUpdateItem()
         didUpdateAmount?(inputString(amount: item.amount, fractionDigits: item.fractionalDigits))
+        refreshCommentEncryptionKey()
         updateViewState()
     }
 
@@ -190,15 +242,19 @@ final class MultichainSendV3ViewModelImplementation: SendV3ViewModel, Multichain
     }
 
     func didTapRecipientPasteButton() {
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        didInputRecipient(pasteboardString)
-        didUpdateRecipient?(pasteboardString)
+        Task { @MainActor [weak self] in
+            guard let pasteboardString = await UIPasteboard.general.readString() else { return }
+            self?.didInputRecipient(pasteboardString)
+            self?.didUpdateRecipient?(pasteboardString)
+        }
     }
 
     func didTapCommentPasteButton() {
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        didInputComment(pasteboardString)
-        didUpdateComment?(pasteboardString)
+        Task { @MainActor [weak self] in
+            guard let pasteboardString = await UIPasteboard.general.readString() else { return }
+            self?.didInputComment(pasteboardString)
+            self?.didUpdateComment?(pasteboardString)
+        }
     }
 
     func didTapRecipientScanButton() {
@@ -227,6 +283,99 @@ final class MultichainSendV3ViewModelImplementation: SendV3ViewModel, Multichain
 }
 
 private extension MultichainSendV3ViewModelImplementation {
+    /// Whether the switch is on and the recipient's key is read.
+    var isCommentEncryptedToRecipient: Bool {
+        isCommentEncrypted && commentEncryptionKey.key != nil
+    }
+
+    /// Whether the switch is on screen: under a comment that can go encrypted, while the recipient holds a
+    /// key, or while the switch is on and that key is unknown, so that it can be turned off.
+    var showsCommentEncryption: Bool {
+        let comment = comment ?? ""
+        guard item.isSupportComment,
+              !recipientState.isMemoRequired,
+              sendController.canEncrypt(comment: comment),
+              case .ok = sendController.validateComment(comment: comment)
+        else {
+            return false
+        }
+        return commentEncryptionKey.key != nil || (isCommentEncrypted && commentEncryptionKey.isUnknown)
+    }
+
+    /// Whether the comment goes encrypted: the switch is on screen and on, and the recipient's key is read.
+    var encryptsComment: Bool {
+        showsCommentEncryption && isCommentEncryptedToRecipient
+    }
+
+    var isEncryptedCommentTooLong: Bool {
+        encryptsComment && (comment ?? "").utf8.count > sendController.maxEncryptedCommentBytes
+    }
+
+    /// Whether Continue waits: the switch is on screen and on while the recipient's key is unknown, so the
+    /// comment would go as it is if sent now. Turning the switch off sends it as it is.
+    var awaitsCommentEncryptionKey: Bool {
+        showsCommentEncryption && isCommentEncrypted && commentEncryptionKey.isUnknown
+    }
+
+    /// Reads, once per recipient, the key a GRAM comment to the recipient on screen can go encrypted to; a
+    /// read that failed is read again on the next refresh. Another asset, a recipient not yet resolved or a
+    /// wallet that cannot encrypt has none.
+    func refreshCommentEncryptionKey() {
+        guard item.asset.asset.chain == .ton,
+              item.asset.isNative,
+              sendController.canEncryptComment,
+              let recipient = recipientState.recipient?.address
+        else {
+            commentEncryptionKey = .none
+            return
+        }
+        guard !commentEncryptionKey.covers(recipient) else {
+            return
+        }
+        // As the recipient's resolution does: the form's state is only touched back on the main queue.
+        let task = Task { [sendController] in
+            let state: CommentEncryptionKey
+            do {
+                let key = try await sendController.commentEncryptionKey(recipient: recipient)
+                state = .read(recipient: recipient, key: key)
+            } catch {
+                Log.send.w("comment encryption key unread", error: error)
+                state = .unread(recipient: recipient)
+            }
+            await MainActor.run {
+                // The refresh that replaces a read cancels it on the main queue: checked here, it is never applied late.
+                guard !Task.isCancelled else { return }
+                self.commentEncryptionKey = state
+                self.updateViewState()
+            }
+        }
+        commentEncryptionKey = .reading(recipient: recipient, task: task)
+    }
+
+    /// A comment that can go encrypted, or whose encryption is on while the recipient's key is unknown,
+    /// with the link that switches its encryption under it.
+    func encryptableCommentState() -> SendV3ViewModelViewState.CommentState {
+        let isEncrypted = isCommentEncrypted
+        let action = isEncrypted ? TKLocales.Send.Comment.decrypt : TKLocales.Send.Comment.encrypt
+        let hint = isEncrypted ? TKLocales.Send.Comment.encryptedDescription : TKLocales.Send.Comment.description
+        return SendV3ViewModelViewState.CommentState(
+            isValid: !isEncryptedCommentTooLong,
+            placeholder: TKLocales.Send.Comment.placeholder,
+            description: "\(hint)\n\(action)".withTextStyle(
+                .body2,
+                color: .Text.secondary,
+                alignment: .left,
+                lineBreakMode: .byWordWrapping
+            ),
+            actionItems: [
+                TKActionLabel.ActionItem(text: action) { [weak self] in
+                    self?.isCommentEncrypted.toggle()
+                    self?.updateViewState()
+                },
+            ]
+        )
+    }
+
     func applyRecipientInput(_ string: String) {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -362,6 +511,8 @@ private extension MultichainSendV3ViewModelImplementation {
             && recipientValidation.isNotEmpty
             && isAmountValid
             && !isRequiredCommentEmpty
+            && !isEncryptedCommentTooLong
+            && !awaitsCommentEncryptionKey
         configuration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continueAction))
         configuration.action = { [weak self] in
             self?.continueAction()
@@ -455,6 +606,9 @@ private extension MultichainSendV3ViewModelImplementation {
     func commentState() -> SendV3ViewModelViewState.CommentState? {
         guard item.isSupportComment else { return nil }
 
+        if showsCommentEncryption {
+            return encryptableCommentState()
+        }
         let isCommentRequired = recipientState.isMemoRequired
         let comment = comment ?? ""
         let isCommentOk = sendController.validateComment(comment: comment)
@@ -518,6 +672,7 @@ private extension MultichainSendV3ViewModelImplementation {
             recipient: recipientState.recipient,
             item: item,
             comment: item.isSupportComment ? comment : nil,
+            commentEncryptionKey: encryptsComment ? commentEncryptionKey.key : nil,
             isMaxAmount: item.asset.balance > 0 && item.amount == item.asset.balance
         ) else {
             Log.send.w(
@@ -540,6 +695,7 @@ extension SendData {
         recipient: MultichainRecipient?,
         item: MultichainSendItem,
         comment: String?,
+        commentEncryptionKey: String? = nil,
         isMaxAmount: Bool
     ) -> SendData? {
         guard let recipient else { return nil }
@@ -550,6 +706,7 @@ extension SendData {
                 asset: item.asset,
                 amount: item.amount,
                 comment: comment,
+                commentEncryptionKey: commentEncryptionKey,
                 isMaxAmount: isMaxAmount
             )
         )

@@ -41,6 +41,17 @@ final class WalletConnectRequestFactoryTests: XCTestCase {
         }
     }
 
+    func testHandsTheSignerOnlyTheValidatedValueOfARepeatedKey() throws {
+        let typedData = #"{"domain":{"chainId":8453,"chainId":137},"message":{}}"#
+
+        let request = try makeRequest(method: .ethSignTypedDataV4, payload: .signMessage(message(typedData, kind: .typedDataV4)))
+
+        XCTAssertEqual(
+            request.payload,
+            .signMessage(message(#"{"domain":{"chainId":8453},"message":{}}"#, kind: .typedDataV4))
+        )
+    }
+
     func testAcceptsTypedDataWithoutADomainChain() throws {
         let typedData = #"{"domain":{"name":"Vaults"},"message":{}}"#
 

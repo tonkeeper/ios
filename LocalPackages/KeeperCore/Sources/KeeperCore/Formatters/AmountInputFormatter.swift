@@ -103,6 +103,7 @@ import Foundation
             || character == ","
             || character == "\u{066B}"
             || character == "\u{060C}"
+            || character == "\u{FF0E}"
             || String(character) == localeDecimalSeparator
     }
 

@@ -10,8 +10,9 @@ import TonSwift
 import UIKit
 
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters) -> Void)?
+    public var didHandleDeeplink: ((_ deeplink: Deeplink, _ utm: UtmParameters, _ presentingViewController: UIViewController?) -> Void)?
     public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
+    public var didRequestOpenDapp: ((URL) -> Void)?
 
     private var browserInput: BrowserModuleInput?
 
@@ -67,7 +68,7 @@ private extension BrowserCoordinator {
         }
 
         module.output.didOpenDeeplink = { [weak self] deeplink, utm in
-            self?.didHandleDeeplink?(deeplink, utm)
+            self?.didHandleDeeplink?(deeplink, utm, nil)
         }
 
         browserInput = module.input
@@ -114,9 +115,10 @@ private extension BrowserCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        coordinator.didHandleDeeplink = { [weak self] deeplink, utm in
-            _ = self?.didHandleDeeplink?(deeplink, utm)
+        coordinator.didHandleDeeplink = { [weak self] deeplink, utm, presentingViewController in
+            _ = self?.didHandleDeeplink?(deeplink, utm, presentingViewController)
         }
+        coordinator.didRequestOpenDapp = didRequestOpenDapp
 
         coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInternalPurchasing in
             self?.removeChild(coordinator)
@@ -125,6 +127,9 @@ private extension BrowserCoordinator {
             } else {
                 self?.openDefi()
             }
+        }
+        coordinator.didFinish = { [weak self] finished in
+            self?.removeChild(finished)
         }
 
         addChild(coordinator)

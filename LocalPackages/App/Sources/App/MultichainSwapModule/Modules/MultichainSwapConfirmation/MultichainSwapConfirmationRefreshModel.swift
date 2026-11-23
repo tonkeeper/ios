@@ -1,33 +1,31 @@
 import Foundation
 import KeeperCore
-import TKLocalize
 import TKLogging
 
 @MainActor
 final class MultichainSwapConfirmationRefreshModel {
+    /// A fresh route fetched after the one being prepared went stale.
     var onQuoteStateChange: ((MultichainSwapConfirmationQuoteState) -> Void)?
     var onExecutionPlanChange: ((MultichainSwapExecutionPlan?) -> Void)?
     var onPreparationFailure: ((MultichainSwapConfirmationRefreshReason, MultichainSwapExecutionFailure) -> Void)?
-    var onQuoteRefreshFailed: ((MultichainSwapConfirmationRefreshReason, _ message: String?) -> Void)?
-    var onRefreshCycleCompleted: (() -> Void)?
 
     private let swapWallet: MultichainSwapWallet
     private let quoteRefresher: MultichainSwapConfirmationQuoteRefresher
-    private let executionService: MultichainSwapExecutionService
+    private let planProvider: MultichainSwapPlanProvider
     private let routeRecovery: MultichainSwapRouteRecovery
     private let logInfoMaker: MultichainSwapConfirmationLogInfoMaker
-    private var refreshTask: Task<Void, Never>?
+    private(set) var refreshTask: Task<Void, Never>?
 
     init(
         swapWallet: MultichainSwapWallet,
         quoteRefresher: MultichainSwapConfirmationQuoteRefresher,
-        executionService: MultichainSwapExecutionService,
+        planProvider: MultichainSwapPlanProvider,
         routeRecovery: MultichainSwapRouteRecovery,
         logInfoMaker: MultichainSwapConfirmationLogInfoMaker
     ) {
         self.swapWallet = swapWallet
         self.quoteRefresher = quoteRefresher
-        self.executionService = executionService
+        self.planProvider = planProvider
         self.routeRecovery = routeRecovery
         self.logInfoMaker = logInfoMaker
     }
@@ -36,21 +34,15 @@ final class MultichainSwapConfirmationRefreshModel {
         refreshTask?.cancel()
     }
 
-    func loadInitialExecutionPlan(
-        input: MultichainSwapConfirmationInput,
-        selectedSlippageBps: Int
-    ) {
-        refreshExecutionPlan(
-            input: input,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: .initial
-        )
+    var isPreparing: Bool {
+        refreshTask != nil
     }
 
     func refreshExecutionPlan(
         input: MultichainSwapConfirmationInput,
         selectedSlippageBps: Int,
-        reason: MultichainSwapConfirmationRefreshReason
+        reason: MultichainSwapConfirmationRefreshReason,
+        recoversStaleRoute: Bool = true
     ) {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
@@ -59,33 +51,11 @@ final class MultichainSwapConfirmationRefreshModel {
                 input: input,
                 selectedSlippageBps: selectedSlippageBps,
                 reason: reason,
-                routeRecoveryDelays: routeRecovery.delays
+                routeRecoveryDelays: recoversStaleRoute ? routeRecovery.delays : []
             )
-        }
-    }
-
-    func refreshQuote(
-        input: MultichainSwapConfirmationInput,
-        selectedSlippageBps: Int,
-        reason: MultichainSwapConfirmationRefreshReason
-    ) {
-        refreshTask?.cancel()
-        refreshTask = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                if !Task.isCancelled {
-                    onRefreshCycleCompleted?()
-                }
+            if !Task.isCancelled {
+                refreshTask = nil
             }
-            Log.multichainSwap.i(
-                "confirmation quote refresh requested",
-                extraInfo: logInfo(input: input, additional: ["reason": reason.logValue])
-            )
-            await performQuoteRefresh(
-                input: input,
-                selectedSlippageBps: selectedSlippageBps,
-                reason: reason
-            )
         }
     }
 
@@ -96,90 +66,6 @@ final class MultichainSwapConfirmationRefreshModel {
 }
 
 private extension MultichainSwapConfirmationRefreshModel {
-    func performQuoteRefresh(
-        input: MultichainSwapConfirmationInput,
-        selectedSlippageBps: Int,
-        reason: MultichainSwapConfirmationRefreshReason
-    ) async {
-        let refreshedQuoteState: MultichainSwapConfirmationQuoteState
-        do {
-            Log.multichainSwap.i(
-                "confirmation quote refresh started",
-                extraInfo: logInfo(
-                    input: input,
-                    additional: ["slippageBps": "\(selectedSlippageBps)"]
-                )
-            )
-            refreshedQuoteState = try await quoteRefresher.refresh(
-                input: input,
-                selectedSlippageBps: selectedSlippageBps,
-                swapWallet: swapWallet
-            )
-        } catch MultichainSwapConfirmationQuoteRefreshError.missingWalletAddress {
-            guard !Task.isCancelled else { return }
-            Log.multichainSwap.w(
-                "confirmation quote refresh skipped due to missing wallet address",
-                extraInfo: logInfo(input: input)
-            )
-            onQuoteRefreshFailed?(reason, nil)
-            return
-        } catch let MultichainSwapConfirmationQuoteRefreshError.noNonExpiredRoute(quote) {
-            guard !Task.isCancelled else { return }
-            Log.multichainSwap.w(
-                "confirmation quote refresh completed without non-expired route",
-                extraInfo: logInfo(
-                    input: input,
-                    additional: [
-                        "quoteId": quote.quoteId,
-                        "routeCount": "\(quote.routes.count)",
-                        "offeredRoutes": quote.offeredRoutesLogDescription,
-                        "providerErrors": quote.providerErrorsLogDescription,
-                    ]
-                )
-            )
-            let providerMessage = quote.routes.isEmpty ? quote.providerErrorMessage : nil
-            onQuoteRefreshFailed?(reason, providerMessage)
-            return
-        } catch {
-            guard !Task.isCancelled else { return }
-            Log.multichainSwap.w(
-                "confirmation quote refresh failed",
-                error: error,
-                extraInfo: logInfo(input: input)
-            )
-            let isTransportFailure = if case MultichainSwapAPIError.transportError = error { true } else { false }
-            onQuoteRefreshFailed?(
-                reason,
-                isTransportFailure ? TKLocales.MultichainSwap.Screen.Confirm.Error.networkError : nil
-            )
-            return
-        }
-
-        guard !Task.isCancelled else { return }
-        let updatedInput = MultichainSwapConfirmationInput(
-            userInput: input.userInput,
-            quoteState: refreshedQuoteState
-        )
-        onQuoteStateChange?(refreshedQuoteState)
-        await loadExecutionPlan(
-            input: updatedInput,
-            selectedSlippageBps: selectedSlippageBps,
-            reason: reason,
-            routeRecoveryDelays: []
-        )
-        guard !Task.isCancelled else { return }
-        Log.multichainSwap.i(
-            "confirmation quote refresh completed",
-            extraInfo: logInfo(
-                input: updatedInput,
-                additional: [
-                    "quoteId": refreshedQuoteState.quote.quoteId,
-                    "slippageBps": "\(selectedSlippageBps)",
-                ]
-            )
-        )
-    }
-
     func loadExecutionPlan(
         input: MultichainSwapConfirmationInput,
         selectedSlippageBps: Int,
@@ -191,11 +77,11 @@ private extension MultichainSwapConfirmationRefreshModel {
             extraInfo: logInfo(input: input)
         )
         do {
-            let executionPlan = try await executionService.prepareExecutionPlan(
-                swapWallet: swapWallet,
+            let executionPlan = try await planProvider.plan(
                 sourceAsset: input.userInput.sendAsset,
                 destinationAsset: input.userInput.receiveAsset,
-                route: input.quoteState.route
+                route: input.quoteState.route,
+                reusingPrepared: reason.reusesPreparedPlan
             )
             guard !Task.isCancelled else { return }
             onExecutionPlanChange?(executionPlan)
@@ -301,6 +187,11 @@ private extension MultichainSwapConfirmationRefreshModel {
                 error: error,
                 extraInfo: logInfo(input: input)
             )
+            if let terminalFailure = (error as? MultichainSwapConfirmationQuoteRefreshError)?.terminalFailure {
+                onExecutionPlanChange?(nil)
+                onPreparationFailure?(reason, terminalFailure)
+                return
+            }
             await advanceRouteRecovery(
                 input: input,
                 selectedSlippageBps: selectedSlippageBps,
@@ -312,7 +203,6 @@ private extension MultichainSwapConfirmationRefreshModel {
         }
         guard !Task.isCancelled else { return }
         onQuoteStateChange?(refreshedQuoteState)
-        onRefreshCycleCompleted?()
         await loadExecutionPlan(
             input: MultichainSwapConfirmationInput(
                 userInput: input.userInput,

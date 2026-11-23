@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import KeeperCoreComponents
 import TKBatteryAPI
 import TonAPI
 import TonSwift
@@ -22,14 +23,21 @@ public protocol BatteryService {
         jettonMasterAddress: String,
         boc: String
     ) async throws -> String
+    /// Returns the hash of the message the relayer sent for `boc`, when it names one.
+    @discardableResult
     func sendTransaction(
         wallet: Wallet,
         boc: String,
         proof: String?,
         headers: [String: String]
-    ) async throws
+    ) async throws -> String?
     func makePurchase(wallet: Wallet, transactionId: String, promocode: String?) async throws -> TKBatteryAPI.Components.Schemas.iOSBatteryPurchaseStatus
     func loadPurchases(wallet: Wallet) async throws -> [BatteryPurchase]
+    func migrateBattery(
+        from sourceWallet: Wallet,
+        to destinationWallet: Wallet,
+        proof: BatteryMigrationProof
+    ) async throws -> TKBatteryAPI.Components.Schemas.BatteryMigration
     func loadTronTransactions(
         wallet: Wallet,
         limit: Int,
@@ -72,11 +80,12 @@ protocol BatteryGaslessService {
 }
 
 public extension BatteryService {
+    @discardableResult
     func sendTransaction(
         wallet: Wallet,
         boc: String,
         proof: String? = nil
-    ) async throws {
+    ) async throws -> String? {
         try await sendTransaction(
             wallet: wallet,
             boc: boc,
@@ -86,19 +95,22 @@ public extension BatteryService {
     }
 }
 
-final class BatteryServiceImplementation: BatteryService, BatteryGaslessService {
+final class BatteryServiceImplementation: BatteryService, BatteryGaslessService, BatteryPurchaseService {
     private let batteryAPIProvider: BatteryAPIProvider
     private let rechargeMethodsRepository: BatteryRechargeMethodsRepository
+    private let assetMethodsVault: FileSystemVault<[BatteryAssetRechargeMethod], String>?
     private let authorizationService: BatteryAuthorizationService
 
     init(
         batteryAPIProvider: BatteryAPIProvider,
         rechargeMethodsRepository: BatteryRechargeMethodsRepository,
-        authorizationService: BatteryAuthorizationService
+        authorizationService: BatteryAuthorizationService,
+        assetMethodsVault: FileSystemVault<[BatteryAssetRechargeMethod], String>? = nil
     ) {
         self.batteryAPIProvider = batteryAPIProvider
         self.rechargeMethodsRepository = rechargeMethodsRepository
         self.authorizationService = authorizationService
+        self.assetMethodsVault = assetMethodsVault
     }
 
     private func api(for network: Network) throws(BatteryAPI.ApiError) -> BatteryAPI {
@@ -196,9 +208,9 @@ final class BatteryServiceImplementation: BatteryService, BatteryGaslessService 
         boc: String,
         proof: String?,
         headers: [String: String]
-    ) async throws {
+    ) async throws -> String? {
         let api = try api(for: wallet.network)
-        try await authorizationService.withAuthorization(for: wallet) { authorization in
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
             try await api.sendMessage(
                 authorization: authorization,
                 boc: boc,
@@ -223,6 +235,28 @@ final class BatteryServiceImplementation: BatteryService, BatteryGaslessService 
         let api = try api(for: wallet.network)
         return try await authorizationService.withAuthorization(for: wallet) { authorization in
             try await api.getPurchases(authorization: authorization)
+        }
+    }
+
+    func migrateBattery(
+        from sourceWallet: Wallet,
+        to destinationWallet: Wallet,
+        proof: BatteryMigrationProof
+    ) async throws -> TKBatteryAPI.Components.Schemas.BatteryMigration {
+        let api = try api(for: sourceWallet.network)
+        let fromAddress = try sourceWallet.tonMigrationAccountId()
+        return try await authorizationService.withMigrationAuthorization(
+            from: sourceWallet,
+            to: destinationWallet,
+            validateDestination: { authorization in
+                _ = try await api.getBalance(authorization: authorization)
+            }
+        ) { authorization in
+            try await api.migrateBattery(
+                authorization: authorization,
+                proof: proof.signature,
+                fromAddress: fromAddress
+            )
         }
     }
 
@@ -292,6 +326,33 @@ final class BatteryServiceImplementation: BatteryService, BatteryGaslessService 
     func verifyPromocode(wallet: Wallet, promocode: String) async throws {
         try await api(for: wallet.network)
             .verifyPromocode(promocode: promocode)
+    }
+
+    func loadAssetRechargeMethods(wallet: Wallet) async throws -> [BatteryAssetRechargeMethod] {
+        guard wallet.isMultichain else { return [] }
+        let methods = try await api(for: wallet.network).rechargeMethods(includeRechargeOnly: false, multichain: true)
+            .compactMap(BatteryAssetRechargeMethod.init)
+        try? assetMethodsVault?.saveItem(methods, key: "battery_asset_methods_v1_" + String(wallet.network.rawValue))
+        return methods
+    }
+
+    func cachedAssetRechargeMethods(wallet: Wallet) -> [BatteryAssetRechargeMethod] {
+        guard wallet.isMultichain else { return [] }
+        return (try? assetMethodsVault?.loadItem(key: "battery_asset_methods_v1_" + String(wallet.network.rawValue))) ?? []
+    }
+
+    func estimatePurchase(wallet: Wallet, request: BatteryPurchaseRequest) async throws -> TKBatteryAPI.Components.Schemas.PurchaseBatteryEstimateResponse {
+        let api = try api(for: wallet.network)
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
+            try await api.purchaseBatteryEstimate(authorization: authorization, request: request.apiRequest)
+        }
+    }
+
+    func emulatePurchase(wallet: Wallet, request: BatteryPurchaseRequest) async throws -> TKBatteryAPI.Components.Schemas.PurchaseBatteryEmulateResponse {
+        let api = try api(for: wallet.network)
+        return try await authorizationService.withAuthorization(for: wallet) { authorization in
+            try await api.purchaseBatteryEmulate(authorization: authorization, request: request.apiRequest)
+        }
     }
 
     func gaslessConfig() async throws -> TKBatteryAPI.Components.Schemas.GaslessV2Config {

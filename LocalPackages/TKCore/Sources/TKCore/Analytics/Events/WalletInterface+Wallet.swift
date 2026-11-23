@@ -62,6 +62,8 @@ extension WalletContractVersion {
             return .v5beta
         case .v5R1:
             return .v5r1
+        case .walletTg:
+            return .wallettg
         }
     }
 }
@@ -76,7 +78,9 @@ extension Wallet {
             let .Ledger(_, contractVersion, _),
             let .Keystone(_, _, _, contractVersion):
             .regular(contractVersion)
-        case .Lockup, .Watchonly:
+        case let .Watchonly(_, contractVersion):
+            contractVersion.map(TonWalletInterface.regular) ?? .readonly
+        case .Lockup:
             .readonly
         }
     }

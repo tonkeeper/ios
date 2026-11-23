@@ -297,6 +297,7 @@ private extension ChartServiceTests {
             disableBattery: configuration.disableBattery,
             disableBatterySend: configuration.disableBatterySend,
             disableBatteryCryptoRechargeModule: configuration.disableBatteryCryptoRechargeModule,
+            disableBatteryPromoModule: configuration.disableBatteryPromoModule,
             flags: configuration.flags,
             stories: configuration.stories,
             reportAmount: configuration.reportAmount,
@@ -311,9 +312,12 @@ private extension ChartServiceTests {
             multichainHelpUrl: configuration.multichainHelpUrl,
             multichain: configuration.multichain,
             trading: configuration.trading,
+            keeperEarn: configuration.keeperEarn,
             explorers: configuration.explorers,
             earnUrl: configuration.earnUrl,
-            earnFeaturedVaults: configuration.earnFeaturedVaults
+            earnFeaturedVaults: configuration.earnFeaturedVaults,
+            perpsSecurity: configuration.perpsSecurity,
+            featureAccess: configuration.featureAccess
         )
         return Configuration(
             bootConfigurationService: BootConfigurationServiceStub(

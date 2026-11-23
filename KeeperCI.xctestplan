@@ -1,0 +1,117 @@
+{
+  "configurations" : [
+    {
+      "id" : "D55B25B1-2B36-46A3-98AE-DEC01FF91033",
+      "name" : "Default",
+      "options" : {}
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "defaultTestExecutionTimeAllowance" : 60,
+    "language" : "en",
+    "maximumTestRepetitions" : 3,
+    "region" : "US",
+    "testRepetitionMode" : "retryOnFailure",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/KeeperCore",
+        "identifier" : "KeeperCoreComponentsTests",
+        "name" : "KeeperCoreComponentsTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/KeeperCore",
+        "identifier" : "KeeperCoreTests",
+        "name" : "KeeperCoreTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/KeeperCore",
+        "identifier" : "WalletCoreTests",
+        "name" : "WalletCoreTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/TronSwift",
+        "identifier" : "TronSwift-Tests",
+        "name" : "TronSwift-Tests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/TronSwift",
+        "identifier" : "TKCryptoKit-Tests",
+        "name" : "TKCryptoKit-Tests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/TKCore",
+        "identifier" : "TKCoreTests",
+        "name" : "TKCoreTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/TKBase",
+        "identifier" : "TKLocalizeTests",
+        "name" : "TKLocalizeTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/App",
+        "identifier" : "AppTests",
+        "name" : "AppTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/TKUIKit",
+        "identifier" : "TKUIKitTests",
+        "name" : "TKUIKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/AppModules/Perps",
+        "identifier" : "PerpsTests",
+        "name" : "PerpsTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/Ledger",
+        "identifier" : "TonTransportTests",
+        "name" : "TonTransportTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LocalPackages/AppModules/MoonPay",
+        "identifier" : "MoonPayTests",
+        "name" : "MoonPayTests"
+      }
+    }
+  ],
+  "version" : 1
+}

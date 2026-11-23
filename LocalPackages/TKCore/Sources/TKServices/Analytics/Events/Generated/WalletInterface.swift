@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Address / account interface of a wallet. The vocabulary is per-chain; the chain is implied by context (the &#x60;asset&#x60; on &#x60;transaction_sent&#x60;, the single chain on &#x60;wallet_open&#x60;):  - TON: v1R1 | v1R2 | v1R3 | v2R1 | v2R2 | v3R1 | v3R2 | v4R1 | v4R2 | v5Beta | v5R1 (W5) - Bitcoin: legacy (P2PKH) | p2sh (nested SegWit) | segwit (native P2WPKH) | taproot (P2TR) - EVM (Ethereum/Base/Arbitrum/Polygon/BNB), TRON, Solana: eoa | smart_account (ERC-4337 account abstraction)  Always present on &#x60;transaction_sent&#x60; (the submitting wallet). On &#x60;wallet_open&#x60; it is optional and set only for single-chain wallets (&#x60;wallet_mode &#x3D; single&#x60;); multichain wallets span several interfaces, so it is omitted there.  */
+/** Address / account interface of a wallet. The vocabulary is per-chain; the chain is implied by context (the &#x60;asset&#x60; on &#x60;transaction_sent&#x60;, the single chain on &#x60;wallet_open&#x60;):  - TON: v1R1 | v1R2 | v1R3 | v2R1 | v2R2 | v3R1 | v3R2 | v4R1 | v4R2 | v5Beta | v5R1 (W5) |   walletTg (the Telegram wallet, Money in Telegram; tonapi&#39;s &#x60;walletTg&#x60; interface) - Bitcoin: legacy (P2PKH) | p2sh (nested SegWit) | segwit (native P2WPKH) | taproot (P2TR) - EVM (Ethereum/Base/Arbitrum/Polygon/BNB), TRON, Solana: eoa | smart_account (ERC-4337 account abstraction)  Always present on &#x60;transaction_sent&#x60; (the submitting wallet). On &#x60;wallet_open&#x60; it is optional and set only for single-chain wallets (&#x60;wallet_mode &#x3D; single&#x60;); multichain wallets span several interfaces, so it is omitted there.  */
 public enum WalletInterface: String, Codable, CaseIterable {
     case v1r1 = "v1R1"
     case v1r2 = "v1R2"
@@ -23,6 +23,7 @@ public enum WalletInterface: String, Codable, CaseIterable {
     case v4r2 = "v4R2"
     case v5beta = "v5Beta"
     case v5r1 = "v5R1"
+    case wallettg = "walletTg"
     case legacy = "legacy"
     case p2sh = "p2sh"
     case segwit = "segwit"

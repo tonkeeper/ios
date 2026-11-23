@@ -19,13 +19,23 @@ public protocol PerpsTradeConfirmViewModeling: ObservableObject {
     var noticeText: String? { get }
     var isNoticeError: Bool { get }
     var isNoticeWarning: Bool { get }
+    var confirmAppearance: TKSlider.Appearance { get }
 
     func onAppear()
     func onDisappear()
     func back()
     func close()
     func editAutoClose()
+    func pickFee()
+    func openLoyalty()
     func confirm()
+    func swipeBegan()
+    func swipeAbandoned()
+}
+
+public extension PerpsTradeConfirmViewModeling {
+    func swipeBegan() {}
+    func swipeAbandoned() {}
 }
 
 public extension PerpsTradeConfirmViewModeling {
@@ -52,6 +62,14 @@ public extension PerpsTradeConfirmViewModeling {
     var isNoticeWarning: Bool {
         false
     }
+
+    var confirmAppearance: TKSlider.Appearance {
+        .standart
+    }
+
+    func pickFee() {}
+
+    func openLoyalty() {}
 }
 
 public struct PerpsTradeConfirmView<ViewModel: PerpsTradeConfirmViewModeling>: View {
@@ -68,7 +86,19 @@ public struct PerpsTradeConfirmView<ViewModel: PerpsTradeConfirmViewModeling>: V
     }
 
     private var state: ConfirmActionState {
-        ConfirmActionState(
+        var action = ConfirmActionBarState(
+            kind: .slider(title: TKLocales.Perps.Confirm.confirm, subtitle: TKLocales.Perps.Confirm.swipe),
+            isEnabled: viewModel.isConfirmationEnabled,
+            process: viewModel.isProcessing ? .processing : .idle,
+            successTitle: TKLocales.Result.success,
+            failureTitle: TKLocales.Result.failure,
+            accessibilityIdentifier: "perps_confirm_swipe",
+            appearance: viewModel.confirmAppearance,
+            onConfirm: viewModel.confirm
+        )
+        action.onSwipeBegan = viewModel.swipeBegan
+        action.onSwipeAbandoned = viewModel.swipeAbandoned
+        return ConfirmActionState(
             header: viewModel.iconURL.map { .avatar(.url($0, chainIcon: viewModel.iconChainImage)) }
                 ?? .letter(viewModel.iconLetter),
             caption: TKLocales.Perps.Confirm.title,
@@ -76,29 +106,42 @@ public struct PerpsTradeConfirmView<ViewModel: PerpsTradeConfirmViewModeling>: V
             titleSuffix: viewModel.titleSuffixText,
             rows: viewModel.rows.map(row),
             notice: viewModel.noticeText.map { .init(text: $0, isError: viewModel.isNoticeError, isWarning: viewModel.isNoticeWarning) },
-            action: ConfirmActionBarState(
-                kind: .slider(title: TKLocales.Perps.Confirm.confirm, subtitle: TKLocales.Perps.Confirm.swipe),
-                isEnabled: viewModel.isConfirmationEnabled,
-                process: viewModel.isProcessing ? .processing : .idle,
-                successTitle: TKLocales.Result.success,
-                failureTitle: TKLocales.Result.failure,
-                accessibilityIdentifier: "perps_confirm_swipe",
-                onConfirm: viewModel.confirm
-            )
+            action: action
         )
     }
 
     private func row(_ row: PerpsTradeConfirmRow) -> ConfirmActionRow {
-        let value: ConfirmActionRow.Value = if let parts = row.valueParts, !parts.isEmpty {
+        if row.id == .loyaltyReward {
+            return ConfirmActionRow(
+                id: "\(row.id)",
+                title: row.title,
+                value: .amount(row.value, icon: .TKUIKit.Icons.Size28.ohms),
+                interaction: .tap(viewModel.openLoyalty),
+                titleIcon: .TKUIKit.Icons.Size12.informationCircle,
+                isEnabled: viewModel.isConfirmationEnabled
+            )
+        }
+        let value: ConfirmActionRow.Value = if row.showsFeePicker {
+            .feeOption(row.value, token: row.feeMethod, showsPicker: true, subtitle: row.subValue)
+        } else if let parts = row.valueParts, !parts.isEmpty {
             .parts(parts.map { .init(text: $0.text, tone: $0.tone.confirmTone) }, subtitle: row.subValue)
         } else {
             .text(row.value, subtitle: row.subValue, tone: row.tone.confirmTone)
+        }
+        let interaction: ConfirmActionRow.Interaction = if row.showsFeePicker {
+            .tap(viewModel.pickFee)
+        } else if row.showsChevron {
+            .tap(viewModel.editAutoClose, showsChevron: true)
+        } else {
+            .none
         }
         return ConfirmActionRow(
             id: "\(row.id)",
             title: row.title,
             value: value,
-            interaction: row.showsChevron ? .tap(viewModel.editAutoClose, showsChevron: true) : .none,
+            interaction: interaction,
+            titleHint: row.titleHint,
+            note: row.note,
             isEnabled: viewModel.isConfirmationEnabled
         )
     }

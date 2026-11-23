@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 @testable import KeeperCore
+import OperationReviewModels
 import Security
 import TKKeychain
 import XCTest
@@ -260,6 +261,23 @@ final class WalletAuthTokenProviderTests: XCTestCase {
         let kept = await relaunched.token(walletId: "wallet-2", accessToken: "jwt-1")
         XCTAssertNil(forgotten)
         XCTAssertEqual(kept, "signed(key-two,jwt-1)")
+    }
+
+    /// A Ledger wallet's seed is kept beside its app key and goes with the wallet, like the key.
+    func test_ledgerKeys_keepTheSeedUntilTheWalletIsForgotten() async {
+        let chainKit = ChainKitWalletAuthFake()
+        let vault = InMemoryKeychainVault()
+        let provider = makeProvider(chainKit: chainKit, vault: vault)
+
+        await provider.persistLedgerKeys(seed: Data(repeating: 0x2A, count: 64), appKey: Data("key-ledger".utf8), walletId: "ledger-1")
+
+        let token = await makeProvider(chainKit: chainKit, vault: vault).token(walletId: "ledger-1", accessToken: "jwt-1")
+        XCTAssertEqual(token, "signed(key-ledger,jwt-1)")
+        XCTAssertEqual(vault.itemCount, 3)
+
+        await provider.forget(walletId: "ledger-1")
+
+        XCTAssertEqual(vault.itemCount, 0)
     }
 
     func test_wipe_removesEveryWalletFromTheKeychain() async {
@@ -553,7 +571,7 @@ private final class ChainKitWalletAuthFake: ChainKitService, @unchecked Sendable
         return Data("key-\(mnemonic)".utf8)
     }
 
-    func walletAuthToken(appPrivateKey: Data, accessToken: String) -> String {
+    func walletAuthToken(appPrivateKey: Data, walletId _: String, accessToken: String) -> String? {
         signedAccessTokens.append(accessToken)
         return "signed(\(String(decoding: appPrivateKey, as: UTF8.self)),\(accessToken))"
     }
@@ -576,19 +594,43 @@ private final class ChainKitWalletAuthFake: ChainKitService, @unchecked Sendable
         asset _: MultichainAsset,
         amount _: BigUInt,
         comment _: String?,
+        commentEncryptionKey _: String?,
         isMaxAmount _: Bool
     ) async throws(MultichainTransactionEmulationFailure) -> MultichainTransactionEmulationResult {
         fatalError("unused")
     }
 
     func sendMultichainTransfer(
-        passcodeProvider _: @escaping () async -> String?,
+        signer _: MultichainTransferSigner,
         wallet _: Wallet,
         recipient _: String,
         asset _: MultichainAsset,
         amount _: BigUInt,
         comment _: String?,
+        commentEncryptionKey _: String?,
+        isMaxAmount _: Bool,
+        consent _: OperationConsent
+    ) async throws(MultichainTransactionFailure) -> [String] {
+        fatalError("unused")
+    }
+
+    func emulateOperationTransfer(
+        wallet _: Wallet,
+        recipient _: String,
+        asset _: MultichainAsset,
+        amount _: BigUInt,
+        comment _: String?,
+        commentEncryptionKey _: String?,
         isMaxAmount _: Bool
+    ) async throws(MultichainTransactionEmulationFailure) -> MultichainTransactionEmulationResult {
+        fatalError("unused")
+    }
+
+    func sendOperationTransfer(
+        _: MultichainTransactionEmulationResult,
+        wallet _: Wallet,
+        passcodeProvider _: @escaping () async -> String?,
+        consent _: OperationConsent
     ) async throws(MultichainTransactionFailure) -> [String] {
         fatalError("unused")
     }
@@ -598,7 +640,7 @@ private final class ChainKitWalletAuthFake: ChainKitService, @unchecked Sendable
     }
 
     func makeWalletRegisterItem(
-        mnemonic _: String,
+        appPrivateKey _: Data,
         deviceId _: String,
         challenge _: String,
         state _: MultichainWalletState

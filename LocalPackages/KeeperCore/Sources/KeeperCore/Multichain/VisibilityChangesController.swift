@@ -51,6 +51,10 @@ public final class VisibilityChangesController {
         guard !changes.isEmpty else { return }
     }
 
+    func pendingSend(walletId: String) -> Task<Void, Never>? {
+        locked { retryTasks[walletId] }
+    }
+
     public func pendingSnapshot(walletId: String) -> VisibilityChangesSnapshot {
         locked {
             VisibilityChangesSnapshot(

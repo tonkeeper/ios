@@ -136,6 +136,12 @@ final class WalletBalanceSetupModel {
         }
     }
 
+    func openSettingsIfBiometryDenied() -> Bool {
+        guard BiometryProvider().isFaceIDDenied else { return false }
+        openSettings()
+        return true
+    }
+
     func turnOnBiometry(passcode: String) async throws {
         try await mnemonicsAccess.setBiometryProtectedPasscode(passcode)
         await securityStore.setIsBiometryEnable(true)
@@ -158,10 +164,7 @@ final class WalletBalanceSetupModel {
 
         switch settings.authorizationStatus {
         case .denied:
-            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else { return }
-            if UIApplication.shared.canOpenURL(settingsUrl) {
-                UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
-            }
+            openSettings()
             return
         case .notDetermined:
             guard await requestPushAuthorization() else { return }
@@ -187,6 +190,13 @@ final class WalletBalanceSetupModel {
         }
         UIApplication.shared.registerForRemoteNotifications()
         return true
+    }
+
+    private func openSettings() {
+        guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else { return }
+        if UIApplication.shared.canOpenURL(settingsUrl) {
+            UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
+        }
     }
 
     private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
@@ -243,7 +253,8 @@ final class WalletBalanceSetupModel {
             }
 
             if wallet.isBiometryAvailable, !isBiometryEnable {
-                if BiometryProvider().isAvailable {
+                let biometryProvider = BiometryProvider()
+                if biometryProvider.isAvailable || biometryProvider.isFaceIDDenied {
                     items.append(.biometry)
                 } else {
                     isBiometryStepDeferred = true

@@ -108,6 +108,7 @@ struct PerpsAutoCloseLegs {
 enum PerpsTradingErrorMapper {
     static func map(_ error: Error) -> PerpsTradingError {
         if let trading = error as? PerpsTradingError { return trading }
+        if let refusal = error as? PerpsSignedMarketRefusal { return refusal.error }
         if let api = error as? PerpsAPIError { return map(api) }
         if let execution = kotlinException(from: error, as: PerpsExecutionException.self) {
             return map(kind: execution.kind, message: execution.message ?? "execution failed")
@@ -215,7 +216,7 @@ enum PerpsTradingErrorMapper {
             return .authExpired
         case "token_revoked", "device_inactive":
             return .credentialsRevoked
-        case "wallet_forbidden":
+        case "wallet_forbidden", "region_restricted":
             return .regionUnavailable
         case "not_found":
             return .positionNotFound

@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** TON app on the connected Ledger reported itself open during import.  */
+/** TON app on the connected Ledger reported itself open during import. A multichain Ledger reads the TON app first, so this is also the point where its other apps start being read.  */
 public struct WalletImportLedgerAppOpened: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_ledger_app_opened"

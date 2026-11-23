@@ -253,6 +253,7 @@ public extension TransactionCellContent {
         public var subtitle: String
         public var subtitleColor: TKColor
         public var isVerified: Bool
+        public var isSecureMode: Bool
 
         public init(
             id: NftId,
@@ -260,7 +261,8 @@ public extension TransactionCellContent {
             title: String,
             subtitle: String,
             subtitleColor: TKColor = .textSecondary,
-            isVerified: Bool
+            isVerified: Bool,
+            isSecureMode: Bool = false
         ) {
             self.id = id
             self.imageSource = imageSource
@@ -268,6 +270,7 @@ public extension TransactionCellContent {
             self.subtitle = subtitle
             self.subtitleColor = subtitleColor
             self.isVerified = isVerified
+            self.isSecureMode = isSecureMode
         }
     }
 }
@@ -282,15 +285,20 @@ public extension TransactionCellContent {
         public var id: String
         public var text: String
         public var style: MessageStyle
+        /// For a comment still encrypted, about how many characters it has: a spoiler that long stands in for
+        /// it, `text` names it to VoiceOver, and a tap on it asks to decrypt it.
+        public var encryptedLength: Int?
 
         public init(
             id: String,
             text: String,
-            style: MessageStyle = .regular
+            style: MessageStyle = .regular,
+            encryptedLength: Int? = nil
         ) {
             self.id = id
             self.text = text
             self.style = style
+            self.encryptedLength = encryptedLength
         }
     }
 }
@@ -301,15 +309,19 @@ public struct TransactionCell: View {
     public var config: TransactionCellConfig
     public var onTap: () -> Void
     public var onTapNft: (TransactionCellContent.NftId) -> Void
+    /// A tap on an encrypted message, by its id.
+    public var onTapEncryptedMessage: (String) -> Void
 
     public init(
         config: TransactionCellConfig,
         onTap: @escaping () -> Void = {},
-        onTapNft: @escaping (TransactionCellContent.NftId) -> Void = { _ in }
+        onTapNft: @escaping (TransactionCellContent.NftId) -> Void = { _ in },
+        onTapEncryptedMessage: @escaping (String) -> Void = { _ in }
     ) {
         self.config = config
         self.onTap = onTap
         self.onTapNft = onTapNft
+        self.onTapEncryptedMessage = onTapEncryptedMessage
     }
 
     public var body: some View {
@@ -613,6 +625,11 @@ extension TransactionCell {
                 ),
                 shape: .rectangle()
             )
+            .overlay {
+                if preview.isSecureMode {
+                    TKSecureBlurViewRepresentable()
+                }
+            }
 
             VStack(alignment: .leading, spacing: NftPreviewLayout.textSpacing) {
                 Text(preview.title)
@@ -664,11 +681,42 @@ extension TransactionCell {
     }
 
     private func message(_ content: TransactionCellContent.Message) -> some View {
-        Text(content.text)
+        Group {
+            if let encryptedLength = content.encryptedLength {
+                Button {
+                    onTapEncryptedMessage(content.id)
+                } label: {
+                    messageBubble(content) {
+                        messageText(String(repeating: "0", count: max(encryptedLength, 1)))
+                            .hidden()
+                            .overlay(TKSpoiler())
+                    }
+                }
+                .buttonStyle(TKTapAnimationButtonStyle())
+                .accessibilityLabel(content.text)
+            } else {
+                messageBubble(content) {
+                    messageText(content.text)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, Layout.supplementaryTopInset)
+    }
+
+    private func messageText(_ text: String) -> some View {
+        Text(text)
             .textStyle(.body2)
             .foregroundStyle(.textPrimary)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func messageBubble(
+        _ content: TransactionCellContent.Message,
+        @ViewBuilder label: () -> some View
+    ) -> some View {
+        label()
             .padding(.horizontal, MessageLayout.horizontalPadding)
             .padding(.top, MessageLayout.topPadding)
             .padding(.bottom, MessageLayout.bottomPadding)
@@ -679,8 +727,6 @@ extension TransactionCell {
                 )
                 .fill(.backgroundContentTint)
             )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, Layout.supplementaryTopInset)
     }
 
     private func messageCornerRadius(for style: TransactionCellContent.MessageStyle) -> CGFloat {

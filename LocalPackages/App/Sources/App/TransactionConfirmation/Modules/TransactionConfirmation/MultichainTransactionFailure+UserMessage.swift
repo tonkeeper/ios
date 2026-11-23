@@ -10,6 +10,10 @@ extension MultichainTransactionFailure {
             return TKLocales.Multichain.Transaction.Error.unsupportedAsset
         case .insufficientSelectedFee:
             return TKLocales.MultichainSwap.Screen.Confirm.Error.insufficientBalance
+        case .batteryMigrationFailed:
+            return TKLocales.Multichain.Transaction.Error.failedToPrepare
+        case .operationExpired:
+            return TKLocales.SignMessage.Error.expired
         case let .emulationFailure(failure):
             return failure.transactionConfirmationUserMessage
         case let .failedToEstimateNonce(kind, _):
@@ -24,7 +28,7 @@ extension MultichainTransactionFailure {
             return kind.transactionConfirmationUserMessage(
                 fallback: TKLocales.Multichain.Transaction.Error.failedToSend
             )
-        case .relayerQuoteUnavailable:
+        case .feeQuoteLoading, .feeMethodUnavailable, .relayerQuoteUnavailable:
             return TKLocales.Multichain.Transaction.Error.failedToCalculateFee
         case .relayerQuoteExpired, .relayerRejected:
             return TKLocales.Multichain.Transaction.Error.failedToSend

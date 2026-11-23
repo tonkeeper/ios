@@ -72,7 +72,6 @@ public struct MoonPayPaymentStatusViewState: Equatable {
 public struct MoonPayPaymentStatusView: View {
     private let state: MoonPayPaymentStatusViewState
     private let onAction: () -> Void
-    private let onClose: () -> Void
     private let onCopy: (String) -> Void
 
     @State private var isFeesExpanded = false
@@ -80,37 +79,24 @@ public struct MoonPayPaymentStatusView: View {
     public init(
         state: MoonPayPaymentStatusViewState,
         onAction: @escaping () -> Void,
-        onClose: @escaping () -> Void,
         onCopy: @escaping (String) -> Void = { _ in }
     ) {
         self.state = state
         self.onAction = onAction
-        self.onClose = onClose
         self.onCopy = onCopy
     }
 
     public var body: some View {
+        // The sheet draws the title and the close button.
         VStack(spacing: 0) {
-            DefaultModalCardHeader(
-                config: DefaultModalCardHeader.Config(
-                    title: DefaultModalCardHeader.Title(text: state.title),
-                    rightIcon: .close(onTap: { _ in onClose() }),
-                    height: .compact
-                )
-            )
-            .fixedSize(horizontal: false, vertical: true)
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: Layout.groupSpacing) {
-                    stepsGroup
-                    if state.showsDetails {
-                        summaryGroup
-                        feesGroup
-                    }
+            VStack(spacing: Layout.groupSpacing) {
+                stepsGroup
+                if state.showsDetails {
+                    summaryGroup
+                    feesGroup
                 }
-                .padding(.horizontal, Layout.horizontalInset)
-                .padding(.top, Layout.groupSpacing)
             }
+            .padding(.bottom, Layout.contentBottomInset)
 
             if let actionTitle = state.actionTitle {
                 ButtonView(config: .init(
@@ -121,10 +107,10 @@ public struct MoonPayPaymentStatusView: View {
                     action: onAction
                 ))
                 .padding(.horizontal, Layout.horizontalInset)
-                .padding(.vertical, Layout.groupSpacing)
+                .padding(.bottom, Layout.bottomInset)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .top)
         .background(.backgroundPage)
         .animation(.easeInOut(duration: 0.2), value: state)
     }
@@ -132,47 +118,74 @@ public struct MoonPayPaymentStatusView: View {
     private var stepsGroup: some View {
         VStack(spacing: 0) {
             ForEach(Array(state.steps.enumerated()), id: \.element.id) { index, step in
-                stepRow(step, isLast: index == state.steps.count - 1)
+                stepRow(step, isFirst: index == 0, isLast: index == state.steps.count - 1)
             }
         }
-        .padding(.vertical, Layout.stepsVerticalPadding)
-        .background(RoundedRectangle(cornerRadius: Layout.cornerRadius).fill(.backgroundContent))
+        .asCellsGroup()
     }
 
-    private func stepRow(_ step: MoonPayPaymentStatusViewState.Step, isLast: Bool) -> some View {
-        HStack(alignment: .center, spacing: 16) {
+    /// The design's Cell / Status Step: a 44 pt indicator, a line to the steps around it, and a
+    /// divider from the text.
+    private func stepRow(_ step: MoonPayPaymentStatusViewState.Step, isFirst: Bool, isLast: Bool) -> some View {
+        HStack(spacing: Layout.stepSpacing) {
             stepIndicator(step.status)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(step.title)
                     .textStyle(.label1)
                     .foregroundStyle(step.status == .waiting ? .textSecondary : .textPrimary)
+                    .lineLimit(1)
                 Text(step.subtitle)
                     .textStyle(.body2)
-                    .foregroundStyle(.textSecondary)
+                    .foregroundStyle(step.status == .waiting ? .textTertiary : .textSecondary)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, Layout.stepRowPadding)
+        .padding(.horizontal, Layout.horizontalInset)
+        .frame(minHeight: Layout.stepHeight)
+        .overlay(alignment: .topLeading) {
+            if !isFirst {
+                stepLine
+            }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if !isLast {
+                stepLine
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if !isLast {
+                TKColor.separatorCommon
+                    .frame(height: Layout.dividerHeight)
+                    .padding(.leading, Layout.dividerInset)
+            }
+        }
+    }
+
+    private var stepLine: some View {
+        Capsule()
+            .fill(.backgroundContentTint)
+            .frame(width: Layout.lineWidth, height: Layout.lineHeight)
+            .padding(.leading, Layout.horizontalInset + (Layout.indicatorSize - Layout.lineWidth) / 2)
     }
 
     private func stepIndicator(_ status: MoonPayPaymentStatusViewState.Step.Status) -> some View {
         ZStack {
             switch status {
             case .waiting:
-                Circle().fill(.backgroundContentTint)
+                Circle().fill(.buttonTertiaryBackgroundDisabled)
             case .inProgress:
                 Circle().fill(.backgroundContentTint)
-                ProgressView()
+                CircularLoader(mode: .indeterminate, preset: .medium)
             case .done:
-                Circle().fill(.accentGreen.opacity(0.2))
-                Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                Circle().fill(.accentGreen.opacity(Layout.accentBackgroundOpacity))
+                SwiftUI.Image.TKUIKit.Icons.Size28.checkmarkCircle
+                    .renderingMode(.template)
                     .foregroundStyle(.accentGreen)
             case .failed:
-                Circle().fill(.accentRed.opacity(0.2))
-                Image(systemName: "exclamationmark")
-                    .font(.system(size: 14, weight: .bold))
+                Circle().fill(.accentRed.opacity(Layout.accentBackgroundOpacity))
+                SwiftUI.Image.TKUIKit.Icons.Size28.exclamationmarkCircle
+                    .renderingMode(.template)
                     .foregroundStyle(.accentRed)
             }
         }
@@ -185,8 +198,8 @@ public struct MoonPayPaymentStatusView: View {
                 summaryRow(row)
             }
         }
-        .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: Layout.cornerRadius).fill(.backgroundContent))
+        .padding(.vertical, Layout.groupVerticalPadding)
+        .asCellsGroup()
     }
 
     @ViewBuilder
@@ -203,20 +216,20 @@ public struct MoonPayPaymentStatusView: View {
     }
 
     private func summaryRowContent(_ row: MoonPayPaymentStatusViewState.SummaryRow) -> some View {
-        HStack {
+        HStack(spacing: Layout.rowSpacing) {
             Text(row.title)
                 .textStyle(.body2)
                 .foregroundStyle(.textSecondary)
                 .layoutPriority(1)
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
             Text(row.value)
                 .textStyle(.body2)
                 .foregroundStyle(row.isHighlighted ? .accentGreen : .textPrimary)
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, Layout.horizontalInset)
+        .padding(.vertical, Layout.rowVerticalPadding)
     }
 
     private var feesGroup: some View {
@@ -225,23 +238,26 @@ public struct MoonPayPaymentStatusView: View {
                 guard !state.feeDetails.isEmpty else { return }
                 isFeesExpanded.toggle()
             } label: {
-                HStack {
+                HStack(spacing: Layout.feesChevronSpacing) {
                     Text(state.feesTitle)
                         .textStyle(.body2)
                         .foregroundStyle(.textSecondary)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Layout.rowSpacing)
                     Text(state.feesValue)
                         .textStyle(.body2)
                         .foregroundStyle(.textPrimary)
                     if !state.feeDetails.isEmpty {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.iconTertiary)
+                        SwiftUI.Image.TKUIKit.Icons.Size16.chevronDown
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: Layout.chevronSize, height: Layout.chevronSize)
+                            .foregroundStyle(.iconSecondary)
                             .rotationEffect(.degrees(isFeesExpanded ? 180 : 0))
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, Layout.horizontalInset)
+                .padding(.vertical, Layout.rowVerticalPadding)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -252,16 +268,28 @@ public struct MoonPayPaymentStatusView: View {
                 }
             }
         }
-        .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: Layout.cornerRadius).fill(.backgroundContent))
+        .padding(.vertical, Layout.groupVerticalPadding)
+        .asCellsGroup()
     }
 
     private enum Layout {
         static let horizontalInset: CGFloat = 16
-        static let groupSpacing: CGFloat = 16
-        static let cornerRadius: CGFloat = 16
-        static let indicatorSize: CGFloat = 48
-        static let stepsVerticalPadding: CGFloat = 4
-        static let stepRowPadding: CGFloat = 8
+        static let groupSpacing: CGFloat = 8
+        static let bottomInset: CGFloat = 16
+        /// The design's 8 pt under the last group and the table's 16.
+        static let contentBottomInset: CGFloat = 24
+        static let stepHeight: CGFloat = 76
+        static let stepSpacing: CGFloat = 16
+        static let indicatorSize: CGFloat = 44
+        static let accentBackgroundOpacity: Double = 0.12
+        static let lineWidth: CGFloat = 2
+        static let lineHeight: CGFloat = 12
+        static let dividerInset: CGFloat = 76
+        static let dividerHeight: CGFloat = 0.5
+        static let groupVerticalPadding: CGFloat = 4
+        static let rowVerticalPadding: CGFloat = 8
+        static let rowSpacing: CGFloat = 8
+        static let feesChevronSpacing: CGFloat = 6
+        static let chevronSize: CGFloat = 16
     }
 }

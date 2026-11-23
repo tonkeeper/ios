@@ -19,7 +19,7 @@ final class MultichainSendCoordinator: RouterCoordinator<NavigationControllerRou
     var didSendSuccessfully: ((RouterCoordinator<NavigationControllerRouter>?) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
     var didRequestRefill: ((Token, _ onRefill: @escaping () -> Void) -> Void)?
-    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)?
+    var didRequestOpenBattery: ((BatteryAnalyticsSource, @escaping () -> Void) -> Void)?
     var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
@@ -164,8 +164,8 @@ private extension MultichainSendCoordinator {
         }
 
         module.output.didTapScan = { [weak self] in
-            self?.openScan(completion: { deeplink in
-                self?.handleScan(deeplink: deeplink, input: module.input)
+            self?.openScan(completion: { scanned in
+                self?.handleScan(scanned, input: module.input)
             })
         }
 
@@ -252,7 +252,7 @@ private extension MultichainSendCoordinator {
         )
     }
 
-    func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
+    func openScan(completion: @escaping (ScannedDeeplink) -> Void) {
         let scannerAssembly = keeperCoreMainAssembly.scannerAssembly()
         let scanModule = ScannerModule(
             dependencies: ScannerModule.Dependencies(
@@ -269,15 +269,16 @@ private extension MultichainSendCoordinator {
                 title: TKLocales.Scanner.title,
                 subtitle: nil,
                 isFlashlightVisible: true
-            )
+            ),
+            analytics: .scanEvents(openUtm: .empty)
         )
 
         let navigationController = TKNavigationController(rootViewController: scanModule.view)
         navigationController.configureTransparentAppearance()
 
-        scanModule.output.didScanDeeplink = { [weak self] deeplink in
+        scanModule.output.didScanDeeplink = { [weak self] scanned in
             self?.router.dismiss(completion: {
-                completion(deeplink)
+                completion(scanned)
             })
         }
 
@@ -294,10 +295,11 @@ private extension MultichainSendCoordinator {
     }
 
     func handleScan(
-        deeplink: KeeperCore.Deeplink,
+        _ scan: ScannedDeeplink,
         input: MultichainSendV3ModuleInput
     ) {
-        guard let scanned = MultichainScannedTransfer(deeplink: deeplink) else {
+        guard let scanned = MultichainScannedTransfer(deeplink: scan.deeplink) else {
+            scan.rejectUnsupported()
             return
         }
         let selectedChain = selectedAsset?.asset.chain
@@ -310,8 +312,10 @@ private extension MultichainSendCoordinator {
             ToastPresenter.showToast(
                 configuration: ToastPresenter.Configuration(title: TKLocales.Send.invalidAddress)
             )
+            scan.rejectUnsupported()
             return
         }
+        scan.accept()
 
         switch MultichainScanApplication(
             scannedAssetId: scanned.assetId,
@@ -394,28 +398,25 @@ private extension MultichainSendCoordinator {
             return
         }
 
+        let passcodeHandoff = TronTransferPasscodeHandoff()
         let transactionConfirmationController = keeperCoreMainAssembly.multichainTransferTransactionConfirmationController(
             wallet: multichain.wallet,
             recipient: multichain.recipient,
             asset: multichain.asset,
             amount: multichain.amount,
             comment: multichain.comment,
+            commentEncryptionKey: multichain.commentEncryptionKey,
             isMaxAmount: multichain.isMaxAmount,
-            passcodeProvider: { [weak self, keeperCoreMainAssembly] in
-                guard let self else {
-                    return nil
-                }
-                return await PasscodeInputCoordinator.getPasscode(
-                    parentCoordinator: self,
-                    parentRouter: router,
-                    mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-                    securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-                    analyticsProvider: analyticsProvider,
-                    reason: .confirmTransfer
-                )
-            }
+            signer: transferSigner(wallet: multichain.wallet)
         )
-        let tronSignHandler = { [weak self, keeperCoreMainAssembly, coreAssembly] (txID: TronSwift.TxID, wallet: Wallet) async throws(TronTransferSignError) -> TronSwift.SignedTxID in
+        transactionConfirmationController.batteryPasscodeHandoff = { passcode in
+            if let passcode {
+                passcodeHandoff.storeForCurrentOperation(passcode)
+            } else {
+                passcodeHandoff.discard()
+            }
+        }
+        let tronSignHandler = { [weak self, keeperCoreMainAssembly, coreAssembly, passcodeHandoff] (txID: TronSwift.TxID, wallet: Wallet) async throws(TronTransferSignError) -> TronSwift.SignedTxID in
             guard let self else {
                 throw .cancelled
             }
@@ -424,7 +425,8 @@ private extension MultichainSendCoordinator {
                 wallet: wallet,
                 txID: txID,
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
-                coreAssembly: coreAssembly
+                coreAssembly: coreAssembly,
+                passcodeHandoff: passcodeHandoff
             )
             return try await coordinator
                 .handleSign(parentCoordinator: self)
@@ -448,7 +450,7 @@ private extension MultichainSendCoordinator {
             self?.feePickerCoordinator.start(presentation: presentation)
         }
 
-        module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet throws(WalletTransferSignError) in
+        module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly, passcodeHandoff] walletTransfer, wallet throws(WalletTransferSignError) in
             guard let self else {
                 throw .cancelled
             }
@@ -457,7 +459,8 @@ private extension MultichainSendCoordinator {
                 wallet: wallet,
                 transferData: walletTransfer,
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
-                coreAssembly: coreAssembly
+                coreAssembly: coreAssembly,
+                passcodeHandoff: passcodeHandoff
             )
 
             self.walletTransferSignCoordinator = coordinator
@@ -521,6 +524,15 @@ private extension MultichainSendCoordinator {
             self.logSendConfirm(model: model, context: analyticsContext)
         }
 
+        module.output.didWaitForFee = {
+            sendRedSession?.finish(
+                outcome: .fail,
+                error: TransactionConfirmationError.multichainTransactionFailure(.feeQuoteLoading),
+                stage: "fee"
+            )
+            sendRedSession = nil
+        }
+
         module.output.didCancelTransaction = {
             sendRedSession?.finish(
                 outcome: .cancel,
@@ -557,7 +569,7 @@ private extension MultichainSendCoordinator {
             sendRedSession?.finish(
                 outcome: .fail,
                 error: error,
-                stage: "send"
+                stage: error.transactionConfirmationStage
             )
             sendRedSession = nil
             self.logSendFailed(model: model, error: error, context: analyticsContext)
@@ -653,6 +665,28 @@ private extension MultichainSendCoordinator {
         }
         addChild(coordinator)
         coordinator.start()
+    }
+}
+
+private extension MultichainSendCoordinator {
+    /// A Ledger wallet signs on the Ledger it was paired with; any other wallet unlocks its mnemonic.
+    func transferSigner(wallet: Wallet) -> MultichainTransferSigner {
+        if let device = LedgerDeviceSigner.signer(for: wallet, coreAssembly: coreAssembly, presenter: { [weak self] in self?.router.rootViewController }) {
+            return .device(device)
+        }
+        return .mnemonic(passcodeProvider: { [weak self, keeperCoreMainAssembly] in
+            guard let self else {
+                return nil
+            }
+            return await PasscodeInputCoordinator.getPasscode(
+                parentCoordinator: self,
+                parentRouter: router,
+                mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
+                securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+                analyticsProvider: analyticsProvider,
+                reason: .confirmTransfer
+            )
+        })
     }
 }
 

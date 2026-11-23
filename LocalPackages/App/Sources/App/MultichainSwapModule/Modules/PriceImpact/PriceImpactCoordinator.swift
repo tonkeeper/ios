@@ -11,8 +11,7 @@ final class PriceImpactCoordinator: RouterCoordinator<NavigationControllerRouter
                 presentation: PriceImpactPresentation(
                     style: presentation.style,
                     title: presentation.title,
-                    subtitle: presentation.subtitle,
-                    description: presentation.description,
+                    message: presentation.message,
                     confirmButtonTitle: presentation.confirmButtonTitle,
                     backButtonTitle: presentation.backButtonTitle,
                     // The actions run in the dismiss completion: acting while the sheet is

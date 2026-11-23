@@ -1,5 +1,6 @@
 import AppUI
 import Foundation
+import TKAppInfo
 import TKLocalize
 
 protocol OnboardingRootModuleOutput: AnyObject {
@@ -15,15 +16,19 @@ final class OnboardingRootViewModelImplementation: OnboardingRootModuleOutput {
     var didTapImportButton: (() -> Void)?
     var didShowWelcome: (() -> Void)?
 
-    let state = OnboardingRootScreenState(
-        title: TKLocales.Onboarding.title,
-        caption: TKLocales.Onboarding.caption,
-        createButtonTitle: TKLocales.Onboarding.Buttons.createNew,
-        importButtonTitle: TKLocales.Onboarding.Buttons.importExisting,
-        termsCaption: TKLocales.Onboarding.Terms.caption(TKLocales.Onboarding.Terms.title),
-        termsLinkTitle: TKLocales.Onboarding.Terms.title,
-        termsURL: URL(string: "https://tonkeeper.com/terms")
-    )
+    let state: OnboardingRootScreenState
+
+    init(termsURL: URL? = InfoProvider.termsOfServiceURL()) {
+        state = OnboardingRootScreenState(
+            title: TKLocales.Onboarding.title,
+            caption: TKLocales.Onboarding.caption,
+            createButtonTitle: TKLocales.Onboarding.Buttons.createNew,
+            importButtonTitle: TKLocales.Onboarding.Buttons.importExisting,
+            termsCaption: TKLocales.Onboarding.Terms.caption(TKLocales.Onboarding.Terms.title),
+            termsLinkTitle: TKLocales.Onboarding.Terms.title,
+            termsURL: termsURL
+        )
+    }
 
     func didTapCreate() {
         didTapCreateButton?()

@@ -433,6 +433,135 @@ public enum Operations {
             }
         }
     }
+    /// Get blockchain config
+    ///
+    /// - Remark: HTTP `GET /v2/blockchain/config`.
+    /// - Remark: Generated from `#/paths//v2/blockchain/config/get(getBlockchainConfig)`.
+    public enum GetBlockchainConfig {
+        public static let id: Swift.String = "getBlockchainConfig"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/blockchain/config/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetBlockchainConfig.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetBlockchainConfig.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetBlockchainConfig.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetBlockchainConfig.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/blockchain/config/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/blockchain/config/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.BlockchainConfig)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.BlockchainConfig {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetBlockchainConfig.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetBlockchainConfig.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// blockchain config
+            ///
+            /// - Remark: Generated from `#/paths//v2/blockchain/config/get(getBlockchainConfig)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetBlockchainConfig.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetBlockchainConfig.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/blockchain/config/get(getBlockchainConfig)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get migratable assets value (TON balance, jettons with prices, NFT count) for several wallets at once.
     ///
     /// - Remark: HTTP `POST /v2/migration/wallets`.
@@ -539,6 +668,198 @@ public enum Operations {
             /// Some error during request processing
             ///
             /// - Remark: Generated from `#/paths//v2/migration/wallets/post(getMigrationWallets)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Prepare ordered signable transactions that migrate every asset from `from` to `to`.
+    ///
+    /// - Remark: HTTP `POST /v2/migration/prepare`.
+    /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)`.
+    public enum PrepareMigration {
+        public static let id: Swift.String = "prepareMigration"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PrepareMigration.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PrepareMigration.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.PrepareMigration.Input.Headers
+            /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.MigrationPrepareRequest)
+            }
+            public var body: Operations.PrepareMigration.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.PrepareMigration.Input.Headers = .init(),
+                body: Operations.PrepareMigration.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MigrationPrepareResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MigrationPrepareResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PrepareMigration.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PrepareMigration.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// ordered transactions to sign and broadcast
+            ///
+            /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.PrepareMigration.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.PrepareMigration.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/migration/prepare/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas.MigrationPrepareConflict)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MigrationPrepareConflict {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PrepareMigration.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PrepareMigration.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// the migration is prepared but not executable as-is — see `error_code`
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.PrepareMigration.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.PrepareMigration.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/migration/prepare/post(prepareMigration)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses._Error)
@@ -874,6 +1195,191 @@ public enum Operations {
             /// Some error during request processing
             ///
             /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/get(getAccountJettonsBalances)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get Jetton balance by owner address
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/jettons/{jetton_id}`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/{jetton_id}/get(getAccountJettonBalance)`.
+    public enum GetAccountJettonBalance {
+        public static let id: Swift.String = "getAccountJettonBalance"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// account ID
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/path/account_id`.
+                public var accountId: Components.Parameters.AccountIDParameter
+                /// jetton ID
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/path/jetton_id`.
+                public var jettonId: Components.Parameters.JettonIDParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - accountId: account ID
+                ///   - jettonId: jetton ID
+                public init(
+                    accountId: Components.Parameters.AccountIDParameter,
+                    jettonId: Components.Parameters.JettonIDParameter
+                ) {
+                    self.accountId = accountId
+                    self.jettonId = jettonId
+                }
+            }
+            public var path: Operations.GetAccountJettonBalance.Input.Path
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// accept gram and all possible fiat currencies, separated by commas
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/query/currencies`.
+                public var currencies: Components.Parameters.CurrenciesQuery?
+                /// comma separated list supported extensions
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/query/supported_extensions`.
+                public var supportedExtensions: Components.Parameters.SupportedExtensions?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currencies: accept gram and all possible fiat currencies, separated by commas
+                ///   - supportedExtensions: comma separated list supported extensions
+                public init(
+                    currencies: Components.Parameters.CurrenciesQuery? = nil,
+                    supportedExtensions: Components.Parameters.SupportedExtensions? = nil
+                ) {
+                    self.currencies = currencies
+                    self.supportedExtensions = supportedExtensions
+                }
+            }
+            public var query: Operations.GetAccountJettonBalance.Input.Query
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountJettonBalance.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountJettonBalance.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetAccountJettonBalance.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetAccountJettonBalance.Input.Path,
+                query: Operations.GetAccountJettonBalance.Input.Query = .init(),
+                headers: Operations.GetAccountJettonBalance.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/jettons/{jetton_id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.JettonBalance)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.JettonBalance {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetAccountJettonBalance.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetAccountJettonBalance.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// account jetton balance
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/{jetton_id}/get(getAccountJettonBalance)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetAccountJettonBalance.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetAccountJettonBalance.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/jettons/{jetton_id}/get(getAccountJettonBalance)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses._Error)
@@ -1718,6 +2224,337 @@ public enum Operations {
             }
         }
     }
+    /// Get expiring account .ton dns
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/dns/expiring`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/dns/expiring/get(getAccountDnsExpiring)`.
+    public enum GetAccountDnsExpiring {
+        public static let id: Swift.String = "getAccountDnsExpiring"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// account ID
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/path/account_id`.
+                public var accountId: Components.Parameters.AccountIDParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - accountId: account ID
+                public init(accountId: Components.Parameters.AccountIDParameter) {
+                    self.accountId = accountId
+                }
+            }
+            public var path: Operations.GetAccountDnsExpiring.Input.Path
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// number of days before expiration
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/query/period`.
+                public var period: Components.Parameters.PeriodQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - period: number of days before expiration
+                public init(period: Components.Parameters.PeriodQuery? = nil) {
+                    self.period = period
+                }
+            }
+            public var query: Operations.GetAccountDnsExpiring.Input.Query
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountDnsExpiring.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountDnsExpiring.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetAccountDnsExpiring.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetAccountDnsExpiring.Input.Path,
+                query: Operations.GetAccountDnsExpiring.Input.Query = .init(),
+                headers: Operations.GetAccountDnsExpiring.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/dns/expiring/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DnsExpiring)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DnsExpiring {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetAccountDnsExpiring.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetAccountDnsExpiring.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// account's expiring .ton dns
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/dns/expiring/get(getAccountDnsExpiring)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetAccountDnsExpiring.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetAccountDnsExpiring.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/dns/expiring/get(getAccountDnsExpiring)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get public key by account id
+    ///
+    /// - Remark: HTTP `GET /v2/accounts/{account_id}/publickey`.
+    /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/publickey/get(getAccountPublicKey)`.
+    public enum GetAccountPublicKey {
+        public static let id: Swift.String = "getAccountPublicKey"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// account ID
+                ///
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/path/account_id`.
+                public var accountId: Components.Parameters.AccountIDParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - accountId: account ID
+                public init(accountId: Components.Parameters.AccountIDParameter) {
+                    self.accountId = accountId
+                }
+            }
+            public var path: Operations.GetAccountPublicKey.Input.Path
+            /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountPublicKey.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetAccountPublicKey.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetAccountPublicKey.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetAccountPublicKey.Input.Path,
+                headers: Operations.GetAccountPublicKey.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/responses/200/content/json`.
+                    public struct JsonPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/responses/200/content/json/public_key`.
+                        public var publicKey: Swift.String
+                        /// Creates a new `JsonPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - publicKey:
+                        public init(publicKey: Swift.String) {
+                            self.publicKey = publicKey
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case publicKey = "public_key"
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/v2/accounts/{account_id}/publickey/GET/responses/200/content/application\/json`.
+                    case json(Operations.GetAccountPublicKey.Output.Ok.Body.JsonPayload)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Operations.GetAccountPublicKey.Output.Ok.Body.JsonPayload {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetAccountPublicKey.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetAccountPublicKey.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// account's public key
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/publickey/get(getAccountPublicKey)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetAccountPublicKey.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetAccountPublicKey.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/accounts/{account_id}/publickey/get(getAccountPublicKey)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get full information about domain name
     ///
     /// - Remark: HTTP `GET /v2/dns/{domain_name}`.
@@ -2120,6 +2957,311 @@ public enum Operations {
             /// Some error during request processing
             ///
             /// - Remark: Generated from `#/paths//v2/nfts/_bulk/post(getNftItemsByAddresses)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get NFT item by its address
+    ///
+    /// - Remark: HTTP `GET /v2/nfts/{account_id}`.
+    /// - Remark: Generated from `#/paths//v2/nfts/{account_id}/get(getNftItemByAddress)`.
+    public enum GetNftItemByAddress {
+        public static let id: Swift.String = "getNftItemByAddress"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/nfts/{account_id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// account ID
+                ///
+                /// - Remark: Generated from `#/paths/v2/nfts/{account_id}/GET/path/account_id`.
+                public var accountId: Components.Parameters.AccountIDParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - accountId: account ID
+                public init(accountId: Components.Parameters.AccountIDParameter) {
+                    self.accountId = accountId
+                }
+            }
+            public var path: Operations.GetNftItemByAddress.Input.Path
+            /// - Remark: Generated from `#/paths/v2/nfts/{account_id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetNftItemByAddress.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetNftItemByAddress.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetNftItemByAddress.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetNftItemByAddress.Input.Path,
+                headers: Operations.GetNftItemByAddress.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/nfts/{account_id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/nfts/{account_id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.NftItem)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.NftItem {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetNftItemByAddress.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetNftItemByAddress.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// nft item
+            ///
+            /// - Remark: Generated from `#/paths//v2/nfts/{account_id}/get(getNftItemByAddress)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetNftItemByAddress.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetNftItemByAddress.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/nfts/{account_id}/get(getNftItemByAddress)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get an event either by event ID or a hash of any transaction in a trace. An event is built on top of a trace which is a series of transactions caused by one inbound message. TonAPI looks for known patterns inside the trace and splits the trace into actions, where a single action represents a meaningful high-level operation like a Jetton Transfer or an NFT Purchase. Actions are expected to be shown to users. It is advised not to build any logic on top of actions because actions can be changed at any time.
+    ///
+    /// - Remark: HTTP `GET /v2/events/{event_id}`.
+    /// - Remark: Generated from `#/paths//v2/events/{event_id}/get(getEvent)`.
+    public enum GetEvent {
+        public static let id: Swift.String = "getEvent"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// event ID or transaction hash in hex (without 0x) or base64url format
+                ///
+                /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/path/event_id`.
+                public var eventId: Components.Parameters.EventIDParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - eventId: event ID or transaction hash in hex (without 0x) or base64url format
+                public init(eventId: Components.Parameters.EventIDParameter) {
+                    self.eventId = eventId
+                }
+            }
+            public var path: Operations.GetEvent.Input.Path
+            /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/header/Accept-Language`.
+                public var acceptLanguage: Components.Parameters.I18n?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetEvent.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - acceptLanguage:
+                ///   - accept:
+                public init(
+                    acceptLanguage: Components.Parameters.I18n? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetEvent.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.acceptLanguage = acceptLanguage
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetEvent.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetEvent.Input.Path,
+                headers: Operations.GetEvent.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/events/{event_id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Event)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Event {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetEvent.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetEvent.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// event
+            ///
+            /// - Remark: Generated from `#/paths//v2/events/{event_id}/get(getEvent)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetEvent.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetEvent.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/events/{event_id}/get(getEvent)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses._Error)
@@ -3694,6 +4836,288 @@ public enum Operations {
             /// Some error during request processing
             ///
             /// - Remark: Generated from `#/paths//v2/gasless/config/get(gaslessConfig)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get wallets by public key
+    ///
+    /// - Remark: HTTP `GET /v2/pubkeys/{public_key}/wallets`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/{public_key}/wallets/get(getWalletsByPublicKey)`.
+    public enum GetWalletsByPublicKey {
+        public static let id: Swift.String = "getWalletsByPublicKey"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/pubkeys/{public_key}/wallets/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/pubkeys/{public_key}/wallets/GET/path/public_key`.
+                public var publicKey: Components.Parameters.PublicKeyParameter
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - publicKey:
+                public init(publicKey: Components.Parameters.PublicKeyParameter) {
+                    self.publicKey = publicKey
+                }
+            }
+            public var path: Operations.GetWalletsByPublicKey.Input.Path
+            /// - Remark: Generated from `#/paths/v2/pubkeys/{public_key}/wallets/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetWalletsByPublicKey.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetWalletsByPublicKey.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetWalletsByPublicKey.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetWalletsByPublicKey.Input.Path,
+                headers: Operations.GetWalletsByPublicKey.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/pubkeys/{public_key}/wallets/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/pubkeys/{public_key}/wallets/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Wallets)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Wallets {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetWalletsByPublicKey.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetWalletsByPublicKey.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// a list of wallets
+            ///
+            /// - Remark: Generated from `#/paths//v2/pubkeys/{public_key}/wallets/get(getWalletsByPublicKey)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetWalletsByPublicKey.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetWalletsByPublicKey.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/pubkeys/{public_key}/wallets/get(getWalletsByPublicKey)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get wallets by a list of public keys
+    ///
+    /// - Remark: HTTP `POST /v2/pubkeys/wallets/_bulk`.
+    /// - Remark: Generated from `#/paths//v2/pubkeys/wallets/_bulk/post(getWalletsByPublicKeyBulk)`.
+    public enum GetWalletsByPublicKeyBulk {
+        public static let id: Swift.String = "getWalletsByPublicKeyBulk"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/pubkeys/wallets/_bulk/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetWalletsByPublicKeyBulk.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetWalletsByPublicKeyBulk.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetWalletsByPublicKeyBulk.Input.Headers
+            public var body: Components.RequestBodies.PublicKeys?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.GetWalletsByPublicKeyBulk.Input.Headers = .init(),
+                body: Components.RequestBodies.PublicKeys? = nil
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/pubkeys/wallets/_bulk/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/pubkeys/wallets/_bulk/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.WalletsByPublicKeys)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.WalletsByPublicKeys {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetWalletsByPublicKeyBulk.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetWalletsByPublicKeyBulk.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// grouped wallets per public key
+            ///
+            /// - Remark: Generated from `#/paths//v2/pubkeys/wallets/_bulk/post(getWalletsByPublicKeyBulk)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetWalletsByPublicKeyBulk.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetWalletsByPublicKeyBulk.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Some error during request processing
+            ///
+            /// - Remark: Generated from `#/paths//v2/pubkeys/wallets/_bulk/post(getWalletsByPublicKeyBulk)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses._Error)

@@ -2,11 +2,45 @@ import ChainKit
 
 /// Signs and encodes a swap transaction with the per-chain ChainKit delegate.
 /// Bitcoin signs with the whole HD wallet (the delegate needs the UTXO set); every
-/// other chain signs with the chain's private key.
+/// other chain signs with the chain's private key. A hardware wallet signs on the device.
 struct SwapTransactionSigner {
     private let tonBatchSigner = TonSwapBatchSigner()
 
+    /// The signed outputs to send, in order: one, except for several TON messages signed on a device, which
+    /// leave one transaction each.
     func signAndEncode<I, O>(
+        mediator: ChainMediatorWrapper<I, O>,
+        transactions: [any ChainKit.Transaction],
+        fee: Fee,
+        nonce: BignumBigInteger,
+        sourceChain: MultichainChain,
+        wallet: SwapSigningWallet,
+        payloadId: String
+    ) async throws(MultichainSwapExecutionFailure) -> [KotlinByteArray] {
+        if case let .device(device, swapWallet) = wallet {
+            return try await signOnDevice(
+                mediator: mediator,
+                transactions: transactions,
+                fee: fee,
+                nonce: nonce,
+                sourceChain: sourceChain,
+                device: device,
+                wallet: swapWallet.wallet,
+                payloadId: payloadId
+            )
+        }
+        return try await[signAndEncodeInApp(
+            mediator: mediator,
+            transactions: transactions,
+            fee: fee,
+            nonce: nonce,
+            sourceChain: sourceChain,
+            wallet: wallet,
+            payloadId: payloadId
+        )]
+    }
+
+    private func signAndEncodeInApp<I, O>(
         mediator: ChainMediatorWrapper<I, O>,
         transactions: [any ChainKit.Transaction],
         fee: Fee,
@@ -122,8 +156,64 @@ struct SwapTransactionSigner {
 
 private extension SwapTransactionSigner {
     enum Signer {
-        case wallet(CryptoWallet)
+        case wallet(MnemonicWallet)
         case privateKey(ChainKit.PrivateKey)
+    }
+
+    func signOnDevice<I, O>(
+        mediator: ChainMediatorWrapper<I, O>,
+        transactions: [any ChainKit.Transaction],
+        fee: Fee,
+        nonce: BignumBigInteger,
+        sourceChain: MultichainChain,
+        device: DeviceTransferSigner,
+        wallet: Wallet,
+        payloadId: String
+    ) async throws(MultichainSwapExecutionFailure) -> [KotlinByteArray] {
+        if sourceChain == .ton {
+            do {
+                return try await DeviceTransactionSigner.signTon(
+                    mediator: mediator,
+                    transactions: transactions,
+                    fee: fee,
+                    nonce: nonce,
+                    wallet: wallet,
+                    device: device.ton
+                )
+            } catch {
+                throw Self.failure(error, payloadId: payloadId)
+            }
+        }
+        guard let transaction = transactions.first, transactions.count == 1, DeviceTransactionSigner.canSign(sourceChain) else {
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .unsupportedTransaction,
+                reason: "a hardware wallet cannot sign \(transactions.count) \(sourceChain.rawValue) swap messages"
+            )
+        }
+        do {
+            return try await[DeviceTransactionSigner.signAndEncode(
+                mediator: mediator,
+                transaction: transaction,
+                fee: fee,
+                nonce: nonce,
+                chain: sourceChain,
+                device: device
+            )]
+        } catch {
+            throw Self.failure(error, payloadId: payloadId)
+        }
+    }
+
+    static func failure(_ error: MultichainTransactionFailure, payloadId: String) -> MultichainSwapExecutionFailure {
+        switch error {
+        case .canceled:
+            .canceled
+        case let .failedToSign(kind, reason):
+            .signingFailed(payloadId: payloadId, kind: kind, reason: reason)
+        default:
+            .signingFailed(payloadId: payloadId, kind: .signInternalError, reason: error.logDescription)
+        }
     }
 
     func resolvedSigner(
@@ -139,6 +229,12 @@ private extension SwapTransactionSigner {
                 payloadId: payloadId,
                 kind: .unknown,
                 reason: "a legacy wallet cannot sign a bitcoin payload"
+            )
+        case (.btc, .device):
+            throw .signingFailed(
+                payloadId: payloadId,
+                kind: .unknown,
+                reason: "a hardware wallet signs a bitcoin payload on the device"
             )
         case (.ton, _), (.eth, _), (.base, _), (.tron, _), (.arb, _), (.bsc, _), (.sol, _), (.polygon, _), (.avax, _), (.robinhood, _):
             return try .privateKey(wallet.privateKey(chain: sourceChain))

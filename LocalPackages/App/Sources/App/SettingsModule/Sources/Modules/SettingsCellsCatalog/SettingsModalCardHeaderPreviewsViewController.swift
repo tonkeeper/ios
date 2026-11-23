@@ -4,7 +4,7 @@ import UIKit
 
 final class SettingsModalCardHeaderPreviewsViewController: UIViewController {
     private let hostingController = TKHostingController(
-        content: ModalCardHeaderPreviews()
+        content: CatalogView()
     )
 
     override func viewDidLoad() {
@@ -22,5 +22,13 @@ final class SettingsModalCardHeaderPreviewsViewController: UIViewController {
         hostingController.view.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+    }
+}
+
+/// The catalog shows headers as content, so they stay cards in the Settings stack under liquid glass.
+private struct CatalogView: View {
+    var body: some View {
+        ModalCardHeaderPreviews()
+            .tkModalCardHeaderStaysInCard()
     }
 }

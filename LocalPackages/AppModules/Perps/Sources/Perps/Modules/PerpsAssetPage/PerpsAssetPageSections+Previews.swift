@@ -9,6 +9,14 @@ import TKUIKit
         .tkPreviewTheme(.deepBlue)
 }
 
+@available(iOS 17.0, *)
+#Preview("Loyalty banner", traits: .sizeThatFitsLayout) {
+    PerpsAssetLoyaltyBanner(onOpen: {}, onDismiss: {})
+        .frame(width: 390)
+        .background(.backgroundPage)
+        .tkPreviewTheme(.dark)
+}
+
 private struct PerpsLimitOrderBusyPreview: View {
     @State private var isBusy = true
     @State private var canCancelOrders = true
@@ -33,7 +41,7 @@ private struct PerpsLimitOrderBusyPreview: View {
                 onLimitOrder: { _ in }
             )
             PerpsAssetStickyActions(
-                actions: .editCancelLimitOrder(orderIndex: 1, enabled: canCancelOrders && !isBusy),
+                actions: .editCancelLimitOrder(orderIndex: 1, editEnabled: canCancelOrders && !isBusy, cancelEnabled: canCancelOrders && !isBusy),
                 isLimitOrderBusy: isBusy,
                 onLong: {},
                 onShort: {},

@@ -10,6 +10,10 @@ struct TransactionLiveActivityAttributes: ActivityAttributes {
             case send
             case receive
             case swap
+            case deposit
+            case withdrawal
+            case open
+            case close
             case other
         }
 
@@ -21,8 +25,6 @@ struct TransactionLiveActivityAttributes: ActivityAttributes {
 
         struct WalletDisplay: Codable, Hashable {
             let name: String
-            let emoji: String?
-            let icon: String?
         }
 
         enum Status: String, Codable {
@@ -33,26 +35,37 @@ struct TransactionLiveActivityAttributes: ActivityAttributes {
             case unknown
         }
 
-        /// Where a multi-stage operation is, 1-based; the outcome is the last of `count`.
+        /// Where a multi-stage operation is: step `index` of `count`, 1-based, named by `title`.
         struct Stage: Codable, Hashable {
             let index: Int
             let count: Int
+            var title: String?
         }
 
         var transactionId: String
         var chain: String
         var detail: String?
-        let status: Status
-        let title: String
-        let updatedAt: Date
-        let source: Leg?
-        let destination: Leg?
-        let kind: Kind?
-        let wallet: WalletDisplay?
-        let counterpartyAddress: String?
-        let stage: Stage?
+        var status: Status
+        var title: String
+        var updatedAt: Date
+        var source: Leg?
+        var destination: Leg?
+        var kind: Kind?
+        var wallet: WalletDisplay?
+        var counterpartyAddress: String?
+        var stage: Stage?
         /// The market of a perps trade, which a tap opens.
-        let perpsMarketId: Int64?
+        var perpsMarketId: Int64?
+        /// The step count of a multi-stage operation. The server clears `stage` when it settles the
+        /// activity and keeps this, so the outcome still shows every step.
+        var steps: Int?
+        /// The main amount in the person's currency.
+        var fiat: String?
+        /// The token logo: a file in the shared container that the app wrote, as the extension cannot load a URL.
+        var icon: String?
+        /// The wallet's other pending operations.
+        var queuedCount: Int?
+        var isRedacted = false
     }
 
     let walletId: String
@@ -95,7 +108,12 @@ extension TransactionLiveActivityAttributes.ContentState {
             wallet: values.decodeIfPresent(WalletDisplay.self, forKey: .wallet),
             counterpartyAddress: values.decodeIfPresent(String.self, forKey: .counterpartyAddress),
             stage: values.decodeIfPresent(Stage.self, forKey: .stage),
-            perpsMarketId: values.decodeIfPresent(Int64.self, forKey: .perpsMarketId)
+            perpsMarketId: values.decodeIfPresent(Int64.self, forKey: .perpsMarketId),
+            steps: values.decodeIfPresent(Int.self, forKey: .steps),
+            fiat: values.decodeIfPresent(String.self, forKey: .fiat),
+            icon: values.decodeIfPresent(String.self, forKey: .icon),
+            queuedCount: values.decodeIfPresent(Int.self, forKey: .queuedCount),
+            isRedacted: values.decodeIfPresent(Bool.self, forKey: .isRedacted) ?? false
         )
     }
 }
@@ -110,6 +128,12 @@ extension Activity where Attributes == TransactionLiveActivityAttributes {
 /// The URL a tap on the activity opens the app with. The app takes it before the deeplink parser,
 /// so a transaction's ids never reach the attribution SDKs.
 struct TransactionLiveActivityLink: Equatable {
+    /// Where the tap came from; its raw value is the link's `utm_content`.
+    enum Surface: String {
+        case lockScreen = "lock_screen"
+        case dynamicIsland = "dynamic_island"
+    }
+
     private static let scheme = "tonkeeper"
     private static let host = "live-activity"
     static let perpsFundingPrefix = "perps-funding:"
@@ -145,7 +169,7 @@ struct TransactionLiveActivityLink: Equatable {
             ? String(transactionId.dropFirst(Self.perpsFundingPrefix.count)) : nil
     }
 
-    var url: URL? {
+    func url(on surface: Surface) -> URL? {
         var components = URLComponents()
         components.scheme = Self.scheme
         components.host = Self.host
@@ -156,6 +180,11 @@ struct TransactionLiveActivityLink: Equatable {
         if let perpsMarketId {
             components.queryItems?.append(URLQueryItem(name: "market_id", value: String(perpsMarketId)))
         }
+        components.queryItems? += [
+            URLQueryItem(name: "utm_source", value: "tonkeeper"),
+            URLQueryItem(name: "utm_medium", value: "live_activity"),
+            URLQueryItem(name: "utm_content", value: surface.rawValue),
+        ]
         return components.url
     }
 }

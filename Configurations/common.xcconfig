@@ -1,5 +1,5 @@
 APP_NAME = Keeper
-APP_VERSION_COMMON = 26.10.3
+APP_VERSION_COMMON = 26.11.4
 
 BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER)
 PRODUCT_BUNDLE_IDENTIFIER = $(BUNDLE_IDENTIFIER)
@@ -17,17 +17,20 @@ ASSOCIATED_DOMAIN_APPLINKS_FOURTH = applinks:go.tonkeeper.com
 ASSOCIATED_DOMAIN_APPLINKS_FIFTH = applinks:x1zxr.app.link
 ASSOCIATED_DOMAIN_APPLINKS_SIXTH = applinks:x1zxr-alternate.app.link
 ASSOCIATED_DOMAIN_APPLINKS_SEVENTH = applinks:app.keeperwallet.com
+ASSOCIATED_DOMAIN_APPLINKS_EIGHTH = applinks:keeper.onelink.me
 
 // A REPLACE_WITH_* test key is ignored. Branch starts with the live key.
 LINKRUNNER_TOKEN = SmUhAMEH4C2ZdJgBrRXn5d79
 BRANCH_KEY_LIVE = key_live_evAHVEIYXLiLyUU2dg8BupjkxCbVjapg
 BRANCH_KEY_TEST = REPLACE_WITH_BRANCH_KEY_TEST
+APPSFLYER_DEV_KEY = K4DcfTJtj9yZvub93jxPzW
+APPSFLYER_APP_ID = 1587742107
 
 APTABASE_KEY = A-SH-6199502298
 APTABASE_ENDPOINT = https:/$()/anonymous-analytics.tonkeeper.com
 PLATFORM = ios
 
-TERMS_OF_SERVICE_URL = https:/$()/tonkeeper.com/terms
+TERMS_OF_SERVICE_URL = https:/$()/www.keeperwallet.com/terms
 PRIVACY_POLICY_URL = https:/$()/tonkeeper.com/privacy
 TONKEEPER_SWAP_URL = https:/$()/swap-widget.tonkeeper.com
 

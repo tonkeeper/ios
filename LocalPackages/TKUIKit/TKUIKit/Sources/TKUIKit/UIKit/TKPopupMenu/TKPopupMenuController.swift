@@ -24,7 +24,6 @@ public enum TKPopupMenuController {
 
         let menuViewController = TKPopupMenuViewController()
         menuViewController.didSelectItem = {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
             self.dismiss()
         }
 
@@ -32,8 +31,14 @@ public enum TKPopupMenuController {
             self.dismiss()
         }
 
+        menuViewController.didChangeContainerSize = { [weak menuViewController] in
+            guard let menuViewController, self.menuViewController === menuViewController else { return }
+            self.dismiss()
+        }
+
         sourceWindow.addSubview(menuViewController.view)
         menuViewController.view.frame = sourceWindow.bounds
+        menuViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         menuViewController.showMenu(
             items: items,
@@ -50,10 +55,13 @@ public enum TKPopupMenuController {
     }
 
     public static func dismiss() {
-        menuViewController?.hideMenu(duration: .animationDuration, completion: {
-            menuViewController?.view.removeFromSuperview()
-            self.menuViewController = nil
-        })
+        // Once per menu: a second call while it hides does nothing, and the hide removes only its
+        // own menu, never one shown after it.
+        guard let menuViewController else { return }
+        self.menuViewController = nil
+        menuViewController.hideMenu(duration: .animationDuration) {
+            menuViewController.view.removeFromSuperview()
+        }
     }
 }
 

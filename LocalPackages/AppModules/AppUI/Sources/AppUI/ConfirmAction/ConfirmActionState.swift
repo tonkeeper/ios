@@ -75,8 +75,9 @@ public struct ConfirmActionRow: Identifiable {
         /// One line in several tones, e.g. "$120 → $95".
         case parts([Part], subtitle: String? = nil)
         case wallet(name: String, emoji: String?, icon: UIImage?)
-        /// A fee paid in `token`, which the user can switch when `showsPicker`.
-        case feeOption(String, token: String?, showsPicker: Bool)
+        case amount(String, icon: UIImage)
+        /// A fee paid in `token`, which the user can switch when `showsPicker`. A shortage shows the subtitle in red.
+        case feeOption(String, token: String?, showsPicker: Bool, subtitle: String? = nil, isShortage: Bool = false)
         case unavailable(String, retryTitle: String, retry: () -> Void)
         case loading
     }
@@ -93,6 +94,9 @@ public struct ConfirmActionRow: Identifiable {
     public let value: Value
     public let interaction: Interaction
     public let titleHint: String?
+    public let titleIcon: UIImage?
+    /// A line under the whole row, as wide as it: for text the value's column would wrap.
+    public let note: String?
     public let isEnabled: Bool
 
     public init(
@@ -101,6 +105,8 @@ public struct ConfirmActionRow: Identifiable {
         value: Value,
         interaction: Interaction = .none,
         titleHint: String? = nil,
+        titleIcon: UIImage? = nil,
+        note: String? = nil,
         isEnabled: Bool = true
     ) {
         self.id = id
@@ -108,6 +114,8 @@ public struct ConfirmActionRow: Identifiable {
         self.value = value
         self.interaction = interaction
         self.titleHint = titleHint
+        self.titleIcon = titleIcon
+        self.note = note
         self.isEnabled = isEnabled
     }
 }
@@ -130,7 +138,12 @@ public struct ConfirmActionBarState {
     public var accessibilityIdentifier: String
     /// A change springs a swiped slider back, for a confirmation that ended without leaving the screen.
     public var resetToken: Int
+    /// The slider's tint; the button stays primary.
+    public var appearance: TKSlider.Appearance
     public var onConfirm: () -> Void
+    /// The slider started to move; a screen can start what the confirmation will need.
+    public var onSwipeBegan: (() -> Void)?
+    public var onSwipeAbandoned: (() -> Void)?
 
     public init(
         kind: Kind,
@@ -140,6 +153,7 @@ public struct ConfirmActionBarState {
         failureTitle: String,
         accessibilityIdentifier: String = "confirm_swipe",
         resetToken: Int = 0,
+        appearance: TKSlider.Appearance = .standart,
         onConfirm: @escaping () -> Void
     ) {
         self.kind = kind
@@ -149,6 +163,7 @@ public struct ConfirmActionBarState {
         self.failureTitle = failureTitle
         self.accessibilityIdentifier = accessibilityIdentifier
         self.resetToken = resetToken
+        self.appearance = appearance
         self.onConfirm = onConfirm
     }
 }

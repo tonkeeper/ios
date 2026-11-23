@@ -2,7 +2,6 @@ import KeeperCore
 
 protocol MultichainSwapSlippageService {
     var optionsBps: [Int] { get }
-    func initialSelectedBps(route: MultichainSwapRoute) -> Int
 }
 
 struct DefaultMultichainSwapSlippageService: MultichainSwapSlippageService {
@@ -29,21 +28,6 @@ struct DefaultMultichainSwapSlippageService: MultichainSwapSlippageService {
 
     var defaultBps: Int {
         sourceSlippageOptions?.defaultBps ?? fallbackBps
-    }
-
-    func initialSelectedBps(route: MultichainSwapRoute) -> Int {
-        if let routeSlippage = route.totalSlippageBps,
-           optionsBps.contains(routeSlippage)
-        {
-            return routeSlippage
-        }
-        if let defaultBps = sourceSlippageOptions?.defaultBps {
-            return defaultBps
-        }
-        // Without a config the swap keeps the slippage the swap screen quoted with. The route's
-        // `total_slippage_bps` is the slippage its legs add up to, not a tolerance to ask for, and
-        // SwapKit reports it negative, which the quote endpoint rejects.
-        return fallbackBps
     }
 }
 

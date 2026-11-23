@@ -35,7 +35,7 @@ final class DappBrowserAnalyticsTests: XCTestCase {
         XCTAssertEqual(context.urlDomain, "dedust.io")
         XCTAssertEqual(context.appId, "featured-dedust")
         XCTAssertEqual(context.bannerId, "promo-summer-2026")
-        XCTAssertEqual(context.assetChain, .bnb)
+        XCTAssertEqual(context.assetChain, .bsc)
         XCTAssertEqual(context.location, "TR")
     }
 

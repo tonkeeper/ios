@@ -1,6 +1,6 @@
 import Foundation
-import ReownWalletKit
 import TKLogging
+import WalletConnectSign
 
 struct WalletConnectDefaultSocketFactory: WebSocketFactory {
     func create(with url: URL) -> WebSocketConnecting {

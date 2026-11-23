@@ -24,6 +24,7 @@ final class MultichainWalletBalanceViewController: UIViewController, WalletConta
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        ScreenRenderTracker.shared.lifecycle(.viewDidLoad, for: .portfolio, from: self)
 
         view.backgroundColor = .clear
 
@@ -32,23 +33,27 @@ final class MultichainWalletBalanceViewController: UIViewController, WalletConta
         hostingController.didMove(toParent: self)
 
         hostingController.view.backgroundColor = .clear
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
+        hostingController.view.frame = view.bounds
+        hostingController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewWillAppear, for: .portfolio, from: self)
         viewModel.viewWillAppear()
+        if case .ready = viewModel.walletViewModel.state {
+            ScreenRenderTracker.shared.contentApplied(.cached, for: .portfolio)
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewDidAppear, for: .portfolio, from: self)
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        ScreenRenderTracker.shared.abandon(.portfolio, by: self)
         viewModel.viewDidDisappear()
     }
 

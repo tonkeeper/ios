@@ -31,22 +31,6 @@ func bridgeKotlin<T>(
     }
 }
 
-/// Awaits a Kotlin suspend function with a nullable result: a nil value with no
-/// error is a legitimate Kotlin null, not a failure.
-func bridgeKotlinOptional<T>(
-    _ body: (@escaping @Sendable (T?, Error?) -> Void) -> Void
-) async throws -> T? {
-    try await withCheckedThrowingContinuation { continuation in
-        body { value, error in
-            if let error {
-                continuation.resume(throwing: error)
-            } else {
-                continuation.resume(returning: value)
-            }
-        }
-    }
-}
-
 func perpsValue<T: AnyObject>(_ result: PerpsRes<T>) throws -> T {
     if let error = result.error {
         throw PerpsTradeFailure(exception: error)

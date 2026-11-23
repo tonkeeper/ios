@@ -6,6 +6,7 @@ public final class HomeBannersLoader {
 
     init(
         tonkeeperAPI: TonkeeperAPI,
+        configuration: Configuration,
         homeBannersStore: HomeBannersStore,
         walletsStore: WalletsStore
     ) {
@@ -13,7 +14,9 @@ public final class HomeBannersLoader {
             walletsStore: walletsStore,
             fetch: { walletId in
                 do {
-                    return try await tonkeeperAPI.loadBanners(walletId: walletId)
+                    let banners = try await tonkeeperAPI.loadBanners(walletId: walletId)
+                    _ = await configuration.loadConfigurations()
+                    return banners.filter { !configuration.isPromoHidden(id: $0.id) }
                 } catch {
                     Log.w("Failed to load home banners for wallet \(walletId ?? "none"): \(error)")
                     return nil

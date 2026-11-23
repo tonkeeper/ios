@@ -3,11 +3,11 @@ import SwiftCentrifuge
 import TKLogging
 
 private let clientName = "ios"
-private let walletChannelPrefix = "wallet:"
 
 protocol MultichainRealtimeTransport: AnyObject {
     func connect(walletId: String, endpoint: URL)
     func disconnect()
+    func setPerpsSubscribed(_ subscribed: Bool)
     func setSignalHandler(_ handler: @escaping (MultichainRealtimeSignal) -> Void)
     func setDisabledByBackendHandler(_ handler: @escaping () -> Void)
 }
@@ -22,8 +22,10 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
 
     private var client: CentrifugeClient?
     private var clientID = UUID()
-    private var subscription: CentrifugeSubscription?
-    private var subscriptionDelegate: WalletSubscriptionDelegate?
+    private var walletId: String?
+    private var wantsPerps = false
+    private var walletSubscription: ChannelSubscription?
+    private var perpsSubscription: ChannelSubscription?
     private let syncQueue = DispatchQueue(label: "com.tonkeeper.multichain.realtime")
 
     init(
@@ -54,8 +56,19 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
             self.teardownClient()
             let client = self.makeClient(endpoint: endpoint)
             self.client = client
-            self.subscribe(client: client, walletId: walletId)
+            self.walletId = walletId
+            Log.multichain.i("Realtime connect: wallet:\(walletLogId(walletId)) \(endpoint.host ?? endpoint.absoluteString)")
+            self.walletSubscription = self.subscribe(client: client, walletId: walletId, channel: .wallet)
+            self.applyPerpsSubscription()
             client.connect()
+        }
+    }
+
+    func setPerpsSubscribed(_ subscribed: Bool) {
+        syncQueue.async { [weak self] in
+            guard let self else { return }
+            self.wantsPerps = subscribed
+            self.applyPerpsSubscription()
         }
     }
 
@@ -66,13 +79,32 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
         }
     }
 
+    private func applyPerpsSubscription() {
+        if wantsPerps {
+            guard perpsSubscription == nil, let client, let walletId else { return }
+            perpsSubscription = subscribe(client: client, walletId: walletId, channel: .perps)
+        } else if let subscription = perpsSubscription {
+            perpsSubscription = nil
+            remove(subscription)
+        }
+    }
+
+    private func remove(_ channel: ChannelSubscription) {
+        Log.multichain.i("Realtime unsubscribe: \(channel.delegate.logName)")
+        channel.subscription.unsubscribe()
+        client?.removeSubscription(channel.subscription)
+    }
+
     private func teardownClient() {
+        if client != nil {
+            Log.multichain.i("Realtime disconnect")
+        }
         clientID = UUID()
-        let subscription = self.subscription
-        self.subscription = nil
-        subscriptionDelegate = nil
-        subscription?.unsubscribe()
-        if let subscription { client?.removeSubscription(subscription) }
+        let subscriptions = [walletSubscription, perpsSubscription].compactMap { $0 }
+        walletSubscription = nil
+        perpsSubscription = nil
+        walletId = nil
+        subscriptions.forEach(remove)
         client?.disconnect()
         client = nil
     }
@@ -102,12 +134,10 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
         )
     }
 
-    private func subscribe(client: CentrifugeClient, walletId: String) {
-        let channel = walletChannelPrefix + walletId
-        let delegate = WalletSubscriptionDelegate(walletId: walletId) { [weak self] delegate, signal in
+    private func subscribe(client: CentrifugeClient, walletId: String, channel: RealtimeChannel) -> ChannelSubscription? {
+        let delegate = ChannelSubscriptionDelegate(walletId: walletId, channel: channel) { [weak self] delegate, signal in
             self?.emit(signal, from: delegate)
         }
-        subscriptionDelegate = delegate
         let clientID = self.clientID
         let config = CentrifugeSubscriptionConfig(
             tokenGetter: { [weak self] _, completion in
@@ -116,21 +146,35 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
                         completion(.failure(CentrifugeError.unauthorized))
                         return
                     }
-                    let result = await self.tokenSource.subscriptionToken(walletId: walletId)
+                    let result = await self.subscriptionToken(channel: channel, walletId: walletId)
                     completion(self.mapTokenResult(result, clientID: clientID))
                 }
             }
         )
         do {
             let subscription = try client.newSubscription(
-                channel: channel,
+                channel: channel.name(walletId: walletId),
                 delegate: delegate,
                 config: config
             )
-            self.subscription = subscription
             subscription.subscribe()
+            Log.multichain.i("Realtime subscribe: \(channel.logName(walletId: walletId))")
+            return ChannelSubscription(subscription: subscription, delegate: delegate)
         } catch {
-            Log.multichain.w("Realtime subscription create failed", error: error)
+            Log.multichain.w("Realtime subscription create failed: \(channel.logName(walletId: walletId))", error: error)
+            return nil
+        }
+    }
+
+    private func subscriptionToken(channel: RealtimeChannel, walletId: String) async -> RealtimeTokenResult {
+        switch channel {
+        case .wallet:
+            await tokenSource.subscriptionToken(walletId: walletId)
+        case .perps:
+            switch await tokenSource.perpsSubscriptionToken(walletId: walletId) {
+            case .disabledByBackend: .forbidden
+            case let result: result
+            }
         }
     }
 
@@ -156,9 +200,11 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
         }
     }
 
-    private func emit(_ signal: MultichainRealtimeSignal, from delegate: WalletSubscriptionDelegate) {
+    private func emit(_ signal: MultichainRealtimeSignal, from delegate: ChannelSubscriptionDelegate) {
         syncQueue.async { [weak self] in
-            guard let self, self.subscriptionDelegate === delegate else { return }
+            guard let self,
+                  self.walletSubscription?.delegate === delegate || self.perpsSubscription?.delegate === delegate
+            else { return }
             self.signalHandler?(signal)
         }
     }
@@ -166,15 +212,15 @@ final class MultichainRealtimeClient: MultichainRealtimeTransport {
 
 extension MultichainRealtimeClient: CentrifugeClientDelegate {
     func onConnecting(_: CentrifugeClient, _ event: CentrifugeConnectingEvent) {
-        Log.multichain.d("Realtime connecting: \(event.code) \(event.reason)")
+        Log.multichain.i("Realtime connecting: \(event.code) \(event.reason)")
     }
 
     func onConnected(_: CentrifugeClient, _: CentrifugeConnectedEvent) {
-        Log.multichain.d("Realtime connected")
+        Log.multichain.i("Realtime connected")
     }
 
     func onDisconnected(_: CentrifugeClient, _ event: CentrifugeDisconnectedEvent) {
-        Log.multichain.d("Realtime disconnected: \(event.code) \(event.reason)")
+        Log.multichain.i("Realtime disconnected: \(event.code) \(event.reason)")
     }
 
     func onError(_: CentrifugeClient, _ event: CentrifugeErrorEvent) {
@@ -182,29 +228,72 @@ extension MultichainRealtimeClient: CentrifugeClientDelegate {
     }
 }
 
-private final class WalletSubscriptionDelegate: CentrifugeSubscriptionDelegate {
+private enum RealtimeChannel {
+    case wallet
+    case perps
+
+    func name(walletId: String) -> String {
+        switch self {
+        case .wallet: "wallet:\(walletId)"
+        case .perps: "perps:\(walletId)"
+        }
+    }
+
+    func logName(walletId: String) -> String {
+        name(walletId: walletLogId(walletId))
+    }
+}
+
+private struct ChannelSubscription {
+    let subscription: CentrifugeSubscription
+    let delegate: ChannelSubscriptionDelegate
+}
+
+private final class ChannelSubscriptionDelegate: CentrifugeSubscriptionDelegate {
     private let walletId: String
-    private let onSignal: (WalletSubscriptionDelegate, MultichainRealtimeSignal) -> Void
+    private let channel: RealtimeChannel
+    private let onSignal: (ChannelSubscriptionDelegate, MultichainRealtimeSignal) -> Void
     private let lock = NSLock()
     private var subscribedBefore = false
 
-    init(walletId: String, onSignal: @escaping (WalletSubscriptionDelegate, MultichainRealtimeSignal) -> Void) {
+    init(
+        walletId: String,
+        channel: RealtimeChannel,
+        onSignal: @escaping (ChannelSubscriptionDelegate, MultichainRealtimeSignal) -> Void
+    ) {
         self.walletId = walletId
+        self.channel = channel
         self.onSignal = onSignal
     }
 
-    func onSubscribing(_: CentrifugeSubscription, _ event: CentrifugeSubscribingEvent) {
-        Log.multichain.d("Realtime subscribing: wallet:\(walletId) \(event.code) \(event.reason)")
-        onSignal(self, .unsubscribed(walletId: walletId))
+    var logName: String {
+        channel.logName(walletId: walletId)
     }
 
-    func onSubscribed(_: CentrifugeSubscription, _: CentrifugeSubscribedEvent) {
-        Log.multichain.d("Realtime subscribed: wallet:\(walletId)")
+    private var unsubscribedSignal: MultichainRealtimeSignal {
+        switch channel {
+        case .wallet: .unsubscribed(walletId: walletId)
+        case .perps: .perpsUnsubscribed(walletId: walletId)
+        }
+    }
+
+    func onSubscribing(_: CentrifugeSubscription, _ event: CentrifugeSubscribingEvent) {
+        Log.multichain.i("Realtime subscribing: \(logName) \(event.code) \(event.reason)")
+        onSignal(self, unsubscribedSignal)
+    }
+
+    func onSubscribed(_: CentrifugeSubscription, _ event: CentrifugeSubscribedEvent) {
+        Log.multichain.i("Realtime subscribed: \(logName) recovered:\(event.wasRecovering && event.recovered)")
         lock.lock()
         let wasSubscribed = subscribedBefore
         subscribedBefore = true
         lock.unlock()
-        onSignal(self, .subscribed(walletId: walletId, resubscribed: wasSubscribed))
+        switch channel {
+        case .wallet:
+            onSignal(self, .subscribed(walletId: walletId, resubscribed: wasSubscribed))
+        case .perps:
+            onSignal(self, .perpsSubscribed(walletId: walletId, recovered: event.wasRecovering && event.recovered))
+        }
     }
 
     func onPublication(_: CentrifugeSubscription, _ event: CentrifugePublicationEvent) {
@@ -212,11 +301,11 @@ private final class WalletSubscriptionDelegate: CentrifugeSubscriptionDelegate {
     }
 
     func onUnsubscribed(_: CentrifugeSubscription, _ event: CentrifugeUnsubscribedEvent) {
-        Log.multichain.d("Realtime unsubscribed: wallet:\(walletId) \(event.code) \(event.reason)")
-        onSignal(self, .unsubscribed(walletId: walletId))
+        Log.multichain.i("Realtime unsubscribed: \(logName) \(event.code) \(event.reason)")
+        onSignal(self, unsubscribedSignal)
     }
 
     func onError(_: CentrifugeSubscription, _ event: CentrifugeSubscriptionErrorEvent) {
-        Log.multichain.w("Realtime subscription error: wallet:\(walletId)", error: event.error)
+        Log.multichain.w("Realtime subscription error: \(logName)", error: event.error)
     }
 }

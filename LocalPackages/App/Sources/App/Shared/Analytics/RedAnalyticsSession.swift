@@ -1,3 +1,4 @@
+import KeeperCore
 import TKCore
 
 public typealias RedAnalyticsMetadata = [RedAnalyticsMetadataKey: Any?]
@@ -9,4 +10,5 @@ struct RedAnalyticsSession {
     var attemptSource: RedAnalyticsAttemptSource?
     var startedAtMs: Int
     var otherMetadata: RedAnalyticsMetadata?
+    var utm: UtmParameters = .empty
 }

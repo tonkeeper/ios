@@ -70,8 +70,9 @@ public extension Wallet {
                 return contractVersion
             case .Lockup:
                 throw Error.invalidWalletKind
-            case .Watchonly:
-                throw Error.invalidWalletKind
+            case let .Watchonly(_, contractVersion):
+                guard let contractVersion else { throw Error.invalidWalletKind }
+                return contractVersion
             case let .Signer(_, contractVersion):
                 return contractVersion
             case let .SignerDevice(_, contractVersion):
@@ -120,6 +121,8 @@ public extension Wallet {
                         workchain: 0
                     )
                 )
+            case .walletTg:
+                return WalletTg(publicKey: publicKey.data, network: network)
             }
         }
     }
@@ -137,7 +140,7 @@ public extension Wallet {
                 return try contract.address()
             case .Lockup:
                 return try contract.address()
-            case let .Watchonly(address):
+            case let .Watchonly(address, _):
                 switch address {
                 case let .Resolved(address):
                     return address
@@ -191,6 +194,10 @@ public extension Wallet {
         kind == .regular && isW5
     }
 
+    var isTonConnectSignDataAvailable: Bool {
+        kind != .ledger
+    }
+
     var isV4R2: Bool {
         do {
             return try contractVersion == .v4R2
@@ -217,6 +224,10 @@ public extension Wallet {
 
     var isW5Generation: Bool {
         isW5 || isW5Beta
+    }
+
+    var isWalletTg: Bool {
+        (try? contractVersion) == .walletTg
     }
 
     var isSendAvailable: Bool {
@@ -306,13 +317,19 @@ public extension Wallet {
         }
     }
 
+    /// The Battery relayer does not accept WalletTg requests.
     var isBatteryEnable: Bool {
         switch kind {
         case .regular:
-            return true
+            return !isWalletTg
         default:
             return false
         }
+    }
+
+    /// A Ledger has the battery on TRON alone, where the battery relays the very transaction its Tron app signs.
+    func isBatteryEnable(on chain: MultichainChain) -> Bool {
+        isBatteryEnable || (kind == .ledger && chain == .tron)
     }
 
     var isReportSpamAvailable: Bool {

@@ -586,7 +586,7 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         } else {
             dateFormatter.dateFormat = "LLLL y"
         }
-        return dateFormatter.string(from: date).capitalized
+        return dateFormatter.string(from: date).capitalizedFirst
     }
 
     private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {

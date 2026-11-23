@@ -6,13 +6,17 @@ final class LedgerConfirmView: TKView, ConfigurableView {
     let contentView = LedgerContentView()
     let buttonsStackView = UIStackView()
     let cancelButton = TKButton()
+    let confirmButton = TKButton()
 
     override func setup() {
         addSubview(containerView)
         containerView.addSubview(contentView)
         containerView.addSubview(buttonsStackView)
 
+        buttonsStackView.spacing = .buttonsSpacing
+        buttonsStackView.distribution = .fillEqually
         buttonsStackView.addArrangedSubview(cancelButton)
+        buttonsStackView.addArrangedSubview(confirmButton)
 
         containerView.snp.makeConstraints { make in
             make.edges.equalTo(self)
@@ -34,13 +38,24 @@ final class LedgerConfirmView: TKView, ConfigurableView {
 
     struct Model {
         let contentViewModel: LedgerContentView.Model
+        /// Cancels the work, or skips the app of a stage that waits for the user's choice.
         let cancelButton: TKButton.Configuration
+        /// Lets the Ledger open the app of a stage that waits for the user's choice.
+        var confirmButton: TKButton.Configuration?
     }
 
     func configure(model: Model) {
         contentView.configure(model: model.contentViewModel)
         cancelButton.configuration = model.cancelButton
+        confirmButton.isHidden = model.confirmButton == nil
+        if let confirm = model.confirmButton {
+            confirmButton.configuration = confirm
+        }
     }
+}
+
+private extension CGFloat {
+    static let buttonsSpacing: CGFloat = 16
 }
 
 private extension UIEdgeInsets {

@@ -23,4 +23,11 @@ final class DappLoadFailureAnalyticsTests: XCTestCase {
         XCTAssertEqual(failure.errorCode, "web_content_process_terminated")
         XCTAssertNil(failure.httpStatus)
     }
+
+    func test_timeoutHasACodeOfItsOwn() {
+        let failure = TKBridgeWebViewController.LoadFailure.timeout
+
+        XCTAssertEqual(failure.errorCode, "timeout")
+        XCTAssertNil(failure.httpStatus)
+    }
 }

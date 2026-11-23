@@ -73,13 +73,15 @@ public extension TonConnect {
             }
         }
 
-        public init(maxMessages: Int, appVersion: String, isSignMessageSupported: Bool) {
+        public init(maxMessages: Int, appVersion: String, isSignMessageSupported: Bool, isSignDataSupported: Bool) {
             self.appVersion = appVersion
             var features = [
                 FeatureCompatible.legacy(.sendTransaction(maxMessages: maxMessages)),
                 FeatureCompatible.feature(.sendTransaction(maxMessages: maxMessages)),
-                FeatureCompatible.feature(.signData(types: [.text, .binary, .cell])),
             ]
+            if isSignDataSupported {
+                features.append(.feature(.signData(types: [.text, .binary, .cell])))
+            }
             if isSignMessageSupported {
                 features.append(.feature(.signMessage(maxMessages: maxMessages)))
             }
@@ -116,6 +118,12 @@ public extension TonConnect {
         public let event = "connect_error"
         public let id = Int(Date().timeIntervalSince1970)
         public let payload: Payload
+    }
+
+    struct DisconnectEvent: Encodable {
+        public let event = "disconnect"
+        public let id = Int(Date().timeIntervalSince1970)
+        public let payload = [String: String]()
     }
 
     @frozen enum ConnectItemReply: Encodable {

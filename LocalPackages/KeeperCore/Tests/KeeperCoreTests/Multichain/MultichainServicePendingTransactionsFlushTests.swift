@@ -1,6 +1,7 @@
 import Foundation
 @testable import KeeperCore
 import KeeperCoreComponents
+import TKTestSupport
 import XCTest
 
 final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
@@ -43,9 +44,11 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
 
     func test_getWalletActivities_requestsHistory_whenFlushExceedsItsTimeLimit() async throws {
         let calls = CallRecorder()
+        let flushHold = TestGate()
+        addTeardownBlock { await flushHold.open() }
         let service = try makeService(
             calls: calls,
-            flushDuration: 10,
+            flushHold: flushHold,
             pendingTransactionsFlushTimeLimit: 0.05
         )
 
@@ -69,7 +72,7 @@ final class MultichainServicePendingTransactionsFlushTests: XCTestCase {
 private extension MultichainServicePendingTransactionsFlushTests {
     func makeService(
         calls: CallRecorder,
-        flushDuration: TimeInterval = 0,
+        flushHold: TestGate? = nil,
         pendingTransactionsFlushTimeLimit: TimeInterval = MultichainServiceImplementation
             .defaultPendingTransactionsFlushTimeLimit
     ) throws -> MultichainService {
@@ -88,7 +91,7 @@ private extension MultichainServicePendingTransactionsFlushTests {
             ),
             pendingTransactionsService: RecordingPendingTransactionsService(
                 calls: calls,
-                flushDuration: flushDuration
+                flushHold: flushHold
             ),
             pendingTransactionsFlushTimeLimit: pendingTransactionsFlushTimeLimit
         )
@@ -110,14 +113,12 @@ private actor CallRecorder {
 
 private struct RecordingPendingTransactionsService: PendingTransactionsService {
     let calls: CallRecorder
-    let flushDuration: TimeInterval
+    let flushHold: TestGate?
 
     func report(_: MultichainPendingTransaction) async {}
 
     func flushRetained() async {
-        if flushDuration > 0 {
-            try? await Task.sleep(nanoseconds: UInt64(flushDuration * 1_000_000_000))
-        }
+        try? await flushHold?.wait()
         await calls.record(.flushRetainedPendingTransactions)
     }
 }
@@ -187,6 +188,10 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
         throw .connectionError(underlying: nil)
     }
 
+    func getWalletAsset(walletId _: String, assetId _: String, currencies _: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord? {
+        nil
+    }
+
     func saveWalletAssetsFilters(
         walletId _: String,
         changes _: [MultichainAssetFilterChange]
@@ -235,6 +240,10 @@ private struct MultichainActivitiesClientAPIStub: MultichainClientAPI {
     }
 
     func getWalletRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
+        throw .connectionError(underlying: nil)
+    }
+
+    func getWalletPerpsRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
         throw .connectionError(underlying: nil)
     }
 }

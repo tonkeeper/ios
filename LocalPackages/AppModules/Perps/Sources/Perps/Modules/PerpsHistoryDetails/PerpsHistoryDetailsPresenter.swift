@@ -11,28 +11,52 @@ public final class PerpsHistoryDetailsPresenter {
     private let marketsStore: any PerpsMarketsStoring
     private let format: PerpsFormatting
     private let shareFlow: PerpsSharePositionFlow
+    private let onOpenLoyalty: @MainActor () -> Void
 
-    public convenience init(marketsStore: any PerpsMarketsStoring, format: PerpsFormatting) {
-        self.init(marketsStore: marketsStore, format: format, shareFlow: PerpsSharePositionFlow(format: format))
+    public convenience init(
+        marketsStore: any PerpsMarketsStoring,
+        format: PerpsFormatting,
+        onOpenLoyalty: @escaping @MainActor () -> Void
+    ) {
+        self.init(
+            marketsStore: marketsStore,
+            format: format,
+            shareFlow: PerpsSharePositionFlow(format: format),
+            onOpenLoyalty: onOpenLoyalty
+        )
     }
 
-    init(marketsStore: any PerpsMarketsStoring, format: PerpsFormatting, shareFlow: PerpsSharePositionFlow) {
+    init(
+        marketsStore: any PerpsMarketsStoring,
+        format: PerpsFormatting,
+        shareFlow: PerpsSharePositionFlow,
+        onOpenLoyalty: @escaping @MainActor () -> Void
+    ) {
         self.marketsStore = marketsStore
         self.format = format
         self.shareFlow = shareFlow
+        self.onOpenLoyalty = onOpenLoyalty
     }
 
     public func present(_ event: PerpsHistoryEvent, from presenter: UIViewController) {
         guard presenter.view.window != nil, presenter.presentedViewController == nil else { return }
         weak var bottomSheet: TKBottomSheetViewController?
         let sheet = TKBottomSheetViewController(
-            contentViewController: PerpsBottomSheetScrollContentViewController(header: .compact) {
-                PerpsHistoryDetailsContent(event: event, marketsStore: marketsStore, format: format) { [weak self, weak presenter] share in
-                    bottomSheet?.dismiss {
-                        guard let presenter, presenter.view.window != nil else { return }
-                        self?.shareFlow.present(share, from: presenter)
+            contentViewController: TKBottomSheetScrollHostingController(header: .compact) {
+                PerpsHistoryDetailsContent(
+                    event: event,
+                    marketsStore: marketsStore,
+                    format: format,
+                    onShare: { [weak self, weak presenter] share in
+                        bottomSheet?.dismiss {
+                            guard let presenter, presenter.view.window != nil else { return }
+                            self?.shareFlow.present(share, from: presenter)
+                        }
+                    },
+                    onOpenLoyalty: { [weak self] in
+                        bottomSheet?.dismiss { self?.onOpenLoyalty() }
                     }
-                }
+                )
             }
         )
         bottomSheet = sheet
@@ -45,6 +69,7 @@ private struct PerpsHistoryDetailsContent: View {
     let marketsStore: any PerpsMarketsStoring
     let format: PerpsFormatting
     let onShare: (SharePositionSnapshot) -> Void
+    let onOpenLoyalty: () -> Void
 
     @State private var market: PerpsHistoryDetailsMapping.Market?
 
@@ -56,7 +81,8 @@ private struct PerpsHistoryDetailsContent: View {
                 format: format,
                 onShare: PerpsHistoryDetailsMapping.shareSnapshot(event: event, iconURL: market?.iconURL).map { share in
                     { onShare(share) }
-                }
+                },
+                onOpenLoyalty: onOpenLoyalty
             ),
             onOpenTransaction: { _, _ in },
             onCopy: { _ in }

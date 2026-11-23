@@ -49,24 +49,56 @@ enum MultichainHistoryEventTarget {
         of activity: MultichainActivity,
         in activities: [MultichainActivity]
     ) -> MultichainActivity? {
+        let hashes = Set(activity.txIds.map(transactionHash)).subtracting([""])
+        if hashes.isEmpty, activity.status == .pending,
+           [.perpsBalanceDeposit, .perpsBalanceWithdrawal].contains(activity.activityType)
+        {
+            return listedFunding(of: activity, in: activities)
+        }
         let identity = MultichainHistoryActivityIdentity(activity: activity)
         if let same = activities.first(where: { MultichainHistoryActivityIdentity(activity: $0) == identity }) {
             return same
         }
-        let hashes = Set(activity.txIds.map(transactionHash)).subtracting([""])
+        guard !hashes.isEmpty else {
+            return nil
+        }
         let candidates = activities.filter { candidate in
             candidate.txIds.contains { hashes.contains(transactionHash($0)) }
         }
         return candidates.count == 1 ? candidates[0] : nil
     }
+
+    /// A Perps deposit or withdrawal is listed pending before it has a transaction, and its time stays
+    /// when it settles. A withdrawal then gets its hashes and destination chain; a deposit keeps no hashes,
+    /// and its amount turns from the quoted one into the credited one. Pending operations of one shape
+    /// differ only in time, which the identity leaves out, so the time decides here.
+    private static func listedFunding(
+        of activity: MultichainActivity,
+        in activities: [MultichainActivity]
+    ) -> MultichainActivity? {
+        let candidates = activities.filter { candidate in
+            candidate.activityType == activity.activityType
+                && candidate.direction == activity.direction
+                && candidate.blockTime == activity.blockTime
+                && candidate.walletAddress?.lowercased() == activity.walletAddress?.lowercased()
+                && candidate.outToken?.assetId == activity.outToken?.assetId
+                && (activity.activityType == .perpsBalanceDeposit
+                    ? candidate.inToken?.assetId == activity.inToken?.assetId
+                    : candidate.outAmount == activity.outAmount)
+        }
+        return candidates.count == 1 ? candidates[0] : nil
+    }
 }
 
-private extension MultichainHistoryEventTarget {
+extension MultichainHistoryEventTarget {
+    /// The history lists `<chain>:<hash>`, while the app keeps the bare hash; both give the same key.
     static func transactionHash(_ txId: String) -> String {
         let parts = txId.split(separator: ":", omittingEmptySubsequences: false)
         return normalizedHash(String(parts.count > 1 ? parts[1] : parts[0]))
     }
+}
 
+private extension MultichainHistoryEventTarget {
     static func indexedTransactionID(_ eventId: String) -> (txId: String, index: Int)? {
         guard let separator = eventId.lastIndex(of: ":") else {
             return nil

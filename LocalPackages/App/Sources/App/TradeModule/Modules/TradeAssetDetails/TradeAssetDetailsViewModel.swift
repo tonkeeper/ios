@@ -81,6 +81,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
 
     let chartState: TokenChartViewState?
     let walletCapabilities: TradeAssetDetailsWalletCapabilities
+    private let walletName: String
 
     private let multichainState: MultichainWalletState?
     private let assetID: String
@@ -99,10 +100,12 @@ final class TradeAssetDetailsViewModel: ObservableObject {
     private let marketDataViewModel: TradeAssetDetailsMarketDataViewModel
     private let balanceViewModel: any TradeAssetDetailsBalanceViewModeling
     private let historySource: HistorySource
+    private let encryptedComments: MultichainEncryptedComments?
     private let tronFeesViewModel: TradeAssetDetailsTronFeesViewModel?
     private let perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?
     private let tonStakingAPYProvider: () -> Decimal?
-    private let earnAssetOffersRepository: EarnAssetOffersRepository
+    /// `nil` for a wallet that cannot open an Earn vault.
+    private let earnAssetOffersRepository: EarnAssetOffersRepository?
     private let tokenDetailsConfiguratorProvider: (TradingAssetInfo) async -> TokenDetailsConfigurator?
     private let onOpenHistory: (TradeAssetHistoryContext) -> Void
     private let onOpenHistoryEvent: (TradeAssetHistorySelection) -> Void
@@ -146,6 +149,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         preview: PreviewContext,
         isSwapDisabled: Bool,
         walletCapabilities: TradeAssetDetailsWalletCapabilities,
+        walletName: String,
         analyticsProvider: AnalyticsProvider,
         analyticsSource: AssetViewAnalyticsSource,
         favoriteAssetsService: TradingFavoriteAssetsService,
@@ -161,6 +165,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         marketDataViewModel: TradeAssetDetailsMarketDataViewModel,
         balanceViewModel: any TradeAssetDetailsBalanceViewModeling,
         historySource: HistorySource,
+        encryptedComments: MultichainEncryptedComments? = nil,
         tronFeesViewModel: TradeAssetDetailsTronFeesViewModel?,
         perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?,
         tonStakingAPYProvider: @escaping () -> Decimal?,
@@ -179,7 +184,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         onTronFees: @escaping (TronUsdtFeesSnapshot, TradeAssetDetailsTronFeesTrigger) -> Void,
         onOpenStaking: @escaping () -> Void,
         onOpenEarnVault: @escaping (EarnAssetOffer) -> Void,
-        earnAssetOffersRepository: EarnAssetOffersRepository,
+        earnAssetOffersRepository: EarnAssetOffersRepository?,
         onOpenTokenizedInfo: @escaping (TokenizedAssetInfoKind) -> Void,
         onOpenUnverifiedTokenInfo: @escaping () -> Void,
         onOpenVerifiedTokenInfo: @escaping () -> Void,
@@ -190,6 +195,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.assetID = preview.assetID
         self.isSwapDisabled = isSwapDisabled
         self.walletCapabilities = walletCapabilities
+        self.walletName = walletName
         self.analyticsProvider = analyticsProvider
         self.analyticsSource = analyticsSource
         self.favoriteAssetsService = favoriteAssetsService
@@ -217,6 +223,7 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.marketDataViewModel = marketDataViewModel
         self.balanceViewModel = balanceViewModel
         self.historySource = historySource
+        self.encryptedComments = encryptedComments
         self.tronFeesViewModel = tronFeesViewModel
         self.perpPositionViewModel = perpPositionViewModel
         self.tonStakingAPYProvider = tonStakingAPYProvider
@@ -240,6 +247,13 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         self.onAssetVisibilityChanged = onAssetVisibilityChanged
         self.onBack = onBack
         self.chartState = chartState
+
+        encryptedComments?.$revision
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
 
         transactionSendNotificationToken = NotificationCenter.default.addObserver(
             forName: .transactionSendNotification,
@@ -380,8 +394,21 @@ final class TradeAssetDetailsViewModel: ObservableObject {
         MultichainTransactionDetailsModelBuilder(
             amountFormatter: amountFormatter,
             dateFormatter: DateFormatter(),
-            transactionButtonProvider: MultichainTransactionDetailsModelBuilder.transactionButton
+            transactionButtonProvider: MultichainTransactionDetailsModelBuilder.transactionButton,
+            hidesAmounts: { [appSettingsStore] in appSettingsStore.getState().isSecureMode },
+            walletName: walletName,
+            decryptedComment: { [encryptedComments] in encryptedComments?.decryptedComment(of: $0) },
+            decryptComment: encryptedComments.map { encryptedComments in { encryptedComments.decrypt($0) } }
         ).build(activity: activity)
+    }
+
+    /// The details on screen show an activity with its comment as decrypted so far, so a decryption rebuilds them.
+    func multichainDetailsItem(for activity: MultichainActivity) -> MultichainActivityDetailsItem {
+        MultichainActivityDetailsItem(activity: activity, decryptedComment: encryptedComments?.decryptedComment(of: activity))
+    }
+
+    func decryptMultichainComment(of activity: MultichainActivity) {
+        encryptedComments?.decrypt(activity)
     }
 
     func dismissMultichainActivity() {
@@ -698,6 +725,7 @@ private extension TradeAssetDetailsViewModel {
     }
 
     func loadEarnOffer() {
+        guard let earnAssetOffersRepository else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -826,6 +854,15 @@ private extension TradeAssetDetailsViewModel {
                         return
                     }
                     self.multichainHistoryPreview = preview
+                    if let shown = self.selectedMultichainActivity,
+                       let current = MultichainHistoryEventTarget.current(
+                           of: shown,
+                           in: preview?.activities ?? []
+                       ),
+                       current != shown
+                    {
+                        self.selectedMultichainActivity = current
+                    }
                     guard self.details != nil else {
                         return
                     }

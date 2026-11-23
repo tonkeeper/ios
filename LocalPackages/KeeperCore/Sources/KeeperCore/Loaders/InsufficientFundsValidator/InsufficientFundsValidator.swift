@@ -117,7 +117,11 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
             guard case .withdraw = staking.flow else {
                 return
             }
-            let requiredAmount = staking.pool.implementation.withdrawalRequiredBalance
+            var networkFee: BigUInt?
+            if case .extra = emulationModel.extraState {
+                networkFee = BigUInt(max(emulationModel.totalFee, 0))
+            }
+            let requiredAmount = staking.pool.implementation.withdrawalRequiredBalance(networkFee: networkFee)
             guard formattedTonBalance >= requiredAmount else {
                 throw .blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: requiredAmount)
             }

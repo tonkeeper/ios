@@ -76,13 +76,11 @@ private extension StakingInputViewController {
         customView.setAmountInputView(amountInputViewController.view)
         amountInputViewController.didMove(toParent: self)
 
-        customView.continueButton.accessibilityIdentifier = "staking_deposit_continue"
-
         addChild(detailsViewController)
         customView.setDetailsView(detailsViewController.view)
         detailsViewController.didMove(toParent: self)
 
-        customView.continueButton.configuration.action = { [weak viewModel] in
+        customView.setupContinueButton { [weak viewModel] in
             viewModel?.didTapContinue()
         }
     }
@@ -125,8 +123,7 @@ private extension StakingInputViewController {
         }
 
         viewModel.didUpdateButton = { [weak self] title, isEnable in
-            self?.customView.continueButton.configuration.content.title = .plainString(title)
-            self?.customView.continueButton.isEnabled = isEnable
+            self?.customView.updateContinueButton(title: title, isEnabled: isEnable)
         }
     }
 }

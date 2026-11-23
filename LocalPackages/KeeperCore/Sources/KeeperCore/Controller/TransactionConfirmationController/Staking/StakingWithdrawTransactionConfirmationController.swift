@@ -25,7 +25,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
             return .success(())
         } catch {
             extraState = .none
-            return .failure(.failedToCalculateFee)
+            return .failure(.failedToCalculateFee())
         }
     }
 
@@ -37,7 +37,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         do {
             transferData = try await createTransferData()
         } catch {
-            return .failure(.failedToSendTransaction())
+            return .failure(TransactionConfirmationError(transferFailure: .failedToCreateTransferData(message: error.analyticsReason)))
         }
 
         let signedTransactions: SignedTransactions
@@ -49,7 +49,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
 
         do {
             if signedTransactions.isEmpty {
-                return .failure(.failedToSendTransaction())
+                return .failure(TransactionConfirmationError(transferFailure: .nothingToSend))
             }
 
             if signedTransactions.count == 1 {
@@ -65,7 +65,11 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
                 )
             )
         } catch {
-            return .failure(.failedToSendTransaction())
+            return .failure(
+                TransactionConfirmationError(
+                    transferFailure: .broadcastFailure(error, count: signedTransactions.count, transferType: .default)
+                )
+            )
         }
     }
 

@@ -80,4 +80,16 @@ final class DappNativeBridgeTests: XCTestCase {
 
         XCTAssertEqual(Set(params.keys), ["vault"])
     }
+
+    func test_trackParamsCannotOverrideTheAppsBaseEventFields() {
+        let params = DappNativeBridge.trackParams([
+            "platform": "web",
+            "device_id": "page",
+            "firebase_user_id": "page",
+            "utm_source": "page",
+            "vault": "usdt",
+        ])
+
+        XCTAssertEqual(Set(params.keys), ["vault"])
+    }
 }

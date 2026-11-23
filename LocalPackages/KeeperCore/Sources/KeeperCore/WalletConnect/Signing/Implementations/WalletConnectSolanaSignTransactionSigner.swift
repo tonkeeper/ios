@@ -26,6 +26,7 @@ struct WalletConnectSolanaSignTransactionSigner: WalletConnectRequestPayloadSign
             ])
         }
 
+        try await context.checkRequestIsPending()
         do {
             let signature = try await utilities.send(
                 signed.transaction,

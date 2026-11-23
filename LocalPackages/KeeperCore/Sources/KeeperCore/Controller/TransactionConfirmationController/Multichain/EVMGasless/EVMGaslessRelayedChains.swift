@@ -7,6 +7,8 @@ actor EVMGaslessRelayedChains {
     private let loadConfig: @Sendable () async throws -> Components.Schemas.GaslessV2Config
     private let lifetime: TimeInterval
     private let now: () -> Date
+    /// Read on every call, so a chain switched off remotely leaves at once, cached config or not.
+    private let includes: @Sendable (MultichainChain) -> Bool
     private var cached: (chains: Set<MultichainChain>, loadedAt: Date)?
     private var loading: Task<Set<MultichainChain>?, Never>?
     private var loadGeneration = 0
@@ -14,15 +16,21 @@ actor EVMGaslessRelayedChains {
     init(
         loadConfig: @escaping @Sendable () async throws -> Components.Schemas.GaslessV2Config,
         lifetime: TimeInterval = 15 * 60,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        includes: @escaping @Sendable (MultichainChain) -> Bool = { _ in true }
     ) {
         self.loadConfig = loadConfig
         self.lifetime = lifetime
         self.now = now
+        self.includes = includes
     }
 
     /// `nil` until a config has been read.
     func chains() async -> Set<MultichainChain>? {
+        await relayedChains()?.filter(includes)
+    }
+
+    private func relayedChains() async -> Set<MultichainChain>? {
         if let cached, now().timeIntervalSince(cached.loadedAt) < lifetime {
             return cached.chains
         }
@@ -52,12 +60,13 @@ actor EVMGaslessRelayedChains {
         return loaded ?? cached?.chains
     }
 
+    /// The chains whose transfers the relayer carries as a `main` call: the EVM chains, and Solana.
     static func relayedEVMChains(in config: Components.Schemas.GaslessV2Config) -> Set<MultichainChain> {
         Set(
             config.chains
                 .filter { $0.payload_types.contains(EVMGaslessCall.payloadType) }
                 .compactMap { MultichainChain(relayerChainId: $0.chain_id) }
-                .filter(\.isEVM)
+                .filter { $0.isEVM || $0 == .sol }
         )
     }
 }

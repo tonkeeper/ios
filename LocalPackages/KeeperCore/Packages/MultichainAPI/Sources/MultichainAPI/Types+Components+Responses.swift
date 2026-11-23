@@ -384,10 +384,6 @@ extension Components {
                 self.body = body
             }
         }
-        public struct NotModified: Sendable, Hashable {
-            /// Creates a new `NotModified`.
-            public init() {}
-        }
         public struct Wallets: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/Wallets/content`.
             @frozen public enum Body: Sendable, Hashable {
@@ -500,174 +496,6 @@ extension Components {
                 self.body = body
             }
         }
-        public struct ChainNodes: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/ChainNodes/headers`.
-            public struct Headers: Sendable, Hashable {
-                /// Entity tag for cache validation
-                ///
-                /// - Remark: Generated from `#/components/responses/ChainNodes/headers/ETag`.
-                public var ETag: Swift.String?
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - ETag: Entity tag for cache validation
-                public init(ETag: Swift.String? = nil) {
-                    self.ETag = ETag
-                }
-            }
-            /// Received HTTP response headers
-            public var headers: Components.Responses.ChainNodes.Headers
-            /// - Remark: Generated from `#/components/responses/ChainNodes/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/ChainNodes/content/json`.
-                public struct jsonPayload: Codable, Hashable, Sendable {
-                    /// Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
-                    ///
-                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/data`.
-                    public struct dataPayload: Codable, Hashable, Sendable {
-                        /// A container of undocumented properties.
-                        public var additionalProperties: [String: [Components.Schemas.Node]]
-                        /// Creates a new `dataPayload`.
-                        ///
-                        /// - Parameters:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(additionalProperties: [String: [Components.Schemas.Node]] = .init()) {
-                            self.additionalProperties = additionalProperties
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
-                    ///
-                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/data`.
-                    public var data: Components.Responses.ChainNodes.Body.jsonPayload.dataPayload
-                    /// Unix time (seconds) at which this node set was computed.
-                    ///
-                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/timestamp`.
-                    public var timestamp: Swift.Int64
-                    /// Creates a new `jsonPayload`.
-                    ///
-                    /// - Parameters:
-                    ///   - data: Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
-                    ///   - timestamp: Unix time (seconds) at which this node set was computed.
-                    public init(
-                        data: Components.Responses.ChainNodes.Body.jsonPayload.dataPayload,
-                        timestamp: Swift.Int64
-                    ) {
-                        self.data = data
-                        self.timestamp = timestamp
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case data
-                        case timestamp
-                    }
-                }
-                /// - Remark: Generated from `#/components/responses/ChainNodes/content/application\/json`.
-                case json(Components.Responses.ChainNodes.Body.jsonPayload)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Responses.ChainNodes.Body.jsonPayload {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.ChainNodes.Body
-            /// Creates a new `ChainNodes`.
-            ///
-            /// - Parameters:
-            ///   - headers: Received HTTP response headers
-            ///   - body: Received HTTP response body
-            public init(
-                headers: Components.Responses.ChainNodes.Headers = .init(),
-                body: Components.Responses.ChainNodes.Body
-            ) {
-                self.headers = headers
-                self.body = body
-            }
-        }
-        public struct AssetCatalog: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/AssetCatalog/headers`.
-            public struct Headers: Sendable, Hashable {
-                /// Entity tag for cache validation
-                ///
-                /// - Remark: Generated from `#/components/responses/AssetCatalog/headers/ETag`.
-                public var ETag: Swift.String?
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - ETag: Entity tag for cache validation
-                public init(ETag: Swift.String? = nil) {
-                    self.ETag = ETag
-                }
-            }
-            /// Received HTTP response headers
-            public var headers: Components.Responses.AssetCatalog.Headers
-            /// - Remark: Generated from `#/components/responses/AssetCatalog/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json`.
-                public struct jsonPayload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json/assets`.
-                    public var assets: [Components.Schemas.AssetInfo]
-                    /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json/next_cursor`.
-                    public var next_cursor: Swift.String
-                    /// Creates a new `jsonPayload`.
-                    ///
-                    /// - Parameters:
-                    ///   - assets:
-                    ///   - next_cursor:
-                    public init(
-                        assets: [Components.Schemas.AssetInfo],
-                        next_cursor: Swift.String
-                    ) {
-                        self.assets = assets
-                        self.next_cursor = next_cursor
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case assets
-                        case next_cursor
-                    }
-                }
-                /// - Remark: Generated from `#/components/responses/AssetCatalog/content/application\/json`.
-                case json(Components.Responses.AssetCatalog.Body.jsonPayload)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Responses.AssetCatalog.Body.jsonPayload {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.AssetCatalog.Body
-            /// Creates a new `AssetCatalog`.
-            ///
-            /// - Parameters:
-            ///   - headers: Received HTTP response headers
-            ///   - body: Received HTTP response body
-            public init(
-                headers: Components.Responses.AssetCatalog.Headers = .init(),
-                body: Components.Responses.AssetCatalog.Body
-            ) {
-                self.headers = headers
-                self.body = body
-            }
-        }
         public struct Assets: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/Assets/content`.
             @frozen public enum Body: Sendable, Hashable {
@@ -716,34 +544,6 @@ extension Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.Assets.Body) {
-                self.body = body
-            }
-        }
-        public struct AssetDetails: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/AssetDetails/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/AssetDetails/content/application\/json`.
-                case json(Components.Schemas.SummaryAsset)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.SummaryAsset {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.AssetDetails.Body
-            /// Creates a new `AssetDetails`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.AssetDetails.Body) {
                 self.body = body
             }
         }
@@ -928,62 +728,6 @@ extension Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.FeeEstimates.Body) {
-                self.body = body
-            }
-        }
-        public struct DnsResolved: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/DnsResolved/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/DnsResolved/content/application\/json`.
-                case json(Components.Schemas.DnsResolution)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.DnsResolution {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.DnsResolved.Body
-            /// Creates a new `DnsResolved`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.DnsResolved.Body) {
-                self.body = body
-            }
-        }
-        public struct SwapStatus: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/SwapStatus/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/SwapStatus/content/application\/json`.
-                case json(Components.Schemas.StonfiSwapStatus)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.StonfiSwapStatus {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.SwapStatus.Body
-            /// Creates a new `SwapStatus`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.SwapStatus.Body) {
                 self.body = body
             }
         }
@@ -1285,62 +1029,6 @@ extension Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.DeviceBindingsResult.Body) {
-                self.body = body
-            }
-        }
-        public struct IntrospectResult: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/IntrospectResult/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/IntrospectResult/content/application\/json`.
-                case json(Components.Schemas.IntrospectResult)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.IntrospectResult {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.IntrospectResult.Body
-            /// Creates a new `IntrospectResult`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.IntrospectResult.Body) {
-                self.body = body
-            }
-        }
-        public struct Jwks: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/Jwks/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/Jwks/content/application\/json`.
-                case json(Components.Schemas.Jwks)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.Jwks {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.Jwks.Body
-            /// Creates a new `Jwks`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.Jwks.Body) {
                 self.body = body
             }
         }

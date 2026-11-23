@@ -3,13 +3,18 @@ import TKUIKit
 
 @MainActor
 final class TokenPickerV2CategoryViewModel {
+    private struct QueryKey: Hashable {
+        let query: String
+        let scope: TokenPickerV2QueryScope
+    }
+
     private let category: TokenPickerV2ChainFilter
     private let tokenPickerModel: any TokenPickerV2Model
     private let amountFormatter: AmountFormatter
     private let currencyStore: CurrencyStore
     private let displayMode: SendTokenV2PickerDisplayMode
 
-    private var queryViewModels = [String: TokenPickerV2QueryViewModel]()
+    private var queryViewModels = [QueryKey: TokenPickerV2QueryViewModel]()
 
     init(
         category: TokenPickerV2ChainFilter,
@@ -25,8 +30,8 @@ final class TokenPickerV2CategoryViewModel {
         self.displayMode = displayMode
     }
 
-    func queryViewModel(for query: String?) -> TokenPickerV2QueryViewModel {
-        let key = query ?? ""
+    func queryViewModel(for query: String?, scope: TokenPickerV2QueryScope) -> TokenPickerV2QueryViewModel {
+        let key = QueryKey(query: query ?? "", scope: scope)
         if let queryViewModel = queryViewModels[key] {
             return queryViewModel
         }
@@ -41,6 +46,10 @@ final class TokenPickerV2CategoryViewModel {
         )
         queryViewModels[key] = queryViewModel
         return queryViewModel
+    }
+
+    func cachedQueryViewModel(for query: String?, scope: TokenPickerV2QueryScope) -> TokenPickerV2QueryViewModel? {
+        queryViewModels[QueryKey(query: query ?? "", scope: scope)]
     }
 
     func disappeared() {

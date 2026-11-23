@@ -1,5 +1,6 @@
 import BigInt
 import KeeperCore
+import Stories
 import TKCoordinator
 import TKCore
 import TKFeatureFlags
@@ -12,6 +13,19 @@ import UIKit
 enum DeeplinkOrigin {
     case app
     case banner
+    case loyalty
+
+    init(dappURL: URL) {
+        self = KeeperDappBridge.isLoyalty(url: dappURL) ? .loyalty : .app
+    }
+
+    var perpsEntryPoint: PerpsEntryPoint {
+        switch self {
+        case .banner: .mainBanner
+        case .loyalty: .loyalty
+        case .app: .other
+        }
+    }
 }
 
 /// Outcome of a send deeplink that cannot reach the send form, thrown so every handler reports it
@@ -40,7 +54,7 @@ extension MainCoordinator {
         }
         switch origin {
         case .banner: return .banner
-        case .app: return .deeplink
+        case .app, .loyalty: return .deeplink
         }
     }
 
@@ -883,7 +897,9 @@ extension MainCoordinator {
 
             let appSettings = coreAssembly.appSettings
             let catalogMode: DappCatalogMode = .multichain
-            if let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang),
+            let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang)
+            guard !Task.isCancelled else { return }
+            if let popularAppsResponse,
                let app = getApp(url, popularAppsResponse)
             {
                 openDapp(
@@ -895,7 +911,9 @@ extension MainCoordinator {
                 )
             } else if
                 let host = url.host,
-                appSettings.isDappOpenWarningDoNotShow(host) || appSettings.dappHostWhiteList.contains(host)
+                KeeperDappBridge.isTrusted(url: url)
+                || appSettings.isDappOpenWarningDoNotShow(host)
+                || appSettings.dappHostWhiteList.contains(host)
             {
                 openDapp(title: nil, url: url, analyticsFrom: analyticsFrom, utm: utm)
             } else {
@@ -922,7 +940,12 @@ extension MainCoordinator {
     }
 
     /// Catalog asset ids are multichain-only; legacy swaps fall back to defaults.
-    func openSwapDeeplink(fromToken: String?, toToken: String?, utm: UtmParameters) {
+    func openSwapDeeplink(
+        fromToken: String?,
+        toToken: String?,
+        utm: UtmParameters,
+        presentingViewController: UIViewController? = nil
+    ) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
@@ -951,7 +974,8 @@ extension MainCoordinator {
                     deeplinkSendAssetId: fromToken,
                     deeplinkReceiveAssetId: toToken
                 ),
-                initiatedBy: .deepLink
+                initiatedBy: .deepLink,
+                presentingViewController: presentingViewController
             )
             return
         }
@@ -1036,7 +1060,7 @@ extension MainCoordinator {
         openAddWallet(router: ViewControllerRouter(rootViewController: router.rootViewController))
     }
 
-    func openMysteryRaffleDeeplink() {
+    func openMysteryRaffleDeeplink(raffleId: String?) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
 
@@ -1049,7 +1073,7 @@ extension MainCoordinator {
 
         let raffleStore = keeperCoreMainAssembly.storesAssembly.raffleStore
         guard raffleStore.getState().isEmpty else {
-            openMysteryRaffle(source: .deepLink)
+            openMysteryRaffle(source: .deepLink, raffleId: raffleId)
             return
         }
 
@@ -1057,8 +1081,10 @@ extension MainCoordinator {
             from: self,
             rootViewController: router.rootViewController,
             source: .deepLink,
+            raffleId: raffleId,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
+            swapStatusTracker: swapStatusTracker,
             openDeeplink: { [weak self] in self?.handleRaffleDeeplink($0) },
             openMigration: { [weak self] onFinish in
                 self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
@@ -1097,9 +1123,164 @@ extension MainCoordinator {
         coordinator.start()
     }
 
-    func handleBatteryDeeplink(_ payload: Deeplink.Battery, utm: UtmParameters) {
+    func openMultichainDappDeeplink(url: URL, analyticsFrom: DappOpenSource, utm: UtmParameters) {
+        withMultichainWallet(isEligible: isMultichainDappsWallet) { [weak self] in
+            _ = self?.handleDappDeeplink(url: url, analyticsFrom: analyticsFrom, utm: utm)
+        }
+    }
+
+    func isEarnDapp(url: URL) -> Bool {
+        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+        return configuration.featureEnabled(.earnEnabled)
+            && EarnDappMatcher(earnURL: configuration.earnUrl).matches(url: url)
+    }
+
+    func openEarnDeeplink(url: URL, analyticsFrom: DappOpenSource, utm: UtmParameters) {
+        withMultichainWallet(isEligible: isMultichainDappsWallet) { [weak self] in
+            self?.resetToWalletTab { [weak self] in
+                self?.openEarnDapp(url: url, analyticsFrom: analyticsFrom, utm: utm, on: nil)
+            }
+        }
+    }
+
+    func openEarnDeeplink(
+        _ destination: KeeperCore.Deeplink.Earn,
+        analyticsFrom: DappOpenSource,
+        utm: UtmParameters
+    ) {
+        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+        guard configuration.featureEnabled(.earnEnabled) else {
+            resetToWalletTab {}
+            return
+        }
+        let url = switch destination {
+        case .home:
+            configuration.earnUrl
+        case let .vault(network, vaultId):
+            configuration.earnUrl.appendingEarnVaultPath(network: network, vaultId: vaultId)
+        }
+        openEarnDeeplink(url: url, analyticsFrom: analyticsFrom, utm: utm)
+    }
+
+    private var isMultichainDappsWallet: (Wallet) -> Bool {
+        keeperCoreMainAssembly.configurationAssembly.configuration.isMultichainDappsAvailable
+    }
+
+    func withMultichainWallet(
+        isEligible: @escaping (Wallet) -> Bool,
+        pickerSubtitle: String? = nil,
+        emptyPickerSubtitle: String? = nil,
+        then open: @escaping () -> Void
+    ) {
+        let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+        if let activeWallet = try? walletsStore.activeWallet, isEligible(activeWallet) {
+            open()
+            return
+        }
+        guard !isMultichainWalletStepOnScreen else { return }
+        resetToWalletTab { [weak self] in
+            if walletsStore.wallets.contains(where: isEligible) {
+                self?.openMultichainWalletPicker(isEligible: isEligible, subtitle: pickerSubtitle, then: open)
+            } else if let emptyPickerSubtitle {
+                self?.openMultichainWalletPicker(isEligible: isEligible, subtitle: emptyPickerSubtitle, then: open)
+            } else {
+                self?.openCreateMultichainWallet(then: open)
+            }
+        }
+    }
+
+    private var isMultichainWalletStepOnScreen: Bool {
+        multichainWalletPicker?.presentingViewController != nil
+            || (createMultichainWalletCoordinator != nil && router.rootViewController.presentedViewController != nil)
+    }
+
+    func releaseMultichainWalletCreation(_ creation: CreateWalletCoordinator?) {
+        guard let creation,
+              creation === createMultichainWalletCoordinator,
+              router.rootViewController.presentedViewController == nil
+        else { return }
+        createMultichainWalletCoordinator = nil
+        removeChild(creation)
+    }
+
+    private func openMultichainWalletPicker(
+        isEligible: @escaping (Wallet) -> Bool,
+        subtitle: String?,
+        then completion: @escaping () -> Void
+    ) {
+        let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+        let model = MultichainWalletsPickerListModel(walletsStore: walletsStore, isEligible: isEligible, subtitle: subtitle)
+        let module = WalletsListAssembly.module(
+            model: model,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+
+        model.didSelectWallet = { [weak bottomSheetViewController] wallet in
+            bottomSheetViewController?.dismiss {
+                Task { @MainActor in
+                    await walletsStore.makeWalletActive(wallet)
+                    completion()
+                }
+            }
+        }
+        module.output.addButtonEvent = { [weak self, weak bottomSheetViewController] in
+            bottomSheetViewController?.dismiss {
+                self?.openCreateMultichainWallet(then: completion)
+            }
+        }
+
+        multichainWalletPicker = bottomSheetViewController
+        bottomSheetViewController.present(fromViewController: router.rootViewController)
+    }
+
+    private func openCreateMultichainWallet(then completion: @escaping () -> Void) {
+        guard !isMultichainWalletStepOnScreen else { return }
+        removeChild(createMultichainWalletCoordinator)
+        let module = AddWalletModule(
+            dependencies: AddWalletModule.Dependencies(
+                walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+                storesAssembly: keeperCoreMainAssembly.storesAssembly,
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
+                scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+                configurationAssembly: keeperCoreMainAssembly.configurationAssembly
+            )
+        )
+        let coordinator = module.createCreateWalletCoordinator(
+            router: ViewControllerRouter(rootViewController: router.rootViewController),
+            mode: .multichain,
+            analyticsContext: module.makeWalletFlowAnalyticsContext(from: .main)
+        )
+
+        coordinator.didCancel = { [weak self, weak coordinator] in
+            guard let self, let coordinator, coordinator === createMultichainWalletCoordinator else { return }
+            createMultichainWalletCoordinator = nil
+            removeChild(coordinator)
+        }
+        coordinator.didRequestBack = { [weak self, weak coordinator] in
+            guard let self, let coordinator, coordinator === createMultichainWalletCoordinator else { return }
+            createMultichainWalletCoordinator = nil
+            router.dismiss(animated: true) { [weak self] in
+                self?.removeChild(coordinator)
+            }
+        }
+        coordinator.didFinish = { [weak self, weak coordinator] _ in
+            guard let self, let coordinator, coordinator === createMultichainWalletCoordinator else { return }
+            createMultichainWalletCoordinator = nil
+            removeChild(coordinator)
+            completion()
+        }
+
+        createMultichainWalletCoordinator = coordinator
+        addChild(coordinator)
+        coordinator.start()
+    }
+
+    func handleBatteryDeeplink(_ payload: Deeplink.Battery, utm: UtmParameters, origin: DeeplinkOrigin) {
         let walletStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-        guard let wallet = try? walletStore.activeWallet else { return }
+        guard let wallet = try? walletStore.activeWallet, !wallet.isWalletTg else { return }
         if keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.batteryDisabled, network: wallet.network) {
             return
         }
@@ -1107,7 +1288,9 @@ extension MainCoordinator {
         let service = keeperCoreMainAssembly.batteryAssembly.batteryService()
         let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
 
-        if let promocode = payload.promocode {
+        if let promocode = payload.promocode,
+           !keeperCoreMainAssembly.configurationAssembly.configuration.isDisableBatteryPromoModule(network: wallet.network)
+        {
             Task {
                 await promocodeStore.setResolveState(.resolving(promocode: promocode))
                 do {
@@ -1123,15 +1306,22 @@ extension MainCoordinator {
             wallet: wallet,
             jettonMasterAddress: payload.masterJettonAddress,
             initiatedBy: .deepLink,
+            analyticsSource: origin == .banner ? .batteryBanner : .deeplink,
             utm: utm
         )
     }
 
-    func handleStoryDeeplink(storyId: String) {
+    func handleStoryDeeplink(
+        storyId: String,
+        mode: Stories.StoriesPresenter.Mode = .regular,
+        ignoresStoriesFlag: Bool = false
+    ) {
         showStory { [weak self] in
             try await self?.mainCoordinatorStoriesController?.handleDeeplinkStory(
                 storyId: storyId,
-                walletId: self?.activeWalletScopeId
+                walletId: self?.activeWalletScopeId,
+                mode: mode,
+                ignoresStoriesFlag: ignoresStoriesFlag
             )
         }
     }

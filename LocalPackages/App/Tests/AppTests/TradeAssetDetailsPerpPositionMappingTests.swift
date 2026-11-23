@@ -15,7 +15,7 @@ final class TradeAssetDetailsPerpPositionMappingTests: XCTestCase {
         guard case let .banner(marketId, title, caption) = section else { return XCTFail("expected banner") }
         XCTAssertEqual(marketId, 3)
         XCTAssertEqual(title, TKLocales.Trade.AssetDetails.PerpPosition.tradeTitle("GRAM"))
-        XCTAssertEqual(caption, TKLocales.Trade.AssetDetails.PerpPosition.leverageCaption("10x"))
+        XCTAssertEqual(caption, TKLocales.Trade.AssetDetails.PerpPosition.leverageCaption("10⨯"))
     }
 
     func test_assetWithPerpMarketAndOpenPosition_showsThePositionRow() {
@@ -24,7 +24,7 @@ final class TradeAssetDetailsPerpPositionMappingTests: XCTestCase {
             id: 3,
             symbol: "GRAM",
             iconURL: nil,
-            leverageText: "27X",
+            leverageText: "27⨯",
             sideText: "LONG",
             isLong: true,
             valueText: "$20.50",

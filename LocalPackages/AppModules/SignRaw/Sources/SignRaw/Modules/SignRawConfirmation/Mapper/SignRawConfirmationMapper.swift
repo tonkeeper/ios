@@ -20,7 +20,6 @@ struct SignRawConfirmationModel {
 struct SignRawConfirmationMapper {
     private let nftService: NFTService
     private let tonRatesStore: TonRatesStore
-    private let currencyStore: CurrencyStore
     private let totalBalanceStore: TotalBalanceStore
     private let balanceStore: BalanceStore
     private let nftManagmentStore: WalletNFTsManagementStore
@@ -31,7 +30,6 @@ struct SignRawConfirmationMapper {
     init(
         nftService: NFTService,
         tonRatesStore: TonRatesStore,
-        currencyStore: CurrencyStore,
         totalBalanceStore: TotalBalanceStore,
         balanceStore: BalanceStore,
         nftManagmentStore: WalletNFTsManagementStore,
@@ -41,7 +39,6 @@ struct SignRawConfirmationMapper {
     ) {
         self.nftService = nftService
         self.tonRatesStore = tonRatesStore
-        self.currencyStore = currencyStore
         self.totalBalanceStore = totalBalanceStore
         self.balanceStore = balanceStore
         self.nftManagmentStore = nftManagmentStore
@@ -63,11 +60,11 @@ struct SignRawConfirmationMapper {
         gaslessRelayAddress: Address?
     ) -> SignRawConfirmationModel {
         let actions = emulation.event.actions.flatMap { action in
-            let actionModels = mapEvent(emulation.event.replacingActions(with: [action]), wallet: wallet).actions
+            let actionModels = mapAction(action, of: emulation.event, wallet: wallet, currency: emulation.risk.currency)
             guard action.isJettonTransfer(to: gaslessRelayAddress) else {
                 return actionModels
             }
-            return actionModels.map { $0.settingCustomName(TKLocales.EventDetails.fee) }
+            return actionModels.map { $0.setting(customName: TKLocales.EventDetails.fee) }
         }
         let eventModel = AccountEventModel(
             eventId: emulation.event.eventId,
@@ -86,10 +83,16 @@ struct SignRawConfirmationMapper {
     }
 
     func mapSuccessEmulationResult(signRawEmulation: SignRawEmulation, wallet: Wallet) -> AccountEventCellContentView.Model {
-        let currency = currencyStore.getState()
+        let currency = signRawEmulation.risk.currency
         let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })
 
-        let eventModel = mapEvent(signRawEmulation.event, wallet: wallet)
+        let event = signRawEmulation.event
+        let eventModel = AccountEventModel(
+            eventId: event.eventId,
+            actions: event.actions.flatMap { mapAction($0, of: event, wallet: wallet, currency: currency) },
+            accountEvent: event,
+            date: Date()
+        )
 
         let feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
             + amountFormatter.format(
@@ -121,8 +124,25 @@ struct SignRawConfirmationMapper {
         )
     }
 
-    private func mapEvent(_ event: AccountEvent, wallet: Wallet) -> AccountEventModel {
-        let currency = currencyStore.getState()
+    /// Unlike the history list, a contract call shows its decoded body here: without it the
+    /// confirmation names only the contract, whatever the call does to it.
+    private func mapAction(
+        _ action: AccountEventAction,
+        of event: AccountEvent,
+        wallet: Wallet,
+        currency: Currency
+    ) -> [AccountEventModel.Action] {
+        let actionModels = mapEvent(event.replacingActions(with: [action]), wallet: wallet, currency: currency).actions
+        guard case let .smartContractExec(smartContractExec) = action.type,
+              let payload = smartContractExec.payload?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !payload.isEmpty
+        else {
+            return actionModels
+        }
+        return actionModels.map { $0.setting(description: payload) }
+    }
+
+    private func mapEvent(_ event: AccountEvent, wallet: Wallet, currency: Currency) -> AccountEventModel {
         let descriptionProvider = SignRawConfirmationAccountEventRightTopDescriptionProvider(
             rates: tonRatesStore.state.tonRates.first(where: { $0.currency == currency }),
             currency: currency,
@@ -147,7 +167,7 @@ struct SignRawConfirmationMapper {
     }
 
     private func signMessageTotalEquivalent(emulation: SignRawEmulation, wallet: Wallet) -> Double? {
-        let currency = currencyStore.getState()
+        let currency = emulation.risk.currency
         guard let tonBalance = balanceStore.state[wallet]?.walletBalance.balance.tonBalance.amount,
               let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })
         else {
@@ -164,6 +184,7 @@ struct SignRawConfirmationMapper {
         guard
             let totalBalanceState = totalBalanceStore.state[wallet],
             let totalBalance = totalBalanceState.totalBalance,
+            totalBalance.currency == emulation.risk.currency,
             let total = totalEquivalent.flatMap(Decimal.init(floatLiteral:))
         else {
             return nil
@@ -171,7 +192,7 @@ struct SignRawConfirmationMapper {
 
         let totalString = amountFormatter.format(
             decimal: total,
-            accessory: .fiat(currencyStore.state),
+            accessory: .fiat(emulation.risk.currency),
             style: .regular
         )
 
@@ -227,10 +248,10 @@ private extension AccountEventAction {
 }
 
 private extension AccountEventModel.Action {
-    func settingCustomName(_ customName: String) -> AccountEventModel.Action {
+    func setting(customName: String? = nil, description: String? = nil) -> AccountEventModel.Action {
         AccountEventModel.Action(
             eventType: eventType,
-            customName: customName,
+            customName: customName ?? self.customName,
             stakingImplementation: stakingImplementation,
             amount: amount,
             subamount: subamount,
@@ -240,7 +261,7 @@ private extension AccountEventModel.Action {
             status: status,
             comment: comment,
             encryptedComment: encryptedComment,
-            description: description,
+            description: description ?? self.description,
             nft: nft
         )
     }

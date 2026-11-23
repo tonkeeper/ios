@@ -13,14 +13,18 @@ final class TransferServiceRelayerEnabledTests: XCTestCase {
         )
     }
 
-    func test_jettonTransferWithBatteryTurnedOffForJettons_isNotEnabled() {
+    /// A switch stored before the battery settings screen was removed no longer turns the battery off.
+    func test_storedBatterySwitchesAreIgnored() throws {
         let wallet = makeWallet(
-            batterySettings: BatterySettings(isJettonTransactionEnable: false)
+            batterySettings: BatterySettings(
+                isSwapTransactionEnable: false,
+                isJettonTransactionEnable: false,
+                isNFTTransactionEnable: false
+            )
         )
 
-        XCTAssertFalse(
-            TransferService.isRelayerEnabled(wallet: wallet, transfer: makeJettonTransfer())
-        )
+        XCTAssertTrue(TransferService.isRelayerEnabled(wallet: wallet, transfer: makeJettonTransfer()))
+        XCTAssertTrue(try TransferService.isRelayerEnabled(wallet: wallet, transfer: makeMultichainSwapTransfer()))
     }
 
     /// The battery never pays for a plain TON transfer, so the option must not be listed for one.
@@ -28,20 +32,6 @@ final class TransferServiceRelayerEnabledTests: XCTestCase {
         let transfer = Transfer.ton(amount: 1, recipient: makeRecipient(), comment: nil)
 
         XCTAssertFalse(TransferService.isRelayerEnabled(wallet: makeWallet(), transfer: transfer))
-    }
-
-    func test_multichainSwap_followsTheSwapBatterySetting() throws {
-        let transfer = try makeMultichainSwapTransfer()
-
-        XCTAssertTrue(
-            TransferService.isRelayerEnabled(wallet: makeWallet(), transfer: transfer)
-        )
-        XCTAssertFalse(
-            TransferService.isRelayerEnabled(
-                wallet: makeWallet(batterySettings: BatterySettings(isSwapTransactionEnable: false)),
-                transfer: transfer
-            )
-        )
     }
 
     /// Only an aggregator's swap keeps the refund address its payload was built with; Tonkeeper's own
@@ -68,10 +58,36 @@ final class TransferServiceRelayerEnabledTests: XCTestCase {
             TransferService.isRelayerEnabled(wallet: wallet, transfer: makeJettonTransfer())
         )
     }
+
+    /// The Battery relayer does not accept WalletTg requests, not even a forced TonConnect one.
+    func test_telegramWallet_isNotEnabled() throws {
+        let wallet = makeWallet(revision: .walletTg)
+        let forcedSignRaw = try Transfer.signRaw(makeSignRawRequest(), forceRelayer: true)
+
+        XCTAssertFalse(TransferService.isRelayerEnabled(wallet: wallet, transfer: makeJettonTransfer()))
+        XCTAssertFalse(TransferService.isRelayerEnabled(wallet: wallet, transfer: forcedSignRaw))
+        XCTAssertTrue(TransferService.isRelayerEnabled(wallet: makeWallet(), transfer: forcedSignRaw))
+    }
 }
 
 private extension TransferServiceRelayerEnabledTests {
     static let rawAddress = "0:0000000000000000000000000000000000000000000000000000000000000001"
+
+    func makeSignRawRequest() throws -> SignRawRequest {
+        try SignRawRequest(
+            messages: [
+                SignRawRequestMessage(
+                    address: AnyAddress(rawAddress: Self.rawAddress),
+                    amount: 100_000_000,
+                    stateInit: nil,
+                    payload: nil
+                ),
+            ],
+            validUntil: nil,
+            from: Address.parse(Self.rawAddress),
+            messagesVariants: nil
+        )
+    }
 
     func makeMultichainSwapTransfer() throws -> Transfer {
         try .multichainSwap(
@@ -91,12 +107,15 @@ private extension TransferServiceRelayerEnabledTests {
         )
     }
 
-    func makeWallet(batterySettings: BatterySettings = BatterySettings()) -> Wallet {
+    func makeWallet(
+        batterySettings: BatterySettings = BatterySettings(),
+        revision: WalletContractVersion = .v5R1
+    ) -> Wallet {
         Wallet(
             id: "wallet-id",
             identity: WalletIdentity(
                 network: .mainnet,
-                kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v5R1)
+                kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), revision)
             ),
             metaData: WalletMetaData(label: "Wallet", tintColor: .defaultColor, icon: .icon(.wallet)),
             setupSettings: WalletSetupSettings(),

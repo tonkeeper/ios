@@ -1,4 +1,5 @@
 import AppUI
+import Combine
 import SwiftUI
 import TKUIKit
 import UIKit
@@ -7,6 +8,13 @@ final class MultichainSwapViewController: UIViewController {
     private let viewModel: MultichainSwapViewModel
     private let hostingController: TKHostingController<MultichainSwapViewContainer>
     private var hasAppearedBefore = false
+    private var modalityUpdates: AnyCancellable?
+
+    /// The SwiftUI header hands its buttons and title to the navigation item of the hosting controller,
+    /// while the bar shows this controller's one.
+    override var navigationItem: UINavigationItem {
+        TKLiquidGlass.isEnabled ? hostingController.navigationItem : super.navigationItem
+    }
 
     init(viewModel: MultichainSwapViewModel) {
         self.viewModel = viewModel
@@ -37,18 +45,16 @@ final class MultichainSwapViewController: UIViewController {
             hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
             hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-    }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        if hasAppearedBefore, isReturningFromPushedController {
-            viewModel.requestFocusOnAppear()
-            // The quote stood still under the confirmation: its route may have expired there, and
-            // the timer only refreshes a quote that is still ready.
-            viewModel.requestFreshQuote()
-        }
+        // Swiped away while a swap is on its way, the screen would take the swap's outcome along.
+        modalityUpdates = viewModel.$confirmationPhase
+            .map { $0 == .swapping }
+            .removeDuplicates()
+            .sink { [weak self] isSwapping in
+                self?.navigationController?.isModalInPresentation = isSwapping
+            }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -64,15 +70,5 @@ final class MultichainSwapViewController: UIViewController {
         if isBeingDismissed || navigationController?.isBeingDismissed == true {
             view.endEditing(true)
         }
-    }
-
-    private var isReturningFromPushedController: Bool {
-        guard let coordinator = transitionCoordinator,
-              coordinator.viewController(forKey: .to) === self,
-              let fromViewController = coordinator.viewController(forKey: .from)
-        else {
-            return false
-        }
-        return fromViewController.navigationController === navigationController
     }
 }

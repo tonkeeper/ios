@@ -6,18 +6,20 @@ extension AnalyticsProvider {
     func logWalletImportStarted(
         walletMode: WalletMode,
         walletSource: WalletSource,
-        from: AddWalletSource
+        from: AddWalletSource,
+        pairingEntry: PairingEntry? = nil
     ) {
-        log(WalletImportStarted(walletMode: walletMode, walletSource: walletSource, from: from))
+        log(WalletImportStarted(walletMode: walletMode, walletSource: walletSource, from: from, pairingEntry: pairingEntry))
     }
 
     func logWalletImportSuccess(
         walletMode: WalletMode,
         walletSource: WalletSource,
         from: AddWalletSource,
-        ledgerModel: LedgerModel? = nil
+        ledgerModel: LedgerModel? = nil,
+        pairingEntry: PairingEntry? = nil
     ) {
-        log(WalletImportSuccess(walletMode: walletMode, walletSource: walletSource, from: from, ledgerModel: ledgerModel))
+        log(WalletImportSuccess(walletMode: walletMode, walletSource: walletSource, from: from, pairingEntry: pairingEntry, ledgerModel: ledgerModel))
     }
 
     func logWalletImportSuccess(

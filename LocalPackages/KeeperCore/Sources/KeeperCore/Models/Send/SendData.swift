@@ -22,6 +22,8 @@ public struct TonSendData {
     public let recipientDisplayAddress: String?
     /// Estimated exchange duration in seconds (e.g. for withdraw flow).
     public let estimatedDurationSeconds: Int?
+    /// Destination memo / tag of the withdraw/exchange flow, shown on Confirm next to `recipientDisplayAddress`.
+    public let recipientExtraId: String?
 
     public init(
         wallet: Wallet,
@@ -30,7 +32,8 @@ public struct TonSendData {
         comment: String?,
         isMaxAmount: Bool = false,
         recipientDisplayAddress: String? = nil,
-        estimatedDurationSeconds: Int? = nil
+        estimatedDurationSeconds: Int? = nil,
+        recipientExtraId: String? = nil
     ) {
         self.wallet = wallet
         self.recipient = recipient
@@ -39,6 +42,7 @@ public struct TonSendData {
         self.isMaxAmount = isMaxAmount
         self.recipientDisplayAddress = recipientDisplayAddress
         self.estimatedDurationSeconds = estimatedDurationSeconds
+        self.recipientExtraId = recipientExtraId
     }
 }
 
@@ -80,19 +84,23 @@ public struct TronSendData {
     public let recipientDisplayAddress: String?
     /// Estimated exchange duration in seconds (e.g. for withdraw flow).
     public let estimatedDurationSeconds: Int?
+    /// Destination memo / tag of the withdraw/exchange flow, shown on Confirm next to `recipientDisplayAddress`.
+    public let recipientExtraId: String?
 
     public init(
         wallet: Wallet,
         recipient: TronRecipient,
         item: Item,
         recipientDisplayAddress: String? = nil,
-        estimatedDurationSeconds: Int? = nil
+        estimatedDurationSeconds: Int? = nil,
+        recipientExtraId: String? = nil
     ) {
         self.wallet = wallet
         self.recipient = recipient
         self.item = item
         self.recipientDisplayAddress = recipientDisplayAddress
         self.estimatedDurationSeconds = estimatedDurationSeconds
+        self.recipientExtraId = recipientExtraId
     }
 }
 
@@ -102,6 +110,8 @@ public struct MultichainSendData {
     public let asset: MultichainAsset
     public let amount: BigUInt
     public let comment: String?
+    /// The recipient's TON public key, hex, when the comment goes encrypted to it.
+    public let commentEncryptionKey: String?
     public let isMaxAmount: Bool
 
     public init(
@@ -110,6 +120,7 @@ public struct MultichainSendData {
         asset: MultichainAsset,
         amount: BigUInt,
         comment: String?,
+        commentEncryptionKey: String? = nil,
         isMaxAmount: Bool
     ) {
         self.wallet = wallet
@@ -117,6 +128,7 @@ public struct MultichainSendData {
         self.asset = asset
         self.amount = amount
         self.comment = comment
+        self.commentEncryptionKey = commentEncryptionKey
         self.isMaxAmount = isMaxAmount
     }
 }

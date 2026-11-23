@@ -304,7 +304,9 @@ private extension CreateWalletCoordinator {
 
     func finishWalletCreation(router: NavigationControllerRouter) {
         didCreateWallet?()
-        router.dismiss(animated: true)
+        router.dismiss(animated: true) { [weak self] in
+            self?.didFinish?(self)
+        }
     }
 }
 

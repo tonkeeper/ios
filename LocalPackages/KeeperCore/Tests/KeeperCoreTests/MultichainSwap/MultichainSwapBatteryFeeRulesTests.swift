@@ -55,17 +55,34 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
         let cases: [(String, Bool)] = [
             ("remote battery flag", isBatteryAllowed(isBatteryEnabled: false)),
             ("remote battery send flag", isBatteryAllowed(isBatterySendEnabled: false)),
-            (
-                "wallet turned battery off for swaps",
-                isBatteryAllowed(wallet: makeWallet(batterySettings: .init(isSwapTransactionEnable: false)))
-            ),
         ]
         for (reason, isAllowed) in cases {
             XCTAssertFalse(isAllowed, reason)
         }
+        XCTAssertTrue(
+            isBatteryAllowed(wallet: makeWallet(batterySettings: .init(isSwapTransactionEnable: false))),
+            "a stored switch no longer turns the battery off"
+        )
         XCTAssertNotNil(
             relayedAsset(swapWallet: makeSwapWallet(batterySettings: .init(isSwapTransactionEnable: false)))
         )
+    }
+
+    /// A Ledger signs on TRON the very transaction the battery relays; on TON the battery would have it sign what its
+    /// TON app does not.
+    func testALedgerIsRelayedOnTronAlone() {
+        let ledger = WalletKind.Ledger(
+            TonSwift.PublicKey(data: Data(repeating: 1, count: 32)),
+            .v4R2,
+            Wallet.LedgerDevice(deviceId: UUID().uuidString, deviceModel: "Flex", accountIndex: 0)
+        )
+        let swapWallet = makeSwapWallet(keys: .device, kind: ledger)
+
+        XCTAssertEqual(relayedAsset(swapWallet: swapWallet, assetId: usdtAssetId, chain: .tron), .tron(.usdt))
+        XCTAssertEqual(relayedAsset(swapWallet: swapWallet, assetId: "tron/mainnet/coin", chain: .tron), .tron(.trx))
+        XCTAssertNil(relayedAsset(swapWallet: swapWallet, assetId: tonJettonAssetId))
+        XCTAssertTrue(isBatteryAllowed(wallet: swapWallet.wallet, chain: .tron))
+        XCTAssertFalse(isBatteryAllowed(wallet: swapWallet.wallet, chain: .ton))
     }
 
     /// The USDT send path hides battery entirely in a TRX-only region, so a TRON swap must not offer a
@@ -75,6 +92,44 @@ final class MultichainSwapBatteryFeeRulesTests: XCTestCase {
             relayedAsset(assetId: usdtAssetId, chain: .tron, isTRXOnlyRegion: true)
         )
         XCTAssertEqual(relayedAsset(isTRXOnlyRegion: true), .tonJetton)
+    }
+
+    /// The swap screen offers the battery where a relayed method would charge it: a jetton on TON, TRX or
+    /// USDT on TRON, and any asset on an EVM chain the relayer serves.
+    func testCoverageFollowsTheRelayedMethods() {
+        let coverage = coverage()
+
+        XCTAssertTrue(coverage.covers(makeAsset(assetId: tonJettonAssetId, chain: .ton)))
+        XCTAssertTrue(coverage.covers(makeAsset(assetId: usdtAssetId, chain: .tron)))
+        XCTAssertTrue(coverage.covers(makeAsset(assetId: "tron/mainnet/coin", chain: .tron)))
+        XCTAssertTrue(coverage.covers(makeAsset(assetId: "bsc/mainnet/coin", chain: .bsc)))
+        XCTAssertTrue(coverage.covers(makeAsset(assetId: "sol/mainnet/coin", chain: .sol)))
+        let uncovered: [(String, MultichainAsset)] = [
+            ("the TON coin", makeAsset(assetId: "ton/mainnet/coin", chain: .ton)),
+            ("an EVM chain the relayer does not serve", makeAsset(assetId: "eth/mainnet/coin", chain: .eth)),
+            ("an EVM chain the Hermes delegate does not run on", makeAsset(assetId: "avax/mainnet/coin", chain: .avax)),
+            ("a chain with no relayed method", makeAsset(assetId: "btc/mainnet/coin", chain: .btc)),
+        ]
+        for (reason, asset) in uncovered {
+            XCTAssertFalse(coverage.covers(asset), reason)
+        }
+    }
+
+    func testCoverageEndsWithTheSwitchesTheRelayedMethodsObey() {
+        let jetton = makeAsset(assetId: tonJettonAssetId, chain: .ton)
+        let usdt = makeAsset(assetId: usdtAssetId, chain: .tron)
+        let bnb = makeAsset(assetId: "bsc/mainnet/coin", chain: .bsc)
+
+        for asset in [jetton, usdt, bnb] {
+            XCTAssertFalse(coverage(isBatteryEnabled: false).covers(asset), "battery switched off remotely")
+            XCTAssertTrue(
+                coverage(batterySettings: .init(isSwapTransactionEnable: false)).covers(asset),
+                "a stored switch no longer turns the battery off"
+            )
+        }
+        XCTAssertFalse(coverage(isTRXOnlyRegion: true).covers(usdt))
+        XCTAssertTrue(coverage(isTRXOnlyRegion: true).covers(jetton))
+        XCTAssertFalse(coverage(keys: .legacy).covers(bnb), "EVM relaying signs with the HD keys")
     }
 
     func testOptionCarriesChargesAndExcess() {
@@ -238,13 +293,38 @@ private extension MultichainSwapBatteryFeeRulesTests {
 
     func isBatteryAllowed(
         wallet: Wallet? = nil,
+        chain: MultichainChain = .ton,
         isBatteryEnabled: Bool = true,
         isBatterySendEnabled: Bool = true
     ) -> Bool {
         MultichainSwapBatteryFeeRules.isBatteryAllowed(
             wallet: wallet ?? makeWallet(),
+            chain: chain,
             isBatteryEnabled: isBatteryEnabled,
             isBatterySendEnabled: isBatterySendEnabled
+        )
+    }
+
+    func coverage(
+        isBatteryEnabled: Bool = true,
+        isTRXOnlyRegion: Bool = false,
+        batterySettings: BatterySettings = .init(),
+        keys: MultichainSwapWallet.Keys = .hd
+    ) -> MultichainSwapBatteryCoverage {
+        MultichainSwapBatteryCoverage(
+            swapWallet: makeSwapWallet(
+                batterySettings: batterySettings,
+                addresses: Self.addresses + [
+                    .init(chain: .bsc, address: "0x0000000000000000000000000000000000000001"),
+                    .init(chain: .avax, address: "0x0000000000000000000000000000000000000001"),
+                    .init(chain: .sol, address: "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT"),
+                    .init(chain: .btc, address: "bc1qmultichainbtcaddress"),
+                ],
+                keys: keys
+            ),
+            isBatteryEnabled: isBatteryEnabled,
+            isTRXOnlyRegion: isTRXOnlyRegion,
+            relayedEVMChains: [.bsc, .avax, .sol]
         )
     }
 
@@ -258,10 +338,11 @@ private extension MultichainSwapBatteryFeeRulesTests {
         batterySettings: BatterySettings = .init(),
         addresses: [MultichainWalletAddress] = MultichainSwapBatteryFeeRulesTests.addresses,
         registration: MultichainSwapWallet.Registration = .registered(walletId: "multichain-wallet-id"),
-        keys: MultichainSwapWallet.Keys = .hd
+        keys: MultichainSwapWallet.Keys = .hd,
+        kind: WalletKind = .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v4R2)
     ) -> MultichainSwapWallet {
         MultichainSwapWallet(
-            wallet: makeWallet(network: network, batterySettings: batterySettings),
+            wallet: makeWallet(network: network, batterySettings: batterySettings, kind: kind),
             addresses: addresses,
             registration: registration,
             keys: keys
@@ -270,13 +351,14 @@ private extension MultichainSwapBatteryFeeRulesTests {
 
     func makeWallet(
         network: Network = .mainnet,
-        batterySettings: BatterySettings = .init()
+        batterySettings: BatterySettings = .init(),
+        kind: WalletKind = .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v4R2)
     ) -> Wallet {
         Wallet(
             id: "wallet-id",
             identity: .init(
                 network: network,
-                kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v4R2)
+                kind: kind
             ),
             metaData: .init(
                 label: "Test wallet",

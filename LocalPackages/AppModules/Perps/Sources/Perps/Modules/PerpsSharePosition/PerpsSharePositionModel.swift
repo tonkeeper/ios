@@ -9,6 +9,7 @@ public struct SharePositionSnapshot: Equatable {
     public let leverage: Double?
     public let entryPrice: Double
     public let currentPrice: Double
+    public let isClosed: Bool
     public let pnlPercent: Double?
     public let isProfit: Bool
     public let date: Date
@@ -21,6 +22,7 @@ public struct SharePositionSnapshot: Equatable {
         leverage: Double?,
         entryPrice: Double,
         currentPrice: Double,
+        isClosed: Bool = false,
         pnlPercent: Double?,
         isProfit: Bool,
         date: Date
@@ -32,6 +34,7 @@ public struct SharePositionSnapshot: Equatable {
         self.leverage = leverage
         self.entryPrice = entryPrice
         self.currentPrice = currentPrice
+        self.isClosed = isClosed
         self.pnlPercent = pnlPercent
         self.isProfit = isProfit
         self.date = date
@@ -49,8 +52,9 @@ public enum PerpsSharePositionPresenter {
             sideText: (snapshot.isLong ? TKLocales.Perps.Asset.long : TKLocales.Perps.Asset.short).uppercased(),
             isProfit: snapshot.isProfit,
             pnlPercentText: snapshot.pnlPercent.map { format.signedPercent($0) },
-            entryText: format.usd(snapshot.entryPrice),
-            currentText: format.usd(snapshot.currentPrice),
+            entryText: format.price(snapshot.entryPrice),
+            currentLabel: snapshot.isClosed ? TKLocales.Perps.Asset.close : TKLocales.Perps.Asset.current,
+            currentText: format.price(snapshot.currentPrice),
             dateText: format.candleDateTime(snapshot.date)
         )
     }

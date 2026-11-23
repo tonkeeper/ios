@@ -1,6 +1,7 @@
 import ChainKit
 import Foundation
 import PerpsModels
+import TKFeatureFlags
 import TKKeychain
 
 public final class PerpsAssembly {
@@ -11,6 +12,12 @@ public final class PerpsAssembly {
     private let marketDetailsService: PerpsMarketDetailsService
     private let accountService: PerpsAccountService
     private let multichainService: () -> MultichainService
+    private let makeHistoryEvents: (Wallet) -> PerpsHistoryEvents
+    private let perpsSignals: @Sendable (_ walletId: String) -> AsyncStream<PerpsRealtimeSignal>
+    private let isRealtimeEnabled: @Sendable () -> Bool
+    private let appConfiguration: Configuration
+    private let unlistedPositions: PerpsUnlistedPositionsReport
+    private let securityConfig: PerpsSecurityConfigRepository
 
     init(
         configurationAssembly: ConfigurationAssembly,
@@ -22,9 +29,18 @@ public final class PerpsAssembly {
         appInfoProvider: AppInfoProvider,
         walletAuth: @escaping () -> MultichainWalletAuthDependencies,
         chainKitClient: CryptoKitClient,
-        multichainService: @escaping () -> MultichainService
+        multichainService: @escaping () -> MultichainService,
+        historyEvents: @escaping (Wallet) -> PerpsHistoryEvents,
+        swapFeeMethods: @escaping () -> MultichainSwapFeeMethodResolver?,
+        perpsSignals: @escaping @Sendable (_ walletId: String) -> AsyncStream<PerpsRealtimeSignal>
     ) {
         self.multichainService = multichainService
+        makeHistoryEvents = historyEvents
+        self.perpsSignals = perpsSignals
+        appConfiguration = configurationAssembly.configuration
+        isRealtimeEnabled = { [appConfiguration = configurationAssembly.configuration] in
+            appConfiguration.featureEnabled(.perpsRealtimeEnabled)
+        }
         // One session per timeout profile, shared by every client on it.
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 60
@@ -38,7 +54,12 @@ public final class PerpsAssembly {
         let hermesUrlSession = URLSession(configuration: hermesConfiguration)
 
         let kandelabrHost = KandelabrAPIHostProvider(configuration: configurationAssembly.configuration)
-        let hermes = HermesSocketHub(hostProvider: kandelabrHost, urlSession: hermesUrlSession)
+        let deviceAuth = walletAuth().deviceAuth
+        let hermes = HermesSocketHub(
+            hostProvider: kandelabrHost,
+            urlSession: hermesUrlSession,
+            deviceAuth: deviceAuth
+        )
 
         let perpsAPI = PerpsAPIImplementation { [apiAssembly, appInfoProvider, walletAuth, configurationAssembly] walletId in
             let dependencies = walletAuth()
@@ -58,9 +79,13 @@ public final class PerpsAssembly {
         }
         self.perpsAPI = perpsAPI
 
+        let securityConfig = PerpsSecurityConfigRepository.live(configuration: configurationAssembly.configuration)
+        self.securityConfig = securityConfig
+        unlistedPositions = PerpsUnlistedPositionsReport(signedSymbols: { await securityConfig.verified()?.signedSymbols })
         let marketsRepository = PerpsMarketsRepository(
             api: tradingAPI,
-            requestContextProvider: tradingRequestContextProvider
+            requestContextProvider: tradingRequestContextProvider,
+            signedSymbols: { await securityConfig.verified()?.signedSymbols }
         )
         self.marketsRepository = marketsRepository
         marketsStore = PerpsMarketsStore(
@@ -68,7 +93,11 @@ public final class PerpsAssembly {
             pricesClient: HermesMarkPricesClient(hub: hermes)
         )
         chartService = PerpsChartService(
-            kandelabr: KandelabrAPIImplementation(hostProvider: kandelabrHost, urlSession: urlSession),
+            kandelabr: KandelabrAPIImplementation(
+                hostProvider: kandelabrHost,
+                urlSession: urlSession,
+                deviceAuth: deviceAuth
+            ),
             hermes: HermesCandleClient(hub: hermes),
             marketsRepository: marketsRepository
         )
@@ -77,10 +106,35 @@ public final class PerpsAssembly {
             mnemonicAccess: mnemonicAccess,
             keychainVault: keychainVault,
             perpsAPI: perpsAPI,
+            submitLanes: PerpsSubmitLanes(api: perpsAPI),
             bindSigner: PerpsAccountBindSigner(client: chainKitClient),
             walletAuthTokenProvider: walletAuth().walletAuthTokenProvider,
-            chainKitClient: chainKitClient
+            chainKitClient: chainKitClient,
+            depositGate: OperationGate(configuration: configurationAssembly.configuration, validatingWith: chainKitClient),
+            swapFeeMethods: swapFeeMethods,
+            securityConfig: securityConfig
         )
+    }
+
+    public func marketId(symbol: String) -> Int64? {
+        securityConfig.verifiedNow()?.marketId(symbol: symbol)
+    }
+
+    public var access: PerpsAccess {
+        appConfiguration.perpsAccess
+    }
+
+    public func reloadAccess() async -> PerpsAccess {
+        _ = await appConfiguration.reloadConfigurations()
+        return access
+    }
+
+    public func observeAccess<Observer: AnyObject>(_ observer: Observer, onChange: @escaping @Sendable (Observer) -> Void) {
+        appConfiguration.addUpdateObserver(observer, closure: onChange)
+    }
+
+    public func historyEvents(for wallet: Wallet) -> PerpsHistoryEvents {
+        makeHistoryEvents(wallet)
     }
 
     public func makeMarketDetailsStore() -> PerpsMarketDetailsStore {
@@ -100,6 +154,7 @@ public final class PerpsAssembly {
                 accountService: accountService,
                 perpsAPI: perpsAPI,
                 multichainService: multichainService(),
+                historyEvents: makeHistoryEvents(wallet),
                 // Live only: a cached catalog price carries no observation time, and the
                 // planner would stamp it as observed now and prefer it over the mark price
                 // that came with the trading screen it is planning against.
@@ -108,11 +163,26 @@ public final class PerpsAssembly {
                 },
                 marketProvider: { [marketsRepository] marketId in
                     await marketsRepository.market(marketId: marketId)
-                }
+                },
+                markPrices: { [marketsStore] marketIds in
+                    marketsStore.livePrices(of: marketIds)
+                },
+                perpsSignals: perpsSignals,
+                isRealtimeEnabled: isRealtimeEnabled,
+                unlistedPositions: unlistedPositions
             )
             walletScopes = walletScopes.filter { $0.value.value != nil }
             walletScopes[wallet.id] = Weak(value: scope)
             return scope
+        }
+    }
+
+    /// Positions poll only for screens, so the background pauses them. A scope created in the
+    /// background starts unpaused, but no screen can subscribe to it before the foreground.
+    public func setForeground(_ isForeground: Bool) {
+        let scopes = walletScopeLock.withLock { walletScopes.values.compactMap(\.value) }
+        for scope in scopes {
+            scope.accountStore.setForeground(isForeground)
         }
     }
 

@@ -86,7 +86,8 @@ public extension Transaction {
     }
 }
 
-extension Transaction {
+public extension Transaction {
+    /// The `raw_data` bytes a signature is produced over, as a hardware wallet signs them.
     func rawDataBytes() throws -> [UInt8] {
         do {
             return try ProtobufWire.decodeHex(rawDataHex)

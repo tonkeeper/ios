@@ -45,6 +45,21 @@ public final class WalletImportController {
         )
     }
 
+    /// The found Telegram wallet with its jettons and NFTs. The lookup knows only its TON balance,
+    /// so it stays as it is when they fail to load.
+    public func loadTelegramWallet(
+        _ telegramWallet: ActiveWalletModel,
+        network: Network
+    ) async -> ActiveWalletModel {
+        let loaded = try? await findActiveWallets(
+            accounts: [(id: telegramWallet.id, address: telegramWallet.address, revision: .walletTg)],
+            network: network,
+            checkHistory: false
+        ).first
+        guard let loaded, loaded.isActive else { return telegramWallet }
+        return loaded
+    }
+
     public func findActiveWallets(
         accounts: [(id: String, address: Address, revision: WalletContractVersion)],
         network: Network,

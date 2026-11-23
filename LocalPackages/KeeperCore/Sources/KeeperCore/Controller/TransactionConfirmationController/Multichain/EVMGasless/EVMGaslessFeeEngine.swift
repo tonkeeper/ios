@@ -1,9 +1,10 @@
 import BigInt
 import Foundation
+import OperationReviewModels
 import TKLogging
 
-/// Prices and sends an EVM transfer through the battery's relayer, which pays the chain and takes
-/// its fee in battery charges or in a token of the chain. The chain's own coin stays with ChainKit:
+/// Prices and sends an EVM or Solana transfer through the battery's relayer, which pays the chain and
+/// takes its fee in battery charges or in a token of the chain. The chain's own coin stays with ChainKit:
 /// this engine only puts the relayed methods next to it.
 final class EVMGaslessFeeEngine {
     struct Transfer {
@@ -22,9 +23,14 @@ final class EVMGaslessFeeEngine {
         let call: EVMGaslessCall
         var options: [EVMGaslessFeeOption]
         var emulation: EVMGaslessEmulation?
+        /// What the checks found in the operation `emulation` holds for the selection.
+        var review: OperationReview?
+        var heldFeeType: TransactionConfirmationModel.ExtraType? = nil
+        var unaffordablePick: EVMGaslessFeeOption?
 
         func selected(picked: TransactionConfirmationModel.ExtraType?) -> EVMGaslessFeeOption? {
-            EVMGaslessFeeSelection.resolve(options, picked: picked)
+            if let heldFeeType { return options.first { $0.isNamed(by: heldFeeType) } }
+            return EVMGaslessFeeSelection.resolve(options, picked: unaffordablePick?.isNamed(by: picked) == true ? nil : picked)
         }
     }
 
@@ -33,9 +39,12 @@ final class EVMGaslessFeeEngine {
     /// The remote battery switches; the wallet's own are read here.
     private let isEnabled: (Wallet) async -> Bool
     private let batteryCharges: (Wallet) async -> BatteryChargesAvailability
+    private let currentBatteryCharges: (Wallet) async -> BatteryChargesAvailability
+    private let offersBatteryMigration: (Wallet) async -> Bool
     /// The wallet's own entries for assets other than the one being sent, by the ids they are asked
     /// for; an asset the wallet does not list, or whose listing cannot be read, is missing from the answer.
     private let walletTokens: (_ assetIds: [String], _ wallet: Wallet) async -> [String: MultichainAsset]
+    private let gate: OperationGate
     private let now: () -> Date
 
     init(
@@ -44,13 +53,19 @@ final class EVMGaslessFeeEngine {
         isEnabled: @escaping (Wallet) async -> Bool,
         batteryCharges: @escaping (Wallet) async -> BatteryChargesAvailability,
         walletTokens: @escaping (_ assetIds: [String], _ wallet: Wallet) async -> [String: MultichainAsset],
-        now: @escaping () -> Date = Date.init
+        gate: OperationGate,
+        now: @escaping () -> Date = Date.init,
+        currentBatteryCharges: ((Wallet) async -> BatteryChargesAvailability)? = nil,
+        offersBatteryMigration: @escaping (Wallet) async -> Bool = { _ in false }
     ) {
         self.relayer = relayer
         self.signer = signer
         self.isEnabled = isEnabled
         self.batteryCharges = batteryCharges
+        self.currentBatteryCharges = currentBatteryCharges ?? batteryCharges
+        self.offersBatteryMigration = offersBatteryMigration
         self.walletTokens = walletTokens
+        self.gate = gate
         self.now = now
     }
 
@@ -82,8 +97,9 @@ final class EVMGaslessFeeEngine {
             )
             return nil
         }
+        let migrationPending = await offersBatteryMigration(transfer.wallet)
         let options = await reweighed(
-            estimations.compactMap { option(for: $0, transfer: transfer) },
+            estimations.compactMap { option(for: $0, transfer: transfer, migrationPending: migrationPending) },
             transfer: transfer
         )
         guard !options.isEmpty else {
@@ -113,16 +129,29 @@ final class EVMGaslessFeeEngine {
             else {
                 break
             }
+            if selected.isBattery, await offersBatteryMigration(transfer.wallet) {
+                current.emulation = nil
+                break
+            }
             if let emulation = current.emulation, emulation.assetId == assetId, !emulation.isExpired(at: now()) {
                 break
             }
             current.emulation = nil
             do {
                 let emulation = try await relayer.emulate(wallet: transfer.wallet, call: current.call, assetId: assetId)
+                if let refusal = Self.refusal(of: emulation, call: current.call, chain: transfer.chain, paidWith: selected, now: now()) {
+                    Log.multichain.w(
+                        "gasless emulation ruled the fee method out: the relayer built another operation",
+                        extraInfo: ["assetId": transfer.asset.asset.assetId, "feeAssetId": assetId, "reason": refusal]
+                    )
+                    current.options = EVMGaslessFeeSelection.rulingOut(selected, in: current.options)
+                    continue
+                }
                 var priced = selected.priced(emulation.fee)
                 priced.isInsufficient = await isInsufficient(priced, transfer: transfer)
                 guard priced.canPay else {
-                    current.options = EVMGaslessFeeSelection.rulingOut(priced, in: current.options)
+                    current.options = EVMGaslessFeeSelection.payableFirst(EVMGaslessFeeSelection.replacing(priced, in: current.options))
+                    if priced.isNamed(by: picked) { current.unaffordablePick = priced }
                     continue
                 }
                 current.options = EVMGaslessFeeSelection.replacing(priced, in: current.options)
@@ -135,6 +164,15 @@ final class EVMGaslessFeeEngine {
                     extraInfo: ["assetId": transfer.asset.asset.assetId, "feeAssetId": assetId]
                 )
                 current.options = EVMGaslessFeeSelection.rulingOut(selected, in: current.options)
+            }
+        }
+        current.review = nil
+        if let emulation = current.emulation,
+           let selected = current.selected(picked: picked),
+           selected.relayerAssetId == emulation.assetId
+        {
+            current.review = await gate.preview(Self.presentation(of: selected, on: transfer.chain)) {
+                try [Self.signable(of: emulation, paidWith: selected, transfer: transfer)]
             }
         }
         return current
@@ -156,20 +194,35 @@ final class EVMGaslessFeeEngine {
         return reweighed
     }
 
-    /// Sends the transfer through the relayer, paying with `selected`.
+    /// Sends the transfer through the relayer, paying with `selected`; `consent` answers what the
+    /// review of the operation signed asks. Returns the relayer's transaction hash when it gives one.
     func send(
         _ quote: Quote,
         selected: EVMGaslessFeeOption,
         transfer: Transfer,
-        passcodeProvider: @escaping () async -> String?
-    ) async -> Result<Void, TransactionConfirmationError> {
+        passcodeProvider: @escaping () async -> String?,
+        consent: OperationConsent
+    ) async -> Result<String?, TransactionConfirmationError> {
         guard let assetId = selected.relayerAssetId else {
             return .failure(.multichainTransactionFailure(.internal(reason: "the chain's coin is not relayed")))
         }
+        // A Solana operation carries a recent blockhash that lapses well before the relayer's deadline:
+        // every send builds it again, after the PIN, whose wait can outlast the blockhash too.
+        let rebuildsOnSend = transfer.chain == .sol
+        let signingPasscodeProvider: () async -> String?
+        if rebuildsOnSend {
+            guard let passcode = await passcodeProvider(), !Task.isCancelled else {
+                return .failure(.cancelledByUser)
+            }
+            signingPasscodeProvider = { passcode }
+        } else {
+            signingPasscodeProvider = passcodeProvider
+        }
+
         // The quote can be minutes old by the time the user confirms: price the chosen method again
         // rather than ask the relayer to broadcast an operation it has already forgotten.
         let emulation: EVMGaslessEmulation
-        if let quoted = quote.emulation, quoted.assetId == assetId, !quoted.isExpired(at: now()) {
+        if let quoted = quote.emulation, quoted.assetId == assetId, !rebuildsOnSend, !quoted.isExpired(at: now()) {
             emulation = quoted
         } else {
             do {
@@ -182,17 +235,55 @@ final class EVMGaslessFeeEngine {
                 )
                 return .failure(.multichainTransactionFailure(.relayerQuoteUnavailable(reason: error.logDescription)))
             }
+            do {
+                try Self.requireConfirmedFee(emulation.fee, of: selected, operationId: emulation.operation.id)
+            } catch {
+                Log.multichain.w(
+                    "gasless fee priced again does not hold to the confirmed one",
+                    error: error,
+                    extraInfo: ["assetId": transfer.asset.asset.assetId, "feeAssetId": assetId]
+                )
+                return .failure(.multichainTransactionFailure(.relayerQuoteUnavailable(reason: error.logDescription)))
+            }
+        }
+
+        if let refusal = Self.refusal(of: emulation, call: quote.call, chain: transfer.chain, paidWith: selected, now: now()) {
+            Log.multichain.e(
+                "gasless operation not signed: the relayer built another operation",
+                extraInfo: ["assetId": transfer.asset.asset.assetId, "feeAssetId": assetId, "reason": refusal]
+            )
+            return .failure(.multichainTransactionFailure(.relayerQuoteUnavailable(reason: refusal)))
+        }
+
+        // The user can read the review past the relayer's deadline. A deadline the device's clock had
+        // behind it already is left to the relayer to judge, as it always was.
+        let wasLive = !emulation.isExpired(at: now())
+        do throws(OperationRefusal) {
+            try await gate.clear(Self.presentation(of: selected, on: transfer.chain), consent: consent) {
+                try [Self.signable(of: emulation, paidWith: selected, transfer: transfer)]
+            }
+        } catch .declined {
+            return .failure(.cancelledByUser)
+        } catch {
+            return .failure(.multichainTransactionFailure(.internal(reason: "the relayed transfer could not be reviewed: \(error)")))
+        }
+        guard !wasLive || !emulation.isExpired(at: now()) else {
+            return .failure(.multichainTransactionFailure(.operationExpired))
         }
         // The estimate the method was chosen by can be stale too: the relayer must not be asked to
         // sponsor a transfer the wallet can no longer pay for.
-        guard await !isInsufficient(selected.priced(emulation.fee), transfer: transfer) else {
+        guard await !isInsufficient(selected.priced(emulation.fee), transfer: transfer, forPayment: true) else {
             return .failure(.multichainTransactionFailure(.insufficientSelectedFee))
+        }
+        // The PIN is already in: a screen closed while the operation was built again sends nothing.
+        if rebuildsOnSend, Task.isCancelled {
+            return .failure(.cancelledByUser)
         }
 
         let signedOperation: Data
         do {
             signedOperation = try await signer.signRelayedOperation(
-                passcodeProvider: passcodeProvider,
+                passcodeProvider: signingPasscodeProvider,
                 wallet: transfer.wallet,
                 chain: transfer.chain,
                 operation: emulation.operation
@@ -205,8 +296,9 @@ final class EVMGaslessFeeEngine {
             return .failure(.multichainTransactionFailure(error))
         }
 
+        let txHash: String?
         do {
-            try await relayer.send(wallet: transfer.wallet, signedOperation: signedOperation)
+            txHash = try await relayer.send(wallet: transfer.wallet, signedOperation: signedOperation)
         } catch {
             Log.multichain.e(
                 "gasless send failed",
@@ -218,25 +310,111 @@ final class EVMGaslessFeeEngine {
                 return .failure(.multichainTransactionFailure(.relayerQuoteExpired))
             case let .malformedEnvelope(reason):
                 return .failure(.multichainTransactionFailure(.internal(reason: reason)))
+            // A retry builds another transaction, so one the relayer may have broadcast is not retried.
+            case .rejected(_, true) where rebuildsOnSend:
+                return .failure(.multichainTransactionFailure(.relayerOutcomeUnknown(reason: error.logDescription)))
             case .rejected:
                 return .failure(.multichainTransactionFailure(.relayerRejected(reason: error.logDescription)))
             case nil:
                 return .failure(.multichainTransactionFailure(.relayerOutcomeUnknown(reason: error.logDescription)))
             }
         }
-        return .success(())
+        Log.multichain.i(
+            "gasless send handed to the relayer",
+            extraInfo: ["assetId": transfer.asset.asset.assetId, "feeAssetId": assetId, "txHash": txHash ?? "none"]
+        )
+        return .success(txHash)
     }
 
-    /// The wallet's own battery switches, the same ones a TON jetton transfer is relayed under:
-    /// the wallet has no switch of its own for a coin transfer, so the token one covers both.
+    private static func refusal(
+        of emulation: EVMGaslessEmulation,
+        call: EVMGaslessCall,
+        chain: MultichainChain,
+        paidWith fee: EVMGaslessFeeOption,
+        now: Date
+    ) -> String? {
+        // Solana's relayer builds the whole transaction: emulation refuses one the sender pays the fee of,
+        // and the review holds it to the transfer's intent.
+        guard chain.isEVM else {
+            return nil
+        }
+        let relayedFee: HermesExecute.Fee
+        if fee.isBattery {
+            relayedFee = .battery
+        } else if case let .asset(_, _, _, contract) = AssetIdComponents(assetId: emulation.assetId) {
+            relayedFee = .token(contract: contract, amount: emulation.fee)
+        } else {
+            return "the fee asset \(emulation.assetId) is not a token"
+        }
+        return HermesExecute.refusal(
+            of: emulation.operation,
+            calls: [.init(call)],
+            chain: chain,
+            owner: call.sender,
+            fee: relayedFee,
+            now: emulation.deadlineReference(at: now)
+        )
+    }
+
+    /// What `send` signs for `emulation`: the relayer's operation, held to the amount sent and to a
+    /// fee in a token at the most it may rise to.
+    private static func signable(
+        of emulation: EVMGaslessEmulation,
+        paidWith fee: EVMGaslessFeeOption,
+        transfer: Transfer
+    ) throws -> SignableOperation {
+        let tokenFee: OperationIntent.Spend? = if case let .token(asset, confirmed) = fee.payer {
+            .relayerFee(confirmed, in: asset)
+        } else {
+            nil
+        }
+        return try SignableOperation(
+            operation: emulation.operation.operation,
+            account: ChainKitOperationSender.account(wallet: transfer.wallet, chain: transfer.chain, holding: transfer.asset.asset),
+            intent: .send(transfer.amount, of: transfer.asset.asset, to: transfer.recipient, fee: tokenFee),
+            fidelity: .exact
+        )
+    }
+
+    /// Charges are asked about, and on Solana a fee in a token too. Elsewhere a fee in a token is only
+    /// logged until the relayer's operation states it, or the review would read the fee's transfer as
+    /// paying someone else.
+    static func presentation(of fee: EVMGaslessFeeOption, on chain: MultichainChain) -> OperationPresentation {
+        fee.isBattery || chain == .sol ? .ask : .logOnly
+    }
+
     static func isRelayAllowed(by wallet: Wallet) -> Bool {
-        wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable
+        wallet.isBatteryEnable
+    }
+
+    /// A fee priced again holds to the one the user confirmed by the rules of relayed swaps: charges
+    /// strictly, a token within the tolerance its moving rate gets.
+    private static func requireConfirmedFee(
+        _ fee: BigUInt,
+        of selected: EVMGaslessFeeOption,
+        operationId: String
+    ) throws(MultichainSwapExecutionFailure) {
+        switch selected.payer {
+        case let .battery(confirmedCharges):
+            // The balance is weighed right after, with the failure the screen has for a shortage.
+            try MultichainSwapBatteryFeeRules.requireQuote(
+                Int(clamping: fee),
+                confirmedCharges: confirmedCharges,
+                available: .unknown,
+                payloadId: operationId
+            )
+        case let .token(_, confirmedFee):
+            try MultichainSwapBatteryFeeRules.requireTokenQuote(fee, confirmedAmount: confirmedFee, payloadId: operationId)
+        case .native:
+            throw .internal(reason: "the chain's coin is not relayed")
+        }
     }
 
     /// The method an estimation names, not yet weighed against the wallet's balances.
     private func option(
         for estimation: EVMGaslessEstimation,
-        transfer: Transfer
+        transfer: Transfer,
+        migrationPending: Bool
     ) -> EVMGaslessFeeOption? {
         if estimation.isBattery {
             let charges = Int(clamping: estimation.fee)
@@ -246,7 +424,7 @@ final class EVMGaslessFeeEngine {
             return EVMGaslessFeeOption(
                 payer: .battery(charges: charges),
                 relayerAssetId: estimation.asset.id,
-                isAvailable: estimation.isAvailable
+                isAvailable: estimation.isAvailable || migrationPending
             )
         }
         let sent = transfer.asset.asset
@@ -287,9 +465,9 @@ final class EVMGaslessFeeEngine {
         return await walletTokens(assetIds, transfer.wallet)
     }
 
-    private func isInsufficient(_ option: EVMGaslessFeeOption, transfer: Transfer) async -> Bool {
+    private func isInsufficient(_ option: EVMGaslessFeeOption, transfer: Transfer, forPayment: Bool = false) async -> Bool {
         let heldTokens = await loadWalletTokens(weighing: [option], transfer: transfer)
-        return await isInsufficient(option, transfer: transfer, heldTokens: heldTokens)
+        return await isInsufficient(option, transfer: transfer, heldTokens: heldTokens, forPayment: forPayment)
     }
 
     /// Whether the wallet covers the fee. A fee in the asset being sent has to fit next to the
@@ -297,11 +475,12 @@ final class EVMGaslessFeeEngine {
     private func isInsufficient(
         _ option: EVMGaslessFeeOption,
         transfer: Transfer,
-        heldTokens: [String: MultichainAsset]
+        heldTokens: [String: MultichainAsset],
+        forPayment: Bool = false
     ) async -> Bool {
         switch option.payer {
         case let .battery(charges):
-            switch await batteryCharges(transfer.wallet) {
+            switch await(forPayment ? currentBatteryCharges(transfer.wallet) : batteryCharges(transfer.wallet)) {
             case .unavailable:
                 return true
             case .unknown:

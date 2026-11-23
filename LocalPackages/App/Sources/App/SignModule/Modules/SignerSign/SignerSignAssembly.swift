@@ -24,7 +24,8 @@ struct SignerSignAssembly {
                 title: nil,
                 subtitle: nil,
                 isFlashlightVisible: false
-            )
+            ),
+            analytics: .none
         )
 
         let viewModel = SignerSignViewModelImplementation(

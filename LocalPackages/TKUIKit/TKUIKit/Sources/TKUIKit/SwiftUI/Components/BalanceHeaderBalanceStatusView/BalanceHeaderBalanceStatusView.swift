@@ -107,14 +107,7 @@ private extension BalanceHeaderBalanceStatusView {
                     .multilineTextAlignment(.center)
 
                 if model.isLoading {
-                    BalanceHeaderBalanceStatusLoaderView(
-                        size: Layout.loaderSize,
-                        tintColor: palette.icon.secondary
-                    )
-                    .frame(
-                        width: Layout.loaderSize.side,
-                        height: Layout.loaderSize.side
-                    )
+                    CircularLoader(mode: .indeterminate, preset: .custom(loaderConfiguration))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -139,93 +132,21 @@ private struct BalanceHeaderBalanceStatusSwiftUIViewStyle: SwiftUI.ButtonStyle {
     }
 }
 
-private struct BalanceHeaderBalanceStatusLoaderView: View {
-    var size: Size
-    var tintColor: Color
-    @State private var isAnimating = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(
-                    tintColor.opacity(Layout.bottomCircleOpacity),
-                    lineWidth: size.circleWidth
-                )
-                .frame(
-                    width: size.circleSide,
-                    height: size.circleSide
-                )
-
-            Circle()
-                .trim(from: 0, to: Layout.topCircleTrimEnd)
-                .stroke(
-                    tintColor,
-                    style: StrokeStyle(
-                        lineWidth: size.circleWidth,
-                        lineCap: .round
-                    )
-                )
-                .frame(
-                    width: size.circleSide,
-                    height: size.circleSide
-                )
-                .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                .animation(
-                    .linear(duration: Layout.rotationDuration)
-                        .repeatForever(autoreverses: false),
-                    value: isAnimating
-                )
-        }
-        .frame(
-            width: size.side,
-            height: size.side
-        )
-        .onAppear {
-            isAnimating = true
-        }
-        .onDisappear {
-            isAnimating = false
-        }
-    }
-}
-
 private extension BalanceHeaderBalanceStatusView {
+    var loaderConfiguration: CircularLoaderConfiguration {
+        CircularLoaderConfiguration(
+            lineWidth: 2,
+            progressColor: palette.icon.secondary,
+            trackColor: palette.icon.secondary.opacity(0.32),
+            size: CGSize(width: 12, height: 12),
+            contentPadding: 1,
+            spinnerArcLength: 0.25,
+            spinnerTurnDuration: 1
+        )
+    }
+
     enum Layout {
         static let connectionSpacing: CGFloat = 4
         static let chevronSpacing: CGFloat = 4
-        static let loaderSize: BalanceHeaderBalanceStatusLoaderView.Size = .xSmall
-    }
-}
-
-private extension BalanceHeaderBalanceStatusLoaderView {
-    enum Size {
-        case xSmall
-
-        var side: CGFloat {
-            switch self {
-            case .xSmall:
-                12
-            }
-        }
-
-        var circleSide: CGFloat {
-            switch self {
-            case .xSmall:
-                10
-            }
-        }
-
-        var circleWidth: CGFloat {
-            switch self {
-            case .xSmall:
-                2
-            }
-        }
-    }
-
-    enum Layout {
-        static let bottomCircleOpacity: CGFloat = 0.32
-        static let topCircleTrimEnd: CGFloat = 0.25
-        static let rotationDuration: TimeInterval = 1
     }
 }

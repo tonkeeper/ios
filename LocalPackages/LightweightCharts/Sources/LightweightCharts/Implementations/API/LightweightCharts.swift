@@ -410,13 +410,21 @@ public class LightweightCharts: UIView {
         addSubview(webView)
     }
 
-    private static func defaultLoadScript(named fileName: String) throws -> String {
+    /// Every chart bootstraps with the same ~240 KB of scripts; read them from disk once.
+    @MainActor private static var loadedScripts: [String: String] = [:]
+
+    @MainActor private static func defaultLoadScript(named fileName: String) throws -> String {
+        if let script = loadedScripts[fileName] {
+            return script
+        }
         let bundle = Bundle.module
         let pathForJSRuntime = bundle.path(forResource: fileName, ofType: "js")
         guard let path = pathForJSRuntime else {
             return ""
         }
-        return try String(contentsOfFile: path, encoding: .utf8)
+        let script = try String(contentsOfFile: path, encoding: .utf8)
+        loadedScripts[fileName] = script
+        return script
     }
 
     func startBootstrapIfNeeded() {

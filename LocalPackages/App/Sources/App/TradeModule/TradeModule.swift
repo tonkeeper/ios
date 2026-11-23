@@ -78,7 +78,7 @@ extension TradeModule {
         var onOpenStaking: (Wallet) -> Void
         var onOpenEarnVault: (URL, UINavigationController?) -> Void
         var onOpenPerps: ((UINavigationController?) -> Void)?
-        var onOpenPerpsMarket: ((Int64, UINavigationController?) -> Void)?
+        var onOpenPerpsMarket: ((Int64, PerpsEntryPoint, UINavigationController?) -> Void)?
         var onOpenHistoryEvent: (TradeAssetHistorySelection, UINavigationController?) -> Void
         var tokenDetailsConfiguratorProvider: (Wallet, Token) -> TokenDetailsConfigurator?
         var onOpenUnverifiedTokenInfoPopup: (UINavigationController?) -> Void

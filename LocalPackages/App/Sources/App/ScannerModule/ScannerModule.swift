@@ -12,12 +12,20 @@ struct ScannerModule {
 
     func createScannerModule(
         configurator: ScannerControllerConfigurator,
-        uiConfiguration: ScannerUIConfiguration
+        uiConfiguration: ScannerUIConfiguration,
+        analytics: ScannerAnalytics
     ) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
-        ScannerAssembly.module(
+        let analyticsSession: ScanAnalyticsSession? = switch analytics {
+        case let .scanEvents(openUtm):
+            ScanAnalyticsSession(analyticsProvider: dependencies.coreAssembly.analyticsProvider, openUtm: openUtm)
+        case .none:
+            nil
+        }
+        return ScannerAssembly.module(
             scannerController: dependencies.scannerAssembly.scannerController(configurator: configurator),
             urlOpener: dependencies.coreAssembly.urlOpener(),
-            uiConfiguration: uiConfiguration
+            uiConfiguration: uiConfiguration,
+            analyticsSession: analyticsSession
         )
     }
 }

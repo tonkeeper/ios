@@ -68,6 +68,8 @@ private extension PerpsDepositServiceTests {
             journal: PerpsPendingJournal(walletId: "wallet", environment: "test", directoryURL: directoryURL),
             api: api,
             delivery: StubDepositDelivery(),
+            gate: OperationGate { [] },
+            securityConfig: { KeyRegistrationFixture.security },
             now: { [now] in now }
         )
     }

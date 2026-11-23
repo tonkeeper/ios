@@ -5,7 +5,7 @@ public struct PerpsAssetPagePosition: Equatable {
     public let isPending: Bool
     public let pnlText: String
     public let pnlPercentText: String?
-    public let isPnlPositive: Bool
+    public let isPnlPositive: Bool?
     public let isLong: Bool
     public let sideText: String
     public let leverageText: String?
@@ -22,7 +22,7 @@ public struct PerpsAssetPagePosition: Equatable {
         isPending: Bool,
         pnlText: String,
         pnlPercentText: String?,
-        isPnlPositive: Bool,
+        isPnlPositive: Bool?,
         isLong: Bool,
         sideText: String,
         leverageText: String?,
@@ -67,7 +67,7 @@ public struct PerpsAssetPageTriggerOrder: Equatable, Identifiable {
     public let priceText: String
     public let valueText: String?
     public let percentText: String?
-    public let isPositive: Bool
+    public let isPositive: Bool?
 
     public init(
         id: String,
@@ -77,7 +77,7 @@ public struct PerpsAssetPageTriggerOrder: Equatable, Identifiable {
         priceText: String,
         valueText: String?,
         percentText: String?,
-        isPositive: Bool
+        isPositive: Bool?
     ) {
         self.id = id
         self.actionText = actionText
@@ -97,6 +97,8 @@ public struct PerpsAssetPageLimitOrder: Equatable, Identifiable {
     public let captionText: String
     public let sideText: String
     public let isLong: Bool
+    public let takeProfitText: String?
+    public let stopLossText: String?
 
     public init(
         id: String,
@@ -104,7 +106,9 @@ public struct PerpsAssetPageLimitOrder: Equatable, Identifiable {
         limitPriceText: String,
         captionText: String,
         sideText: String,
-        isLong: Bool
+        isLong: Bool,
+        takeProfitText: String? = nil,
+        stopLossText: String? = nil
     ) {
         self.id = id
         self.orderIndex = orderIndex
@@ -112,6 +116,8 @@ public struct PerpsAssetPageLimitOrder: Equatable, Identifiable {
         self.captionText = captionText
         self.sideText = sideText
         self.isLong = isLong
+        self.takeProfitText = takeProfitText
+        self.stopLossText = stopLossText
     }
 }
 
@@ -152,8 +158,7 @@ public struct PerpsAssetPageActivityRow: Equatable, Identifiable {
 public enum PerpsAssetPageActions: Equatable {
     case longShort(enabled: Bool)
     case editCashOut(editEnabled: Bool, cashOutEnabled: Bool)
-    case editCancelLimitOrder(orderIndex: Int64, enabled: Bool)
-    case hidden
+    case editCancelLimitOrder(orderIndex: Int64, editEnabled: Bool, cancelEnabled: Bool)
 }
 
 public struct PerpsAssetPageReady: Equatable {
@@ -164,11 +169,11 @@ public struct PerpsAssetPageReady: Equatable {
     public let priceText: String
     public let changePercentText: String
     public let changeAmountText: String
-    public let isChangePositive: Bool
+    public let isChangePositive: Bool?
     public let volumeText: String
     public let openInterestText: String
     public let fundingText: String?
-    public let about: String?
+    public let about: String
     public let position: PerpsAssetPagePosition?
     public let limitOrders: [PerpsAssetPageLimitOrder]
     public let orders: [PerpsAssetPageTriggerOrder]
@@ -188,11 +193,11 @@ public struct PerpsAssetPageReady: Equatable {
         priceText: String,
         changePercentText: String,
         changeAmountText: String,
-        isChangePositive: Bool,
+        isChangePositive: Bool?,
         volumeText: String,
         openInterestText: String,
         fundingText: String?,
-        about: String?,
+        about: String,
         position: PerpsAssetPagePosition?,
         limitOrders: [PerpsAssetPageLimitOrder],
         orders: [PerpsAssetPageTriggerOrder],
@@ -230,7 +235,7 @@ public struct PerpsAssetPageReady: Equatable {
 }
 
 public enum PerpsAssetPageState: Equatable {
-    case loading
+    case loading(hasPosition: Bool)
     case ready(PerpsAssetPageReady)
     case failed
     case notFound
@@ -243,5 +248,6 @@ public enum PerpsAssetPageState: Equatable {
 public enum PerpsAssetPageTradeToast: Equatable {
     case progress(String)
     case success(String)
+    case unknown(String)
     case failure(String)
 }

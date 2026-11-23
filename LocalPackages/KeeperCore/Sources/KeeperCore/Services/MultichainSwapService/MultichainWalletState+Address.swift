@@ -57,7 +57,7 @@ public extension Wallet {
             switch try contractVersion {
             case .v5R1:
                 return .tonV5R1
-            case .v3R1, .v3R2, .v4R1, .v4R2, .v5Beta:
+            case .v3R1, .v3R2, .v4R1, .v4R2, .v5Beta, .walletTg:
                 return .tonV4R2
             }
         } catch {

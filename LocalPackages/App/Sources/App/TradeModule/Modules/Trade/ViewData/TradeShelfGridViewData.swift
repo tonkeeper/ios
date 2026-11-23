@@ -7,6 +7,7 @@ struct TradeShelfGridViewData: Identifiable {
     var items: [TradeShelfAssetViewData]
     var seeAllCategory: TradingAssetCategory?
     var initialCatalogSearchSort: MultichainAssetSearchSort
+    var seeAllChain: MultichainChain?
 
     var seeAllEnabled: Bool {
         seeAllCategory != nil

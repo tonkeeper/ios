@@ -1,6 +1,7 @@
 @testable import App
 @testable import KeeperCore
 @testable import TKCore
+import TKTestSupport
 import TKUIKit
 import XCTest
 
@@ -13,7 +14,7 @@ final class TokenChartViewModelTests: XCTestCase {
 
         viewModel.viewDidLoad()
 
-        await waitUntil { recorder.models.count == 1 }
+        await waitUntil(recorder.changes) { recorder.models.count == 1 }
         let model = recorder.models[0]
         XCTAssertEqual(model.chartData.style, .skeleton)
         guard let buttonsConfig = model.buttons, case .shimmer = buttonsConfig else {
@@ -21,10 +22,10 @@ final class TokenChartViewModelTests: XCTestCase {
         }
         XCTAssertEqual(recorder.headers.count, 1)
 
-        await waitUntil { fake.hasPendingLoad(for: .day) }
+        await waitUntil(fake.changes) { fake.hasPendingLoad(for: .day) }
         fake.resolveLoad(for: .day, with: makeCoordinates(count: 5))
 
-        await waitUntil { recorder.models.last?.chartData.style == .active }
+        await waitUntil(recorder.changes) { recorder.models.last?.chartData.style == .active }
         XCTAssertEqual(recorder.models.last?.chartData.coordinates.count, 5)
     }
 
@@ -38,7 +39,7 @@ final class TokenChartViewModelTests: XCTestCase {
 
         recorder.tapButton(period: .month)
 
-        await waitUntil { recorder.models.last?.chartData.style == .skeleton }
+        await waitUntil(recorder.changes) { recorder.models.last?.chartData.style == .skeleton }
         guard let model = recorder.models.last else {
             return XCTFail("no loading model presented")
         }
@@ -59,10 +60,10 @@ final class TokenChartViewModelTests: XCTestCase {
         let headersCount = recorder.headers.count
 
         recorder.tapButton(period: .month)
-        await waitUntil { fake.hasPendingLoad(for: .month) }
+        await waitUntil(fake.changes) { fake.hasPendingLoad(for: .month) }
         fake.resolveLoad(for: .month, with: makeCoordinates(count: 9))
 
-        await waitUntil { recorder.models.last?.chartData.style == .active }
+        await waitUntil(recorder.changes) { recorder.models.last?.chartData.style == .active }
         XCTAssertEqual(recorder.models.last?.chartData.coordinates.count, 9)
         XCTAssertEqual(recorder.headers.count, headersCount + 1)
     }
@@ -75,14 +76,14 @@ final class TokenChartViewModelTests: XCTestCase {
         await presentInitialData(viewModel: viewModel, fake: fake, recorder: recorder, count: 5)
 
         recorder.tapButton(period: .month)
-        await waitUntil { fake.hasPendingLoad(for: .month) }
+        await waitUntil(fake.changes) { fake.hasPendingLoad(for: .month) }
         recorder.tapButton(period: .year)
-        await waitUntil { fake.hasPendingLoad(for: .year) }
+        await waitUntil(fake.changes) { fake.hasPendingLoad(for: .year) }
 
         fake.resolveLoad(for: .month, with: makeCoordinates(count: 9))
         fake.resolveLoad(for: .year, with: makeCoordinates(count: 3))
 
-        await waitUntil { recorder.models.last?.chartData.style == .active }
+        await waitUntil(recorder.changes) { recorder.models.last?.chartData.style == .active }
         XCTAssertEqual(recorder.models.last?.chartData.coordinates.count, 3)
         XCTAssertFalse(recorder.models.contains { $0.chartData.style == .active && $0.chartData.coordinates.count == 9 })
     }
@@ -112,16 +113,20 @@ private extension TokenChartViewModelTests {
                 dateFormatter: keeperCoreFormatters.dateFormatter,
                 amountFormatter: keeperCoreFormatters.amountFormatter,
                 signedAmountFormatter: keeperCoreFormatters.signedAmountFormatter
-            )
+            ),
+            loadingTransitionMinimumDuration: 0
         )
         viewModel.didUpdateChartData = { model in
             recorder.models.append(model)
+            recorder.changes.send()
         }
         viewModel.didUpdateHeader = { header in
             recorder.headers.append(header)
+            recorder.changes.send()
         }
         viewModel.didFailedUpdateChartData = { error in
             recorder.errors.append(error)
+            recorder.changes.send()
         }
         return viewModel
     }
@@ -134,9 +139,9 @@ private extension TokenChartViewModelTests {
         count: Int
     ) async {
         viewModel.viewDidLoad()
-        await waitUntil { fake.hasPendingLoad(for: .day) }
+        await waitUntil(fake.changes) { fake.hasPendingLoad(for: .day) }
         fake.resolveLoad(for: .day, with: makeCoordinates(count: count))
-        await waitUntil { recorder.models.last?.chartData.style == .active }
+        await waitUntil(recorder.changes) { recorder.models.last?.chartData.style == .active }
     }
 
     func makeCoordinates(count: Int) -> [KeeperCore.Coordinate] {
@@ -148,23 +153,10 @@ private extension TokenChartViewModelTests {
     func selectedTitles(_ buttons: [ChartBottomButtonsView.Config.Button]) -> [String] {
         buttons.filter(\.isSelected).map(\.title)
     }
-
-    func waitUntil(
-        timeout: TimeInterval = 2,
-        condition: @escaping () async -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if await condition() {
-                return
-            }
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        XCTFail("condition not met within \(timeout)s")
-    }
 }
 
 private final class ChartOutputRecorder {
+    let changes = TestSignal()
     var models = [TKUIKit.ChartView.Model]()
     var headers = [ChartHeaderView.Configuration]()
     var errors = [ChartErrorView.Model]()
@@ -181,6 +173,7 @@ private final class ChartOutputRecorder {
 }
 
 private final class ChartServiceFake: ChartService, @unchecked Sendable {
+    let changes = TestSignal()
     private let lock = NSLock()
     private var cachedData = [Period: [KeeperCore.Coordinate]]()
     private var pendingLoads = [(period: Period, continuation: CheckedContinuation<[KeeperCore.Coordinate], Swift.Error>)]()
@@ -220,8 +213,9 @@ private final class ChartServiceFake: ChartService, @unchecked Sendable {
         do {
             return try await withCheckedThrowingContinuation { continuation in
                 lock.lock()
-                defer { lock.unlock() }
                 pendingLoads.append((period, continuation))
+                lock.unlock()
+                changes.send()
             }
         } catch {
             throw (error as? ChartServiceError) ?? .networkError

@@ -15,6 +15,7 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         var showsChevron: Bool
         var leadingImage: UIImage?
         var leadingImageURL: URL?
+        var leadingChainImage: UIImage?
     }
 
     struct BalanceState {
@@ -87,6 +88,10 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             updateBalanceState()
             updateIsEnableState()
         }
+    }
+
+    var minimumDisplayStyle: AmountDisplayStyle = .compact {
+        didSet { updateBalanceState() }
     }
 
     var isMaxButtonVisible = false {
@@ -167,6 +172,12 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         }
     }
 
+    var convertedLeadingChainImage: UIImage? {
+        didSet {
+            updateValueState()
+        }
+    }
+
     func reset() {
         sourceAmount = 0
         mode = .source
@@ -184,6 +195,12 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
         updateInputText()
         updateIsEnableState()
         updateQuickOptionSelection()
+    }
+
+    func setQuotedDestinationAmount(_ amount: BigUInt?) {
+        guard mode == .source else { return }
+        if let amount { _destinationAmount = amount } else { recalculateDestination() }
+        updateValueState()
     }
 
     func replaceDestinationUnit(_ unit: AmountInputUnit) {
@@ -281,7 +298,8 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             showsShimmer: false,
             showsChevron: false,
             leadingImage: nil,
-            leadingImageURL: nil
+            leadingImageURL: nil,
+            leadingChainImage: nil
         )
         balance = BalanceState(
             text: "",
@@ -297,6 +315,11 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
 
     func requestFocus() {
         focusRequest += 1
+    }
+
+    /// Drops a pending request.
+    func resetFocusRequest() {
+        focusRequest = 0
     }
 
     // MARK: - View actions
@@ -397,7 +420,8 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             showsShimmer: isConvertedShimmering,
             showsChevron: isConvertedSelectable,
             leadingImage: convertedLeadingImage,
-            leadingImageURL: convertedLeadingImageURL
+            leadingImageURL: convertedLeadingImageURL,
+            leadingChainImage: convertedLeadingChainImage
         )
     }
 
@@ -436,7 +460,8 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             let formattedMinimum = amountFormatter.format(
                 amount: minimumSourceAmount,
                 fractionDigits: sourceUnit.fractionalDigits,
-                accessory: .tokenSymbol(sourceUnit.symbol)
+                accessory: .tokenSymbol(sourceUnit.symbol),
+                style: minimumDisplayStyle
             )
             text = TKLocales.StakingInput.minimumBalance(formattedMinimum)
             isError = true
@@ -539,7 +564,8 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             amount: destinationAmount,
             amountFractionLength: destinationUnit.fractionalDigits,
             rate: rate,
-            targetFractionLength: sourceUnit.fractionalDigits
+            targetFractionLength: sourceUnit.fractionalDigits,
+            roundingMode: destinationUnit.conversionRounding.outOfUnitMode
         )
         _sourceAmount = converted
         updateIsMax()
@@ -550,7 +576,8 @@ final class AmountInputSwiftUIViewModel: ObservableObject, AmountInputModuleInpu
             amount: sourceAmount,
             amountFractionLength: sourceUnit.fractionalDigits,
             rate: rate,
-            targetFractionLength: destinationUnit.fractionalDigits
+            targetFractionLength: destinationUnit.fractionalDigits,
+            roundingMode: destinationUnit.conversionRounding.intoUnitMode
         )
         _destinationAmount = converted
     }

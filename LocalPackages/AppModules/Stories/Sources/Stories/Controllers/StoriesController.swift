@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKUIKit
 
 public actor StoriesController {
     public enum Error: Swift.Error {
@@ -25,7 +26,9 @@ public actor StoriesController {
         let storyIds = await configuration.stories
         var claimedStoryIds = Set<String>()
         let candidates = storyIds.filter { storyId in
-            claimedStoryIds.insert(storyId).inserted && storiesService.isNeedToShow(storyID: storyId)
+            !configuration.isPromoHidden(id: storyId)
+                && claimedStoryIds.insert(storyId).inserted
+                && storiesService.isNeedToShow(storyID: storyId)
         }
         guard !candidates.isEmpty,
               !candidatesWithoutAutoplay.contains(candidates),
@@ -34,6 +37,7 @@ public actor StoriesController {
         else {
             return []
         }
+        prefetchImages(of: loadedStories)
 
         let storiesById = Dictionary(loadedStories.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let autoplayStories = candidates.compactMap { storiesById[$0] }.filter(\.isAutoShow)
@@ -43,7 +47,19 @@ public actor StoriesController {
         return autoplayStories
     }
 
+    public func prefetchStory(storyId: String, walletId: String?) async {
+        guard let story = try? await storiesService.loadStory(storyID: storyId, walletId: walletId) else { return }
+        prefetchImages(of: [story])
+    }
+
     public func loadStory(storyId: String, ignoreShowed: Bool, walletId: String?) async -> Result<Story, Error> {
+        guard ignoreShowed || storiesService.isNeedToShow(storyID: storyId) else {
+            return .failure(.allStoriesShown)
+        }
+        _ = await configuration.loadConfigurations()
+        guard !configuration.isPromoHidden(id: storyId) else {
+            return .failure(.failedLoadStory(storyId: storyId))
+        }
         do {
             let story = try await storiesService.loadStory(storyID: storyId, walletId: walletId)
             guard ignoreShowed || storiesService.isNeedToShow(storyID: storyId) else {
@@ -53,5 +69,9 @@ public actor StoriesController {
         } catch {
             return .failure(.failedLoadStory(storyId: storyId))
         }
+    }
+
+    private nonisolated func prefetchImages(of stories: [Story]) {
+        ImagePrefetcherService().prefetch(urls: stories.flatMap { $0.pages.compactMap(\.image) })
     }
 }

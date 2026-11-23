@@ -77,6 +77,37 @@ final class PerpsPendingJournalFundingTests: XCTestCase {
         XCTAssertEqual(restored, [deposit])
     }
 
+    func testBrokenTradingRecordCanBeSalvagedWithoutLosingConfirmedAutoClose() async throws {
+        let journal = makeJournal()
+        let confirmed = PerpsAutoClose(takeProfit: .init(triggerPrice: 2100), stopLoss: nil)
+        try await journal.confirmAutoClose(marketId: 1) { _ in confirmed }
+        try rewriteDocument { document in
+            document["pending"] = ["broken": ["operationId": "broken"]]
+        }
+
+        _ = try await journal.savePendingIfAbsentWithStatus(makeTradingPending())
+        let restored = try await makeJournal().confirmedAutoClose(marketId: 1)
+        XCTAssertEqual(restored, confirmed)
+    }
+
+    func testADocumentWithLimitPlacementsFromAnOlderBuildKeepsEveryRecord() async throws {
+        let journal = makeJournal()
+        let deposit = makeDeposit(operationId: "deposit", stage: .registrationPending)
+        _ = try await journal.saveFundingIfAbsent(deposit)
+        _ = try await journal.savePendingIfAbsentWithStatus(makeTradingPending())
+        try rewriteDocument {
+            $0["placements"] = ["1:11": [
+                "marketId": 1, "clientOrderIndex": 11, "marginUsd": 3, "leverage": 25, "baseSize": 0.5, "expiresAtMillis": 1,
+            ]]
+        }
+
+        let reopened = makeJournal()
+        let funding = try await reopened.allFunding()
+        let pending = try await reopened.allPending()
+        XCTAssertEqual(funding, [deposit])
+        XCTAssertEqual(pending.map(\.operationId), ["trade"])
+    }
+
     func testDocumentFromANewerVersionIsRefusedRatherThanRewritten() async throws {
         let journal = makeJournal()
         _ = try await journal.saveFundingIfAbsent(makeDeposit(operationId: "deposit"))
@@ -102,6 +133,22 @@ final class PerpsPendingJournalFundingTests: XCTestCase {
         XCTAssertTrue(initial.inserted)
         XCTAssertFalse(repeated.inserted)
         XCTAssertEqual(repeated.operation, first)
+    }
+
+    func testOnlySettledDepositAcknowledgementsSurviveRestart() async throws {
+        let journal = makeJournal()
+        for stage: PerpsDepositStage in [.failed, .refunded, .unconfirmed, .registeredPending, .credited] {
+            _ = try await journal.saveFundingIfAbsent(makeDeposit(operationId: stage.rawValue, stage: stage, updatedAtMillis: 1))
+        }
+        let ids: Set<String> = ["failed", "refunded", "unconfirmed", "registeredPending", "credited", "missing"]
+        try await journal.acknowledgeDepositStatuses(ids)
+
+        let restored = try await makeJournal().allFunding()
+        XCTAssertEqual(Set(restored.filter { $0.deposit?.statusAcknowledged == true }.map(\.operationId)), ["failed", "refunded", "unconfirmed", "credited"])
+        XCTAssertTrue(restored.allSatisfy { $0.deposit?.sourceAmountUnits == "25000000" && $0.updatedAtMillis == 1 })
+        try await journal.acknowledgeDepositStatuses(ids)
+        let repeated = try await makeJournal().allFunding()
+        XCTAssertEqual(Dictionary(uniqueKeysWithValues: repeated.map { ($0.operationId, $0) }), Dictionary(uniqueKeysWithValues: restored.map { ($0.operationId, $0) }))
     }
 
     func testMissingDictionariesBlockFundingButNotTrading() async throws {

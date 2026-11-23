@@ -37,88 +37,6 @@ public struct Client: APIProtocol {
     private var converter: Converter {
         client.converter
     }
-    /// Check server readiness
-    ///
-    /// - Remark: HTTP `GET /v2/healthcheck`.
-    /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)`.
-    public func healthcheck(_ input: Operations.healthcheck.Input) async throws -> Operations.healthcheck.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.healthcheck.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/healthcheck",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.healthcheck.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.Ok.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
     /// Calculate swap
     ///
     /// Get swap route with amounts and fees
@@ -600,181 +518,6 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Get currencies
-    ///
-    /// Get available currencies, merchants and trading pairs
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/currencies`.
-    /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)`.
-    @available(*, deprecated)
-    public func getExchangeCurrencies(_ input: Operations.getExchangeCurrencies.Input) async throws -> Operations.getExchangeCurrencies.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.getExchangeCurrencies.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/onramp/currencies",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                try converter.setHeaderFieldAsURI(
-                    in: &request.headerFields,
-                    name: "F",
-                    value: input.headers.F
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "country",
-                    value: input.query.country
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "device_country_code",
-                    value: input.query.device_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "store_country_code",
-                    value: input.query.store_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "sim_country",
-                    value: input.query.sim_country
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "timezone",
-                    value: input.query.timezone
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "is_vpn_active",
-                    value: input.query.is_vpn_active
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "build",
-                    value: input.query.build
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "platform",
-                    value: input.query.platform
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "direction",
-                    value: input.query.direction
-                )
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getExchangeCurrencies.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.ExchangeCurrencies.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 400:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.BadRequest.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.BadRequest.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .badRequest(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
     /// Calculate exchange rates
     ///
     /// Get exchange rates from all available merchants
@@ -885,185 +628,6 @@ public struct Client: APIProtocol {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
                             Components.Schemas.ExchangeCalculation.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 400:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.BadRequest.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.BadRequest.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .badRequest(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
-    /// Get payment methods
-    ///
-    /// Get available payment methods by currency and country
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/payment_methods`.
-    /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)`.
-    public func getExchangePaymentMethods(_ input: Operations.getExchangePaymentMethods.Input) async throws -> Operations.getExchangePaymentMethods.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.getExchangePaymentMethods.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/onramp/payment_methods",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                try converter.setHeaderFieldAsURI(
-                    in: &request.headerFields,
-                    name: "X-Wallet-ID",
-                    value: input.headers.X_hyphen_Wallet_hyphen_ID
-                )
-                try converter.setHeaderFieldAsURI(
-                    in: &request.headerFields,
-                    name: "F",
-                    value: input.headers.F
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "country",
-                    value: input.query.country
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "device_country_code",
-                    value: input.query.device_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "store_country_code",
-                    value: input.query.store_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "sim_country",
-                    value: input.query.sim_country
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "timezone",
-                    value: input.query.timezone
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "is_vpn_active",
-                    value: input.query.is_vpn_active
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "build",
-                    value: input.query.build
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "platform",
-                    value: input.query.platform
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "currency",
-                    value: input.query.currency
-                )
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getExchangePaymentMethods.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            [Components.Schemas.ExchangePaymentMethod].self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -1400,200 +964,6 @@ public struct Client: APIProtocol {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
                             Components.Schemas.ExchangeResult.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 400:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.BadRequest.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.BadRequest.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .badRequest(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
-    /// Get trading pairs
-    ///
-    /// Get available trading pairs with filtering
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/pairs`.
-    /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)`.
-    @available(*, deprecated)
-    public func getExchangePairs(_ input: Operations.getExchangePairs.Input) async throws -> Operations.getExchangePairs.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.getExchangePairs.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/onramp/pairs",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                try converter.setHeaderFieldAsURI(
-                    in: &request.headerFields,
-                    name: "X-Wallet-ID",
-                    value: input.headers.X_hyphen_Wallet_hyphen_ID
-                )
-                try converter.setHeaderFieldAsURI(
-                    in: &request.headerFields,
-                    name: "F",
-                    value: input.headers.F
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "device_country_code",
-                    value: input.query.device_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "store_country_code",
-                    value: input.query.store_country_code
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "sim_country",
-                    value: input.query.sim_country
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "timezone",
-                    value: input.query.timezone
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "is_vpn_active",
-                    value: input.query.is_vpn_active
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "direction",
-                    value: input.query.direction
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "fiat",
-                    value: input.query.fiat
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "crypto",
-                    value: input.query.crypto
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "network",
-                    value: input.query.network
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "platform",
-                    value: input.query.platform
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "build",
-                    value: input.query.build
-                )
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getExchangePairs.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.ExchangePairs.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -2356,222 +1726,6 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Look up a single cross-chain asset by AssetID
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/asset`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)`.
-    public func getCrossSwapAsset(_ input: Operations.getCrossSwapAsset.Input) async throws -> Operations.getCrossSwapAsset.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.getCrossSwapAsset.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/crosschain/asset",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "asset_id",
-                    value: input.query.asset_id
-                )
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getCrossSwapAsset.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.CrossSwapAsset.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 400:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.BadRequest.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.BadRequest.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .badRequest(.init(body: body))
-                case 404:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.NotFound.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.NotFound.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .notFound(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
-    /// Slippage options per source chain
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/slippage`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)`.
-    @available(*, deprecated)
-    public func getCrossSwapSlippage(_ input: Operations.getCrossSwapSlippage.Input) async throws -> Operations.getCrossSwapSlippage.Output {
-        try await client.send(
-            input: input,
-            forOperation: Operations.getCrossSwapSlippage.id,
-            serializer: { input in
-                let path = try converter.renderedPath(
-                    template: "/v2/crosschain/slippage",
-                    parameters: []
-                )
-                var request: HTTPTypes.HTTPRequest = .init(
-                    soar_path: path,
-                    method: .get
-                )
-                suppressMutabilityWarning(&request)
-                converter.setAcceptHeader(
-                    in: &request.headerFields,
-                    contentTypes: input.headers.accept
-                )
-                return (request, nil)
-            },
-            deserializer: { response, responseBody in
-                switch response.status.code {
-                case 200:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getCrossSwapSlippage.Output.Ok.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.CrossSwapSlippage.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .ok(.init(body: body))
-                case 500:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.InternalError.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.InternalError.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .internalServerError(.init(body: body))
-                default:
-                    return .undocumented(
-                        statusCode: response.status.code,
-                        .init(
-                            headerFields: response.headerFields,
-                            body: responseBody
-                        )
-                    )
-                }
-            }
-        )
-    }
     /// Create cross-chain swap quote
     ///
     /// - Remark: HTTP `POST /v2/crosschain/quotes`.
@@ -2599,13 +1753,6 @@ public struct Client: APIProtocol {
                     in: &request.headerFields,
                     name: "F",
                     value: input.headers.F
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "is_new",
-                    value: input.query.is_new
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
@@ -2704,6 +1851,32 @@ public struct Client: APIProtocol {
     }
     /// Prepare selected route
     ///
+    /// Builds the transaction for a quoted route. This is the call that
+    /// commits: the aggregator allocates any deposit address, screens the
+    /// wallets and mints its own id for the swap, which comes back as
+    /// `provider_route_id`.
+    ///
+    /// Screening is why a route that quoted fine can fail here. A `400` with
+    /// code `wallet_screened` means the aggregator's compliance check
+    /// rejected the sender or the recipient — an AML block on the wallet
+    /// itself, not a malformed address. It is final for that wallet: a retry,
+    /// a fresh quote or another route will be refused the same way, and the
+    /// user cannot fix it by correcting the address. swapsxyz raises it as
+    /// `WALLET_SCREENED` with `details.riskLevel` and `details.screenedAt`,
+    /// which our message carries verbatim. Treat it as a terminal state for
+    /// the swap and route the user to support rather than to a retry.
+    ///
+    /// Other `400` codes: `invalid_address` when the address is genuinely
+    /// malformed or the pair needs a receiver we do not have,
+    /// `min_amount_not_met` for an amount under the aggregator's minimum,
+    /// `insufficient_balance` for any other amount the aggregator refuses,
+    /// `provider_rejected` for another request parameter it refuses,
+    /// `route_expired` once the quote is stale or the aggregator no longer
+    /// finds the route it quoted, `cannot_build_transaction`, and
+    /// `provider_unavailable` for a rate limit or an upstream outage, which
+    /// is the one worth retrying.
+    ///
+    ///
     /// - Remark: HTTP `POST /v2/crosschain/routes/{route_id}/prepare`.
     /// - Remark: Generated from `#/paths//v2/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRoute)`.
     public func prepareCrossSwapRoute(_ input: Operations.prepareCrossSwapRoute.Input) async throws -> Operations.prepareCrossSwapRoute.Output {
@@ -2731,13 +1904,6 @@ public struct Client: APIProtocol {
                     in: &request.headerFields,
                     name: "F",
                     value: input.headers.F
-                )
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "is_new",
-                    value: input.query.is_new
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
@@ -2858,26 +2024,48 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Submit signed payload
+    /// Create cross-chain swap quote (Generic Payload flow)
     ///
-    /// - Remark: HTTP `POST /v2/crosschain/payloads/{payload_id}/submit`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)`.
-    public func submitCrossSwapPayload(_ input: Operations.submitCrossSwapPayload.Input) async throws -> Operations.submitCrossSwapPayload.Output {
+    /// The quote of `POST /v2/crosschain/quotes` for clients that sign
+    /// Generic Payload API operations. The route carries no payloads: get
+    /// them from `POST /v3/crosschain/routes/{route_id}/prepare`.
+    ///
+    /// Differences from v2: no Lighter targets, no inline payloads; a source
+    /// on a chain the Generic Payload API has no payloads for (anything but
+    /// TON, EVM, TRON, Bitcoin and Solana) is refused with
+    /// `unsupported_asset`. An erc20 or bep20 source is always quoted as a
+    /// contract call (approve and swap), never through a deposit address,
+    /// and a TON source never takes a deposit address. A client from
+    /// 26.14.0, and a dev build, is quoted through Rango alone (see
+    /// `aggregators`).
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/quotes`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)`.
+    public func createCrossSwapQuoteV3(_ input: Operations.createCrossSwapQuoteV3.Input) async throws -> Operations.createCrossSwapQuoteV3.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.submitCrossSwapPayload.id,
+            forOperation: Operations.createCrossSwapQuoteV3.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/v2/crosschain/payloads/{}/submit",
-                    parameters: [
-                        input.path.payload_id
-                    ]
+                    template: "/v3/crosschain/quotes",
+                    parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
                     soar_path: path,
                     method: .post
                 )
                 suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-ID",
+                    value: input.headers.X_hyphen_Wallet_hyphen_ID
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "F",
+                    value: input.headers.F
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
@@ -2897,7 +2085,7 @@ public struct Client: APIProtocol {
                 switch response.status.code {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.submitCrossSwapPayload.Output.Ok.Body
+                    let body: Operations.createCrossSwapQuoteV3.Output.Ok.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -2907,7 +2095,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.CrossSwapSubmit.self,
+                            Components.Schemas.CrossSwapQuoteV3.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -2939,28 +2127,6 @@ public struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .badRequest(.init(body: body))
-                case 404:
-                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.NotFound.Body
-                    let chosenContentType = try converter.bestContentType(
-                        received: contentType,
-                        options: [
-                            "application/json"
-                        ]
-                    )
-                    switch chosenContentType {
-                    case "application/json":
-                        body = try await converter.getResponseBodyAsJSON(
-                            Components.Responses.NotFound.Body.jsonPayload.self,
-                            from: responseBody,
-                            transforming: { value in
-                                .json(value)
-                            }
-                        )
-                    default:
-                        preconditionFailure("bestContentType chose an invalid content type.")
-                    }
-                    return .notFound(.init(body: body))
                 case 500:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.InternalError.Body
@@ -2995,37 +2161,65 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Get execution status
+    /// Prepare selected route as a Generic Payload operation
     ///
-    /// - Remark: HTTP `GET /v2/crosschain/executions/{execution_id}`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)`.
-    public func getCrossSwapExecution(_ input: Operations.getCrossSwapExecution.Input) async throws -> Operations.getCrossSwapExecution.Output {
+    /// `POST /v2/crosschain/routes/{route_id}/prepare` with the transaction
+    /// returned as a Generic Payload API operation. The transaction is always
+    /// built on the aggregator side. Errors are those of v2; a route whose
+    /// transaction has no Generic Payload form answers
+    /// `cannot_build_transaction`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/routes/{route_id}/prepare`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)`.
+    public func prepareCrossSwapRouteV3(_ input: Operations.prepareCrossSwapRouteV3.Input) async throws -> Operations.prepareCrossSwapRouteV3.Output {
         try await client.send(
             input: input,
-            forOperation: Operations.getCrossSwapExecution.id,
+            forOperation: Operations.prepareCrossSwapRouteV3.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/v2/crosschain/executions/{}",
+                    template: "/v3/crosschain/routes/{}/prepare",
                     parameters: [
-                        input.path.execution_id
+                        input.path.route_id
                     ]
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
                     soar_path: path,
-                    method: .get
+                    method: .post
                 )
                 suppressMutabilityWarning(&request)
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "X-Wallet-ID",
+                    value: input.headers.X_hyphen_Wallet_hyphen_ID
+                )
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "F",
+                    value: input.headers.F
+                )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
                 )
-                return (request, nil)
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case .none:
+                    body = nil
+                case let .json(value):
+                    body = try converter.setOptionalRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
             },
             deserializer: { response, responseBody in
                 switch response.status.code {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.getCrossSwapExecution.Output.Ok.Body
+                    let body: Operations.prepareCrossSwapRouteV3.Output.Ok.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -3035,7 +2229,7 @@ public struct Client: APIProtocol {
                     switch chosenContentType {
                     case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
-                            Components.Schemas.CrossSwapExecution.self,
+                            Components.Schemas.CrossSwapPrepareV3.self,
                             from: responseBody,
                             transforming: { value in
                                 .json(value)
@@ -5231,6 +4425,98 @@ public struct Client: APIProtocol {
                             headerFields: response.headerFields,
                             body: responseBody
                         )
+                    )
+                }
+            }
+        )
+    }
+    /// Display metadata of MoonPay payment methods
+    ///
+    /// Title, subtitle, icon and badge for every MoonPay payment method type,
+    /// to decorate the types returned by MoonPay Platform `GET /platform/v1/payment-methods`.
+    /// Types missing from the response have no metadata; show them with a fallback.
+    /// The list is refreshed from MoonPay once a day.
+    ///
+    /// `503` `provider_unavailable`: the metadata has not been loaded from MoonPay yet.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v2/moonpay/payment-methods`.
+    /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)`.
+    public func getMoonPayPaymentMethods(_ input: Operations.getMoonPayPaymentMethods.Input) async throws -> Operations.getMoonPayPaymentMethods.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.getMoonPayPaymentMethods.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/v2/moonpay/payment-methods",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "lang",
+                    value: input.query.lang
+                )
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.getMoonPayPaymentMethods.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.MoonPayPaymentMethods.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                default:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses._Error.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ErrorResponse.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(body: body)
                     )
                 }
             }

@@ -48,6 +48,7 @@ final class PasscodeInputView: UIView {
     private let lockoutSubtitleLabel = UILabel()
 
     private let errorFeedbackGenerator = UINotificationFeedbackGenerator()
+    private let successFeedbackGenerator = UIImpactFeedbackGenerator(style: .soft)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -71,6 +72,9 @@ final class PasscodeInputView: UIView {
             }
             passcodeView.inputCount = count
             passcodeView.validationState = .none
+            if count > 0 {
+                successFeedbackGenerator.prepare()
+            }
             completion?()
         case let .failed(count, attemptsLeft, willLockout):
             showLockout(false)
@@ -90,6 +94,7 @@ final class PasscodeInputView: UIView {
         case .success:
             showLockout(false)
             passcodeView.validationState = .success
+            successFeedbackGenerator.impactOccurred(intensity: 0.6)
             completion?()
         case let .lockout(remainingSeconds):
             updateLockout(remainingSeconds: remainingSeconds)

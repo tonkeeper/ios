@@ -4,8 +4,8 @@ import BigInt
 /// a `TransferService`.
 enum MultichainSwapBatteryFeeRules {
     /// What the relayer may be asked to move for this swap, or `nil` when no relayed method must pay
-    /// for it: there must be nothing to approve first, and the wallet must be a mainnet regular one
-    /// whose address on that chain is known.
+    /// for it: there must be nothing to approve first, and the wallet must be a mainnet one the battery
+    /// serves on that chain, whose address there is known.
     static func relayedAsset(
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
@@ -15,10 +15,9 @@ enum MultichainSwapBatteryFeeRules {
         guard !requiresApproval else {
             return nil
         }
-        guard swapWallet.wallet.kind == .regular, swapWallet.wallet.network.isMainnet else {
-            return nil
-        }
-        guard let asset = MultichainSwapRelayedAsset(sourceAsset),
+        guard swapWallet.wallet.network.isMainnet,
+              let asset = MultichainSwapRelayedAsset(sourceAsset),
+              swapWallet.wallet.isBatteryEnable(on: asset.chain),
               swapWallet.address(for: asset.chain) != nil
         else {
             return nil
@@ -31,19 +30,29 @@ enum MultichainSwapBatteryFeeRules {
         return asset
     }
 
+    /// The EVM and Solana relayer signs with the HD keys the chain's address derives from, for a regular
+    /// mainnet wallet that has an address on the chain, and only on Solana or a chain the Hermes delegate runs on.
+    static func relaysSwaps(of swapWallet: MultichainSwapWallet, on chain: MultichainChain) -> Bool {
+        swapWallet.keys == .hd
+            && swapWallet.wallet.kind == .regular
+            && swapWallet.wallet.network.isMainnet
+            && (PerpsDepositCalldata.hermesChains.contains(chain) || chain == .sol)
+            && swapWallet.address(for: chain) != nil
+    }
+
     /// Battery on top of that: the relayer has to be switched on remotely and by the wallet itself.
     /// The wallet's own switch is checked here rather than per chain, because a user who turned
     /// battery off for swaps means it for every chain. The GRAM instant fee is not charges, so it is
     /// not gated on any of this — the same way the TRON send screen offers it.
     static func isBatteryAllowed(
         wallet: Wallet,
+        chain: MultichainChain,
         isBatteryEnabled: Bool,
         isBatterySendEnabled: Bool
     ) -> Bool {
         isBatteryEnabled
             && isBatterySendEnabled
-            && wallet.isBatteryEnable
-            && wallet.batterySettings.isSwapTransactionEnable
+            && wallet.isBatteryEnable(on: chain)
     }
 
     /// A method that cannot cover its own fee is still offered, marked insufficient, so the picker can
@@ -57,14 +66,15 @@ enum MultichainSwapBatteryFeeRules {
         // method here is what left the picker offering the chain's coin alone, so the row stays and
         // carries the refill instead.
         guard let charges, charges > 0 else {
-            return MultichainSwapFeeOption(cost: .batteryUnpriced)
+            return MultichainSwapFeeOption(cost: .batteryUnpriced, availableCharges: availableCharges.count)
         }
         return MultichainSwapFeeOption(
             cost: .batteryCharges(
                 count: charges,
                 excess: excessCharges,
                 isInsufficient: isInsufficient(charges: charges, availableCharges: availableCharges)
-            )
+            ),
+            availableCharges: availableCharges.count
         )
     }
 
@@ -129,12 +139,17 @@ enum MultichainSwapBatteryFeeRules {
     /// more of them is a real one more.
     static let gramRequoteTolerancePercent: BigUInt = 5
 
+    /// The most a re-quote of `confirmed` may come to and still pass for it.
+    static func toleratedRequote(of confirmed: BigUInt) -> BigUInt {
+        confirmed + confirmed * gramRequoteTolerancePercent / 100
+    }
+
     static func requireGramQuote(
         _ amountNano: BigUInt,
         confirmedAmountNano: BigUInt,
         payloadId: String
     ) throws(MultichainSwapExecutionFailure) {
-        let tolerated = confirmedAmountNano + confirmedAmountNano * gramRequoteTolerancePercent / 100
+        let tolerated = toleratedRequote(of: confirmedAmountNano)
         guard amountNano > tolerated else {
             return
         }
@@ -151,7 +166,7 @@ enum MultichainSwapBatteryFeeRules {
         confirmedAmount: BigUInt,
         payloadId: String
     ) throws(MultichainSwapExecutionFailure) {
-        let tolerated = confirmedAmount + confirmedAmount * gramRequoteTolerancePercent / 100
+        let tolerated = toleratedRequote(of: confirmedAmount)
         guard amount > tolerated else {
             return
         }

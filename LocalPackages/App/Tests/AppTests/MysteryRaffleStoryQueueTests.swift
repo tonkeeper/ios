@@ -2,6 +2,7 @@
 import Foundation
 @testable import KeeperCore
 import Stories
+import TKStories
 import UIKit
 import XCTest
 
@@ -166,7 +167,9 @@ private final class SpyStoryPresenter: RaffleStoryPresenting {
         story: Stories.Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
-        isClosable: Bool,
+        mode: Stories.StoriesPresenter.Mode,
+        ignoresStoriesFlag: Bool,
+        closeAlert: StoriesCloseAlertModel?,
         deeplinkAction: @escaping (String) -> Void,
         urlAction: @escaping (URL) -> Void,
         onDismiss: ((Stories.StoriesPresenter.DismissReason) -> Void)?

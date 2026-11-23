@@ -14,6 +14,7 @@ final class PerpsPositionsController: Sendable {
         case start
         case stop(CheckedContinuation<Void, Never>)
         case stopIfIdle
+        case setForeground(Bool)
         case flush(CheckedContinuation<Void, Never>)
         case flushed
     }
@@ -47,8 +48,7 @@ final class PerpsPositionsController: Sendable {
     init(
         makeWatch: @escaping MakeWatch,
         onUpdate: @escaping @Sendable (PerpsAccountTick) -> Void,
-        onInterrupted: @escaping @Sendable () -> Void,
-        onStop: @escaping @Sendable () -> Void
+        onInterrupted: @escaping @Sendable () -> Void
     ) {
         let (stream, commands) = AsyncStream<Command>.makeStream()
         self.commands = commands
@@ -57,6 +57,7 @@ final class PerpsPositionsController: Sendable {
             var watch: Watch?
             var idleStop: Task<Void, Never>?
             var isActive = false
+            var isForeground = true
             // Waiters live here rather than in the watch's event stream: cancelling a watch drops
             // whatever it had buffered, and a flush that vanished with it would never resume.
             var flushWaiters = [CheckedContinuation<Void, Never>]()
@@ -75,7 +76,6 @@ final class PerpsPositionsController: Sendable {
                 await watch?.cancel()
                 watch = nil
                 resumeFlushWaiters()
-                onStop()
             }
 
             for await command in stream {
@@ -104,6 +104,11 @@ final class PerpsPositionsController: Sendable {
                 case .stopIfIdle:
                     guard subscribers.isEmpty else { continue }
                     await dropWatch()
+                case let .setForeground(value):
+                    isForeground = value
+                    if !value {
+                        await dropWatch()
+                    }
                 case let .flush(completion):
                     guard let watch else {
                         completion.resume()
@@ -114,13 +119,14 @@ final class PerpsPositionsController: Sendable {
                 case .flushed:
                     resumeFlushWaiters()
                 }
-                guard isActive,
-                      let cadence = PerpsPositionsCadence.allCases.first(where: { subscribers[$0] != nil }),
-                      watch?.cadence != cadence
+                guard isActive, isForeground,
+                      let cadence = PerpsPositionsCadence.allCases
+                      .filter({ subscribers[$0] != nil })
+                      .min(by: { $0.pollInterval < $1.pollInterval }),
+                      watch.map({ $0.handle.followsCadence && $0.cadence != cadence }) ?? true
                 else { continue }
                 await watch?.cancel()
                 resumeFlushWaiters()
-                onStop()
                 watch = Self.makeWatch(
                     cadence: cadence,
                     commands: commands,
@@ -149,6 +155,11 @@ final class PerpsPositionsController: Sendable {
         commands.yield(.start)
     }
 
+    /// Every subscriber is a screen, so the background keeps the subscriptions and drops only the watch.
+    func setForeground(_ isForeground: Bool) {
+        commands.yield(.setForeground(isForeground))
+    }
+
     func stop() async {
         await withCheckedContinuation { commands.yield(.stop($0)) }
     }
@@ -173,7 +184,7 @@ final class PerpsPositionsController: Sendable {
                 guard !Task.isCancelled else { return }
                 switch event {
                 case let .update(tick):
-                    pending = tick
+                    pending = pending?.followed(by: tick) ?? tick
                 case .interrupted:
                     onInterrupted()
                 case let .flush(acknowledged):

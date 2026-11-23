@@ -74,8 +74,10 @@ private extension PerpsChartView {
         switch viewModel.loadingState {
         case .empty:
             messageView(TKLocales.Perps.Chart.empty)
+                .accessibilityIdentifier("perps_chart_empty")
         case .failed:
             failedView
+                .accessibilityIdentifier("perps_chart_failed")
         case .loading, .ready, .reconnecting:
             ZStack(alignment: .topLeading) {
                 PerpsChartCanvas(
@@ -93,8 +95,10 @@ private extension PerpsChartView {
                     }
                 )
                 .allowsHitTesting(!showsLoader)
+                .accessibilityIdentifier(showsLoader ? "perps_chart_canvas" : "perps_chart_ready")
                 if showsLoader {
                     loadingView
+                        .accessibilityIdentifier("perps_chart_loading")
                 }
                 if viewModel.loadingState == .reconnecting {
                     staleBadge
@@ -104,11 +108,11 @@ private extension PerpsChartView {
     }
 
     var loadingView: some View {
-        ZStack {
-            CircularLoader(mode: .indeterminate, preset: .medium)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.backgroundPage)
+        RoundedRectangle(cornerRadius: 16)
+            .fill(.backgroundContent)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.backgroundPage)
     }
 
     func messageView(_ text: String) -> some View {

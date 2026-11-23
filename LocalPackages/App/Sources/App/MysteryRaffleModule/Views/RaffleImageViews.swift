@@ -1,13 +1,6 @@
-import Kingfisher
 import SwiftUI
 import TKUIKit
 import UIKit
-
-enum RaffleKingfisherSource {
-    static func source(_ url: URL) -> Kingfisher.Source {
-        url.isFileURL ? .provider(LocalFileImageDataProvider(fileURL: url)) : .network(url)
-    }
-}
 
 struct TemplateIcon: View {
     let image: UIImage
@@ -35,7 +28,7 @@ struct RaffleImageView: View {
             TemplateIcon(image: symbol.image, tint: tint, size: size)
         case let .url(url):
             if let url {
-                TKRemoteImage(source: RaffleKingfisherSource.source(url), contentMode: .fit) {
+                TKRemoteImage(url: url, contentMode: .fit) {
                     ShimmerSwiftUIView(config: .init(color: .backgroundContentTint))
                 } failure: {
                     ShimmerSwiftUIView(config: .init(color: .backgroundContentTint))
@@ -126,5 +119,6 @@ struct RaffleCloseButton: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("promo_sheet_close")
     }
 }

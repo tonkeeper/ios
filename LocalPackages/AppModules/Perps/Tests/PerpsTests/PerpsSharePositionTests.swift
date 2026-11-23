@@ -1,4 +1,6 @@
+import Combine
 @testable import Perps
+import PerpsModels
 import TKLocalize
 import XCTest
 
@@ -15,9 +17,29 @@ final class PerpsSharePositionTests: XCTestCase {
         XCTAssertEqual(model.sideText, TKLocales.Perps.Asset.long.uppercased())
         XCTAssertEqual(model.leverageText, PerpsFormatting.test.leverage(27).uppercased())
         XCTAssertEqual(model.pnlPercentText, PerpsFormatting.test.signedPercent(128.97))
-        XCTAssertEqual(model.entryText, PerpsFormatting.test.usd(66541.7))
-        XCTAssertEqual(model.currentText, PerpsFormatting.test.usd(120_541))
+        XCTAssertEqual(model.entryText, PerpsFormatting.test.price(66541.7))
+        XCTAssertEqual(model.currentText, PerpsFormatting.test.price(120_541))
         XCTAssertEqual(model.dateText, PerpsFormatting.test.candleDateTime(Date(timeIntervalSince1970: 0)))
+    }
+
+    func test_model_namesTheThirdPriceCurrent_andCloseForAClosedPosition() {
+        let live = PerpsSharePositionPresenter.model(from: snapshot(isLong: true, pnlPercent: 1, isProfit: true), format: .test)
+        XCTAssertEqual(live.currentLabel, TKLocales.Perps.Asset.current)
+
+        let closed = SharePositionSnapshot(
+            coinName: "Bitcoin",
+            iconLetter: "B",
+            iconURL: nil,
+            isLong: true,
+            leverage: nil,
+            entryPrice: 1,
+            currentPrice: 2,
+            isClosed: true,
+            pnlPercent: 1,
+            isProfit: true,
+            date: Date(timeIntervalSince1970: 0)
+        )
+        XCTAssertEqual(PerpsSharePositionPresenter.model(from: closed, format: .test).currentLabel, TKLocales.Perps.Asset.close)
     }
 
     func test_model_lossShort_isProfitFalse_andSideShort() {
@@ -36,6 +58,49 @@ final class PerpsSharePositionTests: XCTestCase {
             isLong: true, pnlPercent: nil, isProfit: true
         ), format: PerpsFormatting.test)
         XCTAssertNil(model.pnlPercentText)
+    }
+
+    // MARK: Live card
+
+    @MainActor
+    func test_share_followsThePosition_withTheLivePrice_andKeepsTheOpeningDate() {
+        let account = StubRootAccountStore()
+        let markets = StubRootMarketsStore()
+        markets.markets = livePrice(3.6135)
+        account.marketLifecycle = .open(position(roiPercent: 2.27, markPrice: 3.62))
+        let viewModel = PerpsAssetPageViewModel(
+            marketId: 1,
+            store: markets,
+            marketDetailsStore: LifecycleMarketDetailsStore(),
+            accountStore: account,
+            openPositionFlow: PerpsOpenPositionFlow(),
+            tradeOutcomes: { AsyncStream { $0.finish() } },
+            format: .test,
+            loyalty: nil
+        )
+        viewModel.onWillAppear()
+
+        var opened: SharePositionSnapshot?
+        var updates: [SharePositionSnapshot] = []
+        var cancellable: AnyCancellable?
+        viewModel.onShare = { snapshot, live in
+            opened = snapshot
+            cancellable = live.sink { updates.append($0) }
+        }
+        viewModel.share()
+
+        XCTAssertEqual(opened?.pnlPercent, 2.27)
+        XCTAssertEqual(opened?.currentPrice, 3.6135)
+
+        markets.markets = livePrice(3.6102)
+        account.marketLifecycle = .open(position(roiPercent: 2.73, markPrice: 3.62))
+        viewModel.onWillAppear()
+        viewModel.onWillAppear()
+
+        XCTAssertEqual(updates.map(\.pnlPercent), [2.73])
+        XCTAssertEqual(updates.first?.currentPrice, 3.6102)
+        XCTAssertEqual(updates.first?.date, opened?.date)
+        withExtendedLifetime(cancellable) {}
     }
 
     // MARK: Rendering
@@ -79,6 +144,19 @@ private extension UIImage {
 }
 
 private extension PerpsSharePositionTests {
+    func livePrice(_ price: Double) -> PerpsMarkets {
+        PerpsMarkets(sort: .volume, items: [], livePrices: [1: price], hasNextPage: false, isLoadingNextPage: false)
+    }
+
+    func position(roiPercent: Double, markPrice: Double) -> PerpsPositionSummary {
+        PerpsPositionSummary(
+            positionId: "lighter:1", marketId: 1, symbol: "LIT", side: .short, baseSize: 1,
+            notionalUsd: 3.6, marginUsd: 0.72, equityUsd: 0.74, leverage: 5, roiPercent: roiPercent,
+            entryPrice: 3.63, liquidationPrice: 4.3, unrealizedPnlUsd: 0.02, realizedPnlUsd: 0,
+            fundingPaidUsd: nil, markPrice: markPrice
+        )
+    }
+
     func snapshot(
         isLong: Bool,
         leverage: Double? = 27,

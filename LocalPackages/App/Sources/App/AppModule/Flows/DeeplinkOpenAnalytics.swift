@@ -49,7 +49,7 @@ extension DeeplinkOpen.LinkType {
         case .externalSign: self = .externalSign
         case .tonconnect: self = .tonconnect
         case .walletConnect: self = .walletConnect
-        case .dapp: self = .dapp
+        case .dapp, .multichainDapp, .loyalty, .earn: self = .dapp
         case .battery: self = .battery
         case .browser: self = .browser
         case .migration: self = .migration
@@ -61,7 +61,8 @@ extension DeeplinkOpen.LinkType {
         case .addWallet: self = .addWallet
         case .main: self = .main
         case .raffle: self = .raffle
-        case .perps, .history: self = .unknown
+        case .perps: self = .perps
+        case .history: self = .unknown
         }
     }
 }

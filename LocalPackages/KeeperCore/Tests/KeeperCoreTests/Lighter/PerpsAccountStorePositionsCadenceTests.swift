@@ -1,6 +1,7 @@
 import Foundation
 @testable import KeeperCore
 import PerpsModels
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -14,6 +15,18 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
         await waitForIntervals(on: service, count: 1)
         XCTAssertEqual(service.intervals, [PerpsPositionsCadence.ambient.pollInterval])
+        XCTAssertLessThan(PerpsPositionsCadence.live.pollInterval, PerpsPositionsCadence.ambient.pollInterval)
+    }
+
+    func testOnlyAnExplicitRefreshDropsSharedReads() {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+
+        store.refreshOnAppear()
+        XCTAssertEqual(service.sharedReadInvalidations, 0)
+
+        store.refresh()
+        XCTAssertEqual(service.sharedReadInvalidations, 1)
     }
 
     func testATradingScreenSpeedsUpAWatchTheWalletHomeStarted() async {
@@ -42,16 +55,6 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
         await waitForIntervals(on: service, count: 3)
         XCTAssertEqual(service.intervals.last, PerpsPositionsCadence.ambient.pollInterval)
-    }
-
-    func testAnOrderTheVenueDidNotNameFallsBackToWatchingPositions() {
-        let named = makeLimitOrder(id: "lighter:1")
-        let unnamed = makeLimitOrder(id: "")
-
-        XCTAssertEqual(PerpsAccountStore.watchFocus(restingOrders: []), .idle)
-        XCTAssertEqual(PerpsAccountStore.watchFocus(restingOrders: [named]), .orders(["lighter:1"]))
-        XCTAssertEqual(PerpsAccountStore.watchFocus(restingOrders: [unnamed]), .positions)
-        XCTAssertEqual(PerpsAccountStore.watchFocus(restingOrders: [named, unnamed]), .positions)
     }
 
     func testAFillIntoAMarketAlreadyHeldCountsAsAMove() {
@@ -93,13 +96,13 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         XCTAssertEqual(store.watchFocus(), .idle)
     }
 
-    func testAnOpenPositionPutsTheWatchBackOnPositions() async {
+    func testAnOpenPositionPutsTheWatchOnThePortfolio() async {
         let service = CadenceAccountReading()
         service.positions = [makePosition(marketId: 1)]
         let store = makeStore(service: service)
         await resolve(store)
 
-        XCTAssertEqual(store.watchFocus(), .positions)
+        XCTAssertEqual(store.watchFocus(), .portfolio)
     }
 
     func testARestingOrderAloneKeepsThePositionsWatchRunning() async {
@@ -109,10 +112,10 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         await resolve(store)
         await waitForOpenOrders(on: store, count: 1)
 
-        XCTAssertEqual(store.watchFocus(), .positions)
+        XCTAssertEqual(store.watchFocus(), .portfolio)
     }
 
-    func testAnOrderGoneFromThePollLeavesAndTheBalanceIsReread() async {
+    func testAnOrderGoneFromThePollLeavesWithTheBalanceTheTickCarries() async {
         let service = CadenceAccountReading()
         service.openOrders = [makePortfolioOrder(marketId: 1)]
         let store = makeStore(service: service)
@@ -120,22 +123,20 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         await waitForOpenOrders(on: store, count: 1)
         store.subscribePositions(cadence: .live)
         await waitForIntervals(on: service, count: 1)
+        let statusReads = service.statusReads
 
-        service.openOrders = []
-        service.availableBalance = "90"
-        service.emitUpdate(at: 0, tick: .positions([], openOrders: []))
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(availableBalance: "90")))
         await store.flushPositionsForTesting()
 
         await waitForOpenOrders(on: store, count: 0)
-        for _ in 0 ..< 100 {
-            if case let .active(account) = store.currentWalletState(), account.availableBalance == "90" { return }
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        XCTFail("the balance was not reread after the order left")
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.availableBalance, "90")
+        XCTAssertEqual(service.statusReads, statusReads)
     }
 
     func testAPollThatCannotSeeOrdersKeepsTheOnesShown() async {
         let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 2)]
         service.openOrders = [makePortfolioOrder(marketId: 1)]
         let store = makeStore(service: service)
         await resolve(store)
@@ -143,51 +144,104 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         store.subscribePositions(cadence: .live)
         await waitForIntervals(on: service, count: 1)
 
-        service.emitUpdate(at: 0, tick: .positions([makePosition(marketId: 2)], openOrders: nil))
+        service.emitUpdate(at: 0, tick: .positions([makePosition(marketId: 2, baseSize: 2)]))
         await store.flushPositionsForTesting()
-        await waitForOnlyPosition(on: store, marketId: 2)
+        await waitForPosition(on: store, marketId: 2, baseSize: 2)
 
         guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
         XCTAssertEqual(account.openOrders.map(\.marketId), [1])
     }
 
-    func testOrdersMatchByMarketAndIndexWhateverTheirOrder() {
+    func testAnOrderMovesItsMarketOnceItFillsOrLeaves() {
         let btc = makePortfolioOrder(marketId: 1)
         let eth = makePortfolioOrder(marketId: 2)
+        let btcPartlyFilled = makePortfolioOrder(marketId: 1, remaining: 0.6, filled: 0.4)
 
-        XCTAssertTrue(PerpsAccountStore.sameOrders([btc, eth], [eth, btc]))
-        XCTAssertFalse(PerpsAccountStore.sameOrders([btc, eth], [btc]))
+        XCTAssertTrue(PerpsAccountStore.marketsWithMovedOrders(before: [btc, eth], after: [eth, btc]).isEmpty)
+        XCTAssertEqual(PerpsAccountStore.marketsWithMovedOrders(before: [btc, eth], after: [btcPartlyFilled, eth]), [1])
+        XCTAssertEqual(PerpsAccountStore.marketsWithMovedOrders(before: [btc, eth], after: [btc]), [2])
     }
 
-    func testPositionsAndRestingOrdersArePolledTogether() {
-        XCTAssertEqual(
-            PerpsAccountStore.watchFocus(
-                hasPositions: true,
-                restingOrders: [makeLimitOrder(id: "lighter:1")]
-            ),
-            .positionsAndOrders(["lighter:1"])
-        )
-    }
-
-    func testMixedPollTickDoesNotDropThePositionUpdate() async {
+    func testAPartialFillShowsItsProgressAndReloadsOnlyItsMarket() async {
         let service = CadenceAccountReading()
-        service.positions = [makePosition(marketId: 1)]
+        let resting = makePortfolioOrder(marketId: 1, remaining: 0.6, filled: 0.4)
+        service.positions = [makePosition(marketId: 1, baseSize: 0.4)]
+        service.openOrders = [resting, makePortfolioOrder(marketId: 2)]
         let store = makeStore(service: service)
         await resolve(store)
+        await waitForOpenOrders(on: store, count: 2)
+        store.loadMarketExtras(marketId: 1)
+        store.loadMarketExtras(marketId: 2)
+        await waitForSnapshotReads(on: service, count: 2)
         store.subscribePositions(cadence: .live)
         await waitForIntervals(on: service, count: 1)
-
-        let updatedPosition = makePosition(marketId: 2)
-        service.emitUpdate(
-            at: 0,
-            tick: .positionsAndOrders(
-                [updatedPosition],
-                [PerpsOrderProgress(id: "lighter:1", isResting: false, filledBaseAmount: 1)]
-            )
+        let statusReads = service.statusReads
+        let progressed = makePortfolioOrder(marketId: 1, remaining: 0.3, filled: 0.7)
+        service.tradingSnapshotResult = PerpsTradingSnapshot(
+            flags: nil,
+            orders: PerpsActiveOrders(limitOrders: [progressed.order], triggerOrders: [])
         )
+
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "80",
+            positions: [makePosition(marketId: 1, baseSize: 0.7)],
+            openOrders: [progressed, makePortfolioOrder(marketId: 2)]
+        )))
         await store.flushPositionsForTesting()
 
-        await waitForOnlyPosition(on: store, marketId: 2)
+        await waitForSnapshotReads(on: service, count: 3)
+        for _ in 0 ..< 100 where store.marketExtras(marketId: 1)?.limitOrders != [progressed.order] {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(store.marketExtras(marketId: 1)?.limitOrders, [progressed.order])
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.openOrders.first?.order.filledBaseAmount, 0.7)
+        XCTAssertEqual(account.availableBalance, "80")
+        XCTAssertEqual(Array(service.snapshotMarkets.dropFirst(2)), [1])
+        XCTAssertEqual(service.statusReads, statusReads)
+    }
+
+    func testAHistoryChangeRereadsOnlyTheMarketsOnScreen() async {
+        let service = CadenceAccountReading()
+        var historyChanged: (() -> Void)?
+        let store = PerpsAccountStore(
+            service: service,
+            wallet: makeWallet(),
+            observeHistoryChanges: { _, onChange in historyChanged = onChange }
+        )
+        await resolve(store)
+        store.loadMarketExtras(marketId: 1)
+        store.loadMarketExtras(marketId: 2)
+        await waitForSnapshotReads(on: service, count: 2)
+        store.releaseMarketExtras(marketId: 2)
+
+        historyChanged?()
+
+        await waitForSnapshotReads(on: service, count: 3)
+        XCTAssertEqual(Array(service.snapshotMarkets.dropFirst(2)), [1])
+    }
+
+    func testAPositionThatAppearsRefreshesTheWholeAccount() async {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForLoadedPositions(on: store)
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let statusReads = service.statusReads
+        service.positions = [makePosition(marketId: 1)]
+
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [makePosition(marketId: 1)]
+        )))
+        await store.flushPositionsForTesting()
+
+        for _ in 0 ..< 100 where service.statusReads == statusReads {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(service.statusReads, statusReads + 1)
+        await waitForOnlyPosition(on: store, marketId: 1)
     }
 
     func testAnUpdateFromAReplacedWatchIsIgnored() async {
@@ -211,30 +265,34 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
     func testAReplacedWatchCannotOverwriteTheNewWatchsPendingTick() async {
         let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 2)]
         let store = makeStore(service: service)
         await resolve(store)
+        await waitForLoadedPositions(on: store)
         store.subscribePositions(cadence: .ambient)
         await waitForIntervals(on: service, count: 1)
         service.emitUpdate(at: 0, tick: .positions([makePosition(marketId: 99)]))
         store.subscribePositions(cadence: .live)
         await waitForIntervals(on: service, count: 2)
-        service.emitUpdate(at: 1, tick: .positions([makePosition(marketId: 2)]))
+        service.emitUpdate(at: 1, tick: .positions([makePosition(marketId: 2, baseSize: 2)]))
         service.emitUpdate(at: 0, tick: .positions([makePosition(marketId: 99)]))
 
         await store.flushPositionsForTesting()
 
-        await waitForOnlyPosition(on: store, marketId: 2)
+        await waitForPosition(on: store, marketId: 2, baseSize: 2)
     }
 
     func testReplacingAWatchDuringItsCreationKeepsTheNewPendingTick() async {
         let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 2)]
         let store = makeStore(service: service)
         await resolve(store)
+        await waitForLoadedPositions(on: store)
         service.onWatchCreated = { [weak store] index in
             if index == 0 {
                 store?.subscribePositions(cadence: .live)
             } else {
-                service.emitUpdate(at: index, tick: .positions([self.makePosition(marketId: 2)]))
+                service.emitUpdate(at: index, tick: .positions([self.makePosition(marketId: 2, baseSize: 2)]))
             }
         }
         defer { service.onWatchCreated = nil }
@@ -245,13 +303,15 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
         XCTAssertEqual(service.intervals, [PerpsPositionsCadence.ambient.pollInterval, PerpsPositionsCadence.live.pollInterval])
         XCTAssertEqual(service.cancelCount, 1)
-        await waitForOnlyPosition(on: store, marketId: 2)
+        await waitForPosition(on: store, marketId: 2, baseSize: 2)
     }
 
     func testCancellationCanReenterTheStoreWithoutDeliveringAnOldTick() async {
         let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 2)]
         let store = makeStore(service: service)
         await resolve(store)
+        await waitForLoadedPositions(on: store)
         store.subscribePositions(cadence: .ambient)
         await waitForIntervals(on: service, count: 1)
         service.onCancel = { [weak store] index in
@@ -262,10 +322,10 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
         store.subscribePositions(cadence: .live)
         await waitForIntervals(on: service, count: 2)
-        service.emitUpdate(at: 1, tick: .positions([makePosition(marketId: 2)]))
+        service.emitUpdate(at: 1, tick: .positions([makePosition(marketId: 2, baseSize: 2)]))
         await store.flushPositionsForTesting()
 
-        await waitForOnlyPosition(on: store, marketId: 2)
+        await waitForPosition(on: store, marketId: 2, baseSize: 2)
     }
 
     func testAPositionsTickKeepsAnAccountThatStillNeedsActivation() async {
@@ -309,7 +369,7 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         let store = PerpsAccountStore(
             service: service,
             wallet: makeWallet(),
-            refreshOrderAccess: {
+            reissueReadOnlyToken: {
                 await gate.enter()
                 return false
             }
@@ -329,6 +389,426 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         await fulfillment(of: [revived], timeout: 0.2)
     }
 
+    func testARefusedTradeLeavesItsMarketAndNoOtherOutcomeDoes() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .closing(position))
+        store.tradeSettled(operationId: "another", succeeded: false)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .closing(position))
+        store.tradeSettled(operationId: "close", succeeded: false)
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(position))
+    }
+
+    func testATradeThatWentThroughStaysUntilTheAccountShowsIt() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+
+        store.tradeSettled(operationId: "close", succeeded: true)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .closing(position))
+        service.positions = []
+        store.refresh()
+
+        for _ in 0 ..< 100 where store.lifecycle(marketId: 1) != .flat {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testAConfirmedCloseRefreshesTheAccountAndShowsWhatTheReadAfterItLists() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        await store.resolveTaskForTesting?.value
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        let statusReads = service.statusReads
+        let invalidations = service.sharedReadInvalidations
+
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+
+        XCTAssertEqual(service.statusReads, statusReads + 1)
+        XCTAssertEqual(service.sharedReadInvalidations, invalidations + 1)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(position))
+    }
+
+    func testATickRequestedBeforeAConfirmedCloseDoesNotBringThePositionBack() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let beforeClose = ProcessInfo.processInfo.systemUptime
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        service.positions = []
+        await store.positionClosed(operationId: "close", marketId: 1)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [position],
+            requestedAt: beforeClose
+        )))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+
+        service.emitUpdate(at: 0, tick: .positions([position], requestedAt: beforeClose))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+
+        let reopened = makePosition(marketId: 1, baseSize: 2)
+        service.positions = [reopened]
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [reopened],
+            requestedAt: ProcessInfo.processInfo.systemUptime
+        )))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(reopened))
+    }
+
+    func testATickRequestedBeforeAConfirmedCloseIsIgnoredAndTheReadAfterTheCloseStays() async {
+        let service = CadenceAccountReading()
+        let closed = makePosition(marketId: 1)
+        let kept = makePosition(marketId: 2)
+        service.positions = [closed, kept]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let staleAt = ProcessInfo.processInfo.systemUptime
+        let stale = PerpsAccountTick.portfolio(PerpsAccountSnapshot(
+            availableBalance: "80",
+            positions: [closed, kept],
+            requestedAt: staleAt
+        ))
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        service.positions = [kept]
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        let statusReads = service.statusReads
+
+        for _ in 0 ..< 3 {
+            service.emitUpdate(at: 0, tick: stale)
+            await store.flushPositionsForTesting()
+            service.emitUpdate(at: 0, tick: .positions([closed], requestedAt: staleAt))
+            await store.flushPositionsForTesting()
+        }
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        XCTAssertEqual(service.statusReads, statusReads)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+
+        let reopened = makePosition(marketId: 1, baseSize: 2)
+        service.positions = [reopened, kept]
+        service.availableBalance = "90"
+        store.refresh()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        service.emitUpdate(at: 0, tick: stale)
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.positions, [reopened, kept])
+        XCTAssertEqual(account.availableBalance, "90")
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(reopened))
+    }
+
+    func testMarksKeepRepricingTheShownPositionsAfterAConfirmedClose() async {
+        let service = CadenceAccountReading()
+        let closed = makePosition(marketId: 1)
+        let kept = makePosition(marketId: 2)
+        service.positions = [closed, kept]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let staleAt = ProcessInfo.processInfo.systemUptime
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        service.positions = [kept]
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [closed, kept],
+            requestedAt: staleAt
+        )))
+        await store.flushPositionsForTesting()
+        service.emitUpdate(at: 0, tick: .marks([1: 120, 2: 120]))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.positions, [kept.marked(at: 120)])
+        XCTAssertEqual(service.cancelCount, 0)
+    }
+
+    func testAPortfolioReadRequestedBeforeAShownTickLeavesTheTickShown() async {
+        let service = CadenceAccountReading()
+        service.statusResult = .account(accountIndex: 42, hasTradingKey: true, hasReadOnlyToken: true)
+        service.positions = [makePosition(marketId: 1)]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let held = ResolveGate()
+        service.holdNextPortfolio(at: held)
+        store.refresh()
+        await held.waitUntilEntered()
+
+        let newer = makePosition(marketId: 1, baseSize: 2)
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "70",
+            positions: [newer],
+            requestedAt: ProcessInfo.processInfo.systemUptime
+        )))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+        await held.open()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.positions, [newer])
+        XCTAssertEqual(account.availableBalance, "70")
+    }
+
+    func testAConfirmedCloseTakesThePositionOutOfTheAccountSoANewTradeThereStartsFlat() async {
+        let service = CadenceAccountReading()
+        let closed = makePosition(marketId: 1)
+        let kept = makePosition(marketId: 2)
+        service.positions = [closed, kept]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+
+        service.positions = [kept]
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.positions, [kept])
+
+        let descriptor = PerpsOpeningDescriptor(marketId: 1, symbol: "BTC", side: .long, marginUsd: 20, leverage: 5, isLimit: false)
+        store.tradeBegan(operationId: "open", marketId: 1, .opening(descriptor))
+        XCTAssertEqual(store.lifecycle(marketId: 1), .opening(descriptor))
+        store.tradeSettled(operationId: "open", succeeded: false)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+        await store.resolveTaskForTesting?.value
+    }
+
+    func testASecondConfirmationOfTheSameCloseStartsNoSecondRefresh() async {
+        let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 1)]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        await store.resolveTaskForTesting?.value
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        let held = ResolveGate()
+        service.holdNextPortfolio(at: held)
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        let invalidations = service.sharedReadInvalidations
+
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+
+        XCTAssertEqual(service.sharedReadInvalidations, invalidations)
+        await held.open()
+        await store.resolveTaskForTesting?.value
+    }
+
+    func testARepeatedConfirmationReturnsOnlyOnceTheFirstHasTakenThePositionOut() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        await store.resolveTaskForTesting?.value
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        service.positions = []
+        let queueHeld = DispatchSemaphore(value: 0)
+        let progress = CloseProgress()
+        store.updateState({ _ in
+            progress.markHeld()
+            queueHeld.wait()
+            return nil
+        }, completion: nil)
+
+        let confirmations = (0 ..< 2).map { _ in
+            Task {
+                progress.markStarted()
+                await store.positionClosed(operationId: "close", marketId: 1)
+                progress.record(store.lifecycle(marketId: 1))
+            }
+        }
+        await waitUntil(progress.changes) { progress.isHeld && progress.started == 2 }
+        queueHeld.signal()
+        for confirmation in confirmations {
+            await confirmation.value
+        }
+
+        XCTAssertEqual(progress.lifecycles, [.flat, .flat])
+        await store.resolveTaskForTesting?.value
+    }
+
+    func testALateRepeatOfAnOlderCloseLeavesTheMarketsNewPositionAlone() async {
+        let service = CadenceAccountReading()
+        service.positions = [makePosition(marketId: 1)]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        await store.resolveTaskForTesting?.value
+        service.positions = []
+        await store.positionClosed(operationId: "first", marketId: 1)
+        await store.resolveTaskForTesting?.value
+        service.positions = [makePosition(marketId: 1, baseSize: 2)]
+        store.refresh()
+        await store.resolveTaskForTesting?.value
+        service.positions = []
+        await store.positionClosed(operationId: "second", marketId: 1)
+        await store.resolveTaskForTesting?.value
+        let reopened = makePosition(marketId: 1, baseSize: 3)
+        service.positions = [reopened]
+        store.refresh()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        let statusReads = service.statusReads
+
+        await store.positionClosed(operationId: "first", marketId: 1)
+        await store.flushStateForTesting()
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(reopened))
+        XCTAssertEqual(service.statusReads, statusReads)
+    }
+
+    func testAConfirmedCloseTheStoreHasNoOverlayForIsHandledTheSame() async {
+        let service = CadenceAccountReading()
+        let closed = makePosition(marketId: 1)
+        let kept = makePosition(marketId: 2)
+        service.positions = [closed, kept]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let staleAt = ProcessInfo.processInfo.systemUptime
+        service.positions = [kept]
+
+        await store.positionClosed(operationId: "recovered", marketId: 1)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [closed, kept],
+            requestedAt: staleAt
+        )))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("store left active") }
+        XCTAssertEqual(account.positions, [kept])
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testAConfirmedCloseOfAPositionTheAccountDoesNotListYetStillRefreshesAndDropsOlderReads() async {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        store.subscribePositions(cadence: .live)
+        await waitForIntervals(on: service, count: 1)
+        let staleAt = ProcessInfo.processInfo.systemUptime
+        let statusReads = service.statusReads
+
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        service.emitUpdate(at: 0, tick: .portfolio(PerpsAccountSnapshot(
+            availableBalance: "100",
+            positions: [makePosition(marketId: 1)],
+            requestedAt: staleAt
+        )))
+        await store.flushPositionsForTesting()
+        await store.flushStateForTesting()
+
+        XCTAssertEqual(service.statusReads, statusReads + 1)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testAConfirmedCloseEndsItsOverlaySoAPositionReadAfterItShowsOpen() async {
+        let service = CadenceAccountReading()
+        let position = makePosition(marketId: 1)
+        service.positions = [position]
+        let store = makeStore(service: service)
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        await store.resolveTaskForTesting?.value
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: true)
+        let refilled = makePosition(marketId: 1, baseSize: 2)
+        service.positions = [refilled]
+
+        await store.positionClosed(operationId: "close", marketId: 1)
+        await store.flushStateForTesting()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(refilled))
+    }
+
     func testLimitOpeningClearsTogetherWithReloadedOrders() async {
         let service = CadenceAccountReading()
         let store = makeStore(service: service)
@@ -340,7 +820,7 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             return PerpsTradingSnapshot(flags: nil, orders: PerpsActiveOrders(limitOrders: [order], triggerOrders: []))
         }
         let descriptor = makeLimitOpening()
-        store.beginOpening(descriptor)
+        placeLimitOrder(descriptor, in: store)
         let settled = expectation(description: "overlay and orders updated together")
         settled.assertForOverFulfill = false
         store.addObserver(self) { _, _ in
@@ -349,13 +829,124 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             settled.fulfill()
         }
 
-        store.loadMarketExtras(marketId: 1, clearingPending: true)
+        store.loadMarketExtras(marketId: 1)
         await gate.waitUntilEntered()
         XCTAssertEqual(store.lifecycle(marketId: 1), .opening(descriptor))
         XCTAssertNil(store.marketExtras(marketId: 1))
 
         await gate.open()
         await fulfillment(of: [settled], timeout: 2)
+    }
+
+    func testAnOpeningSettlesOnThePrefetchedPortfolioBeforeTheStatusAnswers() async {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        let descriptor = PerpsOpeningDescriptor(marketId: 1, symbol: "BTC", side: .long, marginUsd: 20, leverage: 5, isLimit: false)
+        store.tradeBegan(operationId: "open", marketId: 1, .opening(descriptor))
+        store.tradeSettled(operationId: "open", succeeded: true)
+        let gate = ResolveGate()
+        service.statusGate = gate
+        service.positions = [makePosition(marketId: 1)]
+
+        store.refresh()
+        await gate.waitUntilEntered()
+        await waitForOnlyPosition(on: store, marketId: 1)
+
+        let lifecycle = store.lifecycle(marketId: 1)
+        await gate.open()
+        guard case .open = lifecycle else {
+            return XCTFail("the opening overlay waited for the status probe: \(lifecycle)")
+        }
+    }
+
+    func testAPortfolioReadFromBeforeARefreshDoesNotBringBackAClosedPosition() async {
+        let service = CadenceAccountReading()
+        service.statusResult = .account(accountIndex: 42, hasTradingKey: true, hasReadOnlyToken: true)
+        service.positions = [makePosition(marketId: 1)]
+        let (appliedResolves, resolveApplies) = AsyncStream<Void>.makeStream()
+        var applied = appliedResolves.makeAsyncIterator()
+        let store = PerpsAccountStore(service: service, wallet: makeWallet(), ensureAccountTier: { resolveApplies.yield() })
+        await resolve(store)
+        await waitForOnlyPosition(on: store, marketId: 1)
+        _ = await applied.next()
+        let stale = ResolveGate()
+        service.holdNextPortfolio(at: stale)
+        store.refresh()
+        await stale.waitUntilEntered()
+        _ = await applied.next()
+
+        service.positions = []
+        store.refresh()
+        for _ in 0 ..< 100 where store.lifecycle(marketId: 1) != .flat {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+        let reappeared = expectation(description: "the read from before the refresh shows the closed position again")
+        reappeared.isInverted = true
+        store.addObserver(self) { _, event in
+            if case let .didUpdate(.active(account)) = event, !account.positions.isEmpty {
+                reappeared.fulfill()
+            }
+        }
+
+        await stale.open()
+
+        await fulfillment(of: [reappeared], timeout: 0.2)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testACountThePortfolioReplacedStaysGoneOnceThePositionCloses() async {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        let opening = PerpsOpeningDescriptor(
+            marketId: 1, symbol: "BTC", side: .long, marginUsd: 20, leverage: 5, isLimit: false, liquidationPrice: 80
+        )
+        store.tradeBegan(operationId: "open", marketId: 1, .opening(opening))
+        store.tradeSettled(operationId: "open", succeeded: true)
+        store.positionCounted(
+            operationId: "open",
+            PerpsCountedPosition(baseSize: 1, entryPrice: 100, leverage: 5, isolatedMarginUsd: 20)
+        )
+        service.positions = [makePosition(marketId: 1)]
+        store.refresh()
+        await waitForOnlyPosition(on: store, marketId: 1)
+
+        service.positions = []
+        store.refresh()
+        for _ in 0 ..< 100 where store.lifecycle(marketId: 1) != .flat {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testACountedPositionKeepsThePortfolioWatchedAfterAFailedClose() async throws {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        _ = try XCTUnwrap(openCounted(in: store, marketId: 1))
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: false)
+
+        XCTAssertEqual(store.watchFocus(), .portfolio)
+    }
+
+    func testARefreshReloadsTheExtrasOnScreenWithoutWaitingForTheStatus() async {
+        let service = CadenceAccountReading()
+        let store = makeStore(service: service)
+        await resolve(store)
+        store.loadMarketExtras(marketId: 1)
+        await waitForSnapshotReads(on: service, count: 1)
+        let gate = ResolveGate()
+        service.statusGate = gate
+
+        store.refresh()
+        await gate.waitUntilEntered()
+
+        await waitForSnapshotReads(on: service, count: 2)
+        await gate.open()
     }
 
     func testLimitOpeningClearsAfterEmptyOrFailedReload() async {
@@ -372,14 +963,14 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
                 return PerpsTradingSnapshot(flags: nil, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
             }
             let descriptor = makeLimitOpening()
-            store.beginOpening(descriptor)
+            placeLimitOrder(descriptor, in: store)
             let settled = expectation(description: "empty or failed reload releases overlay")
             settled.assertForOverFulfill = false
             store.addObserver(self) { _, _ in
                 if store.lifecycle(marketId: 1) == .flat { settled.fulfill() }
             }
 
-            store.loadMarketExtras(marketId: 1, clearingPending: true)
+            store.loadMarketExtras(marketId: 1)
             await gate.waitUntilEntered()
             XCTAssertEqual(store.lifecycle(marketId: 1), .opening(descriptor))
 
@@ -390,9 +981,9 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
 
     func testLimitOpeningClearsWhenAccountCannotReloadExtras() {
         let store = makeStore(service: CadenceAccountReading())
-        store.beginOpening(makeLimitOpening())
+        placeLimitOrder(makeLimitOpening(), in: store)
 
-        store.loadMarketExtras(marketId: 1, clearingPending: true)
+        store.loadMarketExtras(marketId: 1)
 
         XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
     }
@@ -407,8 +998,8 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             return PerpsTradingSnapshot(flags: nil, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
         }
         let descriptor = makeLimitOpening()
-        store.beginOpening(descriptor)
-        store.loadMarketExtras(marketId: 1, clearingPending: true)
+        placeLimitOrder(descriptor, in: store)
+        store.loadMarketExtras(marketId: 1)
         await oldGate.waitUntilEntered()
         store.releaseMarketExtras(marketId: 1)
         XCTAssertEqual(store.lifecycle(marketId: 1), .opening(descriptor))
@@ -450,11 +1041,11 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             await gate.enter()
             return PerpsTradingSnapshot(flags: nil, orders: PerpsActiveOrders(limitOrders: [], triggerOrders: []))
         }
-        store.beginOpening(makeLimitOpening())
-        store.loadMarketExtras(marketId: 1, clearingPending: true)
+        placeLimitOrder(makeLimitOpening(), in: store)
+        store.loadMarketExtras(marketId: 1)
         await gate.waitUntilEntered()
         let newer = makeLimitOpening(side: .short)
-        store.beginOpening(newer)
+        store.tradeBegan(operationId: "newer", marketId: 1, .opening(newer))
         let loaded = expectation(description: "old reload completed")
         loaded.assertForOverFulfill = false
         store.addObserver(self) { _, _ in
@@ -478,8 +1069,8 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             return PerpsTradingSnapshot(flags: nil, orders: PerpsActiveOrders(limitOrders: [order], triggerOrders: []))
         }
         let descriptor = makeLimitOpening()
-        store.beginOpening(descriptor)
-        store.loadMarketExtras(marketId: 1, clearingPending: true)
+        placeLimitOrder(descriptor, in: store)
+        store.loadMarketExtras(marketId: 1)
         await gate.waitUntilEntered()
         let loaded = expectation(description: "placement refresh completes after leaving the page")
         loaded.assertForOverFulfill = false
@@ -510,7 +1101,7 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         XCTAssertNotNil(store.marketExtras(marketId: 1))
-        XCTAssertEqual(store.watchFocus(), .orders(["lighter:1"]))
+        XCTAssertEqual(store.watchFocus(), .portfolio)
 
         store.releaseMarketExtras(marketId: 1)
 
@@ -520,7 +1111,7 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
         XCTAssertEqual(store.marketExtras(marketId: 1)?.limitOrders.map(\.id), ["lighter:1"])
 
         store.loadMarketExtras(marketId: 1)
-        XCTAssertEqual(store.watchFocus(), .orders(["lighter:1"]))
+        XCTAssertEqual(store.watchFocus(), .portfolio)
     }
 
     func testExtrasFromAnOldAccountAreNotIncludedInTheWatchFocus() async {
@@ -537,7 +1128,7 @@ final class PerpsAccountStorePositionsCadenceTests: XCTestCase {
             if store.marketExtras(marketId: 1) != nil { break }
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
-        XCTAssertEqual(store.watchFocus(), .orders(["lighter:1"]))
+        XCTAssertEqual(store.watchFocus(), .portfolio)
 
         service.accountIndex = 43
         service.tradingSnapshotResult = PerpsTradingSnapshot(flags: nil, orders: nil)
@@ -557,6 +1148,26 @@ private extension PerpsAccountStorePositionsCadenceTests {
         PerpsOpeningDescriptor(marketId: 1, symbol: "BTC", side: side, marginUsd: 20, leverage: 5, isLimit: true)
     }
 
+    func placeLimitOrder(_ descriptor: PerpsOpeningDescriptor, in store: PerpsAccountStore) {
+        store.tradeBegan(operationId: "open", marketId: descriptor.marketId, .opening(descriptor))
+        store.tradeSettled(operationId: "open", succeeded: true)
+    }
+
+    func openCounted(in store: PerpsAccountStore, marketId: Int64) -> PerpsPositionSummary? {
+        let operationId = "open-\(marketId)"
+        let opening = PerpsOpeningDescriptor(
+            marketId: marketId, symbol: "BTC", side: .long, marginUsd: 20, leverage: 5, isLimit: false, liquidationPrice: 80
+        )
+        store.tradeBegan(operationId: operationId, marketId: marketId, .opening(opening))
+        store.tradeSettled(operationId: operationId, succeeded: true)
+        store.positionCounted(
+            operationId: operationId,
+            PerpsCountedPosition(baseSize: 1, entryPrice: 100, leverage: 5, isolatedMarginUsd: 20)
+        )
+        guard case let .open(counted) = store.lifecycle(marketId: marketId) else { return nil }
+        return counted
+    }
+
     /// `flush()` settles the tick, but `Store` publishes through its own serial queue, so the
     /// new state is one queue hop behind the apply and cannot be read straight afterwards.
     func waitForOnlyPosition(on store: PerpsAccountStore, marketId: Int64, line: UInt = #line) async {
@@ -567,6 +1178,35 @@ private extension PerpsAccountStorePositionsCadenceTests {
         XCTFail("expected only market \(marketId)", line: line)
     }
 
+    func waitForPosition(on store: PerpsAccountStore, marketId: Int64, baseSize: Double, line: UInt = #line) async {
+        for _ in 0 ..< 100 {
+            if case let .active(account) = store.currentWalletState(),
+               account.positions.map(\.marketId) == [marketId],
+               account.positions.first?.baseSize == baseSize
+            {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("expected market \(marketId) at \(baseSize)", line: line)
+    }
+
+    func waitForLoadedPositions(on store: PerpsAccountStore, line: UInt = #line) async {
+        for _ in 0 ..< 100 {
+            if case let .active(account) = store.currentWalletState(), account.positionsLoaded { return }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("positions never loaded", line: line)
+    }
+
+    func waitForSnapshotReads(on service: CadenceAccountReading, count: Int, line: UInt = #line) async {
+        for _ in 0 ..< 100 {
+            if service.snapshotMarkets.count >= count { return }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTFail("expected \(count) trading screen reads, made \(service.snapshotMarkets.count)", line: line)
+    }
+
     func waitForOpenOrders(on store: PerpsAccountStore, count: Int, line: UInt = #line) async {
         for _ in 0 ..< 100 {
             if case let .active(account) = store.currentWalletState(), account.openOrders.count == count { return }
@@ -575,18 +1215,23 @@ private extension PerpsAccountStorePositionsCadenceTests {
         XCTFail("expected \(count) open orders", line: line)
     }
 
-    func makePortfolioOrder(marketId: Int64) -> PerpsPortfolioOrder {
-        PerpsPortfolioOrder(marketId: marketId, symbol: "BTC", order: makeLimitOrder(id: "lighter:\(marketId)"))
+    func makePortfolioOrder(marketId: Int64, remaining: Double = 1, filled: Double = 0) -> PerpsPortfolioOrder {
+        PerpsPortfolioOrder(
+            marketId: marketId,
+            symbol: "BTC",
+            order: makeLimitOrder(id: "lighter:\(marketId)", remaining: remaining, filled: filled)
+        )
     }
 
-    func makeLimitOrder(id: String) -> PerpsLimitOrderSummary {
+    func makeLimitOrder(id: String, remaining: Double = 1, filled: Double = 0) -> PerpsLimitOrderSummary {
         PerpsLimitOrderSummary(
             id: id,
             orderIndex: 7,
             clientOrderIndex: 0,
             side: .long,
             limitPrice: 100,
-            remainingBaseAmount: 1
+            remainingBaseAmount: remaining,
+            filledBaseAmount: filled
         )
     }
 
@@ -665,13 +1310,37 @@ private final class CadenceAccountReading: PerpsAccountReading, @unchecked Senda
         lock.withLock { cancelled }
     }
 
+    private var invalidations = 0
+
+    var sharedReadInvalidations: Int {
+        lock.withLock { invalidations }
+    }
+
+    func invalidateSharedReads() {
+        lock.withLock { invalidations += 1 }
+    }
+
     var accountIndex: Int64 = 42
     var tradingSnapshotDelayNanoseconds: UInt64 = 0
 
     var statusResult: PerpsAccountStatus?
+    private var statuses = 0
+    private var snapshotReads = [Int64]()
+
+    var statusReads: Int {
+        lock.withLock { statuses }
+    }
+
+    var snapshotMarkets: [Int64] {
+        lock.withLock { snapshotReads }
+    }
+
+    var statusGate: ResolveGate?
 
     func status(wallet _: Wallet) async -> PerpsAccountStatus {
+        lock.withLock { statuses += 1 }
         onStatus?()
+        if let statusGate { await statusGate.enter() }
         return statusResult ?? .account(accountIndex: accountIndex)
     }
 
@@ -679,13 +1348,25 @@ private final class CadenceAccountReading: PerpsAccountReading, @unchecked Senda
     var openOrders: [PerpsPortfolioOrder] = []
     var availableBalance = "100"
     var tradingSnapshotResult = PerpsTradingSnapshot(flags: nil, orders: nil)
+    private var nextPortfolioGate: ResolveGate?
+
+    func holdNextPortfolio(at gate: ResolveGate) {
+        lock.withLock { nextPortfolioGate = gate }
+    }
 
     func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
-        PerpsAccountSnapshot(
+        let snapshot = PerpsAccountSnapshot(
             availableBalance: availableBalance,
             positions: positions,
-            openOrders: openOrders
+            openOrders: openOrders,
+            requestedAt: ProcessInfo.processInfo.systemUptime
         )
+        let gate = lock.withLock {
+            defer { nextPortfolioGate = nil }
+            return nextPortfolioGate
+        }
+        await gate?.enter()
+        return snapshot
     }
 
     func watchPositions(
@@ -724,7 +1405,8 @@ private final class CadenceAccountReading: PerpsAccountReading, @unchecked Senda
         lock.withLock { tradingSnapshotOverride = body }
     }
 
-    func tradingSnapshot(wallet _: Wallet, marketId _: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+    func tradingSnapshot(wallet _: Wallet, marketId: Int64, positionId _: String?) async throws -> PerpsTradingSnapshot {
+        lock.withLock { snapshotReads.append(marketId) }
         if let body = lock.withLock({ tradingSnapshotOverride }) {
             return try await body()
         }
@@ -732,6 +1414,40 @@ private final class CadenceAccountReading: PerpsAccountReading, @unchecked Senda
             try? await Task.sleep(nanoseconds: tradingSnapshotDelayNanoseconds)
         }
         return tradingSnapshotResult
+    }
+}
+
+private final class CloseProgress: @unchecked Sendable {
+    let changes = TestSignal()
+    private let lock = NSLock()
+    private var held = false
+    private var startedCount = 0
+    private var recorded = [PerpsMarketLifecycle]()
+
+    var isHeld: Bool {
+        lock.withLock { held }
+    }
+
+    var started: Int {
+        lock.withLock { startedCount }
+    }
+
+    var lifecycles: [PerpsMarketLifecycle] {
+        lock.withLock { recorded }
+    }
+
+    func markHeld() {
+        lock.withLock { held = true }
+        changes.send()
+    }
+
+    func markStarted() {
+        lock.withLock { startedCount += 1 }
+        changes.send()
+    }
+
+    func record(_ lifecycle: PerpsMarketLifecycle) {
+        lock.withLock { recorded.append(lifecycle) }
     }
 }
 

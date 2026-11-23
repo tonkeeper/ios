@@ -2,10 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>APP_NAME</key>
 	<string>$(APP_NAME)</string>
+	<key>APPSFLYER_APP_ID</key>
+	<string>$(APPSFLYER_APP_ID)</string>
+	<key>APPSFLYER_DEV_KEY</key>
+	<string>$(APPSFLYER_DEV_KEY)</string>
 	<key>APTABASE_ENDPOINT</key>
 	<string>$(APTABASE_ENDPOINT)</string>
 	<key>APTABASE_KEY</key>

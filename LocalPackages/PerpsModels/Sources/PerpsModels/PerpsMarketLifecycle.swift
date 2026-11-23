@@ -14,13 +14,24 @@ public struct PerpsOpeningDescriptor: Equatable, Sendable {
     public let marginUsd: Double
     public let leverage: Double
     public let isLimit: Bool
+    /// The review's estimate. It stands in until the portfolio gives the venue's price.
+    public let liquidationPrice: Double?
 
-    public init(marketId: Int64, symbol: String, side: PerpsTradeSide, marginUsd: Double, leverage: Double, isLimit: Bool) {
+    public init(
+        marketId: Int64,
+        symbol: String,
+        side: PerpsTradeSide,
+        marginUsd: Double,
+        leverage: Double,
+        isLimit: Bool,
+        liquidationPrice: Double? = nil
+    ) {
         self.marketId = marketId
         self.symbol = symbol
         self.side = side
         self.marginUsd = marginUsd
         self.leverage = leverage
         self.isLimit = isLimit
+        self.liquidationPrice = liquidationPrice
     }
 }

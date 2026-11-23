@@ -8,7 +8,7 @@ import TKUIKit
             id: 1,
             symbol: "BTC",
             iconURL: nil,
-            leverageText: "40X",
+            leverageText: "40⨯",
             volumeText: "$1.24B VOL",
             priceText: "$67,104.20",
             changeText: "+3.84%",

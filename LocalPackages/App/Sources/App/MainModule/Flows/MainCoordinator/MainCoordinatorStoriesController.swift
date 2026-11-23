@@ -1,4 +1,5 @@
 import Stories
+import TKStories
 import UIKit
 
 /// The loading half of `StoriesController` the boot sequence needs, as a seam: the concrete
@@ -16,6 +17,8 @@ final class MainCoordinatorStoriesController {
     var deeplinkAction: ((String) -> Void)?
     var urlAction: ((URL) -> Void)?
     var didFinishStory: ((String) -> Void)?
+    var consentStoryId: String?
+    var consentCloseAlert: (() -> StoriesCloseAlertModel)?
 
     private let storiesPresenter: RaffleStoryPresenting
     private let storiesController: BootConfigurationStoriesLoading
@@ -139,10 +142,12 @@ final class MainCoordinatorStoriesController {
                 return
             }
             let didPresent = storiesPresenter.presentStory(
-                story: story,
+                story: withoutConsentPage(story),
                 fromViewController: fromViewController,
                 fromAnalyticsProperty: "wallet",
-                isClosable: true,
+                mode: .regular,
+                ignoresStoriesFlag: false,
+                closeAlert: nil,
                 deeplinkAction: { [weak self] in
                     self?.deeplinkAction?($0)
                 },
@@ -154,7 +159,7 @@ final class MainCoordinatorStoriesController {
                         completion(false)
                         return
                     }
-                    if reason == .lastPageButton {
+                    if reason == .lastPageButton, story.id != consentStoryId {
                         didFinishStory?(story.id)
                     }
                     guard reason == .completed else {
@@ -193,30 +198,69 @@ final class MainCoordinatorStoriesController {
     }
 
     @MainActor
-    func handleDeeplinkStory(storyId: String, walletId: String?) async throws {
+    func handleDeeplinkStory(
+        storyId: String,
+        walletId: String?,
+        mode: Stories.StoriesPresenter.Mode = .regular,
+        ignoresStoriesFlag: Bool = false
+    ) async throws {
         guard let fromViewController = fromViewControllerProvider?() else { return }
         let result = await storiesController.loadStory(storyId: storyId, ignoreShowed: true, walletId: walletId)
         try Task.checkCancellation()
         switch result {
         case let .success(story):
             storiesPresenter.presentStory(
-                story: story,
+                story: withoutConsentPage(story),
                 fromViewController: fromViewController,
                 fromAnalyticsProperty: "deep-link",
-                isClosable: true,
+                mode: mode,
+                ignoresStoriesFlag: ignoresStoriesFlag,
+                closeAlert: nil,
                 deeplinkAction: { [weak self] in
                     self?.deeplinkAction?($0)
                 }, urlAction: { [weak self] in
                     self?.urlAction?($0)
                 },
                 onDismiss: { [weak self] reason in
-                    guard reason == .lastPageButton else { return }
+                    guard reason == .lastPageButton, story.id != self?.consentStoryId else { return }
                     self?.didFinishStory?(story.id)
                 }
             )
         case let .failure(error):
             throw error
         }
+    }
+
+    @MainActor
+    var isPresentingStory: Bool {
+        StoriesPresenter.isAnyStoryOnScreen
+    }
+
+    /// False when the story was seen, failed to load, is no longer wanted or could not go on screen.
+    @MainActor
+    func presentUnseenStory(storyId: String, walletId: String?, isWanted: @MainActor () -> Bool) async -> Bool {
+        let result = await storiesController.loadStory(storyId: storyId, ignoreShowed: false, walletId: walletId)
+        guard case let .success(story) = result,
+              isWanted(),
+              let fromViewController = fromViewControllerProvider?()
+        else {
+            return false
+        }
+        return storiesPresenter.presentStory(
+            story: story,
+            fromViewController: fromViewController,
+            fromAnalyticsProperty: "wallet",
+            mode: .regular,
+            ignoresStoriesFlag: false,
+            closeAlert: nil,
+            deeplinkAction: { [weak self] in
+                self?.deeplinkAction?($0)
+            },
+            urlAction: { [weak self] in
+                self?.urlAction?($0)
+            },
+            onDismiss: nil
+        )
     }
 
     @MainActor
@@ -232,7 +276,9 @@ final class MainCoordinatorStoriesController {
             story: story,
             fromViewController: fromViewController,
             fromAnalyticsProperty: "required",
-            isClosable: false,
+            mode: .required,
+            ignoresStoriesFlag: true,
+            closeAlert: story.id == consentStoryId ? consentCloseAlert?() : nil,
             deeplinkAction: { _ in },
             urlAction: { _ in },
             onDismiss: { [weak self] reason in
@@ -247,5 +293,10 @@ final class MainCoordinatorStoriesController {
             throw Stories.StoriesController.Error.failedLoadStory(storyId: storyId)
         }
         requiredStoryAction = onAction
+    }
+
+    private func withoutConsentPage(_ story: Stories.Story) -> Stories.Story {
+        guard story.id == consentStoryId else { return story }
+        return Stories.Story(id: story.id, pages: Array(story.pages.dropLast()), isAutoShow: story.isAutoShow)
     }
 }

@@ -3,7 +3,7 @@ import TKLocalize
 import URKit
 
 public struct RampRecipientScannerControllerConfigurator: ScannerControllerConfigurator {
-    @frozen public enum Error: Swift.Error, Equatable, LocalizedError {
+    @frozen public enum Error: Swift.Error, Equatable, LocalizedError, ScanRejectionError {
         case invalidAddress(networkName: String)
 
         public var errorDescription: String? {
@@ -11,6 +11,10 @@ public struct RampRecipientScannerControllerConfigurator: ScannerControllerConfi
             case let .invalidAddress(networkName):
                 TKLocales.Send.invalidAddressForNetwork(networkName)
             }
+        }
+
+        public var scanRejection: ScanRejection {
+            .unsupportedHere
         }
     }
 

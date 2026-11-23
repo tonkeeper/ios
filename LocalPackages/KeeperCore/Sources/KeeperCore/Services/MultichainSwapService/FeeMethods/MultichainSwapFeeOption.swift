@@ -20,6 +20,9 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
     }
 
     public let cost: Cost
+    /// The battery's charges when this option was priced, or `nil` for another method or a balance that
+    /// could not be read: a battery that cannot pay is told empty or low by it.
+    public let availableCharges: Int?
 
     public var isInsufficient: Bool {
         switch cost {
@@ -76,6 +79,16 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
         }
     }
 
+    /// The most a fee in a token may take besides what is spent, in the token's own decimals.
+    /// Battery charges and GRAM are not taken from the account that spends.
+    var tokenFee: OperationIntent.Spend? {
+        if case let .token(asset, amount, _) = cost {
+            .relayerFee(amount, in: asset)
+        } else {
+            nil
+        }
+    }
+
     var logValue: String {
         let detail = switch cost {
         case let .native(fees, _): fees.map(\.asset.symbol).joined(separator: "+")
@@ -87,8 +100,9 @@ public struct MultichainSwapFeeOption: Sendable, Hashable {
         return "\(method.id)(\(detail)\(isInsufficient ? ",insufficient" : ""))"
     }
 
-    public init(cost: Cost) {
+    public init(cost: Cost, availableCharges: Int? = nil) {
         self.cost = cost
+        self.availableCharges = availableCharges
     }
 }
 

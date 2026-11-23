@@ -31,6 +31,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        ScreenRenderTracker.shared.lifecycle(.viewDidLoad, for: .portfolio, from: self)
 
         setup()
         setupBindings()
@@ -41,11 +42,21 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewWillAppear, for: .portfolio, from: self)
+        if dataSource.snapshot().hasBalanceRows {
+            ScreenRenderTracker.shared.contentApplied(.cached, for: .portfolio)
+        }
         viewModel.viewWillAppear()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewDidAppear, for: .portfolio, from: self)
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        ScreenRenderTracker.shared.abandon(.portfolio, by: self)
         viewModel.viewDidDisappear()
     }
 
@@ -72,6 +83,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
             customView.refreshControl.endRefreshing()
             // Reloading data recreates hosted SwiftUI sections and makes the banner deck blink.
             dataSource.apply(snapshot, animatingDifferences: isAnimated)
+            if snapshot.hasBalanceRows {
+                ScreenRenderTracker.shared.contentApplied(.cached, for: .portfolio)
+            }
         }
 
         viewModel.didUpdateHeader = { [weak self] model in
@@ -451,6 +465,16 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
 private extension WalletBalanceViewController {
     enum Layout {
         static let emptySectionHeight: CGFloat = 1
+    }
+}
+
+private extension WalletBalance.Snapshot {
+    /// The header and collectibles are always in the snapshot; the balance rows only once a balance is known.
+    var hasBalanceRows: Bool {
+        sectionIdentifiers.contains {
+            if case .balance = $0 { return true }
+            return false
+        }
     }
 }
 

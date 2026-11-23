@@ -5,6 +5,18 @@ enum BatteryChargesAvailability: Equatable {
     case unavailable
     case unknown
 
+    /// A wallet battery cannot pay for at all has no charges to spend.
+    var count: Int? {
+        switch self {
+        case let .available(charges):
+            charges
+        case .unavailable:
+            0
+        case .unknown:
+            nil
+        }
+    }
+
     var logValue: String {
         switch self {
         case let .available(charges):

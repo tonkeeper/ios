@@ -4,28 +4,40 @@ import ChainKit
 @testable import Perps
 import PerpsModels
 import TKLocalize
+import TKTestSupport
 import TonSwift
 import XCTest
 
 @MainActor
 final class PerpsMarginChangeViewModelTests: XCTestCase {
-    private static let limits = PerpsMarginChangeLimits(minUsd: 1, maxReduceUsd: 2.97)
+    private static let limits = PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 712.56, maxReduceUsd: 2.97)
+    private static let wideLimits = PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 712.56, maxReduceUsd: 19.99)
 
     /// BTC long: 0.008 @ $66 000, margin $20, liq $64 141.75.
     private func makeViewModel(
         direction: PerpsMarginChangeDirection,
         service: FakePerpsTradingService = FakePerpsTradingService(),
         marketsStore: PerpsMarketsStore = .makeForTests(),
+        accountStore: (any PerpsAccountStoring)? = nil,
         limits: PerpsMarginChangeLimits? = nil
     ) async -> (viewModel: PerpsMarginChangeViewModel, service: FakePerpsTradingService) {
         if let limits {
             service.marginLimits = .success(limits)
         }
-        let store = PerpsAccountStore(service: MarginChangeAccountReadingSpy(), wallet: .marginChangeTest())
-        store.resolveIfNeeded()
-        await waitUntil {
-            if case .active = store.currentWalletState() { return true }
-            return false
+        let store: any PerpsAccountStoring
+        if let accountStore {
+            store = accountStore
+            store.resolveIfNeeded()
+        } else {
+            let accountStore = PerpsAccountStore(service: MarginChangeAccountReadingSpy(), wallet: .marginChangeTest())
+            let resolved = TestSignal()
+            accountStore.addObserver(self) { _, _ in resolved.send() }
+            accountStore.resolveIfNeeded()
+            await waitUntil(resolved) {
+                if case .active = accountStore.currentWalletState() { return true }
+                return false
+            }
+            store = accountStore
         }
         let viewModel = PerpsMarginChangeViewModel(
             direction: direction,
@@ -53,7 +65,7 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
             format: PerpsFormatting.live
         )
         viewModel.onAppear()
-        await waitUntil { viewModel.availableBalance != nil && (limits == nil || viewModel.limits != nil) }
+        await waitUntil(viewModel) { (viewModel.availableBalance ?? 0) > 0 && (limits == nil || viewModel.limits != nil) }
         return (viewModel, service)
     }
 
@@ -63,13 +75,13 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
             direction: .add,
             marketsStore: .makeForTests(tickers: [1: "BTC/USD"], client: client)
         )
-        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.usd(66141.70))
+        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.price(66141.70))
 
         await waitForTickers(client, toEqual: ["BTC/USD"])
         await client.emit([("BTC/USD", "67000")])
-        await waitUntil { viewModel.priceText == PerpsFormatting.live.usd(67000) }
+        await waitUntil(viewModel) { viewModel.priceText == PerpsFormatting.live.price(67000) }
 
-        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.usd(67000))
+        XCTAssertEqual(viewModel.priceText, PerpsFormatting.live.price(67000))
     }
 
     func test_formShape_noSizeSubtitle_depositOnAddOnly() async {
@@ -101,7 +113,7 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         let (viewModel, _) = await makeViewModel(direction: .reduce, limits: Self.limits)
         XCTAssertEqual(viewModel.balanceRow?.balanceText, PerpsFormatting.live.usd(2.97))
 
-        viewModel.balanceRow?.onMax()
+        viewModel.balanceRow?.onMax?()
         XCTAssertEqual(viewModel.amountText, "2.97")
         XCTAssertTrue(viewModel.isReviewEnabled)
         XCTAssertNil(viewModel.balanceRow?.errorText)
@@ -126,28 +138,98 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
 
         service.reviewer.marginReview = Self.marginReview(new: 63639.99)
         viewModel.setAmount("20")
-        await waitUntil { row()?.value != PerpsFormatting.live.usd(64141.75) }
+        await waitUntil(viewModel) { row()?.value != PerpsFormatting.live.usd(64141.75) }
 
         XCTAssertEqual(row()?.value, "\(PerpsFormatting.live.usd(64141.75)) → \(PerpsFormatting.live.usd(63639.99))")
     }
 
-    func test_reduceAtOrAboveMargin_disablesReviewWithWarning() async {
-        let (viewModel, _) = await makeViewModel(direction: .reduce)
+    func test_reduceWithoutLimits_offersRetry_andReviewsOnceTheyLoad() async {
+        let (viewModel, service) = await makeViewModel(direction: .reduce)
+        await waitUntil(viewModel) { viewModel.limitsLoadFailed }
         viewModel.setAmount("10")
-        XCTAssertTrue(viewModel.isReviewEnabled)
-        XCTAssertNil(viewModel.warningText)
-
-        viewModel.setAmount("20")
         XCTAssertFalse(viewModel.isReviewEnabled)
-        XCTAssertEqual(viewModel.warningText, TKLocales.Perps.EditPosition.reduceExceedsMargin(PerpsFormatting.live.usd(20)))
+        XCTAssertEqual(viewModel.balanceRow?.errorText, TKLocales.Perps.Asset.failedTitle)
+
+        service.marginLimits = .success(Self.wideLimits)
+        viewModel.balanceRow?.onRetry?()
+        await waitUntil(viewModel) { viewModel.limits != nil }
+
+        XCTAssertNil(viewModel.balanceRow?.onRetry)
+        XCTAssertNil(viewModel.balanceRow?.errorText)
+        XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func test_addAboveTheCeiling_showsMaximumMargin_andMaxFillsIt() async {
+        let limits = PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 100, maxReduceUsd: 2.97)
+        let (viewModel, _) = await makeViewModel(direction: .add, limits: limits)
+        XCTAssertEqual(viewModel.balanceRow?.balanceText, PerpsFormatting.live.balance(712.56))
+
+        viewModel.setAmount("150")
+        XCTAssertFalse(viewModel.isReviewEnabled)
+        XCTAssertEqual(
+            viewModel.balanceRow?.errorText,
+            TKLocales.Perps.EditPosition.maximumMargin(PerpsFormatting.live.balance(100))
+        )
+
+        viewModel.balanceRow?.onMax?()
+        XCTAssertEqual(viewModel.amountText, "100")
+        XCTAssertNil(viewModel.balanceRow?.errorText)
+        XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func test_balanceChange_reloadsTheLimits_soTheAddCeilingFollowsADeposit() async {
+        let store = PerpPositionAccountStoreStub(state: .active(PerpsAccount(accountIndex: 1, availableBalance: "5")))
+        let (viewModel, service) = await makeViewModel(
+            direction: .add,
+            accountStore: store,
+            limits: PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 5, maxReduceUsd: 2.97)
+        )
+        viewModel.setAmount("100")
+        XCTAssertEqual(viewModel.balanceRow?.errorText, TKLocales.Perps.OpenPosition.insufficientFunds)
+
+        let deposited = PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 105, maxReduceUsd: 2.97)
+        service.marginLimits = .success(deposited)
+        store.state = .active(PerpsAccount(accountIndex: 1, availableBalance: "105"))
+        store.notify()
+        await waitUntil(viewModel) { viewModel.limits == deposited }
+
+        XCTAssertEqual(viewModel.balanceRow?.balanceText, PerpsFormatting.live.usd(105))
+        XCTAssertNil(viewModel.balanceRow?.errorText)
+        XCTAssertTrue(viewModel.isReviewEnabled)
+    }
+
+    func test_balanceBelowTheMinimum_showsTheBalance_notTheZeroCeiling() async {
+        let store = PerpPositionAccountStoreStub(state: .active(PerpsAccount(accountIndex: 1, availableBalance: "0.215")))
+        let (viewModel, _) = await makeViewModel(
+            direction: .add,
+            accountStore: store,
+            limits: PerpsMarginChangeLimits(minUsd: 1, maxAddUsd: 0, maxReduceUsd: 2.97)
+        )
+        XCTAssertEqual(viewModel.balanceRow?.balanceText, PerpsFormatting.live.balance(0.215))
+
+        viewModel.setAmount("0.2")
+        XCTAssertEqual(viewModel.balanceRow?.errorText, TKLocales.Perps.AdjustMargin.minAmount(PerpsFormatting.live.usd(1)))
+
+        viewModel.setAmount("2")
+        XCTAssertEqual(viewModel.balanceRow?.errorText, TKLocales.Perps.OpenPosition.insufficientFunds)
+        XCTAssertFalse(viewModel.isReviewEnabled)
+    }
+
+    func test_addWithoutLimits_checksTheAvailableBalance() async {
+        let (viewModel, _) = await makeViewModel(direction: .add)
+        viewModel.setAmount("713")
+        XCTAssertFalse(viewModel.isReviewEnabled)
+        XCTAssertEqual(viewModel.balanceRow?.errorText, TKLocales.Perps.OpenPosition.insufficientFunds)
     }
 
     func test_staleMarketRead_isReplacedOnTheNextChange() async {
         let (viewModel, service) = await makeViewModel(direction: .add)
         service.reviewer.marginReview = Self.marginReview(new: 63639.99)
 
+        let row = { viewModel.optionRows.first { $0.id == "liquidation" } }
+
         viewModel.setAmount("20")
-        await waitUntil { service.reviewerLoads == 1 }
+        await waitUntil(viewModel) { row()?.value != PerpsFormatting.live.usd(64141.75) }
         let afterFirstRead = service.reviewerLoads
 
         // A read within its lifetime is reused: typing does not ask again.
@@ -157,16 +239,16 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
         service.reviewer.isStale = true
         viewModel.setAmount("22")
 
-        await waitUntil { service.reviewerLoads > afterFirstRead }
+        await waitUntil(service.changes) { service.reviewerLoads > afterFirstRead }
         XCTAssertGreaterThan(service.reviewerLoads, afterFirstRead)
     }
 
     func test_reduceIntoImmediateRisk_disablesReviewWithWarning() async {
-        let (viewModel, service) = await makeViewModel(direction: .reduce)
+        let (viewModel, service) = await makeViewModel(direction: .reduce, limits: Self.wideLimits)
         service.reviewer.marginReview = Self.marginReview(new: 66100, isImmediateRisk: true)
 
         viewModel.setAmount("15")
-        await waitUntil { viewModel.warningText != nil }
+        await waitUntil(viewModel) { viewModel.warningText != nil }
 
         XCTAssertFalse(viewModel.isReviewEnabled)
         XCTAssertEqual(viewModel.warningText, TKLocales.Perps.AdjustMargin.reduceRisk)
@@ -187,7 +269,7 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
     }
 
     func test_reviewFailure_unlocksTheAmountWithTheWarning() async {
-        let (viewModel, _) = await makeViewModel(direction: .reduce)
+        let (viewModel, _) = await makeViewModel(direction: .reduce, limits: Self.wideLimits)
         viewModel.setAmount("5")
         viewModel.review()
         XCTAssertFalse(viewModel.amountFocusState.isActive)
@@ -216,18 +298,6 @@ final class PerpsMarginChangeViewModelTests: XCTestCase {
             liquidationUnavailableReason: nil,
             isImmediateRisk: isImmediateRisk
         )
-    }
-
-    private func waitUntil(
-        timeout: TimeInterval = 2,
-        intervalNanoseconds: UInt64 = 5_000_000,
-        condition: @escaping () -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return }
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-        }
     }
 }
 

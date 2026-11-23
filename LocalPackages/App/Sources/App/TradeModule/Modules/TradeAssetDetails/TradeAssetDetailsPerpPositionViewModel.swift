@@ -16,7 +16,7 @@ final class TradeAssetDetailsPerpPositionViewModel: ObservableObject {
 
     private let walletScope: PerpsWalletScope?
     private let accountStore: any PerpsAccountStoring
-    private let format = PerpsFormatting.live
+    private let format: PerpsFormatting
     private var marketId: Int64?
     private var iconURL: URL?
     private var isOnScreen = false
@@ -27,11 +27,17 @@ final class TradeAssetDetailsPerpPositionViewModel: ObservableObject {
     init(
         accountStore: any PerpsAccountStoring,
         walletScope: PerpsWalletScope? = nil,
-        walletsStore: WalletsStore? = nil
+        walletsStore: WalletsStore? = nil,
+        appSettingsStore: AppSettingsStore? = nil
     ) {
         self.walletScope = walletScope
         self.accountStore = accountStore
+        format = appSettingsStore.map { .live(appSettingsStore: $0) } ?? .live
         accountStore.addChangeObserver(self) { observer in
+            Task { @MainActor in observer.applyAccount() }
+        }
+        appSettingsStore?.addObserver(self) { observer, event in
+            guard case .didUpdateIsSecureMode = event else { return }
             Task { @MainActor in observer.applyAccount() }
         }
         // The page outlives its wallet's turn as the active one: a send signed for another wallet

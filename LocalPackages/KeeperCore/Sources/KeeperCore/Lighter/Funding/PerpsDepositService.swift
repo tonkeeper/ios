@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 import OpenAPIRuntime
+import OperationReviewModels
 import PerpsModels
 import TKLogging
 import TKPerpsAPI
@@ -22,6 +23,10 @@ enum PerpsDepositServiceError: Error, Equatable {
     case registrationRepriced(quoted: String, previewed: String)
     /// The node refused the payment: the coin the fee is paid in does not cover it.
     case insufficientNetworkFee(symbol: String)
+    case networkFeeUnavailable
+    /// The relayed fee method confirmed for this payment can no longer carry it.
+    case relayUnavailable
+    case bitcoinFeeRaised(quoted: String, shown: String)
 }
 
 /// What the confirmation states, and what the payment is then bound to. The quote inside
@@ -51,16 +56,55 @@ public struct PerpsDepositReview: Sendable, Equatable {
     public let expiresAt: Date?
     /// The provider's estimate from sending to the credit, for display; `nil` when it gives none.
     public let estimatedDurationSeconds: Int?
+    /// `nil` when unknown.
+    public let providerFees: PerpsDepositProviderFees?
     /// Where paying delegates the wallet's address to HermesDelegateV1 (EIP-7702), which it
     /// keeps after the deposit: Ethereum for a key registration, the source chain for a folded
     /// batch.
     public let delegatedChains: [MultichainChain]
+    /// Lighter knows no account for the beneficiary: this deposit creates it. `false` also when Lighter did not answer.
+    public let createsAccount: Bool
 
     let payment: Payment
+    /// The quote whose main payload a relayed fee method is priced for; `nil` where only the chain's own coin can pay.
+    var feeQuote: PerpsDepositQuote? = nil
+    /// `networkFee` in the coin's smallest units.
+    public internal(set) var networkFeeUnits: BigUInt? = nil
+    /// What confirming signs first while the chain's own coin pays, as the checks read it: the
+    /// payment, or the documents a key registration signs before its payment is quoted.
+    var review: OperationReview? = nil
+    public internal(set) var sentAmount: String? = nil
+    public internal(set) var provider: String? = nil
 
     public var resumesPayment: Bool {
         if case .resuming = payment { return true }
         return false
+    }
+
+    public var accountUninitialized: Bool? {
+        switch payment {
+        case let .quoted(quote): quote.accountUninitialized
+        case let .registering(preview): preview.accountUninitialized
+        case .resuming: nil
+        }
+    }
+
+    /// The chain's own coin a jetton payment carries for the jetton wallet's gas, apart from the
+    /// network fee. `nil` for a coin source, whose amount is that coin, and for a payment already sent.
+    public var carriedNativeAmount: String? {
+        guard let quote = feeQuote, case .token = quote.sourceAsset.kind else { return nil }
+        let units = quote.payloads.reduce(BigUInt(0)) { $0 + (BigUInt($1.valueUnits, radix: 10) ?? 0) }
+        guard units > 0 else { return nil }
+        return PerpsFundingAmount.declaredAmount(units: units, decimals: quote.sourceAsset.nativeDecimals)
+    }
+
+    /// What confirming with `relayedFee` signs first, as the checks read it: a key registration's
+    /// documents whatever pays the fee, a payment only while the chain's own coin pays it. A relayed
+    /// method signs the relayer's operation instead, which the final gate reads once it is prepared.
+    /// `nil` when there is nothing to show.
+    public func review(relayedFee: MultichainSwapFeeOption?) -> OperationReview? {
+        if case .quoted = payment, relayedFee?.method.isRelayed == true { return nil }
+        return review
     }
 }
 
@@ -85,6 +129,7 @@ public actor PerpsDepositService {
     /// asked seconds apart, but the aggregator prices the signed calls as a new quote, so they
     /// need not agree to the unit.
     static let registrationRepriceToleranceBps: BigUInt = 100
+    static let bitcoinFeeRiseToleranceBps: BigUInt = 100
 
     private let walletId: String
     private let walletIdentity: String
@@ -92,11 +137,17 @@ public actor PerpsDepositService {
     private let journal: PerpsPendingJournal
     private let api: PerpsAPI
     private let delivery: any PerpsDepositDelivery
+    private let gate: OperationGate
     private let recovery: PerpsFundingRecovery?
     private let registrar: PerpsDepositRegistrar
     /// The wallet's trading key, named on each deposit quote once derived.
     private let keyRegistration: @Sendable () async -> PerpsKeyRegistration?
+    /// The contracts a deposit may delegate to or register the key with, as the backend signed
+    /// them; `nil` when no signed block has verified, and then nothing naming them is signed.
+    private let securityConfig: @Sendable () async -> PerpsSecurityConfig?
+    private let downloadedSecurityConfig: @Sendable () async -> PerpsSecurityConfig?
     private let ensureBinding: @Sendable (String) async throws -> Void
+    private let relaying: PerpsDepositRelaying?
     private let now: @Sendable () -> Date
     private let makeOperationId: @Sendable () -> String
     /// One `pay` at a time: a second tap must not send the same quote twice.
@@ -112,9 +163,13 @@ public actor PerpsDepositService {
         journal: PerpsPendingJournal,
         api: PerpsAPI,
         delivery: any PerpsDepositDelivery,
+        gate: OperationGate,
         recovery: PerpsFundingRecovery? = nil,
         keyRegistration: @escaping @Sendable () async -> PerpsKeyRegistration? = { nil },
+        securityConfig: @escaping @Sendable () async -> PerpsSecurityConfig? = { nil },
+        downloadedSecurityConfig: @escaping @Sendable () async -> PerpsSecurityConfig? = { nil },
         ensureBinding: @escaping @Sendable (String) async throws -> Void = { _ in },
+        relaying: PerpsDepositRelaying? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeOperationId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
@@ -124,10 +179,14 @@ public actor PerpsDepositService {
         self.journal = journal
         self.api = api
         self.delivery = delivery
+        self.gate = gate
         self.recovery = recovery
         registrar = PerpsDepositRegistrar(api: api, journal: journal)
         self.keyRegistration = keyRegistration
+        self.securityConfig = securityConfig
+        self.downloadedSecurityConfig = downloadedSecurityConfig
         self.ensureBinding = ensureBinding
+        self.relaying = relaying
         self.now = now
         self.makeOperationId = makeOperationId
     }
@@ -145,166 +204,282 @@ public actor PerpsDepositService {
             sender_address: senderAddress,
             destination_address: beneficiary
         )
-        return try await read(requestQuote(request), request: request, registration: nil)
+        let security = await securityConfig(forSourceAsset: sourceAsset)
+        return try await read(requestQuote(request), request: request, registration: nil, security: security)
+    }
+
+    private func securityConfig(forSourceAsset sourceAsset: String) async -> PerpsSecurityConfig? {
+        let security = await securityConfig()
+        guard let asset = PerpsFundingAssetId.parse(sourceAsset), asset.chain.isEVM,
+              asset.raw.lowercased() != PerpsFundingAssetId.usdcEthereum,
+              let security, security.relayRouters[asset.chain.rawValue]?.isEmpty ?? true
+        else { return security }
+        return await downloadedSecurityConfig() ?? security
     }
 
     private func requestQuote(_ request: Components.Schemas.DepositQuoteRequest) async throws -> Components.Schemas.DepositQuote {
-        let key = request.change_pub_key == nil ? "" : request.operation == nil ? " key=preview" : " key=signed"
-        let requestText = "asset=\(request.source_asset) amount=\(request.source_amount)\(key)"
-        Log.i("🪵 Perps deposit: quote requested \(requestText)")
-        let quoted: Components.Schemas.DepositQuote
-        do {
-            quoted = try await api.quoteDeposit(walletId: walletId, request: request)
-        } catch {
-            var extraInfo = [String: String]()
-            if case let .transport(underlying?) = error as? PerpsAPIError,
-               let clientError = underlying as? ClientError,
-               let body = await clientError.undecodedResponseBody()
-            {
-                extraInfo["responseBody"] = body
+        return try await PerpsOperationLog.step("quote", source: "backend", fields: ["flow": "deposit", "wallet_id": walletId, "asset_id": request.source_asset, "amount_units": request.source_amount, "key_registration": String(request.change_pub_key != nil), "signed_registration": String(request.operation != nil)]) {
+            let quoted: Components.Schemas.DepositQuote
+            do {
+                quoted = try await api.quoteDeposit(walletId: walletId, request: request)
+            } catch {
+                if case let .transport(underlying?) = error as? PerpsAPIError,
+                   let clientError = underlying as? ClientError,
+                   let body = await clientError.undecodedResponseBody()
+                {
+                    PerpsOperationLog.event("quote", outcome: "undecodable", source: "backend_or_client_contract", error: error, fields: ["responseBody": body])
+                }
+                throw error
             }
-            Log.w("🪵 Perps deposit: quote refused \(requestText)", error: error, extraInfo: extraInfo)
-            throw error
+            try Task.checkCancellation()
+            PerpsOperationLog.event("quote", outcome: "received", source: "backend", fields: [
+                "quote_id": quoted.quote_id, "provider": quoted.provider,
+                "input_units": quoted.input.amount, "output_units": quoted.output.amount,
+                "minimum_output_units": quoted.output.min_amount,
+                "expires_at": String(quoted.expires_at.timeIntervalSince1970),
+                "execution_id": quoted.tracking?.execution_id ?? "none",
+                "preview": String(quoted.preview), "payload_count": String(quoted.operation.payloads.count),
+                "account_uninitialized": quoted.account_uninitialized.map { String($0) } ?? "unknown",
+            ])
+            return quoted
         }
-        try Task.checkCancellation()
-        Log.i(
-            "🪵 Perps deposit: quoted \(requestText) id=\(quoted.quote_id) provider=\(quoted.provider)"
-                + " in=\(quoted.input.amount) out=\(quoted.output.amount) min=\(quoted.output.min_amount)"
-                + " expires=\(quoted.expires_at) tracking=\(quoted.tracking?.execution_id ?? "nil")"
-                + " preview=\(quoted.preview) payloads=\(quoted.operation.payloads.count)"
-                + " uninitialized=\(quoted.account_uninitialized.map { "\($0)" } ?? "nil")"
-        )
-        return quoted
     }
 
     private func read(
         _ quoted: Components.Schemas.DepositQuote,
         request: Components.Schemas.DepositQuoteRequest,
-        registration: PerpsKeyRegistration?
-    ) throws -> PerpsDepositQuote {
+        registration: PerpsKeyRegistration?,
+        security: PerpsSecurityConfig?
+    ) async throws -> PerpsDepositQuote {
+        var quote: PerpsDepositQuote
         do {
-            var quote = try PerpsDepositQuoteReader.read(quoted, request: request, registration: registration, now: now())
-            try Self.checkTerms(of: &quote)
-            return quote
+            quote = try PerpsDepositQuoteReader.read(quoted, request: request, registration: registration, security: security, now: now())
+            try Self.checkTerms(of: &quote, security: security)
+            if let bitcoin = quote.bitcoinPayment {
+                let bytePrice = await delivery.bitcoinBytePrice(paying: bitcoin.sentUnits, from: quote.sender)
+                try Task.checkCancellation()
+                try PerpsBitcoinDepositReader.checkFeeRate(bitcoin, walletBytePrice: bytePrice)
+            }
         } catch {
-            Log.w("🪵 Perps deposit: quote rejected id=\(quoted.quote_id) \(String(describing: error))")
+            PerpsOperationLog.event("quote_validation", outcome: "rejected", source: "backend_or_client_contract", error: error, fields: ["quote_id": quoted.quote_id])
             throw error
         }
+        if quote.sourceAsset.chain == .tron {
+            quote.operation = try await chargingTronNetworkFee(quote.operation, quoteId: quote.quoteId)
+        }
+        return quote
+    }
+
+    private func chargingTronNetworkFee(_ operation: PerpsDepositOperation, quoteId: String) async throws -> PerpsDepositOperation {
+        let quoted = try operation.quotedFeeUnits(on: .tron)
+        guard !quoted.isEmpty else { return operation }
+        let estimated = await delivery.walletNetworkFeeUnits(of: operation, on: .tron)
+        try Task.checkCancellation()
+        var bandwidthUnits: BigUInt?
+        var charged = [String: BigUInt]()
+        for (payloadId, quotedUnits) in quoted {
+            let units: BigUInt
+            if let estimate = estimated[payloadId] {
+                units = estimate
+            } else {
+                if bandwidthUnits == nil {
+                    bandwidthUnits = await delivery.tronBandwidthFeeUnits()
+                    try Task.checkCancellation()
+                }
+                guard let bandwidth = bandwidthUnits else {
+                    PerpsOperationLog.event("network_fee", outcome: "unavailable", source: "chain_rpc", fields: ["quote_id": quoteId, "payload_id": payloadId, "chain": MultichainChain.tron.rawValue])
+                    throw PerpsDepositServiceError.networkFeeUnavailable
+                }
+                units = quotedUnits + bandwidth
+            }
+            PerpsOperationLog.event("network_fee", outcome: units > quotedUnits ? "raised" : "quoted", source: "wallet", fields: [
+                "quote_id": quoteId, "payload_id": payloadId, "chain": MultichainChain.tron.rawValue,
+                "quoted_units": quotedUnits.description, "wallet_units": estimated[payloadId]?.description ?? "none",
+                "bandwidth_units": bandwidthUnits?.description ?? "none",
+            ])
+            if units > quotedUnits { charged[payloadId] = units }
+        }
+        return try operation.charging(charged)
     }
 
     /// Signs what the preview asks for and asks again with the signatures: that answer is the
     /// quote to send, re-priced, since the aggregator's quote is bound to the signed calls.
     private func registeredQuote(
         _ preview: PerpsKeyRegistrationPreview,
-        session: any PerpsDepositSigningSession
+        sourceAsset: PerpsFundingAsset,
+        shownFeeUnits: BigUInt?,
+        session: any PerpsDepositSigningSession,
+        consent: OperationConsent
     ) async throws -> PerpsDepositQuote {
-        try Task.checkCancellation()
-        guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
-        let signed = try await session.signDocuments(preview.operation, owner: preview.beneficiary)
-        let request = try Components.Schemas.DepositQuoteRequest(
-            source_asset: preview.sourceAsset.raw,
-            source_amount: preview.sourceAmountUnits,
-            sender_address: preview.sender,
-            destination_address: preview.beneficiary,
-            change_pub_key: preview.registration.request(),
-            operation: preview.signedOperation(signed)
-        )
-        let quote = try await read(requestQuote(request), request: request, registration: preview.registration)
-        let quoted = try PerpsFundingAmount.integerUnits(quote.depositAmountUnits)
-        let previewed = try PerpsFundingAmount.integerUnits(preview.depositAmountUnits)
-        guard quoted * 10000 >= previewed * (10000 - Self.registrationRepriceToleranceBps) else {
-            throw PerpsDepositServiceError.registrationRepriced(quoted: quote.depositAmountUnits, previewed: preview.depositAmountUnits)
+        return try await PerpsOperationLog.step("registration_quote", source: "wallet", fields: ["flow": "deposit", "wallet_id": walletId, "quote_id": preview.quoteId]) {
+            try Task.checkCancellation()
+            try await clear(.ask, consent: consent) { try [documentsSignable(preview, sourceAsset: sourceAsset)] }
+            guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
+            let signed = try await session.signDocuments(preview.operation, owner: preview.beneficiary)
+            let request = try Components.Schemas.DepositQuoteRequest(
+                source_asset: preview.sourceAsset.raw,
+                source_amount: preview.sourceAmountUnits,
+                sender_address: preview.sender,
+                destination_address: preview.beneficiary,
+                change_pub_key: preview.registration.request(),
+                operation: preview.signedOperation(signed)
+            )
+            let quote = try await read(requestQuote(request), request: request, registration: preview.registration, security: preview.security)
+            let quoted = try PerpsFundingAmount.integerUnits(quote.depositAmountUnits)
+            let previewed = try PerpsFundingAmount.integerUnits(preview.depositAmountUnits)
+            guard quoted * 10000 >= previewed * (10000 - Self.registrationRepriceToleranceBps) else {
+                throw PerpsDepositServiceError.registrationRepriced(quoted: quote.depositAmountUnits, previewed: preview.depositAmountUnits)
+            }
+            if let fee = quote.bitcoinPayment?.feeUnits {
+                guard let shownFeeUnits, fee * 10000 <= shownFeeUnits * (10000 + Self.bitcoinFeeRiseToleranceBps) else {
+                    throw PerpsDepositServiceError.bitcoinFeeRaised(quoted: fee.description, shown: shownFeeUnits?.description ?? "none")
+                }
+            }
+            return quote
         }
-        return quote
     }
 
     /// Quotes, checks what it would sign, and prices it. No side effect: nothing is written
     /// and nothing is unlocked, so a review can be repeated.
     ///
     /// The backend decides whether the trading key needs registration. `registeringKey: false`
-    /// asks only for the payment used to estimate the fee.
+    /// asks only for the payment used to estimate the fee. `previewing: false` checks nothing, for
+    /// a review that is only priced and never confirmed.
     public func review(
         sourceAsset: PerpsFundingAsset,
         amount: String,
         senderAddress: String,
         beneficiary: String,
-        registeringKey: Bool = true
+        registeringKey: Bool = true,
+        previewing: Bool = true
     ) async throws -> PerpsDepositReview {
-        // The screen hands over what the user typed; turning it into units is a money rule
-        // and stays here, where the decimals of the asset it belongs to are known.
-        let amountUnits = try PerpsFundingAmount.units(
-            declaredAmount: amount,
-            decimals: sourceAsset.decimals
-        )
-        let registration = registeringKey ? await keyRegistration() : nil
-        guard !registeringKey || registration != nil else {
-            throw PerpsDepositQuoteError.malformedKeyRegistration("trading key unavailable")
-        }
-        let request = Components.Schemas.DepositQuoteRequest(
-            source_asset: sourceAsset.assetId,
-            source_amount: amountUnits.description,
-            sender_address: senderAddress,
-            destination_address: beneficiary,
-            change_pub_key: registration?.request()
-        )
-        let quoted = try await requestQuote(request)
-        let quote: PerpsDepositQuote
-        let payment: PerpsDepositReview.Payment
-        if quoted.preview {
-            guard let registration else { throw PerpsDepositQuoteError.unexpectedPreview(true) }
-            payment = try .registering(PerpsDepositQuoteReader.readPreview(quoted, request: request, registration: registration, now: now()))
-            // A preview contains signatures only; the payment quote supplies the source fee.
-            quote = try await self.quote(
-                sourceAsset: sourceAsset.assetId,
-                sourceAmountUnits: amountUnits.description,
-                senderAddress: senderAddress,
-                beneficiary: beneficiary
+        return try await PerpsOperationLog.step("prepare_quote", source: "client", fields: ["flow": "deposit", "wallet_id": walletId, "asset_id": sourceAsset.assetId, "amount": amount]) {
+            // The screen hands over what the user typed; turning it into units is a money rule
+            // and stays here, where the decimals of the asset it belongs to are known.
+            let amountUnits = try PerpsFundingAmount.units(
+                declaredAmount: amount,
+                decimals: sourceAsset.decimals
             )
-        } else {
-            quote = try read(quoted, request: request, registration: registration)
-            payment = .quoted(quote)
+            let registration = registeringKey ? await keyRegistration() : nil
+            guard !registeringKey || registration != nil else {
+                throw PerpsDepositQuoteError.malformedKeyRegistration("trading key unavailable")
+            }
+            let request = Components.Schemas.DepositQuoteRequest(
+                source_asset: sourceAsset.assetId,
+                source_amount: amountUnits.description,
+                sender_address: senderAddress,
+                destination_address: beneficiary,
+                change_pub_key: registration?.request()
+            )
+            let security = await securityConfig(forSourceAsset: sourceAsset.assetId)
+            let quoted = try await requestQuote(request)
+            let quote: PerpsDepositQuote
+            let payment: PerpsDepositReview.Payment
+            if quoted.preview {
+                guard let registration else { throw PerpsDepositQuoteError.unexpectedPreview(true) }
+                guard let security else {
+                    throw PerpsDepositQuoteError.malformedKeyRegistration("perps_security")
+                }
+                payment = try .registering(PerpsDepositQuoteReader.readPreview(
+                    quoted,
+                    request: request,
+                    registration: registration,
+                    security: security,
+                    now: now()
+                ))
+                // A preview contains signatures only; the payment quote supplies the source fee.
+                quote = try await self.quote(
+                    sourceAsset: sourceAsset.assetId,
+                    sourceAmountUnits: amountUnits.description,
+                    senderAddress: senderAddress,
+                    beneficiary: beneficiary
+                )
+            } else {
+                quote = try await read(quoted, request: request, registration: registration, security: security)
+                payment = .quoted(quote)
+            }
+            let feeUnits: BigUInt?
+            let isEthereumRegistration = if case let .registering(preview) = payment { preview.sourceAsset.chain == .eth } else { false }
+            if let bitcoin = quote.bitcoinPayment {
+                feeUnits = bitcoin.feeUnits
+            } else if isEthereumRegistration {
+                feeUnits = quote.operation.quotedNetworkFeeUnits(on: quote.sourceAsset.chain)
+            } else {
+                feeUnits = await delivery.networkFeeUnits(of: quote.operation, on: quote.sourceAsset.chain)
+            }
+            var creditedUnits = quote.depositAmountUnits
+            var expiresAt = quote.expiresAt
+            var estimatedDurationSeconds = quote.estimatedDurationSeconds
+            var providerFees = quote.providerFees
+            var delegatedChains = quote.payloads.contains { $0.delegation != nil } ? [quote.sourceAsset.chain] : []
+            if case let .registering(preview) = payment {
+                (creditedUnits, expiresAt) = (preview.depositAmountUnits, preview.expiresAt)
+                estimatedDurationSeconds = preview.estimatedDurationSeconds
+                providerFees = preview.providerFees
+                delegatedChains = [.eth] + delegatedChains.filter { $0 != .eth }
+            }
+            // A registration's payment is quoted again once its documents are signed, so only they are known.
+            let operationReview: OperationReview? = if previewing {
+                await gate.preview(.ask) {
+                    if case let .registering(preview) = payment {
+                        return try [documentsSignable(preview, sourceAsset: sourceAsset)]
+                    }
+                    return try [paymentSignable(quote.operation, sourceAsset: sourceAsset, units: quote.sourceAmountUnits, sender: quote.sender)]
+                }
+            } else {
+                nil
+            }
+            return try PerpsDepositReview(
+                sourceAsset: sourceAsset,
+                sourceChain: quote.sourceAsset.chain,
+                sourceAmount: PerpsFundingAmount.declaredAmount(units: amountUnits, decimals: sourceAsset.decimals),
+                creditedAmount: PerpsFundingAmount.declaredAmount(
+                    units: PerpsFundingAmount.integerUnits(creditedUnits),
+                    decimals: PerpsFundingAmount.usdcDecimals
+                ),
+                networkFee: feeUnits.map {
+                    PerpsFundingAmount.declaredAmount(units: $0, decimals: quote.sourceAsset.nativeDecimals)
+                },
+                networkFeeSymbol: quote.sourceAsset.nativeSymbol,
+                expiresAt: expiresAt,
+                estimatedDurationSeconds: estimatedDurationSeconds,
+                providerFees: providerFees,
+                delegatedChains: delegatedChains,
+                // The first answer, not a preview's plain re-quote: only a quote with change_pub_key waits for Lighter.
+                createsAccount: quoted.account_uninitialized == true,
+                payment: payment,
+                // From Ethereum the registered payment carries a delegation, which the relayer does not.
+                feeQuote: isEthereumRegistration ? nil : quote,
+                networkFeeUnits: feeUnits,
+                review: operationReview,
+                sentAmount: quote.relayPaymentUnits.map {
+                    PerpsFundingAmount.declaredAmount(units: $0, decimals: sourceAsset.decimals)
+                },
+                provider: quote.relayPaymentUnits == nil ? nil : PerpsDepositProvider.relayName
+            )
         }
-        let feeUnits: BigUInt?
-        if case let .registering(preview) = payment, preview.sourceAsset.chain == .eth {
-            feeUnits = quote.operation.quotedNetworkFeeUnits(on: quote.sourceAsset.chain)
-        } else {
-            feeUnits = await delivery.networkFeeUnits(of: quote.operation, on: quote.sourceAsset.chain)
-        }
-        var creditedUnits = quote.depositAmountUnits
-        var expiresAt = quote.expiresAt
-        var delegatedChains = quote.payloads.contains { $0.delegation != nil } ? [quote.sourceAsset.chain] : []
-        if case let .registering(preview) = payment {
-            (creditedUnits, expiresAt) = (preview.depositAmountUnits, preview.expiresAt)
-            delegatedChains = [.eth] + delegatedChains.filter { $0 != .eth }
-        }
-        return try PerpsDepositReview(
-            sourceAsset: sourceAsset,
-            sourceChain: quote.sourceAsset.chain,
-            sourceAmount: PerpsFundingAmount.declaredAmount(units: amountUnits, decimals: sourceAsset.decimals),
-            creditedAmount: PerpsFundingAmount.declaredAmount(
-                units: PerpsFundingAmount.integerUnits(creditedUnits),
-                decimals: PerpsFundingAmount.usdcDecimals
-            ),
-            networkFee: feeUnits.map {
-                PerpsFundingAmount.declaredAmount(units: $0, decimals: quote.sourceAsset.nativeDecimals)
-            },
-            networkFeeSymbol: quote.sourceAsset.nativeSymbol,
-            expiresAt: expiresAt,
-            estimatedDurationSeconds: nil,
-            delegatedChains: delegatedChains,
-            payment: payment
-        )
+    }
+
+    /// The relayed ways to pay the review's source fee, in the order to offer them; empty where
+    /// only the chain's own coin can. `walletAsset` is the source as the wallet holds it, which a
+    /// fee in that asset is weighed against next to the amount.
+    public func feeOptions(of review: PerpsDepositReview, walletAsset: MultichainAsset) async -> [MultichainSwapFeeOption] {
+        guard let relaying, let quote = review.feeQuote,
+              let context = relaying.context(quote: quote, walletAsset: walletAsset)
+        else { return [] }
+        return await relaying.options(context: context)
     }
 
     /// The least a deposit of `sourceAsset` may be: the gateway's floor for USDC itself; for another
     /// asset the dollars the service names when it refuses half a dollar's worth, which move with the
-    /// route's fees, in units at `usdPrice` rounded up. `nil` when the probe is quoted or refused otherwise.
+    /// route's fees, in units at `usdPrice` rounded up. `nil` when the probe is quoted or refused otherwise;
+    /// throws a refusal no amount clears: of the sender itself, or of the region.
     public func minimum(
         sourceAsset: PerpsFundingAsset,
         usdPrice: Decimal,
         senderAddress: String,
         beneficiary: String
-    ) async -> (usd: String, units: BigUInt)? {
+    ) async throws -> (usd: String, units: BigUInt)? {
         if sourceAsset.assetId.lowercased() == Self.targetAsset.assetId {
             let units = PerpsFundingAmount.gatewayMinimumUsdcUnits
             return (PerpsFundingAmount.declaredAmount(units: units, decimals: PerpsFundingAmount.usdcDecimals), units)
@@ -323,6 +498,10 @@ public actor PerpsDepositService {
         } catch let PerpsAPIError.badStatus(failure) where failure.reason == "amount_too_low" {
             guard let minimum = failure.minUsdAmount else { return nil }
             usd = minimum
+        } catch let PerpsAPIError.badStatus(failure)
+            where failure.reason == Self.blockedSenderReason || failure.code == Self.regionRestrictedCode
+        {
+            throw PerpsAPIError.badStatus(failure)
         } catch {
             return nil
         }
@@ -331,6 +510,9 @@ public actor PerpsDepositService {
     }
 
     static let minimumProbeUsd: Decimal = 0.5
+    /// The deposit provider's AML check refuses the sender address.
+    static let blockedSenderReason = "invalid_sender_address"
+    static let regionRestrictedCode = "region_restricted"
 
     static func units(usd: Decimal, price: Decimal, decimals: Int, _ rounding: NSDecimalNumber.RoundingMode) -> BigUInt {
         var value = usd / price * pow(10, decimals)
@@ -341,10 +523,17 @@ public actor PerpsDepositService {
 
     /// An unfinished transport or registration belonging to this wallet.
     public func pendingReview() async throws -> PerpsDepositReview? {
-        guard let pending = try await ownFunding().first(where: { $0.deposit?.requiresResume == true }) else {
-            return nil
+        return try await PerpsOperationLog.step("journal_pending", source: "client", fields: ["flow": "deposit", "wallet_id": walletId], quiet: true) {
+            guard let pending = try await ownFunding().first(where: { $0.deposit?.requiresResume == true }) else {
+                return nil
+            }
+            var review = try Self.review(resuming: pending)
+            if let deposit = pending.deposit, let units = try await self.checkedUnsignedTonPayment(of: deposit) {
+                review.sentAmount = PerpsFundingAmount.declaredAmount(units: units, decimals: deposit.sourceAsset.decimals)
+                review.provider = PerpsDepositProvider.relayName
+            }
+            return review
         }
-        return try Self.review(resuming: pending)
     }
 
     private static func review(resuming operation: PerpsPendingFundingOperation) throws -> PerpsDepositReview {
@@ -368,64 +557,81 @@ public actor PerpsDepositService {
             // Already-spent source funds must not be checked against today's balance.
             networkFee: nil,
             networkFeeSymbol: sourceAssetId.nativeSymbol,
-            expiresAt: deposit.transmission.flatMap { transmission in
+            expiresAt: deposit.relayAttempted == true ? nil : deposit.transmission.flatMap { transmission in
                 let mainId = try? transmission.operation.parsed().payloads.last?.id
                 return transmission.steps.contains { $0.payloadId == mainId && $0.broadcastAttempted } ? nil : transmission.expiresAt
             },
-            estimatedDurationSeconds: nil,
+            estimatedDurationSeconds: deposit.estimatedDurationSeconds,
+            providerFees: nil,
             delegatedChains: [],
+            createsAccount: false,
             payment: .resuming(operationId: operation.operationId)
         )
     }
 
     /// Persists every signature before broadcast and keeps uncertain submissions resumable.
     /// Ethereum key registration checks its final fee after signing the preview, within the same payment.
+    ///
+    /// Whatever is signed is cleared by the gate first, under `consent`, before a new payment is journaled:
+    /// a review it already accepted passes, a decline fails as a `CancellationError`, and what could
+    /// not be reviewed fails as `OperationRefusal.unreviewable`, never as a cancellation.
+    ///
+    /// `relayedFee` is one of `feeOptions(of:walletAsset:)` for the same `walletAsset`: the relayer
+    /// then signs and sends the payment, and the chain's own coin pays nothing.
     public func pay(
         review: PerpsDepositReview,
         passcode: String,
+        consent: OperationConsent,
+        relayedFee: MultichainSwapFeeOption? = nil,
+        walletAsset: MultichainAsset? = nil,
         validateNetworkFee: @Sendable (String) async throws -> Void = { _ in }
     ) async throws -> PerpsDepositOutcome {
-        guard !isPaying else { throw PerpsDepositServiceError.paymentInProgress }
-        isPaying = true
-        defer { isPaying = false }
+        return try await PerpsOperationLog.step("payment", fields: ["flow": "deposit", "wallet_id": walletId, "asset_id": review.sourceAsset.assetId, "amount": review.sourceAmount]) {
+            guard !isPaying else { throw PerpsDepositServiceError.paymentInProgress }
+            isPaying = true
+            defer { isPaying = false }
 
-        switch review.payment {
-        case let .resuming(operationId):
-            try await ensureBinding(passcode)
-            try Task.checkCancellation()
-            return try await resume(operationId) { try await self.delivery.openSession(passcode: passcode) }
-        case let .quoted(quote):
-            guard quote.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(quote.quoteId) }
-            try await ensureBinding(passcode)
-            try Task.checkCancellation()
-            let session = try await delivery.openSession(passcode: passcode)
-            return try await pay(quote, sourceAsset: review.sourceAsset, session: session)
-        case let .registering(preview):
-            guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
-            try await ensureBinding(passcode)
-            try Task.checkCancellation()
-            let session = try await delivery.openSession(passcode: passcode)
-            guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
-            let quote: PerpsDepositQuote
-            if let registered, registered.previewId == preview.quoteId {
-                quote = registered.quote
-            } else {
-                quote = try await registeredQuote(preview, session: session)
-                registered = (preview.quoteId, quote)
-            }
-            if preview.sourceAsset.chain == .eth {
-                guard let feeUnits = await delivery.networkFeeUnits(of: quote.operation, on: quote.sourceAsset.chain) else {
-                    throw ChainKitOperationError.feeUnavailable(payloadId: quote.quoteId, reason: "key registration payment fee unavailable")
-                }
-                try await validateNetworkFee(PerpsFundingAmount.declaredAmount(units: feeUnits, decimals: quote.sourceAsset.nativeDecimals))
+            switch review.payment {
+            case let .resuming(operationId):
+                try await ensureBinding(passcode)
                 try Task.checkCancellation()
+                return try await resume(operationId, consent: consent) { try await self.delivery.openSession(passcode: passcode) }
+            case let .quoted(quote):
+                guard quote.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(quote.quoteId) }
+                let relay = try relayedPayment(quote, fee: relayedFee, walletAsset: walletAsset, passcode: passcode)
+                try await ensureBinding(passcode)
+                try Task.checkCancellation()
+                let session = try await delivery.openSession(passcode: passcode)
+                return try await pay(quote, sourceAsset: review.sourceAsset, estimatedDurationSeconds: review.estimatedDurationSeconds, session: session, relay: relay, consent: consent)
+            case let .registering(preview):
+                guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
+                try await ensureBinding(passcode)
+                try Task.checkCancellation()
+                let session = try await delivery.openSession(passcode: passcode)
+                guard preview.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(preview.quoteId) }
+                let quote: PerpsDepositQuote
+                if let registered, registered.previewId == preview.quoteId {
+                    quote = registered.quote
+                } else {
+                    quote = try await registeredQuote(preview, sourceAsset: review.sourceAsset, shownFeeUnits: review.networkFeeUnits, session: session, consent: consent)
+                    registered = (preview.quoteId, quote)
+                }
+                let relay = try relayedPayment(quote, fee: relayedFee, walletAsset: walletAsset, passcode: passcode)
+                if preview.sourceAsset.chain == .eth {
+                    guard let feeUnits = await delivery.networkFeeUnits(of: quote.operation, on: quote.sourceAsset.chain) else {
+                        throw ChainKitOperationError.feeUnavailable(payloadId: quote.quoteId, reason: "key registration payment fee unavailable")
+                    }
+                    try await validateNetworkFee(PerpsFundingAmount.declaredAmount(units: feeUnits, decimals: quote.sourceAsset.nativeDecimals))
+                    try Task.checkCancellation()
+                }
+                return try await pay(quote, sourceAsset: review.sourceAsset, estimatedDurationSeconds: review.estimatedDurationSeconds, session: session, relay: relay, consent: consent)
             }
-            return try await pay(quote, sourceAsset: review.sourceAsset, session: session)
         }
     }
 
     private func resume(
         _ operationId: String,
+        consent: OperationConsent,
         session openSession: () async throws -> any PerpsDepositSigningSession
     ) async throws -> PerpsDepositOutcome {
         try await holdingDeposit(operationId) {
@@ -447,7 +653,9 @@ public actor PerpsDepositService {
             if pending.deposit?.stage == .needsAuthorization {
                 return try await reauthorize(pending)
             }
-            if pending.deposit?.transmission != nil {
+            if let deposit = pending.deposit, let transmission = deposit.transmission {
+                _ = try await checkedUnsignedTonPayment(of: deposit)
+                try await clear(.ask, consent: consent) { try unsignedSignables(of: deposit, transmission) }
                 return try await send(pending, session: session)
             }
             let recovered = try await recoverLegacy(pending)
@@ -458,7 +666,10 @@ public actor PerpsDepositService {
     private func pay(
         _ quote: PerpsDepositQuote,
         sourceAsset: PerpsFundingAsset,
-        session: any PerpsDepositSigningSession
+        estimatedDurationSeconds: Int?,
+        session: any PerpsDepositSigningSession,
+        relay: RelayedPayment?,
+        consent: OperationConsent
     ) async throws -> PerpsDepositOutcome {
         // The unlock may have outlived the quote.
         guard quote.expiresAt > now() else { throw PerpsDepositServiceError.quoteExpired(quote.quoteId) }
@@ -475,12 +686,33 @@ public actor PerpsDepositService {
                 throw PerpsDepositServiceError.registrationRejected(prior.operationId)
             // Confirmed again after a failure that kept it, such as a fee the balance did not cover.
             case _ where prior.deposit?.requiresResume == true:
-                return try await resume(prior.operationId) { session }
+                return try await resume(prior.operationId, consent: consent) { session }
             default:
                 throw PerpsDepositServiceError.paymentInProgress
             }
         }
         guard !funding.contains(where: { $0.deposit?.blocksNewPayment == true }) else {
+            throw PerpsDepositServiceError.paymentInProgress
+        }
+        // The relayer prices and builds its operation before the payment is journaled or recorded.
+        let relayed: (prepared: MultichainSwapPreparedRelay, wasLive: Bool, passcode: String)?
+        if let relay {
+            let prepared = try await relay.engine.prepare(context: relay.context, confirmed: relay.confirmed)
+            let wasLive = !prepared.isExpired(at: now())
+            try await clear(relay.presentation, consent: consent) {
+                try await prepared.signables(.deposit(of: sourceAsset, units: quote.sourceAmountUnits, fee: relay.tokenFee))
+            }
+            relayed = (prepared, wasLive, relay.passcode)
+        } else {
+            try await clear(.ask, consent: consent) {
+                try [paymentSignable(quote.operation, sourceAsset: sourceAsset, units: quote.sourceAmountUnits, sender: quote.sender)]
+            }
+            relayed = nil
+        }
+        try checkExpiry(of: quote, prepared: relayed?.prepared, wasLive: relayed?.wasLive ?? false)
+        // The relayer and the gate were awaited: a payment journaled meanwhile still comes first.
+        let journaled = try await ownFunding()
+        guard !journaled.contains(where: { $0.deposit?.quoteId == quote.quoteId || $0.deposit?.blocksNewPayment == true }) else {
             throw PerpsDepositServiceError.paymentInProgress
         }
         let operationId = makeOperationId()
@@ -495,6 +727,7 @@ public actor PerpsDepositService {
             executionId: quote.executionId,
             quoteId: quote.quoteId
         )
+        deposit.estimatedDurationSeconds = estimatedDurationSeconds
         deposit.transmission = PerpsDepositTransmission(operation: quote.operation, sender: quote.sender, expiresAt: quote.expiresAt, steps: [])
         let operation = PerpsPendingFundingOperation(
             operationId: operationId,
@@ -507,7 +740,111 @@ public actor PerpsDepositService {
         return try await holdingDeposit(operationId) {
             let saved = try await journal.saveFundingIfAbsent(operation)
             guard saved.inserted else { throw PerpsDepositServiceError.paymentInProgress }
+            if let relayed {
+                return try await self.relay(saved.operation, quote: quote, prepared: relayed.prepared, wasLive: relayed.wasLive, passcode: relayed.passcode)
+            }
             return try await send(saved.operation, session: session)
+        }
+    }
+
+    private struct RelayedPayment {
+        let context: MultichainSwapFeeContext
+        let confirmed: MultichainSwapRelayedFee
+        let tokenFee: OperationIntent.Spend?
+        let engine: any MultichainSwapRelayedFeeEngine
+        let passcode: String
+
+        /// Battery charges on an EVM chain are asked about. A TON payment, and a fee in a token
+        /// until the backend confirms the relayer's fee on its payload, are only logged.
+        var presentation: OperationPresentation {
+            if context.payload.chain.isEVM, case .batteryCharges = confirmed {
+                return .ask
+            }
+            return .logOnly
+        }
+    }
+
+    /// `nil` for the chain's own coin. The quote paid may be another than the one the method was
+    /// priced for — a registration's is quoted again once signed — so it is checked against that one.
+    private func relayedPayment(
+        _ quote: PerpsDepositQuote,
+        fee: MultichainSwapFeeOption?,
+        walletAsset: MultichainAsset?,
+        passcode: String
+    ) throws -> RelayedPayment? {
+        guard let fee, fee.method.isRelayed else { return nil }
+        guard !fee.isInsufficient, let confirmed = fee.relayedFee, let walletAsset, let relaying,
+              let context = relaying.context(quote: quote, walletAsset: walletAsset),
+              let engine = relaying.engine(for: context)
+        else {
+            PerpsOperationLog.event("fee_method", outcome: "unavailable", fields: ["quote_id": quote.quoteId, "fee_method": fee.logValue])
+            throw PerpsDepositServiceError.relayUnavailable
+        }
+        return RelayedPayment(context: context, confirmed: confirmed, tokenFee: fee.tokenFee, engine: engine, passcode: passcode)
+    }
+
+    /// Recorded by its execution before the relayer is asked, as the coin's path records it before
+    /// its first broadcast; the relayer then signs and sends what was prepared and reviewed.
+    private func relay(
+        _ operation: PerpsPendingFundingOperation,
+        quote: PerpsDepositQuote,
+        prepared: MultichainSwapPreparedRelay,
+        wasLive: Bool,
+        passcode: String
+    ) async throws -> PerpsDepositOutcome {
+        return try await PerpsOperationLog.step("relay", source: "backend", fields: operation.operationLogFields) {
+            guard let deposit = operation.deposit else { throw PerpsDepositServiceError.resumedPaymentChanged(operation.operationId) }
+            var current: PerpsPendingFundingOperation
+            do {
+                let registration = try makeRegistration(operationId: operation.operationId, deposit: deposit)
+                current = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: operation.revision) { stored in
+                    guard var deposit = stored.deposit else { return }
+                    deposit.registration = registration
+                    stored.details = .deposit(deposit)
+                }
+                current = try await registrar.recordBeforeBroadcast(operation: current)
+                try checkExpiry(of: quote, prepared: prepared, wasLive: wasLive)
+                // Marked before the relayer is asked: a request it leaves unanswered may still land.
+                current = try await journal.updateFunding(operationId: current.operationId, expectedRevision: current.revision) { stored in
+                    guard var deposit = stored.deposit else { return }
+                    deposit.relayAttempted = true
+                    stored.details = .deposit(deposit)
+                }
+            } catch {
+                // Nothing is out before the relayer is asked, and a payment kept from then would be
+                // resumed with the chain's own coin: it is dropped, as a send with no step is.
+                guard let stored = try await journal.funding(operationId: operation.operationId),
+                      stored.deposit?.relayAttempted != true
+                else { throw error }
+                try await journal.removeFunding(operationId: stored.operationId, expectedRevision: stored.revision)
+                throw error
+            }
+            PerpsOperationLog.event("relay", outcome: "sending", source: "backend", fields: current.operationLogFields)
+            let hash: String?
+            do throws(MultichainSwapExecutionFailure) {
+                hash = try await prepared.send(.mnemonic { passcode })
+            } catch {
+                PerpsOperationLog.event("relay", outcome: "unknown", source: "backend", error: error, fields: current.operationLogFields)
+                guard error.mayHaveRelayed else {
+                    try await journal.removeFunding(operationId: current.operationId, expectedRevision: current.revision)
+                    throw error
+                }
+                hash = nil
+            }
+            if let hash {
+                current = try await journal.updateFunding(operationId: current.operationId, expectedRevision: current.revision) { stored in
+                    guard var deposit = stored.deposit else { return }
+                    deposit.sourceTxHash = hash
+                    stored.details = .deposit(deposit)
+                }
+            }
+            do {
+                return try await finishRegistration(current)
+            } catch {
+                if case PerpsDepositServiceError.registrationRejected = error { throw error }
+                PerpsOperationLog.event("register", outcome: "deferred", source: "backend", error: error, fields: current.operationLogFields)
+                return .authorizationRequired(operationId: current.operationId)
+            }
         }
     }
 
@@ -555,60 +892,67 @@ public actor PerpsDepositService {
     }
 
     private func send(_ operation: PerpsPendingFundingOperation, session: any PerpsDepositSigningSession) async throws -> PerpsDepositOutcome {
-        guard let deposit = operation.deposit, let transmission = deposit.transmission,
-              let chain = Self.fundingChain(assetId: deposit.sourceAsset.assetId)
-        else { throw PerpsDepositServiceError.resumedPaymentChanged(operation.operationId) }
-        Log.perps.i("Deposit payment start op=\(operation.operationId) quote=\(deposit.quoteId ?? "unknown") execution=\(deposit.executionId ?? "none") chain=\(chain.rawValue)", extraInfo: ["payloads": (try? transmission.operation.parsed())?.payloads.map(\.id).joined(separator: ",") ?? "unavailable", "expires_at_ms": String(Int64(transmission.expiresAt.timeIntervalSince1970 * 1000))])
-        // A resumed payment whose registration was built but never posted.
-        try await registrar.recordBeforeBroadcast(operation: operation)
-        do {
-            _ = try await session.send(
-                transmission.operation,
-                on: chain,
-                sender: transmission.sender,
-                expiresAt: transmission.expiresAt,
-                saved: transmission.steps
-            ) { step in
-                try await self.persist(step, operationId: operation.operationId)
+        return try await PerpsOperationLog.step("broadcast", source: "chain_rpc", fields: operation.operationLogFields) {
+            guard let deposit = operation.deposit, let transmission = deposit.transmission,
+                  let chain = Self.fundingChain(assetId: deposit.sourceAsset.assetId)
+            else { throw PerpsDepositServiceError.resumedPaymentChanged(operation.operationId) }
+            // Already with the relayer: sending it again could pay twice.
+            if deposit.relayAttempted == true {
+                return try await finishRegistration(operation)
             }
-        } catch {
+            PerpsOperationLog.event("broadcast", outcome: "sending", source: "chain_rpc", fields: operation.operationLogFields)
+
+            // A resumed payment whose registration was built but never posted.
+            try await registrar.recordBeforeBroadcast(operation: operation)
+            do {
+                _ = try await session.send(
+                    transmission.operation,
+                    on: chain,
+                    sender: transmission.sender,
+                    expiresAt: transmission.expiresAt,
+                    saved: transmission.steps
+                ) { step in
+                    try await self.persist(step, operationId: operation.operationId)
+                }
+            } catch {
+                let current = try await journal.funding(operationId: operation.operationId)
+                guard let current else { throw error }
+                let steps = current.deposit?.transmission?.steps ?? []
+                PerpsOperationLog.event("broadcast", outcome: "unknown", source: "chain_rpc", error: error, fields: ["operation_id": operation.operationId, "chain": chain.rawValue, "tx_hashes": steps.compactMap(\.hash).joined(separator: ",")])
+                if steps.isEmpty {
+                    try await journal.removeFunding(operationId: operation.operationId, expectedRevision: current.revision)
+                } else {
+                    let mainId = try transmission.operation.parsed().payloads.last?.id
+                    let main = steps.last { $0.payloadId == mainId }
+                    if main?.broadcastAttempted == true,
+                       deposit.route == .crosschainSwap || main?.hash != nil
+                    {
+                        do { return try await finishRegistration(current) } catch {
+                            return .authorizationRequired(operationId: operation.operationId)
+                        }
+                    }
+                    if (error as? ChainKitOperationError) == .quoteExpired {
+                        _ = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: current.revision) { stored in
+                            guard var deposit = stored.deposit else { return }
+                            deposit.stage = .failed
+                            stored.details = .deposit(deposit)
+                        }
+                    }
+                }
+                if case ChainKitOperationError.insufficientFunds = error, let source = PerpsFundingAssetId.parse(deposit.sourceAsset.assetId) {
+                    throw PerpsDepositServiceError.insufficientNetworkFee(symbol: source.nativeSymbol)
+                }
+                throw error
+            }
             let current = try await journal.funding(operationId: operation.operationId)
-            guard let current else { throw error }
-            let steps = current.deposit?.transmission?.steps ?? []
-            Log.perps.w("Deposit submission failed op=\(operation.operationId) chain=\(chain.rawValue) hashes=\(steps.compactMap(\.hash).joined(separator: ","))", error: error)
-            if steps.isEmpty {
-                try await journal.removeFunding(operationId: operation.operationId, expectedRevision: current.revision)
-            } else {
-                let mainId = try transmission.operation.parsed().payloads.last?.id
-                let main = steps.last { $0.payloadId == mainId }
-                if main?.broadcastAttempted == true,
-                   deposit.route == .crosschainSwap || main?.hash != nil
-                {
-                    do { return try await finishRegistration(current) } catch {
-                        return .authorizationRequired(operationId: operation.operationId)
-                    }
-                }
-                if (error as? ChainKitOperationError) == .quoteExpired {
-                    _ = try await journal.updateFunding(operationId: operation.operationId, expectedRevision: current.revision) { stored in
-                        guard var deposit = stored.deposit else { return }
-                        deposit.stage = .failed
-                        stored.details = .deposit(deposit)
-                    }
-                }
+            guard let current else { throw PerpsDepositServiceError.resumedPaymentChanged(operation.operationId) }
+            do {
+                return try await finishRegistration(current)
+            } catch {
+                if case PerpsDepositServiceError.registrationRejected = error { throw error }
+                PerpsOperationLog.event("register", outcome: "deferred", source: "backend", error: error, fields: operation.operationLogFields)
+                return .authorizationRequired(operationId: operation.operationId)
             }
-            if case ChainKitOperationError.insufficientFunds = error, let source = PerpsFundingAssetId.parse(deposit.sourceAsset.assetId) {
-                throw PerpsDepositServiceError.insufficientNetworkFee(symbol: source.nativeSymbol)
-            }
-            throw error
-        }
-        let current = try await journal.funding(operationId: operation.operationId)
-        guard let current else { throw PerpsDepositServiceError.resumedPaymentChanged(operation.operationId) }
-        do {
-            return try await finishRegistration(current)
-        } catch {
-            if case PerpsDepositServiceError.registrationRejected = error { throw error }
-            Log.w("🪵 Perps deposit: registration not recorded op=\(operation.operationId)", error: error)
-            return .authorizationRequired(operationId: operation.operationId)
         }
     }
 
@@ -622,7 +966,7 @@ public actor PerpsDepositService {
         do {
             registration = try makeRegistration(operationId: operationId, deposit: deposit)
         } catch {
-            Log.w("🪵 Perps deposit: registration deferred op=\(operationId)", error: error)
+            PerpsOperationLog.event("register", outcome: "deferred", source: "backend", error: error, fields: ["operation_id": operationId])
             return
         }
         let proved = try await journal.updateFunding(operationId: operationId, expectedRevision: current.revision) { stored in
@@ -679,7 +1023,7 @@ public actor PerpsDepositService {
             do {
                 current = try await registrar.register(operation: operation)
             } catch {
-                Log.w("🪵 Perps deposit: registration deferred op=\(operation.operationId)", error: error)
+                PerpsOperationLog.event("register", outcome: "deferred", source: "backend", error: error, fields: operation.operationLogFields)
                 return .registered(operationId: operation.operationId)
             }
         } else {
@@ -713,56 +1057,185 @@ public actor PerpsDepositService {
         )
     }
 
+    private static func checkTerms(of quote: inout PerpsDepositQuote, security: PerpsSecurityConfig?) throws {
+        let amountUnits = try PerpsFundingAmount.integerUnits(quote.sourceAmountUnits)
+        switch quote.sourceAsset.chain {
+        case .ton:
+            switch (quote.provider, quote.sourceAsset.kind) {
+            case (.relay, .coin):
+                quote.relayPaymentUnits = try PerpsTonDepositReader.read(quote.payloads, budget: amountUnits, security: security)
+            // Omniston's escrow is pinned by the backend, which also names the wallet's jetton wallet.
+            case (.omniston, .token):
+                guard quote.payloads.map(\.kind) == [.main] else {
+                    throw PerpsDepositQuoteError.unexpectedPayloads(quote.payloads.map(\.payloadId))
+                }
+            default:
+                throw PerpsDepositQuoteError.unexpectedTonPayment("provider")
+            }
+        case .tron:
+            quote.relayPaymentUnits = try PerpsChainDepositReader.readTron(quote, budget: amountUnits, security: security)
+        case .btc:
+            let bitcoin = try PerpsBitcoinDepositReader.read(quote, budget: amountUnits, security: security)
+            quote.relayPaymentUnits = bitcoin.sentUnits
+            quote.bitcoinPayment = bitcoin
+        case .sol:
+            throw PerpsDepositQuoteError.unsupportedSourceAsset(quote.sourceAsset.raw)
+        case .eth, .base, .arb, .bsc, .polygon, .avax, .robinhood:
+            switch quote.provider {
+            case .relay:
+                quote.relayPaymentUnits = try PerpsChainDepositReader.readRelay(quote, budget: amountUnits, security: security)
+            case .funxyz:
+                guard PerpsDepositProvider.bridgeSources.contains(quote.sourceAsset.raw.lowercased()) else {
+                    throw PerpsDepositQuoteError.unexpectedChainPayment("bridge source")
+                }
+                guard quote.payloads.map(\.kind) == [.main], case let .token(token) = quote.sourceAsset.kind else {
+                    throw PerpsDepositQuoteError.unexpectedPayloads(quote.payloads.map(\.payloadId))
+                }
+                try PerpsDepositCalldata.checkBridgeTransfer(quote.payloads[0], token: token, sender: quote.sender, amountUnits: amountUnits)
+            case .direct:
+                try checkDirect(&quote, amountUnits: amountUnits, security: security)
+            case .omniston:
+                throw PerpsDepositQuoteError.unexpectedProvider(quote.provider.rawValue)
+            }
+        }
+    }
+
     /// The calls a direct deposit makes, checked against its own terms: the gateway call
     /// alone, behind one approval, or both folded into one self-call — which registers the
     /// key as its third call when the deposit does. An aggregator's fill registers it on
     /// Ethereum instead, under the signatures its preview was read for.
-    private static func checkTerms(of quote: inout PerpsDepositQuote) throws {
-        let amountUnits = try PerpsFundingAmount.integerUnits(quote.sourceAmountUnits)
+    private static func checkDirect(_ quote: inout PerpsDepositQuote, amountUnits: BigUInt, security: PerpsSecurityConfig?) throws {
+        guard let gateway = security?.lighterGateway else {
+            throw PerpsDepositQuoteError.unexpectedChainPayment("lighter gateway")
+        }
         let (approval, main): (PerpsDepositQuotePayload?, PerpsDepositQuotePayload)
         switch quote.payloads.map(\.kind) {
-        case [.prebuilt]:
-            return
         case [.main]:
-            if quote.route == .directGateway { quote.registration = nil }
+            quote.registration = nil
             (approval, main) = (nil, quote.payloads[0])
         case [.approval, .main]:
-            if quote.route == .directGateway { quote.registration = nil }
+            quote.registration = nil
             (approval, main) = (quote.payloads[0], quote.payloads[1])
         case [.batch]:
             let calls = try PerpsDepositCalldata.readBatch(quote.payloads[0])
-            if quote.route == .directGateway, calls.count == 3, let registration = quote.registration {
-                try PerpsDepositCalldata.checkKeyRegistrationCall(calls[2], registration: registration)
+            if calls.count == 3, let registration = quote.registration, let security {
+                try PerpsDepositCalldata.checkKeyRegistrationCall(calls[2], registration: registration, contract: security.changePubKeyContract)
             } else {
                 guard calls.count == 2 else {
                     throw PerpsDepositQuoteError.unexpectedPayloads(quote.payloads.map(\.payloadId))
                 }
-                if quote.route == .directGateway { quote.registration = nil }
+                quote.registration = nil
             }
             (approval, main) = (calls[0], calls[1])
         default:
             throw PerpsDepositQuoteError.unexpectedPayloads(quote.payloads.map(\.payloadId))
         }
-        if quote.route == .directGateway {
-            try PerpsDepositCalldata.checkGatewayCall(main, beneficiary: quote.beneficiary, amountUnits: amountUnits)
-        }
+        try PerpsDepositCalldata.checkGatewayCall(main, gateway: gateway, beneficiary: quote.beneficiary, amountUnits: amountUnits)
         guard let approval else { return }
         guard case let .token(token) = quote.sourceAsset.kind else {
             throw PerpsDepositServiceError.approvalWithoutToken(approval.payloadId)
         }
-        _ = try PerpsDepositCalldata.readApproval(
-            approval,
-            token: token,
-            spender: main.to,
-            amountUnits: amountUnits,
-            exactAmount: quote.route == .directGateway
-        )
+        _ = try PerpsDepositCalldata.readApproval(approval, token: token, spender: gateway, amountUnits: amountUnits)
     }
 
     private func ownFunding() async throws -> [PerpsPendingFundingOperation] {
         try await journal.allFunding().filter {
             $0.belongs(walletId: walletId, walletIdentity: walletIdentity, environment: environment)
         }
+    }
+
+    /// The gate, refusing as this flow fails: a decline is the user's cancellation, and what could
+    /// not be reviewed fails as any payment does, never as one the user cancelled.
+    private func clear(
+        _ presentation: OperationPresentation,
+        consent: OperationConsent,
+        file: StaticString = #fileID,
+        function: StaticString = #function,
+        line: UInt = #line,
+        _ build: () async throws -> [SignableOperation]
+    ) async throws {
+        do throws(OperationRefusal) {
+            try await gate.clear(presentation, consent: consent, file: file, function: function, line: line, build)
+        } catch .declined {
+            throw CancellationError()
+        }
+    }
+
+    /// Consent takes as long as the user reads. The relayer holds what it prepared to a deadline of
+    /// its own, which signing must beat by a moment. A device clock already ahead of that deadline
+    /// leaves it to the relayer; only a deadline live at preparation can lapse locally.
+    private func checkExpiry(of quote: PerpsDepositQuote, prepared: MultichainSwapPreparedRelay?, wasLive: Bool) throws {
+        guard quote.expiresAt > now(), !wasLive || prepared?.isExpired(at: now()) != true else {
+            throw PerpsDepositServiceError.quoteExpired(quote.quoteId)
+        }
+    }
+
+    /// What a payment signs, from the account of the asset it spends at the address it was quoted for.
+    private func paymentSignable(
+        _ operation: PerpsDepositOperation,
+        sourceAsset: PerpsFundingAsset,
+        units: String,
+        sender: String
+    ) throws -> SignableOperation {
+        guard let chain = Self.fundingChain(assetId: sourceAsset.assetId) else {
+            throw PerpsDepositQuoteError.unsupportedSourceAsset(sourceAsset.assetId)
+        }
+        return try SignableOperation(
+            operation: operation.parsed(),
+            account: delivery.account(of: sourceAsset, on: chain, sender: sender),
+            intent: .deposit(of: sourceAsset, units: units),
+            fidelity: .exact
+        )
+    }
+
+    /// The documents a key registration signs, from the Ethereum account they are for.
+    private func documentsSignable(_ preview: PerpsKeyRegistrationPreview, sourceAsset: PerpsFundingAsset) throws -> SignableOperation {
+        try SignableOperation(
+            operation: preview.operation.parsed(),
+            account: delivery.account(of: nil, on: .eth, sender: preview.beneficiary),
+            intent: .deposit(of: sourceAsset, units: preview.sourceAmountUnits),
+            fidelity: .exact
+        )
+    }
+
+    private func checkedUnsignedTonPayment(of deposit: PerpsPendingDeposit) async throws -> BigUInt? {
+        guard let transmission = deposit.transmission,
+              let sourceAsset = PerpsFundingAssetId.parse(deposit.sourceAsset.assetId), sourceAsset.chain == .ton,
+              sourceAsset.kind == .coin,
+              try Self.unsignedPayloadsRemain(deposit, transmission)
+        else { return nil }
+        let payloads = try PerpsDepositQuoteReader.payloads(
+            of: transmission.operation,
+            sourceAsset: sourceAsset,
+            sender: transmission.sender,
+            security: nil
+        ).payloads
+        return try await PerpsTonDepositReader.read(
+            payloads,
+            budget: PerpsFundingAmount.integerUnits(deposit.sourceAmountUnits),
+            security: securityConfig()
+        )
+    }
+
+    private static func unsignedPayloadsRemain(_ deposit: PerpsPendingDeposit, _ transmission: PerpsDepositTransmission) throws -> Bool {
+        let signed = Set(transmission.steps.map(\.payloadId))
+        return try deposit.relayAttempted != true
+            && transmission.operation.parsed().payloads.contains(where: { !signed.contains($0.id) })
+    }
+
+    /// What resuming a payment signs: nothing once the relayer has it or every payload is signed.
+    private func unsignedSignables(of deposit: PerpsPendingDeposit, _ transmission: PerpsDepositTransmission) throws -> [SignableOperation] {
+        guard try Self.unsignedPayloadsRemain(deposit, transmission) else { return [] }
+        return try [paymentSignable(transmission.operation, sourceAsset: deposit.sourceAsset, units: deposit.sourceAmountUnits, sender: transmission.sender)]
+    }
+}
+
+private extension OperationIntent {
+    /// What the user asked to deposit, which every quote of the deposit is held to: the source
+    /// asset and the amount typed, and the fee a relayer takes in a token besides it.
+    static func deposit(of asset: PerpsFundingAsset, units: String, fee: Spend? = nil) throws -> OperationIntent {
+        let deposit = try Spend(assetId: asset.assetId, symbol: asset.symbol, decimals: asset.decimals, amount: PerpsFundingAmount.integerUnits(units))
+        return .wallet(spending: [deposit], relayerFee: fee, to: nil)
     }
 }
 
@@ -771,22 +1244,34 @@ public extension PerpsDepositService {
         switch error {
         case PerpsDepositQuoteError.belowGatewayMinimum:
             belowGatewayMinimum
+        case let PerpsAPIError.badStatus(failure) where failure.code == regionRestrictedCode:
+            .regionRestricted
         // The floor moves with the route's fees, so only the service knows it; absent when it could not price it.
         case let PerpsAPIError.badStatus(failure) where failure.reason == "amount_too_low":
             failure.minUsdAmount.map { .belowMinimum(usd: $0) } ?? belowGatewayMinimum
         // A Bitcoin source is quoted from the sender's own outputs, so the quote reads its balance.
         case let PerpsAPIError.badStatus(failure) where failure.reason == "insufficient_balance":
             .insufficientBalance
+        case let PerpsAPIError.badStatus(failure) where failure.reason == blockedSenderReason:
+            .addressBlocked
         case PerpsDepositServiceError.accountCreationPending:
             .accountCreationPending
         case let PerpsDepositServiceError.insufficientNetworkFee(symbol):
             .insufficientNetworkFee(symbol: symbol)
         case let error as PerpsAPIError where error.isAccountCreationPending:
             .accountCreationPending
-        case PerpsDepositQuoteError.expired, PerpsDepositServiceError.quoteExpired, PerpsDepositServiceError.registrationRepriced,
-             PerpsDepositServiceError.resumedPaymentChanged, ChainKitOperationError.quoteExpired, ChainKitOperationError.staleAuthorization:
+        case PerpsDepositQuoteError.expired, PerpsDepositServiceError.quoteExpired,
+             PerpsDepositServiceError.resumedPaymentChanged, ChainKitOperationError.quoteExpired, ChainKitOperationError.staleAuthorization,
+             MultichainSwapExecutionFailure.payloadExpired:
             .quoteExpired
-        case is CancellationError:
+        case PerpsDepositServiceError.registrationRepriced, PerpsDepositServiceError.bitcoinFeeRaised:
+            .quoteChanged
+        // The relayer prices again before it signs: a fee that moved, or one the wallet no longer
+        // covers, is quoted and priced afresh, also when the relayer refused to send for lack of funds.
+        case PerpsDepositServiceError.relayUnavailable, MultichainSwapExecutionFailure.preparationFailed,
+             MultichainSwapExecutionFailure.emulationFailed, MultichainSwapExecutionFailure.broadcastRefused:
+            .quoteExpired
+        case is CancellationError, MultichainSwapExecutionFailure.canceled:
             .canceled
         default:
             .failed

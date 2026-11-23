@@ -426,7 +426,8 @@ extension MultichainSwapAsset {
                 name: name,
                 symbol: symbol,
                 decimals: decimals,
-                image: image ?? ""
+                image: image ?? "",
+                swapAggregators: Set(supportedAggregators.compactMap(MultichainSwapAggregator.init(rawValue:)))
             ),
             price: price,
             balance: .zero

@@ -1,4 +1,5 @@
 import Foundation
+import TKAppInfo
 
 public protocol AppInfoProvider {
     var version: String { get }
@@ -10,3 +11,5 @@ public protocol AppInfoProvider {
     var isVPNActive: Bool { get }
     var timeZoneIdentifier: String { get }
 }
+
+extension DeviceAppInfoProvider: AppInfoProvider {}

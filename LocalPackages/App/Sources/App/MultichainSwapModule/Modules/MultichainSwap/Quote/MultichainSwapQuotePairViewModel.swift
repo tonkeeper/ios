@@ -1,54 +1,52 @@
-import BigInt
 import Foundation
 import KeeperCore
-import TKLocalize
 import TKLogging
 
 @MainActor
 final class MultichainSwapQuotePairViewModel {
     var onSnapshotChange: ((MultichainSwapQuoteSnapshot) -> Void)?
     var onProviderErrorMessage: ((String) -> Void)?
+    /// A suspended quote stays ready past its route's expiry; whoever resumes it asks for a fresh one.
+    var isSuspended = false
+
+    typealias Wait = @MainActor (_ nanoseconds: UInt64) async throws -> Void
 
     private static let quoteDebounceNanoseconds: UInt64 = 500_000_000
 
-    @MainActor
-    private(set) lazy var snapshot = snapshotMaker.initial() {
+    private(set) var snapshot = MultichainSwapQuoteSnapshot.initial() {
         didSet {
-            switch snapshot.quoteState {
-            case .ready:
-                lastReadyRateText = snapshot.rateText
-            case .idle, .expired, .failed:
-                lastReadyRateText = nil
-            case .loading:
-                break
-            }
             onSnapshotChange?(snapshot)
         }
     }
 
     private let context: MultichainSwapQuotePairContext
     private let multichainSwapService: MultichainSwapService
-    private let snapshotMaker: MultichainSwapQuoteSnapshotMaker
     private let requestedAggregators: [String]
+    private let debounce: Wait
+    private let routeExpiryWait: Wait
+    private let now: () -> Date
 
-    private var quoteTask: Task<Void, Never>?
+    private(set) var quoteTask: Task<Void, Never>?
     private var routeExpiryTask: Task<Void, Never>?
-    private var sourceAmount: BigUInt?
+    private var amount: MultichainSwapQuoteAmount?
     private var isMax = false
-    private var isRateInverted = false
-    private var lastReadyRateText: MultichainSwapQuoteText?
+    /// The last ready quote for the current amount, kept on screen when a refresh finds no connection.
+    private var lastReady: (quote: MultichainSwapQuote, route: MultichainSwapRoute)?
+
     init(
         context: MultichainSwapQuotePairContext,
         multichainSwapService: MultichainSwapService,
-        amountFormatter: AmountFormatter,
-        requestedAggregators: [String]
+        requestedAggregators: [String],
+        debounce: Wait? = nil,
+        routeExpiryWait: Wait? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
         self.context = context
         self.multichainSwapService = multichainSwapService
         self.requestedAggregators = requestedAggregators
-        self.snapshotMaker = MultichainSwapQuoteSnapshotMaker(
-            amountFormatter: amountFormatter
-        )
+        self.debounce = debounce ?? { try await Task.sleep(nanoseconds: $0) }
+        self.routeExpiryWait = routeExpiryWait ?? { try await Task.sleep(nanoseconds: $0) }
+        self.now = now
     }
 
     func cancel() {
@@ -58,8 +56,8 @@ final class MultichainSwapQuotePairViewModel {
         routeExpiryTask = nil
     }
 
-    func updateSourceAmount(
-        _ sourceAmount: BigUInt?,
+    func updateAmount(
+        _ amount: MultichainSwapQuoteAmount?,
         isMax: Bool,
         debounce: Bool
     ) {
@@ -67,65 +65,71 @@ final class MultichainSwapQuotePairViewModel {
         routeExpiryTask?.cancel()
         quoteTask = nil
         routeExpiryTask = nil
-        self.sourceAmount = sourceAmount
+        if amount != self.amount || isMax != self.isMax {
+            lastReady = nil
+        }
+        self.amount = amount
         self.isMax = isMax
 
-        guard let sourceAmount, sourceAmount > 0 else {
-            snapshot = snapshotMaker.initial()
+        guard let amount else {
+            snapshot = .initial()
             return
         }
 
-        refreshQuote(sourceAmount: sourceAmount, debounce: debounce)
+        refreshQuote(amount: amount, debounce: debounce)
     }
 
     func notifyCircularProgressCompleted() {
-        guard case .ready = snapshot.quoteState, let sourceAmount else {
+        guard case .ready = snapshot.quoteState, let amount else {
             return
         }
-        refreshQuote(sourceAmount: sourceAmount, debounce: false)
+        refreshQuote(amount: amount, debounce: false)
     }
 
-    func toggleRateDisplayDirection() {
-        isRateInverted.toggle()
-        snapshot = snapshotMaker.inverted(snapshot)
+    /// A quote fetched elsewhere for this pair, such as a fresh route the confirmation asked for.
+    func adopt(quote: MultichainSwapQuote, route: MultichainSwapRoute) {
+        guard amount != nil else {
+            return
+        }
+        quoteTask?.cancel()
+        quoteTask = nil
+        lastReady = (quote, route)
+        snapshot = .ready(quote: quote, route: route)
+        scheduleRouteExpiry(quote: quote, route: route)
     }
 }
 
 private extension MultichainSwapQuotePairViewModel {
     func refreshQuote(
-        sourceAmount: BigUInt,
+        amount: MultichainSwapQuoteAmount,
         debounce: Bool
     ) {
         quoteTask?.cancel()
         routeExpiryTask?.cancel()
         routeExpiryTask = nil
-        snapshot = snapshotMaker.updating(
-            lastReadyRateText: lastReadyRateText,
-            previous: snapshot
-        )
+        snapshot = .updating(previous: snapshot)
 
-        quoteTask = Task { [weak self] in
+        quoteTask = Task { [weak self, wait = self.debounce] in
             if debounce {
-                try? await Task.sleep(nanoseconds: Self.quoteDebounceNanoseconds)
+                try? await wait(Self.quoteDebounceNanoseconds)
             }
             guard !Task.isCancelled else { return }
-            await self?.loadQuote(sourceAmount: sourceAmount)
+            await self?.loadQuote(amount: amount)
         }
     }
 
-    func loadQuote(sourceAmount: BigUInt) async {
+    func loadQuote(amount: MultichainSwapQuoteAmount) async {
         Log.multichainSwap.i("[\(context)] quote request started")
         let quote: MultichainSwapQuote
         do {
             quote = try await multichainSwapService.createCrossSwapQuote(
                 request: MultichainSwapQuoteRequest(
                     sourceAsset: context.source.assetId,
-                    sourceAmount: sourceAmount.description,
                     destinationAsset: context.destination.assetId,
+                    amount: amount,
                     senderAddress: context.source.address,
                     recipientAddress: context.destination.address,
                     slippageBps: context.slippageBps,
-                    exactType: MultichainSwapQuoteRequest.exactInputType,
                     aggregators: requestedAggregators,
                     returnDepositAddress: MultichainSwapQuoteRequest.returnDepositAddress(
                         sourceChain: context.source.chain
@@ -133,35 +137,49 @@ private extension MultichainSwapQuotePairViewModel {
                     includePayload: true,
                     isMax: isMax ? true : nil
                 ),
-                walletId: context.walletId
+                walletId: context.walletId,
+                apiVersion: context.apiVersion
             )
         } catch {
-            guard !Task.isCancelled, self.sourceAmount == sourceAmount else {
+            guard !Task.isCancelled, self.amount == amount else {
                 return
             }
             if error.isPairNotAllowed {
-                snapshot = snapshotMaker.pairUnavailable(previous: snapshot)
+                snapshot = .failed(.pairUnavailable, previous: snapshot)
+            } else if case .transportError = error {
+                snapshot = .offline(keeping: lastReady, previous: snapshot)
             } else {
-                snapshot = snapshotMaker.failed(previous: snapshot)
+                snapshot = .failed(.unavailable, previous: snapshot)
             }
             return Log.multichainSwap.w(
                 "[\(context)] quote request failed",
                 error: error
             )
         }
-        guard !Task.isCancelled, self.sourceAmount == sourceAmount else {
+        guard !Task.isCancelled, self.amount == amount else {
             return Log.multichainSwap.i("[\(context)] quote request canceled")
         }
-        let relevantRoute = quote.preferredRoute(at: Date())
+        let relevantRoute = quote.preferredRoute(at: now())
 
         guard let relevantRoute else {
+            if quote.hasWalletScreenedProviderError {
+                snapshot = .failed(.walletScreened, previous: snapshot)
+                return Log.multichainSwap.w(
+                    "[\(context)] quote request - wallet screened",
+                    extraInfo: [
+                        "quoteId": quote.quoteId,
+                        "offeredRoutes": quote.offeredRoutesLogDescription,
+                        "providerErrors": quote.providerErrorsLogDescription,
+                    ]
+                )
+            }
             // Both missing and expired routes surface as unavailable; the provider
             // error toast carries the reason when it is available.
             if quote.routes.isEmpty {
                 if quote.hasNoRouteProviderError {
-                    snapshot = snapshotMaker.pairUnavailable(previous: snapshot)
+                    snapshot = .failed(.pairUnavailable, previous: snapshot)
                 } else {
-                    snapshot = snapshotMaker.failed(previous: snapshot)
+                    snapshot = .failed(.unavailable, previous: snapshot)
                     if let message = quote.providerErrorMessage {
                         onProviderErrorMessage?(message)
                     }
@@ -174,7 +192,7 @@ private extension MultichainSwapQuotePairViewModel {
                     ]
                 )
             }
-            snapshot = snapshotMaker.failed(previous: snapshot)
+            snapshot = .failed(.unavailable, previous: snapshot)
             return Log.multichainSwap.w(
                 "[\(context)] quote request - routes expired",
                 extraInfo: [
@@ -184,16 +202,8 @@ private extension MultichainSwapQuotePairViewModel {
             )
         }
 
-        snapshot = snapshotMaker.ready(
-            sourceAmount: sourceAmount,
-            quote: quote,
-            route: relevantRoute,
-            sourceSymbol: context.source.symbol,
-            destinationSymbol: context.destination.symbol,
-            sourceDecimals: context.source.decimals,
-            destinationDecimals: context.destination.decimals,
-            inverted: isRateInverted
-        )
+        lastReady = (quote, relevantRoute)
+        snapshot = .ready(quote: quote, route: relevantRoute)
         scheduleRouteExpiry(quote: quote, route: relevantRoute)
         Log.multichainSwap.i(
             "[\(context)] quote request ready",
@@ -213,16 +223,14 @@ private extension MultichainSwapQuotePairViewModel {
         route: MultichainSwapRoute
     ) {
         routeExpiryTask?.cancel()
-        let timeInterval = route.dateExpire.timeIntervalSinceNow
+        let timeInterval = route.dateExpire.timeIntervalSince(now())
         guard timeInterval > 0 else {
             expireRoute(quote: quote, route: route)
             return
         }
 
-        routeExpiryTask = Task { [weak self] in
-            try? await Task.sleep(
-                nanoseconds: UInt64(timeInterval * 1_000_000_000)
-            )
+        routeExpiryTask = Task { [weak self, wait = routeExpiryWait] in
+            try? await wait(UInt64(timeInterval * 1_000_000_000))
             guard !Task.isCancelled else {
                 return
             }
@@ -234,14 +242,15 @@ private extension MultichainSwapQuotePairViewModel {
         quote: MultichainSwapQuote,
         route: MultichainSwapRoute
     ) {
-        guard case .ready = snapshot.quoteState,
+        guard !isSuspended,
+              case .ready = snapshot.quoteState,
               snapshot.selectedQuote?.quoteId == quote.quoteId,
               snapshot.selectedRoute?.routeId == route.routeId
         else {
             return
         }
         routeExpiryTask = nil
-        snapshot = snapshotMaker.failed(previous: snapshot)
+        snapshot = .failed(.unavailable, previous: snapshot)
         Log.multichainSwap.w(
             "[\(context)] quote route expired",
             extraInfo: [

@@ -6,6 +6,7 @@ public struct BatterySwiftUIViewPreviews: View {
     private let sections: [Section] = [
         Section(title: "Empty", state: .empty),
         Section(title: "Empty tinted", state: .emptyTinted),
+        Section(title: "Empty green", state: .emptyGreen),
         Section(title: "Negative", state: .negative),
         Section(title: "10%", state: .fill(0.1)),
         Section(title: "50%", state: .fill(0.5)),

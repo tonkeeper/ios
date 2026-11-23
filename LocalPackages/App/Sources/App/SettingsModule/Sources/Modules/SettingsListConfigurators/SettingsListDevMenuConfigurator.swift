@@ -15,6 +15,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     var didSelectExportLogs: (() -> Void)?
     var didSelectImportTestnetWallet: (() -> Void)?
     var didSelectRemoveNewNetworks: (() -> Void)?
+    var didSelectDropLedgerMultichain: (() -> Void)?
     var didSelectFeatureFlags: (() -> Void)?
     var didSelectTooltips: (() -> Void)?
     var didSelectDesignSystem: (() -> Void)?
@@ -58,7 +59,9 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
     private let uniqueIdProvider: UniqueIdProvider
     private let storiesService: StoriesService
+    private let storiesStore: StoriesStore
     private let homeBannersStore: HomeBannersStore
+    private let loyaltyStore: LoyaltyStore
     private let mysteryRaffleTradeBannerDismissStore: MysteryRaffleTradeBannerDismissStore
     private let appInfoProvider: KeeperCore.AppInfoProvider
     private let featureFlags: TKFeatureFlags
@@ -68,7 +71,9 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     init(
         uniqueIdProvider: UniqueIdProvider,
         storiesService: StoriesService,
+        storiesStore: StoriesStore,
         homeBannersStore: HomeBannersStore,
+        loyaltyStore: LoyaltyStore,
         mysteryRaffleTradeBannerDismissStore: MysteryRaffleTradeBannerDismissStore = UserDefaultsMysteryRaffleTradeBannerDismissStore(),
         appInfoProvider: KeeperCore.AppInfoProvider,
         featureFlags: TKFeatureFlags,
@@ -77,7 +82,9 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     ) {
         self.uniqueIdProvider = uniqueIdProvider
         self.storiesService = storiesService
+        self.storiesStore = storiesStore
         self.homeBannersStore = homeBannersStore
+        self.loyaltyStore = loyaltyStore
         self.mysteryRaffleTradeBannerDismissStore = mysteryRaffleTradeBannerDismissStore
         self.appInfoProvider = appInfoProvider
         self.featureFlags = featureFlags
@@ -136,6 +143,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         let items = [
             createResetWatchedStories(),
             createResetDismissedBanners(),
+            createResetSwapBatteryPromo(),
         ]
         return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem)
@@ -183,6 +191,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             title: SettingsListItemTitle("Reset watched stories"),
             onTap: { [weak self] _ in
                 self?.storiesService.resetShownStories()
+                self?.storiesStore.resetStatuses()
                 self?.appSettings.isPerpsStoryAccepted = false
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
             }
@@ -195,7 +204,19 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             title: SettingsListItemTitle("Reset dismissed banners"),
             onTap: { [weak self] _ in
                 self?.homeBannersStore.resetDismissedBanners()
+                self?.loyaltyStore.resetHiddenBanners()
                 self?.mysteryRaffleTradeBannerDismissStore.resetDismissedBanners()
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
+            }
+        )
+    }
+
+    private func createResetSwapBatteryPromo() -> SettingsListItem {
+        SettingsListItem(
+            id: .resetSwapBatteryPromoIdentifier,
+            title: SettingsListItemTitle("Reset swap battery promo"),
+            onTap: { [weak self] _ in
+                self?.appSettings.isSwapBatteryPromoShown = false
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
             }
         )
@@ -290,6 +311,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
                 items: [
                     .listItem(createImportTestnetWalletItem()),
                     .listItem(createRemoveNewNetworksItem()),
+                    .listItem(createDropLedgerMultichainItem()),
                 ],
                 header: SettingsListSectionHeader(title: "Wallets")
             )
@@ -304,6 +326,17 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             accessory: .none,
             onTap: { [weak self] _ in
                 self?.didSelectRemoveNewNetworks?()
+            }
+        )
+    }
+
+    private func createDropLedgerMultichainItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .dropLedgerMultichainItemIdentifier,
+            title: SettingsListItemTitle("Make multichain Ledger wallets TON-only"),
+            accessory: .none,
+            onTap: { [weak self] _ in
+                self?.didSelectDropLedgerMultichain?()
             }
         )
     }
@@ -602,6 +635,7 @@ private extension String {
     static let version5SeedPhrasesIdentifier = "version5SeedPhrasesIdentifier"
     static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
     static let resetDismissedBannersIdentifier = "resetDismissedBannersIdentifier"
+    static let resetSwapBatteryPromoIdentifier = "resetSwapBatteryPromoIdentifier"
     static let confirmationSliderItemIdentifier = "confirmationSliderItemIdentifier"
     static let sendStatsImmediatelyItemIdentifier = "sendStatsImmediately"
     static let exportLogsIdentifier = "exportLogsIdentifier"
@@ -613,6 +647,7 @@ private extension String {
     static let moonPaySandboxItemIdentifier = "moonPaySandboxItemIdentifier"
     static let importTestnetWalletItemIdentifier = "importTestnetWalletItemIdentifier"
     static let removeNewNetworksItemIdentifier = "removeNewNetworksItemIdentifier"
+    static let dropLedgerMultichainItemIdentifier = "dropLedgerMultichainItemIdentifier"
     static let tooltipsItemIdentifier = "tooltipsItemIdentifier"
     static let featureFlagsItemIdentifier = "featureFlagsItemIdentifier"
     static let designSystemItemIdentifier = "designSystemItemIdentifier"

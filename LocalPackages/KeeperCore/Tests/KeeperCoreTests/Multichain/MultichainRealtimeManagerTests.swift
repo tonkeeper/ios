@@ -126,6 +126,54 @@ final class MultichainRealtimeManagerTests: XCTestCase {
         await fulfillment(of: [balanceExpectation, historyExpectation], timeout: 2)
     }
 
+    func test_resubscribedAfterLongOutage_triggersBalanceAndHistory() async {
+        let clock = RealtimeUptimeClock()
+        let context = makeContext(transport: FakeRealtimeTransport(), uptime: clock.uptime)
+        await subscribeThenDrop(context)
+        clock.advance(by: 15)
+        let balanceExpectation = expectation(description: "balance resync")
+        let historyExpectation = expectation(description: "history resync")
+
+        context.manager.addBalanceChangeObserver(self) { _, _ in
+            balanceExpectation.fulfill()
+        }
+        context.manager.addHistoryInvalidationObserver(self) { _, _ in
+            historyExpectation.fulfill()
+        }
+
+        context.manager.handleSignalForTesting(.subscribed(walletId: context.walletId, resubscribed: true))
+
+        await fulfillment(of: [balanceExpectation, historyExpectation], timeout: 2)
+    }
+
+    func test_resubscribedAfterShortOutage_skipsResync() async {
+        let clock = RealtimeUptimeClock()
+        let context = makeContext(transport: FakeRealtimeTransport(), uptime: clock.uptime)
+        await subscribeThenDrop(context)
+        clock.advance(by: 14)
+        let probeExpectation = expectation(description: "balance hint published after resubscribe")
+        let resyncExpectation = expectation(description: "history resync")
+        resyncExpectation.isInverted = true
+
+        context.manager.addBalanceChangeObserver(self) { _, _ in
+            probeExpectation.fulfill()
+        }
+        context.manager.addHistoryInvalidationObserver(self) { _, _ in
+            resyncExpectation.fulfill()
+        }
+
+        context.manager.handleSignalForTesting(.subscribed(walletId: context.walletId, resubscribed: true))
+        context.manager.handleSignalForTesting(
+            .publication(
+                walletId: context.walletId,
+                payload: envelopeJSON(event: "balance.hint", walletId: context.walletId, seq: 1)
+            )
+        )
+
+        await fulfillment(of: [probeExpectation], timeout: 2)
+        await fulfillment(of: [resyncExpectation], timeout: 1)
+    }
+
     func test_subscription_tracksSubscribedWalletId() async {
         let transport = FakeRealtimeTransport()
         let context = makeContext(transport: transport)
@@ -237,6 +285,97 @@ final class MultichainRealtimeManagerTests: XCTestCase {
         XCTAssertEqual(transport.disconnectCount, 1)
     }
 
+    func test_perpsStream_holdsPerpsSubscriptionWhileOpen() async {
+        let requested = expectation(description: "perps requested")
+        let released = expectation(description: "perps released")
+        let (context, transport) = await connectedContext(onPerps: { ($0 ? requested : released).fulfill() })
+
+        let reader = Task { for await _ in context.manager.perpsSignals(walletId: context.walletId) {} }
+        await fulfillment(of: [requested], timeout: 1)
+        reader.cancel()
+        await fulfillment(of: [released], timeout: 1)
+
+        XCTAssertEqual(transport.perpsRequests, [true, false])
+    }
+
+    func test_perpsEvents_reachStream_andStaleSeqIsDropped() async throws {
+        let requested = expectation(description: "perps requested")
+        let (context, transport) = await connectedContext(onPerps: { if $0 { requested.fulfill() } })
+        let stream = context.manager.perpsSignals(walletId: context.walletId)
+        await fulfillment(of: [requested], timeout: 1)
+        let signal = try XCTUnwrap(transport.signalHandler)
+        let walletId = context.walletId
+
+        signal(.perpsSubscribed(walletId: walletId, recovered: true))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.market", walletId: walletId, seq: 1, data: #"{"market_index":7}"#)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.account", walletId: walletId, seq: 2)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.account", walletId: walletId, seq: 2)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.activity", walletId: walletId, seq: 3)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.deposit", walletId: walletId, seq: 4)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.withdrawal", walletId: walletId, seq: 5)))
+        signal(.perpsUnsubscribed(walletId: walletId))
+
+        let received = await collect(stream, count: 6)
+        XCTAssertEqual(received, [
+            .subscribed(recovered: true),
+            .event(.market(7)),
+            .event(.account),
+            .event(.deposit),
+            .event(.withdrawal),
+            .unsubscribed,
+        ])
+    }
+
+    func test_perpsMarketSeq_isKeptPerMarket() async throws {
+        let requested = expectation(description: "perps requested")
+        let (context, transport) = await connectedContext(onPerps: { if $0 { requested.fulfill() } })
+        let stream = context.manager.perpsSignals(walletId: context.walletId)
+        await fulfillment(of: [requested], timeout: 1)
+        let signal = try XCTUnwrap(transport.signalHandler)
+        let walletId = context.walletId
+
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.market", walletId: walletId, seq: 5, data: #"{"market_index":7}"#)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.market", walletId: walletId, seq: 4, data: #"{"market_index":8}"#)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.market", walletId: walletId, seq: 5, data: #"{"market_index":7}"#)))
+        signal(.publication(walletId: walletId, payload: envelopeJSON(event: "perps.account", walletId: walletId, seq: 1)))
+
+        let received = await collect(stream, count: 3)
+        XCTAssertEqual(received, [.event(.market(7)), .event(.market(8)), .event(.account)])
+    }
+
+    func test_perpsStream_isUnsubscribedWhenConnectionDrops() async throws {
+        let requested = expectation(description: "perps requested")
+        let released = expectation(description: "perps released")
+        let (context, transport) = await connectedContext(onPerps: { ($0 ? requested : released).fulfill() })
+        let stream = context.manager.perpsSignals(walletId: context.walletId)
+        await fulfillment(of: [requested], timeout: 1)
+        let signal = try XCTUnwrap(transport.signalHandler)
+
+        signal(.perpsSubscribed(walletId: context.walletId, recovered: false))
+        context.manager.setForeground(false)
+
+        let received = await collect(stream, count: 2)
+        await fulfillment(of: [released], timeout: 1)
+        XCTAssertEqual(received, [.subscribed(recovered: false), .unsubscribed])
+    }
+
+    func test_perpsStream_openedOnALiveChannel_startsUnrecovered() async throws {
+        let requested = expectation(description: "perps requested")
+        let (context, transport) = await connectedContext(onPerps: { if $0 { requested.fulfill() } })
+        let first = context.manager.perpsSignals(walletId: context.walletId)
+        await fulfillment(of: [requested], timeout: 1)
+        let signal = try XCTUnwrap(transport.signalHandler)
+        signal(.perpsSubscribed(walletId: context.walletId, recovered: true))
+        _ = await collect(first, count: 1)
+
+        let second = context.manager.perpsSignals(walletId: context.walletId)
+        let received = await collect(second, count: 1)
+
+        withExtendedLifetime(first) {}
+        XCTAssertEqual(received, [.subscribed(recovered: false)])
+        XCTAssertEqual(transport.perpsRequests, [true])
+    }
+
     func test_tokenSource_mapsForbiddenAndDisabled() async {
         let forbiddenAPI = RealtimeTokenClientAPIStub(error: .forbidden(message: "wrong wallet"))
         let forbiddenSource = RealtimeTokenSource(clientAPI: forbiddenAPI)
@@ -259,17 +398,65 @@ private extension MultichainRealtimeManagerTests {
 
     func makeContext(
         transport: FakeRealtimeTransport,
-        endpointProvider: @escaping () -> URL = { BootConfiguration.defaultMultichainRealtimeURL }
+        endpointProvider: @escaping () -> URL = { BootConfiguration.defaultMultichainRealtimeURL },
+        uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) -> Context {
         let walletId = "aia3n6aaiisrysg6tgismssvepwp7ozumgba"
         let walletsStore = WalletsStore(keeperInfoStore: KeeperInfoStore(keeperInfoRepository: EmptyKeeperInfoRepository()))
         let manager = MultichainRealtimeManager(
             walletsStore: walletsStore,
             transport: transport,
-            endpointProvider: endpointProvider
+            endpointProvider: endpointProvider,
+            uptime: uptime
         )
         manager.start()
         return Context(walletId: walletId, manager: manager, walletsStore: walletsStore)
+    }
+
+    func connectedContext(onPerps: @escaping (Bool) -> Void) async -> (Context, FakeRealtimeTransport) {
+        let connected = expectation(description: "connected")
+        let transport = FakeRealtimeTransport(onConnect: { _ in connected.fulfill() }, onPerps: onPerps)
+        let context = makeContext(transport: transport)
+        await context.walletsStore.addWallets([makeWallet(walletId: context.walletId)])
+        context.manager.setForeground(true)
+        await fulfillment(of: [connected], timeout: 1)
+        return (context, transport)
+    }
+
+    func collect(_ stream: AsyncStream<PerpsRealtimeSignal>, count: Int) async -> [PerpsRealtimeSignal] {
+        await withTaskGroup(of: [PerpsRealtimeSignal]?.self) { group in
+            group.addTask {
+                var received = [PerpsRealtimeSignal]()
+                for await signal in stream {
+                    received.append(signal)
+                    if received.count == count { break }
+                }
+                return received
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first ?? []
+        }
+    }
+
+    func subscribeThenDrop(_ context: Context) async {
+        let token = NSObject()
+        let subscribed = expectation(description: "subscribed")
+        let unsubscribed = expectation(description: "unsubscribed")
+        subscribed.assertForOverFulfill = false
+        unsubscribed.assertForOverFulfill = false
+        context.manager.addSubscriptionObserver(token) { _, walletId in
+            (walletId == nil ? unsubscribed : subscribed).fulfill()
+        }
+
+        context.manager.handleSignalForTesting(.subscribed(walletId: context.walletId, resubscribed: false))
+        await fulfillment(of: [subscribed], timeout: 1)
+        context.manager.handleSignalForTesting(.unsubscribed(walletId: context.walletId))
+        await fulfillment(of: [unsubscribed], timeout: 1)
     }
 
     func makeWallet(walletId: String) -> Wallet {
@@ -283,10 +470,10 @@ private extension MultichainRealtimeManagerTests {
         )
     }
 
-    func envelopeJSON(event: String, walletId: String, seq: Int64) -> Data {
+    func envelopeJSON(event: String, walletId: String, seq: Int64, data: String = "{}") -> Data {
         Data(
             """
-            {"v":1,"event":"\(event)","wallet_id":"\(walletId)","seq":\(seq),"ts":"2026-08-31T12:20:09.363Z","data":{}}
+            {"v":1,"event":"\(event)","wallet_id":"\(walletId)","seq":\(seq),"ts":"2026-08-31T12:20:09.363Z","data":\(data)}
             """.utf8
         )
     }
@@ -302,18 +489,47 @@ private final class RealtimeEndpointBox {
     }
 }
 
+private final class RealtimeUptimeClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var seconds: TimeInterval = 1000
+
+    func uptime() -> TimeInterval {
+        lock.withLock { seconds }
+    }
+
+    func advance(by delta: TimeInterval) {
+        lock.withLock { seconds += delta }
+    }
+}
+
 private final class FakeRealtimeTransport: MultichainRealtimeTransport {
     private let lock = NSLock()
     private var storedConnections = [URL]()
     private var storedDisconnectCount = 0
     private var storedSignalHandler: ((MultichainRealtimeSignal) -> Void)?
     private var storedDisabledHandler: (() -> Void)?
+    private var storedPerpsRequests = [Bool]()
     private let onConnect: (URL) -> Void
     private let onDisconnect: (Int) -> Void
+    private let onPerps: (Bool) -> Void
 
-    init(onConnect: @escaping (URL) -> Void = { _ in }, onDisconnect: @escaping (Int) -> Void = { _ in }) {
+    init(
+        onConnect: @escaping (URL) -> Void = { _ in },
+        onDisconnect: @escaping (Int) -> Void = { _ in },
+        onPerps: @escaping (Bool) -> Void = { _ in }
+    ) {
         self.onConnect = onConnect
         self.onDisconnect = onDisconnect
+        self.onPerps = onPerps
+    }
+
+    var perpsRequests: [Bool] {
+        lock.withLock { storedPerpsRequests }
+    }
+
+    func setPerpsSubscribed(_ subscribed: Bool) {
+        lock.withLock { storedPerpsRequests.append(subscribed) }
+        onPerps(subscribed)
     }
 
     var connections: [URL] {
@@ -397,6 +613,10 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
         throw error
     }
 
+    func getWalletAsset(walletId _: String, assetId _: String, currencies _: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord? {
+        nil
+    }
+
     func saveWalletAssetsFilters(walletId _: String, changes _: [MultichainAssetFilterChange]) async throws(MultichainClientAPIError) {
         throw error
     }
@@ -453,6 +673,10 @@ private struct RealtimeTokenClientAPIStub: MultichainClientAPI {
     }
 
     func getWalletRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
+        throw error
+    }
+
+    func getWalletPerpsRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
         throw error
     }
 }

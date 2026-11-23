@@ -34,10 +34,10 @@ struct PasscodeLegacyConfirmationValidator: PasscodeInputValidator {
         case .missing, .indeterminate:
             // On device an invalidated biometryCurrentSet item reads as not-found;
             // the non-biometric "migrated" marker tells that apart from a cache
-            // that is genuinely gone (a storage-version rollback drops it), and a
-            // present non-biometry wallet confirms the cache was in use. Same
-            // marker gate as MnemonicAccess.biometryAccessProbe, which keeps
-            // `.indeterminate` as-is rather than folding it in here.
+            // that is genuinely gone, and a present non-biometry wallet confirms
+            // the cache was in use. Same marker gate as
+            // MnemonicAccess.biometryAccessProbe, which keeps `.indeterminate`
+            // as-is rather than folding it in here.
             guard mnemonicsRepository.isBiometryItemMigrated() else {
                 return .indeterminate
             }

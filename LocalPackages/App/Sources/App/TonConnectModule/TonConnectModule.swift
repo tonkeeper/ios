@@ -19,7 +19,8 @@ struct TonConnectModule {
         parameters: TonConnectParameters,
         manifest: TonConnectManifest,
         showWalletPicker: Bool,
-        isSilentConnect: Bool
+        isSilentConnect: Bool,
+        utm: UtmParameters = .empty
     ) -> TonConnectConnectCoordinator {
         TonConnectConnectCoordinator(
             router: router,
@@ -30,7 +31,8 @@ struct TonConnectModule {
             showWalletPicker: showWalletPicker,
             isSilentConnect: isSilentConnect,
             coreAssembly: dependencies.coreAssembly,
-            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+            utm: utm
         )
     }
 }

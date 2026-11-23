@@ -2,6 +2,8 @@ import AppUI
 import Combine
 import Foundation
 import KeeperCore
+import Perps
+import PerpsModels
 import TKCore
 import TKLocalize
 import TKUIKit
@@ -54,8 +56,12 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     }
 
     var onHistoryFiltersChange: ((_ hidesDustTransactions: Bool) -> Void)?
+    /// Set as details open: an operation opened in progress keeps a Status row until its outcome.
+    var showsFundingStatus = false
+    let depositStatus: PerpsDepositStatusViewModel?
 
     private let multichainState: MultichainWalletState
+    private let walletName: String?
     private let assetId: String?
     private let showsPerps: Bool
     private let multichainService: MultichainService
@@ -64,12 +70,20 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
     private let amountFormatter: AmountFormatter
     private let dateFormatter: DateFormatter
     private let nftResolver: MultichainActivityNFTResolver
+    private let encryptedComments: MultichainEncryptedComments?
+    private let appSettingsStore: AppSettingsStore
     private let currentDateProvider: () -> Date
     private let chainImageProvider: (MultichainChain) -> UIImage?
     private let onAddFunds: (() -> Void)?
+    private let accountStore: (any PerpsAccountStoring)?
+    let perpsHistoryEvents: PerpsHistoryEvents?
+    /// The assembly caches wallet scopes weakly: holding the scope keeps its funding recovery running.
+    private let walletScope: PerpsWalletScope?
+    private var unfinishedFunding: Set<String> = []
 
     private var categoryViewModels = [MultichainHistoryCategory: MultichainHistoryCategoryViewModel]()
     private var nftResolutionObservation: AnyCancellable?
+    private var decryptionObservation: AnyCancellable?
     private var pendingEventId: String?
     private var pendingEventObservation: AnyCancellable?
     private var resolvedPendingActivity: MultichainActivity?
@@ -87,12 +101,20 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
+        encryptedComments: MultichainEncryptedComments? = nil,
+        appSettingsStore: AppSettingsStore,
+        walletName: String? = nil,
         currentDateProvider: @escaping () -> Date = Date.init,
         chainImageProvider: @escaping (MultichainChain) -> UIImage? = { $0.addressConfiguration.icon },
         onAddFunds: (() -> Void)? = nil,
-        pendingEventId: String? = nil
+        pendingEventId: String? = nil,
+        walletScope: PerpsWalletScope? = nil,
+        accountStore: (any PerpsAccountStoring)? = nil,
+        format: PerpsFormatting? = nil,
+        perpsHistoryEvents: PerpsHistoryEvents? = nil
     ) {
         self.multichainState = multichainState
+        self.walletName = walletName
         self.assetId = assetId
         self.showsPerps = isPerpsEnabled && assetId == nil
         self.hidesDustTransactions = hidesDustTransactions
@@ -102,12 +124,27 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         self.amountFormatter = amountFormatter
         self.dateFormatter = dateFormatter
         self.nftResolver = nftResolver
+        self.encryptedComments = encryptedComments
+        self.appSettingsStore = appSettingsStore
         self.currentDateProvider = currentDateProvider
         self.chainImageProvider = chainImageProvider
         self.onAddFunds = onAddFunds
+        self.accountStore = accountStore
+        self.perpsHistoryEvents = perpsHistoryEvents
+        self.walletScope = walletScope
+        if let accountStore, let format {
+            depositStatus = PerpsDepositStatusViewModel(accountStore: accountStore, format: format)
+        } else {
+            depositStatus = nil
+        }
         let pendingEventId = pendingEventId?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.pendingEventId = pendingEventId?.isEmpty == false ? pendingEventId : nil
         self.nftResolutionObservation = nftResolver.$revision
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+        self.decryptionObservation = encryptedComments?.$revision
             .dropFirst()
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
@@ -138,6 +175,7 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         reachabilityTracker?.addObserver(self)
         activateCurrentCategory()
         observePendingEvent()
+        observeFunding()
     }
 
     func screenDidAppear() {
@@ -195,13 +233,59 @@ final class MultichainHistoryViewModelImplementation: ObservableObject {
         categoryViewModel(for: category).queryViewModel()
     }
 
+    func trackedDeposit(matching activity: MultichainActivity) -> PerpsDepositStatus? {
+        accountStore?.fundingActivity().unfinishedDeposit(listedAs: activity)
+    }
+
+    /// A deposit or withdrawal row turns final only in a fresh page, and the store sees the operation end
+    /// first. The steps sheet opens without a selected row, so no other refresh follows it.
+    private func observeFunding() {
+        guard let accountStore else { return }
+        unfinishedFunding = Self.unfinishedFunding(in: accountStore.fundingActivity())
+        accountStore.addChangeObserver(self) { observer in
+            Task { @MainActor in observer.fundingDidChange() }
+        }
+    }
+
+    private func fundingDidChange() {
+        guard let activity = accountStore?.fundingActivity() else { return }
+        let ended = Self.fundingEnded(from: unfinishedFunding, in: activity)
+        unfinishedFunding = Self.unfinishedFunding(in: activity)
+        guard ended else { return }
+        Task { [weak self] in await self?.refresh() }
+    }
+
+    /// Only an operation seen unfinished counts: one the journal loads as already ended changes no row.
+    nonisolated static func fundingEnded(from unfinished: Set<String>, in activity: PerpsFundingActivity) -> Bool {
+        !unfinished.isDisjoint(with: activity.ended)
+    }
+
+    /// Every operation the journal holds that has not ended, an unconfirmed deposit included: it can still be credited.
+    nonisolated static func unfinishedFunding(in activity: PerpsFundingActivity) -> Set<String> {
+        Set(activity.deposits.map(\.id))
+            .union(activity.withdrawals)
+            .union(activity.inFlight)
+            .union(activity.pending)
+            .union(activity.transactions.keys)
+            .subtracting(activity.ended)
+    }
+
     func transactionDetailsModel(for activity: MultichainActivity) -> MultichainTransactionDetailsModel {
         MultichainTransactionDetailsModelBuilder(
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
             transactionButtonProvider: MultichainTransactionDetailsModelBuilder.transactionButton,
-            nftProvider: { [nftResolver] in nftResolver.nft(for: $0) }
-        ).build(activity: activity)
+            hidesAmounts: { [weak appSettingsStore] in appSettingsStore?.getState().isSecureMode == true },
+            nftProvider: { [nftResolver] in nftResolver.nft(for: $0) },
+            walletName: walletName,
+            decryptedComment: { [encryptedComments] in encryptedComments?.decryptedComment(of: $0) },
+            decryptComment: encryptedComments.map { encryptedComments in { encryptedComments.decrypt($0) } }
+        ).build(activity: activity, showsFundingStatus: showsFundingStatus)
+    }
+
+    /// The details on screen show an activity with its comment as decrypted so far, so a decryption rebuilds them.
+    func detailsItem(for activity: MultichainActivity) -> MultichainActivityDetailsItem {
+        MultichainActivityDetailsItem(activity: activity, decryptedComment: encryptedComments?.decryptedComment(of: activity))
     }
 }
 
@@ -308,8 +392,11 @@ private extension MultichainHistoryViewModelImplementation {
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
             nftResolver: nftResolver,
+            encryptedComments: encryptedComments,
+            appSettingsStore: appSettingsStore,
             currentDateProvider: currentDateProvider,
-            onAddFunds: onAddFunds
+            onAddFunds: onAddFunds,
+            screenRenderOwner: self
         )
         categoryViewModels[category] = categoryViewModel
         return categoryViewModel

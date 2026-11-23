@@ -9,7 +9,6 @@ final class MultichainNativeFeeShortagePopupPresenter {
     private let wallet: Wallet
     private let amountFormatter: AmountFormatter
     private let presentationGuard = MultichainNativeFeeShortagePopupPresentationGuard()
-    private weak var presentedSheet: TKBottomSheetViewController?
 
     init(
         wallet: Wallet,
@@ -23,18 +22,12 @@ final class MultichainNativeFeeShortagePopupPresenter {
         presentationGuard.startNewFeeCalculation()
     }
 
-    /// Shares `presentationGuard` with the deposit-only popup: a fee calculation that cannot be paid
-    /// raises exactly one of them, never both.
-    func presentBatteryOptionIfNeeded(
+    func presentBatteryOption(
         shortage: MultichainNativeFeeShortage,
         from viewController: UIViewController,
         onRecharge: @escaping () -> Void,
         onDeposit: @escaping (MultichainAssetDetails) -> Void
     ) {
-        guard presentationGuard.reservePresentation() else {
-            return
-        }
-
         let nativeAsset = shortage.asset
         let required = amountFormatter.format(
             amount: shortage.requiredAmount,
@@ -51,7 +44,7 @@ final class MultichainNativeFeeShortagePopupPresenter {
             rechargeButtonTitle: TKLocales.MultichainSwap.Screen.Confirm.BatteryFeeShortage.rechargeBattery,
             depositButtonTitle: TKLocales.Multichain.InsufficientNativeFee.deposit(nativeAsset.symbol)
         )
-        presentedSheet = PopupContentPresenter.presentBatteryFeeShortage(
+        PopupContentPresenter.presentBatteryFeeShortage(
             content: content,
             from: viewController,
             onRecharge: onRecharge,
@@ -69,7 +62,14 @@ final class MultichainNativeFeeShortagePopupPresenter {
         guard presentationGuard.reservePresentation() else {
             return
         }
+        present(shortage: shortage, from: viewController, onDeposit: onDeposit)
+    }
 
+    func present(
+        shortage: MultichainNativeFeeShortage,
+        from viewController: UIViewController,
+        onDeposit: @escaping (MultichainAssetDetails) -> Void
+    ) {
         let nativeAsset = shortage.asset
         let walletTitle = InsufficientFeePopupContent.walletTitle(for: wallet)
         let required = amountFormatter.format(
@@ -91,18 +91,13 @@ final class MultichainNativeFeeShortagePopupPresenter {
             walletName: walletTitle.name,
             walletNamePlaceholder: walletTitle.namePlaceholder
         )
-        presentedSheet = PopupContentPresenter.presentInsufficientFee(
+        PopupContentPresenter.presentInsufficientFee(
             content: content,
             from: viewController,
             onPrimary: {
                 onDeposit(nativeAsset)
             }
         )
-    }
-
-    /// Takes the popup down with the screen whose fee it was about, without acting on it.
-    func dismiss() {
-        presentedSheet?.dismiss()
     }
 }
 

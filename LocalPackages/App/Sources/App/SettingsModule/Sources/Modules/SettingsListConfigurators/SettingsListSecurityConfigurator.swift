@@ -6,6 +6,7 @@ import UIKit
 
 final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     var didRequirePasscode: (() async -> String?)?
+    var didRequireBiometryPermission: (() -> Void)?
     var didTapChangePasscode: (() -> Void)?
 
     // MARK: - SettingsListConfigurator
@@ -25,6 +26,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     private let securityStore: SecurityStore
     private let mnemonicsAccess: MnemonicAccess
     private let biometryProvider: BiometryProvider
+    private var willEnterForegroundObserver: NSObjectProtocol?
 
     // MARK: - Init
 
@@ -48,6 +50,19 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
                 break
             }
         }
+
+        willEnterForegroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.didUpdateState?(self.createState())
+        }
+    }
+
+    deinit {
+        willEnterForegroundObserver.map(NotificationCenter.default.removeObserver)
     }
 
     private func createState() -> SettingsListState {
@@ -102,6 +117,10 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
                 isEnabled = true
                 isOn = securityStore.getState().isBiometryEnable
             }
+        case .failure(.faceIDDenied):
+            title = TKLocales.Security.use(String.faceId)
+            isEnabled = true
+            isOn = false
         case .failure:
             title = TKLocales.Security.unavailableError
             isEnabled = false
@@ -110,6 +129,10 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
 
         let action: (Bool) -> Void = { [weak self] isOn in
             guard let self else { return }
+            if isOn, self.biometryProvider.isFaceIDDenied {
+                self.didRequireBiometryPermission?()
+                return
+            }
             Task {
                 do {
                     if isOn {

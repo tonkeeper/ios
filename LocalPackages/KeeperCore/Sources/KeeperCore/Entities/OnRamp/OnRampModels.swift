@@ -131,6 +131,10 @@ public struct OnRampLayoutCryptoMethod: Codable, Equatable, Hashable {
     public var isTronNetwork: Bool {
         isTron(network: network)
     }
+
+    public var isTonNetwork: Bool {
+        network.lowercased() == "jetton" || networkName.uppercased() == "TON"
+    }
 }
 
 public struct OnRampLayoutProvider: Codable, Equatable, Hashable {

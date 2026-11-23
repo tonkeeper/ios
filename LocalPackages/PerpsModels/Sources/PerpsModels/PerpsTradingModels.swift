@@ -44,6 +44,8 @@ public struct PerpsOpenMarketIntent: Sendable, Equatable {
     public let leverage: Double
     public let maxSlippage: Double
     public let autoClose: PerpsAutoClose?
+    public let takeProfitROIPercent: Double?
+    public let stopLossROIPercent: Double?
     public let limitPrice: Double?
 
     public init(
@@ -53,7 +55,9 @@ public struct PerpsOpenMarketIntent: Sendable, Equatable {
         leverage: Double,
         maxSlippage: Double,
         autoClose: PerpsAutoClose?,
-        limitPrice: Double? = nil
+        limitPrice: Double? = nil,
+        takeProfitROIPercent: Double? = nil,
+        stopLossROIPercent: Double? = nil
     ) {
         self.marketId = marketId
         self.side = side
@@ -61,6 +65,8 @@ public struct PerpsOpenMarketIntent: Sendable, Equatable {
         self.leverage = leverage
         self.maxSlippage = maxSlippage
         self.autoClose = autoClose
+        self.takeProfitROIPercent = takeProfitROIPercent
+        self.stopLossROIPercent = stopLossROIPercent
         self.limitPrice = limitPrice
     }
 }
@@ -125,7 +131,12 @@ public struct PerpsOpenOrderReview: Sendable, Equatable {
     public let notionalUsd: Double
     public let baseSize: Double
     public let estimatedFeeUsd: Double?
+    public let feeRatePercent: Double?
     public let liquidationUnavailableReason: PerpsLiquidationUnavailableReason?
+    /// The open is preceded by a leverage update that puts the market in isolated margin.
+    public let setsIsolatedMargin: Bool
+    /// The price past which the order does not fill.
+    public let worstPrice: Double?
 
     public init(
         symbol: String,
@@ -135,7 +146,10 @@ public struct PerpsOpenOrderReview: Sendable, Equatable {
         notionalUsd: Double,
         baseSize: Double,
         estimatedFeeUsd: Double?,
-        liquidationUnavailableReason: PerpsLiquidationUnavailableReason?
+        feeRatePercent: Double?,
+        liquidationUnavailableReason: PerpsLiquidationUnavailableReason?,
+        setsIsolatedMargin: Bool = false,
+        worstPrice: Double? = nil
     ) {
         self.symbol = symbol
         self.marginUsd = marginUsd
@@ -144,7 +158,10 @@ public struct PerpsOpenOrderReview: Sendable, Equatable {
         self.notionalUsd = notionalUsd
         self.baseSize = baseSize
         self.estimatedFeeUsd = estimatedFeeUsd
+        self.feeRatePercent = feeRatePercent
         self.liquidationUnavailableReason = liquidationUnavailableReason
+        self.setsIsolatedMargin = setsIsolatedMargin
+        self.worstPrice = worstPrice
     }
 }
 
@@ -195,8 +212,11 @@ public struct PerpsCloseReview: Sendable, Equatable {
     public let notionalUsd: Double
     public let baseSize: Double
     public let estimatedFeeUsd: Double?
+    public let feeRatePercent: Double?
     public let estimatedPnlUsd: Double?
     public let estimatedReceiveUsd: Double?
+    /// The price past which the order does not fill.
+    public let worstPrice: Double?
 
     public var estimatedPnlPercent: Double? {
         guard marginUsd > 0, let estimatedPnlUsd else { return nil }
@@ -211,8 +231,10 @@ public struct PerpsCloseReview: Sendable, Equatable {
         notionalUsd: Double,
         baseSize: Double,
         estimatedFeeUsd: Double?,
+        feeRatePercent: Double?,
         estimatedPnlUsd: Double?,
-        estimatedReceiveUsd: Double?
+        estimatedReceiveUsd: Double?,
+        worstPrice: Double? = nil
     ) {
         self.symbol = symbol
         self.side = side
@@ -221,8 +243,10 @@ public struct PerpsCloseReview: Sendable, Equatable {
         self.notionalUsd = notionalUsd
         self.baseSize = baseSize
         self.estimatedFeeUsd = estimatedFeeUsd
+        self.feeRatePercent = feeRatePercent
         self.estimatedPnlUsd = estimatedPnlUsd
         self.estimatedReceiveUsd = estimatedReceiveUsd
+        self.worstPrice = worstPrice
     }
 }
 
@@ -230,7 +254,7 @@ public struct PerpsPreparedCloseAction: Sendable {
     public let operationId: String
     public let walletId: String
     public let marketId: Int64
-    public let review: PerpsCloseReview
+    public var review: PerpsCloseReview
 
     public init(
         operationId: String,
@@ -267,17 +291,6 @@ public enum PerpsAutoCloseUpdate: Sendable, Equatable {
         }
     }
 
-    public func applying(to resting: PerpsAutoClose?) -> PerpsAutoClose? {
-        switch self {
-        case .unchanged:
-            resting.flatMap { $0.isEmpty ? nil : $0 }
-        case .clear:
-            nil
-        case let .replace(value):
-            value.isEmpty ? nil : value
-        }
-    }
-
     fileprivate var normalized: Self {
         if case let .replace(value) = self, value.isEmpty {
             return .clear
@@ -291,17 +304,27 @@ public struct PerpsSizeChangeIntent: Sendable, Equatable {
     public let direction: PerpsSizeChangeDirection
     public let marginDeltaUsd: String
     public let autoCloseUpdate: PerpsAutoCloseUpdate
+    public let takeProfitROIPercent: Double?
+    public let stopLossROIPercent: Double?
 
     public init(
         marketId: Int64,
         direction: PerpsSizeChangeDirection,
         marginDeltaUsd: String,
-        autoCloseUpdate: PerpsAutoCloseUpdate = .unchanged
+        autoCloseUpdate: PerpsAutoCloseUpdate = .unchanged,
+        takeProfitROIPercent: Double? = nil,
+        stopLossROIPercent: Double? = nil
     ) {
         self.marketId = marketId
         self.direction = direction
         self.marginDeltaUsd = marginDeltaUsd
         self.autoCloseUpdate = autoCloseUpdate.normalized
+        self.takeProfitROIPercent = takeProfitROIPercent
+        self.stopLossROIPercent = stopLossROIPercent
+    }
+
+    public static func closesWholePosition(marginDeltaUsd: Double, positionMarginUsd: Double) -> Bool {
+        marginDeltaUsd > 0 && abs(marginDeltaUsd - positionMarginUsd) < 0.01
     }
 }
 
@@ -332,6 +355,10 @@ public struct PerpsSizeChangeReview: Sendable, Equatable {
     public let liquidationPrice: PerpsValueChange?
     public let liquidationUnavailableReason: PerpsLiquidationUnavailableReason?
     public let estimatedFeeUsd: Double?
+    public let feeRatePercent: Double?
+    public let closesWholePosition: Bool
+    /// The price past which the order does not fill.
+    public let worstPrice: Double?
 
     public init(
         symbol: String,
@@ -344,7 +371,10 @@ public struct PerpsSizeChangeReview: Sendable, Equatable {
         baseSize: PerpsValueChange,
         liquidationPrice: PerpsValueChange?,
         liquidationUnavailableReason: PerpsLiquidationUnavailableReason?,
-        estimatedFeeUsd: Double?
+        estimatedFeeUsd: Double?,
+        feeRatePercent: Double?,
+        closesWholePosition: Bool,
+        worstPrice: Double? = nil
     ) {
         self.symbol = symbol
         self.direction = direction
@@ -357,6 +387,9 @@ public struct PerpsSizeChangeReview: Sendable, Equatable {
         self.liquidationPrice = liquidationPrice
         self.liquidationUnavailableReason = liquidationUnavailableReason
         self.estimatedFeeUsd = estimatedFeeUsd
+        self.feeRatePercent = feeRatePercent
+        self.closesWholePosition = closesWholePosition
+        self.worstPrice = worstPrice
     }
 }
 
@@ -404,10 +437,24 @@ public struct PerpsMarginChangeIntent: Sendable, Equatable {
 
 public struct PerpsMarginChangeLimits: Sendable, Equatable {
     public let minUsd: Double
+    public let maxAddUsd: Double
     public let maxReduceUsd: Double
 
-    public init(minUsd: Double, maxReduceUsd: Double) {
+    public init(minUsd: Double, maxAddUsd: Double, maxReduceUsd: Double) {
         self.minUsd = minUsd
+        self.maxAddUsd = maxAddUsd
+        self.maxReduceUsd = maxReduceUsd
+    }
+}
+
+public struct PerpsSizeChangeLimits: Sendable, Equatable {
+    public let maxAddUsd: Double
+    public let minReduceUsd: Double?
+    public let maxReduceUsd: Double?
+
+    public init(maxAddUsd: Double, minReduceUsd: Double?, maxReduceUsd: Double?) {
+        self.maxAddUsd = maxAddUsd
+        self.minReduceUsd = minReduceUsd
         self.maxReduceUsd = maxReduceUsd
     }
 }
@@ -452,7 +499,7 @@ public struct PerpsPreparedMarginChangeAction: Sendable {
     public let walletId: String
     public let marketId: Int64
     public let intent: PerpsMarginChangeIntent
-    public let review: PerpsMarginChangeReview
+    public var review: PerpsMarginChangeReview
 
     public init(
         operationId: String,
@@ -525,18 +572,26 @@ public enum PerpsLimitOrderChangeKind: String, Sendable, Equatable, Codable {
 }
 
 public enum PerpsLimitOrderChangeIntent: Sendable, Equatable {
-    case modify(marketId: Int64, orderIndex: Int64, limitPrice: Double)
-    case cancel(marketId: Int64, orderIndex: Int64)
+    /// `baseAmount` is the remaining size the user saw: the modify replaces the whole order, so a
+    /// larger size read at signing is refused rather than signed.
+    case modify(marketId: Int64, orderIndex: Int64, limitPrice: Double, baseAmount: Double, orderId: String)
+    case cancel(marketId: Int64, orderIndex: Int64, orderId: String)
 
     public var marketId: Int64 {
         switch self {
-        case let .modify(marketId, _, _), let .cancel(marketId, _): marketId
+        case let .modify(marketId, _, _, _, _), let .cancel(marketId, _, _): marketId
         }
     }
 
     public var orderIndex: Int64 {
         switch self {
-        case let .modify(_, orderIndex, _), let .cancel(_, orderIndex): orderIndex
+        case let .modify(_, orderIndex, _, _, _), let .cancel(_, orderIndex, _): orderIndex
+        }
+    }
+
+    public var orderId: String {
+        switch self {
+        case let .modify(_, _, _, _, orderId), let .cancel(_, _, orderId): orderId
         }
     }
 
@@ -549,7 +604,7 @@ public enum PerpsLimitOrderChangeIntent: Sendable, Equatable {
 
     public var limitPrice: Double? {
         switch self {
-        case let .modify(_, _, limitPrice): limitPrice
+        case let .modify(_, _, limitPrice, _, _): limitPrice
         case .cancel: nil
         }
     }
@@ -559,15 +614,19 @@ public struct PerpsLimitOrderChangeReview: Sendable, Equatable {
     public let order: PerpsLimitOrderSummary
     public let kind: PerpsLimitOrderChangeKind
     public let limitPrice: Double?
+    /// The size the change signs, read from the venue's order right before planning.
+    public let baseAmount: Double
 
     public init(
         order: PerpsLimitOrderSummary,
         kind: PerpsLimitOrderChangeKind,
-        limitPrice: Double?
+        limitPrice: Double?,
+        baseAmount: Double
     ) {
         self.order = order
         self.kind = kind
         self.limitPrice = limitPrice
+        self.baseAmount = baseAmount
     }
 }
 
@@ -716,6 +775,7 @@ public enum PerpsPendingPayload: Sendable, Equatable, Codable {
     case marginChange(PerpsPendingMarginChange)
     case autoCloseChange(PerpsPendingAutoCloseChange)
     case limitOrderChange(PerpsPendingLimitOrderChange)
+    case autoCloseRebase(PerpsPendingAutoCloseRebase)
 
     /// Whether the operation can leave an order resting on the venue after it is sent.
     /// A margin move settles or fails at once and leaves nothing behind; everything
@@ -724,7 +784,7 @@ public enum PerpsPendingPayload: Sendable, Equatable, Codable {
         switch self {
         case .marginChange:
             return false
-        case .open, .close, .sizeChange, .autoCloseChange, .limitOrderChange:
+        case .open, .close, .sizeChange, .autoCloseChange, .limitOrderChange, .autoCloseRebase:
             return true
         }
     }
@@ -735,7 +795,7 @@ public enum PerpsPendingPayload: Sendable, Equatable, Codable {
         switch self {
         case .open, .close, .sizeChange:
             return true
-        case .marginChange, .autoCloseChange, .limitOrderChange:
+        case .marginChange, .autoCloseChange, .limitOrderChange, .autoCloseRebase:
             return false
         }
     }
@@ -747,7 +807,7 @@ public struct PerpsPendingTradingAction: Sendable, Equatable, Codable {
     public let walletId: String
     public let marketId: Int64
     public let side: PerpsTradeSide
-    public let payload: PerpsPendingPayload
+    public var payload: PerpsPendingPayload
     /// When the last order this operation can place stops being resting. Nil for an
     /// operation that leaves nothing behind.
     public let expiresAtMillis: Int64?
@@ -797,6 +857,10 @@ public struct PerpsPendingTradingAction: Sendable, Equatable, Codable {
         return signedSteps.allSatisfy { $0.state == .accepted }
     }
 
+    public var hasSentSteps: Bool {
+        signedSteps?.contains { $0.state != .signed } == true
+    }
+
     /// Whether a payload this operation signed can still reach the venue. Past every
     /// step's expiry the venue refuses the transaction itself, so nothing is pending.
     public func canStillLand(now: Int64) -> Bool {
@@ -810,17 +874,6 @@ public struct PerpsPendingTradingAction: Sendable, Equatable, Codable {
         guard payload.placesPositionOrder else { return false }
         return positionOrderRef != nil || canStillLand(now: now)
     }
-
-    /// The venue took the order transaction: it answered the send with the hash of the very
-    /// transaction that was signed. For a resting order that is the whole of "it is placed" —
-    /// what happens to it afterwards is a fill, and a different question.
-    public var isOpenOrderAccepted: Bool {
-        signedSteps?.contains { step in
-            step.stepId == Self.openStepId && step.state == .accepted && !step.txHash.isEmpty
-        } ?? false
-    }
-
-    static let openStepId = "open"
 }
 
 public struct PerpsPendingMarginChange: Sendable, Equatable, Codable {
@@ -896,6 +949,7 @@ public enum PerpsTradingError: Error, Sendable, Equatable {
     case slippageExceeded
     case positionNotFound
     case orderNotFound
+    case orderFilledBeforeCancel
     /// The change would leave the position at or under its maintenance margin.
     case immediateLiquidationRisk
     case protocolFailure(String)
@@ -912,3 +966,32 @@ extension PerpsPreparedSizeChangeAction: PerpsPreparedAction {}
 extension PerpsPreparedMarginChangeAction: PerpsPreparedAction {}
 extension PerpsPreparedAutoCloseChangeAction: PerpsPreparedAction {}
 extension PerpsPreparedLimitOrderChangeAction: PerpsPreparedAction {}
+
+public struct PerpsPendingAutoCloseRebase: Sendable, Equatable, Codable {
+    public let parentOperationId: String
+    public let parentClientOrderIndex: Int64
+    public let originalTriggerPrice: Double
+    public let roiPercent: Double
+    public let leverage: Double
+    /// The position size before an add; nil for an open.
+    public let positionBaseBefore: Double?
+    /// When the entry operation left the journal: the settle window runs from here.
+    public var entrySettledAtMillis: Int64?
+    public var targetPrice: Double?
+
+    public init(
+        parentOperationId: String,
+        parentClientOrderIndex: Int64,
+        originalTriggerPrice: Double,
+        roiPercent: Double,
+        leverage: Double,
+        positionBaseBefore: Double? = nil
+    ) {
+        self.parentOperationId = parentOperationId
+        self.parentClientOrderIndex = parentClientOrderIndex
+        self.originalTriggerPrice = originalTriggerPrice
+        self.roiPercent = roiPercent
+        self.leverage = leverage
+        self.positionBaseBefore = positionBaseBefore
+    }
+}

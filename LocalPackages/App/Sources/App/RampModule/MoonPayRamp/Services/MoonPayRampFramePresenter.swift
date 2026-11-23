@@ -1,4 +1,5 @@
 import MoonPay
+import TKLogging
 import TKUIKit
 import UIKit
 
@@ -11,13 +12,27 @@ protocol MoonPayRampFramePresenting: AnyObject {
         onFailure: @escaping (MoonPayFrameError) -> Void
     ) -> MoonPayRampFrameHandle
 
+    /// `closesAtTap` reports the close button's tap at once rather than once the frame is gone.
+    func presentModal(
+        _ frame: MoonPayFrame,
+        environment: MoonPayEnvironment,
+        onEvent: @escaping (MoonPayFrameEvent) -> Void,
+        onFailure: @escaping (MoonPayFrameError) -> Void,
+        onClose: @escaping () -> Void,
+        closesAtTap: Bool
+    ) -> MoonPayRampFrameHandle
+}
+
+extension MoonPayRampFramePresenting {
     func presentModal(
         _ frame: MoonPayFrame,
         environment: MoonPayEnvironment,
         onEvent: @escaping (MoonPayFrameEvent) -> Void,
         onFailure: @escaping (MoonPayFrameError) -> Void,
         onClose: @escaping () -> Void
-    ) -> MoonPayRampFrameHandle
+    ) -> MoonPayRampFrameHandle {
+        presentModal(frame, environment: environment, onEvent: onEvent, onFailure: onFailure, onClose: onClose, closesAtTap: false)
+    }
 }
 
 @MainActor
@@ -43,17 +58,26 @@ final class MoonPayRampFramePresenter: MoonPayRampFramePresenting {
         environment: MoonPayEnvironment,
         onEvent: @escaping (MoonPayFrameEvent) -> Void,
         onFailure: @escaping (MoonPayFrameError) -> Void,
-        onClose: @escaping () -> Void
+        onClose: @escaping () -> Void,
+        closesAtTap: Bool
     ) -> MoonPayRampFrameHandle {
         let controller = MoonPayFrameViewController(frame: frame, environment: environment)
         controller.didReceiveEvent = onEvent
         controller.didFailToLoad = onFailure
+        controller.didReportDiagnostic = Self.logDiagnostic(of: frame)
 
         let navigationController = UINavigationController(rootViewController: controller)
         navigationController.modalPresentationStyle = .fullScreen
         navigationController.configureTransparentAppearance()
         controller.setupRightCloseButton { [weak navigationController] in
-            navigationController?.dismiss(animated: true, completion: onClose)
+            guard closesAtTap else {
+                navigationController?.dismiss(animated: true, completion: onClose)
+                return
+            }
+            // A frame's own event while it animates out, such as an error from a 3DS page being
+            // closed, must not take the close's place. A dismiss during the animation is ignored.
+            navigationController?.dismiss(animated: true)
+            onClose()
         }
         hostViewController?.topPresentedViewController().present(navigationController, animated: true)
         return MoonPayRampFrameHandle { [weak navigationController] in
@@ -72,6 +96,7 @@ final class MoonPayRampFramePresenter: MoonPayRampFramePresenting {
             return MoonPayRampFrameHandle {}
         }
         let controller = MoonPayFrameViewController(frame: frame, environment: environment)
+        controller.didReportDiagnostic = Self.logDiagnostic(of: frame)
         let channelId = controller.channelId
         controller.didReceiveEvent = { [weak self] event in
             onEvent(event)
@@ -97,6 +122,13 @@ final class MoonPayRampFramePresenter: MoonPayRampFramePresenting {
         headlessControllers[channelId] = controller
         return MoonPayRampFrameHandle { [weak self] in
             self?.removeHeadless(channelId)
+        }
+    }
+
+    private static func logDiagnostic(of frame: MoonPayFrame) -> (String) -> Void {
+        let name = frame.name
+        return { message in
+            Log.multichainRamp.d("moonpay \(name) frame: \(message)")
         }
     }
 

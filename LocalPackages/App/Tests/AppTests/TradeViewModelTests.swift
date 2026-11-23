@@ -4,7 +4,9 @@ import Foundation
 @testable import KeeperCore
 import PerpsModels
 import TKCore
+import TKTestSupport
 import TonSwift
+import UIKit
 import XCTest
 
 final class TradeViewModelTests: XCTestCase {
@@ -14,7 +16,7 @@ final class TradeViewModelTests: XCTestCase {
         var perpsOpened = 0
         let viewModel = makeViewModel(
             shelvesService: TradingShelvesServiceSpy(snapshot: makeEmptySnapshot()),
-            onOpenAssetList: { category, sort in
+            onOpenAssetList: { category, sort, _ in
                 categories.append(category)
                 XCTAssertEqual(sort, .marketCap)
             },
@@ -63,7 +65,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.first?.grids.first?.items.first?.preview.assetCategory == .stocks
             }
@@ -114,14 +116,14 @@ final class TradeViewModelTests: XCTestCase {
         var openedSorts = [MultichainAssetSearchSort]()
         let viewModel = makeViewModel(
             shelvesService: service,
-            onOpenAssetList: { _, sort in
+            onOpenAssetList: { _, sort, _ in
                 openedSorts.append(sort)
             }
         )
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.first?.grids.count == expectedSorts.count
             }
@@ -135,6 +137,62 @@ final class TradeViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_openSeeAll_passesShelfGroupChain() async {
+        let grid = TradingShelfGrid(
+            id: "market_cap",
+            name: "Market Cap",
+            source: "api",
+            seeAllCategory: .all,
+            items: [
+                TradingMarketItem(
+                    id: "ton/mainnet/coin",
+                    symbol: "TON",
+                    name: "Toncoin",
+                    category: .tokens,
+                    imageURL: nil,
+                    price: nil,
+                    change24hPercent: nil,
+                    verification: .whitelist
+                ),
+            ]
+        )
+        let service = TradingShelvesServiceSpy(
+            snapshot: TradingShelvesSnapshot(
+                generatedAt: .now,
+                currency: .USD,
+                shelves: [
+                    TradingShelf(
+                        id: "trending",
+                        title: "Trending",
+                        groups: ["All", "Ton", "Ethereum", "BSC"].map { TradingShelfGroup(id: $0, title: $0, grids: [grid]) }
+                    ),
+                ]
+            )
+        )
+        var openedChains = [MultichainChain?]()
+        let viewModel = makeViewModel(
+            shelvesService: service,
+            onOpenAssetList: { _, _, chain in
+                openedChains.append(chain)
+            }
+        )
+
+        viewModel.viewDidAppear()
+
+        await waitUntil(viewModel) {
+            await MainActor.run {
+                viewModel.shelves.first?.groups.count == 4
+            }
+        }
+
+        for group in viewModel.shelves[0].groups {
+            viewModel.openSeeAll(for: group.grids[0])
+        }
+
+        XCTAssertEqual(openedChains, [nil, .ton, .eth, .bsc])
+    }
+
+    @MainActor
     func test_scrollToGrid_selectsGridAndRequestsParentShelfScrollAfterShelvesLoad() async {
         let service = TradingShelvesServiceSpy(snapshot: makeGridSelectionSnapshot())
         let viewModel = makeViewModel(shelvesService: service)
@@ -144,7 +202,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.selectedGridIDs["shelf-2"] == "target_grid"
                     && viewModel.scrollToShelfRequest?.shelfID == "shelf-2"
@@ -159,7 +217,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 2
             }
@@ -183,7 +241,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -202,7 +260,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -223,7 +281,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -245,7 +303,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -267,7 +325,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -287,7 +345,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.count == 1
             }
@@ -314,7 +372,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.selectedGroupIDs["shelf-grouped"] == "ton"
                     && viewModel.selectedGridIDs["shelf-grouped"] == "shared_grid"
@@ -381,7 +439,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.favoriteAssets.first?.changeText == expectedChangeText
                     && viewModel.favoriteAssets.first?.isChangeLoading == false
@@ -434,7 +492,7 @@ final class TradeViewModelTests: XCTestCase {
 
         await marketItemsGate.open()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.favoriteAssets.allSatisfy {
                     !$0.isChangeLoading && $0.changeText != nil
@@ -454,7 +512,7 @@ final class TradeViewModelTests: XCTestCase {
         )
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             let flags = await favoriteAssetsService.marketItemsForceRefreshFlags
             return flags.count >= 1
         }
@@ -462,7 +520,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertEqual(flags.last, false)
 
         await viewModel.refresh()
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             let flags = await favoriteAssetsService.marketItemsForceRefreshFlags
             return flags.count >= 2
         }
@@ -470,7 +528,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertEqual(flags.last, true)
 
         viewModel.refreshFavoriteAssets()
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             let flags = await favoriteAssetsService.marketItemsForceRefreshFlags
             return flags.count >= 3
         }
@@ -534,7 +592,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertEqual(data.shelves.first?.title, "Cached")
 
         await loadShelvesGate.open()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 if case .loaded = viewModel.state {
                     return true
@@ -554,7 +612,7 @@ final class TradeViewModelTests: XCTestCase {
         )
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 if case .failed = viewModel.state {
                     return true
@@ -610,7 +668,7 @@ final class TradeViewModelTests: XCTestCase {
         )
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 if case .loaded = viewModel.state {
                     return true
@@ -623,7 +681,7 @@ final class TradeViewModelTests: XCTestCase {
         // The initial pending state was resolved, so the guard lets the refresh through.
         viewModel.refreshFavoriteAssets()
 
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             await favoriteAssetsService.marketItemsAssetIDs.count == fetchesAfterLoad + 1
         }
     }
@@ -650,7 +708,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 guard viewModel.favoriteAssets.count == 2 else { return false }
                 return viewModel.favoriteAssets[0].isChangeLoading == false
@@ -719,7 +777,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 let shelfItem = viewModel.shelves.first?.grids.first?.items.first
                 let favoriteItem = viewModel.favoriteAssets.first
@@ -799,7 +857,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 !viewModel.favoriteAssets.isEmpty
             }
@@ -858,7 +916,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.favoriteAssets.count == 2
             }
@@ -879,7 +937,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isFavoritesEditing)
         XCTAssertFalse(viewModel.favoriteAssets.contains { $0.id == removed.id })
 
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             let calls = await favoriteAssetsService.favoriteContexts
             return calls.contains { !$0.isFavorite && $0.context.id == removed.id }
         }
@@ -900,7 +958,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.favoriteAssets.count == 2
             }
@@ -935,7 +993,7 @@ final class TradeViewModelTests: XCTestCase {
 
         viewModel.viewDidAppear()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.favoriteAssets.count == 1
             }
@@ -956,7 +1014,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isFavoritesEditing)
         XCTAssertTrue(viewModel.favoriteAssets.isEmpty)
 
-        await waitUntil {
+        await waitUntil(favoriteAssetsService.changes) {
             let calls = await favoriteAssetsService.favoriteContexts
             return calls.contains { !$0.isFavorite && $0.context.id == removed.id }
         }
@@ -987,7 +1045,7 @@ final class TradeViewModelTests: XCTestCase {
         )
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.first?.title == "Legacy"
             }
@@ -995,7 +1053,7 @@ final class TradeViewModelTests: XCTestCase {
 
         _ = await walletsStore.makeWalletActive(multichainWallet)
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             let calls = await service.loadCalls
             return await MainActor.run {
                 viewModel.shelves.first?.title == "Multichain"
@@ -1033,7 +1091,7 @@ final class TradeViewModelTests: XCTestCase {
 
         _ = await walletsStore.makeWalletActive(multichainWallet)
         _ = await walletsStore.makeWalletActive(legacyWallet)
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 !viewModel.multichainEnabled
             }
@@ -1047,7 +1105,7 @@ final class TradeViewModelTests: XCTestCase {
         XCTAssertEqual(data.mode, .legacy)
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(viewModel) {
             let calls = await service.loadCalls
             return await MainActor.run {
                 viewModel.shelves.first?.title == "Legacy"
@@ -1086,14 +1144,14 @@ final class TradeViewModelTests: XCTestCase {
         await legacyLoadGate.waitUntilEntered()
 
         _ = await walletsStore.makeWalletActive(multichainWallet)
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.first?.title == "Multichain"
             }
         }
 
         await legacyLoadGate.open()
-        await waitUntil {
+        await waitUntil(service.changes) {
             let calls = await service.loadCalls
             return calls == [.legacy, .multichain]
         }
@@ -1137,7 +1195,7 @@ final class TradeViewModelTests: XCTestCase {
         )
 
         viewModel.viewDidAppear()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.shelves.first?.title == "Multichain"
             }
@@ -1146,7 +1204,7 @@ final class TradeViewModelTests: XCTestCase {
         _ = await walletsStore.makeWalletActive(multichainWalletB)
         // A same-mode refetch would insert an extra .multichain call before .legacy.
         _ = await walletsStore.makeWalletActive(legacyWallet)
-        await waitUntil {
+        await waitUntil(service.changes) {
             let calls = await service.loadCalls
             return calls == [.multichain, .legacy]
         }
@@ -1167,7 +1225,7 @@ final class TradeViewModelTests: XCTestCase {
             onOpenPerpsMarket: { openedMarketID = $0 }
         )
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run {
                 viewModel.perpsShelfMarkets.count == 8
             }
@@ -1178,6 +1236,85 @@ final class TradeViewModelTests: XCTestCase {
         viewModel.openPerpsMarket(viewModel.perpsShelfMarkets[3].id)
 
         XCTAssertEqual(openedMarketID, 4)
+    }
+
+    @MainActor
+    func test_perpsShelf_reloadsOnEveryAppear() async {
+        var loadCount = 0
+        let viewModel = makeViewModel(
+            shelvesService: TradingShelvesServiceSpy(snapshot: makeEmptySnapshot()),
+            perpsShelfMarketsLoader: {
+                loadCount += 1
+                return [self.makePerpsMarket(marketID: Int64(loadCount), symbol: "MARKET\(loadCount)")]
+            },
+            onOpenPerps: {},
+            onOpenPerpsMarket: { _ in }
+        )
+
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
+        }
+
+        viewModel.viewDidAppear()
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 2 }
+        }
+
+        viewModel.viewDidDisappear()
+        viewModel.viewDidAppear()
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 3 }
+        }
+        XCTAssertEqual(loadCount, 3)
+    }
+
+    @MainActor
+    func test_perpsShelf_foregroundRestartsTheLoadOnlyWhileVisible() async {
+        var loadCount = 0
+        let viewModel = makeViewModel(
+            shelvesService: TradingShelvesServiceSpy(snapshot: makeEmptySnapshot()),
+            perpsShelfMarketsLoader: {
+                loadCount += 1
+                return [self.makePerpsMarket(marketID: Int64(loadCount), symbol: "MARKET\(loadCount)")]
+            },
+            onOpenPerps: {},
+            onOpenPerpsMarket: { _ in }
+        )
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
+        }
+
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        await Task.yield()
+        XCTAssertEqual(loadCount, 1)
+
+        viewModel.viewDidAppear()
+        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 3 }
+        }
+        XCTAssertEqual(loadCount, 3)
+    }
+
+    @MainActor
+    func test_perpsShelf_appearDuringLoadDoesNotStartAnother() async {
+        var loadCount = 0
+        let viewModel = makeViewModel(
+            shelvesService: TradingShelvesServiceSpy(snapshot: makeEmptySnapshot()),
+            perpsShelfMarketsLoader: {
+                loadCount += 1
+                return [self.makePerpsMarket(marketID: Int64(loadCount), symbol: "MARKET\(loadCount)")]
+            },
+            onOpenPerps: {},
+            onOpenPerpsMarket: { _ in }
+        )
+
+        viewModel.viewDidAppear()
+
+        await waitUntil(viewModel) {
+            await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
+        }
+        XCTAssertEqual(loadCount, 1)
     }
 
     @MainActor
@@ -1213,13 +1350,13 @@ final class TradeViewModelTests: XCTestCase {
             onOpenPerpsMarket: { _ in }
         )
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
         }
 
         _ = await walletsStore.makeWalletActive(walletB)
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 2 }
         }
         XCTAssertEqual(loadCount, 2)
@@ -1270,7 +1407,7 @@ final class TradeViewModelTests: XCTestCase {
         _ = await walletsStore.makeWalletActive(walletB)
         await secondLoadGate.waitUntilEntered()
         await secondLoadGate.open()
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 2 }
         }
 
@@ -1317,7 +1454,7 @@ final class TradeViewModelTests: XCTestCase {
             onOpenPerps: {},
             onOpenPerpsMarket: { _ in }
         )
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
         }
 
@@ -1364,7 +1501,7 @@ final class TradeViewModelTests: XCTestCase {
             onOpenPerps: {},
             onOpenPerpsMarket: { _ in }
         )
-        await waitUntil {
+        await waitUntil(viewModel) {
             await MainActor.run { viewModel.perpsShelfMarkets.first?.id == 1 }
         }
 
@@ -1418,6 +1555,43 @@ final class TradeViewModelTests: XCTestCase {
         _ = await walletsStore.makeWalletActive(legacyWallet)
         XCTAssertEqual(switching.services.map(\.kind), [.tokens, .stocks, .etfs])
     }
+
+    @MainActor
+    func test_multichainPerpsCell_shownOnlyForTonWalletAndOpensPerps() async {
+        let shelves = TradingShelvesServiceSpy(snapshot: makeEmptySnapshot())
+        XCTAssertFalse(makeViewModel(shelvesService: shelves, onOpenPerps: {}).showsMultichainPerpsCell)
+        XCTAssertFalse(
+            makeViewModel(
+                shelvesService: shelves,
+                walletsStore: makeWalletsStore(wallets: [makeWallet()])
+            ).showsMultichainPerpsCell
+        )
+
+        let multichainWallet = makeWallet(
+            id: "multichain",
+            multichain: .multichain(
+                .init(
+                    walletId: "wallet",
+                    addresses: [MultichainWalletAddress(chain: .eth, address: "0xwallet")]
+                )
+            )
+        )
+        let tonWallet = makeWallet(id: "ton")
+        let walletsStore = makeWalletsStore(wallets: [tonWallet, multichainWallet])
+        var perpsOpened = 0
+        let viewModel = makeViewModel(
+            shelvesService: shelves,
+            walletsStore: walletsStore,
+            onOpenPerps: { perpsOpened += 1 }
+        )
+        XCTAssertTrue(viewModel.showsMultichainPerpsCell)
+
+        viewModel.openPerps()
+        XCTAssertEqual(perpsOpened, 1)
+
+        _ = await walletsStore.makeWalletActive(multichainWallet)
+        XCTAssertFalse(viewModel.showsMultichainPerpsCell)
+    }
 }
 
 private extension TradeViewModelTests {
@@ -1427,7 +1601,7 @@ private extension TradeViewModelTests {
         favoriteAssetsService: TradingFavoriteAssetsService = FavoriteAssetsServiceSpy(),
         walletsStore: WalletsStore? = nil,
         perpsShelfMarketsLoader: (() async throws -> [PerpsMarketSummary])? = nil,
-        onOpenAssetList: @escaping (TradingAssetCategory, MultichainAssetSearchSort) -> Void = { _, _ in },
+        onOpenAssetList: @escaping (TradingAssetCategory, MultichainAssetSearchSort, MultichainChain?) -> Void = { _, _, _ in },
         onOpenPerps: (() -> Void)? = nil,
         onOpenPerpsMarket: ((Int64) -> Void)? = nil,
         onOpenAssetDetails: @escaping (TradeAssetDetailsViewModel.PreviewContext) -> Void = { _ in }
@@ -1673,24 +1847,6 @@ private extension TradeViewModelTests {
             balance: .zero
         )
     }
-
-    func waitUntil(
-        timeout: TimeInterval = 2,
-        intervalNanoseconds: UInt64 = 10_000_000,
-        condition: @escaping () async -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-
-        while Date() < deadline {
-            if await condition() {
-                return
-            }
-
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-        }
-
-        XCTFail("Timed out waiting for condition")
-    }
 }
 
 private actor TradingShelvesServiceSpy: TradingShelvesService {
@@ -1725,6 +1881,7 @@ private actor ModeTradingShelvesServiceSpy: TradingShelvesService {
     private let snapshots: [TradingShelvesMode: TradingShelvesSnapshot]
     private let loadGates: [TradingShelvesMode: TestGate]
     private(set) var loadCalls = [TradingShelvesMode]()
+    nonisolated let changes = TestSignal()
 
     init(
         snapshots: [TradingShelvesMode: TradingShelvesSnapshot],
@@ -1740,6 +1897,7 @@ private actor ModeTradingShelvesServiceSpy: TradingShelvesService {
 
     func loadShelves(for mode: TradingShelvesMode) async throws(LoadShelvesFailure) -> TradingShelvesSnapshot {
         loadCalls.append(mode)
+        changes.send()
         await loadGates[mode]?.enter()
         guard let snapshot = snapshots[mode] else {
             throw .apiError(message: nil)
@@ -1784,6 +1942,7 @@ private actor FavoriteAssetsServiceSpy: TradingFavoriteAssetsService {
     private(set) var updatedContexts = [TradingFavoriteAssetContext]()
     private(set) var marketItemsAssetIDs = [[String]]()
     private(set) var marketItemsForceRefreshFlags = [Bool]()
+    nonisolated let changes = TestSignal()
 
     var assets: [TradingFavoriteAsset] {
         get async { storedAssets }
@@ -1814,6 +1973,7 @@ private actor FavoriteAssetsServiceSpy: TradingFavoriteAssetsService {
 
     func setFavorite(_ isFavorite: Bool, context: TradingFavoriteAssetContext) async {
         favoriteContexts.append((isFavorite, context))
+        changes.send()
     }
 
     func updateAsset(_ context: TradingFavoriteAssetContext) async {
@@ -1823,6 +1983,7 @@ private actor FavoriteAssetsServiceSpy: TradingFavoriteAssetsService {
     func marketItems(assetIDs: [String], forceRefresh: Bool) async -> [String: TradingMarketItem] {
         marketItemsAssetIDs.append(assetIDs)
         marketItemsForceRefreshFlags.append(forceRefresh)
+        changes.send()
         await marketItemsGate?.enter()
         return storedMarketItems
     }

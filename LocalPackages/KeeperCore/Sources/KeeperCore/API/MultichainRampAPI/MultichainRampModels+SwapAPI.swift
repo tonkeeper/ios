@@ -54,6 +54,8 @@ extension OnRampPaymentMethod {
         self.image = api.image
         self.isP2P = api._type == .p2p
         self.providers = api.providers.map { OnRampProvider(api: $0) }
+        self.subtitle = api.subtitle
+        self.badge = api.badge
     }
 }
 

@@ -36,6 +36,7 @@ extension BootConfiguration {
         disableBattery = (try? container.decode(Bool.self, forKey: .disableBattery)) ?? empty.disableBattery
         disableBatterySend = (try? container.decode(Bool.self, forKey: .disableBatterySend)) ?? empty.disableBatterySend
         disableBatteryCryptoRechargeModule = (try? container.decode(Bool.self, forKey: .disableBatteryCryptoRechargeModule)) ?? empty.disableBatteryCryptoRechargeModule
+        disableBatteryPromoModule = (try? container.decode(Bool.self, forKey: .disableBatteryPromoModule)) ?? empty.disableBatteryPromoModule
         flags = (try? container.decode(Flags.self, forKey: .flags)) ?? empty.flags
         stories = try? container.decodeIfPresent([String].self, forKey: .stories)
         reportAmount = try? container.decodeIfPresent(String.self, forKey: .reportAmount)
@@ -50,10 +51,16 @@ extension BootConfiguration {
         multichainHelpUrl = try? container.decodeIfPresent(URL.self, forKey: .multichainHelpUrl) ?? empty.multichainHelpUrl
         multichain = (try? container.decode(Endpoint.self, forKey: .multichain)) ?? empty.multichain
         trading = (try? container.decode(Endpoint.self, forKey: .trading)) ?? empty.trading
+        keeperEarn = (try? container.decode(URL.self, forKey: .keeperEarn)) ?? empty.keeperEarn
         explorers = (try? container.decode([ChainExplorer].self, forKey: .explorers)) ?? empty.explorers
-        earnUrl = try? container.decodeIfPresent(URL.self, forKey: .earnUrl)
+        earnUrl = (try? container.decode(URL.self, forKey: .earnUrl)) ?? empty.earnUrl
         earnFeaturedVaults = ((try? container.decode([[String: String]].self, forKey: .earnFeaturedVaults)) ?? [])
             .compactMap { EarnFeaturedVault(network: $0["network"] ?? "", vaultId: $0["vaultId"] ?? "") }
+        perpsSecurity = try? container.decodeIfPresent(PerpsSecurityBlock.self, forKey: .perpsSecurity)
+        let hasFeatureAccess = (try? container.decodeNil(forKey: .featureAccess)) == false
+        featureAccess = hasFeatureAccess
+            ? (try? container.decode(FeatureAccess.self, forKey: .featureAccess)) ?? FeatureAccess(perps: nil)
+            : nil
     }
 
     enum CodingKeys: String, CodingKey {
@@ -88,6 +95,7 @@ extension BootConfiguration {
         case disableBattery = "disable_battery"
         case disableBatterySend = "disable_battery_send"
         case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
+        case disableBatteryPromoModule = "disable_battery_promo_module"
         case stories
         case reportAmount
         case stakingEnabledProviders = "enabled_staking"
@@ -101,9 +109,12 @@ extension BootConfiguration {
         case multichainHelpUrl = "multichain_help_url"
         case multichain
         case trading
+        case keeperEarn
         case explorers
-        case earnUrl = "earn_url"
+        case earnUrl
         case earnFeaturedVaults = "earn_featured_vaults"
+        case perpsSecurity = "perps_security"
+        case featureAccess = "feature_access"
     }
 }
 
@@ -132,6 +143,8 @@ extension BootConfiguration.Flags {
         onboardingStoryDisabled = value(.onboardingStoryDisabled, default: defaults.onboardingStoryDisabled)
         nftsDisabled = value(.nftsDisabled, default: defaults.nftsDisabled)
         nativeSwapDisabled = value(.nativeSwapDisabled, default: defaults.nativeSwapDisabled)
+        perpsEnabled = value(.perpsEnabled, default: defaults.perpsEnabled)
+        txValidationEnabled = value(.txValidationEnabled, default: defaults.txValidationEnabled)
         trxOnlyRegion = value(.trxOnlyRegion, default: defaults.trxOnlyRegion)
     }
 
@@ -149,5 +162,7 @@ extension BootConfiguration.Flags {
         case onboardingStoryDisabled = "disable_onboarding_story"
         case nftsDisabled = "disable_nfts"
         case nativeSwapDisabled = "disable_native_swap"
+        case perpsEnabled = "perps_enabled"
+        case txValidationEnabled = "tx_validation_enabled"
     }
 }

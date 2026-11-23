@@ -14,6 +14,8 @@ public struct MultichainSwapWallet {
         case hd
         /// The keys a legacy wallet's TON and TRON addresses were created with.
         case legacy
+        /// The keys on a hardware wallet, which signs on the device.
+        case device
     }
 
     public let wallet: Wallet
@@ -39,7 +41,7 @@ public struct MultichainSwapWallet {
             wallet: wallet,
             addresses: state.addresses,
             registration: .registered(walletId: state.walletId),
-            keys: .hd
+            keys: wallet.kind == .ledger ? .device : .hd
         )
     }
 

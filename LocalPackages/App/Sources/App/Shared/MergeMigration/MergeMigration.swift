@@ -38,7 +38,7 @@ struct MergeMigration {
     }
 
     private let asyncStorage: RNAsyncStorage
-    private let appInfoProvider: TKCore.AppInfoProvider
+    private let appInfoProvider: DeviceAppInfoProvider
     private let mnemonicsAccess: MnemonicAccess
     private let keeperInfoRepository: KeeperInfoRepository
     private let keeperInfoStore: KeeperInfoStore
@@ -49,7 +49,7 @@ struct MergeMigration {
 
     init(
         asyncStorage: RNAsyncStorage,
-        appInfoProvider: TKCore.AppInfoProvider,
+        appInfoProvider: DeviceAppInfoProvider,
         analyticsProvider: AnalyticsProvider,
         mnemonicsAccess: MnemonicAccess,
         keeperInfoRepository: KeeperInfoRepository,
@@ -112,50 +112,37 @@ struct MergeMigration {
     }
 
     func currentMnemonicsMigrationCheck() -> NativeMigrationCheck {
-        switch mnemonicsAccess {
-        case let .v2(_, _, legacyRepository):
-            if legacyRepository.rn.hasMnemonics(), !legacyRepository.native.hasMnemonics() {
-                logger.i(
-                    "🪵 native migration check (v2): current version=\(MnemonicsVersion.rn)"
-                )
-                return .needsMigration(from: .rn)
-            }
+        let legacyRepository = mnemonicsAccess.legacyRepository
+        if legacyRepository.rn.hasMnemonics(), !legacyRepository.native.hasMnemonics() {
+            logger.i(
+                "🪵 native migration check (v2): current version=\(MnemonicsVersion.rn)"
+            )
+            return .needsMigration(from: .rn)
+        }
 
-            switch v2MigrationState() {
-            case .ready:
-                logger.i(
-                    "🪵 native migration check (v2): current version=\(MnemonicsVersion.nativeV2)"
-                )
-                return .ready(version: .nativeV2)
-            case .needsMigration:
-                logger.i(
-                    "🪵 native migration check (v2): current version=\(MnemonicsVersion.native)"
-                )
-                return .needsMigration(from: .native)
-            case let .blocked(error):
-                logger.e("🪵 native migration check (v2) blocked: \(error)")
-                logV2MigrationEvent(.blocked(error))
-                return .blocked(.readStorageError(error))
-            }
-        case let .disabled(legacyRepository):
-            if legacyRepository.rn.hasMnemonics(), !legacyRepository.native.hasMnemonics() {
-                logger.i("🪵 native migration check (legacy): current version=\(MnemonicsVersion.rn)")
-                return .needsMigration(from: .rn)
-            } else {
-                logger.i("🪵 native migration check (legacy): current version=\(MnemonicsVersion.native)")
-                return .ready(version: .native)
-            }
+        switch v2MigrationState() {
+        case .ready:
+            logger.i(
+                "🪵 native migration check (v2): current version=\(MnemonicsVersion.nativeV2)"
+            )
+            return .ready(version: .nativeV2)
+        case .needsMigration:
+            logger.i(
+                "🪵 native migration check (v2): current version=\(MnemonicsVersion.native)"
+            )
+            return .needsMigration(from: .native)
+        case let .blocked(error):
+            logger.e("🪵 native migration check (v2) blocked: \(error)")
+            logV2MigrationEvent(.blocked(error))
+            return .blocked(.readStorageError(error))
         }
     }
 
     private func v2MigrationState() -> V2MigrationState {
-        guard case let .v2(mnemonicsRepository, _, legacyRepository) = mnemonicsAccess else {
-            return .ready
-        }
-        let hasLegacyMnemonics = legacyRepository.native.hasMnemonics()
+        let hasLegacyMnemonics = mnemonicsAccess.legacyRepository.native.hasMnemonics()
         let hasReadyV2Storage: Bool
         do {
-            hasReadyV2Storage = try mnemonicsRepository.raw.hasCommittedStorage()
+            hasReadyV2Storage = try mnemonicsAccess.mnemonicsRepository.raw.hasCommittedStorage()
         } catch {
             logger.e("🪵 failed to read v2 committed storage state: \(error)")
             logger.i("🪵 v2 migration check: committed state read failed unexpectedly, preserving v2 storage artifacts, blocked=true")
@@ -246,13 +233,8 @@ struct MergeMigration {
     }
 
     private func migrateMnemonicsFromRnToNative() -> Result<Void, MnemonicMigrationError> {
-        let rnMnemonicsRepository: RNMnemonicsVault
-        let mnemonicsRepository: MnemonicsVault
-        switch mnemonicsAccess {
-        case let .v2(_, _, legacyRepository), let .disabled(legacyRepository):
-            rnMnemonicsRepository = legacyRepository.rn
-            mnemonicsRepository = legacyRepository.native
-        }
+        let rnMnemonicsRepository = mnemonicsAccess.legacyRepository.rn
+        let mnemonicsRepository = mnemonicsAccess.legacyRepository.native
         guard rnMnemonicsRepository.hasMnemonics() else {
             logger.i("🪵 rn->native mnemonic migration skipped: rn storage is empty")
             return .failure(.noMnemonics)
@@ -276,13 +258,9 @@ struct MergeMigration {
     }
 
     private func migrateMnemonicsFromNativeToV2(passcode: String) async throws(MnemonicMigrationError) {
-        guard case let .v2(v2Repository, passcodeStorage, legacyRepository) = mnemonicsAccess else {
-            return
-        }
-
         let mnemonics: Mnemonics
         do {
-            mnemonics = try await legacyRepository.native.getMnemonics(password: passcode)
+            mnemonics = try await mnemonicsAccess.legacyRepository.native.getMnemonics(password: passcode)
         } catch {
             logger.e("🪵 native->v2 mnemonic migration failed to read legacy storage: \(error)")
             logV2MigrationEvent(.failure(step: "read_legacy", error: error))
@@ -290,7 +268,7 @@ struct MergeMigration {
         }
 
         do {
-            try v2Repository.raw.deleteAllKnownStorageArtifacts()
+            try mnemonicsAccess.mnemonicsRepository.raw.deleteAllKnownStorageArtifacts()
             logger.i("🪵 native->v2 mnemonic migration cleaned previous v2 mnemonic storage artifacts")
         } catch {
             logger.e("🪵 native->v2 mnemonic migration failed to clean previous v2 mnemonic storage artifacts: \(error)")
@@ -303,18 +281,13 @@ struct MergeMigration {
         // the `setPasscode` step below rewrites the cache and already disables
         // biometry if that write fails.
         do {
-            try passcodeStorage.deleteAllKnownStorageArtifacts()
+            try mnemonicsAccess.passcodeStorage.deleteAllKnownStorageArtifacts()
             logger.i("🪵 native->v2 mnemonic migration cleaned previous v2 passcode storage artifacts")
         } catch {
             logger.w("🪵 native->v2 mnemonic migration failed to clean previous v2 passcode storage artifacts: \(error)")
         }
 
         logger.i("🪵 native->v2 mnemonic migration started: totalLegacy=\(mnemonics.count)")
-        guard !mnemonics.isEmpty else {
-            logger.i("🪵 native->v2 mnemonic migration completed: migrated=0")
-            logV2MigrationEvent(.success(total: 0, ton: 0, bip39: 0, bip39soft: 0, unknown: 0))
-            return
-        }
 
         var migratedTon = 0
         var migratedBip39 = 0
@@ -345,7 +318,7 @@ struct MergeMigration {
             expectedV2Mnemonics[id] = coreMnemonic
         }
         do {
-            try v2Repository.raw.rewrite(
+            try mnemonicsAccess.mnemonicsRepository.raw.rewrite(
                 mnemonics: expectedV2Mnemonics,
                 passcode: passcode
             )
@@ -431,15 +404,10 @@ struct MergeMigration {
 
         if isBiometryEnable || !missedTonProofWallets.isEmpty || needsMigrateToV2 {
             let validator: PasscodeInputValidator
-            switch mnemonicsAccess {
-            case let .v2(_, _, legacyRepository):
-                if needsMigrateToV2 {
-                    validator = PasscodeLegacyConfirmationValidator(mnemonicsRepository: legacyRepository.native)
-                } else {
-                    validator = PasscodeConfirmationValidator(mnemonicAccess: mnemonicsAccess)
-                }
-            case let .disabled(legacyRepository):
-                validator = PasscodeLegacyConfirmationValidator(mnemonicsRepository: legacyRepository.native)
+            if needsMigrateToV2 {
+                validator = PasscodeLegacyConfirmationValidator(mnemonicsRepository: mnemonicsAccess.legacyRepository.native)
+            } else {
+                validator = PasscodeConfirmationValidator(mnemonicAccess: mnemonicsAccess)
             }
             logger.i("🪵 passcode-required migration: waiting for passcode confirmation")
             let onValidPasscode: (String) -> Void = { [mnemonicsAccess] passcode in
@@ -460,7 +428,7 @@ struct MergeMigration {
                         } catch {
                             logger.e("🪵 passcode-required migration failed to save passcode for biometry: \(error)")
                             do {
-                                try deleteBiometryPasscodeAfterFailedMigration()
+                                try mnemonicsAccess.passcodeStorage.deletePasscode()
                             } catch {
                                 logger.e("🪵 passcode-required migration failed to reset passcode storage: \(error)")
                             }
@@ -500,15 +468,6 @@ struct MergeMigration {
         } else {
             logger.i("🪵 passcode-required migration skipped")
             completion(.success(()))
-        }
-    }
-
-    private func deleteBiometryPasscodeAfterFailedMigration() throws {
-        switch mnemonicsAccess {
-        case let .v2(_, passcodeStorage, _):
-            try passcodeStorage.deletePasscode()
-        case .disabled:
-            try mnemonicsAccess.deletePasscode()
         }
     }
 

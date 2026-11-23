@@ -34,7 +34,8 @@ public struct QrCodeView<Overlay: View>: View {
     public var body: some View {
         ZStack {
             if needsTimeline {
-                TimelineView(.animation) { timeline in
+                // Each tick draws the whole code on the main thread: hold the ripples at 60 Hz.
+                TimelineView(.animation(minimumInterval: 1.0 / 60)) { timeline in
                     canvas(
                         tapHighlight: tapHighlight,
                         ripples: activeRipples(at: timeline.date),

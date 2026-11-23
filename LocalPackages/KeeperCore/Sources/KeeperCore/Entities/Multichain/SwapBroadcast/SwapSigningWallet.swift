@@ -5,8 +5,10 @@ import TonSwift
 import TronSwift
 
 enum SwapSigningWallet {
-    case hd(CryptoWallet)
+    case hd(MnemonicWallet)
     case legacy(ton: ChainKit.PrivateKey, tron: ChainKit.PrivateKey)
+    /// A hardware wallet signs on the device; its keys are the ones the wallet's addresses were saved with.
+    case device(DeviceTransferSigner, swapWallet: MultichainSwapWallet)
 
     /// The keys a legacy wallet's addresses were created with: the TON key of the phrase under its
     /// own derivation type and the TRON key `WalletTron` derives through `TonTron`, whatever the
@@ -47,6 +49,8 @@ enum SwapSigningWallet {
             case .eth, .base, .btc, .arb, .bsc, .sol, .polygon, .avax, .robinhood:
                 throw .internal(reason: "a legacy wallet has no \(chain.rawValue) key")
             }
+        case .device:
+            throw .internal(reason: "a hardware wallet keeps its \(chain.rawValue) key on the device")
         }
     }
 
@@ -58,6 +62,11 @@ enum SwapSigningWallet {
             let coinType: Wallet_core_kotlinCoinType = chain == .ton ? .ton : .tron
             let publicKey = try privateKey(chain: chain).core.getPublicKey(coinType: coinType)
             return PubKey(defaultHex: "0x" + publicKey.data.asData.hexString(), segWit: "")
+        case let .device(_, swapWallet):
+            guard let publicKey = swapWallet.walletAddress(for: chain)?.publicKey else {
+                throw .missingWalletAddress(chain: chain)
+            }
+            return publicKey.chainKitPubKey
         }
     }
 }

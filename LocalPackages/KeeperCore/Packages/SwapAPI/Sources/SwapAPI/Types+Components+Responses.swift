@@ -12,34 +12,6 @@ public import struct Foundation.Date
 extension Components {
     /// Types generated from the `#/components/responses` section of the OpenAPI document.
     public enum Responses {
-        public struct _Error: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/Error/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/Error/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses._Error.Body
-            /// Creates a new `_Error`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses._Error.Body) {
-                self.body = body
-            }
-        }
         public struct InternalError: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/InternalError/content`.
             @frozen public enum Body: Sendable, Hashable {
@@ -255,6 +227,34 @@ extension Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.AssetCapabilities.Body) {
+                self.body = body
+            }
+        }
+        public struct _Error: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Error/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Error/content/application\/json`.
+                case json(Components.Schemas.ErrorResponse)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.ErrorResponse {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses._Error.Body
+            /// Creates a new `_Error`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses._Error.Body) {
                 self.body = body
             }
         }

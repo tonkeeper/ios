@@ -13,13 +13,13 @@ extension PerpsTradeConfirmViewModel {
         let symbol = review.symbol
         var rows: [Row] = []
 
-        rows.append(usdtRow(id: .youPay, title: TKLocales.Perps.Confirm.youPay, usd: review.marginUsd, format: format))
+        rows.append(usdRow(id: .youPay, title: TKLocales.Perps.Confirm.youPay, usd: review.marginUsd + (review.estimatedFeeUsd ?? 0), format: format))
 
         if let entryPrice = review.entryPrice, entryPrice > 0 {
             rows.append(Row(
                 id: .entry,
                 title: TKLocales.Perps.Confirm.entryPrice,
-                value: format.usd(entryPrice),
+                value: format.price(entryPrice),
                 subValue: nil
             ))
         } else {
@@ -37,7 +37,7 @@ extension PerpsTradeConfirmViewModel {
             subValue: review.baseSize > 0 ? "≈ \(format.token(review.baseSize, symbol: symbol, decimals: context.sizeDecimals))" : nil
         ))
 
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd, format: format))
+        rows.append(feeRow(ratePercent: review.feeRatePercent, format: format))
 
         rows.append(autoCloseRow(
             from: intent.autoClose,
@@ -60,7 +60,7 @@ extension PerpsTradeConfirmViewModel {
     static func makeCloseRows(review: PerpsCloseReview, sizeDecimals: Int, format: PerpsFormatting) -> [Row] {
         var rows: [Row] = []
 
-        rows.append(usdtRow(id: .position, title: TKLocales.Perps.Confirm.position, usd: review.marginUsd, format: format))
+        rows.append(usdRow(id: .position, title: TKLocales.Perps.Confirm.position, usd: review.marginUsd, format: format))
 
         rows.append(Row(
             id: .leverage,
@@ -76,7 +76,7 @@ extension PerpsTradeConfirmViewModel {
             subValue: review.baseSize > 0 ? "≈ \(format.token(review.baseSize, symbol: review.symbol, decimals: sizeDecimals))" : nil
         ))
 
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd, format: format))
+        rows.append(feeRow(ratePercent: review.feeRatePercent, format: format))
 
         if let pnl = review.estimatedPnlUsd {
             rows.append(Row(
@@ -94,7 +94,7 @@ extension PerpsTradeConfirmViewModel {
             id: .youReceive,
             title: TKLocales.Perps.Confirm.youReceive,
             value: review.estimatedReceiveUsd.map { format.usd($0) } ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: review.estimatedReceiveUsd.map { "≈ \(format.token($0, symbol: "USDT", decimals: 2))" }
+            subValue: nil
         ))
 
         return rows
@@ -109,7 +109,12 @@ extension PerpsTradeConfirmViewModel {
     ) -> [Row] {
         var rows: [Row] = []
 
-        rows.append(payOrCloseRow(isAdd: review.direction == .add, usd: review.marginDeltaUsd, format: format))
+        let isAdd = review.direction == .add
+        rows.append(payOrCloseRow(
+            isAdd: isAdd,
+            usd: isAdd ? review.marginDeltaUsd + (review.estimatedFeeUsd ?? 0) : review.marginDeltaUsd,
+            format: format
+        ))
 
         rows.append(Row(
             id: .entry,
@@ -142,7 +147,7 @@ extension PerpsTradeConfirmViewModel {
                 : nil
         ))
 
-        rows.append(feeRow(estimatedFeeUsd: review.estimatedFeeUsd, format: format))
+        rows.append(feeRow(ratePercent: review.feeRatePercent, format: format))
 
         if let autoCloseRow = autoCloseRow(
             from: autoClose,
@@ -176,15 +181,15 @@ extension PerpsTradeConfirmViewModel {
 
     private static func changeText(_ change: PerpsValueChange, format: PerpsFormatting) -> String {
         change.isChanged
-            ? "\(format.usd(change.old)) → \(format.usd(change.new))"
-            : format.usd(change.old)
+            ? "\(format.price(change.old)) → \(format.price(change.new))"
+            : format.price(change.old)
     }
 
     private static func liquidationRow(review: PerpsOpenOrderReview, format: PerpsFormatting) -> Row {
         guard let liquidationPrice = review.liquidationPrice else {
             return Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: TKLocales.Perps.Confirm.unavailable, subValue: nil)
         }
-        return Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: format.usd(liquidationPrice), subValue: nil)
+        return Row(id: .liquidation, title: TKLocales.Perps.Confirm.liquidation, value: format.price(liquidationPrice), subValue: nil)
     }
 
     private static func autoCloseRow(
@@ -204,7 +209,7 @@ extension PerpsTradeConfirmViewModel {
         var parts: [ValuePart] = []
         if let takeProfit = autoClose.takeProfit {
             parts.append(ValuePart(
-                text: unbreakable("\(TKLocales.Perps.OpenPosition.tp) \(format.usd(takeProfit.triggerPrice))"),
+                text: unbreakable("\(TKLocales.Perps.OpenPosition.tp) \(format.price(takeProfit.triggerPrice))"),
                 tone: invalid.takeProfit ? .negative : .neutral
             ))
         }
@@ -213,7 +218,7 @@ extension PerpsTradeConfirmViewModel {
                 parts.append(ValuePart(text: " / ", tone: .tertiary))
             }
             parts.append(ValuePart(
-                text: unbreakable("\(TKLocales.Perps.OpenPosition.sl) \(format.usd(stopLoss.triggerPrice))"),
+                text: unbreakable("\(TKLocales.Perps.OpenPosition.sl) \(format.price(stopLoss.triggerPrice))"),
                 tone: invalid.stopLoss ? .negative : .neutral
             ))
         }
@@ -232,17 +237,17 @@ extension PerpsTradeConfirmViewModel {
         text.replacingOccurrences(of: " ", with: "\u{00A0}")
     }
 
-    private static func usdtRow(id: Row.Kind, title: String, usd: Double, format: PerpsFormatting) -> Row {
+    private static func usdRow(id: Row.Kind, title: String, usd: Double, format: PerpsFormatting) -> Row {
         Row(
             id: id,
             title: title,
             value: format.usd(usd),
-            subValue: id == .youPay ? nil : "≈ \(format.token(usd, symbol: "USDT", decimals: 2))"
+            subValue: nil
         )
     }
 
     private static func payOrCloseRow(isAdd: Bool, usd: Double, format: PerpsFormatting) -> Row {
-        usdtRow(
+        usdRow(
             id: isAdd ? .youPay : .youClose,
             title: isAdd ? TKLocales.Perps.Confirm.youPay : TKLocales.Perps.Confirm.youClose,
             usd: usd,
@@ -250,12 +255,12 @@ extension PerpsTradeConfirmViewModel {
         )
     }
 
-    private static func feeRow(estimatedFeeUsd: Double?, format: PerpsFormatting) -> Row {
+    private static func feeRow(ratePercent: Double?, format: PerpsFormatting) -> Row {
         Row(
             id: .fee,
             title: TKLocales.Perps.Confirm.fee,
-            value: estimatedFeeUsd.map { format.usd($0) } ?? TKLocales.Perps.Confirm.unavailable,
-            subValue: estimatedFeeUsd.map { "≈ \(format.token($0, symbol: "USD", decimals: 4))" }
+            value: ratePercent.map { format.feeRate(percent: $0) } ?? TKLocales.Perps.Confirm.unavailable,
+            subValue: nil
         )
     }
 }

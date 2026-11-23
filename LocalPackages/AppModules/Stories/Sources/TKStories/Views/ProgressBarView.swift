@@ -15,6 +15,7 @@ final class ProgressBarView: UIView {
 
     private let stackView = UIStackView()
     private var barViews = [PageBarView]()
+    private var isPaused = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -27,19 +28,24 @@ final class ProgressBarView: UIView {
     }
 
     func pause() {
+        guard !isPaused else { return }
+        isPaused = true
         barViews.forEach { $0.pause() }
     }
 
     func resume() {
+        guard isPaused else { return }
+        isPaused = false
         barViews.forEach { $0.resume() }
     }
 
-    func setActivePage(index: Int) {
+    func setActivePage(index: Int, isRunning: Bool) {
+        resume()
         let activeIndex = min(max(index, 0), barsCount - 1)
         for (index, view) in barViews.enumerated() {
             if index < activeIndex {
                 view.progress = 1
-            } else if index == activeIndex {
+            } else if index == activeIndex, isRunning {
                 view.setProgress(1, animated: true)
             } else {
                 view.progress = 0

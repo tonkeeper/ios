@@ -49,6 +49,7 @@ final class MysteryRaffleCoordinator: RouterCoordinator<ViewControllerRouter> {
     /// Where the modal was opened from — carried into `raffle_open`.
     private let source: RaffleSource
     /// Generic deeplink dispatch, bubbled from the presenting coordinator.
+    private let swapStatusTracker: MultichainSwapStatusTracker?
     private let openDeeplink: ((String) -> Void)?
     private let openMigration: ((@escaping () -> Void) -> Void)?
 
@@ -72,6 +73,7 @@ final class MysteryRaffleCoordinator: RouterCoordinator<ViewControllerRouter> {
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         presentedFromSwapFlow: Bool,
+        swapStatusTracker: MultichainSwapStatusTracker?,
         openDeeplink: ((String) -> Void)?,
         openMigration: ((@escaping () -> Void) -> Void)?,
         router: ViewControllerRouter
@@ -84,6 +86,7 @@ final class MysteryRaffleCoordinator: RouterCoordinator<ViewControllerRouter> {
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
         self.presentedFromSwapFlow = presentedFromSwapFlow
+        self.swapStatusTracker = swapStatusTracker
         self.openDeeplink = openDeeplink
         self.openMigration = openMigration
         super.init(router: router)
@@ -124,20 +127,26 @@ extension MysteryRaffleCoordinator {
         coreAssembly: TKCore.CoreAssembly,
         presentedFromSwapFlow: Bool = false,
         presentedFromBanner: Bool = false,
+        raffleId: String? = nil,
+        swapStatusTracker: MultichainSwapStatusTracker?,
         openDeeplink: ((String) -> Void)? = nil,
         openMigration: ((@escaping () -> Void) -> Void)? = nil
     ) -> MysteryRaffleCoordinator? {
-        let presentation = MysteryRafflePresentation(
-            raffles: keeperCoreMainAssembly.storesAssembly.raffleStore.getState()
-        )
-        guard let presentation else { return nil }
+        let raffles = keeperCoreMainAssembly.storesAssembly.raffleStore.getState()
+        let raffle = if let raffleId {
+            raffles.first { $0.id == raffleId }
+        } else {
+            MysteryRafflePresentation.selectRaffle(from: raffles)
+        }
+        guard let raffle else { return nil }
 
-        // The standalone banner exists to open a story (`RaffleBanner` in the contract), so
-        // when its own button deeplinks to one, show that story instead of the modal. Only
-        // the surfaces that actually render `raffle.banner` take this path — the wallet
+        // The card goes where its own button links — one of the raffle's stories, another
+        // deeplink or a web page — so the backend can retarget it. A link to this raffle, or a
+        // button with nowhere to go, opens the modal here, keeping the caller's analytics source.
+        // Only the surfaces that actually render `raffle.banner` take this path — the wallet
         // entry point and the swap promo are separate components with their own CTA.
-        if presentedFromBanner, presentBannerStoryIfNeeded(
-            raffle: presentation.raffle,
+        if presentedFromBanner, openBanner(
+            raffle: raffle,
             rootViewController: rootViewController,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
@@ -147,13 +156,14 @@ extension MysteryRaffleCoordinator {
         }
 
         return present(
-            raffle: presentation.raffle,
+            raffle: raffle,
             from: parent,
             rootViewController: rootViewController,
             source: source,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentedFromSwapFlow: presentedFromSwapFlow,
+            swapStatusTracker: swapStatusTracker,
             openDeeplink: openDeeplink,
             openMigration: openMigration
         )
@@ -169,6 +179,7 @@ extension MysteryRaffleCoordinator {
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         presentedFromSwapFlow: Bool = false,
+        swapStatusTracker: MultichainSwapStatusTracker?,
         openDeeplink: ((String) -> Void)? = nil,
         openMigration: ((@escaping () -> Void) -> Void)? = nil
     ) -> MysteryRaffleCoordinator? {
@@ -183,6 +194,7 @@ extension MysteryRaffleCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentedFromSwapFlow: presentedFromSwapFlow,
+            swapStatusTracker: swapStatusTracker,
             openDeeplink: openDeeplink,
             openMigration: openMigration,
             router: ViewControllerRouter(rootViewController: rootViewController)
@@ -196,8 +208,10 @@ extension MysteryRaffleCoordinator {
         from parent: Coordinator,
         rootViewController: UIViewController,
         source: RaffleSource,
+        raffleId: String? = nil,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
+        swapStatusTracker: MultichainSwapStatusTracker?,
         openDeeplink: ((String) -> Void)? = nil,
         openMigration: ((@escaping () -> Void) -> Void)? = nil
     ) -> MysteryRaffleCoordinator? {
@@ -207,11 +221,12 @@ extension MysteryRaffleCoordinator {
             content: nil,
             selectedRaffle: nil,
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
-            raffleId: nil,
+            raffleId: raffleId,
             source: source,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentedFromSwapFlow: false,
+            swapStatusTracker: swapStatusTracker,
             openDeeplink: openDeeplink,
             openMigration: openMigration,
             router: ViewControllerRouter(rootViewController: rootViewController)
@@ -221,7 +236,7 @@ extension MysteryRaffleCoordinator {
     }
 
     @MainActor
-    private static func presentBannerStoryIfNeeded(
+    private static func openBanner(
         raffle: MultichainRaffle,
         rootViewController: UIViewController,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -231,23 +246,28 @@ extension MysteryRaffleCoordinator {
         guard
             current == nil,
             !isFollowUpFlowActive,
-            let button = raffle.banner?.button,
-            button.action == .deeplink
+            let route = bannerRoute(for: raffle, deeplinkParser: keeperCoreMainAssembly.deeplinkParser)
         else { return false }
 
-        let storiesRouter = MysteryRaffleStoriesRouter.make(
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
-        )
-        guard let story = storiesRouter.story(forPayload: button.payload, in: raffle) else {
-            return false
+        switch route {
+        case let .story(story):
+            return MysteryRaffleStoriesRouter.make(
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            ).present(
+                story: story,
+                from: rootViewController,
+                source: Self.bannerStoryAnalyticsSource,
+                openDeeplink: openDeeplink
+            )
+        case let .deeplink(deeplink):
+            guard let openDeeplink else { return false }
+            openDeeplink(deeplink)
+            return true
+        case let .link(url):
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            return true
         }
-        return storiesRouter.present(
-            story: story,
-            from: rootViewController,
-            source: Self.bannerStoryAnalyticsSource,
-            openDeeplink: openDeeplink
-        )
     }
 
     /// Auto-opens the raffle's next unshown story on its own, with no modal underneath —
@@ -347,6 +367,9 @@ private extension MysteryRaffleCoordinator {
             completion: { [weak self] in
                 guard let self else { return }
                 isSheetPresented = true
+                if awaitingInitialContent {
+                    apply(raffles: raffleStore.getState(), viewModel: self.viewModel)
+                }
                 presentPendingStory()
             },
             onDismiss: { [weak self] in
@@ -386,7 +409,7 @@ private extension MysteryRaffleCoordinator {
     @MainActor
     func apply(raffles: [MultichainRaffle], viewModel: MysteryRaffleViewModel?) {
         guard let raffle = selectRaffle(from: raffles) else {
-            guard !awaitingInitialContent else { return }
+            guard !awaitingInitialContent || (isSheetPresented && !raffles.isEmpty) else { return }
             // No raffle left to show (e.g. active wallet switched to one with none,
             // or a re-fetch came back empty) — don't leave the sheet stuck on stale data.
             close()
@@ -642,7 +665,7 @@ private extension MysteryRaffleCoordinator {
         }
         guard
             let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-            wallet.isMultichain,
+            wallet.hasMultichainMnemonic,
             let openMigration
         else {
             close()
@@ -671,6 +694,8 @@ private extension MysteryRaffleCoordinator {
         }
         guard
             let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+            wallet.isSwapEnable,
+            !keeperCoreMainAssembly.configurationAssembly.configuration.isLedgerDappsLocked(wallet),
             case let .multichain(multichainState) = wallet.multichain
         else {
             close()
@@ -689,6 +714,7 @@ private extension MysteryRaffleCoordinator {
             nativeSwapContext: NativeSwapContext(),
             assetSource: .walletAssets(multichainState, initialSelection: Self.ticketSwapAssetSelection),
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
+            statusTracker: swapStatusTracker,
             initiatedBy: .user,
             router: swapRouter,
             coreAssembly: coreAssembly,
@@ -754,6 +780,7 @@ private extension MysteryRaffleCoordinator {
             wallet: wallet,
             jettonMasterAddress: nil,
             initiatedBy: .user,
+            analyticsSource: .insufficientFunds,
             utm: .empty,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -914,6 +941,28 @@ extension MysteryRaffleCoordinator {
             case .resultsLink: return .resultsLink
             case .deeplink: return nil
             }
+        }
+    }
+
+    enum BannerRoute: Equatable {
+        case story(MultichainRaffleStory)
+        case deeplink(String)
+        case link(URL)
+    }
+
+    nonisolated static func bannerRoute(for raffle: MultichainRaffle, deeplinkParser: DeeplinkParser) -> BannerRoute? {
+        guard let button = raffle.banner?.button else { return nil }
+        switch button.action {
+        case .deeplink:
+            if let story = MysteryRaffleStoriesRouter.story(forPayload: button.payload, in: raffle) {
+                return .story(story)
+            }
+            if case let .raffle(id)? = try? deeplinkParser.parse(string: button.payload), id == raffle.id {
+                return nil
+            }
+            return .deeplink(button.payload)
+        case .link:
+            return URL(string: button.payload).map(BannerRoute.link)
         }
     }
 

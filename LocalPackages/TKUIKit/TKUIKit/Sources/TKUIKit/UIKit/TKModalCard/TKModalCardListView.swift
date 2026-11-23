@@ -40,8 +40,9 @@ public final class TKModalCardListView: UIView, ConfigurableView {
                 }
                 if let copyToastConfiguration {
                     ToastPresenter.showToast(configuration: copyToastConfiguration)
+                } else {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 }
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
             }), for: .touchUpInside)
             stackView.addArrangedSubview(listItemView)
             if index == model.count - 1 {

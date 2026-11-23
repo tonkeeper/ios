@@ -1,6 +1,6 @@
 import Combine
 @testable import KeeperCore
-import ReownWalletKit
+import WalletConnectSign
 import XCTest
 
 final class WalletConnectNetworkConnectionStatusProviderTests: XCTestCase {

@@ -7,6 +7,7 @@ struct SettingsListAppInformationView: View {
     let onDevMenuActivation: () -> Void
 
     @State private var tapCount = 0
+    @State private var tapResetWork: DispatchWorkItem?
     @State private var playbackMode: LottiePlaybackMode = .paused(at: .progress(0))
 
     var body: some View {
@@ -42,6 +43,7 @@ private extension SettingsListAppInformationView {
         .configure { $0.backgroundBehavior = .pauseAndRestore }
         .frame(height: Layout.markHeight, alignment: .top)
         .contentShape(Rectangle())
+        .accessibilityIdentifier("settings_app_information")
         .onTapGesture {
             playbackMode = .playing(.fromProgress(0, toProgress: 1, loopMode: .playOnce))
             countTap()
@@ -61,9 +63,13 @@ private extension SettingsListAppInformationView {
         if tapCount >= Layout.devMenuActivationTapCount {
             onDevMenuActivation()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            tapCount = 0
-        }
+        // The series ends one second after the *last* tap, not the first: a reset armed by the
+        // first tap also cut off a sequence that merely took longer than a second (UI tests tap
+        // at about two taps a second).
+        tapResetWork?.cancel()
+        let work = DispatchWorkItem { tapCount = 0 }
+        tapResetWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
     enum Layout {

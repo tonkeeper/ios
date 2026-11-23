@@ -1,13 +1,17 @@
 @testable import App
+import KeeperCore
 import XCTest
 
 final class TransactionLiveActivityLinkTests: XCTestCase {
     func test_roundTripsIdsThatCarryReservedCharacters() throws {
         let link = TransactionLiveActivityLink(walletId: "wallet 1&2", transactionId: "swap:ton:ab+cd/ef=")
 
-        let url = try XCTUnwrap(link.url)
+        let url = try XCTUnwrap(link.url(on: .dynamicIsland))
 
         XCTAssertEqual(TransactionLiveActivityLink(url: url), link)
+        XCTAssertEqual(UtmParameters(link: url.absoluteString).source, "tonkeeper")
+        XCTAssertEqual(UtmParameters(link: url.absoluteString).medium, "live_activity")
+        XCTAssertEqual(UtmParameters(link: url.absoluteString).content, "dynamic_island")
     }
 
     func test_leavesOtherLinksToTheDeeplinkParser() throws {

@@ -15,4 +15,8 @@ public final class ScannerController {
     public func handleScannedQRCodeUR(_ qrCodeString: String) throws -> UR {
         return try configurator.handleQRCodeUR(qrCodeString)
     }
+
+    public func resetURDecoding() {
+        configurator.resetURDecoding()
+    }
 }

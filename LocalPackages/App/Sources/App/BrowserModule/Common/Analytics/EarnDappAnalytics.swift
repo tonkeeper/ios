@@ -32,7 +32,7 @@ struct EarnDappAnalytics {
                     chain: chain,
                     vaultId: vaultId,
                     errorCode: failure.code,
-                    errorMessage: failure.reason?.redactingLongHex
+                    errorMessage: failure.reason?.redactingAddresses
                 )
             )
         }
@@ -69,7 +69,7 @@ struct EarnDappAnalytics {
         }
         let redacted = params.mapValues { value -> Any in
             guard let text = value as? String else { return value }
-            let redactedText = text.redactingLongHex
+            let redactedText = text.redactingAddresses
             return redactedText == text || MultichainChain(assetId: text) != nil ? text : redactedText
         }
         analyticsProvider.log(event: .Dapp.track(event: name, params: redacted), utm: utm)
@@ -93,7 +93,7 @@ private extension EarnDappAnalytics {
         var payload = params
         for key in ["error_message", "url"] {
             if let value = payload[key] as? String {
-                payload[key] = value.redactingLongHex
+                payload[key] = value.redactingAddresses
             }
         }
         payload["eventName"] = name
@@ -228,6 +228,8 @@ private extension WalletConnectSigningError {
         switch self {
         case .canceled:
             "canceled"
+        case .requestEndedAfterBroadcast:
+            "request_ended_after_broadcast"
         case .unsupportedWalletKind:
             "unsupported_wallet_kind"
         case .missingMultichainAddress:
@@ -248,6 +250,8 @@ private extension WalletConnectSigningError {
             "failed_to_estimate_nonce"
         case .failedToCalculateFee:
             "failed_to_calculate_fee"
+        case .unreviewable:
+            "unreviewable"
         case .failedToSign:
             "failed_to_sign"
         case .failedToSend:
@@ -264,19 +268,14 @@ private extension WalletConnectSigningError {
              let .invalidTransaction(reason),
              let .failedToEstimateNonce(reason),
              let .failedToCalculateFee(reason),
+             let .unreviewable(reason),
              let .failedToSign(reason),
              let .failedToSend(reason),
              let .notImplemented(reason):
             reason
-        case .canceled, .unsupportedWalletKind, .missingMultichainAddress, .senderAddressMismatch,
+        case .canceled, .requestEndedAfterBroadcast, .unsupportedWalletKind, .missingMultichainAddress, .senderAddressMismatch,
              .missingRecipient, .missingPasscode:
             nil
         }
-    }
-}
-
-private extension String {
-    var redactingLongHex: String {
-        replacingOccurrences(of: "(0x)?[0-9a-fA-F]{40,}", with: "<hex>", options: .regularExpression)
     }
 }

@@ -21,7 +21,8 @@ struct KeystoneImportScanAssembly {
                 title: TKLocales.Scanner.title,
                 subtitle: TKLocales.Keystone.Scan.subtitle,
                 isFlashlightVisible: true
-            )
+            ),
+            analyticsSession: nil
         )
 
         let viewModel = KeystoneImportScanViewModelImplementation(

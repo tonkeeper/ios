@@ -4,9 +4,17 @@ import TonSwift
 import XCTest
 
 final class BatteryAuthorizationServiceTests: XCTestCase {
+    func test_deviceSessionFailureLogsRetainTheUnderlyingCase() {
+        for (failure, expected): (DeviceAuthError, String) in [(.connectionError, "connectionError"), (.failed(message: "503"), "failed"), (.cancelled, "cancelled")] {
+            let description = BatteryAuthorizationError.deviceSessionFailure(failure).logDescription
+            XCTAssertTrue(description.contains("deviceSessionFailure"))
+            XCTAssertTrue(description.contains(expected))
+        }
+    }
+
     func test_legacyWallet_usesOnlyTonProofAndSkipsDeviceSession() async throws {
         let tonProof = TonProofTokenServiceFake(token: "ton-proof")
-        let deviceAuth = DeviceAuthFake()
+        let deviceAuth = DeviceAuthFake(sessionError: .connectionError)
         let service = BatteryAuthorizationService(
             tonProofTokenService: tonProof,
             deviceAuth: deviceAuth,
@@ -68,6 +76,59 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
         )
     }
 
+    func test_offlineDeviceSessionPreservesTheNetworkFailureBeforeTheBatteryRequest() async {
+        let service = BatteryAuthorizationService(
+            tonProofTokenService: TonProofTokenServiceFake(token: nil),
+            deviceAuth: DeviceAuthFake(sessionError: .connectionError),
+            walletAuthTokenProvider: WalletAuthTokenProviderStub()
+        )
+        var didRunOperation = false
+
+        do {
+            try await service.withAuthorization(for: makeWallet(multichainWalletId: "backend-wallet-id")) { _ in
+                didRunOperation = true
+            }
+            XCTFail("Expected the device-session network failure")
+        } catch {
+            XCTAssertEqual(error as? BatteryAuthorizationError, .deviceSessionFailure(.connectionError))
+            XCTAssertTrue(BatteryPurchaseError.isNetworkError(error))
+        }
+        XCTAssertFalse(didRunOperation)
+    }
+
+    func test_rejectedDeviceSessionRemainsAnAuthorizationFailure() async {
+        for error: DeviceAuthError in [.unauthorized(reason: "revoked")] {
+            let service = BatteryAuthorizationService(
+                tonProofTokenService: TonProofTokenServiceFake(token: nil),
+                deviceAuth: DeviceAuthFake(sessionError: error),
+                walletAuthTokenProvider: WalletAuthTokenProviderStub()
+            )
+
+            await assertAuthorizationUnavailable(
+                for: makeWallet(multichainWalletId: "backend-wallet-id"),
+                service: service
+            )
+        }
+    }
+
+    func test_deviceSessionFailuresRetainTheirCause() async {
+        for failure: DeviceAuthError in [.connectionError, .failed(message: "503"), .cancelled] {
+            let service = BatteryAuthorizationService(
+                tonProofTokenService: TonProofTokenServiceFake(token: nil),
+                deviceAuth: DeviceAuthFake(sessionError: failure),
+                walletAuthTokenProvider: WalletAuthTokenProviderStub()
+            )
+            do {
+                _ = try await service.authorization(for: makeWallet(multichainWalletId: "backend-wallet-id"))
+                XCTFail("Expected a device-session failure")
+            } catch {
+                XCTAssertEqual(error as? BatteryAuthorizationError, .deviceSessionFailure(failure))
+                XCTAssertEqual(error.isCancelledError, failure == .cancelled)
+                XCTAssertEqual(BatteryPurchaseError.isNetworkError(error), failure == .connectionError)
+            }
+        }
+    }
+
     func test_missingLegacyCredentials_returnsUnavailable() async {
         let service = BatteryAuthorizationService(
             tonProofTokenService: TonProofTokenServiceFake(token: nil),
@@ -79,7 +140,7 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
             _ = try await service.authorization(for: makeWallet())
             XCTFail("Expected unavailable authorization")
         } catch {
-            XCTAssertEqual(error as? BatteryAuthorizationError, .unavailable)
+            XCTAssertEqual(error as? BatteryAuthorizationError, .legacyProofUnavailable)
         }
     }
 
@@ -255,6 +316,125 @@ final class BatteryAuthorizationServiceTests: XCTestCase {
         XCTAssertEqual(recoveredTokens, [])
     }
 
+    func test_migration_sendsTheSourceTonProofWithTheDestinationWalletCredentials() async throws {
+        let service = BatteryAuthorizationService(
+            tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
+            deviceAuth: DeviceAuthFake(sessionToken: "device-access-token"),
+            walletAuthTokenProvider: WalletAuthTokenProviderStub(isWarm: true)
+        )
+
+        let authorization: BatteryAuthorization = try await service.withMigrationAuthorization(
+            from: makeWallet(),
+            to: makeWallet(multichainWalletId: "backend-wallet-id"),
+            validateDestination: { _ in XCTFail("A successful migration does not need a device probe") }
+        ) { $0 }
+
+        XCTAssertEqual(
+            authorization,
+            BatteryAuthorization(
+                tonProof: "ton-proof",
+                walletId: "backend-wallet-id",
+                deviceAccessToken: "device-access-token",
+                walletAuthToken: "signed(backend-wallet-id,device-access-token)"
+            )
+        )
+    }
+
+    func test_migrationUnauthorizedWithValidDeviceSessionDoesNotRecoverOrRetry() async {
+        let deviceAuth = DeviceAuthFake(sessionToken: "valid-device-token")
+        let service = BatteryAuthorizationService(
+            tonProofTokenService: TonProofTokenServiceFake(token: "stale-ton-proof"),
+            deviceAuth: deviceAuth,
+            walletAuthTokenProvider: WalletAuthTokenProviderStub(isWarm: true)
+        )
+        var probes = 0
+        var migrations = 0
+        do {
+            let _: Void = try await service.withMigrationAuthorization(
+                from: makeWallet(),
+                to: makeWallet(multichainWalletId: "backend-wallet-id"),
+                validateDestination: { authorization in
+                    probes += 1
+                    XCTAssertNil(authorization.tonProof)
+                    XCTAssertEqual(authorization.deviceAccessToken, "valid-device-token")
+                }
+            ) { _ in
+                migrations += 1
+                throw BatteryAPI.ApiError.badStatus(status: 401, message: "unauthorized")
+            }
+            XCTFail("Expected the legacy authorization failure")
+        } catch let error as BatteryAPI.ApiError {
+            guard case .badStatus(status: 401, message: _) = error else { return XCTFail("Unexpected error: \(error)") }
+        } catch { XCTFail("Unexpected error: \(error)") }
+
+        let recovered = await deviceAuth.recoveredTokens
+        XCTAssertEqual(recovered, [])
+        XCTAssertEqual(probes, 1)
+        XCTAssertEqual(migrations, 1)
+    }
+
+    func test_migrationRecoversOnlyWhenDeviceOnlyProbeAlsoRejectsTheSession() async throws {
+        let deviceAuth = DeviceAuthFake(sessionToken: "expired-device-token", recoveredToken: "fresh-device-token")
+        let service = BatteryAuthorizationService(
+            tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
+            deviceAuth: deviceAuth,
+            walletAuthTokenProvider: WalletAuthTokenProviderStub(isWarm: true)
+        )
+        var probes = [BatteryAuthorization]()
+        var migrations = [BatteryAuthorization]()
+        let result: String = try await service.withMigrationAuthorization(
+            from: makeWallet(),
+            to: makeWallet(multichainWalletId: "backend-wallet-id"),
+            validateDestination: { authorization in
+                probes.append(authorization)
+                XCTAssertNil(authorization.tonProof)
+                if authorization.deviceAccessToken == "expired-device-token" {
+                    throw BatteryAPI.ApiError.badStatus(status: 401, message: "unauthorized")
+                }
+            }
+        ) { authorization in
+            migrations.append(authorization)
+            if migrations.count == 1 { throw BatteryAPI.ApiError.badStatus(status: 401, message: "unauthorized") }
+            return "migrated"
+        }
+
+        let recovered = await deviceAuth.recoveredTokens
+        XCTAssertEqual(result, "migrated")
+        XCTAssertEqual(recovered, ["expired-device-token"])
+        XCTAssertEqual(probes.map(\.deviceAccessToken), ["expired-device-token", "fresh-device-token"])
+        XCTAssertEqual(migrations.map(\.tonProof), ["ton-proof", "ton-proof"])
+        XCTAssertEqual(migrations.map(\.deviceAccessToken), ["expired-device-token", "fresh-device-token"])
+        XCTAssertEqual(migrations.last?.walletAuthToken, "signed(backend-wallet-id,fresh-device-token)")
+    }
+
+    func test_failedDestinationProbeDoesNotRequestLegacyProofRefresh() async {
+        let failures: [Error] = [
+            BatteryAuthorizationError.unavailable,
+            BatteryAPI.ApiError.badStatus(status: 401, message: "device rejected"),
+            BatteryAPI.ApiError.badStatus(status: 503, message: "unavailable"),
+            URLError(.networkConnectionLost),
+        ]
+        for failure in failures {
+            let service = BatteryAuthorizationService(
+                tonProofTokenService: TonProofTokenServiceFake(token: "ton-proof"),
+                deviceAuth: DeviceAuthFake(),
+                walletAuthTokenProvider: WalletAuthTokenProviderStub()
+            )
+            do {
+                let _: Void = try await service.withMigrationAuthorization(
+                    from: makeWallet(),
+                    to: makeWallet(multichainWalletId: "backend-wallet-id"),
+                    validateDestination: { _ in throw failure }
+                ) { _ in
+                    throw BatteryAPI.ApiError.badStatus(status: 401, message: "unauthorized")
+                }
+                XCTFail("Expected the destination failure")
+            } catch {
+                XCTAssertFalse(LegacyBatteryMigrationController.isAuthorizationError(error))
+            }
+        }
+    }
+
     func test_optionalAuthorization_withoutAnyCredentials_stillRunsUnauthorized() async throws {
         let service = BatteryAuthorizationService(
             tonProofTokenService: TonProofTokenServiceFake(token: nil),
@@ -363,7 +543,8 @@ private extension BatteryAuthorizationServiceTests {
             _ = try await service.authorization(for: wallet)
             XCTFail("Expected unavailable authorization", file: file, line: line)
         } catch {
-            XCTAssertEqual(error as? BatteryAuthorizationError, .unavailable, file: file, line: line)
+            let expected: BatteryAuthorizationError = wallet.multichainWalletId == nil ? .legacyProofUnavailable : .unavailable
+            XCTAssertEqual(error as? BatteryAuthorizationError, expected, file: file, line: line)
         }
     }
 
@@ -438,17 +619,20 @@ private final class TonProofTokenServiceFake: TonProofTokenService {
 
 private actor DeviceAuthFake: DeviceAuthProviding {
     private let sessionToken: String
+    private let sessionError: DeviceAuthError?
     private let recoveredToken: String
     private(set) var sessionCallCount = 0
     private(set) var recoveredTokens = [String]()
 
-    init(sessionToken: String = "session-token", recoveredToken: String = "recovered-token") {
+    init(sessionToken: String = "session-token", recoveredToken: String = "recovered-token", sessionError: DeviceAuthError? = nil) {
         self.sessionToken = sessionToken
         self.recoveredToken = recoveredToken
+        self.sessionError = sessionError
     }
 
     func session() async throws(DeviceAuthError) -> DeviceAuthSession {
         sessionCallCount += 1
+        if let sessionError { throw sessionError }
         return DeviceAuthSession(deviceId: "device-id", accessToken: sessionToken)
     }
 

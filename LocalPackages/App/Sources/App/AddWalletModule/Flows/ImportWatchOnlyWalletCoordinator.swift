@@ -14,6 +14,7 @@ final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<NavigationContro
     private let analyticsProvider: AnalyticsProvider
     private let customizeWalletModule: (_ name: String?) -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     private let analyticsContext: WalletFlowAnalyticsContext
+    private var importTask: Task<Void, Never>?
 
     init(
         router: NavigationControllerRouter,
@@ -33,6 +34,10 @@ final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<NavigationContro
 
     override func start() {
         openWatchOnlyWalletAddressInput()
+    }
+
+    func cancelImport() {
+        importTask?.cancel()
     }
 }
 
@@ -75,7 +80,8 @@ private extension ImportWatchOnlyWalletCoordinator {
 
         module.output.didCustomizeWallet = { [weak self] model in
             guard let self else { return }
-            Task {
+            importTask?.cancel()
+            importTask = Task {
                 await self.importWallet(
                     resolvableAddress: resolvableAddress,
                     model: model
@@ -85,13 +91,16 @@ private extension ImportWatchOnlyWalletCoordinator {
 
         if router.rootViewController.viewControllers.isEmpty {
             module.view.setupHeaderLeftCloseButton { [weak self] in
+                self?.cancelImport()
                 self?.didCancel?()
             }
         } else {
             module.view.setupHeaderBackButton()
         }
 
-        router.push(viewController: module.view)
+        router.push(viewController: module.view, onPopClosures: { [weak self] in
+            self?.cancelImport()
+        })
     }
 
     func importWallet(
@@ -117,8 +126,10 @@ private extension ImportWatchOnlyWalletCoordinator {
                 from: analyticsContext.from
             )
             await MainActor.run {
+                guard !Task.isCancelled else { return }
                 didImportWallet?()
             }
+        } catch is CancellationError {
         } catch {
             Log.e("Watch only wallet import failed", extraInfo: [
                 "error": error.localizedDescription,

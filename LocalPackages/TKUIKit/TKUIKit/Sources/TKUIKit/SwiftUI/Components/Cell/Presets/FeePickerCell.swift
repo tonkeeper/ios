@@ -10,6 +10,8 @@ public struct FeePickerCellContent {
     public var title: String
     public var subtitle: String?
     public var isDisabled: Bool
+    /// Why the method cannot pay, in red between the subtitle and the action.
+    public var subtitleWarning: String?
     public var subtitleActionTitle: String?
     public var isSelected: Bool
 
@@ -18,6 +20,7 @@ public struct FeePickerCellContent {
         title: String,
         subtitle: String? = nil,
         isDisabled: Bool = false,
+        subtitleWarning: String? = nil,
         subtitleActionTitle: String? = nil,
         isSelected: Bool = false
     ) {
@@ -25,6 +28,7 @@ public struct FeePickerCellContent {
         self.title = title
         self.subtitle = subtitle
         self.isDisabled = isDisabled
+        self.subtitleWarning = subtitleWarning
         self.subtitleActionTitle = subtitleActionTitle
         self.isSelected = isSelected
     }
@@ -159,6 +163,7 @@ private extension FeePickerCell {
                 } secondaryRow: {
                     subtitleView(
                         subtitle: subtitle,
+                        warning: content.subtitleWarning,
                         actionTitle: content.subtitleActionTitle
                     )
                 }
@@ -203,21 +208,22 @@ private extension FeePickerCell {
     @ViewBuilder
     func subtitleView(
         subtitle: String,
+        warning: String?,
         actionTitle: String?
     ) -> some View {
-        if let actionTitle {
+        if warning != nil || actionTitle != nil {
             HStack(spacing: 0) {
                 Text(subtitle)
                     .textStyle(.body2)
                     .foregroundStyle(.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                Text(" · ")
-                    .textStyle(.body2)
-                    .foregroundStyle(.textSecondary)
-                Text(actionTitle)
-                    .textStyle(.body2)
-                    .foregroundStyle(.accentBlue)
+                if let warning {
+                    subtitlePart(warning, color: .accentRed)
+                }
+                if let actionTitle {
+                    subtitlePart(actionTitle, color: .accentBlue)
+                }
             }
         } else {
             CellCenterSecondaryRow(
@@ -230,5 +236,17 @@ private extension FeePickerCell {
                 )
             )
         }
+    }
+
+    func subtitlePart(_ text: String, color: TKColor) -> some View {
+        Group {
+            Text(" · ")
+                .foregroundStyle(.textSecondary)
+            Text(text)
+                .foregroundStyle(color)
+        }
+        .textStyle(.body2)
+        .lineLimit(1)
+        .fixedSize()
     }
 }

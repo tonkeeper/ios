@@ -38,13 +38,19 @@ final class StakingBalanceDetailsActionBarView: UIView, ConfigurableView {
     func configure(model: Model) {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for item in model.buttons {
-            var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-            configuration.content = TKButton.Configuration.Content(title: .plainString(item.title))
-            configuration.isEnabled = item.isEnabled
-            configuration.action = item.action
-            let button = TKButton(configuration: configuration)
-            button.accessibilityIdentifier = item.accessibilityIdentifier
-            stackView.addArrangedSubview(button)
+            stackView.addArrangedSubview(button(item))
         }
+    }
+}
+
+private extension StakingBalanceDetailsActionBarView {
+    func button(_ item: Model.Button) -> UIView {
+        var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+        configuration.content = TKButton.Configuration.Content(title: .plainString(item.title))
+        configuration.isEnabled = item.isEnabled
+        configuration.action = item.action
+        let button = TKButton(configuration: configuration)
+        button.accessibilityIdentifier = item.accessibilityIdentifier
+        return button
     }
 }

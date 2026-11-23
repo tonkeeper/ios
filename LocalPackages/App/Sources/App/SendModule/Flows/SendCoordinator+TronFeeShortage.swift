@@ -53,7 +53,7 @@ extension SendCoordinator {
             ),
             from: viewController,
             onRecharge: { [weak self] in
-                self?.handleFeeRefillRequest(extraType: .battery, onRefresh: onRefresh)
+                self?.didRequestOpenBattery?(.insufficientFunds, onRefresh)
             },
             onDeposit: depositTRX
         )

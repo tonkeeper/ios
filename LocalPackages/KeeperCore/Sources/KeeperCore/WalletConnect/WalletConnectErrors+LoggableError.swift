@@ -96,6 +96,8 @@ extension WalletConnectResponseError: LoggableError {
             return walletConnectLogDescription(type: "WalletConnectResponseError", caseName: "missingRequest")
         case .requestExpired:
             return walletConnectLogDescription(type: "WalletConnectResponseError", caseName: "requestExpired")
+        case .requestExpiredAfterBroadcast:
+            return walletConnectLogDescription(type: "WalletConnectResponseError", caseName: "requestExpiredAfterBroadcast")
         case .missingSession:
             return walletConnectLogDescription(type: "WalletConnectResponseError", caseName: "missingSession")
         case .storage:
@@ -115,6 +117,8 @@ extension WalletConnectSigningError: LoggableError {
         switch self {
         case .canceled:
             return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "canceled")
+        case .requestEndedAfterBroadcast:
+            return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "requestEndedAfterBroadcast")
         case .unsupportedWalletKind:
             return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "unsupportedWalletKind")
         case let .missingMultichainAddress(chain, _):
@@ -139,6 +143,8 @@ extension WalletConnectSigningError: LoggableError {
             return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "failedToEstimateNonce")
         case .failedToCalculateFee:
             return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "failedToCalculateFee")
+        case .unreviewable:
+            return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "unreviewable")
         case .failedToSign:
             return walletConnectLogDescription(type: "WalletConnectSigningError", caseName: "failedToSign")
         case .failedToSend:

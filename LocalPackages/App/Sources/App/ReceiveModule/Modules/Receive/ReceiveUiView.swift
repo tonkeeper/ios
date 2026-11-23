@@ -24,7 +24,8 @@ final class ReceiveUiView: UIView {
         network: ReceiveNetworkViewData,
         qrCodeMatrix: QrCodeMatrix?,
         onCopy: @escaping () -> Void,
-        onShare: @escaping () -> Void
+        onShare: @escaping () -> Void,
+        onVerify: (() -> Void)?
     ) {
         titleHostingView.setContent {
             ReceiveTitleBlockView(network: network)
@@ -39,7 +40,8 @@ final class ReceiveUiView: UIView {
         actionsHostingView.setContent {
             ReceiveActionRowView(
                 onCopy: onCopy,
-                onShare: onShare
+                onShare: onShare,
+                onVerify: onVerify
             )
         }
     }

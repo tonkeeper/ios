@@ -1,6 +1,5 @@
 import Foundation
 import PerpsModels
-import TKKandelabrAPI
 
 final class PerpsChartService: PerpsChartProviding, Sendable {
     static let defaultPriceDecimals = 2
@@ -9,17 +8,20 @@ final class PerpsChartService: PerpsChartProviding, Sendable {
     private let hermes: HermesCandleStreaming
     private let marketsRepository: PerpsMarketsReading
     private let snapshotBars: Int32
+    private let now: @Sendable () -> Date
 
     init(
         kandelabr: KandelabrAPI,
         hermes: HermesCandleStreaming,
         marketsRepository: PerpsMarketsReading,
-        snapshotBars: Int32 = 500
+        snapshotBars: Int32 = 500,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.kandelabr = kandelabr
         self.hermes = hermes
         self.marketsRepository = marketsRepository
         self.snapshotBars = snapshotBars
+        self.now = now
     }
 
     func watchChart(
@@ -36,6 +38,7 @@ final class PerpsChartService: PerpsChartProviding, Sendable {
             hermes: hermes,
             marketsRepository: marketsRepository,
             snapshotBars: snapshotBars,
+            now: now,
             onUpdate: onUpdate,
             onReconnecting: onReconnecting,
             onFailed: onFailed

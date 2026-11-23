@@ -37,7 +37,7 @@ actor Argon2DeriveTimeMeasurementController {
 
     init(
         analyticsProvider: AnalyticsProvider,
-        appInfoProvider: AppInfoProvider
+        appInfoProvider: DeviceAppInfoProvider
     ) {
         let deviceModel = appInfoProvider.deviceModel
         self.init(

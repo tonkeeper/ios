@@ -1,6 +1,6 @@
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 @WalletConnectActor
 final class WalletConnectSessionRequestCoordinator: Sendable {
@@ -102,15 +102,23 @@ extension WalletConnectSessionRequestCoordinator {
             )
             clearRequest(key: request.key)
         } catch {
-            if !error.isRetryableDeliveryFailure {
+            let responseError: WalletConnectResponseError
+            if case let .requestExpired(id) = error,
+               request.method?.broadcastsBeforeResponding == true
+            {
+                responseError = .requestExpiredAfterBroadcast(id: id)
+            } else {
+                responseError = error
+            }
+            if !responseError.isRetryableDeliveryFailure {
                 clearRequest(key: request.key)
             }
             Log.walletConnect.w(
                 "request approval delivery failed",
-                error: error,
+                error: responseError,
                 extraInfo: requestLogInfo(request)
             )
-            throw error
+            throw responseError
         }
     }
 
@@ -170,6 +178,10 @@ extension WalletConnectSessionRequestCoordinator {
         pendingRequests = pendingRequests.filter { $0.key.topic != topic }
         receivedRequestKeys = receivedRequestKeys.filter { $0.topic != topic }
     }
+
+    func hasPendingRequest(id: String, topic: String) -> Bool {
+        pendingRequests[WalletConnectPendingRequestKey(topic: topic, requestId: id)] != nil
+    }
 }
 
 private extension WalletConnectSessionRequestCoordinator {
@@ -200,7 +212,8 @@ private extension WalletConnectSessionRequestCoordinator {
         return WalletConnectPendingRequest(
             key: key,
             topic: request.topic,
-            id: request.id
+            id: request.id,
+            method: WalletConnectMethod(rawValue: request.method)
         )
     }
 
@@ -326,6 +339,7 @@ private struct WalletConnectPendingRequest {
     let key: WalletConnectPendingRequestKey
     let topic: String
     let id: RPCID
+    let method: WalletConnectMethod?
 }
 
 private func logSessionRequestReceived(

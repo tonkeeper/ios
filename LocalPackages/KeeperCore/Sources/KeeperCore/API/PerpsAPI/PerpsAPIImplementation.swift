@@ -258,13 +258,14 @@ struct PerpsAPIImplementation: PerpsAPI {
 
     func sendTransactions(
         walletId: String,
+        operationId: String?,
         transactions: [Components.Schemas.SignedTransaction]
     ) async throws -> Components.Schemas.SendTransactionsResponse {
         let client = try await client(walletId: walletId)
         let response: Operations.sendTransactions.Output
         do {
             response = try await client.sendTransactions(
-                body: .json(.init(transactions: transactions))
+                body: .json(.init(transactions: transactions, operation_id: operationId))
             )
         } catch {
             throw PerpsAPIError.transport(underlying: error)
@@ -282,8 +283,8 @@ struct PerpsAPIImplementation: PerpsAPI {
             throw failure(500, try? payload.body.json)
         case let .serviceUnavailable(payload):
             throw sendUnavailable(payload)
-        case let .undocumented(statusCode, _):
-            throw PerpsAPIError.badStatus(.undecoded(statusCode, message: "undocumented"))
+        case let .undocumented(statusCode, payload):
+            throw await undocumentedFailure(statusCode, body: payload.body)
         }
     }
 
@@ -390,7 +391,7 @@ struct PerpsAPIImplementation: PerpsAPI {
             case let .conflict(payload): throw failure(409, try? payload.body.json)
             case let .internalServerError(payload): throw failure(500, try? payload.body.json)
             case let .serviceUnavailable(payload): throw failure(503, try? payload.body.json)
-            case let .undocumented(statusCode, _): throw PerpsAPIError.badStatus(.undecoded(statusCode, message: "undocumented"))
+            case let .undocumented(statusCode, payload): throw await undocumentedFailure(statusCode, body: payload.body)
             }
         }
     }
@@ -573,6 +574,26 @@ struct PerpsAPIImplementation: PerpsAPI {
         try await activityPage(walletId: walletId, query: .init(_type: .withdrawal, cursor: cursor, limit: 100))
     }
 
+    func recordClientMetrics(walletId: String, metrics: [Components.Schemas.ClientMetric]) async throws {
+        try await retrying {
+            let client = try await client(walletId: walletId)
+            let response: Operations.recordClientMetrics.Output
+            do {
+                response = try await client.recordClientMetrics(body: .json(.init(metrics: metrics)))
+            } catch {
+                throw PerpsAPIError.transport(underlying: error)
+            }
+            switch response {
+            case .noContent: return
+            case let .badRequest(payload): throw status(400, payload)
+            case .unauthorized(_), .forbidden: throw PerpsAPIError.unauthorized
+            case let .internalServerError(payload): throw failure(500, try? payload.body.json)
+            case let .serviceUnavailable(payload): throw failure(503, try? payload.body.json)
+            case let .undocumented(statusCode, _): throw PerpsAPIError.badStatus(.undecoded(statusCode, message: "undocumented"))
+            }
+        }
+    }
+
     private func activityPage(
         walletId: String,
         query: Operations.getActivity.Input.Query
@@ -653,6 +674,17 @@ private extension PerpsAPIImplementation {
             return failure(status, nil)
         }
         return .transport(underlying: error)
+    }
+
+    func undocumentedFailure(_ httpStatus: Int, body: HTTPBody?) async -> PerpsAPIError {
+        if httpStatus >= 400, let body,
+           let data = try? await Data(collecting: body, upTo: 64 * 1024),
+           let envelope = try? JSONDecoder().decode(Components.Schemas.ErrorResponse.self, from: data)
+        {
+            let error = failure(httpStatus, envelope)
+            if error.isWithdrawalRateLimited { return error }
+        }
+        return .badStatus(.undecoded(httpStatus, message: "undocumented"))
     }
 
     func failure(_ httpStatus: Int, _ body: Components.Schemas.ErrorResponse?) -> PerpsAPIError {

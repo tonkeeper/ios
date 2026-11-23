@@ -5,10 +5,12 @@ import Foundation
 public struct DeviceAuthSession: Hashable, Sendable {
     public let deviceId: String
     public let accessToken: String
+    public let expiresAt: Date
 
-    public init(deviceId: String, accessToken: String) {
+    public init(deviceId: String, accessToken: String, expiresAt: Date = .distantFuture) {
         self.deviceId = deviceId
         self.accessToken = accessToken
+        self.expiresAt = expiresAt
     }
 }
 

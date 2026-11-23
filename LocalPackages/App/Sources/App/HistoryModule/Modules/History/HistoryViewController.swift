@@ -32,19 +32,10 @@ final class HistoryViewController: GenericViewViewController<HistoryView>, Scrol
         viewModel.viewDidLoad()
     }
 
-    override func loadView() {
-        switch viewModel.presentationStyle {
-        case .modal:
-            view = HistoryView(navigationBar: TKNavigationBar())
-        case .push:
-            view = HistoryView(navigationBar: TKUINavigationBar())
-        }
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
-        customView.navigationBar.uiView.layoutIfNeeded()
+        customView.navigationBar.layoutIfNeeded()
         customView.tabsView.layoutIfNeeded()
         historyListViewController.contentTopPadding = listContentTopPadding
     }
@@ -56,28 +47,22 @@ final class HistoryViewController: GenericViewViewController<HistoryView>, Scrol
 
 private extension HistoryViewController {
     func setup() {
-        switch customView.navigationBar {
-        case let .firstOption(tkNavigationBar):
-            tkNavigationBar.isSeparatorHidden = true
-            tkNavigationBar.title = TKLocales.History.title
-        case let .secondOption(tkuiNavigationBar):
-            let titleView = TKUINavigationBarTitleView()
-            titleView.configure(
-                model: TKUINavigationBarTitleView.Model(
-                    title: TKLocales.History.title
-                )
+        let titleView = TKUINavigationBarTitleView()
+        titleView.configure(
+            model: TKUINavigationBarTitleView.Model(
+                title: TKLocales.History.title
             )
-            tkuiNavigationBar.isSeparatorHidden = true
-            tkuiNavigationBar.centerView = titleView
-            let backButton = TKUINavigationBar.createBackButton(
-                action: { [weak viewModel] in
-                    viewModel?.presentationStyle.closeAction?()
-                }
-            )
-            backButton.accessibilityIdentifier = "history_back_button"
-            backButton.isAccessibilityElement = true
-            tkuiNavigationBar.leftViews = [backButton]
-        }
+        )
+        customView.navigationBar.isSeparatorHidden = true
+        customView.navigationBar.centerView = titleView
+        let backButton = TKUINavigationBar.createBackButton(
+            action: { [weak viewModel] in
+                viewModel?.close()
+            }
+        )
+        backButton.accessibilityIdentifier = "history_back_button"
+        backButton.isAccessibilityElement = true
+        customView.navigationBar.leftViews = [backButton]
 
         setupBindings()
 
@@ -91,17 +76,6 @@ private extension HistoryViewController {
 
         viewModel.didUpdateSelectedTab = { [weak self] selectedTab in
             self?.customView.tabsView.selectedItem = selectedTab
-        }
-
-        viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
-            guard let self else { return }
-            switch customView.navigationBar {
-            case let .firstOption(tkNavigationBar):
-                tkNavigationBar.isConnecting = isConnecting
-            case .secondOption:
-                // TODO: clarify requirements
-                break
-            }
         }
 
         viewModel.didUpdateTabViewIsHidden = { [weak self] isHidden in
@@ -121,10 +95,10 @@ private extension HistoryViewController {
         historyListViewController.didScroll = { [weak self] in
             guard let self else { return }
             let offset = max(0, $0.contentOffset.y + $0.adjustedContentInset.top)
-            let navigationBarOffset = min(offset, customView.navigationBar.uiView.bounds.height)
-            let tabsViewOffset = min(offset, customView.navigationBar.uiView.bounds.height - customView.safeAreaBar.bounds.height)
+            let navigationBarOffset = min(offset, customView.navigationBar.bounds.height)
+            let tabsViewOffset = min(offset, customView.navigationBar.bounds.height - customView.safeAreaBar.bounds.height)
 
-            customView.navigationBar.uiView.transform = CGAffineTransform(translationX: 0, y: -navigationBarOffset)
+            customView.navigationBar.transform = CGAffineTransform(translationX: 0, y: -navigationBarOffset)
             customView.tabsView.transform = CGAffineTransform(translationX: 0, y: -tabsViewOffset)
         }
     }
@@ -136,7 +110,7 @@ private extension HistoryViewController {
 
     var listContentTopPadding: CGFloat {
         var result: CGFloat = 0
-        result += customView.navigationBar.uiView.bounds.height
+        result += customView.navigationBar.bounds.height
         if !isTabViewsHidden {
             result += customView.tabsView.bounds.height
         }

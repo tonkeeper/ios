@@ -46,7 +46,7 @@ struct TradeAssetDetailsView: View {
         }
         .tkBottomSheet(
             item: Binding(
-                get: { viewModel.selectedMultichainActivity },
+                get: { viewModel.selectedMultichainActivity.map(viewModel.multichainDetailsItem) },
                 set: { newValue in
                     if newValue == nil {
                         viewModel.dismissMultichainActivity()
@@ -54,9 +54,9 @@ struct TradeAssetDetailsView: View {
                 }
             ),
             header: { _, _ in .compact },
-            content: { activity in
+            content: { item in
                 MultichainTransactionDetailsView(
-                    model: viewModel.multichainTransactionDetailsModel(for: activity),
+                    model: viewModel.multichainTransactionDetailsModel(for: item.activity),
                     onOpenTransaction: { url, _ in
                         viewModel.open(url: url)
                     },
@@ -166,6 +166,7 @@ extension TradeAssetDetailsView {
                         size: 16,
                         padding: 8,
                         accessibilityIdentifier: "trade_asset_details_back",
+                        liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                         onTap: { _ in
                             viewModel.goBack()
                         }
@@ -199,6 +200,7 @@ extension TradeAssetDetailsView {
                         size: 16,
                         padding: 8,
                         accessibilityIdentifier: "trade_asset_details_menu",
+                        liquidGlassImage: .TKUIKit.Icons.Size28.ellipses,
                         onTap: { anchor in
                             guard let anchor else {
                                 return
@@ -223,6 +225,8 @@ extension TradeAssetDetailsView {
                                 isOn: isOn
                             )
                         },
+                        liquidGlassImage: .TKUIKit.Icons.Size28.star,
+                        systemBarImageSize: 22,
                         onTap: { _ in
                             viewModel.toggleFavorite()
                         },
@@ -349,6 +353,7 @@ extension TradeAssetDetailsView {
                 onSelectActivity: { activity in
                     viewModel.openMultichainHistoryEvent(activity: activity)
                 },
+                onDecryptComment: viewModel.decryptMultichainComment,
                 onSeeAll: viewModel.openHistory
             )
         case let .about(screen):

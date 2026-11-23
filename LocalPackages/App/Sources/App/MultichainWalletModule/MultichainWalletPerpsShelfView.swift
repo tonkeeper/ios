@@ -35,7 +35,7 @@ struct MultichainWalletPerpsShelfView: View {
                         changeConfiguration: market.changeText.map {
                             .content(text: $0, color: market.changeColor)
                         },
-                        titleTag: .tag(text: market.leverage)
+                        titleTag: market.leverageTag
                     )
                 ),
                 avatarSize: .small,

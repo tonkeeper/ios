@@ -24,7 +24,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         } catch {
             self.emulationResult = nil
             await updateFee(emulationResult: nil)
-            return .failure(.failedToCalculateFee)
+            return .failure(.failedToCalculateFee())
         }
     }
 
@@ -49,16 +49,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
                 )
             )
         } catch {
-            if case let .secondOption(transactionError) = error,
-               case .cancelledByUser = transactionError
-            {
-                return .failure(.cancelledByUser)
-            }
-            return .failure(
-                .failedToSendTransaction(
-                    message: error.localizedDescription
-                )
-            )
+            return .failure(TransactionConfirmationError(sendFailure: error))
         }
     }
 

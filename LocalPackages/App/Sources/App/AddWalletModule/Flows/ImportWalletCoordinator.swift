@@ -18,7 +18,6 @@ final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRoute
     private let walletsUpdateAssembly: WalletsUpdateAssembly
     private let storesAssembly: StoresAssembly
     private let multichainAssembly: MultichainAssembly
-    private let configurationAssembly: ConfigurationAssembly
     private let hasPasscodeChecker: HasPasscodeChecker
     private let customizeWalletModule: () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     private let analyticsContext: WalletFlowAnalyticsContext
@@ -30,7 +29,6 @@ final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRoute
         storesAssembly: StoresAssembly,
         hasPasscodeChecker: HasPasscodeChecker,
         multichainAssembly: MultichainAssembly,
-        configurationAssembly: ConfigurationAssembly,
         network: Network,
         analyticsContext: WalletFlowAnalyticsContext,
         customizeWalletModule: @escaping () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
@@ -38,7 +36,6 @@ final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRoute
         self.analyticsProvider = analyticsProvider
         self.walletsUpdateAssembly = walletsUpdateAssembly
         self.storesAssembly = storesAssembly
-        self.configurationAssembly = configurationAssembly
         self.multichainAssembly = multichainAssembly
         self.network = network
         self.customizeWalletModule = customizeWalletModule
@@ -90,28 +87,7 @@ private extension ImportWalletCoordinator {
         }
 
         inputRecoveryPhrase.output.didInputRecoveryPhrase = { [weak self] phrase, completion in
-            guard let self = self else { return }
-            if isWalletAlreadyImported(phrase: phrase) {
-                completion()
-                ToastPresenter.showToast(
-                    configuration: .defaultConfiguration(text: TKLocales.ImportWallet.alreadyImported)
-                )
-                return
-            }
-            analyticsProvider.log(WalletImportMnemonicAccepted(
-                walletMode: analyticsContext.walletMode(for: resolveDerivationType(phrase: phrase)),
-                walletSource: .mnemonic,
-                from: analyticsContext.from
-            ))
-            if isWalletKindSelectionEnabled {
-                loadWalletKindPreviewsIfNeeded(phrase: phrase, completion: completion)
-            } else {
-                startAutomaticImport(
-                    phrase: phrase,
-                    derivationType: resolveDerivationType(phrase: phrase),
-                    completion: completion
-                )
-            }
+            self?.findTelegramWallet(phrase: phrase, completion: completion)
         }
 
         if router.rootViewController.viewControllers.isEmpty {
@@ -129,6 +105,68 @@ private extension ImportWalletCoordinator {
                 self?.didCancel?()
             },
             completion: nil
+        )
+    }
+
+    func findTelegramWallet(phrase: [String], completion: @escaping () -> Void) {
+        Task { @MainActor in
+            let lookup = await walletsUpdateAssembly.telegramWalletFinder().find(words: phrase, network: network)
+            switch lookup {
+            case let .found(telegramWallet):
+                logMnemonicAccepted(phrase: phrase)
+                // The multichain wallet of this phrase being added no longer blocks its Telegram wallet.
+                if isWalletAlreadyImported(phrase: phrase) {
+                    completion()
+                    handleDidChooseRevisions(request: telegramImportRequest(phrase: phrase), revisions: [.walletTg])
+                } else {
+                    loadWalletKindPreviews(phrase: phrase, telegramWallet: telegramWallet, completion: completion)
+                }
+            case let .failed(error):
+                // Falling back to the multichain wallet would silently skip the Telegram one.
+                completion()
+                ToastPresenter.showToast(
+                    configuration: error.isNoConnectionError
+                        ? .noInternetConnection
+                        : .defaultConfiguration(text: TKLocales.Errors.unknown)
+                )
+            case .none:
+                handleRecoveryPhrase(phrase: phrase, completion: completion)
+            }
+        }
+    }
+
+    func handleRecoveryPhrase(phrase: [String], completion: @escaping () -> Void) {
+        if isWalletAlreadyImported(phrase: phrase) {
+            completion()
+            ToastPresenter.showToast(
+                configuration: .defaultConfiguration(text: TKLocales.ImportWallet.alreadyImported)
+            )
+            return
+        }
+        logMnemonicAccepted(phrase: phrase)
+        if isWalletKindSelectionEnabled {
+            loadWalletKindPreviewsIfNeeded(phrase: phrase, completion: completion)
+        } else {
+            startAutomaticImport(
+                phrase: phrase,
+                derivationType: resolveDerivationType(phrase: phrase),
+                completion: completion
+            )
+        }
+    }
+
+    func logMnemonicAccepted(phrase: [String]) {
+        analyticsProvider.log(WalletImportMnemonicAccepted(
+            walletMode: analyticsContext.walletMode(for: resolveDerivationType(phrase: phrase)),
+            walletSource: .mnemonic,
+            from: analyticsContext.from
+        ))
+    }
+
+    func telegramImportRequest(phrase: [String]) -> WalletImportRequest {
+        WalletImportRequest(
+            mnemonic: CoreMnemonic(mnemonicWords: phrase, type: .bip39),
+            walletKindPreference: .selected(.telegram)
         )
     }
 
@@ -151,7 +189,6 @@ private extension ImportWalletCoordinator {
                     mnemonic: mnemonic,
                     network: network,
                     checkHistory: mnemonic.type == .bip39soft
-                        || configurationAssembly.configuration.featureEnabled(.mnemonicsStorageV2)
                 )
                 await MainActor.run {
                     completion()
@@ -257,7 +294,8 @@ private extension ImportWalletCoordinator {
             return false
         }
         let wallets = walletsUpdateAssembly.storesAssembly.walletsStore.getState().wallets
-        return wallets.contains { $0.network == network && (try? $0.publicKey)?.data == publicKey.data }
+        // A Telegram wallet shares its key with the phrase's other wallets but blocks none of them.
+        return wallets.contains { $0.network == network && !$0.isWalletTg && (try? $0.publicKey)?.data == publicKey.data }
     }
 
     func startAutomaticImport(
@@ -300,22 +338,49 @@ private extension ImportWalletCoordinator {
             completion()
             openChooseWalletKind(
                 phrase: phrase,
-                tonPreview: previews.ton,
-                multichainPreview: previews.multichain,
+                options: [
+                    ChooseWalletKindOption(kind: .ton, preview: previews.ton),
+                    ChooseWalletKindOption(kind: .multichain, preview: previews.multichain),
+                ],
                 currency: currency
             )
         }
     }
 
+    func loadWalletKindPreviews(
+        phrase: [String],
+        telegramWallet: ActiveWalletModel,
+        completion: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            let currency = storesAssembly.currencyStore.getState()
+            let previews = await walletsUpdateAssembly.importWalletKindPreviewLoader(
+                multichainAssembly: multichainAssembly
+            ).loadPreviews(
+                words: phrase,
+                telegramWallet: telegramWallet,
+                network: network,
+                currency: currency
+            )
+            completion()
+            var options = [ChooseWalletKindOption(kind: .telegram, preview: previews.telegram)]
+            if let ton = previews.ton {
+                options.append(ChooseWalletKindOption(kind: .ton, preview: ton))
+            }
+            if let multichain = previews.multichain {
+                options.append(ChooseWalletKindOption(kind: .multichain, preview: multichain))
+            }
+            openChooseWalletKind(phrase: phrase, options: options, currency: currency)
+        }
+    }
+
     func openChooseWalletKind(
         phrase: [String],
-        tonPreview: ImportWalletKindPreview,
-        multichainPreview: ImportWalletKindPreview,
+        options: [ChooseWalletKindOption],
         currency: Currency
     ) {
         let module = ChooseWalletKindAssembly.module(
-            tonPreview: tonPreview,
-            multichainPreview: multichainPreview,
+            options: options,
             amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter,
             currency: currency
         )
@@ -324,6 +389,15 @@ private extension ImportWalletCoordinator {
 
         module.output.didSelectKind = { [weak self, weak moduleInput] kind in
             guard let self else { return }
+            if kind == .telegram {
+                handleDidChooseRevisions(
+                    request: telegramImportRequest(phrase: phrase),
+                    revisions: [.walletTg],
+                    onStayOnScreen: { moduleInput?.resetContinueImport() }
+                )
+                moduleInput?.clearContinueLoader()
+                return
+            }
             let derivationType: DerivationType = kind == .ton && DerivationType.isAmbiguous(phrase)
                 ? .ton
                 : .bip39

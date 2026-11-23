@@ -6,13 +6,14 @@ import TKUIKit
 import UIKit
 
 final class TooltipsServiceImplementation {
-    private struct PendingRequest {
+    fileprivate struct PendingRequest {
         let order: Int
         let id: TooltipID
         let sourceView: UIView
         let targetActionViews: [UIView]
         let configuration: HintConfiguration
         let onTargetAction: (() -> Void)?
+        let onTooltipTap: (() -> Void)?
     }
 
     private enum State {
@@ -26,6 +27,8 @@ final class TooltipsServiceImplementation {
     private let viewControllerFactory: TooltipViewControllerFactory
     private var pendingRequests: [PendingRequest] = []
     private var pendingRequestOrder = 0
+    private var reachabilityRetriesLeft = 0
+    private var reachabilityRetryTask: Task<Void, Never>?
     private var state: State = .idle
 
     init(
@@ -42,9 +45,10 @@ extension TooltipsServiceImplementation: TooltipsService {
     func showTooltipIfNeeded(
         id: TooltipID,
         sourceView: UIView,
-        targetActionViews: [UIView] = [],
+        targetActionViews: [UIView],
         configuration: HintConfiguration,
-        onTargetAction: (() -> Void)? = nil
+        onTargetAction: (() -> Void)?,
+        onTooltipTap: (() -> Void)?
     ) {
         let order = pendingRequestOrder
         pendingRequestOrder += 1
@@ -54,12 +58,17 @@ extension TooltipsServiceImplementation: TooltipsService {
             sourceView: sourceView,
             targetActionViews: targetActionViews,
             configuration: configuration,
-            onTargetAction: onTargetAction
+            onTargetAction: onTargetAction,
+            onTooltipTap: onTooltipTap
         )
         Task {
             try? await Task.sleep(nanoseconds: 150_000_000)
             enqueue(request)
         }
+    }
+
+    func canShowTooltip(id: TooltipID) -> Bool {
+        tooltipControllerFactory.controller(for: id).canShowTooltip
     }
 
     func didPerformTooltipTargetAction(id: TooltipID) {
@@ -79,6 +88,7 @@ extension TooltipsServiceImplementation {
         }
         pendingRequests.append(request)
         pendingRequests.sort { $0.order < $1.order }
+        reachabilityRetriesLeft = Constants.reachabilityRetryCount
         processQueueIfPossible()
     }
 
@@ -91,10 +101,9 @@ extension TooltipsServiceImplementation {
         // queue. Otherwise a stale request whose source view never becomes
         // reachable (e.g. it belongs to another screen) would block every later
         // request indefinitely.
-        guard let index = pendingRequests.firstIndex(where: { $0.sourceView.isReachableByUser }) else {
-            return
+        guard let request = pendingRequests.first(where: \.isSourceReady) else {
+            return retryReachabilityIfNeeded()
         }
-        let request = pendingRequests.remove(at: index)
         Log.tooltips.i("tooltip request \(request.id.logName) is preparing")
         state = .preparing(request)
         Task {
@@ -102,14 +111,37 @@ extension TooltipsServiceImplementation {
         }
     }
 
+    /// A source can be covered for a moment, e.g. while a screen cross-dissolves in, and nothing else
+    /// would look at the queue again.
+    @MainActor
+    private func retryReachabilityIfNeeded() {
+        guard reachabilityRetryTask == nil, reachabilityRetriesLeft > 0 else {
+            return
+        }
+        reachabilityRetriesLeft -= 1
+        reachabilityRetryTask = Task {
+            try? await Task.sleep(nanoseconds: Constants.reachabilityRetryDelay)
+            reachabilityRetryTask = nil
+            processQueueIfPossible()
+        }
+    }
+
     @MainActor
     private func present(_ request: PendingRequest) async {
         let controller = tooltipControllerFactory.controller(for: request.id)
-        guard request.sourceView.isReachableByUser else {
-            Log.tooltips.d("tooltip request \(request.id.logName) is skipped. view is not reachable by user")
+        guard request.isSourceReady else {
+            Log.tooltips.d("tooltip request \(request.id.logName) is postponed. view is not reachable by user")
             state = .idle
             return processQueueIfPossible()
         }
+        // The request stays queued until it shows, so a target action or a newer request for the same
+        // tooltip that came in meanwhile has taken it off.
+        guard let index = pendingRequests.firstIndex(where: { $0.order == request.order }) else {
+            Log.tooltips.d("tooltip request \(request.id.logName) is dropped. it left the queue")
+            state = .idle
+            return processQueueIfPossible()
+        }
+        pendingRequests.remove(at: index)
         guard controller.canShowTooltip else {
             Log.tooltips.d("tooltip request \(request.id.logName) is rejected. cannot show tooltip")
             state = .idle
@@ -142,7 +174,7 @@ extension TooltipsServiceImplementation {
             switch interaction {
             case .hintContentTap:
                 controller.didPerformTargetAction()
-                request.onTargetAction?()
+                request.onTooltipTap?()
             case .performedTargetAction:
                 controller.didPerformTargetAction()
                 request.onTargetAction?()
@@ -164,6 +196,20 @@ extension TooltipsServiceImplementation {
     }
 }
 
+private extension TooltipsServiceImplementation.PendingRequest {
+    var isSourceReady: Bool {
+        guard sourceView.isReachableByUser else { return false }
+        return !configuration.requiresVisibleSource || sourceView.isWithinVisibleScrollArea
+    }
+}
+
+private extension TooltipsServiceImplementation {
+    enum Constants {
+        static let reachabilityRetryCount = 10
+        static let reachabilityRetryDelay: UInt64 = 300_000_000
+    }
+}
+
 private extension TooltipID {
     var logName: String {
         switch self {
@@ -179,6 +225,10 @@ private extension TooltipID {
             "addMultichainWalletMain"
         case .addMultichainWalletWalletsList:
             "addMultichainWalletWalletsList"
+        case .earnSection:
+            "earnSection"
+        case .perpsSection:
+            "perpsSection"
         }
     }
 }

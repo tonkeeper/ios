@@ -5,6 +5,7 @@ import Foundation
 @testable import KeeperCore
 import PerpsModels
 import TKLocalize
+import TKTestSupport
 import TKUIKit
 import TonSwift
 import XCTest
@@ -34,7 +35,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         XCTAssertNil(request.chain)
         XCTAssertNil(request.activityTypeFilter)
         XCTAssertEqual(currentActivities(in: viewModel.currentQueryViewModel).map(\.txIds), [["all-1"]])
-        XCTAssertEqual(currentItems(in: viewModel.currentQueryViewModel).map(\.id.txIds), [["all-1"]])
+        XCTAssertEqual(currentItems(in: viewModel.currentQueryViewModel).map(\.id.activity.txIds), [["all-1"]])
         XCTAssertTrue(
             try viewModel.isTypeFilterActionBarVisible(
                 for: XCTUnwrap(viewModel.currentQueryViewModel)
@@ -90,6 +91,47 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [other, settled])?.status, .confirmed)
         XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [other, reindexed])?.fromAddress, "lighter")
         XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [other]))
+    }
+
+    func test_eventTarget_pendingWithdrawalWithoutHashesFollowsItsSettledRow() {
+        let listedAt = Date(timeIntervalSince1970: 1_777_440_000)
+        let pending = activity(id: "pending", activityType: .perpsBalanceWithdrawal, status: .pending, outAmount: "2000000", txIds: [], blockTime: listedAt)
+        let settled = activity(id: "settled", activityType: .perpsBalanceWithdrawal, outAmount: "2000000", txIds: ["lighter:0xaa", "eth:0xbb"], blockTime: listedAt)
+        let earlier = activity(id: "earlier", activityType: .perpsBalanceWithdrawal, outAmount: "2000000", txIds: ["lighter:0xcc", "eth:0xdd"], blockTime: listedAt.addingTimeInterval(-3600))
+        let laterPending = activity(id: "later", activityType: .perpsBalanceWithdrawal, status: .pending, outAmount: "2000000", txIds: [], blockTime: listedAt.addingTimeInterval(3600))
+        let twin = activity(id: "twin", activityType: .perpsBalanceWithdrawal, outAmount: "2000000", txIds: ["lighter:0xee", "eth:0xff"], blockTime: listedAt)
+
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [earlier, settled])?.txIds, ["lighter:0xaa", "eth:0xbb"])
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [laterPending, pending])?.blockTime, listedAt, "a later withdrawal of one shape is not the shown one")
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [laterPending, settled])?.txIds, ["lighter:0xaa", "eth:0xbb"])
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [laterPending, earlier]))
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [settled, twin]), "two settled rows of one shape keep the shown one")
+    }
+
+    func test_eventTarget_pendingDepositFollowsItsCreditedRow() {
+        let listedAt = Date(timeIntervalSince1970: 1_777_440_000)
+        let usdc = asset(symbol: "USDC", decimals: 6, assetId: "lighter/mainnet/3")
+        func deposit(_ id: String, _ status: MultichainActivityStatus, _ amount: String, at time: Date) -> MultichainActivity {
+            activity(id: id, activityType: .perpsBalanceDeposit, status: status, inAmount: amount, inToken: usdc, txIds: [], blockTime: time)
+        }
+        let pending = deposit("pending", .pending, "1960040", at: listedAt)
+        let credited = deposit("credited", .confirmed, "1979838", at: listedAt)
+        let earlier = deposit("earlier", .confirmed, "1960040", at: listedAt.addingTimeInterval(-3600))
+        let laterPending = deposit("later", .pending, "1960040", at: listedAt.addingTimeInterval(60))
+        let twin = deposit("twin", .confirmed, "1979838", at: listedAt)
+
+        XCTAssertEqual(MultichainHistoryEventTarget.current(of: pending, in: [laterPending, credited, earlier])?.inAmount, "1979838")
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [laterPending, earlier]), "a deposit of another time is not the shown one")
+        XCTAssertNil(MultichainHistoryEventTarget.current(of: pending, in: [credited, twin]), "two rows of one shape keep the shown one")
+    }
+
+    func test_pendingFundingRefresh_followsOnlyAPendingPerpsDepositOrWithdrawal() {
+        let refresh = MultichainHistoryPendingFundingRefresh.self
+        XCTAssertNotNil(refresh.target(of: activity(id: "w", activityType: .perpsBalanceWithdrawal, status: .pending, txIds: [])))
+        XCTAssertNotNil(refresh.target(of: activity(id: "d", activityType: .perpsBalanceDeposit, status: .pending)))
+        XCTAssertNil(refresh.target(of: activity(id: "w", activityType: .perpsBalanceWithdrawal)))
+        XCTAssertNil(refresh.target(of: activity(id: "s", status: .pending)))
+        XCTAssertNil(refresh.target(of: nil))
     }
 
     func test_eventTarget_currentKeepsTheShownActivityWhenItsHashIsAmbiguous() {
@@ -241,6 +283,92 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_walletHistory_reloadsWhenAFundingOperationEnds() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [activity(id: "deposit", activityType: .perpsBalanceDeposit, status: .pending)], nextCursor: nil)),
+            .success(page(activities: [activity(id: "deposit", activityType: .perpsBalanceDeposit)], nextCursor: nil)),
+        ])
+        let account = FundingAccountStoreStub()
+        account.activity = PerpsFundingActivity(inFlight: ["op"])
+        let viewModel = makeViewModel(multichainService: service, accountStore: account)
+
+        viewModel.viewDidLoad()
+        await waitUntil { await service.activityRequests().count == 1 }
+        account.activity = PerpsFundingActivity(completed: ["op"])
+        account.notify()
+
+        await waitUntil { await service.activityRequests().count == 2 }
+        await waitUntil {
+            await MainActor.run { self.currentActivities(in: viewModel.currentQueryViewModel).first?.status == .confirmed }
+        }
+    }
+
+    func test_walletHistory_reloadsOnlyForAnOperationItSawUnfinished() {
+        let ended = MultichainHistoryViewModelImplementation.fundingEnded
+        XCTAssertTrue(ended(["op"], PerpsFundingActivity(completed: ["op"])))
+        XCTAssertTrue(ended(["op"], PerpsFundingActivity(failed: ["op"])))
+        XCTAssertFalse(ended(["op"], PerpsFundingActivity(pending: ["op"])), "in flight → pending is not an end")
+        XCTAssertFalse(ended([], PerpsFundingActivity(completed: ["old"])), "the journal loading an ended record")
+        XCTAssertFalse(ended(["op"], PerpsFundingActivity()), "a record aged out of the journal")
+
+        let unfinished = MultichainHistoryViewModelImplementation.unfinishedFunding
+        let unconfirmed = PerpsDepositStatus(
+            id: "unconfirmed",
+            createdAt: Date(timeIntervalSince1970: 0),
+            sourceAmount: "2",
+            sourceSymbol: "USDC",
+            sourceNetwork: "Base",
+            expectedAmount: "1.96",
+            state: .unconfirmed
+        )
+        XCTAssertEqual(
+            unfinished(PerpsFundingActivity(deposits: [unconfirmed], inFlight: ["sending"], completed: ["done"], withdrawals: ["done"])),
+            ["unconfirmed", "sending"],
+            "an unconfirmed deposit can still be credited"
+        )
+    }
+
+    @MainActor
+    func test_perpsHistory_tracksOnlyADepositThatIsNotCompleted() {
+        let account = FundingAccountStoreStub()
+        let deposit = { (id: String, state: PerpsDepositStatus.State) in
+            PerpsDepositStatus(
+                id: id,
+                createdAt: Date(timeIntervalSince1970: 0),
+                sourceAmount: "10",
+                sourceSymbol: "USDT",
+                sourceNetwork: "TON",
+                expectedAmount: "10",
+                state: state
+            )
+        }
+        account.activity = PerpsFundingActivity(
+            deposits: [deposit("done", .completed), deposit("failed", .failed), deposit("pending", .pending)],
+            transactions: ["done": ["0xDONE"], "failed": ["0xfailed"], "pending": ["0xpending"]]
+        )
+        let viewModel = PerpsHistoryViewModel(
+            multichainState: makeMultichainState(),
+            marketId: nil,
+            accountStore: account,
+            multichainService: MultichainServiceSpy(),
+            historyEvents: PerpsHistoryEvents { false },
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
+        )
+        let tracked = { (hash: String) in
+            viewModel.trackedDeposit(matching: self.activity(id: hash, activityType: .perpsBalanceDeposit, txIds: [hash]))?.id
+        }
+
+        XCTAssertNil(tracked("0xdone"))
+        XCTAssertEqual(tracked("0xfailed"), "failed")
+        XCTAssertEqual(tracked("0xpending"), "pending")
+        XCTAssertEqual(tracked("base:0xPENDING"), "pending", "the history names the chain before the hash")
+    }
+
+    @MainActor
     func test_perpsHistoryScreen_requestsPerpsAcrossEveryChain() async throws {
         let service = MultichainServiceSpy()
         await service.setActivityPlans([.success(page(activities: [], nextCursor: nil))])
@@ -248,9 +376,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             multichainState: makeMultichainState(),
             marketId: nil,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
         )
 
         viewModel.query.appeared()
@@ -277,9 +407,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             multichainState: makeMultichainState(),
             marketId: 1,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
         )
 
         viewModel.query.appeared()
@@ -307,11 +439,13 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let viewModel = PerpsHistoryViewModel(
             multichainState: makeMultichainState(),
             marketId: nil,
-            withdrawalOperationId: "withdrawal-op",
+            focusedFundingOperationId: "withdrawal-op",
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
         )
 
         viewModel.screenDidAppear()
@@ -340,11 +474,13 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let viewModel = PerpsHistoryViewModel(
             multichainState: makeMultichainState(),
             marketId: nil,
-            withdrawalOperationId: "withdrawal-op",
+            focusedFundingOperationId: "withdrawal-op",
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             withdrawalRefreshSleep: { delays.append($0) }
         )
 
@@ -367,11 +503,13 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         var viewModel: PerpsHistoryViewModel? = PerpsHistoryViewModel(
             multichainState: makeMultichainState(),
             marketId: nil,
-            withdrawalOperationId: "withdrawal-op",
+            focusedFundingOperationId: "withdrawal-op",
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             withdrawalRefreshSleep: { _ in await gate.enter() }
         )
         viewModel?.screenDidAppear()
@@ -399,11 +537,13 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let viewModel = PerpsHistoryViewModel(
             multichainState: makeMultichainState(),
             marketId: nil,
-            withdrawalOperationId: "withdrawal-op",
+            focusedFundingOperationId: "withdrawal-op",
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             withdrawalRefreshSleep: { delay in
                 delays.append(delay)
                 await gate.enter()
@@ -438,9 +578,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             marketId: nil,
             focusedTransactions: ["abc"],
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
         )
 
         viewModel.query.appeared()
@@ -474,9 +616,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 focusedFundingOperationId: "funding-op",
                 accountStore: account,
                 multichainService: service,
+                historyEvents: PerpsHistoryEvents { false },
                 amountFormatter: makeAmountFormatter(),
                 dateFormatter: makeDateFormatter(),
                 nftResolver: makeNFTResolver(),
+                appSettingsStore: makeAppSettingsStore(),
                 withdrawalRefreshSleep: { _ in await gate.enter() }
             )
 
@@ -524,9 +668,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             focusedFundingOperationId: "funding-op",
             accountStore: account,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             withdrawalRefreshSleep: { _ in await gate.enter() }
         )
 
@@ -564,9 +710,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             focusedFundingOperationId: "funding-op",
             accountStore: account,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             withdrawalRefreshSleep: { _ in await refreshGate.enter() }
         )
 
@@ -604,15 +752,19 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         ])
         let account = FundingAccountStoreStub()
         account.activity = PerpsFundingActivity(inFlight: ["deposit"])
+        let retry = TestGate()
         let viewModel = PerpsHistoryViewModel(
             multichainState: makeMultichainState(),
             marketId: nil,
             focusedTransactions: ["abc"],
             accountStore: account,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
+            focusRetrySleep: { _ in try await retry.wait() }
         )
 
         viewModel.query.appeared()
@@ -626,7 +778,8 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         account.activity = PerpsFundingActivity(completed: ["deposit"])
         account.notify()
         await waitUntil { await service.activityRequests().count >= 2 }
-        await waitUntil(timeout: 3) { viewModel.activityToOpen != nil }
+        await retry.open()
+        await waitUntil { viewModel.activityToOpen != nil }
 
         XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
         var requestCount = await service.activityRequests().count
@@ -655,14 +808,17 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             marketId: nil,
             focusedTransactions: ["abc"],
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
+            focusRetrySleep: { _ in }
         )
 
         viewModel.screenDidAppear()
         viewModel.query.appeared()
-        await waitUntil(timeout: 3) { viewModel.activityToOpen != nil }
+        await waitUntil { viewModel.activityToOpen != nil }
 
         XCTAssertEqual(viewModel.activityToOpen?.fromAddress, "focused")
         let requestCount = await service.activityRequests().count
@@ -670,9 +826,10 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_perpsHistoryScreen_reloadsWhenAFundingOperationArrives() async {
+    func test_perpsHistoryScreen_reloadsWhenAFundingOperationArrivesOrFails() async {
         let service = MultichainServiceSpy()
         await service.setActivityPlans([
+            .success(page(activities: [], nextCursor: nil)),
             .success(page(activities: [], nextCursor: nil)),
             .success(page(activities: [], nextCursor: nil)),
         ])
@@ -683,9 +840,11 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             marketId: nil,
             accountStore: account,
             multichainService: service,
+            historyEvents: PerpsHistoryEvents { false },
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
-            nftResolver: makeNFTResolver()
+            nftResolver: makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore()
         )
         viewModel.query.appeared()
         await waitUntil { await service.activityRequests().count == 1 }
@@ -696,9 +855,13 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         let afterUnrelatedChange = await service.activityRequests().count
         XCTAssertEqual(afterUnrelatedChange, 1, "a stage change on the way leaves the list alone")
 
-        account.activity = PerpsFundingActivity(completed: ["old", "new"])
+        account.activity = PerpsFundingActivity(inFlight: ["refused"], completed: ["old", "new"])
         account.notify()
         await waitUntil { await service.activityRequests().count == 2 }
+
+        account.activity = PerpsFundingActivity(completed: ["old", "new"], failed: ["refused"])
+        account.notify()
+        await waitUntil { await service.activityRequests().count == 3 }
     }
 
     @MainActor
@@ -813,10 +976,39 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.txIds), [["spam"]])
+        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.activity.txIds), [["spam"]])
         // Spam tab fetches all types (no server-side spam filter) and filters client-side.
         let requests = await service.activityRequests()
         XCTAssertEqual(requests.map(\.activityTypeFilter), [nil])
+    }
+
+    @MainActor
+    func test_hiddenBalances_maskTheRowAmounts_andFollowTheToggle() async throws {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [activity(id: "transfer")], nextCursor: nil)),
+        ])
+        let appSettingsStore = AppSettingsStore(
+            keeperInfoStore: KeeperInfoStore(keeperInfoRepository: HistoryKeeperInfoRepositoryStub())
+        )
+        let queryViewModel = makeQueryViewModel(multichainService: service, appSettingsStore: appSettingsStore)
+        queryViewModel.appeared()
+        await waitUntil {
+            await MainActor.run { !self.currentItems(in: queryViewModel).isEmpty }
+        }
+        let shown = try XCTUnwrap(currentItems(in: queryViewModel).first?.primaryAmount)
+
+        setSecureMode(true, in: appSettingsStore)
+        await waitUntil {
+            await MainActor.run { self.currentItems(in: queryViewModel).first?.primaryAmount?.text == .secureModeValueShort }
+        }
+        XCTAssertEqual(currentItems(in: queryViewModel).first?.primaryAmount?.style, .primary)
+
+        setSecureMode(false, in: appSettingsStore)
+        await waitUntil {
+            await MainActor.run { self.currentItems(in: queryViewModel).first?.primaryAmount == shown }
+        }
+        XCTAssertEqual(currentItems(in: queryViewModel).first?.primaryAmount, shown)
     }
 
     @MainActor
@@ -834,7 +1026,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         queryViewModel.appeared()
         await waitUntil {
             await MainActor.run {
-                self.currentItems(in: queryViewModel).map(\.id.txIds) == [["spam"]]
+                self.currentItems(in: queryViewModel).map(\.id.activity.txIds) == [["spam"]]
             }
         }
 
@@ -859,7 +1051,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         queryViewModel.appeared()
         await waitUntil {
             await MainActor.run {
-                self.currentItems(in: queryViewModel).map(\.id.txIds) == [["spam-1"]]
+                self.currentItems(in: queryViewModel).map(\.id.activity.txIds) == [["spam-1"]]
             }
         }
 
@@ -872,7 +1064,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
 
         await waitUntil {
             await MainActor.run {
-                self.currentItems(in: queryViewModel).map(\.id.txIds) == [["spam-1"], ["spam-2"]]
+                self.currentItems(in: queryViewModel).map(\.id.activity.txIds) == [["spam-1"], ["spam-2"]]
             }
         }
 
@@ -912,7 +1104,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
 
         await waitUntil {
             await MainActor.run {
-                self.currentItems(in: queryViewModel).map(\.id.txIds) == [["spam"]]
+                self.currentItems(in: queryViewModel).map(\.id.activity.txIds) == [["spam"]]
             }
         }
     }
@@ -1035,7 +1227,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.txIds), [["clean"]])
+        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.activity.txIds), [["clean"]])
     }
 
     @MainActor
@@ -1067,7 +1259,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.txIds), [["clean"]])
+        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.activity.txIds), [["clean"]])
     }
 
     @MainActor
@@ -1286,23 +1478,53 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_perpsBalanceMoves_areLabelledOnlyOutsidePerpsLists() async {
-        let categories: [(MultichainHistoryCategory, String?)] = [
-            (.chain(chainFilter: .all, typeFilter: .all), TKLocales.MultichainHistory.Perps.toPerps),
-            (.perps, nil),
-            (.asset(assetId: "lighter/mainnet/market/0", typeFilter: .perps), nil),
+    func test_activitySubtitle_showsCounterpartyNameInsteadOfAddress() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [
+                activity(id: "send", activityType: .send, toName: "alice.ton"),
+                activity(id: "receive", activityType: .receive, fromName: "bob.t.me"),
+            ], nextCursor: nil)),
+        ])
+        let queryViewModel = makeQueryViewModel(multichainService: service)
+
+        queryViewModel.appeared()
+        await waitUntil { self.currentItems(in: queryViewModel).count == 2 }
+
+        let subtitles = Dictionary(
+            uniqueKeysWithValues: currentItems(in: queryViewModel).map { ($0.activity.activityType, $0.subtitle) }
+        )
+        XCTAssertEqual(subtitles[.send], "alice.ton")
+        XCTAssertEqual(subtitles[.receive], "bob.t.me")
+    }
+
+    @MainActor
+    func test_perpsBalanceMoves_areLabelledInGeneralAndPerpsLists() async {
+        let categories: [MultichainHistoryCategory] = [
+            .chain(chainFilter: .all, typeFilter: .all),
+            .perps,
+            .asset(assetId: "lighter/mainnet/market/0", typeFilter: .perps),
         ]
-        for (category, expectedSubtitle) in categories {
+        for category in categories {
             let service = MultichainServiceSpy()
             await service.setActivityPlans([
-                .success(page(activities: [activity(id: "deposit", activityType: .perpsBalanceDeposit)], nextCursor: nil)),
+                .success(page(activities: [
+                    activity(id: "deposit", activityType: .perpsBalanceDeposit),
+                    activity(id: "withdrawal", activityType: .perpsBalanceWithdrawal),
+                ], nextCursor: nil)),
             ])
             let queryViewModel = makeQueryViewModel(multichainService: service, category: category)
 
             queryViewModel.appeared()
-            await waitUntil { self.currentItems(in: queryViewModel).count == 1 }
+            await waitUntil { self.currentItems(in: queryViewModel).count == 2 }
 
-            XCTAssertEqual(currentItems(in: queryViewModel).first?.subtitle, expectedSubtitle, "\(category)")
+            let items = currentItems(in: queryViewModel)
+            let deposit = items.first { $0.activity.activityType == .perpsBalanceDeposit }
+            let withdrawal = items.first { $0.activity.activityType == .perpsBalanceWithdrawal }
+            XCTAssertEqual(deposit?.title, TKLocales.MultichainHistory.Perps.deposit, "\(category)")
+            XCTAssertEqual(deposit?.subtitle, TKLocales.MultichainHistory.Perps.toPerps, "\(category)")
+            XCTAssertEqual(withdrawal?.title, TKLocales.MultichainHistory.Perps.withdrawal, "\(category)")
+            XCTAssertEqual(withdrawal?.subtitle, TKLocales.MultichainHistory.Perps.fromPerps, "\(category)")
         }
     }
 
@@ -1329,6 +1551,24 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             return XCTFail("Expected address row")
         }
         XCTAssertEqual(address, "UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ")
+    }
+
+    func test_transactionDetails_showsCounterpartyNameAboveAddress() throws {
+        let builder = makeDetailsBuilder()
+        let sent = builder.build(activity: activity(id: "send", activityType: .send, toName: "alice.ton"))
+        let received = builder.build(activity: activity(id: "receive", activityType: .receive, fromName: "bob.t.me"))
+
+        guard case let .property(sentTitle, sentName) = try XCTUnwrap(sent.rows.first),
+              case .address? = sent.rows.dropFirst().first,
+              case let .property(receivedTitle, receivedName) = try XCTUnwrap(received.rows.first),
+              case .address? = received.rows.dropFirst().first
+        else {
+            return XCTFail("Expected a name row above the address row")
+        }
+        XCTAssertEqual(sentTitle, TKLocales.EventDetails.recipient)
+        XCTAssertEqual(sentName, "alice.ton")
+        XCTAssertEqual(receivedTitle, TKLocales.EventDetails.sender)
+        XCTAssertEqual(receivedName, "bob.t.me")
     }
 
     func test_transactionDetails_hidesNetworkForNativeTokenAmount() {
@@ -1417,6 +1657,42 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         XCTAssertEqual(title, TKLocales.FeeMethodPicker.title)
         XCTAssertEqual(amount, "1 ETH")
         XCTAssertEqual(fiatAmount, "$\u{2009}0.12")
+    }
+
+    func test_hiddenBalances_maskTheDetailsAmountsAndFee_andBlurTheNFT() throws {
+        let eth = asset(symbol: "ETH", assetId: "eth/mainnet/eth")
+        let builder = makeDetailsBuilder(hidesAmounts: { true })
+
+        let sent = builder.build(activity: activity(
+            id: "eth-send",
+            feeToken: eth,
+            feeAmount: "1000000000000000000",
+            feeAmountUsd: 0.12
+        ))
+        XCTAssertEqual(sent.amountLines.map(\.amount), [.secureModeValueShort])
+        guard case let .fee(_, amount, fiatAmount) = try XCTUnwrap(feeRow(in: sent)) else {
+            return XCTFail("Expected fee row")
+        }
+        XCTAssertEqual(amount, .secureModeValueShort)
+        XCTAssertNil(fiatAmount)
+
+        let swap = builder.build(activity: activity(id: "swap", activityType: .swap))
+        XCTAssertEqual(swap.amountLines.map(\.amount), [.secureModeValueShort, .secureModeValueShort])
+
+        let nft = MultichainActivityNFT(
+            id: "nft",
+            name: "Chest #355937",
+            collectionName: "CheQUEs Chests: The Purge",
+            imageURL: nil,
+            isVerified: true
+        )
+        let nftModel = makeDetailsBuilder(hidesAmounts: { true }, nftProvider: { _ in nft })
+            .build(activity: tonNFTActivity(id: "nft-1"))
+        XCTAssertEqual(nftModel.amountLines.map(\.amount), [MultichainActivityNFT.amountTitle])
+        guard case let .nft(_, isSecureMode) = nftModel.image else {
+            return XCTFail("Expected an NFT header")
+        }
+        XCTAssertTrue(isSecureMode)
     }
 
     func test_transactionDetails_formatsNetworkFeeCompactly() throws {
@@ -2085,7 +2361,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_loadNextPage_mergesActivitiesAndFiltersDuplicateValuesKeepingFirstOccurrence() async {
+    func test_loadNextPage_keepsEqualActivitiesOfBothPagesAsSeparateRows() async {
         let first = activity(id: "first", amount: "1")
         let duplicate = activity(id: "duplicate", amount: "2")
         let next = activity(id: "next", amount: "3")
@@ -2110,20 +2386,85 @@ final class MultichainHistoryViewModelTests: XCTestCase {
 
         await waitUntil {
             await MainActor.run {
-                self.currentActivities(in: queryViewModel).count == 3
+                self.currentActivities(in: queryViewModel).count == 4
             }
         }
 
         let requests = await service.activityRequests()
         XCTAssertEqual(requests.map(\.cursor), [nil, "cursor-2"])
-        XCTAssertEqual(
-            currentActivities(in: queryViewModel).map(\.txIds),
-            [["first"], ["duplicate"], ["next"]]
-        )
+        let items = currentItems(in: queryViewModel)
+        XCTAssertEqual(items.map(\.activity.txIds), [["first"], ["duplicate"], ["duplicate"], ["next"]])
+        XCTAssertEqual(items.map(\.id.occurrence), [0, 0, 1, 0])
     }
 
     @MainActor
-    func test_loadNextPage_updatesDuplicateActivityWithFreshPayloadKeepingOriginalPosition() async {
+    func test_loadNextPage_keepsRowIDsUniqueAfterDroppingAStaleRow() async {
+        let pending = activity(id: "shared", status: .pending, amount: "1")
+        let confirmed = activity(id: "shared", status: .confirmed, amount: "1")
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [pending, confirmed], nextCursor: "cursor-2")),
+            .success(page(activities: [confirmed], nextCursor: nil)),
+        ])
+        let queryViewModel = makeQueryViewModel(multichainService: service)
+
+        queryViewModel.appeared()
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: queryViewModel).count == 2
+            }
+        }
+
+        guard let lastItem = currentItems(in: queryViewModel).last else {
+            return XCTFail("Expected loaded item")
+        }
+        queryViewModel.loadNextPageIfNeeded(currentItem: lastItem)
+
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: queryViewModel).map(\.status) == [.confirmed, .confirmed]
+            }
+        }
+
+        XCTAssertEqual(currentItems(in: queryViewModel).map(\.id.occurrence), [1, 2])
+    }
+
+    @MainActor
+    func test_loadNextPage_keepsEqualRowsWithoutTxIdsWhenStatusDiffers() async {
+        let pending = activity(id: "pending", status: .pending, amount: "100", txIds: [])
+        let settled = activity(id: "settled", status: .confirmed, amount: "100", txIds: [])
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [pending], nextCursor: "cursor-2")),
+            .success(page(activities: [settled], nextCursor: nil)),
+        ])
+        let queryViewModel = makeQueryViewModel(multichainService: service)
+
+        queryViewModel.appeared()
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: queryViewModel).count == 1
+            }
+        }
+
+        guard let lastItem = currentItems(in: queryViewModel).last else {
+            return XCTFail("Expected loaded item")
+        }
+        queryViewModel.loadNextPageIfNeeded(currentItem: lastItem)
+
+        await waitUntil {
+            await MainActor.run {
+                self.currentActivities(in: queryViewModel).count == 2
+            }
+        }
+
+        let items = currentItems(in: queryViewModel)
+        XCTAssertEqual(items.map(\.activity.status), [.pending, .confirmed])
+        XCTAssertEqual(items.map(\.id.occurrence), [0, 1])
+    }
+
+    @MainActor
+    func test_loadNextPage_replacesTransactionRowWhoseStatusChanged() async {
         let first = activity(id: "first", amount: "1")
         let pendingDuplicate = activity(id: "duplicate", status: .pending, amount: "2")
         let confirmedDuplicate = activity(
@@ -2248,7 +2589,7 @@ final class MultichainHistoryViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_activityID_canonicalizesTxIdsOrderAndEmptyValuesForDeduplication() async {
+    func test_activityID_canonicalizesTxIdsOrderAndEmptyValues() async {
         let first = activity(id: "first", amount: "1", txIds: ["", "eth:b", "eth:a"])
         let duplicate = activity(id: "duplicate", amount: "1", txIds: ["eth:a", "", "eth:b", "eth:a"])
         let service = MultichainServiceSpy()
@@ -2268,8 +2609,35 @@ final class MultichainHistoryViewModelTests: XCTestCase {
         }
 
         let items = currentItems(in: queryViewModel)
-        XCTAssertEqual(items.count, 1)
-        XCTAssertEqual(items.map(\.id.txIds), [["eth:a", "eth:b"]])
+        XCTAssertEqual(items.map(\.id.activity.txIds), [["eth:a", "eth:b"], ["eth:a", "eth:b"]])
+        XCTAssertEqual(items.map(\.id.occurrence), [0, 1])
+    }
+
+    @MainActor
+    func test_activityID_keepsEqualTransfersOfOneTransactionAsSeparateRows() async {
+        let transfers = ["583", "146", "146", "146", "292"].map {
+            activity(id: "eth:0x4f60", activityType: .receive, amount: $0)
+        }
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: transfers, nextCursor: nil)),
+        ])
+        let queryViewModel = makeQueryViewModel(multichainService: service)
+
+        queryViewModel.appeared()
+        await waitUntil {
+            await MainActor.run {
+                if case .loaded = queryViewModel.state {
+                    return true
+                }
+                return false
+            }
+        }
+
+        let items = currentItems(in: queryViewModel)
+        XCTAssertEqual(items.map(\.activity.inAmount), ["583", "146", "146", "146", "292"])
+        XCTAssertEqual(items.map(\.id.occurrence), [0, 0, 1, 2, 0])
+        XCTAssertEqual(Set(items.map(\.id)).count, 5)
     }
 
     @MainActor
@@ -2630,6 +2998,28 @@ final class MultichainHistoryViewModelTests: XCTestCase {
                 [["december-31"], ["december-1"]],
             ]
         )
+    }
+
+    @MainActor
+    func test_presentationPreservesRussianMonthCaseAfterDayNumber() async {
+        let service = MultichainServiceSpy()
+        await service.setActivityPlans([
+            .success(page(activities: [
+                activity(id: "oct-15", blockTime: makeDate(year: 2026, month: 10, day: 15, hour: 10)),
+                activity(id: "sept-15", blockTime: makeDate(year: 2026, month: 9, day: 15, hour: 10)),
+            ], nextCursor: nil)),
+        ])
+        let dateFormatter = makeDateFormatter()
+        dateFormatter.locale = Locale(identifier: "ru_RU")
+        let viewModel = MultichainHistoryQueryViewModel(
+            multichainState: makeMultichainState(), category: .perps,
+            multichainService: service, amountFormatter: makeAmountFormatter(),
+            dateFormatter: dateFormatter, nftResolver: makeNFTResolver(), appSettingsStore: makeAppSettingsStore(),
+            currentDateProvider: { self.makeDate(year: 2026, month: 10, day: 23, hour: 12) }
+        )
+        viewModel.appeared()
+        await waitUntil { await MainActor.run { self.currentItems(in: viewModel).count == 2 } }
+        XCTAssertEqual(viewModel.presentation.sections.map(\.title), ["15 октября", "Сентябрь"])
     }
 
     @MainActor
@@ -3261,6 +3651,47 @@ final class MultichainHistoryViewModelTests: XCTestCase {
             item.comment,
             "the NFT preview already names the domain the comment stood in for"
         )
+    }
+
+    @MainActor
+    func test_hiddenBalances_maskARenewalFeeOnceItsDomainLoads_andBlurTheNFTPreview() {
+        let domain = MultichainActivityNFT(
+            id: "domain",
+            name: "tonkeepertesttesttest.ton",
+            collectionName: "TON DNS Domains",
+            imageURL: nil,
+            isVerified: true
+        )
+        let mapper = MultichainHistoryActivityItemMapper(
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            hidesAmounts: { true },
+            nftProvider: { _ in domain }
+        )
+
+        let renewal = mapper.makeItem(activity: activity(
+            id: "dns-renew",
+            activityType: .dnsRenew,
+            feeToken: asset(symbol: "TON", decimals: 9, assetId: "ton/mainnet/coin"),
+            feeAmount: "100000000",
+            fromChain: .ton,
+            toChain: .ton,
+            direction: .outgoing
+        ))
+        let transfer = mapper.makeItem(activity: tonNFTActivity(id: "nft-1"))
+
+        XCTAssertEqual(renewal.primaryAmount?.text, .secureModeValueShort)
+        XCTAssertEqual(transfer.primaryAmount?.text, MultichainActivityNFT.amountTitle)
+        XCTAssertEqual(transfer.transactionNftPreview?.isSecureMode, true)
+
+        let shown = MultichainHistoryActivityItemMapper(
+            amountFormatter: makeAmountFormatter(),
+            dateFormatter: makeDateFormatter(),
+            hidesAmounts: { false },
+            nftProvider: { _ in domain }
+        ).makeItem(activity: tonNFTActivity(id: "nft-1"))
+        XCTAssertEqual(shown.transactionNftPreview?.isSecureMode, false)
+        XCTAssertNotEqual(transfer, shown, "an NFT row has no amount to mask, so the flag alone must redraw it on the toggle")
     }
 
     func test_transactionDetails_dnsRenewHeadlinesTheDomainAndDropsTheProtocolRow() {
@@ -3978,7 +4409,8 @@ private extension MultichainHistoryViewModelTests {
         currentDateProvider: @escaping () -> Date = Date.init,
         addresses: [MultichainWalletAddress]? = nil,
         onAddFunds: (() -> Void)? = nil,
-        pendingEventId: String? = nil
+        pendingEventId: String? = nil,
+        accountStore: (any PerpsAccountStoring)? = nil
     ) -> MultichainHistoryViewModelImplementation {
         MultichainHistoryViewModelImplementation(
             multichainState: makeMultichainState(addresses: addresses),
@@ -3988,10 +4420,12 @@ private extension MultichainHistoryViewModelTests {
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: nftResolver ?? makeNFTResolver(),
+            appSettingsStore: makeAppSettingsStore(),
             currentDateProvider: currentDateProvider,
             chainImageProvider: { _ in nil },
             onAddFunds: onAddFunds,
-            pendingEventId: pendingEventId
+            pendingEventId: pendingEventId,
+            accountStore: accountStore
         )
     }
 
@@ -4001,6 +4435,7 @@ private extension MultichainHistoryViewModelTests {
         category: MultichainHistoryCategory = .chain(chainFilter: .all, typeFilter: .all),
         hidesDustTransactions: Bool = false,
         nftResolver: MultichainActivityNFTResolver? = nil,
+        appSettingsStore: AppSettingsStore? = nil,
         currentDateProvider: @escaping () -> Date = Date.init
     ) -> MultichainHistoryQueryViewModel {
         MultichainHistoryQueryViewModel(
@@ -4011,17 +4446,30 @@ private extension MultichainHistoryViewModelTests {
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             nftResolver: nftResolver ?? makeNFTResolver(),
+            appSettingsStore: appSettingsStore ?? makeAppSettingsStore(),
             currentDateProvider: currentDateProvider
         )
     }
 
+    func makeAppSettingsStore() -> AppSettingsStore {
+        AppSettingsStore(keeperInfoStore: KeeperInfoStore(keeperInfoRepository: HistoryKeeperInfoRepositoryStub()))
+    }
+
+    func setSecureMode(_ isSecureMode: Bool, in store: AppSettingsStore) {
+        var state = store.getState()
+        state.isSecureMode = isSecureMode
+        store.setStateNotifying(state, event: { .didUpdateIsSecureMode(isSecureMode: $0.isSecureMode) })
+    }
+
     func makeDetailsBuilder(
+        hidesAmounts: @escaping () -> Bool = { false },
         nftProvider: @escaping (MultichainActivity) -> MultichainActivityNFT? = { _ in nil }
     ) -> MultichainTransactionDetailsModelBuilder {
         MultichainTransactionDetailsModelBuilder(
             amountFormatter: makeAmountFormatter(),
             dateFormatter: makeDateFormatter(),
             transactionButtonProvider: { _ in nil },
+            hidesAmounts: hidesAmounts,
             nftProvider: nftProvider
         )
     }
@@ -4137,6 +4585,8 @@ private extension MultichainHistoryViewModelTests {
         direction: MultichainActivityDirection? = nil,
         fromAddress: String? = "0xfromaddress",
         toAddress: String? = "0xtoaddress",
+        fromName: String? = nil,
+        toName: String? = nil,
         isSpam: Bool = false,
         blockTime: Date = Date(timeIntervalSince1970: 1_777_440_000),
         blockNumber: Int64? = nil,
@@ -4156,6 +4606,8 @@ private extension MultichainHistoryViewModelTests {
             direction: direction ?? (activityType == .receive ? .incoming : .outgoing),
             fromAddress: fromAddress,
             toAddress: toAddress,
+            fromName: fromName,
+            toName: toName,
             outToken: outToken ?? defaultToken,
             outAmount: outAmount ?? amount,
             outAmountUsd: nil,
@@ -4407,6 +4859,17 @@ private extension MultichainHistoryViewModelTests {
     }
 }
 
+private struct HistoryKeeperInfoRepositoryStub: KeeperInfoRepository {
+    struct NoKeeperInfo: Error {}
+
+    func getKeeperInfo() throws -> KeeperInfo {
+        throw NoKeeperInfo()
+    }
+
+    func saveKeeperInfo(_: KeeperInfo) throws {}
+    func removeKeeperInfo() throws {}
+}
+
 private final class FundingAccountStoreStub: PerpsAccountStoring {
     var activity = PerpsFundingActivity()
     private var observers: [() -> Void] = []
@@ -4433,25 +4896,11 @@ private final class FundingAccountStoreStub: PerpsAccountStoring {
         .flat
     }
 
-    func matchingPosition(marketId _: Int64) -> PerpsPositionSummary? {
-        nil
-    }
-
-    func beginOpening(_: PerpsOpeningDescriptor) {}
-    func beginClosing(marketId _: Int64) {}
-    func beginAdjusting(marketId _: Int64, direction _: PerpsSizeChangeDirection, baseSizeBefore _: Double) {}
-    func beginAdjustingMargin(
-        marketId _: Int64,
-        direction _: PerpsMarginChangeDirection,
-        allocatedMarginBefore _: Double,
-        amountUsd _: Double
-    ) {}
-    func clearPending(marketId _: Int64) {}
     func marketExtras(marketId _: Int64) -> PerpsMarketExtras? {
         nil
     }
 
-    func loadMarketExtras(marketId _: Int64, clearingPending _: Bool) {}
+    func loadMarketExtras(marketId _: Int64) {}
     func releaseMarketExtras(marketId _: Int64) {}
     func subscribePositions(cadence _: PerpsPositionsCadence) {}
     func unsubscribePositions(cadence _: PerpsPositionsCadence) {}
@@ -4637,6 +5086,10 @@ private actor MultichainServiceSpy: MultichainService {
         cursor: String?
     ) async throws(MultichainServiceError) -> MultichainWalletAssetsPage {
         throw .apiError(message: "Unimplemented")
+    }
+
+    func getWalletAssetIncludingUnheld(state _: MultichainWalletState, assetId _: String, currencies _: [String]) async throws(MultichainServiceError) -> MultichainAsset? {
+        nil
     }
 
     func saveWalletAssetsFilters(walletId: String, changes: [MultichainAssetFilterChange]) async throws(MultichainServiceError) {

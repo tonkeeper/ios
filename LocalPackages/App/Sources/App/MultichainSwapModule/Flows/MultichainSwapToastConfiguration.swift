@@ -8,7 +8,7 @@ extension ToastPresenter.Configuration {
     }
 
     static func multichainSwapProviderError(_ message: String) -> ToastPresenter.Configuration {
-        var configuration = warning(text: message)
+        var configuration = warning(text: message, feedback: .failure)
         configuration.numberOfLines = 0
         return configuration.withMultichainSwapErrorDuration()
     }

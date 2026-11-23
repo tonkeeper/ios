@@ -1,6 +1,6 @@
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 @frozen public enum WalletConnectServiceEvent: Sendable, Equatable {
     case pairingStarted(pairingTopic: String, source: DappConnectionSource)
@@ -54,6 +54,13 @@ public protocol WalletConnectService: Sendable {
         topic: String,
         reason: WalletConnectRequestRejectionReason
     ) async throws(WalletConnectResponseError)
+
+    /// Whether the dApp still waits for the request: false once an answer to it was delivered, it
+    /// expired or its session ended.
+    func hasPendingRequest(
+        id: String,
+        topic: String
+    ) -> Bool
 
     func disconnect(
         topic: String
@@ -236,6 +243,13 @@ public final class WalletConnectServiceImplementation: WalletConnectService, Sen
             topic: topic,
             reason: reason
         )
+    }
+
+    public func hasPendingRequest(
+        id: String,
+        topic: String
+    ) -> Bool {
+        requestCoordinator.hasPendingRequest(id: id, topic: topic)
     }
 
     public func disconnect(

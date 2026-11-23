@@ -16,6 +16,7 @@ struct WalletConnectSolanaSignAllTransactionsSigner: WalletConnectRequestPayload
         let cryptoWallet = try await context.cryptoWallet()
         var signedTransactions = [String]()
         for transaction in batch.transactions {
+            try await context.checkRequestIsPending()
             let signed = try await utilities.signTransaction(
                 transaction,
                 client: context.client,

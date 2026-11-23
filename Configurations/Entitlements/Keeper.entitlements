@@ -13,6 +13,7 @@
 		<string>$(ASSOCIATED_DOMAIN_APPLINKS_FIFTH)</string>
 		<string>$(ASSOCIATED_DOMAIN_APPLINKS_SIXTH)</string>
 		<string>$(ASSOCIATED_DOMAIN_APPLINKS_SEVENTH)</string>
+		<string>$(ASSOCIATED_DOMAIN_APPLINKS_EIGHTH)</string>
 	</array>
 	<key>com.apple.developer.usernotifications.time-sensitive</key>
 	<true/>

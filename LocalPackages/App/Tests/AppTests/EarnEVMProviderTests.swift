@@ -1,5 +1,6 @@
 @testable import App
 @testable import KeeperCore
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -255,9 +256,19 @@ final class EarnEVMProviderTests: XCTestCase {
         _ = await context.handle(.accounts)
 
         await context.walletsStore.setWalletMultichain(wallet: wallet, multichain: wallet.multichain)
+        let movedAddress = "0x3333333333333333333333333333333333333333"
+        await context.walletsStore.setWalletMultichain(
+            wallet: wallet,
+            multichain: .multichain(
+                MultichainWalletState(
+                    walletId: "multichain-wallet",
+                    addresses: [MultichainWalletAddress(chain: .eth, address: movedAddress)]
+                )
+            )
+        )
 
         await context.waitForEvents(count: 1)
-        XCTAssertTrue(context.events.isEmpty)
+        XCTAssertEqual(context.events, [.accountsChanged([movedAddress])], "only the update that moves the account tells the page")
     }
 }
 
@@ -340,6 +351,7 @@ private final class Context {
     let walletsStore: WalletsStore
     let signer: SignerSpy
     private(set) var events = [EVMProviderEvent]()
+    private let eventSent = TestSignal()
     private(set) var sentTransactions = [SentTransaction]()
     private(set) var signingEvents = [EarnSigningEvent]()
 
@@ -349,6 +361,7 @@ private final class Context {
         self.signer = signer
         provider.onEvent = { [weak self] event in
             self?.events.append(event)
+            self?.eventSent.send()
         }
         provider.onSigning = { [weak self] event in
             self?.signingEvents.append(event)
@@ -367,10 +380,7 @@ private final class Context {
     }
 
     func waitForEvents(count: Int) async {
-        let deadline = Date().addingTimeInterval(2)
-        while events.count < count, Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
+        await waitUntil(eventSent) { self.events.count >= count }
     }
 }
 

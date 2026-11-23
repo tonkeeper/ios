@@ -61,6 +61,13 @@ final class WalletMigrationVisibilityTests: XCTestCase {
         )
     }
 
+    func test_telegramWalletIsNotLegacyMigrationSource() {
+        let telegramWallet = makeWallet(id: "telegram", multichain: .unavailable, revision: .walletTg)
+
+        XCTAssertFalse(WalletMigrationVisibility.isLegacyTonWallet(telegramWallet))
+        XCTAssertEqual(WalletMigrationVisibility.legacyTonWalletCount(wallets: [telegramWallet]), 0)
+    }
+
     func test_hasMigratableLegacyWalletsUsesBackendAssets() async {
         let legacyWallet = makeWallet(id: "legacy", multichain: .unavailable)
         let emptyLegacyWallet = makeWallet(id: "empty-legacy", multichain: .unavailable)
@@ -90,7 +97,8 @@ final class WalletMigrationVisibilityTests: XCTestCase {
 private extension WalletMigrationVisibilityTests {
     func makeWallet(
         id: String,
-        multichain: MultichainWallet?
+        multichain: MultichainWallet?,
+        revision: WalletContractVersion = .v4R2
     ) -> Wallet {
         Wallet(
             id: id,
@@ -98,7 +106,7 @@ private extension WalletMigrationVisibilityTests {
                 network: .mainnet,
                 kind: .Regular(
                     TonSwift.PublicKey(data: Data(repeating: 1, count: 32)),
-                    .v4R2
+                    revision
                 )
             ),
             metaData: WalletMetaData(

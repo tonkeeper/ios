@@ -49,9 +49,25 @@ private let failedFeeState = ConfirmActionState(
     action: action()
 )
 
+private func reviewedSendState(_ appearance: TKSlider.Appearance) -> ConfirmActionState {
+    var state = sendState
+    state.action.appearance = appearance
+    return state
+}
+
 #Preview("Send") {
     ConfirmActionView(state: sendState, onBack: {}, onClose: {})
         .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Send, review warning") {
+    ConfirmActionView(state: reviewedSendState(.warning), onBack: {}, onClose: {})
+        .tkPreviewTheme(.deepBlue)
+}
+
+#Preview("Send, review danger") {
+    ConfirmActionView(state: reviewedSendState(.danger), onBack: {}, onClose: {})
+        .tkPreviewTheme(.light)
 }
 
 #Preview("Fee loading, button") {

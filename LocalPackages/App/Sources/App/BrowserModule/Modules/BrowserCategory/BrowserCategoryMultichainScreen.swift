@@ -25,6 +25,7 @@ private extension BrowserCategoryMultichainScreen {
                     image: .TKUIKit.Icons.Size16.chevronLeft,
                     size: Layout.backIconSize,
                     padding: Layout.backIconPadding,
+                    liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                     onTap: { _ in
                         viewModel.didTapBackButton()
                     }

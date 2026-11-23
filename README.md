@@ -36,4 +36,4 @@ If you use Codex skills, ensure required environment values and dependencies are
 Create a `.env` file at the repository root (one level above `ios/`) with:
 - a non-empty `LINEAR_API_KEY` for the Linear skill. (see https://linear.app/developers)
 - install `gh` (`brew install gh`) and call `gh auth login` for `tondocs` and `pr` skill
-- `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_PATH` (path to the `AuthKey_<id>.p8`, App Manager role) for `make appstore_toolings` (attach the build, push `scripts/appstore/whats_new.txt`, submit to review). `ASC_PRIVATE_KEY_BASE64` works instead of the path (for CI).
+- `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_PATH` (path to the `AuthKey_<id>.p8`, App Manager role) for `make appstore_toolings` (`ACTION=info`: attach the build, set the release type / phased rollout, push `scripts/appstore/whats_new.txt`; `ACTION=release`: submit to review, publish the approved version and tag `release/ios/<ver>` as `ios/<ver>_<build>`, or manage the rollout). `ASC_PRIVATE_KEY_BASE64` works instead of the path (for CI). `SLACK_BOT_TOKEN` and `SLACK_RELEASES_CHANNEL` for `ACTION=status` (posts the release status to Slack).

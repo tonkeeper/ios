@@ -54,16 +54,7 @@ struct SwapGasReserveResolver {
                 )
             }
             throw .insufficientNativeFee(
-                shortage: MultichainNativeFeeShortage(
-                    asset: MultichainAssetDetails(
-                        assetId: feeAsset.id,
-                        name: feeAsset.name,
-                        symbol: feeAsset.symbol,
-                        decimals: Int(feeAsset.decimals.value),
-                        image: ""
-                    ),
-                    requiredAmount: amount
-                )
+                shortage: MultichainNativeFeeShortage(feeAsset: feeAsset, requiredAmount: amount)
             )
         }
         return reserve
@@ -75,6 +66,21 @@ struct SwapGasReserveResolver {
             asset: feeAsset,
             derivation: DerivationDefaultPath.shared,
             publicKey: account.publicKey
+        )
+    }
+}
+
+extension MultichainNativeFeeShortage {
+    init(feeAsset: AssetCoin, requiredAmount: BigUInt) {
+        self.init(
+            asset: MultichainAssetDetails(
+                assetId: feeAsset.id,
+                name: feeAsset.name,
+                symbol: feeAsset.symbol,
+                decimals: Int(feeAsset.decimals.value),
+                image: ""
+            ),
+            requiredAmount: requiredAmount
         )
     }
 }

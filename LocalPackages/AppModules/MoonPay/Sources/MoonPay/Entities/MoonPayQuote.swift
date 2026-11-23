@@ -92,6 +92,15 @@ public struct MoonPayBuyQuote: Decodable, Equatable, Sendable {
         public let id: String
         public let version: String?
 
+        /// What a disclosure MoonPay sent but this app could not read stands in as: unknown, so the
+        /// conservative text still shows.
+        public static let unreadable = PaymentDisclosure(id: "", version: nil)
+
+        public init(id: String, version: String?) {
+            self.id = id
+            self.version = version
+        }
+
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             id = try container.decode(String.self, forKey: .id)
@@ -119,6 +128,8 @@ public struct MoonPayBuyQuote: Decodable, Equatable, Sendable {
     /// Present when the customer must pass a challenge before the quote becomes executable.
     public let challenge: MoonPayJSONValue?
     public let paymentDisclosures: [PaymentDisclosure]?
+    /// `expiresAt` moved onto this device's clock using the server time of the response.
+    public internal(set) var localExpiresAt: Date?
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -134,7 +145,27 @@ public struct MoonPayBuyQuote: Decodable, Equatable, Sendable {
         exchangeRateType = try container.decodeIfPresent(String.self, forKey: .exchangeRateType)
         signature = try container.decode(String.self, forKey: .signature)
         challenge = try container.decodeIfPresent(MoonPayJSONValue.self, forKey: .challenge)
-        paymentDisclosures = try? container.decodeIfPresent([PaymentDisclosure].self, forKey: .paymentDisclosures)
+        paymentDisclosures = Self.decodeDisclosures(from: container)
+    }
+
+    /// Element by element: one malformed disclosure must not hide the others, and a legal text is
+    /// shown for it rather than none.
+    private static func decodeDisclosures(from container: KeyedDecodingContainer<CodingKeys>) -> [PaymentDisclosure]? {
+        guard container.contains(.paymentDisclosures),
+              (try? container.decodeNil(forKey: .paymentDisclosures)) != true
+        else { return nil }
+        guard let elements = try? container.decode([LossyDisclosure].self, forKey: .paymentDisclosures) else {
+            return [.unreadable]
+        }
+        return elements.map { $0.disclosure ?? .unreadable }
+    }
+
+    private struct LossyDisclosure: Decodable {
+        let disclosure: PaymentDisclosure?
+
+        init(from decoder: Decoder) throws {
+            disclosure = try? PaymentDisclosure(from: decoder)
+        }
     }
 
     public var challengeURL: URL? {
@@ -149,4 +180,35 @@ public struct MoonPayBuyQuote: Decodable, Equatable, Sendable {
 
 struct MoonPayBuyQuoteResponse: Decodable {
     let data: MoonPayBuyQuote
+}
+
+public extension MoonPayBuyQuote {
+    /// Seconds left before the quote expires, `nil` when that is not known. `expiresAt` is server time,
+    /// so without the response's server time to correct it, a device clock that is off makes the value
+    /// meaningless and one outside a sane range is treated as unknown.
+    var lifetime: TimeInterval? {
+        if let localExpiresAt {
+            return localExpiresAt.timeIntervalSinceNow
+        }
+        guard let remaining = expiresAt?.timeIntervalSinceNow, (0 ... Self.maximumPlausibleLifetime).contains(remaining) else {
+            return nil
+        }
+        return remaining
+    }
+
+    private static var maximumPlausibleLifetime: TimeInterval {
+        60
+    }
+
+    /// How far MoonPay's clock runs ahead of this device's, read from the response this quote came
+    /// in; `nil` when that response carried no server time.
+    var serverClockOffset: TimeInterval? {
+        guard let expiresAt, let localExpiresAt else { return nil }
+        return expiresAt.timeIntervalSince(localExpiresAt)
+    }
+
+    /// A quote without an expiry is taken as valid.
+    func isFresh(for remaining: TimeInterval) -> Bool {
+        lifetime.map { $0 >= remaining } ?? true
+    }
 }

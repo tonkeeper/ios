@@ -8,14 +8,12 @@ struct ChooseWalletKindAssembly {
     private init() {}
 
     static func module(
-        tonPreview: ImportWalletKindPreview,
-        multichainPreview: ImportWalletKindPreview,
+        options: [ChooseWalletKindOption],
         amountFormatter: AmountFormatter,
         currency: Currency
     ) -> MVVMModule<UIViewController, ChooseWalletKindModuleOutput, ChooseWalletKindModuleInput> {
         let viewModel = ChooseWalletKindViewModel(
-            tonPreview: tonPreview,
-            multichainPreview: multichainPreview,
+            options: options,
             amountFormatter: amountFormatter,
             currency: currency
         )

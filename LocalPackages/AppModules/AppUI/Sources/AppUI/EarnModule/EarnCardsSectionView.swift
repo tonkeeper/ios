@@ -6,21 +6,25 @@ public struct EarnCardsSectionView: View {
     private let cards: [EarnCardViewData]
     private let onOpenCatalog: () -> Void
     private let onSelectCard: (EarnCardViewData) -> Void
+    private let onResolveTitleAnchor: ((UIView) -> Void)?
 
     public init(
         cards: [EarnCardViewData],
         onOpenCatalog: @escaping () -> Void,
-        onSelectCard: @escaping (EarnCardViewData) -> Void
+        onSelectCard: @escaping (EarnCardViewData) -> Void,
+        onResolveTitleAnchor: ((UIView) -> Void)? = nil
     ) {
         self.cards = cards
         self.onOpenCatalog = onOpenCatalog
         self.onSelectCard = onSelectCard
+        self.onResolveTitleAnchor = onResolveTitleAnchor
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ListTitleView(
-                config: .text(TKLocales.Earn.sectionTitle, titleAction: onOpenCatalog)
+                config: .text(TKLocales.Earn.sectionTitle, titleAction: onOpenCatalog),
+                onResolveTitleAnchor: onResolveTitleAnchor
             )
             .padding(.horizontal, Layout.horizontalPadding)
 

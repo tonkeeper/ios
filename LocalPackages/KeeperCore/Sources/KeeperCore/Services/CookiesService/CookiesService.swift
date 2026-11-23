@@ -4,7 +4,6 @@ public protocol CookiesService: AnyObject {
     func fetchLocalCookies(for wallet: Wallet) -> [CookieBridgeModel]
     func saveState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws
 
-    func remove(cookie: HTTPCookie, wallet: Wallet) throws
     func removeAllStorageCookies(for wallet: Wallet) throws
 }
 
@@ -35,11 +34,6 @@ final class CookiesServiceImplementation: CookiesService {
     }
 
     // MARK: -  Remove
-
-    func remove(cookie: HTTPCookie, wallet: Wallet) throws {
-        let bridgeCookie = CookieBridgeModel(cookie: cookie)
-        try cookiesRepository.remove(bridgeCookie, for: wallet)
-    }
 
     func removeAllStorageCookies(for wallet: Wallet) throws {
         try cookiesRepository.removeCookies(for: wallet)

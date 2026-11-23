@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Ledger device connected over Bluetooth during import. Emitted again only after a disconnect, when the device connects once more.  */
+/** Ledger device connected over Bluetooth during import. Emitted again only after a disconnect, when the device connects once more. For a multichain Ledger: sent for each Ledger the user picks, once it connects and its accounts start being read; a Ledger connected by cable sends wallet_import_ledger_usb_connected instead.  */
 public struct WalletImportLedgerBluetoothConnected: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "wallet_import_ledger_bluetooth_connected"

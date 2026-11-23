@@ -192,7 +192,8 @@ public final class PerpsSizeChangeSession: ObservableObject {
     public func refreshReview(_ review: PerpsSizeChangeReview, operationId: String) -> Bool {
         guard phase == .reviewing,
               let confirmationState,
-              confirmationState.prepared.operationId == operationId
+              confirmationState.prepared.operationId == operationId,
+              confirmationState.prepared.review.closesWholePosition == review.closesWholePosition
         else { return false }
         let prepared = confirmationState.prepared
         self.confirmationState = ConfirmationState(
@@ -289,11 +290,14 @@ public final class PerpsSizeChangeSession: ObservableObject {
     }
 
     private func makeIntent(marginDeltaUsd: String? = nil) -> PerpsSizeChangeIntent {
-        PerpsSizeChangeIntent(
+        let roi = direction == .add ? autoCloseROIInput : .none
+        return PerpsSizeChangeIntent(
             marketId: marketId,
             direction: direction,
             marginDeltaUsd: marginDeltaUsd ?? PerpsDecimalInput.normalized(amountText),
-            autoCloseUpdate: autoCloseUpdate
+            autoCloseUpdate: autoCloseUpdate,
+            takeProfitROIPercent: roi.takeProfit?.value,
+            stopLossROIPercent: roi.stopLoss?.value
         )
     }
 
@@ -334,7 +338,8 @@ public final class PerpsSizeChangeSession: ObservableObject {
         prepared: PerpsPreparedSizeChangeAction,
         restingSnapshot: PerpsAutoClose?
     ) -> PerpsAutoClose? {
-        switch prepared.intent.autoCloseUpdate {
+        guard !prepared.review.closesWholePosition else { return nil }
+        return switch prepared.intent.autoCloseUpdate {
         case .unchanged:
             restingSnapshot
         case .clear:

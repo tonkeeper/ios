@@ -15,11 +15,11 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
             .sendConfirmed: (TKLocales.ActionTypes.sending, .confirmed, TKLocales.History.Tab.sent),
             .receiveConfirmed: (TKLocales.ActionTypes.receiving, .confirmed, TKLocales.History.Tab.received),
             .swapConfirmed: (TKLocales.ActionTypes.swapping, .confirmed, TKLocales.LiveActivity.swapped),
-            .swapFailed: (TKLocales.ActionTypes.swapping, .failed, TKLocales.State.failed),
-            .bridgeConfirmed: (TKLocales.LiveActivity.Stage.receiving("USDT"), .confirmed, TKLocales.LiveActivity.swapped),
-            .receiveDropped: (TKLocales.ActionTypes.receiving, .dropped, TKLocales.LiveActivity.dropped),
-            .perpsDeposit: (TKLocales.LiveActivity.Stage.convertingTo("USDC"), .confirmed, TKLocales.LiveActivity.deposited),
-            .perpsWithdraw: (TKLocales.LiveActivity.Stage.sendingToWallet, .confirmed, TKLocales.LiveActivity.withdrawn),
+            .swapFailed: (TKLocales.ActionTypes.swapping, .failed, TKLocales.LiveActivity.swapFailed),
+            .bridgeConfirmed: (TKLocales.LiveActivity.Stage.movingTo("TRON"), .confirmed, TKLocales.LiveActivity.swapped),
+            .receiveDropped: (TKLocales.ActionTypes.receiving, .dropped, TKLocales.LiveActivity.notReceived),
+            .perpsDeposit: (TKLocales.LiveActivity.depositing, .confirmed, TKLocales.LiveActivity.deposited),
+            .perpsWithdraw: (TKLocales.LiveActivity.withdrawing, .confirmed, TKLocales.LiveActivity.withdrawn),
             .perpsOpenLong: (
                 TKLocales.LiveActivity.openingLong, .confirmed, TKLocales.MultichainHistory.Perps.openedLong
             ),
@@ -54,25 +54,26 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
 
     func test_stagedMocksWalkThroughTheirStagesUnderTheSameId() throws {
         typealias Stage = TransactionLiveActivitySnapshot.Stage
-        let expectations: [Mock.Scenario: [(Stage, String)]] = [
-            .perpsDeposit: [
-                (Stage(index: 1, count: 4), TKLocales.LiveActivity.Stage.sendingFromWallet),
-                (Stage(index: 2, count: 4), TKLocales.LiveActivity.Stage.convertingTo("USDC")),
-                (Stage(index: 3, count: 4), TKLocales.LiveActivity.Stage.convertingTo("USDC")),
-            ],
-            .perpsWithdraw: [
-                (Stage(index: 2, count: 5), TKLocales.LiveActivity.Stage.sendingRequest),
-                (Stage(index: 3, count: 5), TKLocales.LiveActivity.Stage.processingWithdrawal),
-                (Stage(index: 4, count: 5), TKLocales.LiveActivity.Stage.sendingToWallet),
-            ],
-            .bridgeConfirmed: [
-                (Stage(index: 2, count: 4), TKLocales.LiveActivity.Stage.movingTo("TRON")),
-                (Stage(index: 3, count: 4), TKLocales.LiveActivity.Stage.receiving("USDT")),
-                (Stage(index: 3, count: 4), TKLocales.LiveActivity.Stage.receiving("USDT")),
-            ],
+        let expectations: [Mock.Scenario: (title: String, stages: [Stage])] = [
+            .perpsDeposit: (TKLocales.LiveActivity.depositing, [
+                Stage(index: 1, count: 3, title: TKLocales.LiveActivity.Stage.sendingFromWallet),
+                Stage(index: 2, count: 3, title: TKLocales.LiveActivity.Stage.convertingTo("USDC")),
+                Stage(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.convertingTo("USDC")),
+            ]),
+            .perpsWithdraw: (TKLocales.LiveActivity.withdrawing, [
+                Stage(index: 1, count: 3, title: TKLocales.LiveActivity.Stage.sendingRequest),
+                Stage(index: 2, count: 3, title: TKLocales.LiveActivity.Stage.processingWithdrawal),
+                Stage(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.sendingToWallet),
+            ]),
+            .bridgeConfirmed: (TKLocales.LiveActivity.Stage.movingTo("TRON"), [
+                Stage(index: 2, count: 3, title: TKLocales.LiveActivity.Stage.sending),
+                Stage(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.arrivingOn("TRON")),
+                Stage(index: 3, count: 3, title: TKLocales.LiveActivity.Stage.arrivingOn("TRON")),
+            ]),
         ]
         let start = Date()
-        for (scenario, stages) in expectations {
+        for (scenario, expected) in expectations {
+            let stages = expected.stages
             let entry = Mock.Entry(
                 id: UUID().uuidString,
                 scenario: scenario,
@@ -85,11 +86,36 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
             }
             let final = try XCTUnwrap(Mock.snapshot(for: entry, now: start.addingTimeInterval(Mock.resolveDelay)))
 
-            XCTAssertEqual(snapshots.map(\.stage), stages.map(\.0), "\(scenario)")
-            XCTAssertEqual(snapshots.map(\.title), stages.map(\.1), "\(scenario)")
+            XCTAssertEqual(snapshots.map(\.stage), stages, "\(scenario)")
+            XCTAssertEqual(Set(snapshots.map(\.title)), [expected.title], "\(scenario)")
             XCTAssertEqual(Set(snapshots.map(\.id)), [final.id], "\(scenario)")
             XCTAssertNil(final.stage, "\(scenario)")
+            XCTAssertEqual(final.steps, 3, "\(scenario)")
         }
+    }
+
+    func test_aDepositThroughTheBridgeIsCreditedRatherThanConverted() {
+        func arriving(executionId: String) -> String? {
+            var deposit = PerpsPendingDeposit(
+                stage: .registeredPending,
+                route: .crosschainSwap,
+                beneficiary: "0xabc",
+                sourceAsset: PerpsFundingAsset(assetId: "arb/mainnet/erc20/0xaf88", symbol: "USDC", decimals: 6),
+                sourceAmountUnits: "5000000",
+                targetAsset: PerpsFundingAsset(assetId: "eth/mainnet/erc20/0xa0b8", symbol: "USDC", decimals: 6)
+            )
+            deposit.executionId = executionId
+            return TransactionLiveActivitySnapshot(funding: PerpsPendingFundingOperation(
+                operationId: "op",
+                walletId: "wallet",
+                walletIdentity: "identity",
+                environment: "test",
+                details: .deposit(deposit)
+            )).stage?.title
+        }
+
+        XCTAssertEqual(arriving(executionId: "funxyz_1"), TKLocales.LiveActivity.Stage.creditingToPerps)
+        XCTAssertEqual(arriving(executionId: "exec-1"), TKLocales.LiveActivity.Stage.movingTo(MultichainChain.eth.shortDisplayTitle))
     }
 
     func test_crossChainSwapIsUnderwayUntilItsDestinationTransactionAppears() {
@@ -106,13 +132,15 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
         let crossChain = swap(to: "trx/mainnet/trx")
         let sameChain = swap(to: "ton/mainnet/jetton/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")
 
-        XCTAssertEqual(crossChain.stage, .init(index: 1, count: 4))
+        XCTAssertEqual(crossChain.stage, .init(index: 1, count: 3, title: TKLocales.LiveActivity.Stage.sending))
+        XCTAssertEqual(crossChain.steps, 3)
         XCTAssertEqual(crossChain.title, TKLocales.LiveActivity.Stage.movingTo("TRON"))
+        XCTAssertNil(sameChain.steps)
         XCTAssertNil(sameChain.stage)
         XCTAssertEqual(sameChain.title, TKLocales.ActionTypes.swapping)
     }
 
-    func test_fundingRingMovesOnEveryJournalStageUnderAtMostFourTitles() {
+    func test_fundingBarFitsEveryJournalStageIntoThreeSegments() {
         func deposit(_ stage: PerpsDepositStage, route: PerpsDepositRoute) -> TransactionLiveActivitySnapshot {
             TransactionLiveActivitySnapshot(funding: operation(.deposit(PerpsPendingDeposit(
                 stage: stage,
@@ -145,22 +173,28 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
             ("withdrawal", [.signed, .sending, .accepted, .awaitingL1].map(withdraw)),
         ]
 
+        let indexes = ["converted deposit": [1, 2, 3], "direct deposit": [1, 2, 3], "withdrawal": [1, 1, 2, 3]]
         for (flow, snapshots) in flows {
             let stages = snapshots.compactMap(\.stage)
-            XCTAssertEqual(stages.count, snapshots.count, flow)
-            XCTAssertEqual(stages.map(\.index), Array(1 ... stages.count), flow)
-            XCTAssertEqual(Set(stages.map(\.count)), [stages.count + 1], flow)
-            XCTAssertLessThanOrEqual(Set(snapshots.map(\.title)).count, 4, flow)
+            XCTAssertEqual(stages.map(\.index), indexes[flow], flow)
+            XCTAssertEqual(Set(stages.map(\.count)), [3], flow)
+            XCTAssertEqual(Set(snapshots.map(\.title)).count, 1, flow)
+            XCTAssertEqual(Set(snapshots.map(\.steps)), [3], flow)
         }
         XCTAssertEqual(
-            depositStages.map { deposit($0, route: .directGateway).title },
+            depositStages.map { deposit($0, route: .directGateway).stage?.title },
             [
                 TKLocales.LiveActivity.Stage.sendingFromWallet,
                 TKLocales.LiveActivity.Stage.creditingToPerps,
                 TKLocales.LiveActivity.Stage.creditingToPerps,
             ]
         )
-        XCTAssertEqual(deposit(.needsAuthorization, route: .crosschainSwap).stage, .init(index: 2, count: 4))
+        XCTAssertEqual(
+            deposit(.needsAuthorization, route: .crosschainSwap).stage,
+            .init(index: 2, count: 3, title: TKLocales.LiveActivity.Stage.convertingTo("USDC"))
+        )
+        XCTAssertEqual(deposit(.sourcePending, route: .crosschainSwap).kind, .deposit)
+        XCTAssertEqual(withdraw(.signed).kind, .withdrawal)
     }
 
     func test_pendingMockWaitsForManualResolution() throws {
@@ -181,6 +215,8 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
             TKLocales.MultichainHistory.Perps.closedLong
         )
         XCTAssertEqual(TransactionLiveActivitySnapshot(trading: close, status: .failed).title, TKLocales.State.failed)
+        XCTAssertEqual(TransactionLiveActivitySnapshot(trading: close).kind, .close)
+        XCTAssertEqual(TransactionLiveActivitySnapshot(trading: margin).kind, .other)
         XCTAssertEqual(TransactionLiveActivitySnapshot(trading: margin).title, TKLocales.ActionTypes.pending)
         XCTAssertEqual(
             TransactionLiveActivitySnapshot(trading: margin, status: .confirmed).title,
@@ -211,10 +247,45 @@ final class TransactionLiveActivityFinalStateTests: XCTestCase {
                 walletId: "wallet",
                 transactionId: state.transactionId,
                 perpsMarketId: state.perpsMarketId
-            ).url)
+            ).url(on: .lockScreen))
 
             XCTAssertEqual(TransactionLiveActivityLink(url: url)?.perpsMarketId, 1, "hidesAmounts: \(hidesAmounts)")
         }
+    }
+
+    func test_tradeShowsItsSizeAndIsPricedAtTheMarkPrice() throws {
+        let icon = try XCTUnwrap(URL(string: "https://example.com/eth.png"))
+        let close = TransactionLiveActivitySnapshot(
+            trading: PerpsPendingTradingAction(
+                operationId: "operation",
+                walletId: "wallet",
+                marketId: 2,
+                side: .short,
+                payload: .close,
+                expectedBaseSize: 0.5
+            ),
+            marketSymbol: "ETH",
+            marketIcon: icon,
+            markPrice: 3400
+        )
+
+        XCTAssertEqual(close.destination?.amount, "0.5")
+        XCTAssertEqual(close.value, .usd(1700))
+        XCTAssertEqual(close.icon, .url(icon))
+    }
+
+    func test_mockTransfersCarryTheirLogoAndDollarValue() throws {
+        let start = Date()
+        func snapshot(_ scenario: Mock.Scenario) throws -> TransactionLiveActivitySnapshot {
+            let entry = Mock.Entry(id: "\(scenario)", scenario: scenario, startedAt: start, resolvesAt: nil)
+            return try XCTUnwrap(Mock.snapshot(for: entry, now: start))
+        }
+
+        XCTAssertEqual(try snapshot(.sendPending).icon, .ton)
+        XCTAssertEqual(try snapshot(.sendPending).value, .usd(3.4))
+        XCTAssertEqual(try snapshot(.receiveConfirmed).icon, .usdt)
+        XCTAssertEqual(try snapshot(.swapConfirmed).icon, .ton)
+        XCTAssertNil(try snapshot(.swapConfirmed).value)
     }
 
     private func trading(side: PerpsTradeSide, payload: PerpsPendingPayload) -> PerpsPendingTradingAction {

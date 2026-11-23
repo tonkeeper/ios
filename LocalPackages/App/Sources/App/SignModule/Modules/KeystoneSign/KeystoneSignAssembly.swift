@@ -25,7 +25,8 @@ struct KeystoneSignAssembly {
                 title: nil,
                 subtitle: nil,
                 isFlashlightVisible: false
-            )
+            ),
+            analytics: .none
         )
 
         let viewModel = KeystoneSignViewModelImplementation(

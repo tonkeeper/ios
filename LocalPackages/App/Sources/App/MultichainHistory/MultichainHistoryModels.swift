@@ -186,7 +186,10 @@ private extension MultichainHistoryActivityIdentity {
 }
 
 struct MultichainHistoryActivityItem: Identifiable, Equatable {
-    typealias ID = MultichainHistoryActivityIdentity
+    struct ID: Hashable {
+        let activity: MultichainHistoryActivityIdentity
+        let occurrence: Int
+    }
 
     struct Amount: Equatable {
         enum Style: Equatable {
@@ -205,12 +208,17 @@ struct MultichainHistoryActivityItem: Identifiable, Equatable {
     let title: String
     let subtitle: String?
     let comment: String?
+    /// A comment encrypted to the wallet, where `comment` has none and a tap can decrypt it.
+    var encryptedComment: MultichainActivityEncryptedComment?
+    /// What `encryptedComment` decrypted to; secure mode hides it, as TON history does.
+    var decryptedComment: String?
     let time: String
     let icon: UIImage
     let primaryAmount: Amount?
     let secondaryAmount: Amount?
     let status: MultichainActivityStatus
     let nft: MultichainActivityNFT?
+    var isSecureMode = false
 
     static func == (lhs: MultichainHistoryActivityItem, rhs: MultichainHistoryActivityItem) -> Bool {
         lhs.id == rhs.id
@@ -218,11 +226,45 @@ struct MultichainHistoryActivityItem: Identifiable, Equatable {
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
             && lhs.comment == rhs.comment
+            && lhs.encryptedComment == rhs.encryptedComment
+            && lhs.decryptedComment == rhs.decryptedComment
             && lhs.time == rhs.time
             && lhs.primaryAmount == rhs.primaryAmount
             && lhs.secondaryAmount == rhs.secondaryAmount
             && lhs.status == rhs.status
             && lhs.nft == rhs.nft
+            && lhs.isSecureMode == rhs.isSecureMode
+    }
+
+    func maskingAmounts() -> MultichainHistoryActivityItem {
+        MultichainHistoryActivityItem(
+            id: id,
+            activity: activity,
+            title: title,
+            subtitle: subtitle,
+            comment: comment,
+            encryptedComment: encryptedComment,
+            decryptedComment: nil,
+            time: time,
+            icon: icon,
+            primaryAmount: primaryAmount == .nft ? primaryAmount : primaryAmount?.masked(),
+            secondaryAmount: secondaryAmount?.masked(),
+            status: status,
+            nft: nft,
+            isSecureMode: true
+        )
+    }
+}
+
+extension MultichainHistoryActivityItem.Amount {
+    static let nft = MultichainHistoryActivityItem.Amount(
+        text: MultichainActivityNFT.amountTitle,
+        chainTitle: nil,
+        style: .primary
+    )
+
+    func masked() -> Self {
+        MultichainHistoryActivityItem.Amount(text: .secureModeValueShort, chainTitle: chainTitle, style: .primary)
     }
 }
 

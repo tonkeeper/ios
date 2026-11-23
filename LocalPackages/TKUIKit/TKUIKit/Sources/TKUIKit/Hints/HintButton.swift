@@ -57,18 +57,23 @@ public struct HintButton<Label: View, Content: View>: View {
                 .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
             }
         }
+        .environment(\.hintAnchorStore, sourceViewStore)
         .background(
             TKHintSourceViewResolver { sourceView in
                 sourceViewStore.view = sourceView
             }
         )
         .onDisappear {
-            HintController.dismiss(sourceView: sourceViewStore.view)
+            dismissHint()
         }
     }
 
+    private var hintSourceView: UIView? {
+        sourceViewStore.anchor ?? sourceViewStore.view
+    }
+
     private func toggleHint() {
-        guard let sourceView = sourceViewStore.view else { return }
+        guard let sourceView = hintSourceView else { return }
 
         HintController.toggle(
             sourceView: sourceView,
@@ -83,7 +88,7 @@ public struct HintButton<Label: View, Content: View>: View {
     }
 
     private func dismissHint() {
-        HintController.dismiss(sourceView: sourceViewStore.view)
+        HintController.dismiss(sourceView: hintSourceView)
     }
 
     private func preferredContentSize<Root: View>(
@@ -107,6 +112,37 @@ public struct HintButton<Label: View, Content: View>: View {
             width: width,
             height: ceil(fittingSize.height)
         )
+    }
+}
+
+public extension View {
+    /// Points the hint of the enclosing `HintButton` at this view, so a wide label can open
+    /// a hint that still shows what it explains.
+    func hintAnchor() -> some View {
+        modifier(HintAnchorModifier())
+    }
+}
+
+private struct HintAnchorModifier: ViewModifier {
+    @Environment(\.hintAnchorStore) private var store
+
+    func body(content: Content) -> some View {
+        content.background(
+            TKHintSourceViewResolver { sourceView in
+                store?.anchor = sourceView
+            }
+        )
+    }
+}
+
+private struct HintAnchorStoreKey: EnvironmentKey {
+    static let defaultValue: HintSourceViewStore? = nil
+}
+
+private extension EnvironmentValues {
+    var hintAnchorStore: HintSourceViewStore? {
+        get { self[HintAnchorStoreKey.self] }
+        set { self[HintAnchorStoreKey.self] = newValue }
     }
 }
 

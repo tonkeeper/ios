@@ -24,10 +24,35 @@ enum BatterySupportedTransaction: String, CaseIterable {
 
 extension Wallet {
     var supportedBatteryTransactions: [BatterySupportedTransaction] {
+        // A Ledger has the battery on TRON alone, where its swaps and USDT go.
+        guard kind != .ledger else {
+            return multichainWalletState?.address(for: .tron) == nil ? [] : [.swap, .trc20]
+        }
         var transactions: [BatterySupportedTransaction] = [.swap, .jetton, .nft]
-        if tron != nil {
+        if tron != nil || multichainWalletState?.address(for: .tron) != nil {
             transactions.append(.trc20)
         }
         return transactions
+    }
+}
+
+struct BatteryTransactionNetwork: Equatable {
+    let chain: MultichainChain
+    let transactions: [BatterySupportedTransaction]
+}
+
+extension Wallet {
+    /// What the battery pays for on each network: TON, TRON and the relayed EVM chains and Solana in `relayedChains`.
+    func batteryTransactionNetworks(relayedChains: [MultichainChain]) -> [BatteryTransactionNetwork] {
+        let supported = supportedBatteryTransactions
+        var networks: [BatteryTransactionNetwork] = []
+        if supported.contains(.jetton) {
+            networks.append(BatteryTransactionNetwork(chain: .ton, transactions: [.swap, .jetton, .nft]))
+        }
+        if supported.contains(.trc20) {
+            networks.append(BatteryTransactionNetwork(chain: .tron, transactions: [.swap, .trc20]))
+        }
+        networks += relayedChains.map { BatteryTransactionNetwork(chain: $0, transactions: [.swap, .jetton]) }
+        return networks
     }
 }

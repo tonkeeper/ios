@@ -99,6 +99,21 @@ public final class PerpsMarketsStore: Store<PerpsMarketsStore.Event, PerpsMarket
         PerpsMarketsPriceInterest(store: self)
     }
 
+    func livePrices(of marketIds: Set<Int64>) -> AsyncStream<[Int64: Double]> {
+        let (stream, continuation) = AsyncStream<[Int64: Double]>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        let interest = PerpsMarketsPriceInterest(store: self)
+        let observer = PerpsLivePricesObserver(marketIds: marketIds, continuation: continuation)
+        addObserver(observer) { observer, event in
+            guard case let .didUpdate(state) = event else { return }
+            observer.receive(state)
+        }
+        interest.set(marketIds: marketIds)
+        continuation.onTermination = { _ in
+            withExtendedLifetime((interest, observer)) {}
+        }
+        return stream
+    }
+
     public func price(marketId: Int64) async -> Double? {
         await controller.price(marketId: marketId)
     }
@@ -117,6 +132,26 @@ public final class PerpsMarketsStore: Store<PerpsMarketsStore.Event, PerpsMarket
 
     fileprivate func publish(_ state: State) {
         setStateNotifying(state, event: Event.didUpdate)
+    }
+}
+
+private final class PerpsLivePricesObserver {
+    private let marketIds: Set<Int64>
+    private let continuation: AsyncStream<[Int64: Double]>.Continuation
+    private var last = [Int64: Double]()
+
+    init(marketIds: Set<Int64>, continuation: AsyncStream<[Int64: Double]>.Continuation) {
+        self.marketIds = marketIds
+        self.continuation = continuation
+    }
+
+    func receive(_ state: PerpsMarketsStore.State) {
+        let prices = marketIds.reduce(into: [Int64: Double]()) { prices, marketId in
+            prices[marketId] = state.livePrice(marketId: marketId)
+        }
+        guard prices != last else { return }
+        last = prices
+        continuation.yield(prices)
     }
 }
 
@@ -170,6 +205,7 @@ private actor PerpsMarketsController {
     private var livePrices: [Int64: Double] = [:]
     private var livePriceRevisions: [Int64: Int] = [:]
     private var livePriceRevision = 0
+    private var publishedState: PerpsMarketsStore.State?
 
     init(
         repository: PerpsMarketsReading,
@@ -599,6 +635,10 @@ private extension PerpsMarketsController {
             state = .failed
         }
 
+        // Price-interest changes alone republish an unchanged state on every scroll step,
+        // and each publish wakes every observer on the main thread.
+        guard state != publishedState else { return }
+        publishedState = state
         stateContinuation.yield(state)
     }
 }

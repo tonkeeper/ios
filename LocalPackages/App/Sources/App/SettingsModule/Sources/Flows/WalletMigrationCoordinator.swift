@@ -2,6 +2,7 @@ import KeeperCore
 import TKCoordinator
 import TKCore
 import TKCryptoKit
+import TKLogging
 import TKUIKit
 import TonSwift
 import TronSwift
@@ -466,11 +467,20 @@ private extension WalletMigrationCoordinator {
                                     ?? tonResult.preferredFeeMethod
                                     ?? .ton(amountNano: tonResult.totalFees)
                                 try await withMigrationPart(.ton, isPartial: hasSettledPart) {
+                                    let signableResult = try await tonResult.refreshedIfExpiring {
+                                        try await self.keeperCoreMainAssembly.servicesAssembly
+                                            .walletMigrationService()
+                                            .prepareMigration(
+                                                from: sourceWallet,
+                                                to: self.wallet,
+                                                currency: self.keeperCoreMainAssembly.storesAssembly.currencyStore.state
+                                            )
+                                    }
                                     try await self.keeperCoreMainAssembly.servicesAssembly
                                         .walletMigrationExecutionService()
                                         .executeMigration(
                                             sourceWallet: sourceWallet,
-                                            prepareResult: tonResult,
+                                            prepareResult: signableResult,
                                             feeMethod: tonFeeMethod,
                                             signer: tonSigner,
                                             batterySendProof: { boc in
@@ -488,6 +498,7 @@ private extension WalletMigrationCoordinator {
                             }
 
                             self.markRaffleMigrationCompleted()
+                            self.migrateBattery(from: sourceWallet, keyPair: keyPair)
 
                             await MainActor.run {
                                 continuation.resume()
@@ -508,6 +519,20 @@ private extension WalletMigrationCoordinator {
         Task { try? await service.completeRaffleMigration(walletId: walletId) }
     }
 
+    func migrateBattery(from sourceWallet: Wallet, keyPair: TonSwift.KeyPair) {
+        guard let proof = BatteryMigrationProof(destinationWallet: wallet, keyPair: keyPair) else {
+            Log.migration.w("battery migration proof unavailable")
+            return
+        }
+        let executionService = keeperCoreMainAssembly.servicesAssembly.walletMigrationExecutionService()
+        Task { [balanceLoader, wallet] in
+            guard await executionService.migrateBattery(from: sourceWallet, to: wallet, proof: proof) else { return }
+            async let source: BalanceRefreshResult = balanceLoader.reloadBalance(wallet: sourceWallet, priority: .userInitiated)
+            async let destination: BalanceRefreshResult = balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
+            _ = await(source, destination)
+        }
+    }
+
     func openBatteryRefill(
         wallet: Wallet,
         onRechargeSuccess: @escaping () -> Void
@@ -522,6 +547,7 @@ private extension WalletMigrationCoordinator {
             wallet: wallet,
             jettonMasterAddress: nil,
             initiatedBy: .user,
+            analyticsSource: .insufficientFunds,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )

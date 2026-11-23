@@ -105,11 +105,11 @@ final class PerpsDepositCalldataTests: XCTestCase {
         XCTAssertThrowsError(try checkGateway(payload(data: "0xabc"))) { error in
             XCTAssertEqual(error as? PerpsDepositCalldataError, .malformedCall(payloadId: "p_approve"))
         }
-        XCTAssertNoThrow(try checkGateway(payload(to: PerpsDepositCalldata.gatewayAddress, data: depositCalldata())))
+        XCTAssertNoThrow(try checkGateway(payload(to: PaymentFixture.gateway, data: depositCalldata())))
     }
 
     func testGatewayCallRejectsAnythingOtherThanTheReviewedDeposit() {
-        let gateway = PerpsDepositCalldata.gatewayAddress
+        let gateway = PaymentFixture.gateway
         let other = "0x000000000000000000000000000000000000dead"
         let unsafe = [
             payload(to: other, data: depositCalldata()),
@@ -128,7 +128,31 @@ final class PerpsDepositCalldataTests: XCTestCase {
     }
 
     private func checkGateway(_ call: PerpsDepositQuotePayload) throws {
-        try PerpsDepositCalldata.checkGatewayCall(call, beneficiary: beneficiary, amountUnits: 2_500_000)
+        try PerpsDepositCalldata.checkGatewayCall(call, gateway: PaymentFixture.gateway, beneficiary: beneficiary, amountUnits: 2_500_000)
+    }
+
+    func testABridgeTransferOfTheWholeAmountIsAccepted() throws {
+        try PerpsDepositCalldata.checkBridgeTransfer(payload(data: transfer(amount: 2_500_000)), token: token, sender: account, amountUnits: 2_500_000)
+    }
+
+    func testABridgeTransferIsRefusedUnlessItIsExactlyThatTransfer() {
+        let foreign = "0x000000000000000000000000000000000000dead"
+        let delegation = PerpsDepositDelegation(chainId: 1, address: PerpsDepositCalldata.hermesDelegate, nonce: 0)
+        let refused: [PerpsDepositQuotePayload] = [
+            payload(data: transfer(amount: 2_400_000)),
+            payload(to: foreign, data: transfer(amount: 2_500_000)),
+            payload(data: approve(spender: spender, amount: 2_500_000)),
+            payload(value: "1", data: transfer(amount: 2_500_000)),
+            payload(data: transfer(amount: 2_500_000), delegation: delegation),
+            payload(data: transfer(to: account, amount: 2_500_000)),
+            payload(data: transfer(to: token, amount: 2_500_000)),
+            payload(data: transfer(to: "0x" + String(repeating: "0", count: 40), amount: 2_500_000)),
+        ]
+        for call in refused {
+            XCTAssertThrowsError(try PerpsDepositCalldata.checkBridgeTransfer(call, token: token, sender: account, amountUnits: 2_500_000)) { error in
+                XCTAssertEqual(error as? PerpsDepositCalldataError, .unsafeBridgeTransfer(payloadId: "p_approve"))
+            }
+        }
     }
 
     func testAFoldedApprovalAndPaymentAreReadAsTheirTwoCalls() throws {
@@ -222,18 +246,29 @@ final class PerpsDepositCalldataTests: XCTestCase {
         }
     }
 
-    private func payload(to: String? = nil, data: String?) -> PerpsDepositQuotePayload {
+    private func payload(
+        to: String? = nil,
+        value: String = "0",
+        data: String?,
+        delegation: PerpsDepositDelegation? = nil
+    ) -> PerpsDepositQuotePayload {
         PerpsDepositQuotePayload(
             payloadId: "p_approve",
             kind: .approval,
             chainId: "eth/mainnet",
             to: to ?? token,
-            valueUnits: "0",
+            valueUnits: value,
             data: data,
             mode: nil,
             gasLimitUnits: nil,
-            delegation: nil
+            delegation: delegation
         )
+    }
+
+    private func transfer(to recipient: String? = nil, amount: BigUInt) -> String {
+        "0x" + PerpsDepositCalldata.transferSelector
+            + String(repeating: "0", count: 24) + (recipient ?? beneficiary).dropFirst(2)
+            + word(amount)
     }
 
     private func approve(spender: String, amount: BigUInt) -> String {

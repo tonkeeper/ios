@@ -18,6 +18,7 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
     private let configuration: Configuration
     private let chainKitService: ChainKitService
     private let mnemonicAccess: MnemonicAccess
+    private let now: () -> Date
 
     init(
         tronUsdtApi: TronUSDTAPI,
@@ -27,7 +28,9 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         batteryCalculation: BatteryCalculation,
         configuration: Configuration,
         chainKitService: ChainKitService,
-        mnemonicAccess: MnemonicAccess
+        mnemonicAccess: MnemonicAccess,
+        offersBatteryMigration: @escaping (Wallet) async -> Bool = { _ in false },
+        now: @escaping () -> Date = Date.init
     ) {
         self.tronUsdtApi = tronUsdtApi
         transactionSender = TronUSDTTransactionSender(
@@ -40,12 +43,14 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         )
         batteryChargesReader = BatteryChargesReader(
             batteryService: batteryService,
-            batteryCalculation: batteryCalculation
+            batteryCalculation: batteryCalculation,
+            offersMigration: offersBatteryMigration
         )
         self.balanceService = balanceService
         self.configuration = configuration
         self.chainKitService = chainKitService
         self.mnemonicAccess = mnemonicAccess
+        self.now = now
     }
 
     let chain = MultichainChain.tron
@@ -83,32 +88,19 @@ struct MultichainSwapTronRelayedFeeEngine: MultichainSwapRelayedFeeEngine {
         return options
     }
 
-    func send(
+    func prepare(
         context: MultichainSwapFeeContext,
-        confirmed: MultichainSwapRelayedFee,
-        passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String? {
+        confirmed: MultichainSwapRelayedFee
+    ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapPreparedRelay {
         let payloadId = context.payloadId
         guard let transfer = await relayedTransfer(context: context) else {
             throw .internal(reason: "no relayed method can pay for swap payload \(payloadId)")
         }
         switch confirmed {
         case let .batteryCharges(confirmedCharges):
-            return try await sendWithBattery(
-                transfer,
-                swapWallet: context.swapWallet,
-                confirmedCharges: confirmedCharges,
-                payloadId: payloadId,
-                passcodeProvider: passcodeProvider
-            )
+            return try await prepareWithBattery(transfer, context: context, confirmedCharges: confirmedCharges)
         case let .gram(confirmedAmountNano):
-            return try await sendWithGram(
-                transfer,
-                swapWallet: context.swapWallet,
-                confirmedAmountNano: confirmedAmountNano,
-                payloadId: payloadId,
-                passcodeProvider: passcodeProvider
-            )
+            return try await prepareWithGram(transfer, context: context, confirmedAmountNano: confirmedAmountNano)
         case .token:
             throw .internal(reason: "a tron swap cannot be relayed against a token fee")
         }
@@ -123,18 +115,23 @@ private extension MultichainSwapTronRelayedFeeEngine {
         let asset: MultichainSwapRelayedAsset.TronAsset
     }
 
-    func sendWithBattery(
+    /// How the wallet signs the transfer: with the key its phrase derives, or on the device.
+    enum Signing {
+        case mnemonic(CoreMnemonic)
+        case device(DeviceTransferSigner)
+    }
+
+    func prepareWithBattery(
         _ transfer: RelayedTransfer,
-        swapWallet: MultichainSwapWallet,
-        confirmedCharges: Int,
-        payloadId: String,
-        passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String {
-        let wallet = swapWallet.wallet
+        context: MultichainSwapFeeContext,
+        confirmedCharges: Int
+    ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapPreparedRelay {
+        let wallet = context.wallet
+        let payloadId = context.payloadId
         guard await isBatteryAllowed(wallet: wallet) else {
             throw .internal(reason: "battery cannot pay for swap payload \(payloadId)")
         }
-        let availableCharges = await batteryChargesReader.availableCharges(wallet: wallet)
+        let availableCharges = await batteryChargesReader.currentCharges(wallet: wallet)
         try MultichainSwapBatteryFeeRules.requireCharges(
             confirmedCharges,
             available: availableCharges,
@@ -154,37 +151,43 @@ private extension MultichainSwapTronRelayedFeeEngine {
             available: availableCharges,
             payloadId: payloadId
         )
-        let mnemonic = try await mnemonic(
-            wallet: wallet,
-            payloadId: payloadId,
-            passcodeProvider: passcodeProvider
-        )
-        let signedTransaction = try await signedTransaction(
-            transfer,
-            keys: swapWallet.keys,
-            mnemonic: mnemonic,
-            payloadId: payloadId
-        )
-        try await relay(
-            signedTransaction,
-            transfer: transfer,
-            wallet: wallet,
-            selectedExtraType: .battery,
-            estimate: estimate,
-            instantFeePayment: nil,
-            payloadId: payloadId
-        )
-        return signedTransaction.txID
+        let transaction = try await extendedTransaction(transfer, payloadId: payloadId)
+        let wasLive = transaction.expiresAt.timeIntervalSince(now()) > Transaction.relayLead
+        return prepared(transaction, context: context) { signer throws(MultichainSwapExecutionFailure) in
+            let signing: Signing = switch signer {
+            case let .mnemonic(passcodeProvider):
+                try await .mnemonic(mnemonic(wallet: wallet, payloadId: payloadId, passcodeProvider: passcodeProvider))
+            case let .device(device):
+                .device(device)
+            }
+            let signedTransaction = try await signed(
+                transaction,
+                transfer: transfer,
+                keys: context.swapWallet.keys,
+                signing: signing,
+                payloadId: payloadId
+            )
+            try await relay(
+                signedTransaction,
+                wasLive: wasLive,
+                transfer: transfer,
+                wallet: wallet,
+                selectedExtraType: .battery,
+                estimate: estimate,
+                instantFeePayment: nil,
+                payloadId: payloadId
+            )
+            return signedTransaction.txID
+        }
     }
 
-    func sendWithGram(
+    func prepareWithGram(
         _ transfer: RelayedTransfer,
-        swapWallet: MultichainSwapWallet,
-        confirmedAmountNano: BigUInt,
-        payloadId: String,
-        passcodeProvider: @escaping () async -> String?
-    ) async throws(MultichainSwapExecutionFailure) -> String {
-        let wallet = swapWallet.wallet
+        context: MultichainSwapFeeContext,
+        confirmedAmountNano: BigUInt
+    ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapPreparedRelay {
+        let wallet = context.wallet
+        let payloadId = context.payloadId
         guard let estimate = await estimate(transfer, wallet: wallet),
               let quote = gramQuote(estimate: estimate)
         else {
@@ -209,33 +212,57 @@ private extension MultichainSwapTronRelayedFeeEngine {
                 ]
             )
         }
-        let mnemonic = try await mnemonic(
-            wallet: wallet,
-            payloadId: payloadId,
-            passcodeProvider: passcodeProvider
+        let transaction = try await extendedTransaction(transfer, payloadId: payloadId)
+        let wasLive = transaction.expiresAt.timeIntervalSince(now()) > Transaction.relayLead
+        return prepared(transaction, context: context) { signer throws(MultichainSwapExecutionFailure) in
+            guard case let .mnemonic(passcodeProvider) = signer else {
+                throw .internal(reason: "a hardware wallet pays the relayer of a tron swap with the battery")
+            }
+            let mnemonic = try await mnemonic(
+                wallet: wallet,
+                payloadId: payloadId,
+                passcodeProvider: passcodeProvider
+            )
+            let signedTransaction = try await signed(
+                transaction,
+                transfer: transfer,
+                keys: context.swapWallet.keys,
+                signing: .mnemonic(mnemonic),
+                payloadId: payloadId
+            )
+            let instantFeePayment = try await instantFeePayment(
+                quote,
+                wallet: wallet,
+                mnemonic: mnemonic,
+                payloadId: payloadId
+            )
+            try await relay(
+                signedTransaction,
+                wasLive: wasLive,
+                transfer: transfer,
+                wallet: wallet,
+                selectedExtraType: .default,
+                estimate: estimate,
+                instantFeePayment: instantFeePayment,
+                payloadId: payloadId
+            )
+            return signedTransaction.txID
+        }
+    }
+
+    /// The node's transaction is what is signed, until the expiration it was extended to.
+    func prepared(
+        _ transaction: Transaction,
+        context: MultichainSwapFeeContext,
+        send: @escaping (MultichainTransferSigner) async throws(MultichainSwapExecutionFailure) -> String?
+    ) -> MultichainSwapPreparedRelay {
+        MultichainSwapPreparedRelay(
+            signables: { intent in
+                try [.tronPrebuild(transaction, account: context.sourceAccount(on: .tron), intent: intent)]
+            },
+            expiresAt: transaction.expiresAt,
+            send: send
         )
-        let signedTransaction = try await signedTransaction(
-            transfer,
-            keys: swapWallet.keys,
-            mnemonic: mnemonic,
-            payloadId: payloadId
-        )
-        let instantFeePayment = try await instantFeePayment(
-            quote,
-            wallet: wallet,
-            mnemonic: mnemonic,
-            payloadId: payloadId
-        )
-        try await relay(
-            signedTransaction,
-            transfer: transfer,
-            wallet: wallet,
-            selectedExtraType: .default,
-            estimate: estimate,
-            instantFeePayment: instantFeePayment,
-            payloadId: payloadId
-        )
-        return signedTransaction.txID
     }
 
     struct GramQuote {
@@ -263,7 +290,9 @@ private extension MultichainSwapTronRelayedFeeEngine {
         wallet: Wallet,
         payloadId: String
     ) -> MultichainSwapFeeOption? {
-        guard let quote = gramQuote(estimate: estimate) else {
+        guard TronUSDTFeeOptionsResolver.isTONBillingAvailable(estimate: estimate, wallet: wallet),
+              let quote = gramQuote(estimate: estimate)
+        else {
             Log.multichainSwap.i(
                 "gram tron swap not offered: the relayer quoted no instant fee",
                 extraInfo: [
@@ -315,6 +344,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
         let isBatterySendEnabled = await configuration.isBatterySendEnable(network: wallet.network)
         return MultichainSwapBatteryFeeRules.isBatteryAllowed(
             wallet: wallet,
+            chain: .tron,
             isBatteryEnabled: isBatteryEnabled,
             isBatterySendEnabled: isBatterySendEnabled
         )
@@ -389,6 +419,7 @@ private extension MultichainSwapTronRelayedFeeEngine {
 
     func relay(
         _ signedTransaction: Transaction,
+        wasLive: Bool,
         transfer: RelayedTransfer,
         wallet: Wallet,
         selectedExtraType: TransactionConfirmationModel.ExtraType,
@@ -396,6 +427,17 @@ private extension MultichainSwapTronRelayedFeeEngine {
         instantFeePayment: TronUSDTTransactionSender.InstantFeePayment?,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) {
+        // The prompt to sign waits on the user with the transaction already built. One the chain
+        // would refuse as expired is not relayed: a relay that fails reads as a swap that may have
+        // gone out, and this one can still be quoted again. A clock already ahead at preparation
+        // leaves the deadline to the relayer, as the gate does.
+        guard !wasLive || signedTransaction.expiresAt.timeIntervalSince(now()) > Transaction.relayLead else {
+            Log.multichainSwap.w(
+                "relayed tron swap expired before the relay",
+                extraInfo: ["payloadId": payloadId, "expiration": "\(signedTransaction.rawData.expiration)"]
+            )
+            throw .payloadExpired(payloadId: payloadId)
+        }
         do {
             try await transactionSender.send(
                 signedTransaction: signedTransaction,
@@ -502,10 +544,8 @@ private extension MultichainSwapTronRelayedFeeEngine {
         }
     }
 
-    func signedTransaction(
+    func extendedTransaction(
         _ transfer: RelayedTransfer,
-        keys: MultichainSwapWallet.Keys,
-        mnemonic: CoreMnemonic,
         payloadId: String
     ) async throws(MultichainSwapExecutionFailure) -> Transaction {
         do {
@@ -523,25 +563,50 @@ private extension MultichainSwapTronRelayedFeeEngine {
                     amountSun: transfer.amount
                 )
             }
-            let extended = try transaction.extendingExpiration(byMilliseconds: 600_000)
-            let privateKey = try tronPrivateKey(keys: keys, mnemonic: mnemonic)
-            var signed = extended
-            signed.signature = try Signer()
-                .sign(hash: extended.signingDigest(), privateKey: privateKey)
-                .hexString()
-            return signed
+            return try transaction.extendingExpiration(byMilliseconds: 600_000)
         } catch {
-            Log.multichainSwap.w(
-                "relayed tron swap signing failed",
-                error: error,
-                extraInfo: ["payloadId": payloadId]
-            )
-            throw .signingFailed(
-                payloadId: payloadId,
-                kind: .signInternalError,
-                reason: "failed to sign a relayed tron swap: \(error.localizedDescription)"
-            )
+            throw Self.signingFailure(error, payloadId: payloadId)
         }
+    }
+
+    func signed(
+        _ transaction: Transaction,
+        transfer: RelayedTransfer,
+        keys: MultichainSwapWallet.Keys,
+        signing: Signing,
+        payloadId: String
+    ) async throws(MultichainSwapExecutionFailure) -> Transaction {
+        do {
+            var signed = transaction
+            switch signing {
+            case let .mnemonic(mnemonic):
+                signed.signature = try Signer()
+                    .sign(hash: transaction.signingDigest(), privateKey: tronPrivateKey(keys: keys, mnemonic: mnemonic))
+                    .hexString()
+            case let .device(device):
+                signed.signature = try await DeviceTransactionSigner
+                    .signTronTransaction(transaction, sender: transfer.sender.base58, device: device.tron)
+                    .hexString()
+            }
+            return signed
+        } catch MultichainTransactionFailure.canceled {
+            throw .canceled
+        } catch {
+            throw Self.signingFailure(error, payloadId: payloadId)
+        }
+    }
+
+    static func signingFailure(_ error: any Error, payloadId: String) -> MultichainSwapExecutionFailure {
+        Log.multichainSwap.w(
+            "relayed tron swap signing failed",
+            error: error,
+            extraInfo: ["payloadId": payloadId]
+        )
+        return .signingFailed(
+            payloadId: payloadId,
+            kind: .signInternalError,
+            reason: "failed to sign a relayed tron swap: \(error.localizedDescription)"
+        )
     }
 
     /// A multichain wallet keeps its TRON key on the BIP39 branch; a legacy wallet derives it from
@@ -560,6 +625,17 @@ private extension MultichainSwapTronRelayedFeeEngine {
                 ),
                 chainCode: Data()
             )
+        case .device:
+            throw MultichainSwapExecutionFailure.internal(reason: "a hardware wallet keeps its TRON key on the device")
         }
+    }
+}
+
+extension Transaction {
+    /// The relayer hands the transaction on a moment later, and the chain checks its expiration then.
+    static let relayLead: TimeInterval = 5
+
+    var expiresAt: Date {
+        Date(timeIntervalSince1970: TimeInterval(rawData.expiration) / 1000)
     }
 }

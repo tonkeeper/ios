@@ -12,8 +12,7 @@ final class PerpsPositionsControllerTests: XCTestCase {
                 return PerpsPositionsWatch {}
             },
             onUpdate: { applied.record($0) },
-            onInterrupted: {},
-            onStop: {}
+            onInterrupted: {}
         )
         var watches = starts.makeAsyncIterator()
         controller.start()
@@ -31,8 +30,7 @@ final class PerpsPositionsControllerTests: XCTestCase {
         let controller = PerpsPositionsController(
             makeWatch: { _, _, _ in PerpsPositionsWatch {} },
             onUpdate: { _ in XCTFail("nothing to apply") },
-            onInterrupted: {},
-            onStop: {}
+            onInterrupted: {}
         )
 
         await controller.flush()
@@ -46,19 +44,17 @@ final class PerpsPositionsControllerTests: XCTestCase {
         let (starts, started) = AsyncStream<WatchCallbacks>.makeStream()
         let received = expectation(description: "only the replacement tick lands")
         received.assertForOverFulfill = true
-        let interrupted = expectation(description: "old interruption ignored")
-        interrupted.isInverted = true
+        let interruptions = WatchLog()
         let controller = PerpsPositionsController(
             makeWatch: { _, update, interrupt in
                 started.yield(WatchCallbacks(update: update, interrupt: interrupt))
-                return PerpsPositionsWatch { update(.orders([])); interrupt() }
+                return PerpsPositionsWatch { update(.portfolio(PerpsAccountSnapshot(availableBalance: "0"))); interrupt() }
             },
             onUpdate: { tick in
-                guard case .positions = tick else { return XCTFail("stale order tick delivered") }
+                guard case .positions = tick else { return XCTFail("stale portfolio tick delivered") }
                 received.fulfill()
             },
-            onInterrupted: { interrupted.fulfill() },
-            onStop: {}
+            onInterrupted: { interruptions.record("interrupted") }
         )
         var watches = starts.makeAsyncIterator()
         controller.start()
@@ -68,12 +64,73 @@ final class PerpsPositionsControllerTests: XCTestCase {
         guard let second = await watches.next() else { return XCTFail("missing replacement") }
 
         second.update(.positions([]))
-        first.update(.orders([]))
+        first.update(.positions([]))
         first.interrupt()
         await controller.flush()
 
-        await fulfillment(of: [received, interrupted], timeout: 0.1)
+        await fulfillment(of: [received], timeout: 1)
+        XCTAssertEqual(interruptions.entries, [], "the replaced watch's consumer ended before the replacement started")
         await controller.stop()
+    }
+
+    func testBackgroundDropsTheWatchAndKeepsTheSubscriptionsForTheForeground() async {
+        let watches = WatchLog()
+        let controller = PerpsPositionsController(
+            makeWatch: { cadence, _, _ in
+                watches.record("start \(cadence)")
+                return PerpsPositionsWatch { watches.record("cancel \(cadence)") }
+            },
+            onUpdate: { _ in },
+            onInterrupted: {}
+        )
+        controller.start()
+        controller.subscribe(cadence: .ambient)
+        controller.setForeground(false)
+        controller.subscribe(cadence: .live)
+        await controller.flush()
+        XCTAssertEqual(watches.entries, ["start ambient", "cancel ambient"])
+
+        controller.setForeground(true)
+        await controller.flush()
+        XCTAssertEqual(watches.entries.suffix(1), ["start live"])
+
+        controller.unsubscribe(cadence: .live)
+        await controller.flush()
+        XCTAssertEqual(watches.entries.suffix(2), ["cancel live", "start ambient"])
+        await controller.stop()
+    }
+
+    func testAWatchThatIgnoresCadenceIsSharedByEveryScreen() async {
+        let watches = WatchLog()
+        let controller = PerpsPositionsController(
+            makeWatch: { cadence, _, _ in
+                watches.record("start \(cadence)")
+                return PerpsPositionsWatch(followsCadence: false) { watches.record("cancel \(cadence)") }
+            },
+            onUpdate: { _ in },
+            onInterrupted: {}
+        )
+        controller.start()
+        controller.subscribe(cadence: .ambient)
+        controller.subscribe(cadence: .live)
+        controller.unsubscribe(cadence: .live)
+        await controller.flush()
+
+        XCTAssertEqual(watches.entries, ["start ambient"])
+        await controller.stop()
+    }
+}
+
+private final class WatchLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var log = [String]()
+
+    var entries: [String] {
+        lock.withLock { log }
+    }
+
+    func record(_ entry: String) {
+        lock.withLock { log.append(entry) }
     }
 }
 

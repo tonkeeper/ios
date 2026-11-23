@@ -1,0 +1,1317 @@
+openapi: 3.1.0
+info:
+  title: Tonstakers API
+  description: "\n## REST api to TON blockchain\n\nPublic API for retrieving information
+    about staking and everything related to it.\n\n## Endpoints\n\n### 1. Get All
+    Farm Configurations\n- **Endpoint**: `/api/v1/farm/config/all`\n- **Method**:
+    `GET`\n- **Description**: Retrieves a list of all farms with their configurations,
+    including images and descriptions for display purposes.\n  \n**Example Request:**\n```\nGET
+    /api/v1/farm/config/all\n```\n\n**Response Format**:\n```json\n{\n  \"status\":
+    0,  // 0 indicates success\n  \"data\": [\n    {\n      \"address\": \"farm_address_1\",\n
+    \     \"logo_url\": \"https://example.com/image1.png\",\n      \"buy_url\": \"https://example.com/buy\",\n
+    \     \"description\": \"Description of the farm\"\n    },\n    ...\n  ]\n}\n```\n\n###
+    2. Get Farm State Information\n- **Endpoint**: `/api/v1/farm/state/all`\n- **Method**:
+    `GET`\n- **Description**: Provides information about the current state of all
+    farms, including data from the smart contract needed to calculate APM (Annual
+    Percentage Multiplier) and the farm's status.\n  \n**Example Request:**\n```\nGET
+    /api/v1/farm/state/all\n```\n\n**Response Format**:\n```json\n{\n  \"status\":
+    0,  // 0 indicates success\n  \"data\": [\n    {\n      \"farm_address\": \"farm_address_1\",\n
+    \     \"timestamp\": 1234567890,\n      \"staking_token_wallet\": \"wallet_address\",\n
+    \     \"staking_jetton\": \"jetton_identifier\",\n      \"current_staked_tokens\":
+    1000,\n      \"min_stake_time\": 86400,\n      \"next_item_index\": 5,\n      \"accrued\":
+    {\n        \"deposited_nanorewards\": \"1000000\",\n        \"per_unit_nanorewards\":
+    \"10\",\n        \"fee_nanorewards\": \"100\",\n        \"claimed_nanorewards\":
+    \"500\",\n        \"claimed_fee_nanorewards\": \"50\",\n        \"nanorewards\":
+    \"1500\",\n        \"last_update_time\": 1234567890\n      },\n      \"rewards\":
+    [\n        {\n          \"reward_jetton\": \"jetton_identifier\",\n          \"token_wallet\":
+    \"wallet_address\",\n          \"nanorewards_per_24h\": \"1000\"\n        }\n
+    \     ]\n    },\n    ...\n  ]\n}\n```\n\n### 3. Get Jetton Configurations\n- **Endpoint**:
+    `/api/v1/jettons/config/all`\n- **Method**: `GET`\n- **Description**: Retrieves
+    information about the tokens (jettons) that can be farmed, including images and
+    descriptions.\n  \n**Example Request:**\n```\nGET /api/v1/jettons/config/all\n```\n\n**Response
+    Format**:\n```json\n{\n  \"status\": 0,  // 0 indicates success\n  \"data\": [\n
+    \   {\n      \"address\": \"jetton_address_1\",\n      \"symbol\": \"JET\",\n
+    \     \"name\": \"Jetton Name\",\n      \"decimals\": 18,\n      \"description\":
+    \"Description of the jetton\",\n      \"image\": \"https://example.com/image1.png\"\n
+    \   },\n    ...\n  ]\n}\n```\n\n## Address Mapping Guide\n\n### Mapping Farm Addresses
+    (`farm_address_1`)\n\n- The `farm_address` obtained from the `/api/v1/farm/config/all`
+    endpoint is used as a unique identifier for each farm.\n- This same `farm_address`
+    should be used as a reference when retrieving the farm state data from the `/api/v1/farm/state/all`
+    endpoint.\n- When making calculations or displaying farm-related data, always
+    ensure that the `farm_address` from these endpoints matches to keep the information
+    consistent.\n\n### Mapping Jetton Addresses (`jetton_address_1`)\n\n- The `jetton_address_1`
+    from the `/api/v1/jettons/config/all` endpoint identifies the jetton (token) involved
+    in the farming process.\n- This address is linked to specific farms as the `staking_jetton`
+    or `reward_jetton` in the `/api/v1/farm/state/all` endpoint.\n- Use this mapping
+    to correctly associate jettons with their respective farms when displaying data
+    or performing reward calculations.\n\n## Response Codes\n- **200**: Success\n-
+    **4xx**: Client errors (invalid requests)\n\n### Error Handling\nFor unsuccessful
+    requests, the API returns an error code along with a message explaining the issue.
+    Ensure that your request parameters are valid to avoid 4xx errors.\n\n**Example
+    Error Response:**\n```json\n{\n  \"status\": 1,  // 1 indicates an error\n  \"message\":
+    \"Invalid request parameters.\"\n}\n```\n\n## Additional Information\n- All API
+    responses are wrapped in a standard format that includes a `status` field indicating
+    success (`0`) or error (`1`) and a `data` field containing the response payload.\n\n"
+  version: 1.0.0
+paths:
+  "/ping":
+    get:
+      summary: Ping
+      operationId: ping
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result_str_"
+  "/api/v1/farm/config/all":
+    get:
+      tags:
+      - Farming
+      summary: Get Farm Config
+      operationId: farming_get_farm_config
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result_list_FarmConfigResult__"
+  "/api/v1/farm/state/all":
+    get:
+      tags:
+      - Farming
+      summary: Get Farm
+      operationId: farming_get_farm
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result_list_FarmResult__"
+  "/api/v1/jettons/config/all":
+    get:
+      tags:
+      - Jettons
+      summary: Get Jettons
+      operationId: jettons_get_jettons
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result_list_JettonResult__"
+  "/api/v1/account/{address}":
+    get:
+      tags:
+      - Account
+      summary: Get Transactions
+      operationId: account_get_transactions
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/stake/{address}":
+    get:
+      tags:
+      - Tasks
+      summary: Get Txs
+      operationId: tasks_get_txs
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Address
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Result"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/stake":
+    get:
+      tags:
+      - Tasks
+      summary: Get Txs By Query
+      description: |-
+        Fetch transaction data by address or telegram_id from query parameters.
+
+        For address queries: Returns total staked amount from specified timestamp.
+        For telegram_id queries: Returns boolean - true if actual staked amount is greater than provided staked_amount parameter.
+
+        Usage:
+        - GET /api/v1/tasks/stake?address=XXX&from=1736417967
+        - GET /api/v1/tasks/stake?telegram_id=XXX&from=1736417967&staked_amount=89123456
+      operationId: tasks_get_txs_by_query
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: address
+        in: query
+        required: false
+        schema:
+          type: string
+          title: Address
+      - name: telegram_id
+        in: query
+        required: false
+        schema:
+          type: integer
+          title: Telegram Id
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Unix timestamp from which to count transactions
+          title: From
+        description: Unix timestamp from which to count transactions
+      - name: staked_amount
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Required when using telegram_id. Amount to compare against.
+          title: Staked Amount
+        description: Required when using telegram_id. Amount to compare against.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/stakes":
+    get:
+      tags:
+      - Tasks
+      summary: Get Stakes
+      description: |-
+        Returns list of stakes made through a specific referral code during the period.
+
+        Usage:
+        - GET /api/v1/tasks/stakes?from=1725232338
+        - GET /api/v1/tasks/stakes?from=1725232338&referral=b5ee9c7201010101000a000010000000000005b7ce
+      operationId: tasks_get_stakes
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Unix timestamp, start of period (inclusive)
+          title: From
+        description: Unix timestamp, start of period (inclusive)
+      - name: referral
+        in: query
+        required: false
+        schema:
+          type: string
+          description: BoC referral code
+          default: b5ee9c7201010101000a000010000000000005b7ce
+          title: Referral
+        description: BoC referral code
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/StakesListResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/rewards":
+    get:
+      tags:
+      - Tasks
+      summary: Get Rewards
+      description: |-
+        Per-round tsTON rewards + all tsTON movements for a user, as one time-descending feed,
+        plus `total_reward_ton` — the reward total (lifetime, or scoped by from_total/to_total).
+
+        Source: ts-liquid-staking-api `/public/wallets/{address}/history` (LIQUID_API_URL/KEY) — one
+        page per request, paged/windowed/totalled by Liquid; if it is unset or fails, falls back to
+        the legacy build (DB round stats + TonAPI movements).
+
+        Response `from_ts`/`to_ts` are the GLOBAL min/max ts of the user's feed (for the current
+        `kind`), independent of the from/to window — so the client knows the full history range.
+
+        Each item is either a `movement` (mint/burn/transfer with running balance) or a
+        `reward` (per validation round: reward_ton = balance_end * roi * rate). Paginated via
+        `limit`/`offset`; `pagination.total` gives the full item count for the period.
+
+        `total=false` omits `total_reward_ton` (returns null) — use it on follow-up scroll pages
+        where the frontend already has the lifetime total from the first request.
+
+        Usage:
+        - GET /api/v1/tasks/rewards?address=EQ...                            (first page, with total)
+        - GET /api/v1/tasks/rewards?address=EQ...&from=1767225600            (from a date)
+        - GET /api/v1/tasks/rewards?address=EQ...&limit=50&offset=50&total=false   (next scroll page)
+      operationId: tasks_get_rewards
+      parameters:
+      - name: address
+        in: query
+        required: true
+        schema:
+          type: string
+          description: User wallet address (raw or friendly)
+          title: Address
+        description: User wallet address (raw or friendly)
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Start of period (unix ts); total & items counted from this
+            date
+          title: From
+        description: Start of period (unix ts); total & items counted from this date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: End of period (unix ts); default — up to now
+          title: To
+        description: End of period (unix ts); default — up to now
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Page size
+          default: 50
+          title: Limit
+        description: Page size
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          description: Items to skip (offset pagination)
+          default: 0
+          title: Offset
+        description: Items to skip (offset pagination)
+      - name: total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Include total_reward_ton; pass false on scroll pages for speed
+          default: true
+          title: Total
+        description: Include total_reward_ton; pass false on scroll pages for speed
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Filter feed: ''reward'' or ''movement'' (default — both)'
+          title: Kind
+        description: 'Filter feed: ''reward'' or ''movement'' (default — both)'
+      - name: from_total
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Scope total_reward_ton from this ts (unix); lifetime if unset
+          title: From Total
+        description: Scope total_reward_ton from this ts (unix); lifetime if unset
+      - name: to_total
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Scope total_reward_ton up to this ts (unix); lifetime if unset
+          title: To Total
+        description: Scope total_reward_ton up to this ts (unix); lifetime if unset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RewardsTimelineResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/rewards-defi":
+    get:
+      tags:
+      - Tasks
+      summary: Get Rewards Defi
+      description: |-
+        Same feed and parameters as /rewards, plus the user's tsTON held in DeFi (STON.fi, EVAA,
+        Affluent, TONCO) at each round close:
+
+        - reward items: `defi_tston` (tsTON in DeFi, not part of `balance_end`), `defi_reward_ton`
+          (= defi_tston * roi * rate — how much they grew in TON; the protocol's own yield is not
+          included) and `defi` (per protocol);
+        - `total_reward_ton_defi` — Σ defi_reward_ton over the same scope as `total_reward_ton`
+          (which stays wallet-only);
+        - a round where the wallet held 0 but DeFi held tsTON is in the feed (balance_end = 0).
+
+        Source: ts-liquid-staking-api `/public/wallets/{address}/history-defi` (LIQUID_API_URL/KEY),
+        one page per request. If it is unset or fails — the legacy /rewards build, DeFi fields null.
+
+        Usage:
+        - GET /api/v1/tasks/rewards-defi?address=EQ...                            (first page, with totals)
+        - GET /api/v1/tasks/rewards-defi?address=EQ...&limit=50&offset=50&total=false   (next scroll page)
+      operationId: tasks_get_rewards_defi
+      parameters:
+      - name: address
+        in: query
+        required: true
+        schema:
+          type: string
+          description: User wallet address (raw or friendly)
+          title: Address
+        description: User wallet address (raw or friendly)
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Start of period (unix ts); total & items counted from this
+            date
+          title: From
+        description: Start of period (unix ts); total & items counted from this date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: End of period (unix ts); default — up to now
+          title: To
+        description: End of period (unix ts); default — up to now
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Page size
+          default: 50
+          title: Limit
+        description: Page size
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          description: Items to skip (offset pagination)
+          default: 0
+          title: Offset
+        description: Items to skip (offset pagination)
+      - name: total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Include total_reward_ton(_defi); pass false on scroll pages
+            for speed
+          default: true
+          title: Total
+        description: Include total_reward_ton(_defi); pass false on scroll pages for
+          speed
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Filter feed: ''reward'' or ''movement'' (default — both)'
+          title: Kind
+        description: 'Filter feed: ''reward'' or ''movement'' (default — both)'
+      - name: from_total
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Scope totals from this ts (unix); lifetime if unset
+          title: From Total
+        description: Scope totals from this ts (unix); lifetime if unset
+      - name: to_total
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Scope totals up to this ts (unix); lifetime if unset
+          title: To Total
+        description: Scope totals up to this ts (unix); lifetime if unset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RewardsDefiTimelineResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/breakdown":
+    get:
+      tags:
+      - Tasks
+      summary: Get Rewards Breakdown
+      description: |-
+        Where the user's tsTON currently sits, per protocol (STON.fi, EVAA, Affluent, TONCO),
+        plus `wallet_tston` — tsTON on the wallet itself (distribution = wallet + items).
+
+        Source: ts-liquid-staking-api `/public/wallets/{address}/positions` — real positions (LP
+        shares for STON.fi/Affluent, deposit for EVAA); each item has `source`, `name` (label),
+        `amount_tston` (nano) and `as_of`. `address` carries the protocol `source`.
+
+        Fallback (Liquid unset or failing): legacy TonAPI netting — per counterparty address,
+        tsTON sent minus returned; `address` is the counterparty, `source`/`as_of` are null.
+
+        Usage:
+        - GET /api/v1/tasks/breakdown?address=EQ...
+      operationId: tasks_get_rewards_breakdown
+      parameters:
+      - name: address
+        in: query
+        required: true
+        schema:
+          type: string
+          description: User wallet address (raw or friendly)
+          title: Address
+        description: User wallet address (raw or friendly)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RewardsBreakdownResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/api/v1/tasks/upcoming-rewards":
+    get:
+      tags:
+      - Tasks
+      summary: Get Upcoming Rewards
+      description: |-
+        Expected rewards for the pending rounds (started, not paid yet — up to 2, newest first; the
+        same rounds as /api/v1/pool/validation_rounds) on the user's current tsTON: wallet (TonAPI)
+        + DeFi positions (as in /breakdown).
+
+        reward_ton = balance_tston * roi * rate. roi — of the round's R-2 (same validator set,
+        parallel pair) from the wallet's Liquid feed with DeFi, as in /rewards-defi (`roi_source=round`);
+        if the wallet had no tsTON in it or Liquid is down — the pool's on-chain projection, as the dapp
+        (`roi_source=projected`). rate — current tsTON price.
+
+        Usage:
+        - GET /api/v1/tasks/upcoming-rewards?address=EQ...
+      operationId: tasks_get_upcoming_rewards
+      parameters:
+      - name: address
+        in: query
+        required: true
+        schema:
+          type: string
+          description: User wallet address (raw or friendly)
+          title: Address
+        description: User wallet address (raw or friendly)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpcomingRewardsResponse"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+components:
+  schemas:
+    Accrued:
+      properties:
+        deposited_nanorewards:
+          type: string
+          title: Deposited Nanorewards
+        per_unit_nanorewards:
+          type: string
+          title: Per Unit Nanorewards
+        fee_nanorewards:
+          type: string
+          title: Fee Nanorewards
+        claimed_nanorewards:
+          type: string
+          title: Claimed Nanorewards
+        claimed_fee_nanorewards:
+          type: string
+          title: Claimed Fee Nanorewards
+        nanorewards:
+          type: string
+          title: Nanorewards
+        last_update_time:
+          type: integer
+          title: Last Update Time
+      type: object
+      required:
+      - deposited_nanorewards
+      - per_unit_nanorewards
+      - fee_nanorewards
+      - claimed_nanorewards
+      - claimed_fee_nanorewards
+      - nanorewards
+      - last_update_time
+      title: Accrued
+    FarmConfigResult:
+      properties:
+        address:
+          type: string
+          title: Address
+        logo_url:
+          type: string
+          title: Logo Url
+        buy_url:
+          type: string
+          title: Buy Url
+        description:
+          type: string
+          title: Description
+      type: object
+      required:
+      - address
+      - logo_url
+      - buy_url
+      - description
+      title: FarmConfigResult
+    FarmResult:
+      properties:
+        farm_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Farm Address
+        timestamp:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Timestamp
+        staking_token_wallet:
+          type: string
+          title: Staking Token Wallet
+        staking_jetton:
+          type: string
+          title: Staking Jetton
+        current_staked_tokens:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Current Staked Tokens
+        min_stake_time:
+          type: integer
+          title: Min Stake Time
+        next_item_index:
+          type: integer
+          title: Next Item Index
+        status:
+          type: integer
+          title: Status
+        accrued:
+          "$ref": "#/components/schemas/Accrued"
+        parameters:
+          "$ref": "#/components/schemas/Parameters"
+        rewards:
+          items:
+            "$ref": "#/components/schemas/Rewards"
+          type: array
+          title: Rewards
+      type: object
+      required:
+      - farm_address
+      - timestamp
+      - staking_token_wallet
+      - staking_jetton
+      - current_staked_tokens
+      - min_stake_time
+      - next_item_index
+      - status
+      - accrued
+      - parameters
+      - rewards
+      title: FarmResult
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            "$ref": "#/components/schemas/ValidationError"
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    JettonResult:
+      properties:
+        address:
+          type: string
+          title: Address
+        symbol:
+          type: string
+          title: Symbol
+        name:
+          type: string
+          title: Name
+        decimals:
+          type: integer
+          title: Decimals
+        description:
+          type: string
+          title: Description
+        image:
+          type: string
+          title: Image
+      type: object
+      required:
+      - address
+      - symbol
+      - name
+      - decimals
+      - description
+      - image
+      title: JettonResult
+    Pagination:
+      properties:
+        limit:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+          default: 0
+        total:
+          type: integer
+          title: Total
+      type: object
+      required:
+      - total
+      title: Pagination
+    Parameters:
+      properties:
+        admin_fee:
+          type: integer
+          title: Admin Fee
+        unrestricted_deposit_rewards:
+          type: integer
+          title: Unrestricted Deposit Rewards
+        can_change_fee:
+          type: integer
+          title: Can Change Fee
+        contract_status:
+          type: integer
+          title: Contract Status
+      type: object
+      required:
+      - admin_fee
+      - unrestricted_deposit_rewards
+      - can_change_fee
+      - contract_status
+      title: Parameters
+    Result:
+      properties:
+        status:
+          "$ref": "#/components/schemas/ResultStatus"
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        data:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Data
+      type: object
+      required:
+      - status
+      title: Result
+    ResultStatus:
+      type: integer
+      enum:
+      - 0
+      - 1
+      title: ResultStatus
+    Result_list_FarmConfigResult__:
+      properties:
+        status:
+          "$ref": "#/components/schemas/ResultStatus"
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        data:
+          anyOf:
+          - items:
+              "$ref": "#/components/schemas/FarmConfigResult"
+            type: array
+          - type: 'null'
+          title: Data
+      type: object
+      required:
+      - status
+      title: Result[list[FarmConfigResult]]
+    Result_list_FarmResult__:
+      properties:
+        status:
+          "$ref": "#/components/schemas/ResultStatus"
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        data:
+          anyOf:
+          - items:
+              "$ref": "#/components/schemas/FarmResult"
+            type: array
+          - type: 'null'
+          title: Data
+      type: object
+      required:
+      - status
+      title: Result[list[FarmResult]]
+    Result_list_JettonResult__:
+      properties:
+        status:
+          "$ref": "#/components/schemas/ResultStatus"
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        data:
+          anyOf:
+          - items:
+              "$ref": "#/components/schemas/JettonResult"
+            type: array
+          - type: 'null'
+          title: Data
+      type: object
+      required:
+      - status
+      title: Result[list[JettonResult]]
+    Result_str_:
+      properties:
+        status:
+          "$ref": "#/components/schemas/ResultStatus"
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        data:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Data
+      type: object
+      required:
+      - status
+      title: Result[str]
+    Rewards:
+      properties:
+        reward_jetton:
+          type: string
+          title: Reward Jetton
+        token_wallet:
+          type: string
+          title: Token Wallet
+        nanorewards_per_24h:
+          type: string
+          title: Nanorewards Per 24H
+      type: object
+      required:
+      - reward_jetton
+      - token_wallet
+      - nanorewards_per_24h
+      title: Rewards
+    RewardsBreakdownItem:
+      properties:
+        address:
+          type: string
+          title: Address
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        amount_tston:
+          type: integer
+          title: Amount Tston
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+        as_of:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: As Of
+      type: object
+      required:
+      - address
+      - amount_tston
+      title: RewardsBreakdownItem
+    RewardsBreakdownResponse:
+      properties:
+        syncing:
+          type: boolean
+          title: Syncing
+        address:
+          type: string
+          title: Address
+        wallet_tston:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Wallet Tston
+        items:
+          items:
+            "$ref": "#/components/schemas/RewardsBreakdownItem"
+          type: array
+          title: Items
+      type: object
+      required:
+      - syncing
+      - address
+      - items
+      title: RewardsBreakdownResponse
+    RewardsDefiPosition:
+      properties:
+        source:
+          type: string
+          title: Source
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        amount_tston:
+          type: integer
+          title: Amount Tston
+      type: object
+      required:
+      - source
+      - amount_tston
+      title: RewardsDefiPosition
+    RewardsDefiTimelineItem:
+      properties:
+        kind:
+          type: string
+          title: Kind
+        ts:
+          type: integer
+          title: Ts
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        amount_tston:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Tston
+        balance_after:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Balance After
+        counterparty:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Counterparty
+        counterparty_kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Counterparty Kind
+        tx_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Id
+        round_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Round Id
+        balance_end:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Balance End
+        roi:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Roi
+        apy:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Apy
+        rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Rate
+        reward_ton:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reward Ton
+        defi_tston:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Defi Tston
+        defi_reward_ton:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Defi Reward Ton
+        defi:
+          anyOf:
+          - items:
+              "$ref": "#/components/schemas/RewardsDefiPosition"
+            type: array
+          - type: 'null'
+          title: Defi
+      type: object
+      required:
+      - kind
+      - ts
+      title: RewardsDefiTimelineItem
+    RewardsDefiTimelineResponse:
+      properties:
+        syncing:
+          type: boolean
+          title: Syncing
+        from_ts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: From Ts
+        to_ts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: To Ts
+        total_reward_ton:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Reward Ton
+        pagination:
+          "$ref": "#/components/schemas/Pagination"
+        items:
+          items:
+            "$ref": "#/components/schemas/RewardsDefiTimelineItem"
+          type: array
+          title: Items
+        total_reward_ton_defi:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Reward Ton Defi
+      type: object
+      required:
+      - syncing
+      - pagination
+      - items
+      title: RewardsDefiTimelineResponse
+    RewardsTimelineItem:
+      properties:
+        kind:
+          type: string
+          title: Kind
+        ts:
+          type: integer
+          title: Ts
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        amount_tston:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Tston
+        balance_after:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Balance After
+        counterparty:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Counterparty
+        counterparty_kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Counterparty Kind
+        tx_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tx Id
+        round_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Round Id
+        balance_end:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Balance End
+        roi:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Roi
+        apy:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Apy
+        rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Rate
+        reward_ton:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reward Ton
+      type: object
+      required:
+      - kind
+      - ts
+      title: RewardsTimelineItem
+    RewardsTimelineResponse:
+      properties:
+        syncing:
+          type: boolean
+          title: Syncing
+        from_ts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: From Ts
+        to_ts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: To Ts
+        total_reward_ton:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Reward Ton
+        pagination:
+          "$ref": "#/components/schemas/Pagination"
+        items:
+          items:
+            "$ref": "#/components/schemas/RewardsTimelineItem"
+          type: array
+          title: Items
+      type: object
+      required:
+      - syncing
+      - pagination
+      - items
+      title: RewardsTimelineResponse
+    StakeItem:
+      properties:
+        tx_id:
+          type: string
+          title: Tx Id
+        address:
+          type: string
+          title: Address
+        amount:
+          type: integer
+          title: Amount
+        timestamp:
+          type: integer
+          title: Timestamp
+      type: object
+      required:
+      - tx_id
+      - address
+      - amount
+      - timestamp
+      title: StakeItem
+    StakesListResponse:
+      properties:
+        stakes:
+          items:
+            "$ref": "#/components/schemas/StakeItem"
+          type: array
+          title: Stakes
+      type: object
+      required:
+      - stakes
+      title: StakesListResponse
+    UpcomingRewardsResponse:
+      properties:
+        address:
+          type: string
+          title: Address
+        balance_tston:
+          type: integer
+          title: Balance Tston
+        wallet_tston:
+          type: integer
+          title: Wallet Tston
+        defi_tston:
+          type: integer
+          title: Defi Tston
+        rate:
+          type: number
+          title: Rate
+        items:
+          items:
+            "$ref": "#/components/schemas/UpcomingRoundReward"
+          type: array
+          title: Items
+      type: object
+      required:
+      - address
+      - balance_tston
+      - wallet_tston
+      - defi_tston
+      - rate
+      - items
+      title: UpcomingRewardsResponse
+    UpcomingRoundReward:
+      properties:
+        round_id:
+          type: integer
+          title: Round Id
+        cycle_end:
+          type: integer
+          title: Cycle End
+        roi_source:
+          type: string
+          title: Roi Source
+        base_round_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Base Round Id
+        roi:
+          type: number
+          title: Roi
+        apy:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Apy
+        reward_ton:
+          type: integer
+          title: Reward Ton
+      type: object
+      required:
+      - round_id
+      - cycle_end
+      - roi_source
+      - roi
+      - reward_ton
+      title: UpcomingRoundReward
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

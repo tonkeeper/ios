@@ -51,12 +51,12 @@ struct PerpsRootProofSigner {
         """
     }
 
-    func l1Address(wallet: CryptoWallet) -> String {
+    func l1Address(wallet: MnemonicWallet) -> String {
         wallet.getAddress(chain: ChainEthereumMainnet.shared).display.lowercased()
     }
 
-    func signProof(wallet: CryptoWallet, message: Data) throws -> String {
-        try signProof(keyPair: wallet.walletKeyPair(kind: .multichain), message: message)
+    func signProof(wallet: MnemonicWallet, message: Data) throws -> String {
+        try signProof(keyPair: wallet.walletKeyPair(), message: message)
     }
 
     func signProof(keyPair: WalletKeyPair, message: Data) throws -> String {
@@ -65,7 +65,7 @@ struct PerpsRootProofSigner {
         return try normalizedSignature(proof, field: "proof")
     }
 
-    func signLinkWallet(wallet: CryptoWallet, walletId: String, deadline: Int64) async throws -> String {
+    func signLinkWallet(wallet: MnemonicWallet, walletId: String, deadline: Int64) async throws -> String {
         let chain = ChainEthereumMainnet.shared
         guard let messageSigner = client.blockchain
             .getMediator(network: chain.network.type)

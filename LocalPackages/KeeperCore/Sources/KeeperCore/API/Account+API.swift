@@ -13,5 +13,6 @@ extension Account {
         self.isWallet = account.isWallet
         self.isScam = account.isScam
         self.isMemoRequired = account.memoRequired
+        self.interfaces = account.interfaces ?? []
     }
 }

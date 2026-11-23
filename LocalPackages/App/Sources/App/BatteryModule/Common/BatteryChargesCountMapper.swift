@@ -11,16 +11,18 @@ struct BatteryChargesMapper {
 
     func getChargesCountString(
         transaction: BatterySupportedTransaction,
-        wallet: Wallet,
-        networks: BatteryNetworks
+        chain: MultichainChain,
+        wallet: Wallet
     ) -> String {
         let perPart: String
         let charges: String
         switch transaction {
         case .swap:
-            perPart = networks.includesEVM
-                ? TKLocales.Battery.Settings.Items.Swaps.evmCaption
-                : TKLocales.Battery.Settings.Items.Swaps.caption
+            // The config prices a swap on TON alone.
+            guard chain == .ton else {
+                return TKLocales.Battery.Settings.Items.Swaps.networkCaption
+            }
+            perPart = TKLocales.Battery.Settings.Items.Swaps.caption
             if let chargesCount = batteryCalculation.calculateSwapsMinimumChargesAmount(network: wallet.network) {
                 charges = "\u{2248} \(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
             } else {
@@ -28,7 +30,7 @@ struct BatteryChargesMapper {
             }
         case .jetton:
             // The estimate is TON's: an EVM transfer costs from 1 charge on Base to tens on Ethereum.
-            guard !networks.includesEVM else {
+            guard chain == .ton else {
                 return TKLocales.Battery.Settings.Items.Token.evmCaption
             }
             perPart = TKLocales.Battery.Settings.Items.Token.caption

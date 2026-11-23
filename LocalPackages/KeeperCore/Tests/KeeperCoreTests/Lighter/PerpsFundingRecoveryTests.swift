@@ -1,7 +1,11 @@
 import Foundation
 @testable import KeeperCore
+import TKLogging
 import TKPerpsAPI
+import TKTestSupport
 import XCTest
+
+private let untilCancelled = TestGate()
 
 final class PerpsFundingRecoveryTests: XCTestCase {
     private var directoryURL: URL!
@@ -19,7 +23,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         _ = try await journal().saveFundingIfAbsent(broadcastPayment(expiresAt: Date().addingTimeInterval(60)))
         let delivery = StubDepositDelivery()
         let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "deposit", status: .credited)))
-        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery, sleep: { _ in })
         let credited = expectation(description: "replayed payment registered")
         let (id, observer) = await observe(recovery) { state in
             if state.operations.first?.deposit?.stage == .credited { credited.fulfill() }
@@ -42,7 +46,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         delivery.onBroadcast = { XCTFail("a refused payment must not be broadcast") }
         let opened = expectation(description: "recorded before the broadcast")
         let api = FundingStubAPI(openDeposit: .failure(PaymentFixture.accountCreationPending), onOpen: { _ in opened.fulfill() })
-        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery, sleep: { _ in })
         let dropped = expectation(description: "refused payment dropped")
         dropped.assertForOverFulfill = false
         let (id, observer) = await observe(recovery) { state in
@@ -75,7 +79,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
             getDeposit: .success(.init(deposit_id: "deposit", status: .credited))
         )
         let recovery = PerpsFundingRecovery(
-            walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, delivery: delivery,
+            walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery,
             sleep: { delay in
                 if await api.openDepositRequests.count == 1 { try await clock.sleep(delay) }
             }
@@ -109,7 +113,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         _ = try await journal().saveFundingIfAbsent(broadcastPayment(expiresAt: Date().addingTimeInterval(-60)))
         let delivery = StubDepositDelivery()
         let api = FundingStubAPI(openDeposit: .success(.init(deposit_id: "deposit", status: .credited)))
-        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, delivery: delivery, sleep: { _ in })
+        let recovery = PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), delivery: delivery, sleep: { _ in })
         let watched = expectation(description: "expired payment registered")
         let (id, observer) = await observe(recovery) { state in
             if state.operations.first?.deposit?.stage == .credited { watched.fulfill() }
@@ -120,6 +124,53 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         XCTAssertTrue(replayed.isEmpty)
         let requests = await api.openDepositRequests
         XCTAssertEqual(requests.first?.operation_id, "operation")
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARecordedDepositNamesItsLateSourceTransactionInsteadOfPolling() async throws {
+        _ = try await journal().saveFundingIfAbsent(recordedCrosschain(sourceTxHash: "0xsource"))
+        let api = FundingStubAPI(
+            openDeposit: .success(.init(deposit_id: "deposit", status: .credited)),
+            getDeposit: .success(.init(deposit_id: "deposit", status: .pending))
+        )
+        let recovery = makeRecovery(api: api)
+        let credited = expectation(description: "credited by the naming call")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.deposit?.stage == .credited { credited.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [credited], timeout: 2)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.map(\.source_tx_hash), ["0xsource"])
+        let polls = await api.getDepositRequests
+        XCTAssertEqual(polls, 0)
+        let stored = try await journal().funding(operationId: "operation")
+        XCTAssertEqual(stored?.deposit?.registration?.sourceTxHash, "0xsource")
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARefusedLateSourceTransactionStillLetsTheDepositBePolled() async throws {
+        _ = try await journal().saveFundingIfAbsent(recordedCrosschain(sourceTxHash: "0xsource"))
+        let refused = PerpsAPIError.badStatus(.init(httpStatus: 400, code: "invalid_execution_id", message: nil, retryable: false, reason: nil))
+        let api = FundingStubAPI(
+            openDeposit: .failure(refused),
+            getDeposit: .success(.init(deposit_id: "deposit", status: .credited))
+        )
+        let recovery = makeRecovery(api: api, sleep: { _ in })
+        let credited = expectation(description: "credited by polling")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.deposit?.stage == .credited { credited.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [credited], timeout: 2)
+
+        let requests = await api.openDepositRequests
+        XCTAssertEqual(requests.count, 1)
+        let polls = await api.getDepositRequests
+        XCTAssertEqual(polls, 1)
         await recovery.removeObserver(id)
         await observer.value
     }
@@ -228,7 +279,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let recovery = makeRecovery(api: api, sleep: { delay in
             XCTAssertEqual(delay, PerpsFundingRecovery.withdrawPollNanoseconds)
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -238,6 +289,26 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         XCTAssertEqual(saved?.withdraw?.withdrawalId, "0xABC")
         XCTAssertEqual(saved?.withdraw?.blocksNewWithdrawal, false)
         XCTAssertEqual(saved?.withdraw?.steps.last?.state, .accepted)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARecoveryStartedInsideAPaymentStepDoesNotKeepItsLogContext() async throws {
+        _ = try await journal().saveFundingIfAbsent(withdrawal(stage: .unknown, executionId: nil))
+        let api = FundingStubAPI(withdrawals: .success(.init(items: [
+            .init(id: "0xABC", _type: .withdrawal, timestamp: Date(), status: "pending"),
+        ])))
+        let polled = expectation(description: "recovery waits for the payout")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            XCTAssertEqual(PerpsOperationLog.context, [:])
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await PerpsOperationLog.$context.withValue(["trace_id": "payment", "flow": "withdraw", "amount": "5"]) {
+            await recovery.setEnabled(true, for: id)
+        }
+        await fulfillment(of: [polled], timeout: 2)
         await recovery.removeObserver(id)
         await observer.value
     }
@@ -252,7 +323,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "recovery waits for the payout")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -305,7 +376,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "secure payout remains pending")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         }, executionTime: { _ in executedAt })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -332,7 +403,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "ambiguous withdrawal remains pending")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         }, executionTime: { _ in executedAt })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -429,7 +500,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
             let recovery = makeRecovery(api: api, sleep: { _ in
                 XCTAssertTrue(ambiguous)
                 checked.fulfill()
-                try await Task.sleep(nanoseconds: .max)
+                try await untilCancelled.wait()
             }, executionTime: { _ in executedAt })
             let (id, observer) = await observe(recovery) { state in
                 if !ambiguous, state.operations.first?.withdraw?.stage == .settled { checked.fulfill() }
@@ -464,7 +535,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "truncated history remains pending")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         }, executionTime: { _ in executedAt })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -495,7 +566,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "recovery waits for evidence")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -512,6 +583,290 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         await observer.value
     }
 
+    /// The push that completes a withdrawal names the operation its send named, so a replay names it too.
+    func testAReplayedWithdrawalNamesItsOperation() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 60000,
+            transactionExpiryUnixMs: nowMillis + 600_000
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits after the replay")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let sent = await api.sentOperationIds
+        XCTAssertEqual(sent, ["withdraw"])
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    /// The confirm screen said a withdrawal refused for its nonce was not sent, so recovery never sends it.
+    func testAWithdrawalRefusedForItsNonceIsNotReplayed() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 60000,
+            transactionExpiryUnixMs: nowMillis + 600_000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits for the next poll")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let sent = await api.sentOperationIds
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(sent, [])
+        XCTAssertEqual(saved?.withdraw?.stage, .unknown)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testAWithdrawalRefusedForItsNonceEndsOnceItsTransactionExpired() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 120_000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let recovery = makeRecovery(api: api)
+        let ended = expectation(description: "the refused withdrawal ended")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.withdraw?.stage == .rejected { ended.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [ended], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.failureReason, "expired")
+        let sends = await api.sendTransactionsRequests
+        XCTAssertEqual(sends, 0)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARefusedWithdrawalEndsByTheServerTimeWithinAMinuteOfTheDevice() async throws {
+        PerpsServerClock.shared.record(serverDate: Date().addingTimeInterval(50))
+        defer { PerpsServerClock.shared.record(serverDate: Date()) }
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 30000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let recovery = makeRecovery(api: api)
+        let ended = expectation(description: "the refused withdrawal ended by the server time")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.withdraw?.stage == .rejected { ended.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [ended], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.failureReason, "expired")
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARefusedWithdrawalExpiredOnlyOnAFastDeviceClockIsNotEnded() async throws {
+        PerpsServerClock.shared.record(serverDate: Date().addingTimeInterval(-300))
+        defer { PerpsServerClock.shared.record(serverDate: Date()) }
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 120_000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits for the server clock")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.stage, .unknown)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARefusedWithdrawalIsNotEndedByAServerDateAYearAhead() async throws {
+        PerpsServerClock.shared.record(serverDate: Date().addingTimeInterval(365 * 86400))
+        defer { PerpsServerClock.shared.record(serverDate: Date()) }
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 1000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits for the venue to expire the withdrawal")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.stage, .unknown)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testARefusedWithdrawalPastTheVerdictWindowKeepsItsRefusal() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - PerpsFundingRecovery.verdictWindowMillis - 1000,
+            transactionExpiryUnixMs: nowMillis - 120_000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 8)),
+            withdrawals: .success(.init(items: []))
+        )
+        let recovery = makeRecovery(api: api)
+        let ended = expectation(description: "the refused withdrawal is unconfirmed")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.withdraw?.stage == .unconfirmed { ended.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [ended], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.failureReason, PerpsWithdrawService.resignRequiredReason)
+        XCTAssertEqual(saved?.withdraw?.isRefusedForNonce, true)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    /// The venue listed a withdrawal it had refused, so it went out: it must not read as refused.
+    func testARefusedWithdrawalTheVenueListedEndsUnconfirmedWithoutItsRefusal() async throws {
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .awaitingL1,
+            executionId: nil,
+            createdAtMillis: Int64(Date().timeIntervalSince1970 * 1000) - PerpsFundingRecovery.verdictWindowMillis - 1000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(withdrawals: .success(.init(items: [])))
+        let recovery = makeRecovery(api: api)
+        let ended = expectation(description: "the listed withdrawal is unconfirmed")
+        let (id, observer) = await observe(recovery) { state in
+            if state.operations.first?.withdraw?.stage == .unconfirmed { ended.fulfill() }
+        }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [ended], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.failureReason, "l1_unverified")
+        XCTAssertEqual(saved?.withdraw?.isRefusedForNonce, false)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testAnExpiredRefusedWithdrawalWhoseNonceWasSpentIsNotEnded() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 120_000,
+            failureReason: PerpsWithdrawService.resignRequiredReason
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 8)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits for evidence")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.stage, .unknown)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testAnExpiredWithdrawalWithAnUnknownSendIsNotEnded() async throws {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
+        _ = try await journal().saveFundingIfAbsent(withdrawal(
+            stage: .unknown,
+            executionId: nil,
+            createdAtMillis: nowMillis - 900_000,
+            transactionExpiryUnixMs: nowMillis - 120_000
+        ))
+        let api = FundingStubAPI(
+            nextNonce: .success(.init(account_index: 42, nonce: 7)),
+            withdrawals: .success(.init(items: []))
+        )
+        let polled = expectation(description: "recovery waits for evidence")
+        let recovery = makeRecovery(api: api, sleep: { _ in
+            polled.fulfill()
+            try await untilCancelled.wait()
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [polled], timeout: 2)
+
+        let saved = try await journal().funding(operationId: "withdraw")
+        XCTAssertEqual(saved?.withdraw?.stage, .unknown)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
     /// An unanswered question is not an answer that the withdrawal is missing: a failed read
     /// of the history must not end one that may have been paid out.
     func testAnUnreadableHistoryDoesNotEndADirectWithdrawal() async throws {
@@ -521,7 +876,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         let polled = expectation(description: "recovery asks again later")
         let recovery = makeRecovery(api: api, sleep: { _ in
             polled.fulfill()
-            try await Task.sleep(nanoseconds: .max)
+            try await untilCancelled.wait()
         })
         let (id, observer) = await observe(recovery) { _ in }
         await recovery.setEnabled(true, for: id)
@@ -625,6 +980,90 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         await observer.value
     }
 
+    func testATrackedDepositWaitsForAChangeInsteadOfItsTimer() async throws {
+        _ = try await journal().saveFundingIfAbsent(trackedDeposit())
+        let api = FundingStubAPI(getDeposit: .success(.init(deposit_id: "deposit", status: .pending)))
+        let waited = expectation(description: "waits for a change")
+        let recovery = makeRecovery(
+            api: api,
+            sleep: { _ in
+                XCTFail("a tracked deposit must wait for a change")
+                try await untilCancelled.wait()
+            },
+            awaitChange: { delay in
+                XCTAssertEqual(delay, 5_000_000_000)
+                waited.fulfill()
+                try? await untilCancelled.wait()
+                return false
+            }
+        )
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [waited], timeout: 2)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testAFailedPassKeepsItsTimer() async throws {
+        _ = try await journal().saveFundingIfAbsent(trackedDeposit())
+        let api = FundingStubAPI(getDeposit: .failure(.badStatus(.undecoded(503, message: "unavailable"))))
+        let slept = expectation(description: "backoff on the timer")
+        let recovery = makeRecovery(
+            api: api,
+            sleep: { delay in
+                XCTAssertEqual(delay, 10_000_000_000)
+                slept.fulfill()
+                try await untilCancelled.wait()
+            },
+            awaitChange: { _ in
+                XCTFail("a failed pass must keep its timer")
+                try? await untilCancelled.wait()
+                return false
+            }
+        )
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [slept], timeout: 2)
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
+    func testAChangeLetsTheNextPassReadAWithdrawalWithinItsPollGap() async throws {
+        let withdrawal = PerpsPendingFundingOperation(
+            operationId: "withdraw",
+            walletId: "wallet",
+            walletIdentity: "identity",
+            environment: "test",
+            details: .withdraw(.init(
+                stage: .unknown,
+                accountIndex: 42,
+                apiKeyIndex: 1,
+                chainId: 304,
+                assetIndex: 3,
+                routeType: 0,
+                amountUnits: "20000000",
+                executionId: "execution"
+            ))
+        )
+        _ = try await journal().saveFundingIfAbsent(withdrawal)
+        let api = FundingStubAPI(fundingStatus: .success(.init(execution_id: "execution", status: .pending)))
+        let waits = CallCounter()
+        let rewaited = expectation(description: "waits again after the second read")
+        let recovery = makeRecovery(api: api, awaitChange: { _ in
+            guard await waits.next() > 1 else { return true }
+            rewaited.fulfill()
+            try? await untilCancelled.wait()
+            return false
+        })
+        let (id, observer) = await observe(recovery) { _ in }
+        await recovery.setEnabled(true, for: id)
+        await fulfillment(of: [rewaited], timeout: 2)
+        let requests = await api.fundingStatusRequests
+        XCTAssertEqual(requests, ["execution", "execution"])
+        await recovery.removeObserver(id)
+        await observer.value
+    }
+
     func testRetryUsesBackoffAndThePersistedBody() async throws {
         _ = try await journal().saveFundingIfAbsent(operation())
         let waiting = expectation(description: "backoff scheduled")
@@ -702,9 +1141,7 @@ final class PerpsFundingRecoveryTests: XCTestCase {
     func testAdditionalObserverDoesNotInterruptBackoff() async throws {
         _ = try await journal().saveFundingIfAbsent(operation())
         let waiting = expectation(description: "backoff scheduled")
-        let interrupted = expectation(description: "additional observer interrupts backoff")
-        interrupted.isInverted = true
-        let clock = RecoverySleeper(onCancel: { interrupted.fulfill() }, onSleep: { _ in waiting.fulfill() })
+        let clock = RecoverySleeper(onSleep: { _ in waiting.fulfill() })
         let api = FundingStubAPI(openDeposit: .failure(.badStatus(.undecoded(503, message: "unavailable"))))
         let recovery = makeRecovery(api: api, sleep: { try await clock.sleep($0) })
         let credited = expectation(description: "both observers receive credit after backoff")
@@ -718,12 +1155,13 @@ final class PerpsFundingRecoveryTests: XCTestCase {
         await api.setOpenDepositResult(.success(.init(deposit_id: "deposit", status: .credited)))
         let (second, secondTask) = await observe(recovery, receive: receive)
         await recovery.setEnabled(true, for: second)
-        await fulfillment(of: [interrupted], timeout: 0.1)
         let requestsBeforeRetry = await api.openDepositRequests.count
         XCTAssertEqual(requestsBeforeRetry, 1)
 
         await clock.advance()
         await fulfillment(of: [credited], timeout: 2)
+        let interruptions = await clock.cancellations
+        XCTAssertEqual(interruptions, 0, "an additional observer must not interrupt the backoff")
         await recovery.removeObserver(first)
         await recovery.removeObserver(second)
         await firstTask.value
@@ -848,9 +1286,10 @@ private extension PerpsFundingRecoveryTests {
     func makeRecovery(
         api: PerpsAPI,
         sleep: @escaping @Sendable (UInt64) async throws -> Void = { _ in XCTFail("unexpected polling") },
+        awaitChange: (@Sendable (UInt64) async -> Bool)? = nil,
         executionTime: @escaping @Sendable (String) async throws -> Int64? = { _ in nil }
     ) -> PerpsFundingRecovery {
-        PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, sleep: sleep, executionTime: executionTime)
+        PerpsFundingRecovery(walletId: "wallet", walletIdentity: "identity", environment: "test", journal: journal(), api: api, submitLanes: PerpsSubmitLanes(api: api), sleep: sleep, awaitChange: awaitChange, executionTime: executionTime)
     }
 
     func observe(
@@ -871,7 +1310,8 @@ private extension PerpsFundingRecoveryTests {
         executionId: String?,
         createdAtMillis: Int64 = Int64(Date().timeIntervalSince1970 * 1000),
         transactionExpiryUnixMs: Int64 = 0,
-        withdrawalId: String? = nil
+        withdrawalId: String? = nil,
+        failureReason: String? = nil
     ) -> PerpsPendingFundingOperation {
         PerpsPendingFundingOperation(
             operationId: "withdraw",
@@ -898,7 +1338,30 @@ private extension PerpsFundingRecoveryTests {
                     txHash: "0xabc",
                     state: .unknown
                 )],
-                withdrawalId: withdrawalId
+                withdrawalId: withdrawalId,
+                failureReason: failureReason
+            ))
+        )
+    }
+
+    func trackedDeposit() -> PerpsPendingFundingOperation {
+        var tracked = operation(stage: .registeredPending)
+        guard var deposit = tracked.deposit else { return tracked }
+        deposit.depositId = "deposit"
+        tracked.details = .deposit(deposit)
+        return tracked
+    }
+
+    func recordedCrosschain(sourceTxHash: String) -> PerpsPendingFundingOperation {
+        let asset = PerpsFundingAsset(assetId: "usdc", symbol: "USDC", decimals: 6)
+        return PerpsPendingFundingOperation(
+            operationId: "operation", walletId: "wallet", walletIdentity: "identity", environment: "test",
+            details: .deposit(.init(
+                stage: .registeredPending, route: .crosschainSwap, beneficiary: "0xabc",
+                sourceAsset: asset, sourceAmountUnits: "25000000", targetAsset: asset,
+                executionId: "exec-1", sourceTxHash: sourceTxHash,
+                registration: .init(operationId: "operation", assetId: asset.assetId, amount: "25", l1TxHash: nil, executionId: "exec-1"),
+                depositId: "deposit"
             ))
         )
     }
@@ -942,14 +1405,22 @@ actor RecoveryGate {
     }
 }
 
+private actor CallCounter {
+    private var count = 0
+
+    func next() -> Int {
+        count += 1
+        return count
+    }
+}
+
 private actor RecoverySleeper {
     private let onSleep: @Sendable (UInt64) -> Void
-    private let onCancel: @Sendable () -> Void
     private var waiters: [UUID: CheckedContinuation<Void, Error>] = [:]
+    private(set) var cancellations = 0
 
-    init(onCancel: @escaping @Sendable () -> Void = {}, onSleep: @escaping @Sendable (UInt64) -> Void) {
+    init(onSleep: @escaping @Sendable (UInt64) -> Void) {
         self.onSleep = onSleep
-        self.onCancel = onCancel
     }
 
     func sleep(_ delay: UInt64) async throws {
@@ -973,7 +1444,7 @@ private actor RecoverySleeper {
 
     private func cancel(_ id: UUID) {
         guard let waiter = waiters.removeValue(forKey: id) else { return }
-        onCancel()
+        cancellations += 1
         waiter.resume(throwing: CancellationError())
     }
 }

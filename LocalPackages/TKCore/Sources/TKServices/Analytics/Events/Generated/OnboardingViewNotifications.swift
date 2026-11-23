@@ -30,3 +30,5 @@ public struct OnboardingViewNotifications: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
     }
 }
+
+

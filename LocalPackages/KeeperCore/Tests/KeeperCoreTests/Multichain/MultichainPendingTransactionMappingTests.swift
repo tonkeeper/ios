@@ -11,6 +11,8 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: "ton/mainnet/coin",
                         toAssetId: "eth/mainnet/coin",
+                        fromAddress: "UQ-source",
+                        fromAmount: "123456789012345678901234567890",
                         quote: .init(aggregator: "swapsxyz", routeId: "route-id", providerRouteId: "tx-id")
                     )
                 )
@@ -23,6 +25,8 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
             [
                 "from_asset_id": "ton/mainnet/coin",
                 "to_asset_id": "eth/mainnet/coin",
+                "from_address": "UQ-source",
+                "from_amount": "123456789012345678901234567890",
                 "aggregator": "swapsxyz",
                 "route_id": "route-id",
                 "provider_route_id": "tx-id",
@@ -37,7 +41,9 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
                 activityType: .swap(
                     MultichainPendingTransaction.SwapDetails(
                         fromAssetId: "ton/mainnet/coin",
-                        toAssetId: "ton/mainnet/jetton/0:abc"
+                        toAssetId: "ton/mainnet/jetton/0:abc",
+                        fromAddress: "UQ-source",
+                        fromAmount: "1000000000"
                     )
                 )
             )
@@ -48,6 +54,8 @@ final class MultichainPendingTransactionMappingTests: XCTestCase {
             [
                 "from_asset_id": "ton/mainnet/coin",
                 "to_asset_id": "ton/mainnet/jetton/0:abc",
+                "from_address": "UQ-source",
+                "from_amount": "1000000000",
             ]
         )
     }

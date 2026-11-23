@@ -56,19 +56,26 @@ public struct MoonPayTransactionDetails: Decodable, Equatable, Sendable {
     public let transactionHash: String?
     public let customerID: String?
     public let stages: [Stage]
+    public let createdAt: Date?
+    /// How the customer paid, such as `apple_pay`: inside the widget it may differ from the quote's.
+    public let paymentMethodType: String?
 
     public init(
         id: String,
         status: String,
         transactionHash: String? = nil,
         customerID: String? = nil,
-        stages: [Stage] = []
+        stages: [Stage] = [],
+        createdAt: Date? = nil,
+        paymentMethodType: String? = nil
     ) {
         self.id = id
         self.status = status
         self.transactionHash = transactionHash
         self.customerID = customerID
         self.stages = stages
+        self.createdAt = createdAt
+        self.paymentMethodType = paymentMethodType
     }
 
     public init(from decoder: Decoder) throws {
@@ -78,6 +85,8 @@ public struct MoonPayTransactionDetails: Decodable, Equatable, Sendable {
         transactionHash = try container.decodeIfPresent(String.self, forKey: .transactionHash)
         customerID = try container.decodeIfPresent(Customer.self, forKey: .customer)?.id
         stages = try container.decodeIfPresent([Stage].self, forKey: .stages) ?? []
+        createdAt = try? container.decodeIfPresent(Date.self, forKey: .createdAt)
+        paymentMethodType = try? container.decodeIfPresent(PaymentMethod.self, forKey: .paymentMethod)?.type
     }
 
     public var isFailed: Bool {
@@ -92,17 +101,30 @@ public struct MoonPayTransactionDetails: Decodable, Equatable, Sendable {
         stages.first { $0.status == "failed" }
     }
 
+    /// The 3DS stage of a card payment, when MoonPay lists it.
+    public var authenticationStage: Stage? {
+        stages.first { $0.kind == "waiting_authentication" }
+    }
+
     private struct Customer: Decodable {
         let id: String
     }
 
+    private struct PaymentMethod: Decodable {
+        let type: String
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case id, status, transactionHash, customer, stages
+        case id, status, transactionHash, customer, stages, createdAt, paymentMethod
     }
 }
 
 struct MoonPayTransactionResponse: Decodable {
     let data: MoonPayTransactionDetails
+}
+
+struct MoonPayTransactionsResponse: Decodable {
+    let data: [MoonPayTransactionDetails]
 }
 
 /// A stored payment method: the `complete` payload of the `add-card` frame and each entry of

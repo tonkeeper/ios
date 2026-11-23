@@ -1,6 +1,6 @@
 @testable import KeeperCore
-import ReownWalletKit
 import TonSwift
+import WalletConnectSign
 import XCTest
 
 final class WalletConnectSessionNamespaceBuilderTests: XCTestCase {

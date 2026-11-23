@@ -16,21 +16,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/healthcheck`.
     /// - Remark: Generated from `#/paths//api/v1/healthcheck/get(healthcheck)`.
     func healthcheck(_ input: Operations.healthcheck.Input) async throws -> Operations.healthcheck.Output
-    /// Check the process is alive
-    ///
-    /// - Remark: HTTP `GET /api/v1/liveness`.
-    /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)`.
-    func liveness(_ input: Operations.liveness.Input) async throws -> Operations.liveness.Output
-    /// Get manifest of supported chains
-    ///
-    /// - Remark: HTTP `GET /api/v1/nodes`.
-    /// - Remark: Generated from `#/paths//api/v1/nodes/get(getNodes)`.
-    func getNodes(_ input: Operations.getNodes.Input) async throws -> Operations.getNodes.Output
-    /// List the asset catalog
-    ///
-    /// - Remark: HTTP `GET /api/v1/assets`.
-    /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)`.
-    func getAssets(_ input: Operations.getAssets.Input) async throws -> Operations.getAssets.Output
     /// Search the swappable asset catalog
     ///
     /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
@@ -38,13 +23,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
     func searchAssets(_ input: Operations.searchAssets.Input) async throws -> Operations.searchAssets.Output
-    /// Get a single catalog asset by asset_id
-    ///
-    /// Catalog metadata for one asset, independent of any wallet: use it for a token screen opened from an activity or a deep link, where the client holds an asset_id and nothing else.
-    ///
-    /// - Remark: HTTP `GET /api/v1/assets/{asset_id}`.
-    /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)`.
-    func getAsset(_ input: Operations.getAsset.Input) async throws -> Operations.getAsset.Output
     /// Broadcast a signed transaction
     ///
     /// - Remark: HTTP `POST /api/v1/broadcast`.
@@ -55,30 +33,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/fees/{chain}`.
     /// - Remark: Generated from `#/paths//api/v1/fees/{chain}/get(getFees)`.
     func getFees(_ input: Operations.getFees.Input) async throws -> Operations.getFees.Output
-    /// Proxy a whitelisted GET-style java-tron HTTP method to the TRON RPC node
-    ///
-    /// GET counterpart of callTronRpc for the java-tron methods the mobile client calls without a JSON body: listwitnesses and the no-arg reads getnowblock and getchainparameters, which java-tron serves over GET as well as POST.
-    ///
-    /// - Remark: HTTP `GET /tron/rpc/wallet/{method}`.
-    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)`.
-    func getTronRpc(_ input: Operations.getTronRpc.Input) async throws -> Operations.getTronRpc.Output
-    /// Proxy a whitelisted java-tron HTTP method to the TRON RPC node
-    ///
-    /// Drop-in analog of the TronGrid FullNode HTTP API for a fixed set of methods: the same request body, the node's response verbatim.
-    ///
-    /// - Remark: HTTP `POST /tron/rpc/wallet/{method}`.
-    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)`.
-    func callTronRpc(_ input: Operations.callTronRpc.Input) async throws -> Operations.callTronRpc.Output
-    /// Resolve an account to an on-chain address
-    ///
-    /// - Remark: HTTP `GET /api/v1/account/{account}`.
-    /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)`.
-    func resolveAccountAddress(_ input: Operations.resolveAccountAddress.Input) async throws -> Operations.resolveAccountAddress.Output
-    /// Check if the account has a swap on STON.fi
-    ///
-    /// - Remark: HTTP `GET /v1/stonfi/swap/{address}/status`.
-    /// - Remark: Generated from `#/paths//v1/stonfi/swap/{address}/status/get(getStonfiSwapStatus)`.
-    func getStonfiSwapStatus(_ input: Operations.getStonfiSwapStatus.Input) async throws -> Operations.getStonfiSwapStatus.Output
     /// Get wallet by id
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}`.
@@ -99,12 +53,13 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/realtime-token`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)`.
     func getWalletRealtimeToken(_ input: Operations.getWalletRealtimeToken.Input) async throws -> Operations.getWalletRealtimeToken.Output
-    /// Wipe and refetch a wallet's activity history
+    /// Mint a realtime subscription token for one wallet's perps channel
     ///
-    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/reindex`.
-    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)`.
-    @available(*, deprecated)
-    func reindexWallet(_ input: Operations.reindexWallet.Input) async throws -> Operations.reindexWallet.Output
+    /// The wallet proof is always required, whatever the client version.
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/perps-realtime-token`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/perps-realtime-token/get(getWalletPerpsRealtimeToken)`.
+    func getWalletPerpsRealtimeToken(_ input: Operations.getWalletPerpsRealtimeToken.Input) async throws -> Operations.getWalletPerpsRealtimeToken.Output
     /// Get assets for all accounts of a registered wallet
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/assets`.
@@ -112,7 +67,7 @@ public protocol APIProtocol: Sendable {
     func getWalletAssets(_ input: Operations.getWalletAssets.Input) async throws -> Operations.getWalletAssets.Output
     /// Set wallet's assets hidden/shown settings
     ///
-    /// Writes the caller's own show/hide choices. Auth is **optional for now and becomes mandatory at release**: clients have not shipped the token on this call yet.
+    /// Writes the caller's own show/hide choices. Needs the wallet proof, or a device bound to the wallet.
     ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/assets`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)`.
@@ -129,7 +84,7 @@ public protocol APIProtocol: Sendable {
     func getWalletActivities(_ input: Operations.getWalletActivities.Input) async throws -> Operations.getWalletActivities.Output
     /// Record a locally-broadcast transaction as a pending activity for this wallet
     ///
-    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins.
+    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins. Needs the wallet proof, or a device bound to the wallet.
     ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/transactions/pending`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)`.
@@ -154,16 +109,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/import`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)`.
     func markWalletRaffleImport(_ input: Operations.markWalletRaffleImport.Input) async throws -> Operations.markWalletRaffleImport.Output
-    /// Resolve device state and wallet membership for another service
-    ///
-    /// - Remark: HTTP `POST /internal/auth/introspect`.
-    /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)`.
-    func introspectAuth(_ input: Operations.introspectAuth.Input) async throws -> Operations.introspectAuth.Output
-    /// Get public keys for verifying device access tokens
-    ///
-    /// - Remark: HTTP `GET /auth/.well-known/jwks.json`.
-    /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)`.
-    func getJwks(_ input: Operations.getJwks.Input) async throws -> Operations.getJwks.Output
     /// Mint a stateless HMAC challenge for device registration
     ///
     /// - Remark: HTTP `GET /api/v2/devices/challenge`.
@@ -179,11 +124,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /api/v2/devices/refresh`.
     /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)`.
     func refreshDevice(_ input: Operations.refreshDevice.Input) async throws -> Operations.refreshDevice.Output
-    /// Revoke a device and detach all its wallets
-    ///
-    /// - Remark: HTTP `POST /api/v2/devices/logout`.
-    /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)`.
-    func logoutDevice(_ input: Operations.logoutDevice.Input) async throws -> Operations.logoutDevice.Output
     /// Reconcile a client's wallet list with the device's bindings
     ///
     /// - Remark: HTTP `POST /api/v2/devices/bindings`.
@@ -204,6 +144,16 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /api/v2/wallets/push/subscribe`.
     /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)`.
     func subscribeDevicePush(_ input: Operations.subscribeDevicePush.Input) async throws -> Operations.subscribeDevicePush.Output
+    /// Register or replace the device's transaction Live Activity, so it can be settled while the app is not running
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/live-activity`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/live-activity/post(registerLiveActivity)`.
+    func registerLiveActivity(_ input: Operations.registerLiveActivity.Input) async throws -> Operations.registerLiveActivity.Output
+    /// Forget the device's transaction Live Activity once it is ended or dismissed
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/live-activity/unregister`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/live-activity/unregister/post(unregisterLiveActivity)`.
+    func unregisterLiveActivity(_ input: Operations.unregisterLiveActivity.Input) async throws -> Operations.unregisterLiveActivity.Output
     /// Detach a device from all push notifications
     ///
     /// - Remark: HTTP `POST /api/v2/wallets/push/unsubscribe`.
@@ -220,33 +170,6 @@ extension APIProtocol {
     public func healthcheck(headers: Operations.healthcheck.Input.Headers = .init()) async throws -> Operations.healthcheck.Output {
         try await healthcheck(Operations.healthcheck.Input(headers: headers))
     }
-    /// Check the process is alive
-    ///
-    /// - Remark: HTTP `GET /api/v1/liveness`.
-    /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)`.
-    public func liveness(headers: Operations.liveness.Input.Headers = .init()) async throws -> Operations.liveness.Output {
-        try await liveness(Operations.liveness.Input(headers: headers))
-    }
-    /// Get manifest of supported chains
-    ///
-    /// - Remark: HTTP `GET /api/v1/nodes`.
-    /// - Remark: Generated from `#/paths//api/v1/nodes/get(getNodes)`.
-    public func getNodes(headers: Operations.getNodes.Input.Headers = .init()) async throws -> Operations.getNodes.Output {
-        try await getNodes(Operations.getNodes.Input(headers: headers))
-    }
-    /// List the asset catalog
-    ///
-    /// - Remark: HTTP `GET /api/v1/assets`.
-    /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)`.
-    public func getAssets(
-        query: Operations.getAssets.Input.Query = .init(),
-        headers: Operations.getAssets.Input.Headers = .init()
-    ) async throws -> Operations.getAssets.Output {
-        try await getAssets(Operations.getAssets.Input(
-            query: query,
-            headers: headers
-        ))
-    }
     /// Search the swappable asset catalog
     ///
     /// Only assets with the `swap` capability are returned unless `omit_swappable=true`. Lighter perps are exempt.
@@ -258,23 +181,6 @@ extension APIProtocol {
         headers: Operations.searchAssets.Input.Headers = .init()
     ) async throws -> Operations.searchAssets.Output {
         try await searchAssets(Operations.searchAssets.Input(
-            query: query,
-            headers: headers
-        ))
-    }
-    /// Get a single catalog asset by asset_id
-    ///
-    /// Catalog metadata for one asset, independent of any wallet: use it for a token screen opened from an activity or a deep link, where the client holds an asset_id and nothing else.
-    ///
-    /// - Remark: HTTP `GET /api/v1/assets/{asset_id}`.
-    /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)`.
-    public func getAsset(
-        path: Operations.getAsset.Input.Path,
-        query: Operations.getAsset.Input.Query = .init(),
-        headers: Operations.getAsset.Input.Headers = .init()
-    ) async throws -> Operations.getAsset.Output {
-        try await getAsset(Operations.getAsset.Input(
-            path: path,
             query: query,
             headers: headers
         ))
@@ -301,68 +207,6 @@ extension APIProtocol {
         headers: Operations.getFees.Input.Headers = .init()
     ) async throws -> Operations.getFees.Output {
         try await getFees(Operations.getFees.Input(
-            path: path,
-            headers: headers
-        ))
-    }
-    /// Proxy a whitelisted GET-style java-tron HTTP method to the TRON RPC node
-    ///
-    /// GET counterpart of callTronRpc for the java-tron methods the mobile client calls without a JSON body: listwitnesses and the no-arg reads getnowblock and getchainparameters, which java-tron serves over GET as well as POST.
-    ///
-    /// - Remark: HTTP `GET /tron/rpc/wallet/{method}`.
-    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)`.
-    public func getTronRpc(
-        path: Operations.getTronRpc.Input.Path,
-        query: Operations.getTronRpc.Input.Query = .init(),
-        headers: Operations.getTronRpc.Input.Headers = .init()
-    ) async throws -> Operations.getTronRpc.Output {
-        try await getTronRpc(Operations.getTronRpc.Input(
-            path: path,
-            query: query,
-            headers: headers
-        ))
-    }
-    /// Proxy a whitelisted java-tron HTTP method to the TRON RPC node
-    ///
-    /// Drop-in analog of the TronGrid FullNode HTTP API for a fixed set of methods: the same request body, the node's response verbatim.
-    ///
-    /// - Remark: HTTP `POST /tron/rpc/wallet/{method}`.
-    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)`.
-    public func callTronRpc(
-        path: Operations.callTronRpc.Input.Path,
-        headers: Operations.callTronRpc.Input.Headers = .init(),
-        body: Operations.callTronRpc.Input.Body? = nil
-    ) async throws -> Operations.callTronRpc.Output {
-        try await callTronRpc(Operations.callTronRpc.Input(
-            path: path,
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Resolve an account to an on-chain address
-    ///
-    /// - Remark: HTTP `GET /api/v1/account/{account}`.
-    /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)`.
-    public func resolveAccountAddress(
-        path: Operations.resolveAccountAddress.Input.Path,
-        query: Operations.resolveAccountAddress.Input.Query,
-        headers: Operations.resolveAccountAddress.Input.Headers = .init()
-    ) async throws -> Operations.resolveAccountAddress.Output {
-        try await resolveAccountAddress(Operations.resolveAccountAddress.Input(
-            path: path,
-            query: query,
-            headers: headers
-        ))
-    }
-    /// Check if the account has a swap on STON.fi
-    ///
-    /// - Remark: HTTP `GET /v1/stonfi/swap/{address}/status`.
-    /// - Remark: Generated from `#/paths//v1/stonfi/swap/{address}/status/get(getStonfiSwapStatus)`.
-    public func getStonfiSwapStatus(
-        path: Operations.getStonfiSwapStatus.Input.Path,
-        headers: Operations.getStonfiSwapStatus.Input.Headers = .init()
-    ) async throws -> Operations.getStonfiSwapStatus.Output {
-        try await getStonfiSwapStatus(Operations.getStonfiSwapStatus.Input(
             path: path,
             headers: headers
         ))
@@ -417,20 +261,19 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Wipe and refetch a wallet's activity history
+    /// Mint a realtime subscription token for one wallet's perps channel
     ///
-    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/reindex`.
-    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)`.
-    @available(*, deprecated)
-    public func reindexWallet(
-        path: Operations.reindexWallet.Input.Path,
-        headers: Operations.reindexWallet.Input.Headers = .init(),
-        body: Components.RequestBodies.WalletReindex? = nil
-    ) async throws -> Operations.reindexWallet.Output {
-        try await reindexWallet(Operations.reindexWallet.Input(
+    /// The wallet proof is always required, whatever the client version.
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/perps-realtime-token`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/perps-realtime-token/get(getWalletPerpsRealtimeToken)`.
+    public func getWalletPerpsRealtimeToken(
+        path: Operations.getWalletPerpsRealtimeToken.Input.Path,
+        headers: Operations.getWalletPerpsRealtimeToken.Input.Headers = .init()
+    ) async throws -> Operations.getWalletPerpsRealtimeToken.Output {
+        try await getWalletPerpsRealtimeToken(Operations.getWalletPerpsRealtimeToken.Input(
             path: path,
-            headers: headers,
-            body: body
+            headers: headers
         ))
     }
     /// Get assets for all accounts of a registered wallet
@@ -450,7 +293,7 @@ extension APIProtocol {
     }
     /// Set wallet's assets hidden/shown settings
     ///
-    /// Writes the caller's own show/hide choices. Auth is **optional for now and becomes mandatory at release**: clients have not shipped the token on this call yet.
+    /// Writes the caller's own show/hide choices. Needs the wallet proof, or a device bound to the wallet.
     ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/assets`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)`.
@@ -497,7 +340,7 @@ extension APIProtocol {
     }
     /// Record a locally-broadcast transaction as a pending activity for this wallet
     ///
-    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins.
+    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins. Needs the wallet proof, or a device bound to the wallet.
     ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/transactions/pending`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)`.
@@ -562,26 +405,6 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Resolve device state and wallet membership for another service
-    ///
-    /// - Remark: HTTP `POST /internal/auth/introspect`.
-    /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)`.
-    public func introspectAuth(
-        headers: Operations.introspectAuth.Input.Headers = .init(),
-        body: Components.RequestBodies.AuthIntrospect
-    ) async throws -> Operations.introspectAuth.Output {
-        try await introspectAuth(Operations.introspectAuth.Input(
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Get public keys for verifying device access tokens
-    ///
-    /// - Remark: HTTP `GET /auth/.well-known/jwks.json`.
-    /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)`.
-    public func getJwks(headers: Operations.getJwks.Input.Headers = .init()) async throws -> Operations.getJwks.Output {
-        try await getJwks(Operations.getJwks.Input(headers: headers))
-    }
     /// Mint a stateless HMAC challenge for device registration
     ///
     /// - Remark: HTTP `GET /api/v2/devices/challenge`.
@@ -614,13 +437,6 @@ extension APIProtocol {
             headers: headers,
             body: body
         ))
-    }
-    /// Revoke a device and detach all its wallets
-    ///
-    /// - Remark: HTTP `POST /api/v2/devices/logout`.
-    /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)`.
-    public func logoutDevice(headers: Operations.logoutDevice.Input.Headers = .init()) async throws -> Operations.logoutDevice.Output {
-        try await logoutDevice(Operations.logoutDevice.Input(headers: headers))
     }
     /// Reconcile a client's wallet list with the device's bindings
     ///
@@ -670,6 +486,32 @@ extension APIProtocol {
         body: Components.RequestBodies.WalletPushSubscribe
     ) async throws -> Operations.subscribeDevicePush.Output {
         try await subscribeDevicePush(Operations.subscribeDevicePush.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Register or replace the device's transaction Live Activity, so it can be settled while the app is not running
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/live-activity`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/live-activity/post(registerLiveActivity)`.
+    public func registerLiveActivity(
+        headers: Operations.registerLiveActivity.Input.Headers = .init(),
+        body: Components.RequestBodies.LiveActivityRegister
+    ) async throws -> Operations.registerLiveActivity.Output {
+        try await registerLiveActivity(Operations.registerLiveActivity.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Forget the device's transaction Live Activity once it is ended or dismissed
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/live-activity/unregister`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/live-activity/unregister/post(unregisterLiveActivity)`.
+    public func unregisterLiveActivity(
+        headers: Operations.unregisterLiveActivity.Input.Headers = .init(),
+        body: Components.RequestBodies.LiveActivityUnregister
+    ) async throws -> Operations.unregisterLiveActivity.Output {
+        try await unregisterLiveActivity(Operations.unregisterLiveActivity.Input(
             headers: headers,
             body: body
         ))

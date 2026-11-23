@@ -23,4 +23,59 @@ final class PerpsServerClockTests: XCTestCase {
         let expected = Int64(serverDate.timeIntervalSinceNow * 1000)
         XCTAssertLessThan(abs(offset - expected), 2000)
     }
+
+    func testTheServerTimeFollowsADateHeaderWithinAMinute() {
+        for skew: TimeInterval in [-30, 30] {
+            let clock = PerpsServerClock()
+            let deviceNow = PerpsPlannerMapping.nowUnixMs()
+            clock.record(serverDate: Date().addingTimeInterval(skew))
+
+            let serverNow = clock.trustedServerNowUnixMs(deviceNowUnixMs: deviceNow)
+
+            XCTAssertEqual(Double(serverNow ?? 0), Double(deviceNow) + skew * 1000, accuracy: 2000, "skew \(skew)")
+        }
+    }
+
+    func testADateHeaderMoreThanAMinuteOffIsNotTakenForTheServerTime() {
+        for skew: TimeInterval in [-90, 90, 365 * 86400] {
+            let clock = PerpsServerClock()
+            clock.record(serverDate: Date().addingTimeInterval(skew))
+
+            XCTAssertNil(clock.trustedServerNowUnixMs(deviceNowUnixMs: PerpsPlannerMapping.nowUnixMs()), "skew \(skew)")
+        }
+    }
+
+    func testSigningFollowsADateHeaderWithinAMinute() {
+        for skew: TimeInterval in [-59, -30, 30, 59] {
+            let clock = PerpsServerClock()
+            let deviceNow = PerpsPlannerMapping.nowUnixMs()
+            clock.record(serverDate: Date().addingTimeInterval(skew))
+
+            let signingNow = clock.signingNowUnixMs(deviceNowUnixMs: deviceNow)
+
+            XCTAssertEqual(Double(signingNow), Double(deviceNow) + skew * 1000, accuracy: 2000, "skew \(skew)")
+        }
+    }
+
+    func testSigningStaysOnTheDeviceClockWhenTheDateHeaderIsMoreThanAMinuteOff() {
+        for skew: TimeInterval in [-365 * 86400, -61, 61, 365 * 86400] {
+            let clock = PerpsServerClock()
+            let deviceNow = PerpsPlannerMapping.nowUnixMs()
+            clock.record(serverDate: Date().addingTimeInterval(skew))
+
+            XCTAssertEqual(clock.signingNowUnixMs(deviceNowUnixMs: deviceNow), deviceNow, "skew \(skew)")
+        }
+    }
+
+    func testWithoutADateHeaderSigningIsOnTheDeviceClock() {
+        let deviceNow = PerpsPlannerMapping.nowUnixMs()
+
+        XCTAssertEqual(PerpsServerClock().signingNowUnixMs(deviceNowUnixMs: deviceNow), deviceNow)
+    }
+
+    func testWithoutADateHeaderTheServerTimeIsTheDeviceTime() {
+        let deviceNow = PerpsPlannerMapping.nowUnixMs()
+
+        XCTAssertEqual(PerpsServerClock().trustedServerNowUnixMs(deviceNowUnixMs: deviceNow), deviceNow)
+    }
 }

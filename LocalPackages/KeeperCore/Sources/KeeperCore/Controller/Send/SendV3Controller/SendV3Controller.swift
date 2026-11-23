@@ -19,6 +19,8 @@ public final class SendV3Controller {
     private let amountFormatter: AmountFormatter
     private let rateConverter: RateConverter
     private let multichainAssetBalanceProvider: MultichainAssetBalanceProvider
+    private let accountService: AccountService
+    private let accountPublicKey: (TonSwift.Address, Network) async throws -> Data
 
     init(
         wallet: Wallet,
@@ -29,6 +31,8 @@ public final class SendV3Controller {
         recipientResolver: RecipientResolver,
         amountFormatter: AmountFormatter,
         multichainAssetBalanceProvider: MultichainAssetBalanceProvider,
+        accountService: AccountService,
+        accountPublicKey: @escaping (TonSwift.Address, Network) async throws -> Data,
         rateConverter: RateConverter = RateConverter()
     ) {
         self.wallet = wallet
@@ -40,6 +44,63 @@ public final class SendV3Controller {
         self.amountFormatter = amountFormatter
         self.rateConverter = rateConverter
         self.multichainAssetBalanceProvider = multichainAssetBalanceProvider
+        self.accountService = accountService
+        self.accountPublicKey = accountPublicKey
+    }
+
+    /// Whether the wallet can send a GRAM comment encrypted: its own keys sign it, and its TON address
+    /// stored the key the comment's stand-in is priced with.
+    public var canEncryptComment: Bool {
+        guard wallet.kind == .regular,
+              let state = wallet.multichainWalletState,
+              state.walletAddress(for: .ton, preferredType: wallet.preferredMultichainAddressType(for: .ton))?.publicKey != nil
+        else {
+            return false
+        }
+        return true
+    }
+
+    /// The longest comment, in UTF-8 bytes, that can be sent encrypted.
+    public var maxEncryptedCommentBytes: Int {
+        MultichainEncryptedComment.maxBytes
+    }
+
+    /// Whether `comment` can be sent encrypted: a blank one cannot.
+    public func canEncrypt(comment: String) -> Bool {
+        MultichainEncryptedComment.encrypts(comment)
+    }
+
+    /// The TON public key, hex, a comment to `recipient` can go encrypted to: an active or frozen account
+    /// that is no scam and requires no memo, and holds a key. `nil` when there is none, as for an account
+    /// TonAPI reads no key from; throws when the account or its key could not be read, so that it is read
+    /// again rather than taken for none.
+    public func commentEncryptionKey(recipient: String) async throws -> String? {
+        guard let address = try? TonSwift.Address.parse(recipient) else {
+            return nil
+        }
+        let account = try await accountService.loadAccount(network: wallet.network, address: address)
+        guard account.isScam != true,
+              account.isMemoRequired != true,
+              account.status == "active" || account.status == "frozen"
+        else {
+            return nil
+        }
+        let key: Data
+        do {
+            key = try await accountPublicKey(address, wallet.network)
+        } catch let error where Self.holdsNoKey(error) {
+            return nil
+        }
+        guard !key.isEmpty else {
+            return nil
+        }
+        return key.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// TonAPI refuses to read a key from an account that holds none, such as a contract that is no wallet
+    /// it knows: 400 "unknown wallet version".
+    private static func holdsNoKey(_ error: any Error) -> Bool {
+        error.tonAPIError?.statusCode == 400
     }
 
     public func resolveRecipient(input: String) async throws -> LegacyRecipient {

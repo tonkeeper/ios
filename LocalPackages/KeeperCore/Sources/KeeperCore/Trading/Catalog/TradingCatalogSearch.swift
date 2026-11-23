@@ -44,10 +44,12 @@ public struct TradingCatalogSpot: Equatable, Sendable {
 public struct TradingCatalogPage: Equatable, Sendable {
     public let rows: [TradingCatalogRow]
     public let nextCursor: String?
+    public let chains: [String]?
 
-    public init(rows: [TradingCatalogRow], nextCursor: String?) {
+    public init(rows: [TradingCatalogRow], nextCursor: String?, chains: [String]? = nil) {
         self.rows = rows
         self.nextCursor = nextCursor
+        self.chains = chains
     }
 }
 
@@ -59,7 +61,7 @@ public protocol TradingCatalogSearching: AnyObject, Sendable {
         sort: MultichainAssetSearchSort,
         cursor: String?,
         pageSize: Int,
-        category: TradingAssetCategory
+        filter: PerpsMarketFilter
     ) async throws -> TradingCatalogPage
 }
 

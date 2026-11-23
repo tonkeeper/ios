@@ -5,10 +5,7 @@ import Foundation
 import KeeperResources
 
 enum TKUIKitLottieFile: String, CaseIterable {
-    case clock = "clock.json"
     case creditCard = "credit-card.json"
-    case folder = "folder.json"
-    case keeperLogo = "keeper-logo.json"
     case exclamationmarkCircle = "exclamationmark_circle.json"
     case favorite = "favorite_icon.json"
     case apps = "ic_apps_28_opt.json"
@@ -18,6 +15,13 @@ enum TKUIKitLottieFile: String, CaseIterable {
     case confettiLeft = "raffle_confetti_left.json"
     case confettiRight = "raffle_confetti_right.json"
     case verificationCheckmark = "verification_checkmark.json"
+    case clock = "clock.json"
+    case folder = "folder.json"
+    case keeperLogo = "keeper-logo.json"
+    case loaderStepsStep1Loop = "loader-steps-step1-loop.json"
+    case loaderStepsStep2Loop = "loader-steps-step2-loop.json"
+    case loaderStepsStep3Loop = "loader-steps-step3-loop.json"
+    case loaderStepsSuccess = "loader-steps-success.json"
     case browserTabItem = "lottie_browser.json"
     case collectiblesTabItem = "lottie_collectibles.json"
     case tradeTabItem = "lottie_trade.json"
@@ -49,10 +53,7 @@ enum TKUIKitLottieFile: String, CaseIterable {
 }
 
 public extension LottieResource {
-    static let clock = TKUIKitLottieFile.clock.resource
     static let creditCard = TKUIKitLottieFile.creditCard.resource
-    static let folder = TKUIKitLottieFile.folder.resource
-    static let keeperLogo = TKUIKitLottieFile.keeperLogo.resource
     static let exclamationmarkCircle = TKUIKitLottieFile.exclamationmarkCircle.resource
     static let favorite = TKUIKitLottieFile.favorite.resource
     static let apps = TKUIKitLottieFile.apps.resource
@@ -62,6 +63,13 @@ public extension LottieResource {
     static let confettiLeft = TKUIKitLottieFile.confettiLeft.resource
     static let confettiRight = TKUIKitLottieFile.confettiRight.resource
     static let verificationCheckmark = TKUIKitLottieFile.verificationCheckmark.resource
+    static let clock = TKUIKitLottieFile.clock.resource
+    static let folder = TKUIKitLottieFile.folder.resource
+    static let keeperLogo = TKUIKitLottieFile.keeperLogo.resource
+    static let loaderStepsStep1Loop = TKUIKitLottieFile.loaderStepsStep1Loop.resource
+    static let loaderStepsStep2Loop = TKUIKitLottieFile.loaderStepsStep2Loop.resource
+    static let loaderStepsStep3Loop = TKUIKitLottieFile.loaderStepsStep3Loop.resource
+    static let loaderStepsSuccess = TKUIKitLottieFile.loaderStepsSuccess.resource
     static let browserTabItem = TKUIKitLottieFile.browserTabItem.resource
     static let collectiblesTabItem = TKUIKitLottieFile.collectiblesTabItem.resource
     static let tradeTabItem = TKUIKitLottieFile.tradeTabItem.resource

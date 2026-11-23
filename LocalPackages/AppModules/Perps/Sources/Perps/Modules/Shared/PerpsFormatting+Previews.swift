@@ -8,8 +8,12 @@ private struct PerpsPreviewAmountFormatting: PerpsAmountFormatting {
         "$" + Self.string(value, maximumFractionDigits: 2)
     }
 
-    func usdExact(_ value: Decimal) -> String {
-        usdCompact(value)
+    func usdFixed(_ value: Decimal, fractionDigits: Int) -> String {
+        "$" + fixed(value, fractionDigits: fractionDigits)
+    }
+
+    func fixed(_ value: Decimal, fractionDigits: Int) -> String {
+        Self.string(value, minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits)
     }
 
     func signedPercent(_ value: Decimal) -> String {
@@ -28,11 +32,12 @@ private struct PerpsPreviewAmountFormatting: PerpsAmountFormatting {
         Self.string(value, maximumFractionDigits: value < 1 ? 8 : 2)
     }
 
-    private static func string(_ value: Decimal, maximumFractionDigits: Int) -> String {
+    private static func string(_ value: Decimal, minimumFractionDigits: Int = 0, maximumFractionDigits: Int) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.groupingSeparator = " "
         formatter.decimalSeparator = "."
+        formatter.minimumFractionDigits = minimumFractionDigits
         formatter.maximumFractionDigits = maximumFractionDigits
         return formatter.string(from: value as NSDecimalNumber) ?? "\(value)"
     }

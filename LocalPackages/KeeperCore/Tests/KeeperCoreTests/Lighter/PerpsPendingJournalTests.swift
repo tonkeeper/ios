@@ -234,6 +234,17 @@ final class PerpsPendingJournalTests: XCTestCase {
             XCTFail("journalling a step for a missing operation must fail")
         } catch {}
     }
+
+    func testOnlyAStepPastSigningCountsAsSent() {
+        var pending = makePending(operationId: "op", createdAtMillis: 1)
+        XCTAssertFalse(pending.hasSentSteps)
+        pending.signedSteps = [makeSignedStep(stepId: "order")]
+        XCTAssertFalse(pending.hasSentSteps)
+        pending.signedSteps = [makeSignedStep(stepId: "leverage", state: .accepted), makeSignedStep(stepId: "order")]
+        XCTAssertTrue(pending.hasSentSteps)
+        pending.signedSteps = [makeSignedStep(stepId: "order", state: .sending)]
+        XCTAssertTrue(pending.hasSentSteps)
+    }
 }
 
 private extension PerpsPendingJournalTests {

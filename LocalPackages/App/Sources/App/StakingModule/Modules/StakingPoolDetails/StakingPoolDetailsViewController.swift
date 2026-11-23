@@ -16,6 +16,10 @@ final class StakingPoolDetailsViewController: GenericViewViewController<StakingP
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // The top inset already clears the system bar, which is in the safe area under liquid glass.
+        if TKLiquidGlass.isEnabled {
+            customView.scrollView.contentInsetAdjustmentBehavior = .never
+        }
 
         setup()
         viewModel.viewDidLoad()

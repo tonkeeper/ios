@@ -22,7 +22,7 @@ final class PickMultichainAddressViewController: TKHostingController<PickMultich
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .Background.page
-        presentationController?.delegate = self
+        tkPresentationController?.delegate = self
     }
 
     override func viewWillDisappear(_ animated: Bool) {

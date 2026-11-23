@@ -22,12 +22,14 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
 
     let selectionView = UIImageView()
     let highlightView = TKHighlightView()
+    private let isLiquidGlass: Bool
     private var isSelectionEnabled = true
 
     override var isHighlighted: Bool {
         didSet {
             guard isHighlighted != oldValue else { return }
-            highlightView.isHighlighted = isSelectionEnabled ? isHighlighted : false
+            // On glass the menu marks the item under the finger itself.
+            highlightView.isHighlighted = isSelectionEnabled && !isLiquidGlass ? isHighlighted : false
         }
     }
 
@@ -105,8 +107,9 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
         return stackView
     }()
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(isLiquidGlass: Bool) {
+        self.isLiquidGlass = isLiquidGlass
+        super.init(frame: .zero)
         setup()
     }
 
@@ -214,17 +217,31 @@ private extension TKPopupMenuItemView {
             self?.didTap?()
         }), for: .touchUpInside)
 
-        backgroundColor = .Background.contentTint
+        // On glass an item has no fill of its own, and its icons, the checkmark too, are Icon/Primary.
+        backgroundColor = isLiquidGlass ? .clear : .Background.contentTint
+        if isLiquidGlass {
+            rightIconImageView.tintColor = .Icon.primary
+        }
 
         selectionView.image = .TKUIKit.Icons.Size16.doneBold
-        selectionView.tintColor = .Accent.blue
+        selectionView.tintColor = isLiquidGlass ? .Icon.primary : .Accent.blue
         selectionView.alpha = isSelected ? 1 : 0
 
         titleLabel.textAlignment = .left
 
-        valueLabel.textAlignment = .right
-        valueLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
+        if isLiquidGlass {
+            // The value follows the title and is the one to truncate.
+            titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+            titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+            valueLabel.textAlignment = .left
+            valueLabel.lineBreakMode = .byTruncatingTail
+            valueLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            valueLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        } else {
+            valueLabel.textAlignment = .right
+            valueLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+            valueLabel.setContentHuggingPriority(.required, for: .horizontal)
+        }
 
         descriptionLabel.numberOfLines = 1
         descriptionLabel.lineBreakMode = .byTruncatingTail
@@ -305,9 +322,10 @@ private extension TKPopupMenuItemView {
         }
 
         separatorView.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(CGFloat.horizontalInset)
+            make.left.equalToSuperview().inset(CGFloat.horizontalInset)
+            make.right.equalToSuperview().inset(isLiquidGlass ? 0 : CGFloat.horizontalInset)
             make.bottom.equalToSuperview()
-            make.height.equalTo(CGFloat.separatorHeight)
+            make.height.equalTo(isLiquidGlass ? CGFloat.glassSeparatorHeight : CGFloat.separatorHeight)
         }
     }
 }
@@ -322,4 +340,5 @@ private extension CGFloat {
     static let horizontalInset: CGFloat = 16
     static let verticalInset: CGFloat = 12
     static let separatorHeight: CGFloat = 1 / UIScreen.main.scale
+    static let glassSeparatorHeight: CGFloat = 0.5
 }

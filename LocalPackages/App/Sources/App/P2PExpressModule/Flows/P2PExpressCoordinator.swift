@@ -24,9 +24,6 @@ final class P2PExpressCoordinator: RouterCoordinator<ViewControllerRouter> {
     override func start() {
         Task { @MainActor [weak self] in
             guard let self else { return }
-            defer {
-                ToastPresenter.hideAll()
-            }
 
             ToastPresenter.hideAll()
             ToastPresenter.showToast(configuration: .loading)
@@ -34,6 +31,8 @@ final class P2PExpressCoordinator: RouterCoordinator<ViewControllerRouter> {
                 let p2pSession = try await onRampService.createP2PSession(
                     data: params.createP2PSession
                 )
+                // Hidden before the callbacks, so a toast they show stays on screen.
+                ToastPresenter.hideAll()
                 guard
                     let url = URL(string: p2pSession.deeplinkUrl),
                     let expirationDate = parseExpirationDate(p2pSession.dateExpire)
@@ -42,6 +41,7 @@ final class P2PExpressCoordinator: RouterCoordinator<ViewControllerRouter> {
                 }
                 didTapOpen?(url, expirationDate)
             } catch {
+                ToastPresenter.hideAll()
                 didFailToCreateSession?(error)
             }
             didFinish?(self)

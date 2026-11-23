@@ -78,10 +78,6 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
             coreAssembly: coreAssembly
         )
 
-        module.view.setupRightCloseButton { [weak self] in
-            self?.didFinish?(self)
-        }
-
         module.output.didConfirm = { [weak self] item in
             guard let self else { return }
             Task {

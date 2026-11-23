@@ -12,6 +12,21 @@ public import struct Foundation.Date
 extension Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     public enum Schemas {
+        /// - Remark: Generated from `#/components/schemas/Error`.
+        public struct _Error: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Error/error`.
+            public var error: Swift.String
+            /// Creates a new `_Error`.
+            ///
+            /// - Parameters:
+            ///   - error:
+            public init(error: Swift.String) {
+                self.error = error
+            }
+            public enum CodingKeys: String, CodingKey {
+                case error
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/AccountAddress`.
         public struct AccountAddress: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/AccountAddress/address`.
@@ -629,6 +644,779 @@ extension Components {
                 case raw
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup`.
+        public struct ConfigProposalSetup: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/min_tot_rounds`.
+            public var minTotRounds: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/max_tot_rounds`.
+            public var maxTotRounds: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/min_wins`.
+            public var minWins: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/max_losses`.
+            public var maxLosses: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/min_store_sec`.
+            public var minStoreSec: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/max_store_sec`.
+            public var maxStoreSec: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/bit_price`.
+            public var bitPrice: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ConfigProposalSetup/cell_price`.
+            public var cellPrice: Swift.Int64
+            /// Creates a new `ConfigProposalSetup`.
+            ///
+            /// - Parameters:
+            ///   - minTotRounds:
+            ///   - maxTotRounds:
+            ///   - minWins:
+            ///   - maxLosses:
+            ///   - minStoreSec:
+            ///   - maxStoreSec:
+            ///   - bitPrice:
+            ///   - cellPrice:
+            public init(
+                minTotRounds: Swift.Int,
+                maxTotRounds: Swift.Int,
+                minWins: Swift.Int,
+                maxLosses: Swift.Int,
+                minStoreSec: Swift.Int64,
+                maxStoreSec: Swift.Int64,
+                bitPrice: Swift.Int64,
+                cellPrice: Swift.Int64
+            ) {
+                self.minTotRounds = minTotRounds
+                self.maxTotRounds = maxTotRounds
+                self.minWins = minWins
+                self.maxLosses = maxLosses
+                self.minStoreSec = minStoreSec
+                self.maxStoreSec = maxStoreSec
+                self.bitPrice = bitPrice
+                self.cellPrice = cellPrice
+            }
+            public enum CodingKeys: String, CodingKey {
+                case minTotRounds = "min_tot_rounds"
+                case maxTotRounds = "max_tot_rounds"
+                case minWins = "min_wins"
+                case maxLosses = "max_losses"
+                case minStoreSec = "min_store_sec"
+                case maxStoreSec = "max_store_sec"
+                case bitPrice = "bit_price"
+                case cellPrice = "cell_price"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GasLimitPrices`.
+        public struct GasLimitPrices: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/special_gas_limit`.
+            public var specialGasLimit: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/flat_gas_limit`.
+            public var flatGasLimit: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/flat_gas_price`.
+            public var flatGasPrice: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/gas_price`.
+            public var gasPrice: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/gas_limit`.
+            public var gasLimit: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/gas_credit`.
+            public var gasCredit: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/block_gas_limit`.
+            public var blockGasLimit: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/freeze_due_limit`.
+            public var freezeDueLimit: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/GasLimitPrices/delete_due_limit`.
+            public var deleteDueLimit: Swift.Int64
+            /// Creates a new `GasLimitPrices`.
+            ///
+            /// - Parameters:
+            ///   - specialGasLimit:
+            ///   - flatGasLimit:
+            ///   - flatGasPrice:
+            ///   - gasPrice:
+            ///   - gasLimit:
+            ///   - gasCredit:
+            ///   - blockGasLimit:
+            ///   - freezeDueLimit:
+            ///   - deleteDueLimit:
+            public init(
+                specialGasLimit: Swift.Int64? = nil,
+                flatGasLimit: Swift.Int64? = nil,
+                flatGasPrice: Swift.Int64? = nil,
+                gasPrice: Swift.Int64,
+                gasLimit: Swift.Int64,
+                gasCredit: Swift.Int64,
+                blockGasLimit: Swift.Int64,
+                freezeDueLimit: Swift.Int64,
+                deleteDueLimit: Swift.Int64
+            ) {
+                self.specialGasLimit = specialGasLimit
+                self.flatGasLimit = flatGasLimit
+                self.flatGasPrice = flatGasPrice
+                self.gasPrice = gasPrice
+                self.gasLimit = gasLimit
+                self.gasCredit = gasCredit
+                self.blockGasLimit = blockGasLimit
+                self.freezeDueLimit = freezeDueLimit
+                self.deleteDueLimit = deleteDueLimit
+            }
+            public enum CodingKeys: String, CodingKey {
+                case specialGasLimit = "special_gas_limit"
+                case flatGasLimit = "flat_gas_limit"
+                case flatGasPrice = "flat_gas_price"
+                case gasPrice = "gas_price"
+                case gasLimit = "gas_limit"
+                case gasCredit = "gas_credit"
+                case blockGasLimit = "block_gas_limit"
+                case freezeDueLimit = "freeze_due_limit"
+                case deleteDueLimit = "delete_due_limit"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/BlockParamLimits`.
+        public struct BlockParamLimits: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BlockParamLimits/underload`.
+            public var underload: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/BlockParamLimits/soft_limit`.
+            public var softLimit: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/BlockParamLimits/hard_limit`.
+            public var hardLimit: Swift.Int64
+            /// Creates a new `BlockParamLimits`.
+            ///
+            /// - Parameters:
+            ///   - underload:
+            ///   - softLimit:
+            ///   - hardLimit:
+            public init(
+                underload: Swift.Int64,
+                softLimit: Swift.Int64,
+                hardLimit: Swift.Int64
+            ) {
+                self.underload = underload
+                self.softLimit = softLimit
+                self.hardLimit = hardLimit
+            }
+            public enum CodingKeys: String, CodingKey {
+                case underload
+                case softLimit = "soft_limit"
+                case hardLimit = "hard_limit"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/BlockLimits`.
+        public struct BlockLimits: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BlockLimits/bytes`.
+            public var bytes: Components.Schemas.BlockParamLimits
+            /// - Remark: Generated from `#/components/schemas/BlockLimits/gas`.
+            public var gas: Components.Schemas.BlockParamLimits
+            /// - Remark: Generated from `#/components/schemas/BlockLimits/lt_delta`.
+            public var ltDelta: Components.Schemas.BlockParamLimits
+            /// Creates a new `BlockLimits`.
+            ///
+            /// - Parameters:
+            ///   - bytes:
+            ///   - gas:
+            ///   - ltDelta:
+            public init(
+                bytes: Components.Schemas.BlockParamLimits,
+                gas: Components.Schemas.BlockParamLimits,
+                ltDelta: Components.Schemas.BlockParamLimits
+            ) {
+                self.bytes = bytes
+                self.gas = gas
+                self.ltDelta = ltDelta
+            }
+            public enum CodingKeys: String, CodingKey {
+                case bytes
+                case gas
+                case ltDelta = "lt_delta"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MsgForwardPrices`.
+        public struct MsgForwardPrices: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/lump_price`.
+            public var lumpPrice: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/bit_price`.
+            public var bitPrice: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/cell_price`.
+            public var cellPrice: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/ihr_price_factor`.
+            public var ihrPriceFactor: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/first_frac`.
+            public var firstFrac: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MsgForwardPrices/next_frac`.
+            public var nextFrac: Swift.Int64
+            /// Creates a new `MsgForwardPrices`.
+            ///
+            /// - Parameters:
+            ///   - lumpPrice:
+            ///   - bitPrice:
+            ///   - cellPrice:
+            ///   - ihrPriceFactor:
+            ///   - firstFrac:
+            ///   - nextFrac:
+            public init(
+                lumpPrice: Swift.Int64,
+                bitPrice: Swift.Int64,
+                cellPrice: Swift.Int64,
+                ihrPriceFactor: Swift.Int64,
+                firstFrac: Swift.Int64,
+                nextFrac: Swift.Int64
+            ) {
+                self.lumpPrice = lumpPrice
+                self.bitPrice = bitPrice
+                self.cellPrice = cellPrice
+                self.ihrPriceFactor = ihrPriceFactor
+                self.firstFrac = firstFrac
+                self.nextFrac = nextFrac
+            }
+            public enum CodingKeys: String, CodingKey {
+                case lumpPrice = "lump_price"
+                case bitPrice = "bit_price"
+                case cellPrice = "cell_price"
+                case ihrPriceFactor = "ihr_price_factor"
+                case firstFrac = "first_frac"
+                case nextFrac = "next_frac"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WorkchainDescr`.
+        public struct WorkchainDescr: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/workchain`.
+            public var workchain: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/enabled_since`.
+            public var enabledSince: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/actual_min_split`.
+            public var actualMinSplit: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/min_split`.
+            public var minSplit: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/max_split`.
+            public var maxSplit: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/basic`.
+            public var basic: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/active`.
+            public var active: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/accept_msgs`.
+            public var acceptMsgs: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/flags`.
+            public var flags: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/zerostate_root_hash`.
+            public var zerostateRootHash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/zerostate_file_hash`.
+            public var zerostateFileHash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/WorkchainDescr/version`.
+            public var version: Swift.Int64
+            /// Creates a new `WorkchainDescr`.
+            ///
+            /// - Parameters:
+            ///   - workchain:
+            ///   - enabledSince:
+            ///   - actualMinSplit:
+            ///   - minSplit:
+            ///   - maxSplit:
+            ///   - basic:
+            ///   - active:
+            ///   - acceptMsgs:
+            ///   - flags:
+            ///   - zerostateRootHash:
+            ///   - zerostateFileHash:
+            ///   - version:
+            public init(
+                workchain: Swift.Int,
+                enabledSince: Swift.Int64,
+                actualMinSplit: Swift.Int,
+                minSplit: Swift.Int,
+                maxSplit: Swift.Int,
+                basic: Swift.Int,
+                active: Swift.Bool,
+                acceptMsgs: Swift.Bool,
+                flags: Swift.Int,
+                zerostateRootHash: Swift.String,
+                zerostateFileHash: Swift.String,
+                version: Swift.Int64
+            ) {
+                self.workchain = workchain
+                self.enabledSince = enabledSince
+                self.actualMinSplit = actualMinSplit
+                self.minSplit = minSplit
+                self.maxSplit = maxSplit
+                self.basic = basic
+                self.active = active
+                self.acceptMsgs = acceptMsgs
+                self.flags = flags
+                self.zerostateRootHash = zerostateRootHash
+                self.zerostateFileHash = zerostateFileHash
+                self.version = version
+            }
+            public enum CodingKeys: String, CodingKey {
+                case workchain
+                case enabledSince = "enabled_since"
+                case actualMinSplit = "actual_min_split"
+                case minSplit = "min_split"
+                case maxSplit = "max_split"
+                case basic
+                case active
+                case acceptMsgs = "accept_msgs"
+                case flags
+                case zerostateRootHash = "zerostate_root_hash"
+                case zerostateFileHash = "zerostate_file_hash"
+                case version
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig`.
+        public struct MisbehaviourPunishmentConfig: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/default_flat_fine`.
+            public var defaultFlatFine: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/default_proportional_fine`.
+            public var defaultProportionalFine: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/severity_flat_mult`.
+            public var severityFlatMult: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/severity_proportional_mult`.
+            public var severityProportionalMult: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/unpunishable_interval`.
+            public var unpunishableInterval: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/long_interval`.
+            public var longInterval: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/long_flat_mult`.
+            public var longFlatMult: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/long_proportional_mult`.
+            public var longProportionalMult: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/medium_interval`.
+            public var mediumInterval: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/medium_flat_mult`.
+            public var mediumFlatMult: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/MisbehaviourPunishmentConfig/medium_proportional_mult`.
+            public var mediumProportionalMult: Swift.Int
+            /// Creates a new `MisbehaviourPunishmentConfig`.
+            ///
+            /// - Parameters:
+            ///   - defaultFlatFine:
+            ///   - defaultProportionalFine:
+            ///   - severityFlatMult:
+            ///   - severityProportionalMult:
+            ///   - unpunishableInterval:
+            ///   - longInterval:
+            ///   - longFlatMult:
+            ///   - longProportionalMult:
+            ///   - mediumInterval:
+            ///   - mediumFlatMult:
+            ///   - mediumProportionalMult:
+            public init(
+                defaultFlatFine: Swift.Int64,
+                defaultProportionalFine: Swift.Int64,
+                severityFlatMult: Swift.Int,
+                severityProportionalMult: Swift.Int,
+                unpunishableInterval: Swift.Int,
+                longInterval: Swift.Int,
+                longFlatMult: Swift.Int,
+                longProportionalMult: Swift.Int,
+                mediumInterval: Swift.Int,
+                mediumFlatMult: Swift.Int,
+                mediumProportionalMult: Swift.Int
+            ) {
+                self.defaultFlatFine = defaultFlatFine
+                self.defaultProportionalFine = defaultProportionalFine
+                self.severityFlatMult = severityFlatMult
+                self.severityProportionalMult = severityProportionalMult
+                self.unpunishableInterval = unpunishableInterval
+                self.longInterval = longInterval
+                self.longFlatMult = longFlatMult
+                self.longProportionalMult = longProportionalMult
+                self.mediumInterval = mediumInterval
+                self.mediumFlatMult = mediumFlatMult
+                self.mediumProportionalMult = mediumProportionalMult
+            }
+            public enum CodingKeys: String, CodingKey {
+                case defaultFlatFine = "default_flat_fine"
+                case defaultProportionalFine = "default_proportional_fine"
+                case severityFlatMult = "severity_flat_mult"
+                case severityProportionalMult = "severity_proportional_mult"
+                case unpunishableInterval = "unpunishable_interval"
+                case longInterval = "long_interval"
+                case longFlatMult = "long_flat_mult"
+                case longProportionalMult = "long_proportional_mult"
+                case mediumInterval = "medium_interval"
+                case mediumFlatMult = "medium_flat_mult"
+                case mediumProportionalMult = "medium_proportional_mult"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig`.
+        public struct SizeLimitsConfig: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_msg_bits`.
+            public var maxMsgBits: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_msg_cells`.
+            public var maxMsgCells: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_library_cells`.
+            public var maxLibraryCells: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_vm_data_depth`.
+            public var maxVmDataDepth: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_ext_msg_size`.
+            public var maxExtMsgSize: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_ext_msg_depth`.
+            public var maxExtMsgDepth: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_acc_state_cells`.
+            public var maxAccStateCells: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/SizeLimitsConfig/max_acc_state_bits`.
+            public var maxAccStateBits: Swift.Int64?
+            /// Creates a new `SizeLimitsConfig`.
+            ///
+            /// - Parameters:
+            ///   - maxMsgBits:
+            ///   - maxMsgCells:
+            ///   - maxLibraryCells:
+            ///   - maxVmDataDepth:
+            ///   - maxExtMsgSize:
+            ///   - maxExtMsgDepth:
+            ///   - maxAccStateCells:
+            ///   - maxAccStateBits:
+            public init(
+                maxMsgBits: Swift.Int64,
+                maxMsgCells: Swift.Int64,
+                maxLibraryCells: Swift.Int64,
+                maxVmDataDepth: Swift.Int,
+                maxExtMsgSize: Swift.Int64,
+                maxExtMsgDepth: Swift.Int,
+                maxAccStateCells: Swift.Int64? = nil,
+                maxAccStateBits: Swift.Int64? = nil
+            ) {
+                self.maxMsgBits = maxMsgBits
+                self.maxMsgCells = maxMsgCells
+                self.maxLibraryCells = maxLibraryCells
+                self.maxVmDataDepth = maxVmDataDepth
+                self.maxExtMsgSize = maxExtMsgSize
+                self.maxExtMsgDepth = maxExtMsgDepth
+                self.maxAccStateCells = maxAccStateCells
+                self.maxAccStateBits = maxAccStateBits
+            }
+            public enum CodingKeys: String, CodingKey {
+                case maxMsgBits = "max_msg_bits"
+                case maxMsgCells = "max_msg_cells"
+                case maxLibraryCells = "max_library_cells"
+                case maxVmDataDepth = "max_vm_data_depth"
+                case maxExtMsgSize = "max_ext_msg_size"
+                case maxExtMsgDepth = "max_ext_msg_depth"
+                case maxAccStateCells = "max_acc_state_cells"
+                case maxAccStateBits = "max_acc_state_bits"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/NewConsensusConfig`.
+        public struct NewConsensusConfig: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/flags`.
+            public var flags: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/use_quic`.
+            public var useQuic: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/target_rate_ms`.
+            public var targetRateMs: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/slots_per_leader_window`.
+            public var slotsPerLeaderWindow: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/first_block_timeout_ms`.
+            public var firstBlockTimeoutMs: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/max_leader_window_desync`.
+            public var maxLeaderWindowDesync: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/noncritical_params`.
+            public struct NoncriticalParamsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.Int64]
+                /// Creates a new `NoncriticalParamsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.Int64] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/NewConsensusConfig/noncritical_params`.
+            public var noncriticalParams: Components.Schemas.NewConsensusConfig.NoncriticalParamsPayload?
+            /// Creates a new `NewConsensusConfig`.
+            ///
+            /// - Parameters:
+            ///   - flags:
+            ///   - useQuic:
+            ///   - targetRateMs:
+            ///   - slotsPerLeaderWindow:
+            ///   - firstBlockTimeoutMs:
+            ///   - maxLeaderWindowDesync:
+            ///   - noncriticalParams:
+            public init(
+                flags: Swift.Int,
+                useQuic: Swift.Bool,
+                targetRateMs: Swift.Int64? = nil,
+                slotsPerLeaderWindow: Swift.Int64,
+                firstBlockTimeoutMs: Swift.Int64? = nil,
+                maxLeaderWindowDesync: Swift.Int64? = nil,
+                noncriticalParams: Components.Schemas.NewConsensusConfig.NoncriticalParamsPayload? = nil
+            ) {
+                self.flags = flags
+                self.useQuic = useQuic
+                self.targetRateMs = targetRateMs
+                self.slotsPerLeaderWindow = slotsPerLeaderWindow
+                self.firstBlockTimeoutMs = firstBlockTimeoutMs
+                self.maxLeaderWindowDesync = maxLeaderWindowDesync
+                self.noncriticalParams = noncriticalParams
+            }
+            public enum CodingKeys: String, CodingKey {
+                case flags
+                case useQuic = "use_quic"
+                case targetRateMs = "target_rate_ms"
+                case slotsPerLeaderWindow = "slots_per_leader_window"
+                case firstBlockTimeoutMs = "first_block_timeout_ms"
+                case maxLeaderWindowDesync = "max_leader_window_desync"
+                case noncriticalParams = "noncritical_params"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ValidatorsSet`.
+        public struct ValidatorsSet: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/utime_since`.
+            public var utimeSince: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/utime_until`.
+            public var utimeUntil: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/total`.
+            public var total: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/main`.
+            public var main: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/total_weight`.
+            public var totalWeight: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/ListPayload`.
+            public struct ListPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ValidatorsSet/ListPayload/public_key`.
+                public var publicKey: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ValidatorsSet/ListPayload/weight`.
+                public var weight: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/ValidatorsSet/ListPayload/adnl_addr`.
+                public var adnlAddr: Swift.String?
+                /// Creates a new `ListPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - publicKey:
+                ///   - weight:
+                ///   - adnlAddr:
+                public init(
+                    publicKey: Swift.String,
+                    weight: Swift.Int64,
+                    adnlAddr: Swift.String? = nil
+                ) {
+                    self.publicKey = publicKey
+                    self.weight = weight
+                    self.adnlAddr = adnlAddr
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case publicKey = "public_key"
+                    case weight
+                    case adnlAddr = "adnl_addr"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/list`.
+            public typealias ListPayload = [Components.Schemas.ValidatorsSet.ListPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/ValidatorsSet/list`.
+            public var list: Components.Schemas.ValidatorsSet.ListPayload
+            /// Creates a new `ValidatorsSet`.
+            ///
+            /// - Parameters:
+            ///   - utimeSince:
+            ///   - utimeUntil:
+            ///   - total:
+            ///   - main:
+            ///   - totalWeight:
+            ///   - list:
+            public init(
+                utimeSince: Swift.Int,
+                utimeUntil: Swift.Int,
+                total: Swift.Int,
+                main: Swift.Int,
+                totalWeight: Swift.String? = nil,
+                list: Components.Schemas.ValidatorsSet.ListPayload
+            ) {
+                self.utimeSince = utimeSince
+                self.utimeUntil = utimeUntil
+                self.total = total
+                self.main = main
+                self.totalWeight = totalWeight
+                self.list = list
+            }
+            public enum CodingKeys: String, CodingKey {
+                case utimeSince = "utime_since"
+                case utimeUntil = "utime_until"
+                case total
+                case main
+                case totalWeight = "total_weight"
+                case list
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Oracle`.
+        public struct Oracle: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Oracle/address`.
+            public var address: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Oracle/secp_pubkey`.
+            public var secpPubkey: Swift.String
+            /// Creates a new `Oracle`.
+            ///
+            /// - Parameters:
+            ///   - address:
+            ///   - secpPubkey:
+            public init(
+                address: Swift.String,
+                secpPubkey: Swift.String
+            ) {
+                self.address = address
+                self.secpPubkey = secpPubkey
+            }
+            public enum CodingKeys: String, CodingKey {
+                case address
+                case secpPubkey = "secp_pubkey"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/OracleBridgeParams`.
+        public struct OracleBridgeParams: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OracleBridgeParams/bridge_addr`.
+            public var bridgeAddr: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OracleBridgeParams/oracle_multisig_address`.
+            public var oracleMultisigAddress: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OracleBridgeParams/external_chain_address`.
+            public var externalChainAddress: Swift.String
+            /// - Remark: Generated from `#/components/schemas/OracleBridgeParams/oracles`.
+            public var oracles: [Components.Schemas.Oracle]
+            /// Creates a new `OracleBridgeParams`.
+            ///
+            /// - Parameters:
+            ///   - bridgeAddr:
+            ///   - oracleMultisigAddress:
+            ///   - externalChainAddress:
+            ///   - oracles:
+            public init(
+                bridgeAddr: Swift.String,
+                oracleMultisigAddress: Swift.String,
+                externalChainAddress: Swift.String,
+                oracles: [Components.Schemas.Oracle]
+            ) {
+                self.bridgeAddr = bridgeAddr
+                self.oracleMultisigAddress = oracleMultisigAddress
+                self.externalChainAddress = externalChainAddress
+                self.oracles = oracles
+            }
+            public enum CodingKeys: String, CodingKey {
+                case bridgeAddr = "bridge_addr"
+                case oracleMultisigAddress = "oracle_multisig_address"
+                case externalChainAddress = "external_chain_address"
+                case oracles
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JettonBridgePrices`.
+        public struct JettonBridgePrices: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/bridge_burn_fee`.
+            public var bridgeBurnFee: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/bridge_mint_fee`.
+            public var bridgeMintFee: Swift.Int64
+            /// this field will gone after Sept. 2026, use wallet_min_gram_for_storage instead
+            ///
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/wallet_min_tons_for_storage`.
+            @available(*, deprecated)
+            public var walletMinTonsForStorage: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/wallet_min_gram_for_storage`.
+            public var walletMinGramForStorage: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/wallet_gas_consumption`.
+            public var walletGasConsumption: Swift.Int64
+            /// this field will gone after Sept. 2026, use wallet_min_gram_for_storage instead
+            ///
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/minter_min_tons_for_storage`.
+            @available(*, deprecated)
+            public var minterMinTonsForStorage: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/minter_min_gram_for_storage`.
+            public var minterMinGramForStorage: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/JettonBridgePrices/discover_gas_consumption`.
+            public var discoverGasConsumption: Swift.Int64
+            /// Creates a new `JettonBridgePrices`.
+            ///
+            /// - Parameters:
+            ///   - bridgeBurnFee:
+            ///   - bridgeMintFee:
+            ///   - walletMinTonsForStorage: this field will gone after Sept. 2026, use wallet_min_gram_for_storage instead
+            ///   - walletMinGramForStorage:
+            ///   - walletGasConsumption:
+            ///   - minterMinTonsForStorage: this field will gone after Sept. 2026, use wallet_min_gram_for_storage instead
+            ///   - minterMinGramForStorage:
+            ///   - discoverGasConsumption:
+            public init(
+                bridgeBurnFee: Swift.Int64,
+                bridgeMintFee: Swift.Int64,
+                walletMinTonsForStorage: Swift.Int64? = nil,
+                walletMinGramForStorage: Swift.Int64,
+                walletGasConsumption: Swift.Int64,
+                minterMinTonsForStorage: Swift.Int64? = nil,
+                minterMinGramForStorage: Swift.Int64,
+                discoverGasConsumption: Swift.Int64
+            ) {
+                self.bridgeBurnFee = bridgeBurnFee
+                self.bridgeMintFee = bridgeMintFee
+                self.walletMinTonsForStorage = walletMinTonsForStorage
+                self.walletMinGramForStorage = walletMinGramForStorage
+                self.walletGasConsumption = walletGasConsumption
+                self.minterMinTonsForStorage = minterMinTonsForStorage
+                self.minterMinGramForStorage = minterMinGramForStorage
+                self.discoverGasConsumption = discoverGasConsumption
+            }
+            public enum CodingKeys: String, CodingKey {
+                case bridgeBurnFee = "bridge_burn_fee"
+                case bridgeMintFee = "bridge_mint_fee"
+                case walletMinTonsForStorage = "wallet_min_tons_for_storage"
+                case walletMinGramForStorage = "wallet_min_gram_for_storage"
+                case walletGasConsumption = "wallet_gas_consumption"
+                case minterMinTonsForStorage = "minter_min_tons_for_storage"
+                case minterMinGramForStorage = "minter_min_gram_for_storage"
+                case discoverGasConsumption = "discover_gas_consumption"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JettonBridgeParams`.
+        public struct JettonBridgeParams: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/bridge_address`.
+            public var bridgeAddress: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/oracles_address`.
+            public var oraclesAddress: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/state_flags`.
+            public var stateFlags: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/burn_bridge_fee`.
+            public var burnBridgeFee: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/oracles`.
+            public var oracles: [Components.Schemas.Oracle]
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/external_chain_address`.
+            public var externalChainAddress: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/JettonBridgeParams/prices`.
+            public var prices: Components.Schemas.JettonBridgePrices?
+            /// Creates a new `JettonBridgeParams`.
+            ///
+            /// - Parameters:
+            ///   - bridgeAddress:
+            ///   - oraclesAddress:
+            ///   - stateFlags:
+            ///   - burnBridgeFee:
+            ///   - oracles:
+            ///   - externalChainAddress:
+            ///   - prices:
+            public init(
+                bridgeAddress: Swift.String,
+                oraclesAddress: Swift.String,
+                stateFlags: Swift.Int,
+                burnBridgeFee: Swift.Int64? = nil,
+                oracles: [Components.Schemas.Oracle],
+                externalChainAddress: Swift.String? = nil,
+                prices: Components.Schemas.JettonBridgePrices? = nil
+            ) {
+                self.bridgeAddress = bridgeAddress
+                self.oraclesAddress = oraclesAddress
+                self.stateFlags = stateFlags
+                self.burnBridgeFee = burnBridgeFee
+                self.oracles = oracles
+                self.externalChainAddress = externalChainAddress
+                self.prices = prices
+            }
+            public enum CodingKeys: String, CodingKey {
+                case bridgeAddress = "bridge_address"
+                case oraclesAddress = "oracles_address"
+                case stateFlags = "state_flags"
+                case burnBridgeFee = "burn_bridge_fee"
+                case oracles
+                case externalChainAddress = "external_chain_address"
+                case prices
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/WalletStats`.
         public struct WalletStats: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/WalletStats/nfts_count`.
@@ -691,6 +1479,63 @@ extension Components {
                 case address
                 case _type = "type"
                 case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Wallets`.
+        public struct Wallets: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Wallets/accounts`.
+            public var accounts: [Components.Schemas.Wallet]
+            /// Creates a new `Wallets`.
+            ///
+            /// - Parameters:
+            ///   - accounts:
+            public init(accounts: [Components.Schemas.Wallet]) {
+                self.accounts = accounts
+            }
+            public enum CodingKeys: String, CodingKey {
+                case accounts
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WalletsByPublicKeys`.
+        public struct WalletsByPublicKeys: Codable, Hashable, Sendable {
+            /// Wallets grouped by the originating public key
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletsByPublicKeys/items`.
+            public var items: [Components.Schemas.WalletsByPublicKey]
+            /// Creates a new `WalletsByPublicKeys`.
+            ///
+            /// - Parameters:
+            ///   - items: Wallets grouped by the originating public key
+            public init(items: [Components.Schemas.WalletsByPublicKey]) {
+                self.items = items
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WalletsByPublicKey`.
+        public struct WalletsByPublicKey: Codable, Hashable, Sendable {
+            /// hex-encoded ed25519 public key
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletsByPublicKey/public_key`.
+            public var publicKey: Swift.String
+            /// - Remark: Generated from `#/components/schemas/WalletsByPublicKey/wallets`.
+            public var wallets: [Components.Schemas.Wallet]
+            /// Creates a new `WalletsByPublicKey`.
+            ///
+            /// - Parameters:
+            ///   - publicKey: hex-encoded ed25519 public key
+            ///   - wallets:
+            public init(
+                publicKey: Swift.String,
+                wallets: [Components.Schemas.Wallet]
+            ) {
+                self.publicKey = publicKey
+                self.wallets = wallets
+            }
+            public enum CodingKeys: String, CodingKey {
+                case publicKey = "public_key"
+                case wallets
             }
         }
         /// - Remark: Generated from `#/components/schemas/Wallet`.
@@ -1046,6 +1891,1270 @@ extension Components {
                 case tuple
             }
         }
+        /// - Remark: Generated from `#/components/schemas/BlockchainConfig`.
+        public struct BlockchainConfig: Codable, Hashable, Sendable {
+            /// config boc in hex format
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/raw`.
+            public var raw: Swift.String
+            /// config address
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/0`.
+            public var _0: Swift.String
+            /// elector address
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/1`.
+            public var _1: Swift.String
+            /// minter address
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/2`.
+            public var _2: Swift.String
+            /// The address of the transaction fee collector.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/3`.
+            public var _3: Swift.String?
+            /// dns root address
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/4`.
+            public var _4: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/5`.
+            public struct _5Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/5/blackhole_addr`.
+                public var blackholeAddr: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/5/fee_burn_nom`.
+                public var feeBurnNom: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/5/fee_burn_denom`.
+                public var feeBurnDenom: Swift.Int64
+                /// Creates a new `_5Payload`.
+                ///
+                /// - Parameters:
+                ///   - blackholeAddr:
+                ///   - feeBurnNom:
+                ///   - feeBurnDenom:
+                public init(
+                    blackholeAddr: Swift.String? = nil,
+                    feeBurnNom: Swift.Int64,
+                    feeBurnDenom: Swift.Int64
+                ) {
+                    self.blackholeAddr = blackholeAddr
+                    self.feeBurnNom = feeBurnNom
+                    self.feeBurnDenom = feeBurnDenom
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case blackholeAddr = "blackhole_addr"
+                    case feeBurnNom = "fee_burn_nom"
+                    case feeBurnDenom = "fee_burn_denom"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/5`.
+            public var _5: Components.Schemas.BlockchainConfig._5Payload?
+            /// Minting fees of new currencies.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/6`.
+            public struct _6Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/6/mint_new_price`.
+                public var mintNewPrice: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/6/mint_add_price`.
+                public var mintAddPrice: Swift.Int64
+                /// Creates a new `_6Payload`.
+                ///
+                /// - Parameters:
+                ///   - mintNewPrice:
+                ///   - mintAddPrice:
+                public init(
+                    mintNewPrice: Swift.Int64,
+                    mintAddPrice: Swift.Int64
+                ) {
+                    self.mintNewPrice = mintNewPrice
+                    self.mintAddPrice = mintAddPrice
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case mintNewPrice = "mint_new_price"
+                    case mintAddPrice = "mint_add_price"
+                }
+            }
+            /// Minting fees of new currencies.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/6`.
+            public var _6: Components.Schemas.BlockchainConfig._6Payload?
+            /// The volume of each of the additional currencies in circulation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7`.
+            public struct _7Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7/CurrenciesPayload`.
+                public struct CurrenciesPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7/CurrenciesPayload/currency_id`.
+                    public var currencyId: Swift.Int64
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7/CurrenciesPayload/amount`.
+                    public var amount: Swift.String
+                    /// Creates a new `CurrenciesPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - currencyId:
+                    ///   - amount:
+                    public init(
+                        currencyId: Swift.Int64,
+                        amount: Swift.String
+                    ) {
+                        self.currencyId = currencyId
+                        self.amount = amount
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case currencyId = "currency_id"
+                        case amount
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7/currencies`.
+                public typealias CurrenciesPayload = [Components.Schemas.BlockchainConfig._7Payload.CurrenciesPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7/currencies`.
+                public var currencies: Components.Schemas.BlockchainConfig._7Payload.CurrenciesPayload
+                /// Creates a new `_7Payload`.
+                ///
+                /// - Parameters:
+                ///   - currencies:
+                public init(currencies: Components.Schemas.BlockchainConfig._7Payload.CurrenciesPayload) {
+                    self.currencies = currencies
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case currencies
+                }
+            }
+            /// The volume of each of the additional currencies in circulation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/7`.
+            public var _7: Components.Schemas.BlockchainConfig._7Payload?
+            /// The network version and additional capabilities supported by the validators.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/8`.
+            public struct _8Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/8/version`.
+                public var version: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/8/capabilities`.
+                public var capabilities: Swift.Int64
+                /// Creates a new `_8Payload`.
+                ///
+                /// - Parameters:
+                ///   - version:
+                ///   - capabilities:
+                public init(
+                    version: Swift.Int64,
+                    capabilities: Swift.Int64
+                ) {
+                    self.version = version
+                    self.capabilities = capabilities
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case version
+                    case capabilities
+                }
+            }
+            /// The network version and additional capabilities supported by the validators.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/8`.
+            public var _8: Components.Schemas.BlockchainConfig._8Payload?
+            /// List of mandatory parameters of the blockchain config.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/9`.
+            public struct _9Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/9/mandatory_params`.
+                public var mandatoryParams: [Swift.Int32]
+                /// Creates a new `_9Payload`.
+                ///
+                /// - Parameters:
+                ///   - mandatoryParams:
+                public init(mandatoryParams: [Swift.Int32]) {
+                    self.mandatoryParams = mandatoryParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case mandatoryParams = "mandatory_params"
+                }
+            }
+            /// List of mandatory parameters of the blockchain config.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/9`.
+            public var _9: Components.Schemas.BlockchainConfig._9Payload?
+            /// List of critical TON parameters, the change of which significantly affects the network, so more voting rounds are held.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/10`.
+            public struct _10Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/10/critical_params`.
+                public var criticalParams: [Swift.Int32]
+                /// Creates a new `_10Payload`.
+                ///
+                /// - Parameters:
+                ///   - criticalParams:
+                public init(criticalParams: [Swift.Int32]) {
+                    self.criticalParams = criticalParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case criticalParams = "critical_params"
+                }
+            }
+            /// List of critical TON parameters, the change of which significantly affects the network, so more voting rounds are held.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/10`.
+            public var _10: Components.Schemas.BlockchainConfig._10Payload?
+            /// This parameter indicates under what conditions proposals to change the TON configuration are accepted.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/11`.
+            public struct _11Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/11/normal_params`.
+                public var normalParams: Components.Schemas.ConfigProposalSetup
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/11/critical_params`.
+                public var criticalParams: Components.Schemas.ConfigProposalSetup
+                /// Creates a new `_11Payload`.
+                ///
+                /// - Parameters:
+                ///   - normalParams:
+                ///   - criticalParams:
+                public init(
+                    normalParams: Components.Schemas.ConfigProposalSetup,
+                    criticalParams: Components.Schemas.ConfigProposalSetup
+                ) {
+                    self.normalParams = normalParams
+                    self.criticalParams = criticalParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case normalParams = "normal_params"
+                    case criticalParams = "critical_params"
+                }
+            }
+            /// This parameter indicates under what conditions proposals to change the TON configuration are accepted.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/11`.
+            public var _11: Components.Schemas.BlockchainConfig._11Payload?
+            /// Workchains in the TON Blockchain
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/12`.
+            public struct _12Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/12/workchains`.
+                public var workchains: [Components.Schemas.WorkchainDescr]
+                /// Creates a new `_12Payload`.
+                ///
+                /// - Parameters:
+                ///   - workchains:
+                public init(workchains: [Components.Schemas.WorkchainDescr]) {
+                    self.workchains = workchains
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case workchains
+                }
+            }
+            /// Workchains in the TON Blockchain
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/12`.
+            public var _12: Components.Schemas.BlockchainConfig._12Payload?
+            /// The cost of filing complaints about incorrect operation of validators.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/13`.
+            public struct _13Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/13/deposit`.
+                public var deposit: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/13/bit_price`.
+                public var bitPrice: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/13/cell_price`.
+                public var cellPrice: Swift.Int64
+                /// Creates a new `_13Payload`.
+                ///
+                /// - Parameters:
+                ///   - deposit:
+                ///   - bitPrice:
+                ///   - cellPrice:
+                public init(
+                    deposit: Swift.Int64,
+                    bitPrice: Swift.Int64,
+                    cellPrice: Swift.Int64
+                ) {
+                    self.deposit = deposit
+                    self.bitPrice = bitPrice
+                    self.cellPrice = cellPrice
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case deposit
+                    case bitPrice = "bit_price"
+                    case cellPrice = "cell_price"
+                }
+            }
+            /// The cost of filing complaints about incorrect operation of validators.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/13`.
+            public var _13: Components.Schemas.BlockchainConfig._13Payload?
+            /// The reward in nanoGram for block creation in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/14`.
+            public struct _14Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/14/masterchain_block_fee`.
+                public var masterchainBlockFee: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/14/basechain_block_fee`.
+                public var basechainBlockFee: Swift.Int64
+                /// Creates a new `_14Payload`.
+                ///
+                /// - Parameters:
+                ///   - masterchainBlockFee:
+                ///   - basechainBlockFee:
+                public init(
+                    masterchainBlockFee: Swift.Int64,
+                    basechainBlockFee: Swift.Int64
+                ) {
+                    self.masterchainBlockFee = masterchainBlockFee
+                    self.basechainBlockFee = basechainBlockFee
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case masterchainBlockFee = "masterchain_block_fee"
+                    case basechainBlockFee = "basechain_block_fee"
+                }
+            }
+            /// The reward in nanoGram for block creation in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/14`.
+            public var _14: Components.Schemas.BlockchainConfig._14Payload?
+            /// The reward in nanograms for block creation in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15`.
+            public struct _15Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15/validators_elected_for`.
+                public var validatorsElectedFor: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15/elections_start_before`.
+                public var electionsStartBefore: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15/elections_end_before`.
+                public var electionsEndBefore: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15/stake_held_for`.
+                public var stakeHeldFor: Swift.Int64
+                /// Creates a new `_15Payload`.
+                ///
+                /// - Parameters:
+                ///   - validatorsElectedFor:
+                ///   - electionsStartBefore:
+                ///   - electionsEndBefore:
+                ///   - stakeHeldFor:
+                public init(
+                    validatorsElectedFor: Swift.Int64,
+                    electionsStartBefore: Swift.Int64,
+                    electionsEndBefore: Swift.Int64,
+                    stakeHeldFor: Swift.Int64
+                ) {
+                    self.validatorsElectedFor = validatorsElectedFor
+                    self.electionsStartBefore = electionsStartBefore
+                    self.electionsEndBefore = electionsEndBefore
+                    self.stakeHeldFor = stakeHeldFor
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case validatorsElectedFor = "validators_elected_for"
+                    case electionsStartBefore = "elections_start_before"
+                    case electionsEndBefore = "elections_end_before"
+                    case stakeHeldFor = "stake_held_for"
+                }
+            }
+            /// The reward in nanograms for block creation in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/15`.
+            public var _15: Components.Schemas.BlockchainConfig._15Payload?
+            /// The limits on the number of validators in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/16`.
+            public struct _16Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/16/max_validators`.
+                public var maxValidators: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/16/max_main_validators`.
+                public var maxMainValidators: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/16/min_validators`.
+                public var minValidators: Swift.Int
+                /// Creates a new `_16Payload`.
+                ///
+                /// - Parameters:
+                ///   - maxValidators:
+                ///   - maxMainValidators:
+                ///   - minValidators:
+                public init(
+                    maxValidators: Swift.Int,
+                    maxMainValidators: Swift.Int,
+                    minValidators: Swift.Int
+                ) {
+                    self.maxValidators = maxValidators
+                    self.maxMainValidators = maxMainValidators
+                    self.minValidators = minValidators
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case maxValidators = "max_validators"
+                    case maxMainValidators = "max_main_validators"
+                    case minValidators = "min_validators"
+                }
+            }
+            /// The limits on the number of validators in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/16`.
+            public var _16: Components.Schemas.BlockchainConfig._16Payload?
+            /// The stake parameters configuration in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17`.
+            public struct _17Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17/min_stake`.
+                public var minStake: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17/max_stake`.
+                public var maxStake: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17/min_total_stake`.
+                public var minTotalStake: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17/max_stake_factor`.
+                public var maxStakeFactor: Swift.Int64
+                /// Creates a new `_17Payload`.
+                ///
+                /// - Parameters:
+                ///   - minStake:
+                ///   - maxStake:
+                ///   - minTotalStake:
+                ///   - maxStakeFactor:
+                public init(
+                    minStake: Swift.String,
+                    maxStake: Swift.String,
+                    minTotalStake: Swift.String,
+                    maxStakeFactor: Swift.Int64
+                ) {
+                    self.minStake = minStake
+                    self.maxStake = maxStake
+                    self.minTotalStake = minTotalStake
+                    self.maxStakeFactor = maxStakeFactor
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case minStake = "min_stake"
+                    case maxStake = "max_stake"
+                    case minTotalStake = "min_total_stake"
+                    case maxStakeFactor = "max_stake_factor"
+                }
+            }
+            /// The stake parameters configuration in the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/17`.
+            public var _17: Components.Schemas.BlockchainConfig._17Payload?
+            /// The prices for data storage.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18`.
+            public struct _18Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload`.
+                public struct StoragePricesPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload/utime_since`.
+                    public var utimeSince: Swift.Int64
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload/bit_price_ps`.
+                    public var bitPricePs: Swift.Int64
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload/cell_price_ps`.
+                    public var cellPricePs: Swift.Int64
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload/mc_bit_price_ps`.
+                    public var mcBitPricePs: Swift.Int64
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/StoragePricesPayload/mc_cell_price_ps`.
+                    public var mcCellPricePs: Swift.Int64
+                    /// Creates a new `StoragePricesPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - utimeSince:
+                    ///   - bitPricePs:
+                    ///   - cellPricePs:
+                    ///   - mcBitPricePs:
+                    ///   - mcCellPricePs:
+                    public init(
+                        utimeSince: Swift.Int64,
+                        bitPricePs: Swift.Int64,
+                        cellPricePs: Swift.Int64,
+                        mcBitPricePs: Swift.Int64,
+                        mcCellPricePs: Swift.Int64
+                    ) {
+                        self.utimeSince = utimeSince
+                        self.bitPricePs = bitPricePs
+                        self.cellPricePs = cellPricePs
+                        self.mcBitPricePs = mcBitPricePs
+                        self.mcCellPricePs = mcCellPricePs
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case utimeSince = "utime_since"
+                        case bitPricePs = "bit_price_ps"
+                        case cellPricePs = "cell_price_ps"
+                        case mcBitPricePs = "mc_bit_price_ps"
+                        case mcCellPricePs = "mc_cell_price_ps"
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/storage_prices`.
+                public typealias StoragePricesPayload = [Components.Schemas.BlockchainConfig._18Payload.StoragePricesPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18/storage_prices`.
+                public var storagePrices: Components.Schemas.BlockchainConfig._18Payload.StoragePricesPayload
+                /// Creates a new `_18Payload`.
+                ///
+                /// - Parameters:
+                ///   - storagePrices:
+                public init(storagePrices: Components.Schemas.BlockchainConfig._18Payload.StoragePricesPayload) {
+                    self.storagePrices = storagePrices
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case storagePrices = "storage_prices"
+                }
+            }
+            /// The prices for data storage.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/18`.
+            public var _18: Components.Schemas.BlockchainConfig._18Payload?
+            /// The cost of computations in the masterchain. The complexity of any computation is estimated in gas units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/20`.
+            public struct _20Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/20/gas_limits_prices`.
+                public var gasLimitsPrices: Components.Schemas.GasLimitPrices
+                /// Creates a new `_20Payload`.
+                ///
+                /// - Parameters:
+                ///   - gasLimitsPrices:
+                public init(gasLimitsPrices: Components.Schemas.GasLimitPrices) {
+                    self.gasLimitsPrices = gasLimitsPrices
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case gasLimitsPrices = "gas_limits_prices"
+                }
+            }
+            /// The cost of computations in the masterchain. The complexity of any computation is estimated in gas units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/20`.
+            public var _20: Components.Schemas.BlockchainConfig._20Payload?
+            /// The cost of computations in the basechains. The complexity of any computation is estimated in gas units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/21`.
+            public struct _21Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/21/gas_limits_prices`.
+                public var gasLimitsPrices: Components.Schemas.GasLimitPrices
+                /// Creates a new `_21Payload`.
+                ///
+                /// - Parameters:
+                ///   - gasLimitsPrices:
+                public init(gasLimitsPrices: Components.Schemas.GasLimitPrices) {
+                    self.gasLimitsPrices = gasLimitsPrices
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case gasLimitsPrices = "gas_limits_prices"
+                }
+            }
+            /// The cost of computations in the basechains. The complexity of any computation is estimated in gas units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/21`.
+            public var _21: Components.Schemas.BlockchainConfig._21Payload?
+            /// The limits on the block in the masterchain, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/22`.
+            public struct _22Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/22/block_limits`.
+                public var blockLimits: Components.Schemas.BlockLimits
+                /// Creates a new `_22Payload`.
+                ///
+                /// - Parameters:
+                ///   - blockLimits:
+                public init(blockLimits: Components.Schemas.BlockLimits) {
+                    self.blockLimits = blockLimits
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case blockLimits = "block_limits"
+                }
+            }
+            /// The limits on the block in the masterchain, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/22`.
+            public var _22: Components.Schemas.BlockchainConfig._22Payload?
+            /// The limits on the block in the basechains, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/23`.
+            public struct _23Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/23/block_limits`.
+                public var blockLimits: Components.Schemas.BlockLimits
+                /// Creates a new `_23Payload`.
+                ///
+                /// - Parameters:
+                ///   - blockLimits:
+                public init(blockLimits: Components.Schemas.BlockLimits) {
+                    self.blockLimits = blockLimits
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case blockLimits = "block_limits"
+                }
+            }
+            /// The limits on the block in the basechains, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/23`.
+            public var _23: Components.Schemas.BlockchainConfig._23Payload?
+            /// The cost of sending messages in the masterchain of the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/24`.
+            public struct _24Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/24/msg_forward_prices`.
+                public var msgForwardPrices: Components.Schemas.MsgForwardPrices
+                /// Creates a new `_24Payload`.
+                ///
+                /// - Parameters:
+                ///   - msgForwardPrices:
+                public init(msgForwardPrices: Components.Schemas.MsgForwardPrices) {
+                    self.msgForwardPrices = msgForwardPrices
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case msgForwardPrices = "msg_forward_prices"
+                }
+            }
+            /// The cost of sending messages in the masterchain of the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/24`.
+            public var _24: Components.Schemas.BlockchainConfig._24Payload?
+            /// The cost of sending messages in the basechains of the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/25`.
+            public struct _25Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/25/msg_forward_prices`.
+                public var msgForwardPrices: Components.Schemas.MsgForwardPrices
+                /// Creates a new `_25Payload`.
+                ///
+                /// - Parameters:
+                ///   - msgForwardPrices:
+                public init(msgForwardPrices: Components.Schemas.MsgForwardPrices) {
+                    self.msgForwardPrices = msgForwardPrices
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case msgForwardPrices = "msg_forward_prices"
+                }
+            }
+            /// The cost of sending messages in the basechains of the TON blockchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/25`.
+            public var _25: Components.Schemas.BlockchainConfig._25Payload?
+            /// The configuration for the Catchain protocol.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28`.
+            public struct _28Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/mc_catchain_lifetime`.
+                public var mcCatchainLifetime: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/shard_catchain_lifetime`.
+                public var shardCatchainLifetime: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/shard_validators_lifetime`.
+                public var shardValidatorsLifetime: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/shard_validators_num`.
+                public var shardValidatorsNum: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/flags`.
+                public var flags: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28/shuffle_mc_validators`.
+                public var shuffleMcValidators: Swift.Bool?
+                /// Creates a new `_28Payload`.
+                ///
+                /// - Parameters:
+                ///   - mcCatchainLifetime:
+                ///   - shardCatchainLifetime:
+                ///   - shardValidatorsLifetime:
+                ///   - shardValidatorsNum:
+                ///   - flags:
+                ///   - shuffleMcValidators:
+                public init(
+                    mcCatchainLifetime: Swift.Int64,
+                    shardCatchainLifetime: Swift.Int64,
+                    shardValidatorsLifetime: Swift.Int64,
+                    shardValidatorsNum: Swift.Int64,
+                    flags: Swift.Int? = nil,
+                    shuffleMcValidators: Swift.Bool? = nil
+                ) {
+                    self.mcCatchainLifetime = mcCatchainLifetime
+                    self.shardCatchainLifetime = shardCatchainLifetime
+                    self.shardValidatorsLifetime = shardValidatorsLifetime
+                    self.shardValidatorsNum = shardValidatorsNum
+                    self.flags = flags
+                    self.shuffleMcValidators = shuffleMcValidators
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case mcCatchainLifetime = "mc_catchain_lifetime"
+                    case shardCatchainLifetime = "shard_catchain_lifetime"
+                    case shardValidatorsLifetime = "shard_validators_lifetime"
+                    case shardValidatorsNum = "shard_validators_num"
+                    case flags
+                    case shuffleMcValidators = "shuffle_mc_validators"
+                }
+            }
+            /// The configuration for the Catchain protocol.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/28`.
+            public var _28: Components.Schemas.BlockchainConfig._28Payload?
+            /// The configuration for the consensus protocol above catchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29`.
+            public struct _29Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/flags`.
+                public var flags: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/new_catchain_ids`.
+                public var newCatchainIds: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/round_candidates`.
+                public var roundCandidates: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/next_candidate_delay_ms`.
+                public var nextCandidateDelayMs: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/consensus_timeout_ms`.
+                public var consensusTimeoutMs: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/fast_attempts`.
+                public var fastAttempts: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/attempt_duration`.
+                public var attemptDuration: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/catchain_max_deps`.
+                public var catchainMaxDeps: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/max_block_bytes`.
+                public var maxBlockBytes: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/max_collated_bytes`.
+                public var maxCollatedBytes: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/proto_version`.
+                public var protoVersion: Swift.Int64?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29/catchain_max_blocks_coeff`.
+                public var catchainMaxBlocksCoeff: Swift.Int64?
+                /// Creates a new `_29Payload`.
+                ///
+                /// - Parameters:
+                ///   - flags:
+                ///   - newCatchainIds:
+                ///   - roundCandidates:
+                ///   - nextCandidateDelayMs:
+                ///   - consensusTimeoutMs:
+                ///   - fastAttempts:
+                ///   - attemptDuration:
+                ///   - catchainMaxDeps:
+                ///   - maxBlockBytes:
+                ///   - maxCollatedBytes:
+                ///   - protoVersion:
+                ///   - catchainMaxBlocksCoeff:
+                public init(
+                    flags: Swift.Int? = nil,
+                    newCatchainIds: Swift.Bool? = nil,
+                    roundCandidates: Swift.Int64,
+                    nextCandidateDelayMs: Swift.Int64,
+                    consensusTimeoutMs: Swift.Int64,
+                    fastAttempts: Swift.Int64,
+                    attemptDuration: Swift.Int64,
+                    catchainMaxDeps: Swift.Int64,
+                    maxBlockBytes: Swift.Int64,
+                    maxCollatedBytes: Swift.Int64,
+                    protoVersion: Swift.Int64? = nil,
+                    catchainMaxBlocksCoeff: Swift.Int64? = nil
+                ) {
+                    self.flags = flags
+                    self.newCatchainIds = newCatchainIds
+                    self.roundCandidates = roundCandidates
+                    self.nextCandidateDelayMs = nextCandidateDelayMs
+                    self.consensusTimeoutMs = consensusTimeoutMs
+                    self.fastAttempts = fastAttempts
+                    self.attemptDuration = attemptDuration
+                    self.catchainMaxDeps = catchainMaxDeps
+                    self.maxBlockBytes = maxBlockBytes
+                    self.maxCollatedBytes = maxCollatedBytes
+                    self.protoVersion = protoVersion
+                    self.catchainMaxBlocksCoeff = catchainMaxBlocksCoeff
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case flags
+                    case newCatchainIds = "new_catchain_ids"
+                    case roundCandidates = "round_candidates"
+                    case nextCandidateDelayMs = "next_candidate_delay_ms"
+                    case consensusTimeoutMs = "consensus_timeout_ms"
+                    case fastAttempts = "fast_attempts"
+                    case attemptDuration = "attempt_duration"
+                    case catchainMaxDeps = "catchain_max_deps"
+                    case maxBlockBytes = "max_block_bytes"
+                    case maxCollatedBytes = "max_collated_bytes"
+                    case protoVersion = "proto_version"
+                    case catchainMaxBlocksCoeff = "catchain_max_blocks_coeff"
+                }
+            }
+            /// The configuration for the consensus protocol above catchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/29`.
+            public var _29: Components.Schemas.BlockchainConfig._29Payload?
+            /// The configuration for the new consensus protocol. Each chain can have its own optional configuration.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/30`.
+            public struct _30Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/30/mc`.
+                public var mc: Components.Schemas.NewConsensusConfig?
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/30/shard`.
+                public var shard: Components.Schemas.NewConsensusConfig?
+                /// Creates a new `_30Payload`.
+                ///
+                /// - Parameters:
+                ///   - mc:
+                ///   - shard:
+                public init(
+                    mc: Components.Schemas.NewConsensusConfig? = nil,
+                    shard: Components.Schemas.NewConsensusConfig? = nil
+                ) {
+                    self.mc = mc
+                    self.shard = shard
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case mc
+                    case shard
+                }
+            }
+            /// The configuration for the new consensus protocol. Each chain can have its own optional configuration.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/30`.
+            public var _30: Components.Schemas.BlockchainConfig._30Payload?
+            /// The configuration for the consensus protocol above catchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/31`.
+            public struct _31Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/31/fundamental_smc_addr`.
+                public var fundamentalSmcAddr: [Swift.String]
+                /// Creates a new `_31Payload`.
+                ///
+                /// - Parameters:
+                ///   - fundamentalSmcAddr:
+                public init(fundamentalSmcAddr: [Swift.String]) {
+                    self.fundamentalSmcAddr = fundamentalSmcAddr
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case fundamentalSmcAddr = "fundamental_smc_addr"
+                }
+            }
+            /// The configuration for the consensus protocol above catchain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/31`.
+            public var _31: Components.Schemas.BlockchainConfig._31Payload?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/32`.
+            public var _32: Components.Schemas.ValidatorsSet?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/33`.
+            public var _33: Components.Schemas.ValidatorsSet?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/34`.
+            public var _34: Components.Schemas.ValidatorsSet?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/35`.
+            public var _35: Components.Schemas.ValidatorsSet?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/36`.
+            public var _36: Components.Schemas.ValidatorsSet?
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/37`.
+            public var _37: Components.Schemas.ValidatorsSet?
+            /// The configuration for punishment for improper behavior (non-validation). In the absence of the parameter, the default fine size is 101 Gram
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/40`.
+            public struct _40Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/40/misbehaviour_punishment_config`.
+                public var misbehaviourPunishmentConfig: Components.Schemas.MisbehaviourPunishmentConfig
+                /// Creates a new `_40Payload`.
+                ///
+                /// - Parameters:
+                ///   - misbehaviourPunishmentConfig:
+                public init(misbehaviourPunishmentConfig: Components.Schemas.MisbehaviourPunishmentConfig) {
+                    self.misbehaviourPunishmentConfig = misbehaviourPunishmentConfig
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case misbehaviourPunishmentConfig = "misbehaviour_punishment_config"
+                }
+            }
+            /// The configuration for punishment for improper behavior (non-validation). In the absence of the parameter, the default fine size is 101 Gram
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/40`.
+            public var _40: Components.Schemas.BlockchainConfig._40Payload?
+            /// The size limits and some other characteristics of accounts and messages.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/43`.
+            public struct _43Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/43/size_limits_config`.
+                public var sizeLimitsConfig: Components.Schemas.SizeLimitsConfig
+                /// Creates a new `_43Payload`.
+                ///
+                /// - Parameters:
+                ///   - sizeLimitsConfig:
+                public init(sizeLimitsConfig: Components.Schemas.SizeLimitsConfig) {
+                    self.sizeLimitsConfig = sizeLimitsConfig
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case sizeLimitsConfig = "size_limits_config"
+                }
+            }
+            /// The size limits and some other characteristics of accounts and messages.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/43`.
+            public var _43: Components.Schemas.BlockchainConfig._43Payload?
+            /// suspended accounts
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/44`.
+            public struct _44Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/44/accounts`.
+                public var accounts: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/44/suspended_until`.
+                public var suspendedUntil: Swift.Int
+                /// Creates a new `_44Payload`.
+                ///
+                /// - Parameters:
+                ///   - accounts:
+                ///   - suspendedUntil:
+                public init(
+                    accounts: [Swift.String],
+                    suspendedUntil: Swift.Int
+                ) {
+                    self.accounts = accounts
+                    self.suspendedUntil = suspendedUntil
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case accounts
+                    case suspendedUntil = "suspended_until"
+                }
+            }
+            /// suspended accounts
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/44`.
+            public var _44: Components.Schemas.BlockchainConfig._44Payload
+            /// precompiled contracts
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45`.
+            public struct _45Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45/ContractsPayload`.
+                public struct ContractsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45/ContractsPayload/code_hash`.
+                    public var codeHash: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45/ContractsPayload/gas_usage`.
+                    public var gasUsage: Swift.Int64
+                    /// Creates a new `ContractsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - codeHash:
+                    ///   - gasUsage:
+                    public init(
+                        codeHash: Swift.String,
+                        gasUsage: Swift.Int64
+                    ) {
+                        self.codeHash = codeHash
+                        self.gasUsage = gasUsage
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case codeHash = "code_hash"
+                        case gasUsage = "gas_usage"
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45/contracts`.
+                public typealias ContractsPayload = [Components.Schemas.BlockchainConfig._45Payload.ContractsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45/contracts`.
+                public var contracts: Components.Schemas.BlockchainConfig._45Payload.ContractsPayload
+                /// Creates a new `_45Payload`.
+                ///
+                /// - Parameters:
+                ///   - contracts:
+                public init(contracts: Components.Schemas.BlockchainConfig._45Payload.ContractsPayload) {
+                    self.contracts = contracts
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case contracts
+                }
+            }
+            /// precompiled contracts
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/45`.
+            public var _45: Components.Schemas.BlockchainConfig._45Payload?
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/71`.
+            public struct _71Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/71/oracle_bridge_params`.
+                public var oracleBridgeParams: Components.Schemas.OracleBridgeParams
+                /// Creates a new `_71Payload`.
+                ///
+                /// - Parameters:
+                ///   - oracleBridgeParams:
+                public init(oracleBridgeParams: Components.Schemas.OracleBridgeParams) {
+                    self.oracleBridgeParams = oracleBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case oracleBridgeParams = "oracle_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/71`.
+            public var _71: Components.Schemas.BlockchainConfig._71Payload?
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/72`.
+            public struct _72Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/72/oracle_bridge_params`.
+                public var oracleBridgeParams: Components.Schemas.OracleBridgeParams
+                /// Creates a new `_72Payload`.
+                ///
+                /// - Parameters:
+                ///   - oracleBridgeParams:
+                public init(oracleBridgeParams: Components.Schemas.OracleBridgeParams) {
+                    self.oracleBridgeParams = oracleBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case oracleBridgeParams = "oracle_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/72`.
+            public var _72: Components.Schemas.BlockchainConfig._72Payload?
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/73`.
+            public struct _73Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/73/oracle_bridge_params`.
+                public var oracleBridgeParams: Components.Schemas.OracleBridgeParams
+                /// Creates a new `_73Payload`.
+                ///
+                /// - Parameters:
+                ///   - oracleBridgeParams:
+                public init(oracleBridgeParams: Components.Schemas.OracleBridgeParams) {
+                    self.oracleBridgeParams = oracleBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case oracleBridgeParams = "oracle_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping TON in other networks.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/73`.
+            public var _73: Components.Schemas.BlockchainConfig._73Payload?
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/79`.
+            public struct _79Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/79/jetton_bridge_params`.
+                public var jettonBridgeParams: Components.Schemas.JettonBridgeParams
+                /// Creates a new `_79Payload`.
+                ///
+                /// - Parameters:
+                ///   - jettonBridgeParams:
+                public init(jettonBridgeParams: Components.Schemas.JettonBridgeParams) {
+                    self.jettonBridgeParams = jettonBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case jettonBridgeParams = "jetton_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/79`.
+            public var _79: Components.Schemas.BlockchainConfig._79Payload?
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/81`.
+            public struct _81Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/81/jetton_bridge_params`.
+                public var jettonBridgeParams: Components.Schemas.JettonBridgeParams
+                /// Creates a new `_81Payload`.
+                ///
+                /// - Parameters:
+                ///   - jettonBridgeParams:
+                public init(jettonBridgeParams: Components.Schemas.JettonBridgeParams) {
+                    self.jettonBridgeParams = jettonBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case jettonBridgeParams = "jetton_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/81`.
+            public var _81: Components.Schemas.BlockchainConfig._81Payload?
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/82`.
+            public struct _82Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BlockchainConfig/82/jetton_bridge_params`.
+                public var jettonBridgeParams: Components.Schemas.JettonBridgeParams
+                /// Creates a new `_82Payload`.
+                ///
+                /// - Parameters:
+                ///   - jettonBridgeParams:
+                public init(jettonBridgeParams: Components.Schemas.JettonBridgeParams) {
+                    self.jettonBridgeParams = jettonBridgeParams
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case jettonBridgeParams = "jetton_bridge_params"
+                }
+            }
+            /// Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///
+            /// - Remark: Generated from `#/components/schemas/BlockchainConfig/82`.
+            public var _82: Components.Schemas.BlockchainConfig._82Payload?
+            /// Creates a new `BlockchainConfig`.
+            ///
+            /// - Parameters:
+            ///   - raw: config boc in hex format
+            ///   - _0: config address
+            ///   - _1: elector address
+            ///   - _2: minter address
+            ///   - _3: The address of the transaction fee collector.
+            ///   - _4: dns root address
+            ///   - _5:
+            ///   - _6: Minting fees of new currencies.
+            ///   - _7: The volume of each of the additional currencies in circulation.
+            ///   - _8: The network version and additional capabilities supported by the validators.
+            ///   - _9: List of mandatory parameters of the blockchain config.
+            ///   - _10: List of critical TON parameters, the change of which significantly affects the network, so more voting rounds are held.
+            ///   - _11: This parameter indicates under what conditions proposals to change the TON configuration are accepted.
+            ///   - _12: Workchains in the TON Blockchain
+            ///   - _13: The cost of filing complaints about incorrect operation of validators.
+            ///   - _14: The reward in nanoGram for block creation in the TON blockchain.
+            ///   - _15: The reward in nanograms for block creation in the TON blockchain.
+            ///   - _16: The limits on the number of validators in the TON blockchain.
+            ///   - _17: The stake parameters configuration in the TON blockchain.
+            ///   - _18: The prices for data storage.
+            ///   - _20: The cost of computations in the masterchain. The complexity of any computation is estimated in gas units.
+            ///   - _21: The cost of computations in the basechains. The complexity of any computation is estimated in gas units.
+            ///   - _22: The limits on the block in the masterchain, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///   - _23: The limits on the block in the basechains, upon reaching which the block is finalized and the callback of the remaining messages (if any) is carried over to the next block.
+            ///   - _24: The cost of sending messages in the masterchain of the TON blockchain.
+            ///   - _25: The cost of sending messages in the basechains of the TON blockchain.
+            ///   - _28: The configuration for the Catchain protocol.
+            ///   - _29: The configuration for the consensus protocol above catchain.
+            ///   - _30: The configuration for the new consensus protocol. Each chain can have its own optional configuration.
+            ///   - _31: The configuration for the consensus protocol above catchain.
+            ///   - _32:
+            ///   - _33:
+            ///   - _34:
+            ///   - _35:
+            ///   - _36:
+            ///   - _37:
+            ///   - _40: The configuration for punishment for improper behavior (non-validation). In the absence of the parameter, the default fine size is 101 Gram
+            ///   - _43: The size limits and some other characteristics of accounts and messages.
+            ///   - _44: suspended accounts
+            ///   - _45: precompiled contracts
+            ///   - _71: Bridge parameters for wrapping TON in other networks.
+            ///   - _72: Bridge parameters for wrapping TON in other networks.
+            ///   - _73: Bridge parameters for wrapping TON in other networks.
+            ///   - _79: Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///   - _81: Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            ///   - _82: Bridge parameters for wrapping tokens from other networks into tokens on the TON network.
+            public init(
+                raw: Swift.String,
+                _0: Swift.String,
+                _1: Swift.String,
+                _2: Swift.String,
+                _3: Swift.String? = nil,
+                _4: Swift.String,
+                _5: Components.Schemas.BlockchainConfig._5Payload? = nil,
+                _6: Components.Schemas.BlockchainConfig._6Payload? = nil,
+                _7: Components.Schemas.BlockchainConfig._7Payload? = nil,
+                _8: Components.Schemas.BlockchainConfig._8Payload? = nil,
+                _9: Components.Schemas.BlockchainConfig._9Payload? = nil,
+                _10: Components.Schemas.BlockchainConfig._10Payload? = nil,
+                _11: Components.Schemas.BlockchainConfig._11Payload? = nil,
+                _12: Components.Schemas.BlockchainConfig._12Payload? = nil,
+                _13: Components.Schemas.BlockchainConfig._13Payload? = nil,
+                _14: Components.Schemas.BlockchainConfig._14Payload? = nil,
+                _15: Components.Schemas.BlockchainConfig._15Payload? = nil,
+                _16: Components.Schemas.BlockchainConfig._16Payload? = nil,
+                _17: Components.Schemas.BlockchainConfig._17Payload? = nil,
+                _18: Components.Schemas.BlockchainConfig._18Payload? = nil,
+                _20: Components.Schemas.BlockchainConfig._20Payload? = nil,
+                _21: Components.Schemas.BlockchainConfig._21Payload? = nil,
+                _22: Components.Schemas.BlockchainConfig._22Payload? = nil,
+                _23: Components.Schemas.BlockchainConfig._23Payload? = nil,
+                _24: Components.Schemas.BlockchainConfig._24Payload? = nil,
+                _25: Components.Schemas.BlockchainConfig._25Payload? = nil,
+                _28: Components.Schemas.BlockchainConfig._28Payload? = nil,
+                _29: Components.Schemas.BlockchainConfig._29Payload? = nil,
+                _30: Components.Schemas.BlockchainConfig._30Payload? = nil,
+                _31: Components.Schemas.BlockchainConfig._31Payload? = nil,
+                _32: Components.Schemas.ValidatorsSet? = nil,
+                _33: Components.Schemas.ValidatorsSet? = nil,
+                _34: Components.Schemas.ValidatorsSet? = nil,
+                _35: Components.Schemas.ValidatorsSet? = nil,
+                _36: Components.Schemas.ValidatorsSet? = nil,
+                _37: Components.Schemas.ValidatorsSet? = nil,
+                _40: Components.Schemas.BlockchainConfig._40Payload? = nil,
+                _43: Components.Schemas.BlockchainConfig._43Payload? = nil,
+                _44: Components.Schemas.BlockchainConfig._44Payload,
+                _45: Components.Schemas.BlockchainConfig._45Payload? = nil,
+                _71: Components.Schemas.BlockchainConfig._71Payload? = nil,
+                _72: Components.Schemas.BlockchainConfig._72Payload? = nil,
+                _73: Components.Schemas.BlockchainConfig._73Payload? = nil,
+                _79: Components.Schemas.BlockchainConfig._79Payload? = nil,
+                _81: Components.Schemas.BlockchainConfig._81Payload? = nil,
+                _82: Components.Schemas.BlockchainConfig._82Payload? = nil
+            ) {
+                self.raw = raw
+                self._0 = _0
+                self._1 = _1
+                self._2 = _2
+                self._3 = _3
+                self._4 = _4
+                self._5 = _5
+                self._6 = _6
+                self._7 = _7
+                self._8 = _8
+                self._9 = _9
+                self._10 = _10
+                self._11 = _11
+                self._12 = _12
+                self._13 = _13
+                self._14 = _14
+                self._15 = _15
+                self._16 = _16
+                self._17 = _17
+                self._18 = _18
+                self._20 = _20
+                self._21 = _21
+                self._22 = _22
+                self._23 = _23
+                self._24 = _24
+                self._25 = _25
+                self._28 = _28
+                self._29 = _29
+                self._30 = _30
+                self._31 = _31
+                self._32 = _32
+                self._33 = _33
+                self._34 = _34
+                self._35 = _35
+                self._36 = _36
+                self._37 = _37
+                self._40 = _40
+                self._43 = _43
+                self._44 = _44
+                self._45 = _45
+                self._71 = _71
+                self._72 = _72
+                self._73 = _73
+                self._79 = _79
+                self._81 = _81
+                self._82 = _82
+            }
+            public enum CodingKeys: String, CodingKey {
+                case raw
+                case _0 = "0"
+                case _1 = "1"
+                case _2 = "2"
+                case _3 = "3"
+                case _4 = "4"
+                case _5 = "5"
+                case _6 = "6"
+                case _7 = "7"
+                case _8 = "8"
+                case _9 = "9"
+                case _10 = "10"
+                case _11 = "11"
+                case _12 = "12"
+                case _13 = "13"
+                case _14 = "14"
+                case _15 = "15"
+                case _16 = "16"
+                case _17 = "17"
+                case _18 = "18"
+                case _20 = "20"
+                case _21 = "21"
+                case _22 = "22"
+                case _23 = "23"
+                case _24 = "24"
+                case _25 = "25"
+                case _28 = "28"
+                case _29 = "29"
+                case _30 = "30"
+                case _31 = "31"
+                case _32 = "32"
+                case _33 = "33"
+                case _34 = "34"
+                case _35 = "35"
+                case _36 = "36"
+                case _37 = "37"
+                case _40 = "40"
+                case _43 = "43"
+                case _44 = "44"
+                case _45 = "45"
+                case _71 = "71"
+                case _72 = "72"
+                case _73 = "73"
+                case _79 = "79"
+                case _81 = "81"
+                case _82 = "82"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/JettonVerificationType`.
         @frozen public enum JettonVerificationType: String, Codable, Hashable, Sendable, CaseIterable {
             case whitelist = "whitelist"
@@ -1223,6 +3332,10 @@ extension Components {
             public var defiAsset: Components.Schemas.JettonAssetInfo?
             /// - Remark: Generated from `#/components/schemas/JettonBalance/extensions`.
             public var extensions: [Swift.String]?
+            /// logical time of the jetton wallet's transaction the balance is as of; absent when unknown, such as for an unclaimed mintless balance
+            ///
+            /// - Remark: Generated from `#/components/schemas/JettonBalance/balance_lt`.
+            public var balanceLt: Swift.Int64?
             /// - Remark: Generated from `#/components/schemas/JettonBalance/lock`.
             public struct LockPayload: Codable, Hashable, Sendable {
                 /// - Remark: Generated from `#/components/schemas/JettonBalance/lock/amount`.
@@ -1257,6 +3370,7 @@ extension Components {
             ///   - jetton:
             ///   - defiAsset:
             ///   - extensions:
+            ///   - balanceLt: logical time of the jetton wallet's transaction the balance is as of; absent when unknown, such as for an unclaimed mintless balance
             ///   - lock:
             public init(
                 balance: Swift.String,
@@ -1265,6 +3379,7 @@ extension Components {
                 jetton: Components.Schemas.JettonPreview,
                 defiAsset: Components.Schemas.JettonAssetInfo? = nil,
                 extensions: [Swift.String]? = nil,
+                balanceLt: Swift.Int64? = nil,
                 lock: Components.Schemas.JettonBalance.LockPayload? = nil
             ) {
                 self.balance = balance
@@ -1273,6 +3388,7 @@ extension Components {
                 self.jetton = jetton
                 self.defiAsset = defiAsset
                 self.extensions = extensions
+                self.balanceLt = balanceLt
                 self.lock = lock
             }
             public enum CodingKeys: String, CodingKey {
@@ -1282,6 +3398,7 @@ extension Components {
                 case jetton
                 case defiAsset = "defi_asset"
                 case extensions
+                case balanceLt = "balance_lt"
                 case lock
             }
         }
@@ -1358,6 +3475,266 @@ extension Components {
                 case status
                 case jettons
                 case nftCount = "nft_count"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest`.
+        public struct MigrationPrepareRequest: Codable, Hashable, Sendable {
+            /// legacy source wallet to drain
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/from`.
+            public var from: Swift.String
+            /// destination wallet TON address
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/to`.
+            public var to: Swift.String
+            /// fiat currency for the preview values
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/currency`.
+            public var currency: Swift.String?
+            /// hex-encoded ed25519 public key of the source wallet. If `from` wallet is uninitialized, then public_key is used to infer wallet code
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/public_key`.
+            public var publicKey: Swift.String?
+            /// Who pays the gas:
+            ///   - `self` — the source wallet pays, as usual
+            ///   - `battery` — asset transfers are sponsored by the Tonkeeper Battery
+            ///   - `gasless` — source wallet pays with jetton, in this case `gas_jetton_master` is required too (only from this list: `/v2/gasless/config`)
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/gas_payer`.
+            @frozen public enum GasPayerPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case _self = "self"
+                case battery = "battery"
+                case gasless = "gasless"
+                case unknown
+                public init(from decoder: any Decoder) throws {
+                    self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+                }
+            }
+            /// Who pays the gas:
+            ///   - `self` — the source wallet pays, as usual
+            ///   - `battery` — asset transfers are sponsored by the Tonkeeper Battery
+            ///   - `gasless` — source wallet pays with jetton, in this case `gas_jetton_master` is required too (only from this list: `/v2/gasless/config`)
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/gas_payer`.
+            public var gasPayer: Components.Schemas.MigrationPrepareRequest.GasPayerPayload?
+            /// Master address of jetton that should be used to cover transactions fees. Must be supported by /v2/gasless/config and held by the source wallet.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareRequest/gas_jetton_master`.
+            public var gasJettonMaster: Swift.String?
+            /// Creates a new `MigrationPrepareRequest`.
+            ///
+            /// - Parameters:
+            ///   - from: legacy source wallet to drain
+            ///   - to: destination wallet TON address
+            ///   - currency: fiat currency for the preview values
+            ///   - publicKey: hex-encoded ed25519 public key of the source wallet. If `from` wallet is uninitialized, then public_key is used to infer wallet code
+            ///   - gasPayer: Who pays the gas:
+            ///   - gasJettonMaster: Master address of jetton that should be used to cover transactions fees. Must be supported by /v2/gasless/config and held by the source wallet.
+            public init(
+                from: Swift.String,
+                to: Swift.String,
+                currency: Swift.String? = nil,
+                publicKey: Swift.String? = nil,
+                gasPayer: Components.Schemas.MigrationPrepareRequest.GasPayerPayload? = nil,
+                gasJettonMaster: Swift.String? = nil
+            ) {
+                self.from = from
+                self.to = to
+                self.currency = currency
+                self.publicKey = publicKey
+                self.gasPayer = gasPayer
+                self.gasJettonMaster = gasJettonMaster
+            }
+            public enum CodingKeys: String, CodingKey {
+                case from
+                case to
+                case currency
+                case publicKey = "public_key"
+                case gasPayer = "gas_payer"
+                case gasJettonMaster = "gas_jetton_master"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MigrationPrepareResponse`.
+        public struct MigrationPrepareResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareResponse/from`.
+            public var from: Swift.String
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareResponse/to`.
+            public var to: Swift.String
+            /// source wallet version (informational)
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareResponse/wallet_version`.
+            public var walletVersion: Swift.String
+            /// ordered; sign and broadcast in array order, one entry per external message
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareResponse/transactions`.
+            public var transactions: [Components.Schemas.MigrationTransaction]
+            /// Creates a new `MigrationPrepareResponse`.
+            ///
+            /// - Parameters:
+            ///   - from:
+            ///   - to:
+            ///   - walletVersion: source wallet version (informational)
+            ///   - transactions: ordered; sign and broadcast in array order, one entry per external message
+            public init(
+                from: Swift.String,
+                to: Swift.String,
+                walletVersion: Swift.String,
+                transactions: [Components.Schemas.MigrationTransaction]
+            ) {
+                self.from = from
+                self.to = to
+                self.walletVersion = walletVersion
+                self.transactions = transactions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case from
+                case to
+                case walletVersion = "wallet_version"
+                case transactions
+            }
+        }
+        /// The prepared migration together with the reason it cannot be executed as-is. Returned with HTTP 409 and error_code 50000 when the source wallet holds migratable assets but not enough TON to cover the transfer gas: the transactions are the ones the migration would consist of once the source holds `details.required`, so a client can show the full preview next to the shortfall instead of re-requesting prepare after the top-up.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict`.
+        public struct MigrationPrepareConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value1`.
+            public var value1: Components.Schemas.MigrationPrepareResponse
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value2/error`.
+                public var error: Swift.String
+                /// same extended code as on a plain error response (50000)
+                ///
+                /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value2/error_code`.
+                public var errorCode: Swift.Int64?
+                /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value2/details`.
+                public var details: Components.Schemas.InsufficientFunds?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - error:
+                ///   - errorCode: same extended code as on a plain error response (50000)
+                ///   - details:
+                public init(
+                    error: Swift.String,
+                    errorCode: Swift.Int64? = nil,
+                    details: Components.Schemas.InsufficientFunds? = nil
+                ) {
+                    self.error = error
+                    self.errorCode = errorCode
+                    self.details = details
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case error
+                    case errorCode = "error_code"
+                    case details
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MigrationPrepareConflict/value2`.
+            public var value2: Components.Schemas.MigrationPrepareConflict.Value2Payload
+            /// Creates a new `MigrationPrepareConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.MigrationPrepareResponse,
+                value2: Components.Schemas.MigrationPrepareConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MigrationTransaction`.
+        public struct MigrationTransaction: Codable, Hashable, Sendable {
+            /// wallet seqno baked into the unsigned body
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/seqno`.
+            public var seqno: Swift.Int32
+            /// base64 BOC of the unsigned wallet body. The body type is determined by (wallet_version, sponsored): for v3/v4 it is always the external body — sign its hash, prepend the signature, wrap in an external message; for w5 with sponsored=false it is the external body with the signature appended as the trailing 512 bits; for w5 with sponsored=true it is the internal_signed body — sign and wrap it for /v2/gasless/send as in the gasless flow.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/boc`.
+            public var boc: Swift.String
+            /// true — the Battery relay pays gas for this transaction; submit it via /v2/gasless/send. false — self-paid; sign and broadcast via /v2/blockchain/message as usual. The final TON sweep is always self-paid, whatever gas_payer says: the relay does not sponsor a TON-only batch, and gasless has no jetton balance left to bill a commission against.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/sponsored`.
+            public var sponsored: Swift.Bool?
+            /// gasless only; the relay commission in indivisible gas-jetton units, embedded in the boc as a jetton transfer to the relay. Exact for the first transaction; an estimate for later ones (re-running prepare refreshes it).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/commission`.
+            public var commission: Swift.String?
+            /// base64 BOC of the wallet StateInit (code + data). Present only on the first transaction when the source wallet is not yet initialized
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/state_init`.
+            public var stateInit: Swift.String?
+            /// ordered raw internal messages carried by this transaction — the cells the wallet resends. These are what populate the payload/actions.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/messages`.
+            public var messages: [Components.Schemas.MigrationOutMessage]
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/emulation`.
+            public var emulation: Components.Schemas.MessageConsequences
+            /// TON burned as network fees by this transaction, in nanotons — the sum over every transaction in `emulation.trace`. For a transfer batch this is only part of the gas attached to its messages: the transfers name the destination wallet as response_destination, so the unburned remainder arrives there instead of returning to the source. For the final balance sweep it is the fee deducted from the swept amount. When `sponsored` is true these fees are covered by the relay, which charges `commission` instead.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/MigrationTransaction/gas_spent`.
+            public var gasSpent: Swift.Int64
+            /// Creates a new `MigrationTransaction`.
+            ///
+            /// - Parameters:
+            ///   - seqno: wallet seqno baked into the unsigned body
+            ///   - boc: base64 BOC of the unsigned wallet body. The body type is determined by (wallet_version, sponsored): for v3/v4 it is always the external body — sign its hash, prepend the signature, wrap in an external message; for w5 with sponsored=false it is the external body with the signature appended as the trailing 512 bits; for w5 with sponsored=true it is the internal_signed body — sign and wrap it for /v2/gasless/send as in the gasless flow.
+            ///   - sponsored: true — the Battery relay pays gas for this transaction; submit it via /v2/gasless/send. false — self-paid; sign and broadcast via /v2/blockchain/message as usual. The final TON sweep is always self-paid, whatever gas_payer says: the relay does not sponsor a TON-only batch, and gasless has no jetton balance left to bill a commission against.
+            ///   - commission: gasless only; the relay commission in indivisible gas-jetton units, embedded in the boc as a jetton transfer to the relay. Exact for the first transaction; an estimate for later ones (re-running prepare refreshes it).
+            ///   - stateInit: base64 BOC of the wallet StateInit (code + data). Present only on the first transaction when the source wallet is not yet initialized
+            ///   - messages: ordered raw internal messages carried by this transaction — the cells the wallet resends. These are what populate the payload/actions.
+            ///   - emulation:
+            ///   - gasSpent: TON burned as network fees by this transaction, in nanotons — the sum over every transaction in `emulation.trace`. For a transfer batch this is only part of the gas attached to its messages: the transfers name the destination wallet as response_destination, so the unburned remainder arrives there instead of returning to the source. For the final balance sweep it is the fee deducted from the swept amount. When `sponsored` is true these fees are covered by the relay, which charges `commission` instead.
+            public init(
+                seqno: Swift.Int32,
+                boc: Swift.String,
+                sponsored: Swift.Bool? = nil,
+                commission: Swift.String? = nil,
+                stateInit: Swift.String? = nil,
+                messages: [Components.Schemas.MigrationOutMessage],
+                emulation: Components.Schemas.MessageConsequences,
+                gasSpent: Swift.Int64
+            ) {
+                self.seqno = seqno
+                self.boc = boc
+                self.sponsored = sponsored
+                self.commission = commission
+                self.stateInit = stateInit
+                self.messages = messages
+                self.emulation = emulation
+                self.gasSpent = gasSpent
+            }
+            public enum CodingKeys: String, CodingKey {
+                case seqno
+                case boc
+                case sponsored
+                case commission
+                case stateInit = "state_init"
+                case messages
+                case emulation
+                case gasSpent = "gas_spent"
             }
         }
         /// - Remark: Generated from `#/components/schemas/MigrationOutMessage`.
@@ -1803,6 +4180,88 @@ extension Components {
                 case origin
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ValueFlow`.
+        public struct ValueFlow: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/account`.
+            public var account: Components.Schemas.AccountAddress
+            /// this field will gone after Sept. 2026, use gram instead
+            ///
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/ton`.
+            @available(*, deprecated)
+            public var ton: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/gram`.
+            public var gram: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/fees`.
+            public var fees: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/JettonsPayload`.
+            public struct JettonsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ValueFlow/JettonsPayload/account`.
+                public var account: Components.Schemas.AccountAddress
+                /// - Remark: Generated from `#/components/schemas/ValueFlow/JettonsPayload/jetton`.
+                public var jetton: Components.Schemas.JettonPreview
+                /// - Remark: Generated from `#/components/schemas/ValueFlow/JettonsPayload/qty`.
+                public var qty: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ValueFlow/JettonsPayload/quantity`.
+                @available(*, deprecated)
+                public var quantity: Swift.Int64
+                /// Creates a new `JettonsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - account:
+                ///   - jetton:
+                ///   - qty:
+                ///   - quantity:
+                public init(
+                    account: Components.Schemas.AccountAddress,
+                    jetton: Components.Schemas.JettonPreview,
+                    qty: Swift.String,
+                    quantity: Swift.Int64
+                ) {
+                    self.account = account
+                    self.jetton = jetton
+                    self.qty = qty
+                    self.quantity = quantity
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case account
+                    case jetton
+                    case qty
+                    case quantity
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/jettons`.
+            public typealias JettonsPayload = [Components.Schemas.ValueFlow.JettonsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/ValueFlow/jettons`.
+            public var jettons: Components.Schemas.ValueFlow.JettonsPayload?
+            /// Creates a new `ValueFlow`.
+            ///
+            /// - Parameters:
+            ///   - account:
+            ///   - ton: this field will gone after Sept. 2026, use gram instead
+            ///   - gram:
+            ///   - fees:
+            ///   - jettons:
+            public init(
+                account: Components.Schemas.AccountAddress,
+                ton: Swift.Int64? = nil,
+                gram: Swift.Int64,
+                fees: Swift.Int64,
+                jettons: Components.Schemas.ValueFlow.JettonsPayload? = nil
+            ) {
+                self.account = account
+                self.ton = ton
+                self.gram = gram
+                self.fees = fees
+                self.jettons = jettons
+            }
+            public enum CodingKeys: String, CodingKey {
+                case account
+                case ton
+                case gram
+                case fees
+                case jettons
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Action`.
         public struct Action: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Action/type`.
@@ -1839,6 +4298,10 @@ extension Components {
                 case buyXTR = "BuyXTR"
                 case depositXTR = "DepositXTR"
                 case withdrawXTR = "WithdrawXTR"
+                case loanRequest = "LoanRequest"
+                case loanIssue = "LoanIssue"
+                case loanRepayment = "LoanRepayment"
+                case poolRoundTransition = "PoolRoundTransition"
                 case unknown = "Unknown"
                 public init(from decoder: any Decoder) throws {
                     self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
@@ -1921,6 +4384,14 @@ extension Components {
             public var depositXTR: Components.Schemas.DepositXTRAction?
             /// - Remark: Generated from `#/components/schemas/Action/BuyXTR`.
             public var buyXTR: Components.Schemas.BuyXTRAction?
+            /// - Remark: Generated from `#/components/schemas/Action/LoanRequest`.
+            public var loanRequest: Components.Schemas.LoanRequestAction?
+            /// - Remark: Generated from `#/components/schemas/Action/LoanIssue`.
+            public var loanIssue: Components.Schemas.LoanIssueAction?
+            /// - Remark: Generated from `#/components/schemas/Action/LoanRepayment`.
+            public var loanRepayment: Components.Schemas.LoanRepaymentAction?
+            /// - Remark: Generated from `#/components/schemas/Action/PoolRoundTransition`.
+            public var poolRoundTransition: Components.Schemas.PoolRoundTransitionAction?
             /// - Remark: Generated from `#/components/schemas/Action/simple_preview`.
             public var simplePreview: Components.Schemas.ActionSimplePreview
             /// - Remark: Generated from `#/components/schemas/Action/base_transactions`.
@@ -1962,6 +4433,10 @@ extension Components {
             ///   - withdrawXTR:
             ///   - depositXTR:
             ///   - buyXTR:
+            ///   - loanRequest:
+            ///   - loanIssue:
+            ///   - loanRepayment:
+            ///   - poolRoundTransition:
             ///   - simplePreview:
             ///   - baseTransactions:
             public init(
@@ -1999,6 +4474,10 @@ extension Components {
                 withdrawXTR: Components.Schemas.WithdrawXTRAction? = nil,
                 depositXTR: Components.Schemas.DepositXTRAction? = nil,
                 buyXTR: Components.Schemas.BuyXTRAction? = nil,
+                loanRequest: Components.Schemas.LoanRequestAction? = nil,
+                loanIssue: Components.Schemas.LoanIssueAction? = nil,
+                loanRepayment: Components.Schemas.LoanRepaymentAction? = nil,
+                poolRoundTransition: Components.Schemas.PoolRoundTransitionAction? = nil,
                 simplePreview: Components.Schemas.ActionSimplePreview,
                 baseTransactions: [Swift.String]
             ) {
@@ -2036,6 +4515,10 @@ extension Components {
                 self.withdrawXTR = withdrawXTR
                 self.depositXTR = depositXTR
                 self.buyXTR = buyXTR
+                self.loanRequest = loanRequest
+                self.loanIssue = loanIssue
+                self.loanRepayment = loanRepayment
+                self.poolRoundTransition = poolRoundTransition
                 self.simplePreview = simplePreview
                 self.baseTransactions = baseTransactions
             }
@@ -2074,6 +4557,10 @@ extension Components {
                 case withdrawXTR = "WithdrawXTR"
                 case depositXTR = "DepositXTR"
                 case buyXTR = "BuyXTR"
+                case loanRequest = "LoanRequest"
+                case loanIssue = "LoanIssue"
+                case loanRepayment = "LoanRepayment"
+                case poolRoundTransition = "PoolRoundTransition"
                 case simplePreview = "simple_preview"
                 case baseTransactions = "base_transactions"
             }
@@ -2252,6 +4739,21 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case user
                 case amount
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ExtraCurrencies`.
+        public struct ExtraCurrencies: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ExtraCurrencies/extra_currencies`.
+            public var extraCurrencies: [Components.Schemas.EcPreview]
+            /// Creates a new `ExtraCurrencies`.
+            ///
+            /// - Parameters:
+            ///   - extraCurrencies:
+            public init(extraCurrencies: [Components.Schemas.EcPreview]) {
+                self.extraCurrencies = extraCurrencies
+            }
+            public enum CodingKeys: String, CodingKey {
+                case extraCurrencies = "extra_currencies"
             }
         }
         /// - Remark: Generated from `#/components/schemas/EcPreview`.
@@ -3165,6 +5667,325 @@ extension Components {
                 case stakeMeta = "stake_meta"
             }
         }
+        /// a validator asking a staking pool for a loan to stake in the next validation round
+        ///
+        /// - Remark: Generated from `#/components/schemas/LoanRequestAction`.
+        public struct LoanRequestAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/borrower`.
+            public var borrower: Components.Schemas.AccountAddress
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/pool`.
+            public var pool: Components.Schemas.AccountAddress
+            /// start of the validation round the loan is for, as its unix time; 0 if the round is unknown
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/round_since`.
+            public var roundSince: Swift.Int64
+            /// loan asked for, in nanograms; absent if too large to represent
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/amount`.
+            public var amount: Swift.Int64?
+            /// least the borrower promises to pay the pool from the round's reward, in nanograms; absent if too large to represent
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/min_payment`.
+            public var minPayment: Swift.Int64?
+            /// sent with the request: the borrower's collateral and the pool's fees, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/ton_attached`.
+            public var tonAttached: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/LoanRequestAction/implementation`.
+            public var implementation: Components.Schemas.PoolImplementationType
+            /// Creates a new `LoanRequestAction`.
+            ///
+            /// - Parameters:
+            ///   - borrower:
+            ///   - pool:
+            ///   - roundSince: start of the validation round the loan is for, as its unix time; 0 if the round is unknown
+            ///   - amount: loan asked for, in nanograms; absent if too large to represent
+            ///   - minPayment: least the borrower promises to pay the pool from the round's reward, in nanograms; absent if too large to represent
+            ///   - tonAttached: sent with the request: the borrower's collateral and the pool's fees, in nanograms
+            ///   - implementation:
+            public init(
+                borrower: Components.Schemas.AccountAddress,
+                pool: Components.Schemas.AccountAddress,
+                roundSince: Swift.Int64,
+                amount: Swift.Int64? = nil,
+                minPayment: Swift.Int64? = nil,
+                tonAttached: Swift.Int64,
+                implementation: Components.Schemas.PoolImplementationType
+            ) {
+                self.borrower = borrower
+                self.pool = pool
+                self.roundSince = roundSince
+                self.amount = amount
+                self.minPayment = minPayment
+                self.tonAttached = tonAttached
+                self.implementation = implementation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case borrower
+                case pool
+                case roundSince = "round_since"
+                case amount
+                case minPayment = "min_payment"
+                case tonAttached = "ton_attached"
+                case implementation
+            }
+        }
+        /// a staking pool lending to a validator, which stakes the loan with the elector
+        ///
+        /// - Remark: Generated from `#/components/schemas/LoanIssueAction`.
+        public struct LoanIssueAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/borrower`.
+            public var borrower: Components.Schemas.AccountAddress
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/pool`.
+            public var pool: Components.Schemas.AccountAddress
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/loan`.
+            public var loan: Components.Schemas.AccountAddress
+            /// start of the validation round the loan is for, as its unix time
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/round_since`.
+            public var roundSince: Swift.Int64
+            /// loan granted, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/amount`.
+            public var amount: Swift.Int64
+            /// pool coins added to the loan beyond what was asked for, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/accrued`.
+            public var accrued: Swift.Int64
+            /// the borrower's own coins staked alongside the loan, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/collateral`.
+            public var collateral: Swift.Int64
+            /// least the borrower pays the pool from the round's reward, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/min_payment`.
+            public var minPayment: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/LoanIssueAction/implementation`.
+            public var implementation: Components.Schemas.PoolImplementationType
+            /// Creates a new `LoanIssueAction`.
+            ///
+            /// - Parameters:
+            ///   - borrower:
+            ///   - pool:
+            ///   - loan:
+            ///   - roundSince: start of the validation round the loan is for, as its unix time
+            ///   - amount: loan granted, in nanograms
+            ///   - accrued: pool coins added to the loan beyond what was asked for, in nanograms
+            ///   - collateral: the borrower's own coins staked alongside the loan, in nanograms
+            ///   - minPayment: least the borrower pays the pool from the round's reward, in nanograms
+            ///   - implementation:
+            public init(
+                borrower: Components.Schemas.AccountAddress,
+                pool: Components.Schemas.AccountAddress,
+                loan: Components.Schemas.AccountAddress,
+                roundSince: Swift.Int64,
+                amount: Swift.Int64,
+                accrued: Swift.Int64,
+                collateral: Swift.Int64,
+                minPayment: Swift.Int64,
+                implementation: Components.Schemas.PoolImplementationType
+            ) {
+                self.borrower = borrower
+                self.pool = pool
+                self.loan = loan
+                self.roundSince = roundSince
+                self.amount = amount
+                self.accrued = accrued
+                self.collateral = collateral
+                self.minPayment = minPayment
+                self.implementation = implementation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case borrower
+                case pool
+                case loan
+                case roundSince = "round_since"
+                case amount
+                case accrued
+                case collateral
+                case minPayment = "min_payment"
+                case implementation
+            }
+        }
+        /// a loan coming back from the elector and its reward being split
+        ///
+        /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction`.
+        public struct LoanRepaymentAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/borrower`.
+            public var borrower: Components.Schemas.AccountAddress
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/pool`.
+            public var pool: Components.Schemas.AccountAddress
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/loan`.
+            public var loan: Components.Schemas.AccountAddress
+            /// start of the validation round the loan is for, as its unix time
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/round_since`.
+            public var roundSince: Swift.Int64
+            /// loan that was granted, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/amount`.
+            public var amount: Swift.Int64
+            /// pool coins added to the loan beyond what was asked for, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/accrued`.
+            public var accrued: Swift.Int64
+            /// what came back to the pool: the stake and the reward, less what the loan contract spent to forward it, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/recovered`.
+            public var recovered: Swift.Int64
+            /// what the pool's stakers earned, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/pool_reward`.
+            public var poolReward: Swift.Int64
+            /// the pool operator's share of the pool's reward, in nanograms; the operator may also receive what is left over from fees
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/protocol_fee`.
+            public var protocolFee: Swift.Int64
+            /// returned to the borrower: collateral and the borrower's reward, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/borrower_payout`.
+            public var borrowerPayout: Swift.Int64
+            /// taken from the borrower's reward to be burned, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/burn_amount`.
+            public var burnAmount: Swift.Int64
+            /// part of the loan the elector did not return and the collateral could not cover, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/shortfall`.
+            public var shortfall: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/LoanRepaymentAction/implementation`.
+            public var implementation: Components.Schemas.PoolImplementationType
+            /// Creates a new `LoanRepaymentAction`.
+            ///
+            /// - Parameters:
+            ///   - borrower:
+            ///   - pool:
+            ///   - loan:
+            ///   - roundSince: start of the validation round the loan is for, as its unix time
+            ///   - amount: loan that was granted, in nanograms
+            ///   - accrued: pool coins added to the loan beyond what was asked for, in nanograms
+            ///   - recovered: what came back to the pool: the stake and the reward, less what the loan contract spent to forward it, in nanograms
+            ///   - poolReward: what the pool's stakers earned, in nanograms
+            ///   - protocolFee: the pool operator's share of the pool's reward, in nanograms; the operator may also receive what is left over from fees
+            ///   - borrowerPayout: returned to the borrower: collateral and the borrower's reward, in nanograms
+            ///   - burnAmount: taken from the borrower's reward to be burned, in nanograms
+            ///   - shortfall: part of the loan the elector did not return and the collateral could not cover, in nanograms
+            ///   - implementation:
+            public init(
+                borrower: Components.Schemas.AccountAddress,
+                pool: Components.Schemas.AccountAddress,
+                loan: Components.Schemas.AccountAddress,
+                roundSince: Swift.Int64,
+                amount: Swift.Int64,
+                accrued: Swift.Int64,
+                recovered: Swift.Int64,
+                poolReward: Swift.Int64,
+                protocolFee: Swift.Int64,
+                borrowerPayout: Swift.Int64,
+                burnAmount: Swift.Int64,
+                shortfall: Swift.Int64? = nil,
+                implementation: Components.Schemas.PoolImplementationType
+            ) {
+                self.borrower = borrower
+                self.pool = pool
+                self.loan = loan
+                self.roundSince = roundSince
+                self.amount = amount
+                self.accrued = accrued
+                self.recovered = recovered
+                self.poolReward = poolReward
+                self.protocolFee = protocolFee
+                self.borrowerPayout = borrowerPayout
+                self.burnAmount = burnAmount
+                self.shortfall = shortfall
+                self.implementation = implementation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case borrower
+                case pool
+                case loan
+                case roundSince = "round_since"
+                case amount
+                case accrued
+                case recovered
+                case poolReward = "pool_reward"
+                case protocolFee = "protocol_fee"
+                case borrowerPayout = "borrower_payout"
+                case burnAmount = "burn_amount"
+                case shortfall
+                case implementation
+            }
+        }
+        /// election: the pool decided which loans to make and staked them with the elector; began: the validation round started; validated: the round's validators finished validating and the stakes are held until the elector releases them; ended: the round's stakes were released and the pool is recovering them; settled: every loan was recovered and the round's deposits and withdrawals were settled
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PoolRoundTransition`.
+        @frozen public enum PoolRoundTransition: String, Codable, Hashable, Sendable, CaseIterable {
+            case election = "election"
+            case began = "began"
+            case validated = "validated"
+            case ended = "ended"
+            case settled = "settled"
+            case unknown
+            public init(from decoder: any Decoder) throws {
+                self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+            }
+        }
+        /// a staking pool moving one of its validation rounds to its next stage
+        ///
+        /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction`.
+        public struct PoolRoundTransitionAction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/pool`.
+            public var pool: Components.Schemas.AccountAddress
+            /// start of the validation round, as its unix time; 0 if the round is unknown
+            ///
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/round_since`.
+            public var roundSince: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/transition`.
+            public var transition: Components.Schemas.PoolRoundTransition
+            /// settled only: lent out for the round, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/total_staked`.
+            public var totalStaked: Swift.Int64?
+            /// settled only: recovered from the round, in nanograms
+            ///
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/total_recovered`.
+            public var totalRecovered: Swift.Int64?
+            /// - Remark: Generated from `#/components/schemas/PoolRoundTransitionAction/implementation`.
+            public var implementation: Components.Schemas.PoolImplementationType
+            /// Creates a new `PoolRoundTransitionAction`.
+            ///
+            /// - Parameters:
+            ///   - pool:
+            ///   - roundSince: start of the validation round, as its unix time; 0 if the round is unknown
+            ///   - transition:
+            ///   - totalStaked: settled only: lent out for the round, in nanograms
+            ///   - totalRecovered: settled only: recovered from the round, in nanograms
+            ///   - implementation:
+            public init(
+                pool: Components.Schemas.AccountAddress,
+                roundSince: Swift.Int64,
+                transition: Components.Schemas.PoolRoundTransition,
+                totalStaked: Swift.Int64? = nil,
+                totalRecovered: Swift.Int64? = nil,
+                implementation: Components.Schemas.PoolImplementationType
+            ) {
+                self.pool = pool
+                self.roundSince = roundSince
+                self.transition = transition
+                self.totalStaked = totalStaked
+                self.totalRecovered = totalRecovered
+                self.implementation = implementation
+            }
+            public enum CodingKeys: String, CodingKey {
+                case pool
+                case roundSince = "round_since"
+                case transition
+                case totalStaked = "total_staked"
+                case totalRecovered = "total_recovered"
+                case implementation
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/ElectionsRecoverStakeAction`.
         public struct ElectionsRecoverStakeAction: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ElectionsRecoverStakeAction/amount`.
@@ -3955,6 +6776,85 @@ extension Components {
                 case jetton
             }
         }
+        /// - Remark: Generated from `#/components/schemas/Event`.
+        public struct Event: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Event/event_id`.
+            public var eventId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Event/timestamp`.
+            public var timestamp: Swift.Int64
+            /// - Remark: Generated from `#/components/schemas/Event/actions`.
+            public var actions: [Components.Schemas.Action]
+            /// - Remark: Generated from `#/components/schemas/Event/value_flow`.
+            public var valueFlow: [Components.Schemas.ValueFlow]
+            /// scam
+            ///
+            /// - Remark: Generated from `#/components/schemas/Event/is_scam`.
+            public var isScam: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/Event/lt`.
+            public var lt: Swift.Int64
+            /// Event trace is not finished yet. Transactions still happening.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Event/in_progress`.
+            public var inProgress: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/Event/progress`.
+            public var progress: Swift.Float
+            /// ID of the slice where this event was finalized. Null if not yet finalized.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Event/last_slice_id`.
+            public var lastSliceId: Swift.Int64?
+            /// Normalized hash of the root external inbound message (hex).
+            ///
+            /// - Remark: Generated from `#/components/schemas/Event/ext_msg_hash`.
+            public var extMsgHash: Swift.String?
+            /// Creates a new `Event`.
+            ///
+            /// - Parameters:
+            ///   - eventId:
+            ///   - timestamp:
+            ///   - actions:
+            ///   - valueFlow:
+            ///   - isScam: scam
+            ///   - lt:
+            ///   - inProgress: Event trace is not finished yet. Transactions still happening.
+            ///   - progress:
+            ///   - lastSliceId: ID of the slice where this event was finalized. Null if not yet finalized.
+            ///   - extMsgHash: Normalized hash of the root external inbound message (hex).
+            public init(
+                eventId: Swift.String,
+                timestamp: Swift.Int64,
+                actions: [Components.Schemas.Action],
+                valueFlow: [Components.Schemas.ValueFlow],
+                isScam: Swift.Bool,
+                lt: Swift.Int64,
+                inProgress: Swift.Bool,
+                progress: Swift.Float,
+                lastSliceId: Swift.Int64? = nil,
+                extMsgHash: Swift.String? = nil
+            ) {
+                self.eventId = eventId
+                self.timestamp = timestamp
+                self.actions = actions
+                self.valueFlow = valueFlow
+                self.isScam = isScam
+                self.lt = lt
+                self.inProgress = inProgress
+                self.progress = progress
+                self.lastSliceId = lastSliceId
+                self.extMsgHash = extMsgHash
+            }
+            public enum CodingKeys: String, CodingKey {
+                case eventId = "event_id"
+                case timestamp
+                case actions
+                case valueFlow = "value_flow"
+                case isScam = "is_scam"
+                case lt
+                case inProgress = "in_progress"
+                case progress
+                case lastSliceId = "last_slice_id"
+                case extMsgHash = "ext_msg_hash"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/JettonMetadata`.
         public struct JettonMetadata: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/JettonMetadata/address`.
@@ -4470,6 +7370,52 @@ extension Components {
                 case description
                 case url
                 case socials
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DnsExpiring`.
+        public struct DnsExpiring: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DnsExpiring/ItemsPayload`.
+            public struct ItemsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DnsExpiring/ItemsPayload/expiring_at`.
+                public var expiringAt: Swift.Int64
+                /// - Remark: Generated from `#/components/schemas/DnsExpiring/ItemsPayload/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/DnsExpiring/ItemsPayload/dns_item`.
+                public var dnsItem: Components.Schemas.NftItem?
+                /// Creates a new `ItemsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - expiringAt:
+                ///   - name:
+                ///   - dnsItem:
+                public init(
+                    expiringAt: Swift.Int64,
+                    name: Swift.String,
+                    dnsItem: Components.Schemas.NftItem? = nil
+                ) {
+                    self.expiringAt = expiringAt
+                    self.name = name
+                    self.dnsItem = dnsItem
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case expiringAt = "expiring_at"
+                    case name
+                    case dnsItem = "dns_item"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DnsExpiring/items`.
+            public typealias ItemsPayload = [Components.Schemas.DnsExpiring.ItemsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/DnsExpiring/items`.
+            public var items: Components.Schemas.DnsExpiring.ItemsPayload
+            /// Creates a new `DnsExpiring`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            public init(items: Components.Schemas.DnsExpiring.ItemsPayload) {
+                self.items = items
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
             }
         }
         /// - Remark: Generated from `#/components/schemas/Seqno`.

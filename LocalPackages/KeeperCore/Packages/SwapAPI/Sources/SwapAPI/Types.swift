@@ -11,11 +11,6 @@ public import struct Foundation.Date
 #endif
 /// A type that performs HTTP operations defined by the OpenAPI document.
 public protocol APIProtocol: Sendable {
-    /// Check server readiness
-    ///
-    /// - Remark: HTTP `GET /v2/healthcheck`.
-    /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)`.
-    func healthcheck(_ input: Operations.healthcheck.Input) async throws -> Operations.healthcheck.Output
     /// Calculate swap
     ///
     /// Get swap route with amounts and fees
@@ -48,14 +43,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: Generated from `#/paths//v2/swap/omniston/build/post(buildOmnistonSwap)`.
     @available(*, deprecated)
     func buildOmnistonSwap(_ input: Operations.buildOmnistonSwap.Input) async throws -> Operations.buildOmnistonSwap.Output
-    /// Get currencies
-    ///
-    /// Get available currencies, merchants and trading pairs
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/currencies`.
-    /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)`.
-    @available(*, deprecated)
-    func getExchangeCurrencies(_ input: Operations.getExchangeCurrencies.Input) async throws -> Operations.getExchangeCurrencies.Output
     /// Calculate exchange rates
     ///
     /// Get exchange rates from all available merchants
@@ -64,13 +51,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: Generated from `#/paths//v2/onramp/calculate/post(exchangeCalculate)`.
     @available(*, deprecated)
     func exchangeCalculate(_ input: Operations.exchangeCalculate.Input) async throws -> Operations.exchangeCalculate.Output
-    /// Get payment methods
-    ///
-    /// Get available payment methods by currency and country
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/payment_methods`.
-    /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)`.
-    func getExchangePaymentMethods(_ input: Operations.getExchangePaymentMethods.Input) async throws -> Operations.getExchangePaymentMethods.Output
     /// Get merchants
     ///
     /// Get merchant information for display
@@ -85,14 +65,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v2/onramp/exchange`.
     /// - Remark: Generated from `#/paths//v2/onramp/exchange/post(createExchange)`.
     func createExchange(_ input: Operations.createExchange.Input) async throws -> Operations.createExchange.Output
-    /// Get trading pairs
-    ///
-    /// Get available trading pairs with filtering
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/pairs`.
-    /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)`.
-    @available(*, deprecated)
-    func getExchangePairs(_ input: Operations.getExchangePairs.Input) async throws -> Operations.getExchangePairs.Output
     /// Get deposit/withdraw assets and methods
     ///
     /// Get available crypto assets with cash and crypto methods for deposit or withdraw
@@ -123,17 +95,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/crosschain/assets`.
     /// - Remark: Generated from `#/paths//v2/crosschain/assets/get(listCrossSwapAssets)`.
     func listCrossSwapAssets(_ input: Operations.listCrossSwapAssets.Input) async throws -> Operations.listCrossSwapAssets.Output
-    /// Look up a single cross-chain asset by AssetID
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/asset`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)`.
-    func getCrossSwapAsset(_ input: Operations.getCrossSwapAsset.Input) async throws -> Operations.getCrossSwapAsset.Output
-    /// Slippage options per source chain
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/slippage`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)`.
-    @available(*, deprecated)
-    func getCrossSwapSlippage(_ input: Operations.getCrossSwapSlippage.Input) async throws -> Operations.getCrossSwapSlippage.Output
     /// Create cross-chain swap quote
     ///
     /// - Remark: HTTP `POST /v2/crosschain/quotes`.
@@ -141,19 +102,66 @@ public protocol APIProtocol: Sendable {
     func createCrossSwapQuote(_ input: Operations.createCrossSwapQuote.Input) async throws -> Operations.createCrossSwapQuote.Output
     /// Prepare selected route
     ///
+    /// Builds the transaction for a quoted route. This is the call that
+    /// commits: the aggregator allocates any deposit address, screens the
+    /// wallets and mints its own id for the swap, which comes back as
+    /// `provider_route_id`.
+    ///
+    /// Screening is why a route that quoted fine can fail here. A `400` with
+    /// code `wallet_screened` means the aggregator's compliance check
+    /// rejected the sender or the recipient — an AML block on the wallet
+    /// itself, not a malformed address. It is final for that wallet: a retry,
+    /// a fresh quote or another route will be refused the same way, and the
+    /// user cannot fix it by correcting the address. swapsxyz raises it as
+    /// `WALLET_SCREENED` with `details.riskLevel` and `details.screenedAt`,
+    /// which our message carries verbatim. Treat it as a terminal state for
+    /// the swap and route the user to support rather than to a retry.
+    ///
+    /// Other `400` codes: `invalid_address` when the address is genuinely
+    /// malformed or the pair needs a receiver we do not have,
+    /// `min_amount_not_met` for an amount under the aggregator's minimum,
+    /// `insufficient_balance` for any other amount the aggregator refuses,
+    /// `provider_rejected` for another request parameter it refuses,
+    /// `route_expired` once the quote is stale or the aggregator no longer
+    /// finds the route it quoted, `cannot_build_transaction`, and
+    /// `provider_unavailable` for a rate limit or an upstream outage, which
+    /// is the one worth retrying.
+    ///
+    ///
     /// - Remark: HTTP `POST /v2/crosschain/routes/{route_id}/prepare`.
     /// - Remark: Generated from `#/paths//v2/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRoute)`.
     func prepareCrossSwapRoute(_ input: Operations.prepareCrossSwapRoute.Input) async throws -> Operations.prepareCrossSwapRoute.Output
-    /// Submit signed payload
+    /// Create cross-chain swap quote (Generic Payload flow)
     ///
-    /// - Remark: HTTP `POST /v2/crosschain/payloads/{payload_id}/submit`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)`.
-    func submitCrossSwapPayload(_ input: Operations.submitCrossSwapPayload.Input) async throws -> Operations.submitCrossSwapPayload.Output
-    /// Get execution status
+    /// The quote of `POST /v2/crosschain/quotes` for clients that sign
+    /// Generic Payload API operations. The route carries no payloads: get
+    /// them from `POST /v3/crosschain/routes/{route_id}/prepare`.
     ///
-    /// - Remark: HTTP `GET /v2/crosschain/executions/{execution_id}`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)`.
-    func getCrossSwapExecution(_ input: Operations.getCrossSwapExecution.Input) async throws -> Operations.getCrossSwapExecution.Output
+    /// Differences from v2: no Lighter targets, no inline payloads; a source
+    /// on a chain the Generic Payload API has no payloads for (anything but
+    /// TON, EVM, TRON, Bitcoin and Solana) is refused with
+    /// `unsupported_asset`. An erc20 or bep20 source is always quoted as a
+    /// contract call (approve and swap), never through a deposit address,
+    /// and a TON source never takes a deposit address. A client from
+    /// 26.14.0, and a dev build, is quoted through Rango alone (see
+    /// `aggregators`).
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/quotes`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)`.
+    func createCrossSwapQuoteV3(_ input: Operations.createCrossSwapQuoteV3.Input) async throws -> Operations.createCrossSwapQuoteV3.Output
+    /// Prepare selected route as a Generic Payload operation
+    ///
+    /// `POST /v2/crosschain/routes/{route_id}/prepare` with the transaction
+    /// returned as a Generic Payload API operation. The transaction is always
+    /// built on the aggregator side. Errors are those of v2; a route whose
+    /// transaction has no Generic Payload form answers
+    /// `cannot_build_transaction`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/routes/{route_id}/prepare`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)`.
+    func prepareCrossSwapRouteV3(_ input: Operations.prepareCrossSwapRouteV3.Input) async throws -> Operations.prepareCrossSwapRouteV3.Output
     /// List supported on-ramp assets (slim, paginated)
     ///
     /// Returns asset metadata only. The provider/method matrix lives at
@@ -228,6 +236,19 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v2/assets/capabilities`.
     /// - Remark: Generated from `#/paths//v2/assets/capabilities/get(getAssetCapabilities)`.
     func getAssetCapabilities(_ input: Operations.getAssetCapabilities.Input) async throws -> Operations.getAssetCapabilities.Output
+    /// Display metadata of MoonPay payment methods
+    ///
+    /// Title, subtitle, icon and badge for every MoonPay payment method type,
+    /// to decorate the types returned by MoonPay Platform `GET /platform/v1/payment-methods`.
+    /// Types missing from the response have no metadata; show them with a fallback.
+    /// The list is refreshed from MoonPay once a day.
+    ///
+    /// `503` `provider_unavailable`: the metadata has not been loaded from MoonPay yet.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v2/moonpay/payment-methods`.
+    /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)`.
+    func getMoonPayPaymentMethods(_ input: Operations.getMoonPayPaymentMethods.Input) async throws -> Operations.getMoonPayPaymentMethods.Output
     /// Create a MoonPay Platform session token
     ///
     /// Creates a MoonPay Platform session (`POST /platform/v1/sessions`) for the
@@ -253,13 +274,6 @@ public protocol APIProtocol: Sendable {
 
 /// Convenience overloads for operation inputs.
 extension APIProtocol {
-    /// Check server readiness
-    ///
-    /// - Remark: HTTP `GET /v2/healthcheck`.
-    /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)`.
-    public func healthcheck(headers: Operations.healthcheck.Input.Headers = .init()) async throws -> Operations.healthcheck.Output {
-        try await healthcheck(Operations.healthcheck.Input(headers: headers))
-    }
     /// Calculate swap
     ///
     /// Get swap route with amounts and fees
@@ -318,22 +332,6 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Get currencies
-    ///
-    /// Get available currencies, merchants and trading pairs
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/currencies`.
-    /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)`.
-    @available(*, deprecated)
-    public func getExchangeCurrencies(
-        query: Operations.getExchangeCurrencies.Input.Query = .init(),
-        headers: Operations.getExchangeCurrencies.Input.Headers = .init()
-    ) async throws -> Operations.getExchangeCurrencies.Output {
-        try await getExchangeCurrencies(Operations.getExchangeCurrencies.Input(
-            query: query,
-            headers: headers
-        ))
-    }
     /// Calculate exchange rates
     ///
     /// Get exchange rates from all available merchants
@@ -350,21 +348,6 @@ extension APIProtocol {
             query: query,
             headers: headers,
             body: body
-        ))
-    }
-    /// Get payment methods
-    ///
-    /// Get available payment methods by currency and country
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/payment_methods`.
-    /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)`.
-    public func getExchangePaymentMethods(
-        query: Operations.getExchangePaymentMethods.Input.Query = .init(),
-        headers: Operations.getExchangePaymentMethods.Input.Headers = .init()
-    ) async throws -> Operations.getExchangePaymentMethods.Output {
-        try await getExchangePaymentMethods(Operations.getExchangePaymentMethods.Input(
-            query: query,
-            headers: headers
         ))
     }
     /// Get merchants
@@ -397,22 +380,6 @@ extension APIProtocol {
             query: query,
             headers: headers,
             body: body
-        ))
-    }
-    /// Get trading pairs
-    ///
-    /// Get available trading pairs with filtering
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/pairs`.
-    /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)`.
-    @available(*, deprecated)
-    public func getExchangePairs(
-        query: Operations.getExchangePairs.Input.Query = .init(),
-        headers: Operations.getExchangePairs.Input.Headers = .init()
-    ) async throws -> Operations.getExchangePairs.Output {
-        try await getExchangePairs(Operations.getExchangePairs.Input(
-            query: query,
-            headers: headers
         ))
     }
     /// Get deposit/withdraw assets and methods
@@ -487,85 +454,107 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Look up a single cross-chain asset by AssetID
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/asset`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)`.
-    public func getCrossSwapAsset(
-        query: Operations.getCrossSwapAsset.Input.Query,
-        headers: Operations.getCrossSwapAsset.Input.Headers = .init()
-    ) async throws -> Operations.getCrossSwapAsset.Output {
-        try await getCrossSwapAsset(Operations.getCrossSwapAsset.Input(
-            query: query,
-            headers: headers
-        ))
-    }
-    /// Slippage options per source chain
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/slippage`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)`.
-    @available(*, deprecated)
-    public func getCrossSwapSlippage(headers: Operations.getCrossSwapSlippage.Input.Headers = .init()) async throws -> Operations.getCrossSwapSlippage.Output {
-        try await getCrossSwapSlippage(Operations.getCrossSwapSlippage.Input(headers: headers))
-    }
     /// Create cross-chain swap quote
     ///
     /// - Remark: HTTP `POST /v2/crosschain/quotes`.
     /// - Remark: Generated from `#/paths//v2/crosschain/quotes/post(createCrossSwapQuote)`.
     public func createCrossSwapQuote(
-        query: Operations.createCrossSwapQuote.Input.Query = .init(),
         headers: Operations.createCrossSwapQuote.Input.Headers = .init(),
         body: Components.RequestBodies.CrossSwapQuote
     ) async throws -> Operations.createCrossSwapQuote.Output {
         try await createCrossSwapQuote(Operations.createCrossSwapQuote.Input(
-            query: query,
             headers: headers,
             body: body
         ))
     }
     /// Prepare selected route
     ///
+    /// Builds the transaction for a quoted route. This is the call that
+    /// commits: the aggregator allocates any deposit address, screens the
+    /// wallets and mints its own id for the swap, which comes back as
+    /// `provider_route_id`.
+    ///
+    /// Screening is why a route that quoted fine can fail here. A `400` with
+    /// code `wallet_screened` means the aggregator's compliance check
+    /// rejected the sender or the recipient — an AML block on the wallet
+    /// itself, not a malformed address. It is final for that wallet: a retry,
+    /// a fresh quote or another route will be refused the same way, and the
+    /// user cannot fix it by correcting the address. swapsxyz raises it as
+    /// `WALLET_SCREENED` with `details.riskLevel` and `details.screenedAt`,
+    /// which our message carries verbatim. Treat it as a terminal state for
+    /// the swap and route the user to support rather than to a retry.
+    ///
+    /// Other `400` codes: `invalid_address` when the address is genuinely
+    /// malformed or the pair needs a receiver we do not have,
+    /// `min_amount_not_met` for an amount under the aggregator's minimum,
+    /// `insufficient_balance` for any other amount the aggregator refuses,
+    /// `provider_rejected` for another request parameter it refuses,
+    /// `route_expired` once the quote is stale or the aggregator no longer
+    /// finds the route it quoted, `cannot_build_transaction`, and
+    /// `provider_unavailable` for a rate limit or an upstream outage, which
+    /// is the one worth retrying.
+    ///
+    ///
     /// - Remark: HTTP `POST /v2/crosschain/routes/{route_id}/prepare`.
     /// - Remark: Generated from `#/paths//v2/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRoute)`.
     public func prepareCrossSwapRoute(
         path: Operations.prepareCrossSwapRoute.Input.Path,
-        query: Operations.prepareCrossSwapRoute.Input.Query = .init(),
         headers: Operations.prepareCrossSwapRoute.Input.Headers = .init(),
         body: Components.RequestBodies.CrossSwapPrepare? = nil
     ) async throws -> Operations.prepareCrossSwapRoute.Output {
         try await prepareCrossSwapRoute(Operations.prepareCrossSwapRoute.Input(
             path: path,
-            query: query,
             headers: headers,
             body: body
         ))
     }
-    /// Submit signed payload
+    /// Create cross-chain swap quote (Generic Payload flow)
     ///
-    /// - Remark: HTTP `POST /v2/crosschain/payloads/{payload_id}/submit`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)`.
-    public func submitCrossSwapPayload(
-        path: Operations.submitCrossSwapPayload.Input.Path,
-        headers: Operations.submitCrossSwapPayload.Input.Headers = .init(),
-        body: Components.RequestBodies.CrossSwapSubmit
-    ) async throws -> Operations.submitCrossSwapPayload.Output {
-        try await submitCrossSwapPayload(Operations.submitCrossSwapPayload.Input(
-            path: path,
+    /// The quote of `POST /v2/crosschain/quotes` for clients that sign
+    /// Generic Payload API operations. The route carries no payloads: get
+    /// them from `POST /v3/crosschain/routes/{route_id}/prepare`.
+    ///
+    /// Differences from v2: no Lighter targets, no inline payloads; a source
+    /// on a chain the Generic Payload API has no payloads for (anything but
+    /// TON, EVM, TRON, Bitcoin and Solana) is refused with
+    /// `unsupported_asset`. An erc20 or bep20 source is always quoted as a
+    /// contract call (approve and swap), never through a deposit address,
+    /// and a TON source never takes a deposit address. A client from
+    /// 26.14.0, and a dev build, is quoted through Rango alone (see
+    /// `aggregators`).
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/quotes`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)`.
+    public func createCrossSwapQuoteV3(
+        headers: Operations.createCrossSwapQuoteV3.Input.Headers = .init(),
+        body: Components.RequestBodies.CrossSwapQuoteV3
+    ) async throws -> Operations.createCrossSwapQuoteV3.Output {
+        try await createCrossSwapQuoteV3(Operations.createCrossSwapQuoteV3.Input(
             headers: headers,
             body: body
         ))
     }
-    /// Get execution status
+    /// Prepare selected route as a Generic Payload operation
     ///
-    /// - Remark: HTTP `GET /v2/crosschain/executions/{execution_id}`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)`.
-    public func getCrossSwapExecution(
-        path: Operations.getCrossSwapExecution.Input.Path,
-        headers: Operations.getCrossSwapExecution.Input.Headers = .init()
-    ) async throws -> Operations.getCrossSwapExecution.Output {
-        try await getCrossSwapExecution(Operations.getCrossSwapExecution.Input(
+    /// `POST /v2/crosschain/routes/{route_id}/prepare` with the transaction
+    /// returned as a Generic Payload API operation. The transaction is always
+    /// built on the aggregator side. Errors are those of v2; a route whose
+    /// transaction has no Generic Payload form answers
+    /// `cannot_build_transaction`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/routes/{route_id}/prepare`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)`.
+    public func prepareCrossSwapRouteV3(
+        path: Operations.prepareCrossSwapRouteV3.Input.Path,
+        headers: Operations.prepareCrossSwapRouteV3.Input.Headers = .init(),
+        body: Components.RequestBodies.CrossSwapPrepareV3? = nil
+    ) async throws -> Operations.prepareCrossSwapRouteV3.Output {
+        try await prepareCrossSwapRouteV3(Operations.prepareCrossSwapRouteV3.Input(
             path: path,
-            headers: headers
+            headers: headers,
+            body: body
         ))
     }
     /// List supported on-ramp assets (slim, paginated)
@@ -742,6 +731,27 @@ extension APIProtocol {
         headers: Operations.getAssetCapabilities.Input.Headers = .init()
     ) async throws -> Operations.getAssetCapabilities.Output {
         try await getAssetCapabilities(Operations.getAssetCapabilities.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Display metadata of MoonPay payment methods
+    ///
+    /// Title, subtitle, icon and badge for every MoonPay payment method type,
+    /// to decorate the types returned by MoonPay Platform `GET /platform/v1/payment-methods`.
+    /// Types missing from the response have no metadata; show them with a fallback.
+    /// The list is refreshed from MoonPay once a day.
+    ///
+    /// `503` `provider_unavailable`: the metadata has not been loaded from MoonPay yet.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v2/moonpay/payment-methods`.
+    /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)`.
+    public func getMoonPayPaymentMethods(
+        query: Operations.getMoonPayPaymentMethods.Input.Query = .init(),
+        headers: Operations.getMoonPayPaymentMethods.Input.Headers = .init()
+    ) async throws -> Operations.getMoonPayPaymentMethods.Output {
+        try await getMoonPayPaymentMethods(Operations.getMoonPayPaymentMethods.Input(
             query: query,
             headers: headers
         ))

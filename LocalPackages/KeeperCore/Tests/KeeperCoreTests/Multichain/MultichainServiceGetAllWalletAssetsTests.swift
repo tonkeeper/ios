@@ -129,6 +129,65 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
         XCTAssertEqual(result.fiatPrice, ["usd": "14.4"])
     }
 
+    func test_implementationReportsTheFirstPageWhenMorePagesFollow() async throws {
+        let setup = makeImplementation(pages: [
+            MultichainWalletAssetRecordsPage(
+                records: [Self.makeRecord(assetId: "ton/mainnet/coin", balance: 2, accountType: .tonV5R1)],
+                nextCursor: "c1",
+                fiatPrice: ["usd": "14.4"]
+            ),
+            MultichainWalletAssetRecordsPage(
+                records: [Self.makeRecord(assetId: "btc/mainnet/coin", balance: 1, chain: .btc, accountType: .btcP2WPKH)],
+                nextCursor: nil
+            ),
+        ])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        var firstPages = [MultichainWalletAssetsPage]()
+
+        let result = try await setup.service.getAllWalletAssets(
+            state: state,
+            currencies: ["usd"],
+            capabilities: nil,
+            chain: nil,
+            search: nil,
+            availableOnly: nil,
+            showHidden: false,
+            showAll: nil,
+            hideDust: nil,
+            onFirstPage: { firstPages.append($0) }
+        )
+
+        XCTAssertEqual(firstPages.map { $0.assets.map(\.asset.assetId) }, [["ton/mainnet/coin"]])
+        XCTAssertEqual(firstPages.first?.fiatPrice, ["usd": "14.4"])
+        XCTAssertEqual(result.assets.map(\.asset.assetId), ["ton/mainnet/coin", "btc/mainnet/coin"])
+    }
+
+    func test_implementationDoesNotReportASinglePage() async throws {
+        let setup = makeImplementation(pages: [
+            MultichainWalletAssetRecordsPage(
+                records: [Self.makeRecord(assetId: "ton/mainnet/coin", balance: 2, accountType: .tonV5R1)],
+                nextCursor: nil
+            ),
+        ])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        var firstPages = [MultichainWalletAssetsPage]()
+
+        _ = try await setup.service.getAllWalletAssets(
+            state: state,
+            currencies: ["usd"],
+            capabilities: nil,
+            chain: nil,
+            search: nil,
+            availableOnly: nil,
+            showHidden: false,
+            showAll: nil,
+            hideDust: nil,
+            onFirstPage: { firstPages.append($0) }
+        )
+
+        XCTAssertTrue(firstPages.isEmpty)
+    }
+
     func test_throwsOnRepeatedCursor() async {
         let service = MultichainServiceStub(pages: [
             Self.makePage(assetIds: ["ton/mainnet/coin"], nextCursor: "again"),
@@ -422,6 +481,90 @@ final class MultichainServiceGetAllWalletAssetsTests: XCTestCase {
         XCTAssertEqual(setup.api.receivedCursors, [nil])
     }
 
+    func test_getWalletAssetIncludingUnheldReturnsAHiddenAssetWithoutBalance() async throws {
+        let assetId = "ton/mainnet/coin"
+        let setup = makeImplementation(pages: [])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        setup.api.walletAsset = MultichainWalletAssetRecord(
+            asset: Self.makeAsset(assetId: assetId, balance: 0, isHidden: true),
+            account: MultichainWalletAddress(chain: .ton, address: "v5", type: .tonV5R1)
+        )
+
+        let asset = try await setup.service.getWalletAssetIncludingUnheld(
+            state: state,
+            assetId: assetId,
+            currencies: ["usd"]
+        )
+
+        XCTAssertEqual(asset?.asset.assetId, assetId)
+        XCTAssertEqual(asset?.balance, 0)
+        XCTAssertEqual(setup.api.receivedWalletAssetIds, [assetId])
+        XCTAssertEqual(setup.api.receivedCursors, [])
+    }
+
+    func test_getWalletAssetIncludingUnheldZeroesTheBalanceOfAnotherLocalWallet() async throws {
+        let assetId = "ton/mainnet/coin"
+        let state = MultichainWalletState(
+            walletId: "wallet-id",
+            addresses: [
+                MultichainWalletAddress(chain: .ton, address: "v5", type: .tonV5R1),
+            ]
+        )
+        let setup = makeImplementation(pages: [])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        setup.api.walletAsset = Self.makeRecord(assetId: assetId, balance: 3, accountType: .tonV4R2)
+
+        let asset = try await setup.service.getWalletAssetIncludingUnheld(
+            state: state,
+            assetId: assetId,
+            currencies: ["usd"]
+        )
+
+        XCTAssertEqual(asset?.asset.assetId, assetId)
+        XCTAssertEqual(asset?.balance, 0)
+    }
+
+    func test_getWalletAssetIncludingUnheldRejectsAnotherAsset() async throws {
+        let setup = makeImplementation(pages: [])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        setup.api.walletAsset = Self.makeRecord(assetId: "ton/mainnet/coin", balance: 3, accountType: .tonV5R1)
+
+        let asset = try await setup.service.getWalletAssetIncludingUnheld(
+            state: state,
+            assetId: "tron/mainnet/coin",
+            currencies: ["usd"]
+        )
+
+        XCTAssertNil(asset)
+    }
+
+    func test_getWalletAssetIncludingUnheldIgnoresAPendingShowOfAnotherAsset() async throws {
+        let assetId = "ton/mainnet/coin"
+        let state = MultichainWalletState(
+            walletId: "wallet-id",
+            addresses: [
+                MultichainWalletAddress(chain: .ton, address: "v5", type: .tonV5R1),
+            ]
+        )
+        let setup = makeImplementation(pages: [])
+        defer { try? FileManager.default.removeItem(at: setup.storageDirectory) }
+        setup.api.walletAsset = Self.makeRecord(assetId: assetId, balance: 3, accountType: .tonV4R2)
+        let shownAsset = Self.makeAsset(assetId: "base/mainnet/coin", balance: 10, isHidden: true)
+        try setup.visibilityChangesController.enqueue(
+            [MultichainAssetFilterChange(assetId: shownAsset.asset.assetId, action: .show)],
+            walletId: state.walletId,
+            assets: [shownAsset]
+        )
+
+        let asset = try await setup.service.getWalletAssetIncludingUnheld(
+            state: state,
+            assetId: assetId,
+            currencies: ["usd"]
+        )
+
+        XCTAssertEqual(asset?.asset.assetId, assetId)
+    }
+
     func test_assetBalanceProviderRequestsOnlyTheTargetAsset() async {
         let assetId = "btc/mainnet/coin"
         let service = MultichainServiceStub(pages: [
@@ -610,6 +753,10 @@ private final class MultichainServiceStub: MultichainService {
         throw .connectionError
     }
 
+    func getWalletAssetIncludingUnheld(state _: MultichainWalletState, assetId _: String, currencies _: [String]) async throws(MultichainServiceError) -> MultichainAsset? {
+        nil
+    }
+
     func saveWalletAssetsFilters(
         walletId _: String,
         changes _: [MultichainAssetFilterChange]
@@ -670,6 +817,8 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
     private(set) var receivedAssetIds: [[String]?] = []
     private(set) var receivedCapabilities: [[MultichainAssetCapability]?] = []
     private(set) var receivedHideDust: [Bool?] = []
+    private(set) var receivedWalletAssetIds: [String] = []
+    var walletAsset: MultichainWalletAssetRecord?
 
     init(pages: [MultichainWalletAssetRecordsPage]) {
         self.pages = pages
@@ -721,6 +870,11 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
 
     func getWalletSyncStatus(walletId _: String) async throws(MultichainClientAPIError) -> MultichainWalletSyncStatus {
         throw .connectionError(underlying: nil)
+    }
+
+    func getWalletAsset(walletId _: String, assetId: String, currencies _: [String]) async throws(MultichainClientAPIError) -> MultichainWalletAssetRecord? {
+        receivedWalletAssetIds.append(assetId)
+        return walletAsset
     }
 
     func saveWalletAssetsFilters(
@@ -785,6 +939,10 @@ private final class MultichainClientAPIStub: MultichainClientAPI {
     }
 
     func getWalletRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
+        throw .connectionError(underlying: nil)
+    }
+
+    func getWalletPerpsRealtimeToken(walletId _: String) async throws(MultichainClientAPIError) -> String {
         throw .connectionError(underlying: nil)
     }
 }

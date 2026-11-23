@@ -1,5 +1,6 @@
 import Foundation
 import TKKandelabrAPI
+import TKLogging
 
 final class HermesCandleClient: HermesCandleStreaming, Sendable {
     private let hub: HermesSocketHub
@@ -56,6 +57,7 @@ private actor Session {
     private var requests: [Int64: String] = [:]
     private var subscribed = false
     private var bufferedUpdates: [Components.Schemas.GetCandlesResponse] = []
+    private var bufferedCandleCount = 0
     private var attempt = 0
     private var retryDelay = Session.minRetryDelay
     private var retryTask: Task<Void, Never>?
@@ -117,7 +119,7 @@ private actor Session {
         pendingFeeds = [feedId, volumeFeedId]
         requests = [:]
         subscribed = false
-        bufferedUpdates = []
+        discardBufferedUpdates()
         retryDelay = Self.minRetryDelay
         subscribePending()
     }
@@ -185,7 +187,7 @@ private actor Session {
             } else if subscribed {
                 await onUpdate(response)
             } else {
-                bufferedUpdates.append(response)
+                buffer(response)
             }
         case let .subscribed(requestId):
             guard let feed = takeRequest(requestId) else { return }
@@ -197,7 +199,7 @@ private actor Session {
             guard feed == feedId, !subscribed else { return }
             subscribed = true
             let buffered = bufferedUpdates
-            bufferedUpdates = []
+            discardBufferedUpdates()
             await onSubscribed()
             for response in buffered {
                 await onUpdate(response)
@@ -219,6 +221,27 @@ private actor Session {
         }
     }
 
+    private func buffer(_ response: Components.Schemas.GetCandlesResponse) {
+        let size = Self.bufferedSize(of: response)
+        guard size <= Self.maxBufferedCandles else {
+            Log.perps.w("hermes candles push skipped before ack — \(size) candles")
+            return
+        }
+        var evicted = 0
+        while bufferedCandleCount + size > Self.maxBufferedCandles {
+            bufferedCandleCount -= Self.bufferedSize(of: bufferedUpdates[evicted])
+            evicted += 1
+        }
+        bufferedUpdates.removeFirst(evicted)
+        bufferedUpdates.append(response)
+        bufferedCandleCount += size
+    }
+
+    private func discardBufferedUpdates() {
+        bufferedUpdates = []
+        bufferedCandleCount = 0
+    }
+
     private func takeRequest(_ requestId: Int64?) -> String? {
         requestId.flatMap { requests.removeValue(forKey: $0) }
     }
@@ -226,4 +249,9 @@ private actor Session {
     private static let subscribeTimeout: TimeInterval = 30
     private static let minRetryDelay: TimeInterval = 1
     private static let maxRetryDelay: TimeInterval = 30
+    private static let maxBufferedCandles = 5000
+
+    private static func bufferedSize(of response: Components.Schemas.GetCandlesResponse) -> Int {
+        max(response.candles.count, 1)
+    }
 }

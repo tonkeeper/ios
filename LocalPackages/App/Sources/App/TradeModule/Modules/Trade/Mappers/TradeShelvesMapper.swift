@@ -19,7 +19,10 @@ enum TradeShelvesMapper {
                                 name: grid.name,
                                 items: grid.items.map(itemsMapper.assetViewData),
                                 seeAllCategory: grid.seeAllCategory,
-                                initialCatalogSearchSort: grid.initialCatalogSearchSort
+                                initialCatalogSearchSort: grid.initialCatalogSearchSort,
+                                seeAllChain: MultichainChain.allCases.first {
+                                    $0.badgeTitle.caseInsensitiveCompare(group.title) == .orderedSame
+                                }
                             )
                         }
                     )

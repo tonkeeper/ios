@@ -10,13 +10,12 @@ protocol ChainKitSwapPipeline {
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapPipelinePreparation
 
     func executeSwapPayloads(
-        passcodeProvider: @escaping () async -> String?,
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
         payloadFees: MultichainSwapPayloadFees,
-        provider: MultichainSwapProvider,
-        approvalMode: MultichainSwapApprovalMode
+        provider: MultichainSwapProvider
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapBroadcastResult
 }

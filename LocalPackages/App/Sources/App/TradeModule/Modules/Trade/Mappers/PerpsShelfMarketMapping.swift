@@ -25,8 +25,8 @@ enum PerpsShelfMarketMapping {
             symbol: market.symbol,
             iconURL: market.iconURL,
             leverage: format.leverageBadge(Double(market.maxLeverage)),
-            changeText: itemsMapper.formatChange(change),
-            changeColor: itemsMapper.changeColor(for: change)
+            changeText: format.priceChange(market.priceChangePercent),
+            changeColor: change == 0 ? .textSecondary : itemsMapper.changeColor(for: change)
         )
     }
 }

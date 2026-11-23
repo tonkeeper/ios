@@ -273,6 +273,35 @@ final class MultichainWalletSyncControllerTests: XCTestCase {
         XCTAssertEqual(bindingsSpy.unregisteredWalletIds, [["gone-state"]])
     }
 
+    func test_reconcileBindings_registersALedgerWalletWithoutAPasscode() async {
+        let device = Wallet.LedgerDevice(deviceId: "device", deviceModel: "Ledger Flex", accountIndex: 0)
+        let ledgerWallet = makeWallet(
+            id: "ledger",
+            kind: .Ledger(makePublicKey(id: "ledger"), .v4R2, device),
+            multichain: .multichain(makeState(walletId: "ledger-state", syncState: .pending))
+        )
+        let bindingsSpy = MultichainBindingsSpy()
+        bindingsSpy.bindings = DeviceBindings(known: [], unknown: ["ledger-state"], extra: [])
+        let persistenceSpy = MultichainSyncPersistenceSpy()
+        var registered = [String]()
+        let controller = makeController(
+            wallets: [ledgerWallet],
+            mnemonicsSpy: MultichainSyncMnemonicsSpy(mnemonics: [:]),
+            syncSpy: MultichainWalletSyncSpy(),
+            persistenceSpy: persistenceSpy,
+            bindingsSpy: bindingsSpy,
+            syncLedgerWallet: { registered.append($0.walletId) }
+        )
+
+        await controller.reconcileBindings()
+
+        XCTAssertEqual(bindingsSpy.requestedWalletIds, [["ledger-state"]])
+        XCTAssertEqual(registered, ["ledger-state"])
+        XCTAssertEqual(persistenceSpy.savedMultichainWallets, [.multichain(makeState(walletId: "ledger-state", syncState: .synced))])
+        XCTAssertTrue(bindingsSpy.unregisteredWalletIds.isEmpty)
+        XCTAssertFalse(controller.needsStartupSync, "a Ledger wallet must never wait for a passcode-gated sync")
+    }
+
     func test_reconcileBindings_detachesLeftoverBindingsWhenNoWalletsRemain() async {
         let bindingsSpy = MultichainBindingsSpy()
         bindingsSpy.bindings = DeviceBindings(known: [], unknown: [], extra: ["gone-state"])
@@ -876,13 +905,15 @@ private extension MultichainWalletSyncControllerTests {
         persistenceSpy: MultichainSyncPersistenceSpy,
         bindingsSpy: MultichainBindingsSpy = MultichainBindingsSpy(),
         appKeySpy: MultichainAppKeySpy = MultichainAppKeySpy(),
-        getWalletsProvider: (() -> [Wallet])? = nil
+        getWalletsProvider: (() -> [Wallet])? = nil,
+        syncLedgerWallet: @escaping (MultichainWalletState) async throws(MultichainServiceError) -> Void = { _ in }
     ) -> MultichainWalletSyncControllerImplementation {
         MultichainWalletSyncControllerImplementation(
             dependencies: MultichainWalletSyncControllerDependencies(
                 getWallets: { getWalletsProvider?() ?? wallets },
                 getMnemonics: mnemonicsSpy.getMnemonics,
                 syncWallet: syncSpy.syncWallet,
+                syncLedgerWallet: syncLedgerWallet,
                 saveWallet: persistenceSpy.saveWallet,
                 hasPersistentAppKey: { walletId in
                     await appKeySpy.hasPersistentAppKey(walletId: walletId)

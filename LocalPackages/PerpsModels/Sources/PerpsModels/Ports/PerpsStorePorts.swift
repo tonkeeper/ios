@@ -40,33 +40,36 @@ public protocol PerpsAccountStoring: PerpsStoreObserving {
     func currentWalletState() -> PerpsWalletAccountState
     func resolveIfNeeded()
     func refresh()
+    /// A refresh as a screen appears, which a read made a moment ago may answer; `refresh()` after an action.
+    func refreshOnAppear()
     func fundingActivity() -> PerpsFundingActivity
+    func acknowledgeDepositStatuses(_ operationIds: Set<String>)
 
     func lifecycle(marketId: Int64) -> PerpsMarketLifecycle
-    func matchingPosition(marketId: Int64) -> PerpsPositionSummary?
-
-    func beginOpening(_ descriptor: PerpsOpeningDescriptor)
-    func beginClosing(marketId: Int64)
-    func beginAdjusting(marketId: Int64, direction: PerpsSizeChangeDirection, baseSizeBefore: Double)
-    func beginAdjustingMargin(
-        marketId: Int64,
-        direction: PerpsMarginChangeDirection,
-        allocatedMarginBefore: Double,
-        amountUsd: Double
-    )
-    func clearPending(marketId: Int64)
 
     func marketExtras(marketId: Int64) -> PerpsMarketExtras?
-    func loadMarketExtras(marketId: Int64, clearingPending: Bool)
+    func loadMarketExtras(marketId: Int64)
     func releaseMarketExtras(marketId: Int64)
 
     func subscribePositions(cadence: PerpsPositionsCadence)
     func unsubscribePositions(cadence: PerpsPositionsCadence)
+
+    /// The open positions the wallet had when they last loaded on this device; nil before the first load.
+    var rememberedPositionsCount: Int? { get }
+    func rememberPositionsCount(_ count: Int)
 }
 
 public extension PerpsAccountStoring {
-    func loadMarketExtras(marketId: Int64) {
-        loadMarketExtras(marketId: marketId, clearingPending: false)
+    var rememberedPositionsCount: Int? {
+        nil
+    }
+
+    func rememberPositionsCount(_: Int) {}
+
+    func acknowledgeDepositStatuses(_: Set<String>) {}
+
+    func refreshOnAppear() {
+        refresh()
     }
 
     func subscribePositions() {

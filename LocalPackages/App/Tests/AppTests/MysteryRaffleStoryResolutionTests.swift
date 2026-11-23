@@ -43,7 +43,26 @@ final class MysteryRaffleStoryResolutionTests: XCTestCase {
         XCTAssertNil(MysteryRaffleStoriesRouter.story(forPayload: "intro", in: raffle(storyIds: [])))
     }
 
-    private func raffle(storyIds: [String]) -> MultichainRaffle {
+    func test_bannerRouteFollowsTheCardButton() throws {
+        let story = try XCTUnwrap(raffle(storyIds: ["intro"]).stories.first)
+
+        XCTAssertEqual(bannerRoute(.deeplink, "tonkeeper://stories/intro"), .story(story))
+        XCTAssertNil(bannerRoute(.deeplink, "tonkeeper://raffle/mystery"))
+        XCTAssertEqual(bannerRoute(.deeplink, "tonkeeper://raffle/other"), .deeplink("tonkeeper://raffle/other"))
+        XCTAssertEqual(bannerRoute(.link, "https://t.me/tonkeeper"), try .link(XCTUnwrap(URL(string: "https://t.me/tonkeeper"))))
+        XCTAssertNil(MysteryRaffleCoordinator.bannerRoute(for: raffle(storyIds: ["intro"]), deeplinkParser: deeplinkParser))
+    }
+
+    private let deeplinkParser = DeeplinkParser(walletConnectDeeplinkValidator: WalletConnectDeeplinkValidatorImplementation())
+
+    private func bannerRoute(_ action: MultichainRaffleCTA.Action, _ payload: String) -> MysteryRaffleCoordinator.BannerRoute? {
+        MysteryRaffleCoordinator.bannerRoute(
+            for: raffle(storyIds: ["intro"], button: MultichainRaffleCTA(title: "", action: action, payload: payload)),
+            deeplinkParser: deeplinkParser
+        )
+    }
+
+    private func raffle(storyIds: [String], button: MultichainRaffleCTA? = nil) -> MultichainRaffle {
         MultichainRaffle(
             id: "mystery",
             status: .joined,
@@ -61,6 +80,7 @@ final class MysteryRaffleStoryResolutionTests: XCTestCase {
             milestones: [],
             cta: MultichainRaffleCTA(title: "", action: .deeplink, payload: ""),
             progress: nil,
+            banner: button.map { MultichainRaffleBanner(title: "", description: nil, imageURL: "", button: $0) },
             stories: storyIds.map { id in
                 MultichainRaffleStory(
                     id: id,

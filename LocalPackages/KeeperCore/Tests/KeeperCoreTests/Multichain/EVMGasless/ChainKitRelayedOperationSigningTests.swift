@@ -15,7 +15,7 @@ final class ChainKitRelayedOperationSigningTests: XCTestCase {
 
     private lazy var client = CryptoKitClient(
         netModule: ModuleNetModule(
-            netConfig: ModuleNetConfig(isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil)
+            netConfig: ModuleNetConfig(isLogging: false, logger: nil, userAgent: nil, sessionProvider: nil, nodeManifestHost: nil)
         )
     )
 

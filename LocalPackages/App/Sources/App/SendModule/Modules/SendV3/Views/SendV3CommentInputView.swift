@@ -9,7 +9,7 @@ final class SendV3CommentInputView: UIView {
         )
     )
 
-    let descriptionLabel = UILabel()
+    let descriptionLabel = TKActionLabel()
     let descriptionContainer = UIView()
 
     let stackView: UIStackView = {

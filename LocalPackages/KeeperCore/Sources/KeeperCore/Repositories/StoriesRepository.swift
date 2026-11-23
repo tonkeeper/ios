@@ -27,6 +27,10 @@ struct StoriesRepository {
         statuses[id] = StoryStatus(isWatched: isWatched, watchedPageIndex: watchedPageIndex)
         try? fileSystemVault.saveItem(statuses, key: .storyStatuses)
     }
+
+    func resetStoryStatuses() {
+        try? fileSystemVault.deleteItem(key: .storyStatuses)
+    }
 }
 
 private extension String {

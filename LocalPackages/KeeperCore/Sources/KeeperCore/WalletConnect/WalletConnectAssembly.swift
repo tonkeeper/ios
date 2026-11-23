@@ -1,7 +1,7 @@
 import ChainKit
 import Foundation
-import ReownWalletKit
 import TKLogging
+import WalletConnectSign
 
 public final class WalletConnectAssembly {
     public private(set) lazy var walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator = WalletConnectDeeplinkValidatorImplementation()
@@ -9,8 +9,20 @@ public final class WalletConnectAssembly {
     public private(set) lazy var walletConnectSigningService: WalletConnectSigningService = WalletConnectSigningService(
         mnemonicAccess: mnemonicAccess,
         client: chainKitClient,
-        pendingTransactionsService: pendingTransactionsService
+        pendingTransactionsService: pendingTransactionsService,
+        gate: signingGate,
+        signsDappOperations: configuration.featureEnabled(.genericPayloadEnabled),
+        sendOperation: WalletConnectSigningService.sending(through: ChainKitOperationSender(client: chainKitClient)),
+        signOperation: WalletConnectSigningService.signing(through: ChainKitOperationSender(client: chainKitClient))
     )
+
+    var signingGate: OperationGate {
+        OperationGate(
+            configuration: configuration,
+            validatingWith: chainKitClient,
+            validationTimeLimit: DappValidationCheck.defaultTimeLimit
+        )
+    }
 
     @WalletConnectActor
     public private(set) lazy var walletConnectService: WalletConnectService = WalletConnectServiceImplementation(
@@ -92,18 +104,21 @@ public final class WalletConnectAssembly {
     private let walletsStore: WalletsStore
     private let chainKitClient: CryptoKitClient
     private let pendingTransactionsService: PendingTransactionsService
+    private let configuration: Configuration
 
     init(
         mnemonicAccess: MnemonicAccess,
         coreAssembly: CoreAssembly,
         walletsStore: WalletsStore,
         chainKitClient: CryptoKitClient,
-        pendingTransactionsService: PendingTransactionsService
+        pendingTransactionsService: PendingTransactionsService,
+        configuration: Configuration
     ) {
         self.mnemonicAccess = mnemonicAccess
         self.coreAssembly = coreAssembly
         self.walletsStore = walletsStore
         self.chainKitClient = chainKitClient
         self.pendingTransactionsService = pendingTransactionsService
+        self.configuration = configuration
     }
 }

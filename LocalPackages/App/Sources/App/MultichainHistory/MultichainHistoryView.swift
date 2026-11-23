@@ -1,6 +1,7 @@
 import AppUI
 import Foundation
 import KeeperCore
+import Perps
 import PerpsModels
 import SwiftUI
 import TKLocalize
@@ -13,6 +14,7 @@ struct MultichainHistoryView: View {
     let onOpenTransaction: (URL, String?) -> Void
     let onSelectPerpsEvent: ((PerpsHistoryEvent) -> Void)?
     @State private var selectedActivity: MultichainActivity?
+    @State private var depositId: String?
     @State private var isFiltersPresented = false
     @Environment(\.tkPalette) private var palette
 
@@ -44,16 +46,28 @@ struct MultichainHistoryView: View {
             }
         }
         .tkBottomSheet(
-            item: $selectedActivity,
+            item: Binding(
+                get: { selectedActivity.map(viewModel.detailsItem) },
+                set: { selectedActivity = $0?.activity }
+            ),
             header: { _, _ in .compact },
-            content: { activity in
+            content: { item in
                 MultichainTransactionDetailsView(
-                    model: viewModel.transactionDetailsModel(for: activity),
+                    model: viewModel.transactionDetailsModel(for: item.activity),
                     onOpenTransaction: onOpenTransaction,
                     onCopy: { Pasteboard.copy(value: $0) }
                 )
             }
         )
+        .refreshesWhileFundingPending(selectedActivity) { [viewModel] in
+            await viewModel.refresh()
+            return viewModel.currentQueryViewModel?.state.activities ?? []
+        }
+        .tkBottomSheet(item: $depositId, header: { _, _ in .depositStatusContent }) { id in
+            if let model = viewModel.depositStatus {
+                PerpsDepositStatusDetailsView(model: model, depositId: id) { depositId = nil }
+            }
+        }
         .tkBottomSheet(
             isPresented: $isFiltersPresented,
             header: { dismiss in
@@ -92,6 +106,7 @@ private extension MultichainHistoryView {
                         size: 16,
                         padding: 8,
                         accessibilityIdentifier: "history_back_button",
+                        liquidGlassImage: .TKUIKit.Icons.Size28.chevronLeft,
                         onTap: { _ in onClose() }
                     )
                 },
@@ -151,6 +166,14 @@ private extension MultichainHistoryView {
                     .opacity(descriptor.isActive ? 1 : 0)
                     .allowsHitTesting(descriptor.isActive)
                     .accessibilityHidden(!descriptor.isActive)
+                    .onReceive(descriptor.queryViewModel.$state) { state in
+                        guard descriptor.isActive,
+                              let shown = selectedActivity,
+                              let current = MultichainHistoryEventTarget.current(of: shown, in: state.activities),
+                              current != shown
+                        else { return }
+                        selectedActivity = current
+                    }
                     .id(descriptor.id)
                 }
             }
@@ -169,9 +192,13 @@ private extension MultichainHistoryView {
     }
 
     func selectActivity(_ activity: MultichainActivity) {
-        if let onSelectPerpsEvent, let event = PerpsHistoryEvent(activity: activity) {
+        if let deposit = viewModel.trackedDeposit(matching: activity), let model = viewModel.depositStatus {
+            depositId = deposit.id
+            model.didOpen(deposit.id)
+        } else if let onSelectPerpsEvent, let event = viewModel.perpsHistoryEvents?.event(from: activity) {
             onSelectPerpsEvent(event)
         } else {
+            viewModel.showsFundingStatus = activity.status == .pending
             selectedActivity = activity
         }
     }
@@ -325,7 +352,8 @@ private extension MultichainHistoryContentView {
                         ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
                             MultichainHistoryTransactionCell(
                                 item: item,
-                                showsDivider: index < group.items.count - 1
+                                showsDivider: index < group.items.count - 1,
+                                onDecryptComment: { viewModel.decryptComment(of: item.activity) }
                             ) {
                                 onSelectActivity(item.activity)
                             }

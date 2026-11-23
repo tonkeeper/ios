@@ -2,12 +2,18 @@ import UIKit
 
 public final class TKUIButtonDefaultBackgroundView: UIView {
     let cornerRadius: CGFloat
+    /// On liquid glass the colour tints a capsule of glass instead of filling the view.
+    private let glassView: TKButtonGlassView?
 
-    public init(cornerRadius: CGFloat) {
+    public init(cornerRadius: CGFloat, isLiquidGlass: Bool = false) {
         self.cornerRadius = cornerRadius
+        self.glassView = isLiquidGlass ? TKButtonGlassView() : nil
         super.init(frame: .zero)
         setContentHuggingPriority(.required, for: .horizontal)
         setContentCompressionResistancePriority(.required, for: .horizontal)
+        if let glassView {
+            addSubview(glassView)
+        }
     }
 
     @available(*, unavailable)
@@ -18,9 +24,14 @@ public final class TKUIButtonDefaultBackgroundView: UIView {
     override public func layoutSubviews() {
         super.layoutSubviews()
         layer.cornerRadius = cornerRadius
+        glassView?.frame = bounds
     }
 
     public func setBackgroundColor(_ color: UIColor) {
-        backgroundColor = color
+        if let glassView {
+            glassView.tint = color
+        } else {
+            backgroundColor = color
+        }
     }
 }

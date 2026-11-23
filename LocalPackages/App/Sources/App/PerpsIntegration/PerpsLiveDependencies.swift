@@ -8,12 +8,13 @@ import UIKit
 /// `PerpsAssembly` hands out live stores; the feature only ever names ports, so the
 /// adapter is the one place the two vocabularies meet.
 struct PerpsLiveDependencies: PerpsDependencies {
-    let format = PerpsFormatting.live
+    let format: PerpsFormatting
 
     private let assembly: PerpsAssembly
 
-    init(assembly: PerpsAssembly) {
+    init(assembly: PerpsAssembly, appSettingsStore: AppSettingsStore) {
         self.assembly = assembly
+        format = .live(appSettingsStore: appSettingsStore)
     }
 
     var marketsRepository: any PerpsMarketsSearching {
@@ -26,6 +27,18 @@ struct PerpsLiveDependencies: PerpsDependencies {
 
     var chartService: any PerpsChartProviding {
         assembly.chartService
+    }
+
+    var access: PerpsAccess {
+        assembly.access
+    }
+
+    func reloadAccess() async -> PerpsAccess {
+        await assembly.reloadAccess()
+    }
+
+    func observeAccess<Observer: AnyObject>(_ observer: Observer, onChange: @escaping @Sendable (Observer) -> Void) {
+        assembly.observeAccess(observer, onChange: onChange)
     }
 
     func makeMarketDetailsStore() -> any PerpsMarketDetailsStoring {
@@ -43,7 +56,7 @@ enum PerpsWalletDependenciesFactory {
             accountStore: walletScope.accountStore,
             tradingService: walletScope.tradingService,
             activateAccount: { parentCoordinator, parentRouter, onPasscodeEntered in
-                if await walletScope.accountService.adoptRegisteredTradingKey(wallet: walletScope.wallet) {
+                if await walletScope.adoptRegisteredTradingKey() {
                     return .activated
                 }
                 guard let passcode = await PasscodeInputCoordinator.getPasscode(
@@ -58,7 +71,7 @@ enum PerpsWalletDependenciesFactory {
                     return .canceled
                 }
                 onPasscodeEntered()
-                switch await walletScope.accountService.activate(wallet: walletScope.wallet, passcode: passcode) {
+                switch await walletScope.activate(passcode: passcode) {
                 case .active:
                     return .activated
                 case .noAccount, .failed:
@@ -85,33 +98,58 @@ enum PerpsWalletDependenciesFactory {
             refreshFunding: {
                 await walletScope.refreshFunding()
             },
-            makeDeposit: {
+            makeDeposit: { sheetPresenter in
                 PerpsLiveDeposit(
                     walletScope: walletScope,
                     assetBalanceProvider: mainAssembly.multichainAssembly.multichainAssetBalanceProvider,
-                    multichainService: mainAssembly.servicesAssembly.multichainService()
+                    multichainService: mainAssembly.servicesAssembly.multichainService(),
+                    assetDetailsService: mainAssembly.servicesAssembly.assetDetailsService(),
+                    amountFormatter: mainAssembly.formattersAssembly.amountFormatter,
+                    feeRefill: PerpsFeeRefill(wallet: walletScope.wallet, coreAssembly: coreAssembly, keeperCoreMainAssembly: mainAssembly),
+                    batteryService: mainAssembly.batteryAssembly.batteryService(),
+                    isBatteryFeeEnabled: coreAssembly.featureFlags[.perpsBatteryFeeEnabled],
+                    sheetPresenter: sheetPresenter
                 )
             },
             makeWithdraw: {
                 PerpsLiveWithdraw(
                     walletScope: walletScope,
                     assetBalanceProvider: mainAssembly.multichainAssembly.multichainAssetBalanceProvider,
-                    multichainService: mainAssembly.servicesAssembly.multichainService()
+                    multichainService: mainAssembly.servicesAssembly.multichainService(),
+                    assetDetailsService: mainAssembly.servicesAssembly.assetDetailsService()
                 )
             },
-            makeHistory: { marketId, focusedTransactions, withdrawalOperationId, focusedFundingOperationId, onSelectEvent, onOpenTransaction in
+            makeHistory: { marketId, focusedTransactions, focusedFundingOperationId, onSelectEvent, onOpenTransaction in
                 makeHistory(
                     wallet: walletScope.wallet,
                     marketId: marketId,
                     focusedTransactions: focusedTransactions,
-                    withdrawalOperationId: withdrawalOperationId,
                     focusedFundingOperationId: focusedFundingOperationId,
                     accountStore: walletScope.accountStore,
                     mainAssembly: mainAssembly,
                     onSelectEvent: onSelectEvent,
                     onOpenTransaction: onOpenTransaction
                 )
-            }
+            },
+            loyalty: makeLoyalty(
+                store: mainAssembly.loyaltyStore,
+                walletsStore: mainAssembly.storesAssembly.walletsStore,
+                wallet: walletScope.wallet
+            ),
+            hasOtherWallets: { [walletsStore = mainAssembly.storesAssembly.walletsStore, wallet = walletScope.wallet] in
+                walletsStore.wallets.contains { $0.hasMultichainMnemonic && $0.id != wallet.id }
+            },
+            track: { [analyticsProvider = coreAssembly.analyticsProvider] in analyticsProvider.log($0, wallet: walletScope.wallet) }
+        )
+    }
+
+    private static func makeLoyalty(store: LoyaltyStore, walletsStore: WalletsStore, wallet: Wallet) -> PerpsLoyalty {
+        let current = { walletsStore.getWallet(id: wallet.id) ?? wallet }
+        return PerpsLoyalty(
+            showsBanner: { store.entry(for: current()).showsBanner },
+            reload: { await store.reload(wallet: current()) },
+            hideBanner: { store.hideBanner(wallet: current()) },
+            reward: { try await store.perpsReward(wallet: current(), volumeUsd: $0) }
         )
     }
 
@@ -120,7 +158,6 @@ enum PerpsWalletDependenciesFactory {
         wallet: Wallet,
         marketId: Int64?,
         focusedTransactions: Set<String>,
-        withdrawalOperationId: String?,
         focusedFundingOperationId: String?,
         accountStore: any PerpsAccountStoring,
         mainAssembly: KeeperCore.MainAssembly,
@@ -132,16 +169,20 @@ enum PerpsWalletDependenciesFactory {
             multichainState: multichainState,
             marketId: marketId,
             focusedTransactions: focusedTransactions,
-            withdrawalOperationId: withdrawalOperationId,
             focusedFundingOperationId: focusedFundingOperationId,
             accountStore: accountStore,
+            format: .live(appSettingsStore: mainAssembly.storesAssembly.appSettingsStore),
+            walletName: wallet.emojiLabel,
             multichainService: mainAssembly.servicesAssembly.multichainService(),
+            historyEvents: mainAssembly.perpsAssembly.historyEvents(for: wallet),
+            realtimeManager: mainAssembly.multichainAssembly.realtimeManager,
             amountFormatter: mainAssembly.formattersAssembly.amountFormatter,
             dateFormatter: mainAssembly.formattersAssembly.dateFormatter,
             nftResolver: MultichainActivityNFTResolver(
                 nftService: mainAssembly.servicesAssembly.nftService(),
                 network: wallet.network
-            )
+            ),
+            appSettingsStore: mainAssembly.storesAssembly.appSettingsStore
         )
         return PerpsHistoryViewController(
             viewModel: viewModel,

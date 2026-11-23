@@ -69,7 +69,9 @@ struct APILoggingMiddleware: ClientMiddleware {
         let status = response.status.code
         let outcome = Self.requestId(in: response.headerFields).map { "\(status) \($0)" } ?? "\(status)"
         guard status >= 400 else {
-            if Date().timeIntervalSince(startedAt) >= slowRequestThreshold {
+            if !PerpsOperationLog.context.isEmpty, PerpsOperationLog.context["poll"] != "true" {
+                domain.i(message(outcome, false), extraInfo: info(host: baseURL, requestBody: nil))
+            } else if Date().timeIntervalSince(startedAt) >= slowRequestThreshold {
                 domain.i("\(message(outcome, false)) - slow")
             } else if !logsBodies {
                 domain.d(message(outcome, true))
@@ -111,26 +113,26 @@ struct APILoggingMiddleware: ClientMiddleware {
             domain.w(
                 message(outcome, false),
                 error: error,
-                extraInfo: info(host: baseURL, requestBody: loggedRequestBody, responseBody: "<unreadable>")
+                extraInfo: info(host: baseURL, requestBody: loggedRequestBody, responseBody: "<unreadable>", isFailure: true)
             )
             throw error
         }
         domain.w(
             message(outcome, false),
-            extraInfo: info(host: baseURL, requestBody: loggedRequestBody, responseBody: loggedBody ?? "<not captured>")
+            extraInfo: info(host: baseURL, requestBody: loggedRequestBody, responseBody: loggedBody ?? "<not captured>", isFailure: true)
         )
         return (response, forwardedBody)
     }
 
-    private func info(host: URL? = nil, requestBody: String?, responseBody: String? = nil) -> [String: String] {
-        var info = [String: String]()
+    private func info(host: URL? = nil, requestBody: String?, responseBody: String? = nil, isFailure: Bool = false) -> [String: String] {
+        var info = PerpsOperationLog.context
         if let host {
             info["host"] = host.host ?? ""
         }
-        if let requestBody {
+        if let requestBody, PerpsOperationLog.context.isEmpty {
             info["requestBody"] = requestBody
         }
-        if let responseBody {
+        if let responseBody, PerpsOperationLog.context.isEmpty || isFailure {
             info["responseBody"] = responseBody
         }
         return info

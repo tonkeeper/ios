@@ -31,7 +31,7 @@ final class NFTDetailsViewController: TKHostingController<NFTDetailsScreen> {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: false)
+        tkUpdateNavigationBarForHeader(animated: false)
     }
 }
 

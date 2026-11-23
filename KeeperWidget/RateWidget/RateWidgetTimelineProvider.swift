@@ -1,184 +1,59 @@
+import Foundation
 import KeeperCore
-import TKCore
-import TKUIKit
 import WidgetKit
+import WidgetUI
 
-struct RateWidgetTimelineProvider: IntentTimelineProvider {
+@available(iOS 17.0, *)
+struct RateWidgetTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> RateWidgetEntry {
-        RateWidgetEntry(
+        .placeholder
+    }
+
+    func snapshot(for configuration: RateWidgetConfigurationIntent, in context: Context) async -> RateWidgetEntry {
+        let entry = await entry(for: configuration)
+        return context.isPreview && entry.state?.price == nil ? .placeholder : entry
+    }
+
+    func timeline(for configuration: RateWidgetConfigurationIntent, in context: Context) async -> Timeline<RateWidgetEntry> {
+        let entry = await entry(for: configuration)
+        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(30 * 60)))
+    }
+
+    /// The price and its change come from the period's chart, so they match the line drawn. A chart from the cache can
+    /// be days old, so then the catalog's price wins, with its 24h change for the day.
+    private func entry(for configuration: RateWidgetConfigurationIntent) async -> RateWidgetEntry {
+        let asset = configuration.asset?.asset(in: .load()) ?? .ton
+        guard !WalletWidgetSnapshot.hasNoWallets else {
+            return RateWidgetEntry(date: Date(), assetId: asset.id, state: nil)
+        }
+        let period = configuration.period
+        let loader = PriceWidgetLoader()
+        async let items = loader.marketItems([asset.id])
+        async let loadedChart = loader.chart(assetId: asset.id, period: period.period)
+        let item = await items?[asset.id]
+        let chart = await loadedChart
+        let icon = await PriceWidgetLoader.icon(item?.imageURL)
+
+        let usesChart = chart.isFresh || item?.price == nil
+        let price = usesChart ? chart.prices.last.map { Decimal($0) } : item?.price
+        let change = PriceWidgetSnapshot.change(
+            prices: usesChart ? chart.prices : [],
+            price: price,
+            percent24h: period == .day ? item?.change24hPercent : nil
+        )
+        return RateWidgetEntry(
             date: Date(),
-            period: "W",
-            information: .init(
-                date: "2018 Wed, 31 Oct",
-                amount: "$2.3381",
-                percentDiff: "+63.08%",
-                fiatDiff: "$0.90",
-                diffDirection: .up
-            ),
-            chartData: .init(
-                data: RateWidgetChartMock.data,
-                minimumValue: "$1.47",
-                maximumValue: "$2.57"
+            assetId: asset.id,
+            state: TokenWidgetState(
+                symbol: item?.symbol ?? asset.symbol,
+                icon: icon,
+                price: price.map(loader.formatPrice),
+                change: change.map { loader.formatChange($0.percent) },
+                fiatChange: change.map { loader.formatFiatChange($0.amount) },
+                period: period.label,
+                updatedAt: chart.isFresh || !usesChart ? Date() : nil,
+                chart: chart.prices
             )
-        )
-    }
-
-    func getSnapshot(
-        for configuration: RateWidgetIntent,
-        in context: Context,
-        completion: @escaping (RateWidgetEntry) -> Void
-    ) {
-        let entry = RateWidgetEntry(
-            date: Date(),
-            period: "W",
-            information: .init(
-                date: "2018 Wed, 31 Oct",
-                amount: "$2.3381",
-                percentDiff: "+63.08%",
-                fiatDiff: "$0.90",
-                diffDirection: .up
-            ),
-            chartData: .init(
-                data: RateWidgetChartMock.data,
-                minimumValue: "$1.47",
-                maximumValue: "$2.57"
-            )
-        )
-        completion(entry)
-    }
-
-    func getTimeline(
-        for configuration: RateWidgetIntent,
-        in context: Context,
-        completion: @escaping (Timeline<RateWidgetEntry>) -> Void
-    ) {
-        let currency: Currency
-        if let configurationCurrencyIdentifier = configuration.currency?.identifier,
-           let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier)
-        {
-            currency = configurationCurrency
-        } else {
-            currency = .USD
-        }
-        let coreAssembly = CoreAssembly()
-        let keeperCoreAssembly = KeeperCore.Assembly(
-            dependencies: Assembly.Dependencies(
-                cacheURL: coreAssembly.cacheURL,
-                sharedCacheURL: coreAssembly.sharedCacheURL,
-                appInfoProvider: coreAssembly.appInfoProvider,
-                featureFlags: coreAssembly.featureFlags,
-                seedProvider: { "" }
-            )
-        )
-        let chartFormatter = coreAssembly.formattersAssembly.chartFormatter(
-            dateFormatter: keeperCoreAssembly.rootAssembly().formattersAssembly.dateFormatter,
-            amountFormatter: keeperCoreAssembly.rootAssembly().formattersAssembly.amountFormatter,
-            signedAmountFormatter: keeperCoreAssembly.rootAssembly().formattersAssembly.signedAmountFormatter
-        )
-        let chartController = keeperCoreAssembly.widgetAssembly().chartV2Controller(token: .ton(.ton))
-
-        let period = KeeperCore.Period(period: configuration.period)
-        let mode: TKLineChartCanvasView.ChartMode
-        switch period {
-        case .hour: mode = .stepped
-        default: mode = .linear
-        }
-
-        Task {
-            // Nothing the controller holds keeps the assembly alive, and the graph is still
-            // needed after every suspension: `WalletAuthTokenProvider` resolves `ChainKitService`
-            // through the assembly on the first signed request, long after `getTimeline` returned.
-            defer { withExtendedLifetime(keeperCoreAssembly) {} }
-            let chartData = try await chartController.loadChartData(period: period, currency: currency)
-            guard let coordinate = chartData.last else { return }
-            let pointInformation = preparePointInformation(
-                coordinate: coordinate,
-                coordinates: chartData,
-                currency: currency,
-                chartController: chartController,
-                chartFormatter: chartFormatter
-            )
-            let values = chartData.map { $0.y }
-            let maximumValue = chartFormatter.mapMaxMinValue(value: values.max() ?? 0, currency: currency)
-            let minimumValue = chartFormatter.mapMaxMinValue(value: values.min() ?? 0, currency: currency)
-            let entryInformation = RateWidgetEntry.Information(chartPointInformationModel: pointInformation)
-            let entry = RateWidgetEntry(
-                date: Date(),
-                period: period.title,
-                information: entryInformation,
-                chartData: .init(
-                    data: TKLineChartCanvasView.ChartData(
-                        mode: mode,
-                        coordinates: chartData
-                    ),
-                    minimumValue: minimumValue,
-                    maximumValue: maximumValue
-                )
-            )
-            let nextUpdate = Calendar.current.date(byAdding: DateComponents(minute: 30), to: Date())!
-            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-            completion(timeline)
-        }
-    }
-}
-
-private extension RateWidgetTimelineProvider {
-    func preparePointInformation(
-        coordinate: KeeperCore.Coordinate,
-        coordinates: [KeeperCore.Coordinate],
-        currency: Currency,
-        chartController: ChartV2Controller,
-        chartFormatter: ChartFormatter
-    ) -> ChartPointInformationModel {
-        let calculatedDiff = chartController.calculateDiff(coordinates: coordinates, coordinate: coordinate)
-
-        let price = chartFormatter.formatValue(coordinate: coordinate, currency: currency)
-        let formattedDiff = chartFormatter.formatDiff(diff: calculatedDiff.diff)
-        let formattedCurrencyDiff = chartFormatter.formatCurrencyDiff(diff: calculatedDiff.currencyDiff, currency: currency)
-
-        let direction: ChartPointInformationModel.Diff.Direction
-        switch calculatedDiff.diff {
-        case let x where x < 0:
-            direction = .down
-        case let x where x > 0:
-            direction = .up
-        default:
-            direction = .none
-        }
-
-        let diff = ChartPointInformationModel.Diff(
-            percent: formattedDiff,
-            fiat: formattedCurrencyDiff,
-            direction: direction
-        )
-
-        return ChartPointInformationModel(
-            amount: price,
-            diff: diff,
-            date: ""
         )
     }
 }
-
-private extension KeeperCore.Period {
-    init(period: KeeperWidgetExtension.Period) {
-        switch period {
-        case .day:
-            self = .day
-        case .halfYear:
-            self = .halfYear
-        case .hour:
-            self = .hour
-        case .month:
-            self = .month
-        case .unknown:
-            self = .week
-        case .week:
-            self = .week
-        case .year:
-            self = .year
-        }
-    }
-}
-
-extension KeeperCore.Coordinate: TKUIKit.Coordinate {}

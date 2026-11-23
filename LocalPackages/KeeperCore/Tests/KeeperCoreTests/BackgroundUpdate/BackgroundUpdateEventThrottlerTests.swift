@@ -10,10 +10,13 @@ final class BackgroundUpdateEventThrottlerTests: XCTestCase {
 
         let leading = expectNextEvent(fixture.recorder)
         let scheduled = expectNextSleep(fixture.sleeper)
+        let processed = expectation(description: "all buffered events reached the throttler")
+        fixture.clock.onRead(count: 20) { processed.fulfill() }
         for lt in 1 ... 20 {
             fixture.throttler.receive(makeEvent(lt: Int64(lt)))
         }
-        await fulfillment(of: [leading, scheduled], timeout: 1)
+        // The first scheduled timer can precede consumption of the rest of the input buffer.
+        await fulfillment(of: [leading, scheduled, processed], timeout: 1)
 
         XCTAssertEqual(fixture.recorder.values, [1])
         XCTAssertEqual(fixture.sleeper.delays, [2])
@@ -195,9 +198,26 @@ private struct Fixture {
 private final class ControlledClock: @unchecked Sendable {
     private let lock = NSLock()
     private var date = Date(timeIntervalSince1970: 0)
+    private var reads = 0
+    private var expectedReads: Int?
+    private var readHandler: (() -> Void)?
 
     func now() -> Date {
-        lock.withLock { date }
+        let (date, handler) = lock.withLock { () -> (Date, (() -> Void)?) in
+            reads += 1
+            guard reads == expectedReads else { return (date, nil) }
+            defer { readHandler = nil }
+            return (date, readHandler)
+        }
+        handler?()
+        return date
+    }
+
+    func onRead(count: Int, _ handler: @escaping () -> Void) {
+        lock.withLock {
+            expectedReads = count
+            readHandler = handler
+        }
     }
 
     func advance(by interval: TimeInterval) {

@@ -1,6 +1,9 @@
 import UIKit
 
 public final class TKUIHeaderIconButton: TKUIButton<TKUIHeaderButtonIconContentView, TKUIButtonDefaultBackgroundView> {
+    /// What `TKUINavigationBar` puts in the system bar in place of this button under liquid glass.
+    var systemBarItem: TKUINavigationBar.SystemBarItem?
+
     public convenience init() {
         self.init(
             contentView: TKUIHeaderButtonIconContentView(),

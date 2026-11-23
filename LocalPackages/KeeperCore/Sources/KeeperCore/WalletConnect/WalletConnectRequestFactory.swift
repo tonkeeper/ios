@@ -14,8 +14,10 @@ import Foundation
         guard method.isSupported(chain: chain) else {
             throw .unsupportedMethod(method.rawValue)
         }
-        if case let .signMessage(message) = payload, message.kind == .typedDataV4 {
-            try WalletConnectEthSignTypedDataV4Parser().validateDomainChain(of: message.message, against: chain)
+        var payload = payload
+        if case var .signMessage(message) = payload, message.kind == .typedDataV4 {
+            message.message = try WalletConnectEthSignTypedDataV4Parser().canonicalTypedData(message.message, chain: chain)
+            payload = .signMessage(message)
         }
         return WalletConnectSessionRequest(
             id: id,

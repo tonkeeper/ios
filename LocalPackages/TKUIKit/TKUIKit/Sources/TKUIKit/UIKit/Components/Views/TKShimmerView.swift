@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKShimmerView: UIView {
+public final class TKShimmerView: TKLayerAnimationView {
     private let gradientLayer = CAGradientLayer()
 
     private let animation: CABasicAnimation = {
@@ -16,16 +16,11 @@ public final class TKShimmerView: UIView {
     override public init(frame: CGRect) {
         super.init(frame: frame)
         setup()
-        subscribeNotifications()
     }
 
     @available(*, unavailable)
     public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    deinit {
-        unsubscribeNotifications()
     }
 
     override public func layoutSubviews() {
@@ -34,11 +29,11 @@ public final class TKShimmerView: UIView {
         layer.cornerRadius = bounds.height / 2
     }
 
-    public func startAnimation() {
-        gradientLayer.add(animation, forKey: animation.keyPath)
+    override func addAnimations() {
+        gradientLayer.add(animation, forKey: .animationKeyPath)
     }
 
-    public func stopAnimation() {
+    override func removeAnimations() {
         gradientLayer.removeAnimation(forKey: .animationKeyPath)
     }
 }
@@ -56,48 +51,6 @@ private extension TKShimmerView {
         ]
         gradientLayer.locations = [0.0, 0.5, 1.0]
         layer.addSublayer(gradientLayer)
-    }
-
-    func subscribeNotifications() {
-        NotificationCenter.default
-            .addObserver(
-                self,
-                selector: #selector(appWillResignActive),
-                name: UIApplication.willResignActiveNotification,
-                object: nil
-            )
-
-        NotificationCenter.default
-            .addObserver(
-                self,
-                selector: #selector(appDidBecomeActive),
-                name: UIApplication.didBecomeActiveNotification,
-                object: nil
-            )
-    }
-
-    func unsubscribeNotifications() {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: UIApplication.willResignActiveNotification,
-            object: nil
-        )
-
-        NotificationCenter.default.removeObserver(
-            self,
-            name: UIApplication.didBecomeActiveNotification,
-            object: nil
-        )
-    }
-
-    @objc
-    func appWillResignActive() {
-        stopAnimation()
-    }
-
-    @objc
-    func appDidBecomeActive() {
-        startAnimation()
     }
 }
 

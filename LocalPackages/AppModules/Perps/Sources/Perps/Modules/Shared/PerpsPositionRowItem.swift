@@ -39,12 +39,21 @@ public struct PerpsPositionsTotal: Equatable {
     let amountText: String
     let pnlText: String
     let pnlPercentText: String?
-    let isPnlPositive: Bool
+    let isPnlPositive: Bool?
 
-    public init(amountText: String, pnlText: String, pnlPercentText: String?, isPnlPositive: Bool) {
+    public init(amountText: String, pnlText: String, pnlPercentText: String?, isPnlPositive: Bool?) {
         self.amountText = amountText
         self.pnlText = pnlText
         self.pnlPercentText = pnlPercentText
         self.isPnlPositive = isPnlPositive
     }
+}
+
+public struct PerpsPositionsPreview: Equatable {
+    public let rows: [PerpsPositionRowItem]
+    public let more: PerpsMorePositions?
+}
+
+public struct PerpsMorePositions: Equatable {
+    let iconURLs: [URL?]
 }

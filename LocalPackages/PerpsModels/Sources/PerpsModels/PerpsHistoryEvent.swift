@@ -46,6 +46,7 @@ public struct PerpsHistoryEvent: Equatable, Sendable, Identifiable {
     public let fundingUsd: Double?
     public let feeUsd: Double?
     public let fee: TokenAmount?
+    public let loyaltyReward: String?
 
     public var isClosing: Bool {
         switch kind {
@@ -71,7 +72,8 @@ public struct PerpsHistoryEvent: Equatable, Sendable, Identifiable {
         pnlPercent: Double? = nil,
         fundingUsd: Double? = nil,
         feeUsd: Double? = nil,
-        fee: TokenAmount? = nil
+        fee: TokenAmount? = nil,
+        loyaltyReward: String? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -90,5 +92,6 @@ public struct PerpsHistoryEvent: Equatable, Sendable, Identifiable {
         self.fundingUsd = fundingUsd
         self.feeUsd = feeUsd
         self.fee = fee
+        self.loyaltyReward = loyaltyReward
     }
 }

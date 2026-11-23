@@ -13,6 +13,7 @@ struct WalletMigrationBatteryIdleWaiter {
     private let timeout: TimeInterval
     private let sleep: Sleep
     private let now: @Sendable () -> Date
+    private let shouldRetryError: @Sendable (Error) -> Bool
 
     init(
         batteryService: BatteryService,
@@ -20,7 +21,8 @@ struct WalletMigrationBatteryIdleWaiter {
         pollInterval: TimeInterval = 1.5,
         timeout: TimeInterval = 60,
         sleep: @escaping Sleep = WalletMigrationBatteryIdleWaiter.defaultSleep,
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        shouldRetryError: @escaping @Sendable (Error) -> Bool = { _ in true }
     ) {
         self.init(
             hasPendingTransactions: { wallet in
@@ -30,7 +32,8 @@ struct WalletMigrationBatteryIdleWaiter {
             pollInterval: pollInterval,
             timeout: timeout,
             sleep: sleep,
-            now: now
+            now: now,
+            shouldRetryError: shouldRetryError
         )
     }
 
@@ -40,7 +43,8 @@ struct WalletMigrationBatteryIdleWaiter {
         pollInterval: TimeInterval = 1.5,
         timeout: TimeInterval = 60,
         sleep: @escaping Sleep = WalletMigrationBatteryIdleWaiter.defaultSleep,
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        shouldRetryError: @escaping @Sendable (Error) -> Bool = { _ in true }
     ) {
         self.hasPendingTransactions = hasPendingTransactions
         self.initialDelay = initialDelay
@@ -48,6 +52,7 @@ struct WalletMigrationBatteryIdleWaiter {
         self.timeout = timeout
         self.sleep = sleep
         self.now = now
+        self.shouldRetryError = shouldRetryError
     }
 
     /// `false` means the deadline passed with the lock still held. Cancellation is thrown; a
@@ -68,6 +73,7 @@ struct WalletMigrationBatteryIdleWaiter {
                     return true
                 }
             } catch {
+                guard shouldRetryError(error) else { throw error }
                 Log.migration.w("battery status poll failed, retrying", extraInfo: [
                     "error": "\(error)",
                 ])

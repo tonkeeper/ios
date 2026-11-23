@@ -14,6 +14,7 @@ enum DappOpenSource {
     case earnFeatured
     case earnYourVaults
     case earnApy
+    case dapp
 }
 
 extension DappOpenSource {
@@ -45,6 +46,8 @@ extension DappOpenSource {
             return .earnYourVaults
         case .earnApy:
             return .earnApy
+        case .dapp:
+            return .dapp
         }
     }
 }

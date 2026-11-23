@@ -20,6 +20,7 @@ final class TradeViewController: UIViewController, ScrollViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        ScreenRenderTracker.shared.lifecycle(.viewDidLoad, for: .trade, from: self)
 
         view.backgroundColor = .Background.page
 
@@ -40,18 +41,39 @@ final class TradeViewController: UIViewController, ScrollViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewWillAppear, for: .trade, from: self)
+        // Shelves load once per mode: a screen that has loaded them shows them without a refresh.
+        switch viewModel.state {
+        case .pending:
+            break
+        case let .refreshing(data, task: _):
+            if !data.shelves.isEmpty {
+                ScreenRenderTracker.shared.contentApplied(.cached, for: .trade)
+            }
+        case .loaded:
+            ScreenRenderTracker.shared.contentApplied(.cached, for: .trade)
+            ScreenRenderTracker.shared.finish(.trade)
+        case let .failed(data):
+            // Nothing retries a failed load on appearance, so the revisit still shows the failure.
+            if !data.shelves.isEmpty {
+                ScreenRenderTracker.shared.contentApplied(.cached, for: .trade)
+            }
+            ScreenRenderTracker.shared.failed(.trade, error: viewModel.shelvesErrorKind ?? .unknown)
+        }
 
         viewModel.refreshFavoriteAssets()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        ScreenRenderTracker.shared.lifecycle(.viewDidAppear, for: .trade, from: self)
 
         viewModel.viewDidAppear()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        ScreenRenderTracker.shared.abandon(.trade, by: self)
 
         viewModel.viewDidDisappear()
     }

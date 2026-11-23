@@ -48,6 +48,6 @@ public final class TonkeeperAPIAssembly {
     }
 
     var apiV1DefaultURL: URL {
-        URL(string: "https://api.tonkeeper.com")!
+        URL(string: "https://app.geo.tonkeeper.com/api")!
     }
 }

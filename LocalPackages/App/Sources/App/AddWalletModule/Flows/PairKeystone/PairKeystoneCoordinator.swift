@@ -14,6 +14,7 @@ final class PairKeystoneCoordinator: RouterCoordinator<NavigationControllerRoute
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
     private let multichainAssembly: MultichainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let pairingAnalytics: WalletImportPairingAnalyticsSession
     private let analyticsContext: WalletFlowAnalyticsContext
     private let keystoneImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String?, String?, String) -> KeystoneImportCoordinator
 
@@ -30,13 +31,23 @@ final class PairKeystoneCoordinator: RouterCoordinator<NavigationControllerRoute
         self.walletUpdateAssembly = walletUpdateAssembly
         self.multichainAssembly = multichainAssembly
         self.coreAssembly = coreAssembly
+        self.pairingAnalytics = WalletImportPairingAnalyticsSession(
+            analyticsProvider: coreAssembly.analyticsProvider,
+            walletMode: .single, walletSource: .keystone, from: analyticsContext.from
+        )
         self.analyticsContext = analyticsContext
         self.keystoneImportCoordinatorProvider = keystoneImportCoordinatorProvider
         super.init(router: router)
     }
 
     override func start() {
+        pairingAnalytics.start()
         openScanner()
+    }
+
+    @discardableResult
+    func cancelPairing() -> Bool {
+        pairingAnalytics.exit()
     }
 }
 
@@ -47,8 +58,15 @@ private extension PairKeystoneCoordinator {
             coreAssembly: coreAssembly
         )
 
+        module.output.didUpdateCameraState = { [weak self] state in
+            self?.pairingAnalytics.cameraStateChanged(state)
+        }
+
         module.output.didScanQRCode = { [weak self] publicKey, xfp, path, name in
-            guard let self else { return }
+            guard let self, pairingAnalytics.isActive else { return }
+            pairingAnalytics.setBlocked(.cameraPermissionDenied, isBlocked: false)
+            pairingAnalytics.setBlocked(.cameraError, isBlocked: false)
+            pairingAnalytics.advance(to: .connected)
             coreAssembly.analyticsProvider.log(WalletImportKeystoneScanned(
                 walletMode: .single,
                 walletSource: .keystone,
@@ -59,13 +77,20 @@ private extension PairKeystoneCoordinator {
 
         if router.rootViewController.viewControllers.isEmpty {
             module.view.setupSwipeDownButton { [weak self] in
-                self?.didCancel?()
+                guard let self else { return }
+                if cancelPairing() {
+                    didCancel?()
+                } else {
+                    router.dismiss(animated: true)
+                }
             }
         } else {
             module.view.setupBackButton()
         }
 
-        router.push(viewController: module.view, animated: false)
+        router.push(viewController: module.view, animated: false, onPopClosures: { [weak self] in
+            if self?.cancelPairing() == true { self?.didCancel?() }
+        })
     }
 
     func openImportCoordinator(
@@ -82,7 +107,7 @@ private extension PairKeystoneCoordinator {
         }
 
         coordinator.didImport = { [weak self] publicKey, revisions, model in
-            guard let self else { return }
+            guard let self, pairingAnalytics.beginImport() else { return }
             Task {
                 do {
                     try await self.importWallet(
@@ -92,11 +117,7 @@ private extension PairKeystoneCoordinator {
                         revisions: revisions,
                         model: model
                     )
-                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
-                        walletMode: .single,
-                        walletSource: .keystone,
-                        from: self.analyticsContext.from
-                    )
+                    self.pairingAnalytics.success()
                     await MainActor.run {
                         self.didPaired?()
                     }
@@ -104,12 +125,7 @@ private extension PairKeystoneCoordinator {
                     Log.e("keystone: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
-                    self.coreAssembly.analyticsProvider.logWalletImportError(
-                        walletMode: .single,
-                        walletSource: .keystone,
-                        from: self.analyticsContext.from,
-                        error: error
-                    )
+                    if self.pairingAnalytics.importFailed(error: error) { self.didCancel?() }
                 }
             }
         }

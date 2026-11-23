@@ -65,6 +65,8 @@ enum SwapExecutionFailureMapper {
             return .unsupportedAsset
         case MultichainSwapAPIError.insufficientBalanceCode:
             return .insufficientBalance
+        case MultichainSwapProviderErrorCode.walletScreened.rawValue:
+            return .walletScreened
         default:
             return fallback
         }

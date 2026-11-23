@@ -46,13 +46,7 @@ import Foundation
     }
 
     public static func sendFailureMessage(from error: Error) -> String {
-        if let data = error.tonAPIError?.body,
-           let errorBody = try? JSONDecoder().decode(ErrorBody.self, from: data),
-           !errorBody.error.isEmpty
-        {
-            return errorBody.error
-        }
-        return error.localizedDescription
+        error.tonAPIError?.errorMessage ?? error.localizedDescription
     }
 
     private struct ErrorBody: Decodable {

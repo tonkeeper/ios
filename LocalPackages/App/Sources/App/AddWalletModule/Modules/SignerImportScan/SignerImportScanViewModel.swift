@@ -6,6 +6,8 @@ import TonSwift
 import UIKit
 
 protocol SignerImportScanModuleOutput: AnyObject {
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)? { get set }
+    var didOpenSigner: (() -> Void)? { get set }
     var didScanLinkQRCode: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
 }
 
@@ -19,6 +21,13 @@ protocol SignerImportScanViewModel: AnyObject {
 final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, SignerImportScanModuleOutput {
     // MARK: - SignerImportScanModuleOutput
 
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)? {
+        get { scannerViewModuleOutput.didUpdateCameraState }
+        set { scannerViewModuleOutput.didUpdateCameraState = newValue }
+    }
+
+    var didOpenSigner: (() -> Void)?
+
     var didScanLinkQRCode: ((TonSwift.PublicKey, String) -> Void)?
 
     // MARK: - SignerImportScanViewModel
@@ -26,8 +35,8 @@ final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, 
     var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)?
 
     func viewDidLoad() {
-        scannerViewModuleOutput.didScanDeeplink = { [weak self] deeplink in
-            guard case let .externalSign(externalSign) = deeplink,
+        scannerViewModuleOutput.didScanDeeplink = { [weak self] scanned in
+            guard case let .externalSign(externalSign) = scanned.deeplink,
                   case let .link(publicKey, name) = externalSign
             else {
                 return
@@ -40,6 +49,7 @@ final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, 
 
     func didTapOpenSigner() {
         guard let url = signerScanController.createOpenSignerUrl() else { return }
+        didOpenSigner?()
         urlOpener.open(url: url)
     }
 

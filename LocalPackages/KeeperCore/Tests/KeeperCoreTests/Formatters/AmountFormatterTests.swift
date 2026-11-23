@@ -42,7 +42,7 @@ final class AmountFormatterTests: XCTestCase {
     }
 
     func testExactBaseUnitFormattingPreservesUntrimmedFraction() {
-        let formatter = AmountFormatter(configuration: .init(trimTrailingZeros: false))
+        let formatter = AmountFormatter(configuration: .init(locale: Locale(identifier: "en_US_POSIX"), trimTrailingZeros: false))
 
         XCTAssertEqual(formatter.format(amount: BigUInt(1_230_000), fractionDigits: 6, style: .exactValue), "1.230000")
         XCTAssertEqual(formatter.format(amount: BigUInt(0), fractionDigits: 6, style: .exactValue), "0.000000")
@@ -268,7 +268,7 @@ final class AmountFormatterTests: XCTestCase {
 
         XCTAssertEqual(
             formatter.format(decimal: decimal("0"), accessory: .token(tokenCurrency), style: .fiatBalance),
-            "0.00000000 TON"
+            "0 TON"
         )
         XCTAssertEqual(
             formatter.format(decimal: decimal("0.000000009"), accessory: .token(tokenCurrency), style: .fiatBalance),
@@ -276,11 +276,11 @@ final class AmountFormatterTests: XCTestCase {
         )
         XCTAssertEqual(
             formatter.format(decimal: decimal("3.567890129"), accessory: .fiat(tokenCurrency), style: .fiatBalance),
-            "3.56789012 TON"
+            "3.56 TON"
         )
         XCTAssertEqual(
             configuredFormatter.format(decimal: decimal("999.999999999"), accessory: .token(tokenCurrency)),
-            "999.99999999 TON"
+            "999.99 TON"
         )
         XCTAssertEqual(
             formatter.format(decimal: decimal("3.567890129"), accessory: .token(fiatCurrency), style: .fiatBalance),
@@ -324,6 +324,12 @@ final class AmountFormatterTests: XCTestCase {
             ("-12.345", .fiat(Currency.USD)),
             ("0", .tokenSymbol("TON")),
             ("0.000000001", .tokenSymbol("TON")),
+            ("0.5", .tokenSymbol("TON")),
+            ("0.0123456789", .tokenSymbol("TON")),
+            ("0.000123456789", .tokenSymbol("TON")),
+            ("999.999", .tokenSymbol("TON")),
+            ("1000.999", .tokenSymbol("TON")),
+            ("12345.678", .tokenSymbol("TON")),
             ("1.123456789", .tokenSymbol("TON")),
             ("-0.5", .tokenSymbol("TON")),
         ]
@@ -333,6 +339,28 @@ final class AmountFormatterTests: XCTestCase {
                 formatter.formatBalanceHeaderAmount(decimal: decimal(value), accessory: accessory).fullText,
                 formatter.format(decimal: decimal(value), accessory: accessory, style: .fiatBalance),
                 "Balance header and .fiatBalance disagree on \(value)"
+            )
+        }
+    }
+
+    func testFiatBalanceTokenPrecisionFollowsValueMagnitude() {
+        let formatter = makeFormatter()
+        let token = AmountCurrency(symbol: "TON", currencyDisplayType: .token)
+        let cases: [(String, String)] = [
+            ("0", "0 TON"),
+            ("999.999", "999.99 TON"),
+            ("1", "1.00 TON"),
+            ("0.5", "0.500 TON"),
+            ("0.0123456789", "0.0123 TON"),
+            ("0.000123456789", "0.000123 TON"),
+            ("0.00000012345", "0.00000012 TON"),
+            ("0.000000009", "< 0.00000001 TON"),
+        ]
+        for (value, expected) in cases {
+            XCTAssertEqual(
+                formatter.format(decimal: decimal(value), accessory: .token(token), style: .fiatBalance),
+                expected,
+                "\(value)"
             )
         }
     }
@@ -459,26 +487,6 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(formatter.format(decimal: decimal("12.345"), style: .percent), "12,35 %")
     }
 
-    func testDefaultLocaleUsesAppPreferredLocalization() {
-        let locale = AmountFormatter.Configuration.makeLocale(
-            preferredLocalizations: ["en"],
-            developmentLocalization: nil,
-            fallback: Locale(identifier: "ru_RU")
-        )
-
-        XCTAssertEqual(locale.decimalSeparator, ".")
-    }
-
-    func testDefaultLocaleFallsBackToDevelopmentLocalizationForBase() {
-        let locale = AmountFormatter.Configuration.makeLocale(
-            preferredLocalizations: ["Base"],
-            developmentLocalization: "en",
-            fallback: Locale(identifier: "ru_RU")
-        )
-
-        XCTAssertEqual(locale.decimalSeparator, ".")
-    }
-
     func testInputFormattingDoesNotGroupDigitsAndUsesLocaleDecimalSeparator() {
         let englishFormatter = makeFormatter(localeIdentifier: "en_US_POSIX")
         let russianFormatter = makeFormatter(localeIdentifier: "ru_RU")
@@ -558,6 +566,17 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(
             AmountInputFormatter.normalizedString("\u{0661}\u{060C}\u{0662}\u{0663}", decimalSeparator: "."),
             "1.23"
+        )
+    }
+
+    func testAmountInputNormalizerAcceptsFullwidthInput() {
+        XCTAssertEqual(
+            AmountInputFormatter.normalizedString("\u{FF11}\u{FF12}\u{FF0E}\u{FF15}", decimalSeparator: "."),
+            "12.5"
+        )
+        XCTAssertEqual(
+            AmountInputFormatter.normalizedString("\u{FF11}\u{FF12}\u{FF0E}\u{FF15}", decimalSeparator: ","),
+            "12,5"
         )
     }
 

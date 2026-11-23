@@ -9,6 +9,18 @@ final class MultichainFeeSelectionTests: XCTestCase {
 
     // MARK: - Insufficiency
 
+    func testUnavailableBatteryDoesNotBecomeABalanceShortageWhenBalancesAreRefreshed() throws {
+        let selection = MultichainFeeSelection(engine: .tronUSDT(tronAddress: "TExampleTronAddress"), transferAmount: 1)
+        let options = selection.annotatingInsufficiency(
+            [.init(type: .battery, value: .battery(charges: requiredCharges, excess: nil), isAvailable: false)],
+            balances: makeBalances(batteryCharges: .available(0))
+        )
+
+        let battery = try option(.battery, in: options)
+        XCTAssertFalse(battery.isAvailable)
+        XCTAssertFalse(battery.isInsufficient)
+    }
+
     func test_zeroTRXBalance_marksTRXOptionInsufficient() throws {
         let options = annotated(balances: makeBalances(trx: 0))
 

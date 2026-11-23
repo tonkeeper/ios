@@ -323,6 +323,10 @@ private actor SendAssetResolverMultichainServiceSpy: MultichainService {
         throw .apiError(message: "Unimplemented")
     }
 
+    func getWalletAssetIncludingUnheld(state _: MultichainWalletState, assetId _: String, currencies _: [String]) async throws(MultichainServiceError) -> MultichainAsset? {
+        nil
+    }
+
     func saveWalletAssetsFilters(walletId _: String, changes _: [MultichainAssetFilterChange]) async throws(MultichainServiceError) {
         throw .apiError(message: "Unimplemented")
     }

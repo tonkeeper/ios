@@ -30,6 +30,7 @@ public struct PerpsMarketRowsCard: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("perps_market_\(market.symbol)")
                 .onAppear { onRowAppear(market.id) }
                 .onDisappear { onRowDisappear(market.id) }
                 .applySeparatorIfNeeded(

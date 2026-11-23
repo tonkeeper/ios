@@ -14,6 +14,7 @@ enum PerpsDepositCalldataError: Error, Equatable {
     /// A batch call that carries coin or calls back into the account.
     case unsafeBatch(payloadId: String)
     case unsafeKeyRegistration(payloadId: String)
+    case unsafeBridgeTransfer(payloadId: String)
 }
 
 /// The calls a quote asks this wallet to sign, read before it signs them. The envelope has
@@ -21,8 +22,9 @@ enum PerpsDepositCalldataError: Error, Equatable {
 enum PerpsDepositCalldata {
     /// `approve(address,uint256)`.
     static let approveSelector = "095ea7b3"
-    /// Lighter's Ethereum mainnet ZkLighter proxy, `deposit(address,uint16,uint8,uint256)`.
-    static let gatewayAddress = "0x3b4d794a66304f130a4db8f2551b0070dfcf5ca7"
+    /// `transfer(address,uint256)`.
+    static let transferSelector = "a9059cbb"
+    /// Lighter's Ethereum gateway, `deposit(address,uint16,uint8,uint256)`.
     static let depositSelector = "8a857083"
     /// ERC-7821 `execute(bytes32,bytes)`.
     static let executeSelector = "e9ae5c53"
@@ -72,11 +74,12 @@ enum PerpsDepositCalldata {
 
     static func checkGatewayCall(
         _ payload: PerpsDepositQuotePayload,
+        gateway: String,
         beneficiary: String,
         amountUnits: BigUInt
     ) throws(PerpsDepositCalldataError) {
         let call = try call(of: payload)
-        guard payload.to.lowercased() == gatewayAddress,
+        guard payload.to.lowercased() == gateway.lowercased(),
               call.selector == depositSelector,
               call.arguments.count == 4,
               address(word: call.arguments[0]) == beneficiary.lowercased(),
@@ -88,13 +91,37 @@ enum PerpsDepositCalldata {
         }
     }
 
-    /// The batch's last call when the deposit registers the key: `changePubKey` into the gateway
-    /// with exactly the key asked for, which the account makes as its owner.
+    /// Lighter's bridge takes the token as one plain transfer of the whole amount. Its deposit
+    /// address is the destination's own and only the quote names it, so the recipient is read, not matched.
+    static func checkBridgeTransfer(
+        _ payload: PerpsDepositQuotePayload,
+        token: String,
+        sender: String,
+        amountUnits: BigUInt
+    ) throws(PerpsDepositCalldataError) {
+        let call = try call(of: payload)
+        let token = normalizedAddress(token)
+        guard normalizedAddress(payload.to) == token,
+              BigUInt(payload.valueUnits, radix: 10) == 0,
+              payload.delegation == nil,
+              call.selector == transferSelector,
+              call.arguments.count == 2,
+              let recipient = address(word: call.arguments[0]),
+              ![normalizedAddress(sender), token, zeroAddress].contains(recipient),
+              BigUInt(call.arguments[1], radix: 16) == amountUnits
+        else {
+            throw .unsafeBridgeTransfer(payloadId: payload.payloadId)
+        }
+    }
+
+    /// The batch's last call when the deposit registers the key: `changePubKey` into the Lighter
+    /// contract the backend signed, with exactly the key asked for, which the account makes as its owner.
     static func checkKeyRegistrationCall(
         _ payload: PerpsDepositQuotePayload,
-        registration: PerpsKeyRegistration
+        registration: PerpsKeyRegistration,
+        contract: String
     ) throws(PerpsDepositCalldataError) {
-        guard payload.to.lowercased() == gatewayAddress,
+        guard payload.to.lowercased() == contract.lowercased(),
               payload.data?.lowercased() == registration.calldata
         else {
             throw .unsafeKeyRegistration(payloadId: payload.payloadId)
@@ -209,13 +236,15 @@ enum PerpsDepositCalldata {
         }
     }
 
-    private struct Call {
+    private static let zeroAddress = "0x" + String(repeating: "0", count: 40)
+
+    struct Call {
         let selector: String
         /// 32-byte words, lowercase hex, without the selector.
         let arguments: [String]
     }
 
-    private static func call(of payload: PerpsDepositQuotePayload) throws(PerpsDepositCalldataError) -> Call {
+    static func call(of payload: PerpsDepositQuotePayload) throws(PerpsDepositCalldataError) -> Call {
         guard let data = payload.data?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
               data.hasPrefix("0x")
         else {
@@ -243,12 +272,12 @@ enum PerpsDepositCalldata {
 
     /// An address argument is right-aligned in its word; anything in the padding means the
     /// word is not an address, and truncating it would invent one.
-    private static func address(word: String) -> String? {
+    static func address(word: String) -> String? {
         guard word.count == 64, word.prefix(24).allSatisfy({ $0 == "0" }) else { return nil }
         return "0x" + word.suffix(40)
     }
 
-    private static func normalizedAddress(_ value: String) -> String {
+    static func normalizedAddress(_ value: String) -> String {
         if let tron = try? TronSwift.Address(address: value) {
             return "0x" + tron.notPrefixed().map { String(format: "%02x", $0) }.joined()
         }

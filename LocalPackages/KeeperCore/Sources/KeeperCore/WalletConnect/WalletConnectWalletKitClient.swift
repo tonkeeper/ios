@@ -1,8 +1,8 @@
 import Combine
 @preconcurrency import Commons
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 @WalletConnectActor
 protocol WalletConnectWalletKitClientProtocol: AnyObject, Sendable {
@@ -94,10 +94,8 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
             projectId: configuration.projectId,
             socketFactory: WalletConnectDefaultSocketFactory()
         )
-        WalletKit.configure(
-            metadata: configuration.metadata,
-            crypto: WalletConnectCryptoProvider()
-        )
+        Pair.configure(metadata: configuration.metadata)
+        Sign.configure(crypto: WalletConnectCryptoProvider())
         configured = true
         Log.walletConnect.i("configure finished", extraInfo: [
             "relayHost": configuration.relayHost,
@@ -122,7 +120,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         }
 
         do {
-            try await WalletKit.instance.pair(uri: uri)
+            try await Pair.instance.pair(uri: uri)
             Log.walletConnect.i("pair submitted")
         } catch {
             Log.walletConnect.i(
@@ -146,7 +144,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         scopedProperties: [String: String]?
     ) async throws(WalletConnectSessionApprovalError) -> WalletConnectSession {
         do {
-            let session = try await WalletKit.instance.approve(
+            let session = try await Sign.instance.approve(
                 proposalId: id,
                 namespaces: namespaces,
                 sessionProperties: sessionProperties,
@@ -178,7 +176,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         reason: RejectionReason
     ) async throws(WalletConnectSessionRejectionError) {
         do {
-            try await WalletKit.instance.rejectSession(
+            try await Sign.instance.rejectSession(
                 proposalId: id,
                 reason: reason
             )
@@ -202,7 +200,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         result: WalletConnectResponseValue
     ) async throws(WalletConnectResponseError) {
         do {
-            try await WalletKit.instance.respond(
+            try await Sign.instance.respond(
                 topic: topic,
                 requestId: requestId,
                 response: .response(anyCodable(from: result))
@@ -228,7 +226,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         error: JSONRPCError = .walletConnectUserRejected
     ) async throws(WalletConnectResponseError) {
         do {
-            try await WalletKit.instance.respond(
+            try await Sign.instance.respond(
                 topic: topic,
                 requestId: requestId,
                 response: .error(error)
@@ -255,7 +253,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         event: String
     ) -> Bool {
         guard let blockchain = Blockchain(chain.caip2),
-              let session = WalletKit.instance.getSessions().first(where: { $0.topic == topic })
+              let session = Sign.instance.getSessions().first(where: { $0.topic == topic })
         else {
             return false
         }
@@ -270,7 +268,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
     }
 
     func walletCapabilitiesScope(topic: String) -> WalletConnectWalletCapabilitiesScope? {
-        guard let session = WalletKit.instance.getSessions().first(where: { $0.topic == topic }) else {
+        guard let session = Sign.instance.getSessions().first(where: { $0.topic == topic }) else {
             return nil
         }
         let accounts: [WalletConnectWalletCapabilitiesScope.Account] = session.namespaces.values
@@ -288,7 +286,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
     }
 
     func sessionAccountAddresses(topic: String, chain: WalletConnectChain) -> [String] {
-        guard let session = WalletKit.instance.getSessions().first(where: { $0.topic == topic }) else {
+        guard let session = Sign.instance.getSessions().first(where: { $0.topic == topic }) else {
             return []
         }
         var addresses = [String]()
@@ -314,7 +312,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
         }
 
         do {
-            try await WalletKit.instance.emit(
+            try await Sign.instance.emit(
                 topic: topic,
                 event: Session.Event(
                     name: "chainChanged",
@@ -339,7 +337,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
 
     func disconnect(topic: String) async throws(WalletConnectResponseError) {
         do {
-            try await WalletKit.instance.disconnect(topic: topic)
+            try await Sign.instance.disconnect(topic: topic)
         } catch {
             if !networkConnectionStatusProvider.isConnected {
                 throw WalletConnectResponseError.sdk(
@@ -356,7 +354,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
     }
 
     func activeSessions() -> [WalletConnectSession] {
-        WalletKit.instance.getSessions().map {
+        Sign.instance.getSessions().map {
             WalletConnectSession(
                 topic: $0.topic,
                 dapp: WalletConnectDapp(metadata: $0.peer),
@@ -368,7 +366,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
     }
 
     func pendingProposals(topic: String?) -> [WalletConnectProposalContext] {
-        WalletKit.instance.getPendingProposals(topic: topic).map { proposal, context in
+        Sign.instance.getPendingProposals(topic: topic).map { proposal, context in
             WalletConnectProposalContext(
                 proposal: proposal,
                 context: context
@@ -377,7 +375,7 @@ final class WalletConnectWalletKitClient: WalletConnectWalletKitClientProtocol, 
     }
 
     func pendingRequests(topic: String?) -> [Request] {
-        WalletKit.instance.getPendingRequests(topic: topic).map { $0.request }
+        Sign.instance.getPendingRequests(topic: topic).map { $0.request }
     }
 }
 

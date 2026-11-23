@@ -11,139 +11,6 @@ public import struct Foundation.Date
 #endif
 /// API operations, with input and output types, generated from `#/paths` in the OpenAPI document.
 public enum Operations {
-    /// Check server readiness
-    ///
-    /// - Remark: HTTP `GET /v2/healthcheck`.
-    /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)`.
-    public enum healthcheck {
-        public static let id: Swift.String = "healthcheck"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/healthcheck/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.healthcheck.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.healthcheck.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.healthcheck.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            public init(headers: Operations.healthcheck.Input.Headers = .init()) {
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/healthcheck/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/healthcheck/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.Ok)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.Ok {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.healthcheck.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.healthcheck.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Server is ready
-            ///
-            /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.healthcheck.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.healthcheck.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/healthcheck/get(healthcheck)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
     /// Calculate swap
     ///
     /// Get swap route with amounts and fees
@@ -514,7 +381,7 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/v2/swap/assets/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Free-text query matched against Symbol and Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
+                /// Matched against the start of Symbol or Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
                 ///
                 /// - Remark: Generated from `#/paths/v2/swap/assets/GET/query/q`.
                 public var q: Components.Parameters.AssetSearchQuery?
@@ -525,7 +392,7 @@ public enum Operations {
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - q: Free-text query matched against Symbol and Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
+                ///   - q: Matched against the start of Symbol or Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
                 ///   - limit: Maximum number of results per page. When `q` is set the server applies an internal default of 50 if omitted; when listing the full snapshot, omitting `limit` returns everything. Hard-capped at 1000. Use together with `cursor` to page through results; a `next_cursor` is returned while more results remain
                 public init(
                     q: Components.Parameters.AssetSearchQuery? = nil,
@@ -854,252 +721,6 @@ public enum Operations {
             }
         }
     }
-    /// Get currencies
-    ///
-    /// Get available currencies, merchants and trading pairs
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/currencies`.
-    /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)`.
-    public enum getExchangeCurrencies {
-        public static let id: Swift.String = "getExchangeCurrencies"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query`.
-            public struct Query: Sendable, Hashable {
-                /// User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/country`.
-                @available(*, deprecated)
-                public var country: Components.Parameters.CountryQuery?
-                /// Device country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/device_country_code`.
-                public var device_country_code: Components.Parameters.DeviceCountryCodeQuery?
-                /// App Store country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/store_country_code`.
-                public var store_country_code: Components.Parameters.StoreCountryCodeQuery?
-                /// SIM card country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/sim_country`.
-                public var sim_country: Components.Parameters.SimCountryQuery?
-                /// Device timezone (IANA format, e.g. Europe/Berlin)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/timezone`.
-                public var timezone: Components.Parameters.TimezoneQuery?
-                /// Whether VPN is currently active
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/is_vpn_active`.
-                public var is_vpn_active: Components.Parameters.IsVpnActiveQuery?
-                /// App build version
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/build`.
-                public var build: Components.Parameters.BuildQuery?
-                /// User device platform
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/platform`.
-                public var platform: Components.Parameters.PlatformQuery?
-                /// Trade direction
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/query/direction`.
-                public var direction: Components.Parameters.DirectionQuery?
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - country: User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
-                ///   - device_country_code: Device country code (ISO 3166-1 alpha-2)
-                ///   - store_country_code: App Store country code (ISO 3166-1 alpha-2)
-                ///   - sim_country: SIM card country code (ISO 3166-1 alpha-2)
-                ///   - timezone: Device timezone (IANA format, e.g. Europe/Berlin)
-                ///   - is_vpn_active: Whether VPN is currently active
-                ///   - build: App build version
-                ///   - platform: User device platform
-                ///   - direction: Trade direction
-                public init(
-                    country: Components.Parameters.CountryQuery? = nil,
-                    device_country_code: Components.Parameters.DeviceCountryCodeQuery? = nil,
-                    store_country_code: Components.Parameters.StoreCountryCodeQuery? = nil,
-                    sim_country: Components.Parameters.SimCountryQuery? = nil,
-                    timezone: Components.Parameters.TimezoneQuery? = nil,
-                    is_vpn_active: Components.Parameters.IsVpnActiveQuery? = nil,
-                    build: Components.Parameters.BuildQuery? = nil,
-                    platform: Components.Parameters.PlatformQuery? = nil,
-                    direction: Components.Parameters.DirectionQuery? = nil
-                ) {
-                    self.country = country
-                    self.device_country_code = device_country_code
-                    self.store_country_code = store_country_code
-                    self.sim_country = sim_country
-                    self.timezone = timezone
-                    self.is_vpn_active = is_vpn_active
-                    self.build = build
-                    self.platform = platform
-                    self.direction = direction
-                }
-            }
-            public var query: Operations.getExchangeCurrencies.Input.Query
-            /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                /// Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/header/F`.
-                public var F: Components.Parameters.FirebaseUserHeader?
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangeCurrencies.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - F: Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///   - accept:
-                public init(
-                    F: Components.Parameters.FirebaseUserHeader? = nil,
-                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangeCurrencies.AcceptableContentType>] = .defaultValues()
-                ) {
-                    self.F = F
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getExchangeCurrencies.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - query:
-            ///   - headers:
-            public init(
-                query: Operations.getExchangeCurrencies.Input.Query = .init(),
-                headers: Operations.getExchangeCurrencies.Input.Headers = .init()
-            ) {
-                self.query = query
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/onramp/currencies/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.ExchangeCurrencies)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.ExchangeCurrencies {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getExchangeCurrencies.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getExchangeCurrencies.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Currencies data
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getExchangeCurrencies.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getExchangeCurrencies.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/currencies/get(getExchangeCurrencies)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
     /// Calculate exchange rates
     ///
     /// Get exchange rates from all available merchants
@@ -1291,259 +912,6 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//v2/onramp/calculate/post(exchangeCalculate)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
-    /// Get payment methods
-    ///
-    /// Get available payment methods by currency and country
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/payment_methods`.
-    /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)`.
-    public enum getExchangePaymentMethods {
-        public static let id: Swift.String = "getExchangePaymentMethods"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query`.
-            public struct Query: Sendable, Hashable {
-                /// User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/country`.
-                @available(*, deprecated)
-                public var country: Components.Parameters.CountryQuery?
-                /// Device country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/device_country_code`.
-                public var device_country_code: Components.Parameters.DeviceCountryCodeQuery?
-                /// App Store country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/store_country_code`.
-                public var store_country_code: Components.Parameters.StoreCountryCodeQuery?
-                /// SIM card country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/sim_country`.
-                public var sim_country: Components.Parameters.SimCountryQuery?
-                /// Device timezone (IANA format, e.g. Europe/Berlin)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/timezone`.
-                public var timezone: Components.Parameters.TimezoneQuery?
-                /// Whether VPN is currently active
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/is_vpn_active`.
-                public var is_vpn_active: Components.Parameters.IsVpnActiveQuery?
-                /// App build version
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/build`.
-                public var build: Components.Parameters.BuildQuery?
-                /// User device platform
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/platform`.
-                public var platform: Components.Parameters.PlatformQuery?
-                /// Fiat currency code (e.g. EUR, USD)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/query/currency`.
-                public var currency: Components.Parameters.CurrencyQuery?
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - country: User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
-                ///   - device_country_code: Device country code (ISO 3166-1 alpha-2)
-                ///   - store_country_code: App Store country code (ISO 3166-1 alpha-2)
-                ///   - sim_country: SIM card country code (ISO 3166-1 alpha-2)
-                ///   - timezone: Device timezone (IANA format, e.g. Europe/Berlin)
-                ///   - is_vpn_active: Whether VPN is currently active
-                ///   - build: App build version
-                ///   - platform: User device platform
-                ///   - currency: Fiat currency code (e.g. EUR, USD)
-                public init(
-                    country: Components.Parameters.CountryQuery? = nil,
-                    device_country_code: Components.Parameters.DeviceCountryCodeQuery? = nil,
-                    store_country_code: Components.Parameters.StoreCountryCodeQuery? = nil,
-                    sim_country: Components.Parameters.SimCountryQuery? = nil,
-                    timezone: Components.Parameters.TimezoneQuery? = nil,
-                    is_vpn_active: Components.Parameters.IsVpnActiveQuery? = nil,
-                    build: Components.Parameters.BuildQuery? = nil,
-                    platform: Components.Parameters.PlatformQuery? = nil,
-                    currency: Components.Parameters.CurrencyQuery? = nil
-                ) {
-                    self.country = country
-                    self.device_country_code = device_country_code
-                    self.store_country_code = store_country_code
-                    self.sim_country = sim_country
-                    self.timezone = timezone
-                    self.is_vpn_active = is_vpn_active
-                    self.build = build
-                    self.platform = platform
-                    self.currency = currency
-                }
-            }
-            public var query: Operations.getExchangePaymentMethods.Input.Query
-            /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/header/X-Wallet-ID`.
-                public var X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader?
-                /// Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/header/F`.
-                public var F: Components.Parameters.FirebaseUserHeader?
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangePaymentMethods.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - X_hyphen_Wallet_hyphen_ID: Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
-                ///   - F: Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///   - accept:
-                public init(
-                    X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader? = nil,
-                    F: Components.Parameters.FirebaseUserHeader? = nil,
-                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangePaymentMethods.AcceptableContentType>] = .defaultValues()
-                ) {
-                    self.X_hyphen_Wallet_hyphen_ID = X_hyphen_Wallet_hyphen_ID
-                    self.F = F
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getExchangePaymentMethods.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - query:
-            ///   - headers:
-            public init(
-                query: Operations.getExchangePaymentMethods.Input.Query = .init(),
-                headers: Operations.getExchangePaymentMethods.Input.Headers = .init()
-            ) {
-                self.query = query
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/onramp/payment_methods/GET/responses/200/content/application\/json`.
-                    case json([Components.Schemas.ExchangePaymentMethod])
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: [Components.Schemas.ExchangePaymentMethod] {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getExchangePaymentMethods.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getExchangePaymentMethods.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Payment methods by merchant
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getExchangePaymentMethods.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getExchangePaymentMethods.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/payment_methods/get(getExchangePaymentMethods)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -2015,272 +1383,6 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//v2/onramp/exchange/post(createExchange)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
-    /// Get trading pairs
-    ///
-    /// Get available trading pairs with filtering
-    ///
-    /// - Remark: HTTP `GET /v2/onramp/pairs`.
-    /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)`.
-    public enum getExchangePairs {
-        public static let id: Swift.String = "getExchangePairs"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query`.
-            public struct Query: Sendable, Hashable {
-                /// Device country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/device_country_code`.
-                public var device_country_code: Components.Parameters.DeviceCountryCodeQuery?
-                /// App Store country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/store_country_code`.
-                public var store_country_code: Components.Parameters.StoreCountryCodeQuery?
-                /// SIM card country code (ISO 3166-1 alpha-2)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/sim_country`.
-                public var sim_country: Components.Parameters.SimCountryQuery?
-                /// Device timezone (IANA format, e.g. Europe/Berlin)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/timezone`.
-                public var timezone: Components.Parameters.TimezoneQuery?
-                /// Whether VPN is currently active
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/is_vpn_active`.
-                public var is_vpn_active: Components.Parameters.IsVpnActiveQuery?
-                /// Trade direction
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/direction`.
-                public var direction: Components.Parameters.DirectionQuery?
-                /// Fiat currency filter (e.g. EUR, USD)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/fiat`.
-                public var fiat: Components.Parameters.FiatQuery?
-                /// Crypto currency filter (e.g. TON, USDT)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/crypto`.
-                public var crypto: Components.Parameters.CryptoQuery?
-                /// Crypto network filter (e.g. native, jetton)
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/network`.
-                public var network: Components.Parameters.NetworkQuery?
-                /// User device platform
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/platform`.
-                public var platform: Components.Parameters.PlatformQuery?
-                /// App build version
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/query/build`.
-                public var build: Components.Parameters.BuildQuery?
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - device_country_code: Device country code (ISO 3166-1 alpha-2)
-                ///   - store_country_code: App Store country code (ISO 3166-1 alpha-2)
-                ///   - sim_country: SIM card country code (ISO 3166-1 alpha-2)
-                ///   - timezone: Device timezone (IANA format, e.g. Europe/Berlin)
-                ///   - is_vpn_active: Whether VPN is currently active
-                ///   - direction: Trade direction
-                ///   - fiat: Fiat currency filter (e.g. EUR, USD)
-                ///   - crypto: Crypto currency filter (e.g. TON, USDT)
-                ///   - network: Crypto network filter (e.g. native, jetton)
-                ///   - platform: User device platform
-                ///   - build: App build version
-                public init(
-                    device_country_code: Components.Parameters.DeviceCountryCodeQuery? = nil,
-                    store_country_code: Components.Parameters.StoreCountryCodeQuery? = nil,
-                    sim_country: Components.Parameters.SimCountryQuery? = nil,
-                    timezone: Components.Parameters.TimezoneQuery? = nil,
-                    is_vpn_active: Components.Parameters.IsVpnActiveQuery? = nil,
-                    direction: Components.Parameters.DirectionQuery? = nil,
-                    fiat: Components.Parameters.FiatQuery? = nil,
-                    crypto: Components.Parameters.CryptoQuery? = nil,
-                    network: Components.Parameters.NetworkQuery? = nil,
-                    platform: Components.Parameters.PlatformQuery? = nil,
-                    build: Components.Parameters.BuildQuery? = nil
-                ) {
-                    self.device_country_code = device_country_code
-                    self.store_country_code = store_country_code
-                    self.sim_country = sim_country
-                    self.timezone = timezone
-                    self.is_vpn_active = is_vpn_active
-                    self.direction = direction
-                    self.fiat = fiat
-                    self.crypto = crypto
-                    self.network = network
-                    self.platform = platform
-                    self.build = build
-                }
-            }
-            public var query: Operations.getExchangePairs.Input.Query
-            /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/header/X-Wallet-ID`.
-                public var X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader?
-                /// Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/header/F`.
-                public var F: Components.Parameters.FirebaseUserHeader?
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangePairs.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - X_hyphen_Wallet_hyphen_ID: Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
-                ///   - F: Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
-                ///   - accept:
-                public init(
-                    X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader? = nil,
-                    F: Components.Parameters.FirebaseUserHeader? = nil,
-                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getExchangePairs.AcceptableContentType>] = .defaultValues()
-                ) {
-                    self.X_hyphen_Wallet_hyphen_ID = X_hyphen_Wallet_hyphen_ID
-                    self.F = F
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getExchangePairs.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - query:
-            ///   - headers:
-            public init(
-                query: Operations.getExchangePairs.Input.Query = .init(),
-                headers: Operations.getExchangePairs.Input.Headers = .init()
-            ) {
-                self.query = query
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/onramp/pairs/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.ExchangePairs)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.ExchangePairs {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getExchangePairs.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getExchangePairs.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Trading pairs
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getExchangePairs.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getExchangePairs.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/onramp/pairs/get(getExchangePairs)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -3171,7 +2273,7 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/v2/crosschain/assets/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Free-text query matched against Symbol and Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
+                /// Matched against the start of Symbol or Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
                 ///
                 /// - Remark: Generated from `#/paths/v2/crosschain/assets/GET/query/q`.
                 public var q: Components.Parameters.AssetSearchQuery?
@@ -3190,7 +2292,7 @@ public enum Operations {
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - q: Free-text query matched against Symbol and Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
+                ///   - q: Matched against the start of Symbol or Name (case-insensitive). Whitespace is trimmed. Empty/missing returns the full list
                 ///   - limit: Maximum number of results per page. When `q` is set the server applies an internal default of 50 if omitted; when listing the full snapshot, omitting `limit` returns everything. Hard-capped at 1000. Use together with `cursor` to page through results; a `next_cursor` is returned while more results remain
                 ///   - chain: Restrict results to a single chain
                 ///   - cursor: Opaque cursor from a prior `next_cursor`. Omit for the first page.
@@ -3370,338 +2472,6 @@ public enum Operations {
             }
         }
     }
-    /// Look up a single cross-chain asset by AssetID
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/asset`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)`.
-    public enum getCrossSwapAsset {
-        public static let id: Swift.String = "getCrossSwapAsset"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/crosschain/asset/GET/query`.
-            public struct Query: Sendable, Hashable {
-                /// Internal asset_id, e.g. `ton/mainnet/coin` or `eth/mainnet/erc-20/0x...`
-                ///
-                /// - Remark: Generated from `#/paths/v2/crosschain/asset/GET/query/asset_id`.
-                public var asset_id: Components.Parameters.CrossSwapAssetIDQuery
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - asset_id: Internal asset_id, e.g. `ton/mainnet/coin` or `eth/mainnet/erc-20/0x...`
-                public init(asset_id: Components.Parameters.CrossSwapAssetIDQuery) {
-                    self.asset_id = asset_id
-                }
-            }
-            public var query: Operations.getCrossSwapAsset.Input.Query
-            /// - Remark: Generated from `#/paths/v2/crosschain/asset/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapAsset.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapAsset.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getCrossSwapAsset.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - query:
-            ///   - headers:
-            public init(
-                query: Operations.getCrossSwapAsset.Input.Query,
-                headers: Operations.getCrossSwapAsset.Input.Headers = .init()
-            ) {
-                self.query = query
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/crosschain/asset/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/crosschain/asset/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.CrossSwapAsset)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.CrossSwapAsset {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getCrossSwapAsset.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getCrossSwapAsset.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Matching cross-chain asset
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getCrossSwapAsset.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getCrossSwapAsset.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Resource not found
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)/responses/404`.
-            ///
-            /// HTTP response code: `404 notFound`.
-            case notFound(Components.Responses.NotFound)
-            /// The associated value of the enum case if `self` is `.notFound`.
-            ///
-            /// - Throws: An error if `self` is not `.notFound`.
-            /// - SeeAlso: `.notFound`.
-            public var notFound: Components.Responses.NotFound {
-                get throws {
-                    switch self {
-                    case let .notFound(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "notFound",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/asset/get(getCrossSwapAsset)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
-    /// Slippage options per source chain
-    ///
-    /// - Remark: HTTP `GET /v2/crosschain/slippage`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)`.
-    public enum getCrossSwapSlippage {
-        public static let id: Swift.String = "getCrossSwapSlippage"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/crosschain/slippage/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapSlippage.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapSlippage.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getCrossSwapSlippage.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            public init(headers: Operations.getCrossSwapSlippage.Input.Headers = .init()) {
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/crosschain/slippage/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/crosschain/slippage/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.CrossSwapSlippage)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.CrossSwapSlippage {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getCrossSwapSlippage.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getCrossSwapSlippage.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Slippage options keyed by chain id
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getCrossSwapSlippage.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getCrossSwapSlippage.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Internal server error
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/slippage/get(getCrossSwapSlippage)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
     /// Create cross-chain swap quote
     ///
     /// - Remark: HTTP `POST /v2/crosschain/quotes`.
@@ -3709,21 +2479,6 @@ public enum Operations {
     public enum createCrossSwapQuote {
         public static let id: Swift.String = "createCrossSwapQuote"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/query`.
-            public struct Query: Sendable, Hashable {
-                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
-                ///
-                /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/query/is_new`.
-                public var is_new: Components.Parameters.IsNewUserQuery?
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
-                public init(is_new: Components.Parameters.IsNewUserQuery? = nil) {
-                    self.is_new = is_new
-                }
-            }
-            public var query: Operations.createCrossSwapQuote.Input.Query
             /// - Remark: Generated from `#/paths/v2/crosschain/quotes/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
@@ -3756,15 +2511,12 @@ public enum Operations {
             /// Creates a new `Input`.
             ///
             /// - Parameters:
-            ///   - query:
             ///   - headers:
             ///   - body:
             public init(
-                query: Operations.createCrossSwapQuote.Input.Query = .init(),
                 headers: Operations.createCrossSwapQuote.Input.Headers = .init(),
                 body: Components.RequestBodies.CrossSwapQuote
             ) {
-                self.query = query
                 self.headers = headers
                 self.body = body
             }
@@ -3900,6 +2652,32 @@ public enum Operations {
     }
     /// Prepare selected route
     ///
+    /// Builds the transaction for a quoted route. This is the call that
+    /// commits: the aggregator allocates any deposit address, screens the
+    /// wallets and mints its own id for the swap, which comes back as
+    /// `provider_route_id`.
+    ///
+    /// Screening is why a route that quoted fine can fail here. A `400` with
+    /// code `wallet_screened` means the aggregator's compliance check
+    /// rejected the sender or the recipient — an AML block on the wallet
+    /// itself, not a malformed address. It is final for that wallet: a retry,
+    /// a fresh quote or another route will be refused the same way, and the
+    /// user cannot fix it by correcting the address. swapsxyz raises it as
+    /// `WALLET_SCREENED` with `details.riskLevel` and `details.screenedAt`,
+    /// which our message carries verbatim. Treat it as a terminal state for
+    /// the swap and route the user to support rather than to a retry.
+    ///
+    /// Other `400` codes: `invalid_address` when the address is genuinely
+    /// malformed or the pair needs a receiver we do not have,
+    /// `min_amount_not_met` for an amount under the aggregator's minimum,
+    /// `insufficient_balance` for any other amount the aggregator refuses,
+    /// `provider_rejected` for another request parameter it refuses,
+    /// `route_expired` once the quote is stale or the aggregator no longer
+    /// finds the route it quoted, `cannot_build_transaction`, and
+    /// `provider_unavailable` for a rate limit or an upstream outage, which
+    /// is the one worth retrying.
+    ///
+    ///
     /// - Remark: HTTP `POST /v2/crosschain/routes/{route_id}/prepare`.
     /// - Remark: Generated from `#/paths//v2/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRoute)`.
     public enum prepareCrossSwapRoute {
@@ -3920,21 +2698,6 @@ public enum Operations {
                 }
             }
             public var path: Operations.prepareCrossSwapRoute.Input.Path
-            /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/query`.
-            public struct Query: Sendable, Hashable {
-                /// Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
-                ///
-                /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/query/is_new`.
-                public var is_new: Components.Parameters.IsNewUserQuery?
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - is_new: Whether the wallet belongs to a user who onboarded on the multichain build, rather than migrating from a legacy one
-                public init(is_new: Components.Parameters.IsNewUserQuery? = nil) {
-                    self.is_new = is_new
-                }
-            }
-            public var query: Operations.prepareCrossSwapRoute.Input.Query
             /// - Remark: Generated from `#/paths/v2/crosschain/routes/{route_id}/prepare/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
@@ -3968,17 +2731,14 @@ public enum Operations {
             ///
             /// - Parameters:
             ///   - path:
-            ///   - query:
             ///   - headers:
             ///   - body:
             public init(
                 path: Operations.prepareCrossSwapRoute.Input.Path,
-                query: Operations.prepareCrossSwapRoute.Input.Query = .init(),
                 headers: Operations.prepareCrossSwapRoute.Input.Headers = .init(),
                 body: Components.RequestBodies.CrossSwapPrepare? = nil
             ) {
                 self.path = path
-                self.query = query
                 self.headers = headers
                 self.body = body
             }
@@ -4135,68 +2895,80 @@ public enum Operations {
             }
         }
     }
-    /// Submit signed payload
+    /// Create cross-chain swap quote (Generic Payload flow)
     ///
-    /// - Remark: HTTP `POST /v2/crosschain/payloads/{payload_id}/submit`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)`.
-    public enum submitCrossSwapPayload {
-        public static let id: Swift.String = "submitCrossSwapPayload"
+    /// The quote of `POST /v2/crosschain/quotes` for clients that sign
+    /// Generic Payload API operations. The route carries no payloads: get
+    /// them from `POST /v3/crosschain/routes/{route_id}/prepare`.
+    ///
+    /// Differences from v2: no Lighter targets, no inline payloads; a source
+    /// on a chain the Generic Payload API has no payloads for (anything but
+    /// TON, EVM, TRON, Bitcoin and Solana) is refused with
+    /// `unsupported_asset`. An erc20 or bep20 source is always quoted as a
+    /// contract call (approve and swap), never through a deposit address,
+    /// and a TON source never takes a deposit address. A client from
+    /// 26.14.0, and a dev build, is quoted through Rango alone (see
+    /// `aggregators`).
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/quotes`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)`.
+    public enum createCrossSwapQuoteV3 {
+        public static let id: Swift.String = "createCrossSwapQuoteV3"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/crosschain/payloads/{payload_id}/submit/POST/path`.
-            public struct Path: Sendable, Hashable {
-                /// Signing payload identifier
-                ///
-                /// - Remark: Generated from `#/paths/v2/crosschain/payloads/{payload_id}/submit/POST/path/payload_id`.
-                public var payload_id: Components.Parameters.CrossSwapPayloadIDPath
-                /// Creates a new `Path`.
-                ///
-                /// - Parameters:
-                ///   - payload_id: Signing payload identifier
-                public init(payload_id: Components.Parameters.CrossSwapPayloadIDPath) {
-                    self.payload_id = payload_id
-                }
-            }
-            public var path: Operations.submitCrossSwapPayload.Input.Path
-            /// - Remark: Generated from `#/paths/v2/crosschain/payloads/{payload_id}/submit/POST/header`.
+            /// - Remark: Generated from `#/paths/v3/crosschain/quotes/POST/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.submitCrossSwapPayload.AcceptableContentType>]
+                /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
+                ///
+                /// - Remark: Generated from `#/paths/v3/crosschain/quotes/POST/header/X-Wallet-ID`.
+                public var X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader?
+                /// Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
+                ///
+                /// - Remark: Generated from `#/paths/v3/crosschain/quotes/POST/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.createCrossSwapQuoteV3.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_ID: Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
+                ///   - F: Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.submitCrossSwapPayload.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader? = nil,
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.createCrossSwapQuoteV3.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_ID = X_hyphen_Wallet_hyphen_ID
+                    self.F = F
                     self.accept = accept
                 }
             }
-            public var headers: Operations.submitCrossSwapPayload.Input.Headers
-            public var body: Components.RequestBodies.CrossSwapSubmit
+            public var headers: Operations.createCrossSwapQuoteV3.Input.Headers
+            public var body: Components.RequestBodies.CrossSwapQuoteV3
             /// Creates a new `Input`.
             ///
             /// - Parameters:
-            ///   - path:
             ///   - headers:
             ///   - body:
             public init(
-                path: Operations.submitCrossSwapPayload.Input.Path,
-                headers: Operations.submitCrossSwapPayload.Input.Headers = .init(),
-                body: Components.RequestBodies.CrossSwapSubmit
+                headers: Operations.createCrossSwapQuoteV3.Input.Headers = .init(),
+                body: Components.RequestBodies.CrossSwapQuoteV3
             ) {
-                self.path = path
                 self.headers = headers
                 self.body = body
             }
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/crosschain/payloads/{payload_id}/submit/POST/responses/200/content`.
+                /// - Remark: Generated from `#/paths/v3/crosschain/quotes/POST/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/crosschain/payloads/{payload_id}/submit/POST/responses/200/content/application\/json`.
-                    case json(Components.Schemas.CrossSwapSubmit)
+                    /// - Remark: Generated from `#/paths/v3/crosschain/quotes/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.CrossSwapQuoteV3)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.CrossSwapSubmit {
+                    public var json: Components.Schemas.CrossSwapQuoteV3 {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -4206,26 +2978,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.submitCrossSwapPayload.Output.Ok.Body
+                public var body: Operations.createCrossSwapQuoteV3.Output.Ok.Body
                 /// Creates a new `Ok`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.submitCrossSwapPayload.Output.Ok.Body) {
+                public init(body: Operations.createCrossSwapQuoteV3.Output.Ok.Body) {
                     self.body = body
                 }
             }
-            /// Submission accepted
+            /// Quote with available routes
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)/responses/200`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Operations.submitCrossSwapPayload.Output.Ok)
+            case ok(Operations.createCrossSwapQuoteV3.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Operations.submitCrossSwapPayload.Output.Ok {
+            public var ok: Operations.createCrossSwapQuoteV3.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -4240,7 +3012,7 @@ public enum Operations {
             }
             /// Invalid request
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)/responses/400`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -4261,32 +3033,9 @@ public enum Operations {
                     }
                 }
             }
-            /// Resource not found
-            ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)/responses/404`.
-            ///
-            /// HTTP response code: `404 notFound`.
-            case notFound(Components.Responses.NotFound)
-            /// The associated value of the enum case if `self` is `.notFound`.
-            ///
-            /// - Throws: An error if `self` is not `.notFound`.
-            /// - SeeAlso: `.notFound`.
-            public var notFound: Components.Responses.NotFound {
-                get throws {
-                    switch self {
-                    case let .notFound(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "notFound",
-                            response: self
-                        )
-                    }
-                }
-            }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/payloads/{payload_id}/submit/post(submitCrossSwapPayload)/responses/500`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/quotes/post(createCrossSwapQuoteV3)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -4338,64 +3087,91 @@ public enum Operations {
             }
         }
     }
-    /// Get execution status
+    /// Prepare selected route as a Generic Payload operation
     ///
-    /// - Remark: HTTP `GET /v2/crosschain/executions/{execution_id}`.
-    /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)`.
-    public enum getCrossSwapExecution {
-        public static let id: Swift.String = "getCrossSwapExecution"
+    /// `POST /v2/crosschain/routes/{route_id}/prepare` with the transaction
+    /// returned as a Generic Payload API operation. The transaction is always
+    /// built on the aggregator side. Errors are those of v2; a route whose
+    /// transaction has no Generic Payload form answers
+    /// `cannot_build_transaction`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v3/crosschain/routes/{route_id}/prepare`.
+    /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)`.
+    public enum prepareCrossSwapRouteV3 {
+        public static let id: Swift.String = "prepareCrossSwapRouteV3"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v2/crosschain/executions/{execution_id}/GET/path`.
+            /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/path`.
             public struct Path: Sendable, Hashable {
-                /// Execution identifier
+                /// Route identifier
                 ///
-                /// - Remark: Generated from `#/paths/v2/crosschain/executions/{execution_id}/GET/path/execution_id`.
-                public var execution_id: Components.Parameters.CrossSwapExecutionIDPath
+                /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/path/route_id`.
+                public var route_id: Components.Parameters.CrossSwapRouteIDPath
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - execution_id: Execution identifier
-                public init(execution_id: Components.Parameters.CrossSwapExecutionIDPath) {
-                    self.execution_id = execution_id
+                ///   - route_id: Route identifier
+                public init(route_id: Components.Parameters.CrossSwapRouteIDPath) {
+                    self.route_id = route_id
                 }
             }
-            public var path: Operations.getCrossSwapExecution.Input.Path
-            /// - Remark: Generated from `#/paths/v2/crosschain/executions/{execution_id}/GET/header`.
+            public var path: Operations.prepareCrossSwapRouteV3.Input.Path
+            /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapExecution.AcceptableContentType>]
+                /// Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
+                ///
+                /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/header/X-Wallet-ID`.
+                public var X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader?
+                /// Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
+                ///
+                /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.prepareCrossSwapRouteV3.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - X_hyphen_Wallet_hyphen_ID: Stable wallet identifier, the same header multichain-backend uses. Only a multichain wallet has one, so sending it marks the request as coming from that wallet, which decides which on-ramp providers are offered.
+                ///   - F: Firebase user id, sent by the mobile client. It decides which on-ramp providers the wallet is offered: a wallet that already bought through Mercuryo or Transak keeps them, a wallet we have not seen before is offered MoonPay. A request without it is left as it is today. Also recorded in the asset-search log.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getCrossSwapExecution.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    X_hyphen_Wallet_hyphen_ID: Components.Parameters.WalletIdHeader? = nil,
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.prepareCrossSwapRouteV3.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.X_hyphen_Wallet_hyphen_ID = X_hyphen_Wallet_hyphen_ID
+                    self.F = F
                     self.accept = accept
                 }
             }
-            public var headers: Operations.getCrossSwapExecution.Input.Headers
+            public var headers: Operations.prepareCrossSwapRouteV3.Input.Headers
+            public var body: Components.RequestBodies.CrossSwapPrepareV3?
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - path:
             ///   - headers:
+            ///   - body:
             public init(
-                path: Operations.getCrossSwapExecution.Input.Path,
-                headers: Operations.getCrossSwapExecution.Input.Headers = .init()
+                path: Operations.prepareCrossSwapRouteV3.Input.Path,
+                headers: Operations.prepareCrossSwapRouteV3.Input.Headers = .init(),
+                body: Components.RequestBodies.CrossSwapPrepareV3? = nil
             ) {
                 self.path = path
                 self.headers = headers
+                self.body = body
             }
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v2/crosschain/executions/{execution_id}/GET/responses/200/content`.
+                /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v2/crosschain/executions/{execution_id}/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.CrossSwapExecution)
+                    /// - Remark: Generated from `#/paths/v3/crosschain/routes/{route_id}/prepare/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.CrossSwapPrepareV3)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.CrossSwapExecution {
+                    public var json: Components.Schemas.CrossSwapPrepareV3 {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -4405,26 +3181,26 @@ public enum Operations {
                     }
                 }
                 /// Received HTTP response body
-                public var body: Operations.getCrossSwapExecution.Output.Ok.Body
+                public var body: Operations.prepareCrossSwapRouteV3.Output.Ok.Body
                 /// Creates a new `Ok`.
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.getCrossSwapExecution.Output.Ok.Body) {
+                public init(body: Operations.prepareCrossSwapRouteV3.Output.Ok.Body) {
                     self.body = body
                 }
             }
-            /// Execution status
+            /// Prepared operation
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)/responses/200`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Operations.getCrossSwapExecution.Output.Ok)
+            case ok(Operations.prepareCrossSwapRouteV3.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Operations.getCrossSwapExecution.Output.Ok {
+            public var ok: Operations.prepareCrossSwapRouteV3.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -4439,7 +3215,7 @@ public enum Operations {
             }
             /// Invalid request
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)/responses/400`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -4462,7 +3238,7 @@ public enum Operations {
             }
             /// Resource not found
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)/responses/404`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)/responses/404`.
             ///
             /// HTTP response code: `404 notFound`.
             case notFound(Components.Responses.NotFound)
@@ -4485,7 +3261,7 @@ public enum Operations {
             }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//v2/crosschain/executions/{execution_id}/get(getCrossSwapExecution)/responses/500`.
+            /// - Remark: Generated from `#/paths//v3/crosschain/routes/{route_id}/prepare/post(prepareCrossSwapRouteV3)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -4560,7 +3336,7 @@ public enum Operations {
                 public var fiat: Components.Parameters.OnrampFiatQuery?
                 /// - Remark: Generated from `#/paths/v2/onramp/configuration/GET/query/payment_method`.
                 public var payment_method: Components.Parameters.OnrampPaymentMethodQuery?
-                /// Free-text search over `symbol`. Case-insensitive substring match.
+                /// Search by the start of `symbol` or `name`, case-insensitive; symbol matches rank above name matches.
                 ///
                 /// - Remark: Generated from `#/paths/v2/onramp/configuration/GET/query/q`.
                 public var q: Components.Parameters.SearchQuery?
@@ -4615,7 +3391,7 @@ public enum Operations {
                 ///   - destination_chain: Internal chain id, e.g. `eth/mainnet`
                 ///   - fiat: Source fiat (ISO 4217)
                 ///   - payment_method:
-                ///   - q: Free-text search over `symbol`. Case-insensitive substring match.
+                ///   - q: Search by the start of `symbol` or `name`, case-insensitive; symbol matches rank above name matches.
                 ///   - country: User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
                 ///   - device_country_code: Device country code (ISO 3166-1 alpha-2)
                 ///   - store_country_code: App Store country code (ISO 3166-1 alpha-2)
@@ -6195,7 +4971,7 @@ public enum Operations {
                 public var fiat: Components.Parameters.OfframpFiatQuery?
                 /// - Remark: Generated from `#/paths/v2/offramp/configuration/GET/query/payout_method`.
                 public var payout_method: Components.Parameters.OfframpPayoutMethodQuery?
-                /// Free-text search over `symbol`. Case-insensitive substring match.
+                /// Search by the start of `symbol` or `name`, case-insensitive; symbol matches rank above name matches.
                 ///
                 /// - Remark: Generated from `#/paths/v2/offramp/configuration/GET/query/q`.
                 public var q: Components.Parameters.SearchQuery?
@@ -6250,7 +5026,7 @@ public enum Operations {
                 ///   - source_chain: Internal chain id, e.g. `eth/mainnet`
                 ///   - fiat: Target fiat (ISO 4217)
                 ///   - payout_method:
-                ///   - q: Free-text search over `symbol`. Case-insensitive substring match.
+                ///   - q: Search by the start of `symbol` or `name`, case-insensitive; symbol matches rank above name matches.
                 ///   - country: User country code (ISO 3166-1 alpha-2). Deprecated: use device_country_code and store_country_code instead
                 ///   - device_country_code: Device country code (ISO 3166-1 alpha-2)
                 ///   - store_country_code: App Store country code (ISO 3166-1 alpha-2)
@@ -7572,6 +6348,163 @@ public enum Operations {
             ///
             /// A response with a code that is not documented in the OpenAPI document.
             case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Display metadata of MoonPay payment methods
+    ///
+    /// Title, subtitle, icon and badge for every MoonPay payment method type,
+    /// to decorate the types returned by MoonPay Platform `GET /platform/v1/payment-methods`.
+    /// Types missing from the response have no metadata; show them with a fallback.
+    /// The list is refreshed from MoonPay once a day.
+    ///
+    /// `503` `provider_unavailable`: the metadata has not been loaded from MoonPay yet.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v2/moonpay/payment-methods`.
+    /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)`.
+    public enum getMoonPayPaymentMethods {
+        public static let id: Swift.String = "getMoonPayPaymentMethods"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v2/moonpay/payment-methods/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Language code
+                ///
+                /// - Remark: Generated from `#/paths/v2/moonpay/payment-methods/GET/query/lang`.
+                public var lang: Components.Parameters.LangQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - lang: Language code
+                public init(lang: Components.Parameters.LangQuery? = nil) {
+                    self.lang = lang
+                }
+            }
+            public var query: Operations.getMoonPayPaymentMethods.Input.Query
+            /// - Remark: Generated from `#/paths/v2/moonpay/payment-methods/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getMoonPayPaymentMethods.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getMoonPayPaymentMethods.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getMoonPayPaymentMethods.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getMoonPayPaymentMethods.Input.Query = .init(),
+                headers: Operations.getMoonPayPaymentMethods.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v2/moonpay/payment-methods/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v2/moonpay/payment-methods/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MoonPayPaymentMethods)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MoonPayPaymentMethods {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getMoonPayPaymentMethods.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getMoonPayPaymentMethods.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Payment method metadata
+            ///
+            /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getMoonPayPaymentMethods.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getMoonPayPaymentMethods.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error
+            ///
+            /// - Remark: Generated from `#/paths//v2/moonpay/payment-methods/get(getMoonPayPaymentMethods)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses._Error)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses._Error {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
         }
         @frozen public enum AcceptableContentType: AcceptableProtocol {
             case json

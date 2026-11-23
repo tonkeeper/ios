@@ -12,14 +12,6 @@ public import struct Foundation.Date
 extension Components {
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
     public enum Parameters {
-        /// - Remark: Generated from `#/components/parameters/enterpriseAccessToken`.
-        public typealias enterpriseAccessToken = Swift.String
-        /// - Remark: Generated from `#/components/parameters/itrxSignature`.
-        public typealias itrxSignature = Swift.String
-        /// - Remark: Generated from `#/components/parameters/itrxTimestamp`.
-        public typealias itrxTimestamp = Swift.String
-        /// - Remark: Generated from `#/components/parameters/token`.
-        public typealias token = Swift.String
         /// - Remark: Generated from `#/components/parameters/optionalToken`.
         public typealias optionalToken = Swift.String
         /// Tonkeeper WalletID identifying the wallet, format 2 only: base32 lowercase 36-char, which carries its own format and kind and is the one X-Wallet-Authorization can be checked against. The earlier hex64 and base32 32-char spellings are no longer accepted — a proof is verified by recovering the signing key from it, which those derivations cannot do, so an id that cannot be proven cannot be trusted to name a wallet. When it comes with a valid access token in Authorization, the request is authenticated by the wallet id; otherwise X-TonConnect-Auth is used as before. The wallet id alone identifies the user; the public key is not sent by the client, it is taken from the message the request carries.
@@ -38,12 +30,8 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/optionalEnterpriseAccessToken`.
         public typealias optionalEnterpriseAccessToken = Swift.String
-        /// - Remark: Generated from `#/components/parameters/adminToken`.
-        public typealias adminToken = Swift.String
         /// - Remark: Generated from `#/components/parameters/jettonMasterParameter`.
         public typealias jettonMasterParameter = Swift.String
-        /// - Remark: Generated from `#/components/parameters/purchaseId`.
-        public typealias purchaseId = Swift.Int
         /// - Remark: Generated from `#/components/parameters/limitQuery`.
         public typealias limitQuery = Swift.Int
         /// - Remark: Generated from `#/components/parameters/offsetQuery`.

@@ -1,6 +1,7 @@
 import BigInt
 import ChainKit
 import Foundation
+import PerpsModels
 import TKLogging
 import TKPerpsAPI
 import TonSwift
@@ -66,6 +67,8 @@ struct PerpsFundingAssetId: Sendable, Equatable {
         // Base58 is case-sensitive, so a Tron token keeps the spelling it came with.
         case ("trc20", 4) where chain == .tron && isTronAddress(spelled[3]):
             return Self(raw: raw, chain: chain, kind: .token(address: spelled[3]))
+        case ("jetton", 4) where chain == .ton && (try? TonSwift.Address.parse(spelled[3])) != nil:
+            return Self(raw: raw, chain: chain, kind: .token(address: spelled[3]))
         default:
             return nil
         }
@@ -80,6 +83,23 @@ struct PerpsFundingAssetId: Sendable, Equatable {
     static func isTronAddress(_ value: String) -> Bool {
         (try? TronSwift.Address(address: value)) != nil
     }
+
+    static func bitcoinAddress(_ value: String) -> String? {
+        if let first = value.first, first == "1" || first == "3", (26 ... 35).contains(value.count),
+           value.allSatisfy({ base58Alphabet.contains($0) })
+        {
+            return value
+        }
+        let bech32 = value.lowercased()
+        guard value == bech32 || value == value.uppercased(),
+              bech32.hasPrefix("bc1"), (11 ... 90).contains(bech32.count),
+              bech32.dropFirst(3).allSatisfy({ bech32Alphabet.contains($0) })
+        else { return nil }
+        return bech32
+    }
+
+    private static let base58Alphabet = Set("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
+    private static let bech32Alphabet = Set("qpzry9x8gf2tvdw0s3jn54khce6mua7l")
 
     /// Ethereum spells one address in several cases and TON in several encodings — raw,
     /// bounceable, non-bounceable — so those are compared by what they name. Tron and
@@ -108,6 +128,21 @@ extension MultichainChain {
     }
 }
 
+enum PerpsDepositProvider: String, Sendable, Equatable {
+    case direct
+    case relay
+    case funxyz
+    case omniston
+
+    static let relayName = "Relay"
+    static let bridgeSources: Set<String> = [
+        PerpsFundingAssetId.usdcEthereum,
+        "arb/mainnet/erc20/0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+        "base/mainnet/erc20/0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "polygon/mainnet/erc20/0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+    ]
+}
+
 enum PerpsDepositQuoteError: Error, Equatable {
     case expired(Date)
     case echoMismatch(field: String)
@@ -120,7 +155,6 @@ enum PerpsDepositQuoteError: Error, Equatable {
     case belowGatewayMinimum(String)
     case unsupportedSourceAsset(String)
     case missingTracking
-    case unexpectedTracking
     /// ChainKit could not read the operation, so there is nothing this client could sign.
     case malformedOperation(String)
     case approvalWithoutMain
@@ -135,6 +169,10 @@ enum PerpsDepositQuoteError: Error, Equatable {
     /// A quote to send is not a preview; a preview is a key registration's, signatures only.
     case unexpectedPreview(Bool)
     case malformedKeyRegistration(String)
+    case unexpectedTonPayment(String)
+    case unexpectedProvider(String)
+    case unexpectedChainPayment(String)
+    case unexpectedBitcoinPayment(String)
 }
 
 /// The EIP-7702 authorization a folded deposit carries: from this transaction on, the sender's
@@ -189,6 +227,11 @@ struct PerpsDepositOperation: Sendable, Equatable, Codable {
         self.payloads = payloads
     }
 
+    private init(id: String, payloads: String) {
+        self.id = id
+        self.payloads = payloads
+    }
+
     func parsed() throws(PerpsDepositQuoteError) -> ChainKit.Operation {
         do {
             return try ChainKitOperationSender.parse(id: id, payloads: payloads)
@@ -203,6 +246,40 @@ struct PerpsDepositOperation: Sendable, Equatable, Codable {
         guard let total = try? parsed().quotedFeeAmount(asset: chain.asChainKitChain.toAsset()) else { return nil }
         return BigUInt(total.description)
     }
+
+    func quotedFeeUnits(on chain: MultichainChain) throws(PerpsDepositQuoteError) -> [(payloadId: String, units: BigUInt)] {
+        let coinId = chain.asChainKitChain.toAsset().id
+        return try parsed().payloads.compactMap { payload in
+            guard let fee = payload.fee as? FeeValue, fee.asset.id == coinId, let units = BigUInt(fee.amount.description) else {
+                return nil
+            }
+            return (payload.id, units)
+        }
+    }
+
+    func charging(_ fees: [String: BigUInt]) throws(PerpsDepositQuoteError) -> PerpsDepositOperation {
+        guard !fees.isEmpty else { return self }
+        guard var payloads = try? JSONSerialization.jsonObject(with: Data(payloads.utf8)) as? [[String: Any]] else {
+            throw PerpsDepositQuoteError.malformedOperation(id)
+        }
+        for index in payloads.indices {
+            guard let payloadId = payloads[index]["id"] as? String, let units = fees[payloadId] else { continue }
+            guard var fee = payloads[index]["fee"] as? [String: Any], fee["type"] as? String == "value",
+                  var data = fee["data"] as? [String: Any]
+            else {
+                throw PerpsDepositQuoteError.malformedPayload(payloadId: payloadId)
+            }
+            data["amount"] = units.description
+            fee["data"] = data
+            payloads[index]["fee"] = fee
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: payloads, options: [.withoutEscapingSlashes]),
+              let charged = String(data: data, encoding: .utf8)
+        else {
+            throw PerpsDepositQuoteError.malformedOperation(id)
+        }
+        return PerpsDepositOperation(id: id, payloads: charged)
+    }
 }
 
 /// A quote envelope the client has checked against its own request. Building
@@ -211,6 +288,7 @@ struct PerpsDepositOperation: Sendable, Equatable, Codable {
 struct PerpsDepositQuote: Sendable, Equatable {
     let quoteId: String
     let route: PerpsDepositRoute
+    let provider: PerpsDepositProvider
     let expiresAt: Date
     let sourceAsset: PerpsFundingAssetId
     let sourceAmountUnits: String
@@ -220,13 +298,37 @@ struct PerpsDepositQuote: Sendable, Equatable {
     let beneficiary: String
     let targetAssetId: String
     let depositAmountUnits: String
-    let operation: PerpsDepositOperation
+    var operation: PerpsDepositOperation
     let payloads: [PerpsDepositQuotePayload]
     let executionId: String?
     /// The requested key; on the direct route, present only when the batch registers it.
     var registration: PerpsKeyRegistration?
     /// Whether Lighter knows no account for the beneficiary yet; `nil` when it did not answer in time.
     var accountUninitialized: Bool?
+    var estimatedDurationSeconds: Int? = nil
+    var providerFees: PerpsDepositProviderFees? = nil
+    var relayPaymentUnits: BigUInt? = nil
+    var bitcoinPayment: PerpsBitcoinDeposit? = nil
+}
+
+extension Components.Schemas.DepositQuote {
+    /// Zero when the provider states none; `nil` once one is unreadable, as a partial sum would
+    /// understate them.
+    var providerFees: PerpsDepositProviderFees? {
+        var destinationGas: Foundation.Decimal = 0
+        var provider: Foundation.Decimal = 0
+        for fee in fees ?? [] {
+            guard let amount = Foundation.Decimal(string: fee.amount_usd, locale: Locale(identifier: "en_US_POSIX")),
+                  !amount.isNaN, amount >= 0
+            else { return nil }
+            if fee._type == "destination_gas" {
+                destinationGas += amount
+            } else {
+                provider += amount
+            }
+        }
+        return PerpsDepositProviderFees(destinationGasUsd: destinationGas, providerUsd: provider)
+    }
 }
 
 enum PerpsDepositQuoteReader {
@@ -237,6 +339,7 @@ enum PerpsDepositQuoteReader {
         _ quote: Components.Schemas.DepositQuote,
         request: Components.Schemas.DepositQuoteRequest,
         registration: PerpsKeyRegistration? = nil,
+        security: PerpsSecurityConfig?,
         now: Date
     ) throws(PerpsDepositQuoteError) -> PerpsDepositQuote {
         let (sourceAsset, budget, expected) = try terms(of: quote, request: request, now: now)
@@ -244,36 +347,52 @@ enum PerpsDepositQuoteReader {
             throw PerpsDepositQuoteError.unexpectedPreview(true)
         }
 
+        guard let provider = PerpsDepositProvider(rawValue: quote.provider) else {
+            throw PerpsDepositQuoteError.unexpectedProvider(quote.provider)
+        }
         let route: PerpsDepositRoute
         let executionId: String?
-        // `provider` is display-only by contract: a source that already is USDC on Ethereum
-        // goes straight to the gateway, anything else is an aggregator fill to track.
-        if sourceAsset.raw.lowercased() == PerpsFundingAssetId.usdcEthereum {
-            guard quote.tracking == nil else {
-                throw PerpsDepositQuoteError.unexpectedTracking
-            }
-            route = .directGateway
-            executionId = nil
-        } else {
-            guard let tracking = quote.tracking, !tracking.execution_id.isEmpty else {
+        // `tracking` is absent exactly when USDC on Ethereum goes straight to the gateway. Anything
+        // tracked is a fill to follow, USDC on Ethereum included: Lighter's bridge takes a top-up of an
+        // existing account from there too.
+        if let tracking = quote.tracking {
+            guard !tracking.execution_id.isEmpty else {
                 throw PerpsDepositQuoteError.missingTracking
+            }
+            guard provider != .direct else {
+                throw PerpsDepositQuoteError.unexpectedProvider(quote.provider)
             }
             route = .crosschainSwap
             executionId = tracking.execution_id
+        } else {
+            guard sourceAsset.raw.lowercased() == PerpsFundingAssetId.usdcEthereum, provider == .direct else {
+                throw PerpsDepositQuoteError.missingTracking
+            }
+            route = .directGateway
+            executionId = nil
         }
 
         let operation = try PerpsDepositOperation(quote.operation)
         // From Ethereum the payment itself delegates the address the key's `Execute` runs on (`readPreview`).
         let delegatedPayment = registration != nil && route == .crosschainSwap && sourceAsset.chain == .eth
             && PerpsFundingAssetId.sameAddress(request.sender_address, request.destination_address)
-        let read = try payloads(of: operation, sourceAsset: sourceAsset, sender: request.sender_address, delegatedPayment: delegatedPayment)
+        let read = try payloads(
+            of: operation,
+            sourceAsset: sourceAsset,
+            sender: request.sender_address,
+            delegatedPayment: delegatedPayment,
+            security: security
+        )
         // A coin payment spends the budget through `value`, or through the outputs of a
-        // prebuilt transaction. A token's budget travels in the calldata, and a token source
-        // is always an EVM or Tron one, where a transaction pays its fee outside `value` — so
-        // native value on such a payload is a transfer this quote never asked for, and nothing
-        // else bounds it.
-        let nativeBudget = sourceAsset.kind == .coin ? budget : BigUInt(0)
-        guard read.totalValue <= nativeBudget else {
+        // prebuilt transaction. A token's budget travels in the calldata. On EVM and Tron a
+        // transaction pays its fee outside `value`, so native value beside a token is a transfer
+        // this quote never asked for. A jetton transfer is a message to the wallet's jetton
+        // wallet, and the coin it carries pays that contract's gas, so no budget bounds it.
+        let nativeBudget: BigUInt? = switch sourceAsset.kind {
+        case .coin: budget
+        case .token: sourceAsset.chain == .ton ? nil : 0
+        }
+        if let nativeBudget, read.totalValue > nativeBudget {
             throw PerpsDepositQuoteError.overspend(
                 spent: read.totalValue.description,
                 budget: nativeBudget.description
@@ -283,6 +402,7 @@ enum PerpsDepositQuoteReader {
         return PerpsDepositQuote(
             quoteId: quote.quote_id,
             route: route,
+            provider: provider,
             expiresAt: quote.expires_at,
             sourceAsset: sourceAsset,
             sourceAmountUnits: budget.description,
@@ -294,7 +414,9 @@ enum PerpsDepositQuoteReader {
             payloads: read.payloads,
             executionId: executionId,
             registration: registration,
-            accountUninitialized: quote.account_uninitialized
+            accountUninitialized: quote.account_uninitialized,
+            estimatedDurationSeconds: quote.estimated_duration_seconds.map(Int.init),
+            providerFees: quote.providerFees
         )
     }
 
@@ -357,7 +479,8 @@ enum PerpsDepositQuoteReader {
         of operation: PerpsDepositOperation,
         sourceAsset: PerpsFundingAssetId,
         sender: String,
-        delegatedPayment: Bool = false
+        delegatedPayment: Bool = false,
+        security: PerpsSecurityConfig?
     ) throws(PerpsDepositQuoteError) -> (payloads: [PerpsDepositQuotePayload], totalValue: BigUInt) {
         let sourceChainId = sourceAsset.chainId
         let chain = sourceAsset.chain
@@ -400,7 +523,9 @@ enum PerpsDepositQuoteReader {
             // A delegation rides on that batch, or on a payment that registers the key from Ethereum.
             let isSelfCall = chain != .ton && PerpsFundingAssetId.sameAddress(to, sender)
             if isSelfCall {
-                guard PerpsDepositCalldata.hermesChains.contains(chain), case .token = sourceAsset.kind else {
+                // Signing no delegation, the batch needs no signed block: without one, the built-in chains stand.
+                let hermesRuns = security.map { $0.delegates(on: chain) } ?? PerpsDepositCalldata.hermesChains.contains(chain)
+                guard hermesRuns, case .token = sourceAsset.kind else {
                     throw malformed(payload, reason: "self-call")
                 }
             } else if authorization != nil, !delegatedPayment {
@@ -408,7 +533,7 @@ enum PerpsDepositQuoteReader {
             }
             var delegation: PerpsDepositDelegation?
             if let authorization {
-                delegation = try Self.delegation(authorization, of: payload, chain: chain)
+                delegation = try Self.delegation(authorization, of: payload, chain: chain, security: security)
             }
             totalValue += value
             read.append(PerpsDepositQuotePayload(
@@ -431,14 +556,18 @@ enum PerpsDepositQuoteReader {
         return (read, totalValue)
     }
 
-    /// The delegate's code runs as the account from then on, so the one contract this client
-    /// was built for is the whole of what it signs an authorization for.
+    /// The delegate's code runs as the account from then on, so the one contract the backend
+    /// signed in `security`, on a chain it names, is the whole of what it signs an authorization for.
     private static func delegation(
         _ authorization: PayloadMetaEvmAuthorization,
         of payload: Payload,
-        chain: MultichainChain
+        chain: MultichainChain,
+        security: PerpsSecurityConfig?
     ) throws(PerpsDepositQuoteError) -> PerpsDepositDelegation {
-        guard authorization.address.display.lowercased() == PerpsDepositCalldata.hermesDelegate else {
+        guard let security,
+              security.delegates(on: chain),
+              authorization.address.display.lowercased() == security.hermesDelegate
+        else {
             throw malformed(payload, reason: "delegate")
         }
         // Whether it is the sender's next nonce only the live account says, so the send checks that.
@@ -449,7 +578,7 @@ enum PerpsDepositQuoteReader {
         }
         return PerpsDepositDelegation(
             chainId: authorization.chainId,
-            address: PerpsDepositCalldata.hermesDelegate,
+            address: security.hermesDelegate,
             nonce: nonce
         )
     }
@@ -519,7 +648,8 @@ private enum Meta {
     init?(_ payload: Payload, chain: MultichainChain) {
         guard payload.version == 1 else { return nil }
         switch (payload.type, payload.meta) {
-        case let (.main, meta as PayloadMetaTonMain) where chain == .ton && meta.stateInit == nil:
+        case let (.main, meta as PayloadMetaTonMain) where chain == .ton && meta.stateInit == nil && meta.token == nil
+            && (meta.comment ?? "").isEmpty:
             self = .main(
                 to: meta.to.display,
                 valueUnits: meta.value.description,
@@ -537,7 +667,7 @@ private enum Meta {
                 gasLimitUnits: meta.gas?.description,
                 authorization: meta.authorization
             )
-        case let (.main, meta as PayloadMetaTronMain) where chain == .tron:
+        case let (.main, meta as PayloadMetaTronMain) where chain == .tron && (meta.memo ?? "").isEmpty:
             self = .main(
                 to: meta.to.display,
                 valueUnits: meta.value.description,

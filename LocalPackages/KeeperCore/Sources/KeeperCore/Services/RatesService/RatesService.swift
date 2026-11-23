@@ -26,7 +26,8 @@ actor RatesServiceImplementation: RatesService {
     }
 
     private let fetchRates: FetchRates
-    private let ratesRepository: RatesRepository
+    private let ratesRepository: RatesRepository?
+    private let servesStaleRatesOnFailure: Bool
     private let freshnessInterval: TimeInterval
     private let failureRetryInterval: TimeInterval
     private let now: @Sendable () -> Date
@@ -37,20 +38,21 @@ actor RatesServiceImplementation: RatesService {
 
     init(
         fetchRates: @escaping FetchRates,
-        ratesRepository: RatesRepository,
+        ratesRepository: RatesRepository?,
+        servesStaleRatesOnFailure: Bool = true,
         freshnessInterval: TimeInterval = 30,
         failureRetryInterval: TimeInterval = 5,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.fetchRates = fetchRates
         self.ratesRepository = ratesRepository
+        self.servesStaleRatesOnFailure = servesStaleRatesOnFailure
         self.freshnessInterval = freshnessInterval
         self.failureRetryInterval = failureRetryInterval
         self.now = now
     }
 
-    /// Falls back to a stale payload and throws only when there is nothing to serve at all: on a
-    /// cold start without network, something priced yesterday beats no fiat at all.
+    /// Balance displays allow a stale payload during an outage; risk totals opt out.
     func loadRates(jettons: [String], currencies: [Currency]) async throws -> Rates {
         let key = Key(
             jettons: jettons.sorted(),
@@ -64,14 +66,14 @@ actor RatesServiceImplementation: RatesService {
         if let failureDate = lastFailureDate[key],
            now().timeIntervalSince(failureDate) < failureRetryInterval
         {
-            guard let cached = cached[key] else { throw RatesServiceError.unavailable }
+            guard servesStaleRatesOnFailure, let cached = cached[key] else { throw RatesServiceError.unavailable }
             return cached.rates
         }
 
         do {
             return try await load(key: key, jettons: jettons, currencies: currencies).value
         } catch {
-            guard let cached = cached[key] else { throw error }
+            guard servesStaleRatesOnFailure, let cached = cached[key] else { throw error }
             return cached.rates
         }
     }
@@ -103,7 +105,7 @@ actor RatesServiceImplementation: RatesService {
 
     private func persist(_ rates: Rates) {
         do {
-            try ratesRepository.saveRates(rates)
+            try ratesRepository?.saveRates(rates)
         } catch {
             Log.tonAPI.w("failed to cache rates on disk", extraInfo: ["error": "\(error)"])
         }

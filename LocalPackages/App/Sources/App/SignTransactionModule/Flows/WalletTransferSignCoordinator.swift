@@ -34,6 +34,7 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
     private let reason: PasscodeReason
+    private let passcodeHandoff: TronTransferPasscodeHandoff?
 
     init(
         router: ViewControllerRouter,
@@ -41,9 +42,11 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
         transferData: TransferData,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
-        reason: PasscodeReason = .confirmTransfer
+        reason: PasscodeReason = .confirmTransfer,
+        passcodeHandoff: TronTransferPasscodeHandoff? = nil
     ) {
         self.reason = reason
+        self.passcodeHandoff = passcodeHandoff
         self.wallet = wallet
         self.transferData = transferData
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
@@ -232,6 +235,10 @@ private extension WalletTransferSignCoordinator {
     }
 
     func handleRegularSign() {
+        if let passcode = passcodeHandoff?.take() {
+            sign(passcode: passcode)
+            return
+        }
         PasscodeInputCoordinator.present(
             parentCoordinator: self,
             parentRouter: router,
@@ -242,44 +249,47 @@ private extension WalletTransferSignCoordinator {
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
-            onInput: { [weak self, wallet, keeperCoreMainAssembly, transferData] passcode in
-                guard let self else { return }
-                Task {
-                    do {
-                        let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(
-                            wallet: wallet,
-                            passcode: passcode
-                        )
-                        let keyPair = try mnemonic.toKeyPair()
-                        let privateKey = keyPair.privateKey
-                        let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
-                            .createUnsignedWalletTransfer(
-                                wallet: wallet
-                            )
-                        let signed = try TransferSigner.signWalletTransfer(
-                            walletTransfer,
-                            wallet: wallet,
-                            seqno: transferData.seqno,
-                            signer: WalletTransferSecretKeySigner(secretKey: privateKey.data)
-                        )
-                        let boc = try signed.toBoc().base64EncodedString()
-                        let proof = keeperCoreMainAssembly.multichainAssembly.chainKitService
-                            .batterySendProof(
-                                wallet: wallet,
-                                mnemonic: mnemonic.mnemonicWords.joined(separator: " "),
-                                boc: boc
-                            )
-                        self.didSign?(SignedTransactions(boc: boc, batterySendProof: proof))
-                    } catch {
-                        self.didFail?(
-                            .failedToSign(
-                                message: "passcode input failure: \(error.localizedDescription)"
-                            )
-                        )
-                    }
-                }
+            onInput: { [weak self] passcode in
+                self?.sign(passcode: passcode)
             }
         )
+    }
+
+    func sign(passcode: String) {
+        Task {
+            do {
+                let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(
+                    wallet: wallet,
+                    passcode: passcode
+                )
+                let keyPair = try mnemonic.toKeyPair()
+                let privateKey = keyPair.privateKey
+                let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+                    .createUnsignedWalletTransfer(
+                        wallet: wallet
+                    )
+                let signed = try TransferSigner.signWalletTransfer(
+                    walletTransfer,
+                    wallet: wallet,
+                    seqno: transferData.seqno,
+                    signer: WalletTransferSecretKeySigner(secretKey: privateKey.data)
+                )
+                let boc = try signed.toBoc().base64EncodedString()
+                let proof = keeperCoreMainAssembly.multichainAssembly.chainKitService
+                    .batterySendProof(
+                        wallet: wallet,
+                        mnemonic: mnemonic.mnemonicWords.joined(separator: " "),
+                        boc: boc
+                    )
+                didSign?(SignedTransactions(boc: boc, batterySendProof: proof))
+            } catch {
+                didFail?(
+                    .failedToSign(
+                        message: "passcode input failure: \(error.localizedDescription)"
+                    )
+                )
+            }
+        }
     }
 
     func handleLedgerSign(transactions: [Transaction], ledgerDevice: Wallet.LedgerDevice) async -> LedgerConfirmSignedItem? {
@@ -300,29 +310,37 @@ private extension WalletTransferSignCoordinator {
 
                 let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
+                var hasResumed = false
+                let resumeOnce: (LedgerConfirmSignedItem?) -> Void = { signature in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    continuation.resume(returning: signature)
+                }
+
                 bottomSheetViewController.didClose = { isInteractivly in
                     guard !isInteractivly else {
-                        continuation.resume(returning: nil)
+                        resumeOnce(nil)
                         return
                     }
                 }
 
                 module.output.didCancel = { [weak bottomSheetViewController] in
                     bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(returning: nil)
+                        resumeOnce(nil)
                     })
                 }
 
                 module.output.didSign = { [weak bottomSheetViewController] signature in
                     bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(returning: signature)
+                        resumeOnce(signature)
                     })
                 }
 
                 module.output.didError = { [weak bottomSheetViewController, weak self] error in
                     bottomSheetViewController?.dismiss(completion: {
+                        guard !hasResumed else { return }
                         self?.handleLedgerConfirmError(error)
-                        continuation.resume(returning: nil)
+                        resumeOnce(nil)
                     })
                 }
 
@@ -345,7 +363,10 @@ private extension WalletTransferSignCoordinator {
                     revision: revision,
                     network: network,
                     isOnDevice: false
-                ) else { return }
+                ) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
                 let module = SignerSignAssembly.module(
                     url: url,
                     wallet: wallet,
@@ -354,16 +375,21 @@ private extension WalletTransferSignCoordinator {
                 )
                 let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
-                bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+                var hasResumed = false
+                let resumeOnce: (Data?) -> Void = { sign in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    continuation.resume(returning: sign)
+                }
+
+                bottomSheetViewController.didClose = { isInteractivly in
                     guard isInteractivly else { return }
-                    bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(returning: nil)
-                    })
+                    resumeOnce(nil)
                 }
 
                 module.output.didScanSignedTransaction = { [weak bottomSheetViewController] sign in
                     bottomSheetViewController?.dismiss {
-                        continuation.resume(returning: sign)
+                        resumeOnce(sign)
                     }
                 }
 
@@ -390,7 +416,10 @@ private extension WalletTransferSignCoordinator {
                     revision: revision,
                     network: network,
                     isOnDevice: false
-                ) else { return }
+                ) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
                 let module = KeystoneSignAssembly.module(
                     transaction: ur,
                     wallet: wallet,
@@ -399,16 +428,21 @@ private extension WalletTransferSignCoordinator {
                 )
                 let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
-                bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+                var hasResumed = false
+                let resumeOnce: (UR?) -> Void = { ur in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    continuation.resume(returning: ur)
+                }
+
+                bottomSheetViewController.didClose = { isInteractivly in
                     guard isInteractivly else { return }
-                    bottomSheetViewController?.dismiss(completion: {
-                        continuation.resume(returning: nil)
-                    })
+                    resumeOnce(nil)
                 }
 
                 module.output.didScanSignedTransaction = { [weak bottomSheetViewController] ur in
                     bottomSheetViewController?.dismiss {
-                        continuation.resume(returning: ur)
+                        resumeOnce(ur)
                     }
                 }
 

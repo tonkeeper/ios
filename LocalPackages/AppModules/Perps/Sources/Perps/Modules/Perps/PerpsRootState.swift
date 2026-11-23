@@ -1,12 +1,11 @@
 import Foundation
-import PerpsModels
 
-public enum PerpsRootAccountState {
+public enum PerpsRootAccountState: Equatable {
     case resolving
     case inactive
     case active(Portfolio)
 
-    public struct Portfolio {
+    public struct Portfolio: Equatable {
         public let accountIndex: Int64
         public let balanceText: String
         public let positions: [PerpsPositionRowItem]

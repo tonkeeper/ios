@@ -53,7 +53,8 @@ struct AddWalletOptionPickerScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.backgroundPage)
-        .ignoresSafeArea(.container, edges: .top)
+        // Under liquid glass the header is the system bar of the sheet's navigation controller, kept clear of.
+        .ignoresSafeArea(.container, edges: TKLiquidGlass.isEnabled ? [] : .top)
     }
 
     private var titleDescription: some View {

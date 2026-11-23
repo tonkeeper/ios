@@ -100,7 +100,18 @@ final class WalletBalanceHeaderViewModel {
     /// from the background both ask for the load that confirms it.
     private func refresh() {
         Task { [balanceLoader, wallet] in
-            await balanceLoader.reloadBalance(wallet: wallet, priority: .userVisible)
+            let tracker = ScreenRenderTracker.shared
+            tracker.requestStarted(for: .portfolio)
+            let result = await balanceLoader.reloadBalance(wallet: wallet, priority: .userVisible)
+            tracker.requestFinished(for: .portfolio)
+            switch result {
+            case .delivered:
+                tracker.contentApplied(.fresh, for: .portfolio)
+            case .failed:
+                tracker.failed(.portfolio, error: .unknown)
+            case .dropped:
+                tracker.finish(.portfolio)
+            }
         }
     }
 
@@ -245,6 +256,7 @@ final class WalletBalanceHeaderViewModel {
                 addressText,
                 tags: wallet.isMultichain
                     ? [WalletMultichainPresentation.badgeTagSwiftUIConfiguration]
+                    + (wallet.kind == .ledger ? [wallet.balanceKindTagSwiftUIConfiguration()].compactMap { $0 } : [])
                     : wallet.balanceTagSwiftUIConfigurations()
             )
         )
@@ -281,19 +293,19 @@ final class WalletBalanceHeaderViewModel {
     }
 
     private func makeBatteryConfiguration(batteryBalance: BatteryBalance?) -> BatterySwiftUIViewConfig? {
-        guard wallet.kind == .regular else { return nil }
+        guard wallet.kind == .regular, !wallet.isWalletTg else { return nil }
         guard !configuration.flag(\.batteryDisabled, network: wallet.network) else { return nil }
 
-        let state: BatterySwiftUIViewConfig.State
         switch batteryBalance?.batteryState {
         case let .fill(percents):
-            state = .fill(percents)
+            return BatterySwiftUIViewConfig(size: .size34, state: .fill(percents))
         case .negative:
-            state = .negative
-        case .empty, .none:
-            state = .emptyTinted
+            return BatterySwiftUIViewConfig(size: .size34, state: .negative)
+        case .empty:
+            return BatterySwiftUIViewConfig(size: .size34, state: .emptyTinted, showsHint: true)
+        case .none:
+            return BatterySwiftUIViewConfig(size: .size34, state: .emptyTinted)
         }
-        return BatterySwiftUIViewConfig(size: .size34, state: state)
     }
 
     private func makeButtonsModel() -> WalletBalanceHeaderButtonsRedesignView.Model {

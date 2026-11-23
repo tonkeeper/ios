@@ -67,6 +67,8 @@ struct SendV3ViewModelViewState {
         let isValid: Bool
         let placeholder: String
         let description: NSAttributedString?
+        /// What the description offers to tap, such as encrypting the comment.
+        var actionItems: [TKActionLabel.ActionItem] = []
     }
 
     struct RecipientDescription {
@@ -144,6 +146,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     // MARK: - State
 
     private var comment: String?
+    private var withdrawMemo = ""
     private var sendInput: SendInput
     private var item: SendV3Item {
         didSet {
@@ -307,6 +310,12 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     }
 
     func didInputComment(_ string: String) {
+        if case .withdraw = sendInput {
+            guard string != withdrawMemo else { return }
+            withdrawMemo = string
+            updateViewState()
+            return
+        }
         guard string != comment else { return }
         comment = string
         updateViewState()
@@ -353,15 +362,19 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     }
 
     func didTapRecipientPasteButton() {
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        didInputRecipient(pasteboardString)
-        didUpdateRecipient?(pasteboardString)
+        Task { @MainActor [weak self] in
+            guard let pasteboardString = await UIPasteboard.general.readString() else { return }
+            self?.didInputRecipient(pasteboardString)
+            self?.didUpdateRecipient?(pasteboardString)
+        }
     }
 
     func didTapCommentPasteButton() {
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        didInputComment(pasteboardString)
-        didUpdateComment?(pasteboardString)
+        Task { @MainActor [weak self] in
+            guard let pasteboardString = await UIPasteboard.general.readString() else { return }
+            self?.didInputComment(pasteboardString)
+            self?.didUpdateComment?(pasteboardString)
+        }
     }
 
     func didTapRecipientScanButton() {
@@ -705,7 +718,19 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         }()
 
         let commentState: SendV3ViewModelViewState.CommentState? = {
-            if case .withdraw = sendInput { return nil }
+            if case let .withdraw(_, exchangeTo) = sendInput {
+                guard exchangeTo.isTonNetwork else { return nil }
+                return SendV3ViewModelViewState.CommentState(
+                    isValid: true,
+                    placeholder: TKLocales.Send.Memo.placeholder,
+                    description: TKLocales.Send.Memo.exchangeDescription.withTextStyle(
+                        .body2,
+                        color: .Text.secondary,
+                        alignment: .left,
+                        lineBreakMode: .byWordWrapping
+                    )
+                )
+            }
             guard item.isSupportComment else { return nil }
 
             let isCommentRequired = recipient?.isCommentRequired ?? false
@@ -813,6 +838,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         guard !isProcessingExchange else { return }
         let walletAddress = recipientInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !walletAddress.isEmpty else { return }
+        let memo = withdrawMemo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let extraId: String? = exchangeTo.isTonNetwork && !memo.isEmpty ? memo : nil
 
         isProcessingExchange = true
         updateViewState()
@@ -829,7 +856,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     fromNetwork: sourceAsset.network,
                     toNetwork: exchangeTo.network,
                     walletAddress: walletAddress,
-                    extraId: nil,
+                    extraId: extraId,
                     flow: RampFlow.withdraw.api
                 )
                 let comment = "Cross-chain withdrawal"
@@ -841,7 +868,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     comment: item.isSupportComment ? comment : nil,
                     isMaxAmount: isMaxAmount,
                     recipientDisplayAddress: walletAddress,
-                    estimatedDurationSeconds: result.estimatedDuration
+                    estimatedDurationSeconds: result.estimatedDuration,
+                    recipientExtraId: extraId
                 ) else { return }
                 didContinueSend?(data)
             } catch {

@@ -8,7 +8,7 @@ struct P2PExpressParams {
     let network: String?
     let cryptoCurrency: String?
     let fiatCurrency: String
-    let amount: Int64?
+    let amount: Decimal?
     let requestNetwork: Network
 
     var createP2PSession: CreateP2PSession {

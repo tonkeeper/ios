@@ -11,12 +11,11 @@ final class PairSignerDeeplinkCoordinator: RouterCoordinator<NavigationControlle
     var didCancel: (() -> Void)?
     var didPaired: (() -> Void)?
 
+    private let pairingAnalytics: WalletImportPairingAnalyticsSession
     private let publicKey: TonSwift.PublicKey
     private let name: String
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
-    private let coreAssembly: TKCore.CoreAssembly
     private let multichainAssembly: MultichainAssembly
-    private let analyticsContext: WalletFlowAnalyticsContext
     private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
 
     init(
@@ -27,43 +26,55 @@ final class PairSignerDeeplinkCoordinator: RouterCoordinator<NavigationControlle
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter,
         analyticsContext: WalletFlowAnalyticsContext,
+        pairingEntry: PairingEntry,
         publicKeyImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
     ) {
+        self.pairingAnalytics = WalletImportPairingAnalyticsSession(
+            analyticsProvider: coreAssembly.analyticsProvider,
+            walletMode: .single, walletSource: .signer, from: analyticsContext.from,
+            entry: pairingEntry, hasPairingScreen: false
+        )
         self.publicKey = publicKey
         self.name = name
         self.walletUpdateAssembly = walletUpdateAssembly
-        self.coreAssembly = coreAssembly
         self.multichainAssembly = multichainAssembly
-        self.analyticsContext = analyticsContext
         self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
         super.init(router: router)
     }
 
     override func start() {
+        pairingAnalytics.start()
         openImport()
+    }
+
+    @discardableResult
+    func cancelPairing() -> Bool {
+        pairingAnalytics.exit()
     }
 }
 
 private extension PairSignerDeeplinkCoordinator {
     func openImport() {
-        coreAssembly.analyticsProvider.logWalletImportStarted(
-            walletMode: .single,
-            walletSource: .signer,
-            from: analyticsContext.from
-        )
         let coordinator = publicKeyImportCoordinatorProvider(router, publicKey, name)
 
         coordinator.didPrepareForPresent = { [weak self] in
-            self?.didPrepareToPresent?()
+            guard let self, pairingAnalytics.isActive else { return }
+            didPrepareToPresent?()
         }
 
         coordinator.didCancel = { [weak self, weak coordinator] in
             guard let coordinator else { return }
             self?.removeChild(coordinator)
+            guard let self else { return }
+            if cancelPairing() {
+                didCancel?()
+            } else {
+                router.dismiss(animated: true)
+            }
         }
 
         coordinator.didImport = { [weak self] publicKey, revisions, model in
-            guard let self else { return }
+            guard let self, pairingAnalytics.beginImport() else { return }
             Task {
                 do {
                     try await self.importWallet(
@@ -71,11 +82,7 @@ private extension PairSignerDeeplinkCoordinator {
                         revisions: revisions,
                         model: model
                     )
-                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
-                        walletMode: .single,
-                        walletSource: .signer,
-                        from: self.analyticsContext.from
-                    )
+                    self.pairingAnalytics.success()
                     await MainActor.run {
                         self.didPaired?()
                     }
@@ -83,12 +90,7 @@ private extension PairSignerDeeplinkCoordinator {
                     Log.e("deeplink pair signer: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
-                    self.coreAssembly.analyticsProvider.logWalletImportError(
-                        walletMode: .single,
-                        walletSource: .signer,
-                        from: self.analyticsContext.from,
-                        error: error
-                    )
+                    if self.pairingAnalytics.importFailed(error: error) { self.didCancel?() }
                 }
             }
         }

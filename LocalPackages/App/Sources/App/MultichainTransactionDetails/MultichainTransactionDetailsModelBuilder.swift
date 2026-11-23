@@ -11,13 +11,26 @@ struct MultichainTransactionDetailsModelBuilder {
     private let dateFormatter: DateFormatter
     private let transactionButtonProvider: (MultichainActivity) -> MultichainTransactionDetailsModel.TransactionButton?
     private let nftProvider: (MultichainActivity) -> MultichainActivityNFT?
+    private let hidesAmounts: () -> Bool
+    private let walletName: String?
+    private let decryptedComment: (MultichainActivity) -> String?
+    private let decryptComment: ((MultichainActivity) -> Void)?
 
+    /// Only with `decryptComment` does a comment an activity carries encrypted show, until `decryptedComment`
+    /// gives it decrypted.
     init(
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
         transactionButtonProvider: @escaping (MultichainActivity) -> MultichainTransactionDetailsModel.TransactionButton?,
-        nftProvider: @escaping (MultichainActivity) -> MultichainActivityNFT? = { _ in nil }
+        hidesAmounts: @escaping () -> Bool,
+        nftProvider: @escaping (MultichainActivity) -> MultichainActivityNFT? = { _ in nil },
+        walletName: String? = nil,
+        decryptedComment: @escaping (MultichainActivity) -> String? = { _ in nil },
+        decryptComment: ((MultichainActivity) -> Void)? = nil
     ) {
+        self.walletName = walletName
+        self.decryptedComment = decryptedComment
+        self.decryptComment = decryptComment
         self.amountFormatter = amountFormatter
         var signedConfiguration = amountFormatter.config
         signedConfiguration.signPolicy = .always
@@ -27,10 +40,16 @@ struct MultichainTransactionDetailsModelBuilder {
         self.dateFormatter = detailsDateFormatter
         self.transactionButtonProvider = transactionButtonProvider
         self.nftProvider = nftProvider
+        self.hidesAmounts = hidesAmounts
     }
 
-    func build(activity: MultichainActivity) -> MultichainTransactionDetailsModel {
+    /// `showsFundingStatus`: a Perps deposit or withdrawal opened while in progress keeps a Status
+    /// row that follows it to its outcome. A failed or dropped one always shows it, or nothing would tell the failure.
+    func build(activity: MultichainActivity, showsFundingStatus: Bool = false) -> MultichainTransactionDetailsModel {
         let kind = MultichainActivityPresentationKind(activity: activity)
+        if let isCredit = kind.isPerpsAccountCredit {
+            return perpsFundingModel(activity: activity, kind: kind, isCredit: isCredit, showsStatus: showsFundingStatus)
+        }
         // A pending exchange knows both tokens but not yet both amounts, so the amount side alone
         // would collapse it to a single leg.
         if activity.rendersTokenPair {
@@ -72,6 +91,13 @@ struct MultichainTransactionDetailsModelBuilder {
             let transactionID = rawTransactionID.trimmingCharacters(in: .whitespacesAndNewlines)
             return transactionID.isEmpty ? nil : transactionID
         }
+        if let explorerTxId = activity.explorerTxId,
+           let separatorIndex = explorerTxId.firstIndex(of: ":")
+        {
+            let hash = explorerTxId[explorerTxId.index(after: separatorIndex)...]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !hash.isEmpty { return hash }
+        }
         let sourceChainTransactionID = transactionIDs.compactMap { transactionID -> String? in
             guard let separatorIndex = transactionID.firstIndex(of: ":"),
                   MultichainChain(
@@ -85,20 +111,196 @@ struct MultichainTransactionDetailsModelBuilder {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return transactionID.isEmpty ? nil : transactionID
         }.first
-        let fallbackTransactionID = transactionIDs.first { transactionID in
+        // An id on a chain the app does not know, like a Lighter deposit's `lighter:0x…`,
+        // is shown by its hash alone.
+        let fallbackTransactionID = transactionIDs.lazy.compactMap { transactionID -> String? in
             guard let separatorIndex = transactionID.firstIndex(of: ":") else {
-                return true
+                return transactionID
             }
-            return MultichainChain(
-                assetIdChain: String(transactionID[..<separatorIndex])
-            ) == nil
-        }
+            guard MultichainChain(assetIdChain: String(transactionID[..<separatorIndex])) == nil else {
+                return nil
+            }
+            let hash = transactionID[transactionID.index(after: separatorIndex)...]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return hash.isEmpty ? nil : hash
+        }.first
 
         return sourceChainTransactionID ?? fallbackTransactionID
+    }
+
+    func feeRow(activity: MultichainActivity) -> MultichainTransactionDetailsCellContent? {
+        if let batteryFee = batteryFeeRow(activity: activity) {
+            return batteryFee
+        }
+        if let tronResourceFee = tronResourceFeeRow(activity: activity) {
+            return tronResourceFee
+        }
+        guard let feeAmount = activity.feeAmount,
+              let feeToken = activity.feeToken
+        else {
+            return nil
+        }
+        return .fee(
+            title: TKLocales.FeeMethodPicker.title,
+            amount: maskedIfHidden(amountTitle(
+                activity: activity,
+                rawAmount: feeAmount,
+                token: feeToken,
+                sign: .none,
+                style: .compact
+            )),
+            fiatAmount: hidesAmounts() || activity.isPerpsDollar(feeToken) ? nil : fiatTitle(activity.feeAmountUsd)
+        )
     }
 }
 
 private extension MultichainTransactionDetailsModelBuilder {
+    struct FundingLeg {
+        let token: MultichainAssetDetails?
+        let rawAmount: String?
+        let amountUsd: Double?
+        let sign: AmountSign
+        let isPerpsBalance: Bool
+    }
+
+    /// The Perps balance leg in USDC, and the token on the wallet's side when the backend sends it:
+    /// a withdrawal's payout, a deposit's source. They read left to right, outgoing first.
+    /// A withdrawal's fee is part of what left the balance: the payout is the amount less the fee.
+    func perpsFundingModel(
+        activity: MultichainActivity,
+        kind: MultichainActivityPresentationKind,
+        isCredit: Bool,
+        showsStatus: Bool
+    ) -> MultichainTransactionDetailsModel {
+        let isIncoming = kind.amountSide(for: activity) == .incoming
+        let perpsLeg = FundingLeg(
+            token: isIncoming ? activity.inToken : activity.outToken,
+            rawAmount: isIncoming ? activity.inAmount : activity.outAmount,
+            amountUsd: isIncoming ? activity.inAmountUsd : activity.outAmountUsd,
+            sign: isCredit ? .positive : .negative,
+            isPerpsBalance: true
+        )
+        let walletToken = isCredit ? activity.outToken : activity.inToken
+        let walletLeg = walletToken.flatMap { token -> FundingLeg? in
+            let rawAmount = isCredit ? activity.outAmount : activity.inAmount
+            let repeatsPerpsLeg = isCredit
+                ? activity.isPerpsDollar(token)
+                : token.assetId.caseInsensitiveCompare(perpsLeg.token?.assetId ?? "") == .orderedSame
+            guard isCredit == isIncoming, rawAmount != nil, !repeatsPerpsLeg else { return nil }
+            return FundingLeg(
+                token: token,
+                rawAmount: rawAmount,
+                amountUsd: isCredit ? activity.outAmountUsd : activity.inAmountUsd,
+                sign: isCredit ? .negative : .positive,
+                isPerpsBalance: false
+            )
+        }
+        let legs = (isCredit ? [walletLeg, perpsLeg] : [perpsLeg, walletLeg]).compactMap { $0 }
+        let image: MultichainTransactionDetailsModel.Image = if legs.count == 2 {
+            .swap(left: fundingAsset(activity: activity, kind: kind, leg: legs[0]), right: fundingAsset(activity: activity, kind: kind, leg: legs[1]))
+        } else {
+            .single(fundingAsset(activity: activity, kind: kind, leg: perpsLeg))
+        }
+        let date = dateString(for: activity.blockTime)
+
+        return MultichainTransactionDetailsModel(
+            image: image,
+            amountLines: legs.map { fundingAmountLine(activity: activity, leg: $0) },
+            fiat: legs.last.flatMap { fundingFiat(activity: activity, leg: $0) }.map(maskedIfHidden),
+            date: activity.status == .confirmed
+                ? isCredit ? TKLocales.EventDetails.depositedOn(date) : TKLocales.EventDetails.withdrawnOn(date)
+                : dateTitle(activity: activity, kind: kind),
+            pendingTitle: showsStatus ? nil : pendingTitle(activity: activity, kind: kind),
+            rows: [
+                walletName.map { .property(title: TKLocales.ConfirmSend.wallet, value: $0) },
+                .property(
+                    title: isCredit
+                        ? TKLocales.MultichainHistory.Perps.depositedTo
+                        : TKLocales.MultichainHistory.Perps.withdrawnFrom,
+                    value: TKLocales.Perps.balance
+                ),
+                protocolRow(activity: activity),
+                feeRow(activity: activity),
+                Self.transactionID(for: activity).map {
+                    .inlineHash(title: TKLocales.MultichainHistory.Perps.transactionHash, hash: $0)
+                },
+                showsStatus || [.failed, .dropped].contains(activity.status) ? fundingStatusRow(activity: activity) : nil,
+            ].compactMap { $0 },
+            transactionButton: transactionButtonProvider(activity)
+        )
+    }
+
+    func fundingStatusRow(activity: MultichainActivity) -> MultichainTransactionDetailsCellContent {
+        let title = TKLocales.MultichainSwap.Details.status
+        switch activity.status {
+        case .confirmed:
+            return .status(title: title, value: TKLocales.Result.success, color: .accentGreen)
+        case .failed:
+            return .status(title: title, value: TKLocales.State.failed, color: .accentOrange)
+        case .dropped:
+            return .status(title: title, value: TKLocales.LiveActivity.dropped, color: .accentOrange)
+        case .pending:
+            return .status(title: title, value: TKLocales.MultichainSwap.Details.pending, color: .textSecondary, isPending: true)
+        }
+    }
+
+    func fundingAsset(
+        activity: MultichainActivity,
+        kind: MultichainActivityPresentationKind,
+        leg: FundingLeg
+    ) -> MultichainTransactionDetailsModel.Asset {
+        guard let token = leg.token,
+              !(activity.isPerpsDollar(token) && token.image.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        else {
+            return .init(imageSource: .image(kind.icon, chainIcon: nil))
+        }
+        return asset(token: token, chain: token.chain)
+    }
+
+    /// The Perps leg reads in USDC here, not dollars: the dollar value is the line under it.
+    /// A withdrawal's payout is compact: the backend sends it with every digit of the token.
+    func fundingAmountLine(
+        activity: MultichainActivity,
+        leg: FundingLeg
+    ) -> MultichainTransactionDetailsModel.AmountLine {
+        let walletStyle: AmountDisplayStyle = leg.sign == .positive ? .compact : .exactValue
+        guard let token = leg.token,
+              activity.isPerpsDollar(token),
+              let rawAmount = leg.rawAmount,
+              let amount = MultichainActivityAmount.unsigned(rawAmount)
+        else {
+            return amountLine(
+                amount: maskedIfHidden(amountTitle(
+                    activity: activity,
+                    rawAmount: leg.rawAmount,
+                    token: leg.token,
+                    sign: leg.sign,
+                    style: walletStyle
+                )),
+                chain: amountLineChainTitle(token: leg.token, chain: leg.token?.chain)
+            )
+        }
+        return amountLine(
+            amount: maskedIfHidden(signedAmountFormatter.format(
+                amount: amount,
+                fractionDigits: token.decimals,
+                accessory: .tokenSymbol(token.symbol),
+                isNegative: leg.sign == .negative,
+                style: leg.isPerpsBalance ? .fiatBalance : walletStyle
+            )),
+            chain: leg.isPerpsBalance ? nil : amountLineChainTitle(token: token, chain: token.chain)
+        )
+    }
+
+    func fundingFiat(activity: MultichainActivity, leg: FundingLeg) -> String? {
+        if let amountUsd = leg.amountUsd {
+            let dollars = amountFormatter.format(decimal: Decimal(abs(amountUsd)), accessory: .fiat(Currency.USD), style: .fiatBalance)
+            return (leg.sign == .negative ? String.Symbol.minus : String.Symbol.plus) + amountFormatter.config.space + dollars
+        }
+        guard let token = leg.token, activity.isPerpsDollar(token) else { return nil }
+        return amountTitle(activity: activity, rawAmount: leg.rawAmount, token: token, sign: leg.sign, style: .fiatBalance)
+    }
+
     func sentModel(
         activity: MultichainActivity,
         kind: MultichainActivityPresentationKind
@@ -110,9 +312,9 @@ private extension MultichainTransactionDetailsModelBuilder {
             kind: kind,
             token: token,
             chain: chain,
-            rawAmount: activity.perpsDebitedOutAmount,
+            rawAmount: activity.outAmount,
             amountUsd: activity.outAmountUsd,
-            sign: kind.isPerpsAccountCredit == true ? .positive : .negative
+            sign: .negative
         )
 
         return MultichainTransactionDetailsModel(
@@ -123,6 +325,7 @@ private extension MultichainTransactionDetailsModelBuilder {
             date: dateTitle(activity: activity, kind: kind),
             pendingTitle: pendingTitle(activity: activity, kind: kind),
             rows: [
+                activity.toName.map { .property(title: TKLocales.EventDetails.recipient, value: $0) },
                 addressRow(
                     type: TKLocales.EventDetails.recipientAddress,
                     value: activity.toAddress ?? activity.walletAddress,
@@ -154,7 +357,7 @@ private extension MultichainTransactionDetailsModelBuilder {
             chain: chain,
             rawAmount: activity.inAmount,
             amountUsd: activity.inAmountUsd,
-            sign: kind.isPerpsAccountCredit == false ? .negative : .positive
+            sign: .positive
         )
 
         return MultichainTransactionDetailsModel(
@@ -165,6 +368,7 @@ private extension MultichainTransactionDetailsModelBuilder {
             date: dateTitle(activity: activity, kind: kind),
             pendingTitle: pendingTitle(activity: activity, kind: kind),
             rows: [
+                activity.fromName.map { .property(title: TKLocales.EventDetails.sender, value: $0) },
                 addressRow(
                     type: TKLocales.EventDetails.senderAddress,
                     value: activity.fromAddress ?? activity.walletAddress,
@@ -199,25 +403,25 @@ private extension MultichainTransactionDetailsModelBuilder {
             ),
             amountLines: [
                 amountLine(
-                    amount: amountTitle(
+                    amount: maskedIfHidden(amountTitle(
                         activity: activity,
                         rawAmount: activity.outAmount,
                         token: outToken,
                         sign: .negative
-                    ),
+                    )),
                     chain: amountLineChainTitle(token: outToken, chain: fromChain)
                 ),
                 amountLine(
-                    amount: amountTitle(
+                    amount: maskedIfHidden(amountTitle(
                         activity: activity,
                         rawAmount: activity.inAmount,
                         token: inToken,
                         sign: .positive
-                    ),
+                    )),
                     chain: amountLineChainTitle(token: inToken, chain: toChain)
                 ),
             ],
-            fiat: fiatTitle(activity.inAmountUsd ?? activity.outAmountUsd),
+            fiat: fiatTitle(activity.inAmountUsd ?? activity.outAmountUsd).map(maskedIfHidden),
             date: dateTitle(activity: activity, kind: kind),
             pendingTitle: pendingTitle(activity: activity, kind: kind),
             rows: [
@@ -253,14 +457,16 @@ private extension MultichainTransactionDetailsModelBuilder {
         chain: MultichainChain?,
         rawAmount: String?,
         amountUsd: Double?,
-        sign: AmountSign
+        sign: AmountSign,
+        style: AmountDisplayStyle = .exactValue
     ) -> Hero {
         if let nft = nftProvider(activity) {
             return Hero(
                 image: .nft(
                     MultichainTransactionDetailsModel.Asset(
                         imageSource: .url(nft.imageURL)
-                    )
+                    ),
+                    isSecureMode: hidesAmounts()
                 ),
                 nft: MultichainTransactionDetailsModel.NFT(
                     name: nft.name,
@@ -295,17 +501,22 @@ private extension MultichainTransactionDetailsModelBuilder {
             nft: nil,
             amountLines: [
                 amountLine(
-                    amount: amountTitle(
+                    amount: maskedIfHidden(amountTitle(
                         activity: activity,
                         rawAmount: rawAmount,
                         token: token,
-                        sign: sign
-                    ),
+                        sign: sign,
+                        style: style
+                    )),
                     chain: isDollar ? nil : amountLineChainTitle(token: token, chain: chain)
                 ),
             ],
-            fiat: isDollar ? nil : fiatTitle(amountUsd)
+            fiat: isDollar ? nil : fiatTitle(amountUsd).map(maskedIfHidden)
         )
+    }
+
+    func maskedIfHidden(_ text: String) -> String {
+        hidesAmounts() ? .secureModeValueShort : text
     }
 
     func asset(
@@ -370,40 +581,34 @@ private extension MultichainTransactionDetailsModelBuilder {
     }
 
     func commentRow(activity: MultichainActivity) -> MultichainTransactionDetailsCellContent? {
-        guard !activity.isSpam,
-              let comment = activity.comment?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !comment.isEmpty
-        else {
+        guard !activity.isSpam else {
+            return nil
+        }
+        if let comment = activity.comment {
+            return commentRow(comment)
+        }
+        guard let encryptedComment = activity.encryptedComment, let decryptComment else {
+            return nil
+        }
+        // Secure mode hides what it decrypted to, as TON history does.
+        if !hidesAmounts(), let comment = decryptedComment(activity) {
+            return commentRow(comment)
+        }
+        return .encryptedComment(
+            title: TKLocales.EventDetails.comment,
+            length: encryptedComment.approximateLength,
+            decrypt: { decryptComment(activity) }
+        )
+    }
+
+    func commentRow(_ comment: String) -> MultichainTransactionDetailsCellContent? {
+        let trimmedComment = comment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedComment.isEmpty else {
             return nil
         }
         return .comment(
             title: TKLocales.EventDetails.comment,
-            value: comment
-        )
-    }
-
-    func feeRow(activity: MultichainActivity) -> MultichainTransactionDetailsCellContent? {
-        if let batteryFee = batteryFeeRow(activity: activity) {
-            return batteryFee
-        }
-        if let tronResourceFee = tronResourceFeeRow(activity: activity) {
-            return tronResourceFee
-        }
-        guard let feeAmount = activity.feeAmount,
-              let feeToken = activity.feeToken
-        else {
-            return nil
-        }
-        return .fee(
-            title: TKLocales.FeeMethodPicker.title,
-            amount: amountTitle(
-                activity: activity,
-                rawAmount: feeAmount,
-                token: feeToken,
-                sign: .none,
-                style: .compact
-            ),
-            fiatAmount: activity.isPerpsDollar(feeToken) ? nil : fiatTitle(activity.feeAmountUsd)
+            value: trimmedComment
         )
     }
 
@@ -498,7 +703,8 @@ private extension MultichainTransactionDetailsModelBuilder {
         else {
             return nil
         }
-        let displayName = MultichainHistoryStakingProvider(rawValue: protocolName)?.displayName ?? protocolName
+        let displayName = activity.activityType.isPerps && protocolName.lowercased() == "lighter"
+            ? "Lighter" : MultichainHistoryStakingProvider(rawValue: protocolName)?.displayName ?? protocolName
         return .property(
             title: TKLocales.EventDetails.protocol,
             value: displayName
@@ -523,7 +729,7 @@ private extension MultichainTransactionDetailsModelBuilder {
         }
 
         let symbol = displaySymbol(for: token, activity: activity)
-        if let amount = unsignedAmount(from: rawAmount) {
+        if let amount = MultichainActivityAmount.unsigned(rawAmount) {
             if activity.isPerpsDollar(token) {
                 return sign == .none
                     ? amountFormatter.format(
@@ -604,6 +810,9 @@ private extension MultichainTransactionDetailsModelBuilder {
         kind: MultichainActivityPresentationKind
     ) -> String {
         let date = dateString(for: activity.blockTime)
+        if kind.isPerpsAccountCredit != nil {
+            return "\(kind.title) · \(date)"
+        }
         // A bridge maps to a send/receive kind, so its own date title would describe a transfer
         // while the screen above it shows both legs of an exchange.
         guard activity.rendersTokenPair else {
@@ -630,26 +839,6 @@ private extension MultichainTransactionDetailsModelBuilder {
 
     func dateString(for date: Date) -> String {
         return dateFormatter.string(from: date)
-    }
-
-    func unsignedAmount(from value: String) -> BigUInt? {
-        var normalized = value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: String.Symbol.minus, with: "-")
-
-        guard !normalized.isEmpty else {
-            return nil
-        }
-
-        if normalized.first == "+" || normalized.first == "-" {
-            normalized.removeFirst()
-        }
-
-        guard normalized.allSatisfy({ "0123456789".contains($0) }) else {
-            return nil
-        }
-
-        return BigUInt(normalized)
     }
 
     func networkValue(from: String, to: String) -> TKThemedText {
@@ -689,7 +878,7 @@ private extension MultichainTransactionDetailsModelBuilder {
     }
 }
 
-private extension MultichainActivity {
+extension MultichainActivity {
     /// A same-chain swap and a cross-chain bridge both exchange one token for another, and the
     /// multichain swap flow reports either one depending on whether the chains match.
     var isExchange: Bool {

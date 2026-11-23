@@ -1,4 +1,5 @@
 import Foundation
+import KeeperCore
 import os
 import TKScreenKit
 import WebKit
@@ -14,17 +15,9 @@ extension TKBridgeWebViewController.Configuration {
         showsInitialLoadingIndicator: Bool = false,
         allowsBackForwardNavigationGestures: Bool = false
     ) throws -> TKBridgeWebViewController.Configuration {
-        var websiteDataStore: WKWebsiteDataStore?
-        if let walletIdentifier, #available(iOS 17.0, *) {
-            let dataStoreUuid = try UUID(
-                namespace: UUID.NamespaceV5.walletWebDataSourceScope,
-                name: walletIdentifier
-            )
-            websiteDataStore = WKWebsiteDataStore(forIdentifier: dataStoreUuid)
-        }
-        return TKBridgeWebViewController.Configuration(
+        try TKBridgeWebViewController.Configuration(
             copyToastConfiguration: .copied,
-            websiteDataStore: websiteDataStore,
+            websiteDataStore: walletIdentifier.map(WKWebsiteDataStore.dapp(walletId:)),
             applicationNameForUserAgent: applicationNameForUserAgent,
             showsInitialLoadingIndicator: showsInitialLoadingIndicator,
             allowsBackForwardNavigationGestures: allowsBackForwardNavigationGestures

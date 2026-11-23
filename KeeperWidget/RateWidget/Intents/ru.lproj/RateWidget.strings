@@ -55,3 +55,8 @@
 "xudSBV" = "Период";
 
 "yZnBBJ" = "Кошелек";
+
+// Read by the App Intents configuration (RateWidgetConfigurationIntent), not by the SiriKit intent.
+"Token" = "Токен";
+"Auto" = "Авто";
+"First favorite or largest balance" = "Первый из избранного или крупнейший баланс";

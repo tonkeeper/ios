@@ -139,7 +139,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
         currency: Currency,
         checkHistory: Bool
     ) async throws -> [ActiveWalletModel] {
-        let revisions = WalletContractVersion.allCases
+        let revisions = WalletContractVersion.regularCases
 
         return try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { taskGroup in
             for revision in revisions {
@@ -270,6 +270,8 @@ private extension ActiveWalletsServiceImplementation {
                 publicKey: publicKey.data,
                 revision: .r1
             )
+        case .walletTg:
+            contract = WalletTg(publicKey: publicKey.data, network: networkId)
         }
         return try contract.address()
     }

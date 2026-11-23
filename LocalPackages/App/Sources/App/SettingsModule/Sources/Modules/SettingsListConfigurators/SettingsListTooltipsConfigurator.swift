@@ -18,6 +18,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
     private let tradeTabTooltipSettings: TradeTabTooltipRepository
     private let favoriteTooltipSettings: FavoriteTooltipRepository
     private let addMultichainWalletTooltipSettings: AddMultichainWalletTooltipRepository
+    private let earnSectionTooltipSettings: EarnSectionTooltipRepository
+    private let perpsSectionTooltipSettings: PerpsSectionTooltipRepository
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
 
@@ -29,6 +31,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         tradeTabTooltipSettings: TradeTabTooltipRepository,
         favoriteTooltipSettings: FavoriteTooltipRepository,
         addMultichainWalletTooltipSettings: AddMultichainWalletTooltipRepository,
+        earnSectionTooltipSettings: EarnSectionTooltipRepository,
+        perpsSectionTooltipSettings: PerpsSectionTooltipRepository,
         calendar: Calendar = .current
     ) {
         self.commonTooltipSettings = commonTooltipSettings
@@ -38,6 +42,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         self.tradeTabTooltipSettings = tradeTabTooltipSettings
         self.favoriteTooltipSettings = favoriteTooltipSettings
         self.addMultichainWalletTooltipSettings = addMultichainWalletTooltipSettings
+        self.earnSectionTooltipSettings = earnSectionTooltipSettings
+        self.perpsSectionTooltipSettings = perpsSectionTooltipSettings
         self.calendar = calendar
 
         let dateFormatter = DateFormatter()
@@ -76,6 +82,13 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
             .listItem(createAddMultichainWalletShownCountItem()),
             .listItem(createAddMultichainWalletLastShownDateItem()),
         ]
+        let earnSectionItems: [SettingsListItemsSectionItem] = [
+            .listItem(createEarnSectionShownCountItem()),
+            .listItem(createEarnSectionLastShownDateItem()),
+        ]
+        let perpsSectionItems: [SettingsListItemsSectionItem] = [
+            .listItem(createPerpsSectionHasBeenShownItem()),
+        ]
 
         return SettingsListState(
             sections: [
@@ -113,6 +126,18 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
                     SettingsListItemsSection(
                         items: addMultichainWalletItems,
                         header: SettingsListSectionHeader(title: "Add Multichain Wallet")
+                    )
+                ),
+                .items(
+                    SettingsListItemsSection(
+                        items: earnSectionItems,
+                        header: SettingsListSectionHeader(title: "Earn Section")
+                    )
+                ),
+                .items(
+                    SettingsListItemsSection(
+                        items: perpsSectionItems,
+                        header: SettingsListSectionHeader(title: "Perps Section")
                     )
                 ),
                 .items(
@@ -233,6 +258,30 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         )
     }
 
+    private func createEarnSectionShownCountItem() -> SettingsListItem {
+        createValueItem(
+            id: .earnSectionTooltipShownCountItemIdentifier,
+            title: "Shown count",
+            value: String(earnSectionTooltipSettings.shownCount)
+        )
+    }
+
+    private func createEarnSectionLastShownDateItem() -> SettingsListItem {
+        createValueItem(
+            id: .earnSectionTooltipLastShownDateItemIdentifier,
+            title: "Last shown date",
+            value: formatted(earnSectionTooltipSettings.lastShownDate)
+        )
+    }
+
+    private func createPerpsSectionHasBeenShownItem() -> SettingsListItem {
+        createValueItem(
+            id: .perpsSectionTooltipHasBeenShownItemIdentifier,
+            title: "Has been shown",
+            value: perpsSectionTooltipSettings.hasBeenShown ? "true" : "false"
+        )
+    }
+
     private func createResetStateItem() -> SettingsListButtonItem {
         SettingsListButtonItem(
             id: .tooltipResetStateItemIdentifier,
@@ -245,6 +294,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
                 self.tradeTabTooltipSettings.resetPersistentState()
                 self.favoriteTooltipSettings.resetPersistentState()
                 self.addMultichainWalletTooltipSettings.resetPersistentState()
+                self.earnSectionTooltipSettings.resetPersistentState()
+                self.perpsSectionTooltipSettings.resetPersistentState()
                 self.didUpdateState?(self.createState())
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reset"))
             }
@@ -294,5 +345,8 @@ private extension String {
     static let favoriteTooltipHasBeenShownItemIdentifier = "favoriteTooltipHasBeenShownItemIdentifier"
     static let addMultichainWalletTooltipShownCountItemIdentifier = "addMultichainWalletTooltipShownCountItemIdentifier"
     static let addMultichainWalletTooltipLastShownDateItemIdentifier = "addMultichainWalletTooltipLastShownDateItemIdentifier"
+    static let earnSectionTooltipShownCountItemIdentifier = "earnSectionTooltipShownCountItemIdentifier"
+    static let earnSectionTooltipLastShownDateItemIdentifier = "earnSectionTooltipLastShownDateItemIdentifier"
+    static let perpsSectionTooltipHasBeenShownItemIdentifier = "perpsSectionTooltipHasBeenShownItemIdentifier"
     static let tooltipResetStateItemIdentifier = "tooltipResetStateItemIdentifier"
 }

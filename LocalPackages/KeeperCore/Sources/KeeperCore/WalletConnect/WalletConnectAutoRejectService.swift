@@ -1,6 +1,6 @@
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 @WalletConnectActor
 final class WalletConnectAutoRejectService: Sendable {

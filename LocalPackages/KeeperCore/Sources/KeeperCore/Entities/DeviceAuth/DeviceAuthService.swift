@@ -72,7 +72,7 @@ actor DeviceAuthService: DeviceAuthProviding {
 
     func recoverSession(invalidating accessToken: String) async throws(DeviceAuthError) -> DeviceAuthSession {
         if let current, current.accessToken != accessToken {
-            return DeviceAuthSession(deviceId: current.deviceId, accessToken: current.accessToken)
+            return DeviceAuthSession(deviceId: current.deviceId, accessToken: current.accessToken, expiresAt: current.expiresAt)
         }
         current = nil
         return try await renewedSession()
@@ -90,7 +90,7 @@ private extension DeviceAuthService {
         guard let current, current.expiresAt.timeIntervalSince(now()) > Self.expiryLeeway else {
             return nil
         }
-        return DeviceAuthSession(deviceId: current.deviceId, accessToken: current.accessToken)
+        return DeviceAuthSession(deviceId: current.deviceId, accessToken: current.accessToken, expiresAt: current.expiresAt)
     }
 
     /// Joins the renewal already in flight, or starts one. Concurrent callers share a
@@ -115,7 +115,7 @@ private extension DeviceAuthService {
 
         do {
             let session = try await task.value
-            return DeviceAuthSession(deviceId: session.deviceId, accessToken: session.accessToken)
+            return DeviceAuthSession(deviceId: session.deviceId, accessToken: session.accessToken, expiresAt: session.expiresAt)
         } catch {
             throw Self.authError(from: error)
         }

@@ -30,6 +30,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     var didTapBattery: ((Wallet) -> Void)?
     var didTapConnectedApps: ((Wallet) -> Void)?
     var didTapMigration: ((Wallet) -> Void)?
+    var didTapAddLedgerNetworks: ((Wallet) -> Void)?
+    var didTapLedgerDevice: ((Wallet) -> Void)?
 
     // MARK: - SettingsListConfigurator
 
@@ -46,6 +48,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     // MARK: - Dependencies
 
     private var wallet: Wallet
+    private var didReportDeletion = false
     private let walletsStore: WalletsStore
     private let currencyStore: CurrencyStore
     private let appSettingsStore: AppSettingsStore
@@ -56,6 +59,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     private let anaylticsProvider: AnalyticsProvider
     private let walletNotificationStore: WalletNotificationStore
     private let settingsRepository: SettingsRepository
+    private let featureFlags: TKFeatureFlags
 
     // MARK: - Init
 
@@ -70,7 +74,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         walletDeleteController: WalletDeleteController,
         anaylticsProvider: AnalyticsProvider,
         walletNotificationStore: WalletNotificationStore,
-        settingsRepository: SettingsRepository
+        settingsRepository: SettingsRepository,
+        featureFlags: TKFeatureFlags
     ) {
         self.wallet = wallet
         self.walletsStore = walletsStore
@@ -83,16 +88,19 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         self.anaylticsProvider = anaylticsProvider
         self.walletNotificationStore = walletNotificationStore
         self.settingsRepository = settingsRepository
+        self.featureFlags = featureFlags
         walletsStore.addObserver(self) { observer, event in
             switch event {
             case let .didUpdateWalletMetaData(wallet):
                 DispatchQueue.main.async {
+                    guard wallet == observer.wallet else { return }
                     observer.wallet = wallet
                     let state = observer.createState()
                     observer.didUpdateState?(state)
                 }
             case let .didUpdateWalletSetupSettings(wallet):
                 DispatchQueue.main.async {
+                    guard wallet == observer.wallet else { return }
                     observer.wallet = wallet
                 }
             case let .didUpdateWalletMultichain(wallet):
@@ -119,13 +127,17 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             case let .didDeleteWallet(wallet):
                 DispatchQueue.main.async {
                     if wallet == observer.wallet {
-                        observer.didDeleteWallet?()
+                        observer.reportDeletion()
                     } else {
                         let state = observer.createState()
                         observer.didUpdateState?(state)
                     }
                 }
             default: break
+            }
+        } onRegistered: { [weak self] in
+            DispatchQueue.main.async {
+                self?.applyWalletUpdatesMissedBeforeRegistration()
             }
         }
         currencyStore.addObserver(self) { observer, event in
@@ -153,6 +165,25 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                 observer.didUpdateState?(state)
             }
         }
+    }
+
+    /// The store registers the observer asynchronously, so an update or a deletion of the wallet between
+    /// the caller's read of it and the registration is never delivered.
+    private func applyWalletUpdatesMissedBeforeRegistration() {
+        guard let storedWallet = walletsStore.getWallet(id: wallet.id) else {
+            reportDeletion()
+            return
+        }
+        wallet = storedWallet
+        didUpdateState?(createState())
+    }
+
+    /// One deletion reaches the configurator more than once: from the store event, from the catch-up
+    /// after registration and from the delete action itself.
+    private func reportDeletion() {
+        guard !didReportDeletion else { return }
+        didReportDeletion = true
+        didDeleteWallet?()
     }
 
     private func createState() -> SettingsListState {
@@ -188,6 +219,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     private func createWalletSettingsSection(configuration: Configuration) -> SettingsListSection? {
         var items = [SettingsListItemsSectionItem]()
+        if let ledgerDeviceItem = createLedgerDeviceItem() {
+            items.append(.listItem(ledgerDeviceItem))
+        }
+        if let addLedgerNetworksItem = createAddLedgerNetworksItem() {
+            items.append(.listItem(addLedgerNetworksItem))
+        }
         if let backupItem = createBackupItem() {
             items.append(.listItem(backupItem))
         }
@@ -200,6 +237,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             items.append(.listItem(v4Item))
         }
         if
+            !wallet.isWalletTg,
             !configuration.flag(\.batteryDisabled, network: wallet.network),
             let batteryItem = createBatteryItem(isBeta: configuration.isBatteryBeta(network: wallet.network))
         {
@@ -266,28 +304,13 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createWalletItem() -> SettingsListItem {
-        let icon: SettingsListItemIcon? = {
-            let backgroundColor = TKColor.fixed(Color(uiColor: wallet.tintColor.uiColor))
-            switch wallet.icon {
-            case let .emoji(emoji):
-                return .emoji(emoji, backgroundColor: backgroundColor)
-            case let .icon(image):
-                return .image(
-                    SettingsListItemImageIcon(
-                        image: image.swiftUIImage,
-                        tintColor: .fixed(.white),
-                        backgroundColor: backgroundColor
-                    )
-                )
-            }
-        }()
         // A multichain wallet spans several chains, so no single TON contract revision describes it.
         let tags: [TKTagSwiftUIViewConfig] = wallet.isMultichain
-            ? []
+            ? (wallet.kind == .ledger ? [wallet.listTagSwiftUIConfiguration()].compactMap { $0 } : [])
             : wallet.listTagSwiftUIConfigurations()
         return SettingsListItem(
             id: .walletIdentifier,
-            icon: icon,
+            icon: SettingsListItemIcon(wallet: wallet),
             title: SettingsListItemTitle(wallet.label),
             tags: tags,
             captions: [SettingsListItemCaption(TKLocales.Settings.Items.setupWalletDescription)],
@@ -312,6 +335,44 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                 settingsRepository.didOpenWalletMigration = true
                 self.didUpdateState?(self.createState())
                 self.didTapMigration?(self.wallet)
+            }
+        )
+    }
+
+    private func createLedgerDeviceItem() -> SettingsListItem? {
+        guard featureFlags[.ledgerMigration], case let .Ledger(_, _, device) = wallet.identity.kind else {
+            return nil
+        }
+        return SettingsListItem(
+            id: .ledgerDeviceIdentifier,
+            title: SettingsListItemTitle(device.deviceModel),
+            captions: [SettingsListItemCaption(TKLocales.LedgerDevice.account(Int(device.accountIndex) + 1))],
+            accessory: .icon(.TKUIKit.Icons.Size28.ledger, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
+                guard let self else { return }
+                self.didTapLedgerDevice?(self.wallet)
+            }
+        )
+    }
+
+    /// A multichain Ledger has the battery on TRON once the multichain Ledger is rolled out.
+    private var hasLedgerBattery: Bool {
+        wallet.kind == .ledger && featureFlags[.ledgerMultichain] && wallet.multichainWalletState?.address(for: .tron) != nil
+    }
+
+    private func createAddLedgerNetworksItem() -> SettingsListItem? {
+        let chains = wallet.addableLedgerChains(featureFlags: featureFlags)
+        guard !chains.isEmpty else {
+            return nil
+        }
+        return SettingsListItem(
+            id: .addLedgerNetworksIdentifier,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.addLedgerNetworks),
+            captions: [SettingsListItemCaption(chains.map(\.shortDisplayTitle).joined(separator: ", "))],
+            accessory: .icon(.TKUIKit.Icons.Size28.plusCircle, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
+                guard let self else { return }
+                self.didTapAddLedgerNetworks?(self.wallet)
             }
         )
     }
@@ -353,7 +414,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createW5Item() -> SettingsListItem? {
-        guard !wallet.isW5, !configuration.flag(\.gaslessDisabled, network: wallet.network) else { return nil }
+        guard !wallet.isW5, !wallet.isMultichain, !wallet.isWalletTg, wallet.kind != .watchonly, !configuration.flag(\.gaslessDisabled, network: wallet.network) else { return nil }
         let isW5Added: Bool = { [walletsStore] in
             let wallets = walletsStore.wallets.filter { $0.kind == .regular || $0.kind == .signer }
             do {
@@ -375,7 +436,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createV4Item() -> SettingsListItem? {
-        guard wallet.isW5 else { return nil }
+        guard wallet.isW5, !wallet.isMultichain, wallet.kind != .watchonly else { return nil }
         let isV4R2Added: Bool = { [walletsStore] in
             let wallets = walletsStore.wallets.filter { $0.kind == .regular || $0.kind == .signer }
             do {
@@ -635,7 +696,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                             await self.walletNotificationStore.setNotificationIsOn(false, wallet: self.wallet)
                             await self.walletDeleteController.deleteWallet(wallet: self.wallet)
                             await MainActor.run {
-                                self.didDeleteWallet?()
+                                self.reportDeletion()
                                 self.anaylticsProvider.log(eventKey: .deleteWallet)
                             }
                         }
@@ -700,7 +761,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createBatteryItem(isBeta: Bool) -> SettingsListItem? {
-        guard wallet.kind == .regular else { return nil }
+        guard wallet.kind == .regular || hasLedgerBattery else { return nil }
         var tags = [TKTagSwiftUIViewConfig]()
         if isBeta {
             tags.append(.tag(text: "BETA"))
@@ -740,4 +801,24 @@ private extension String {
     static let batteryIdentifier = "Battery item"
     static let connectedAppsIdentifier = "ConnectedAppsItem"
     static let migrationItemIdentifier = "migrationItemIdentifier"
+    static let addLedgerNetworksIdentifier = "addLedgerNetworksIdentifier"
+    static let ledgerDeviceIdentifier = "ledgerDeviceIdentifier"
+}
+
+extension SettingsListItemIcon {
+    init(wallet: Wallet) {
+        let backgroundColor = TKColor.fixed(Color(uiColor: wallet.tintColor.uiColor))
+        switch wallet.icon {
+        case let .emoji(emoji):
+            self = .emoji(emoji, backgroundColor: backgroundColor)
+        case let .icon(image):
+            self = .image(
+                SettingsListItemImageIcon(
+                    image: image.swiftUIImage,
+                    tintColor: .fixed(.white),
+                    backgroundColor: backgroundColor
+                )
+            )
+        }
+    }
 }

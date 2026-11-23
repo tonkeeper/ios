@@ -10,7 +10,7 @@ extension Components.Schemas.QuotePayload {
         chain: String = "ton/mainnet",
         to: String = "EQCrdGsDTqA2t6xRR4N6V4J705F7w_VQbUdHnofsh-8lVIPs",
         value: String,
-        body: String? = "te6cckEBAQEASAAAjAAAAAAweGYwNWExZmJj",
+        body: String? = TonDepositFixture.orderIdComment,
         bounce: Bool? = false,
         mode: Int? = 1
     ) -> Self {
@@ -55,6 +55,20 @@ extension Components.Schemas.QuotePayload {
         // swiftlint:disable:next force_try
         self = try! Self(unvalidatedValue: raw)
     }
+}
+
+enum TonDepositFixture {
+    static let depository = "0:ab746b034ea036b7ac5147837a57827bd3917bc3f5506d47479e87ec87ef2554"
+    static let depositoryBounceable = "EQCrdGsDTqA2t6xRR4N6V4J705F7w_VQbUdHnofsh-8lVIPs"
+    static let orderIdComment = "te6cckEBAQEASAAAjAAAAAAweGYwNWExZmJjZDJlOGE3YzRiMTlmM2U2ZDVhMmM4YjdlNGYxYTlkM2M2YjJlOGY1YTdjNGQxYjllM2Y2YTJjOGS32rxS"
+    static let upperCaseOrderIdComment = "te6cckEBAQEASAAAjAAAAAAweEYwNUExRkJDRDJFOEE3QzRCMTlGM0U2RDVBMkM4QjdFNEYxQTlEM0M2QjJFOEY1QTdDNEQxQjlFM0Y2QTJDOEQAoFkS"
+    static let helloComment = "te6cckEBAQEACwAAEgAAAABoZWxsb5oNank="
+    static let shortOrderIdComment = "te6cckEBAQEAEAAAHAAAAAAweGYwNWExZmJjZRq0tw=="
+    static let jettonTransferBody = "te6cckEBAQEAEgAAIA+KfqUAAAAAAAAAAEO5rKDYvP9/"
+    static let unalignedBody = "te6cckEBAQEABwAACQAAAACoh/eOkQ=="
+    static let orderIdCommentWithTail = "te6cckEBAgEASwABRAAAAAAweGYwNWExZmJjZDJlOGE3YzRiMTlmM2U2ZDVhMmMBAEg4YjdlNGYxYTlkM2M2YjJlOGY1YTdjNGQxYjllM2Y2YTJjOGRiD77g"
+    static let orderIdCommentWithoutChecksum = "te6ccgEBAQEASAAAjAAAAAAweGYwNWExZmJjZDJlOGE3YzRiMTlmM2U2ZDVhMmM4YjdlNGYxYTlkM2M2YjJlOGY1YTdjNGQxYjllM2Y2YTJjOGQ="
+    static let orderIdCommentWithDanglingRef = "te6cckEBAQEASQABjAAAAAAweGYwNWExZmJjZDJlOGE3YzRiMTlmM2U2ZDVhMmM4YjdlNGYxYTlkM2M2YjJlOGY1YTdjNGQxYjllM2Y2YTJjOGQF1BNOww=="
 }
 
 enum BtcFixture {

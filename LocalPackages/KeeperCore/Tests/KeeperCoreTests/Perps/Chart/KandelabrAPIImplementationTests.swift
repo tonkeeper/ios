@@ -34,6 +34,15 @@ final class KandelabrAPIImplementationTests: XCTestCase {
         XCTAssertEqual(responses.last?.candles.first?.v, "10")
     }
 
+    func testCandlesSendsTheDeviceAccessTokenAsBearer() async throws {
+        let api = makeAPI { request in
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer device-jwt")
+            return try Self.httpResponse(for: request, statusCode: 200, body: #"{"responses":[]}"#)
+        }
+
+        _ = try await api.candles(tickers: ["BTC/USD"], resolution: "1h", limit: 1, endTs: nil)
+    }
+
     func testCandlesForwardsEndTsWhenPaging() async throws {
         let api = makeAPI { request in
             let body = try XCTUnwrap((Self.requestJSON(request)["requests"] as? [[String: Any]])?.first)
@@ -107,7 +116,8 @@ private extension KandelabrAPIImplementationTests {
         let basePath = KandelabrAPIURLProtocolStub.register(handler)
         return KandelabrAPIImplementation(
             hostProvider: KandelabrAPIHostProviderStub(value: basePath),
-            urlSession: URLSession(configuration: configuration)
+            urlSession: URLSession(configuration: configuration),
+            deviceAuth: DeviceAuthStub()
         )
     }
 
@@ -160,6 +170,20 @@ private struct KandelabrAPIHostProviderStub: APIHostProvider {
         get async {
             value
         }
+    }
+}
+
+private struct DeviceAuthStub: DeviceAuthProviding {
+    func session() -> DeviceAuthSession {
+        DeviceAuthSession(deviceId: "device", accessToken: "device-jwt")
+    }
+
+    func recoverSession(invalidating _: String) -> DeviceAuthSession {
+        session()
+    }
+
+    func isDeviceKnown() -> Bool {
+        true
     }
 }
 

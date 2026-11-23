@@ -4,12 +4,14 @@ public final class TKReusableContainerView: UICollectionReusableView, ReusableVi
     private var contentView: UIView?
 
     public func setContentView(_ contentView: UIView?) {
-        self.contentView?.removeFromSuperview()
-        self.contentView = nil
+        if let current = self.contentView, current !== contentView, current.superview === self {
+            current.removeFromSuperview()
+        }
+        self.contentView = contentView
         guard let contentView else { return }
         addSubview(contentView)
 
-        contentView.snp.makeConstraints { make in
+        contentView.snp.remakeConstraints { make in
             make.edges.equalTo(self)
         }
     }

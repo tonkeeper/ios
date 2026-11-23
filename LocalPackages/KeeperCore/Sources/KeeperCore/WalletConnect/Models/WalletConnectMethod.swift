@@ -20,6 +20,19 @@ import Foundation
 }
 
 extension WalletConnectMethod {
+    public var broadcastsBeforeResponding: Bool {
+        switch self {
+        case .ethSendTransaction, .tonSendMessage, .solanaSignAndSendTransaction:
+            return true
+        case .personalSign, .ethSignTypedDataV4, .ethSignTransaction,
+             .walletSwitchEthereumChain, .walletGetCapabilities,
+             .tronSignMessage, .tronSignTransaction, .tonSignData,
+             .solanaGetAccounts, .solanaRequestAccounts, .solanaSignMessage,
+             .solanaSignTransaction, .solanaSignAllTransactions:
+            return false
+        }
+    }
+
     static let evmMethods: Set<WalletConnectMethod> = [
         .personalSign,
         .ethSignTypedDataV4,

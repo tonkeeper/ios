@@ -21,8 +21,16 @@ public extension MultichainSwapQuote {
     /// has to be applied here — and identically on both quote sites, or a refresh would move a
     /// confirmed swap to another provider.
     func preferredRoute(at date: Date) -> MultichainSwapRoute? {
-        let liveRoutes = routes.filter { $0.dateExpire > date }
+        let liveRoutes = routes.filter { $0.dateExpire > date && !isScreened($0) }
         return liveRoutes.first { $0.aggregator == MultichainSwapAggregator.swapsXyz.rawValue }
             ?? liveRoutes.first
+    }
+}
+
+private extension MultichainSwapQuote {
+    func isScreened(_ route: MultichainSwapRoute) -> Bool {
+        (route.payloads ?? []).isEmpty && (providerErrors ?? []).contains { error in
+            error.isWalletScreened && error.aggregator == route.aggregator
+        }
     }
 }

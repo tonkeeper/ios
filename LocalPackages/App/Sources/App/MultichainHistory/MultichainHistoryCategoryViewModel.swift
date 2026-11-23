@@ -11,9 +11,12 @@ final class MultichainHistoryCategoryViewModel {
     private let amountFormatter: AmountFormatter
     private let dateFormatter: DateFormatter
     private let nftResolver: MultichainActivityNFTResolver
+    private let encryptedComments: MultichainEncryptedComments?
+    private let appSettingsStore: AppSettingsStore
     private let currentDateProvider: () -> Date
     private let onAddFunds: (() -> Void)?
 
+    private weak var screenRenderOwner: AnyObject?
     private var cachedQueryViewModel: MultichainHistoryQueryViewModel?
 
     init(
@@ -25,8 +28,11 @@ final class MultichainHistoryCategoryViewModel {
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
         nftResolver: MultichainActivityNFTResolver,
+        encryptedComments: MultichainEncryptedComments?,
+        appSettingsStore: AppSettingsStore,
         currentDateProvider: @escaping () -> Date,
-        onAddFunds: (() -> Void)?
+        onAddFunds: (() -> Void)?,
+        screenRenderOwner: AnyObject? = nil
     ) {
         self.multichainState = multichainState
         self.category = category
@@ -36,8 +42,11 @@ final class MultichainHistoryCategoryViewModel {
         self.amountFormatter = amountFormatter
         self.dateFormatter = dateFormatter
         self.nftResolver = nftResolver
+        self.encryptedComments = encryptedComments
+        self.appSettingsStore = appSettingsStore
         self.currentDateProvider = currentDateProvider
         self.onAddFunds = onAddFunds
+        self.screenRenderOwner = screenRenderOwner
     }
 
     func queryViewModel() -> MultichainHistoryQueryViewModel {
@@ -54,8 +63,11 @@ final class MultichainHistoryCategoryViewModel {
             amountFormatter: amountFormatter,
             dateFormatter: dateFormatter,
             nftResolver: nftResolver,
+            encryptedComments: encryptedComments,
+            appSettingsStore: appSettingsStore,
             currentDateProvider: currentDateProvider,
-            onAddFunds: onAddFunds
+            onAddFunds: onAddFunds,
+            screenRenderOwner: screenRenderOwner
         )
         cachedQueryViewModel = queryViewModel
         return queryViewModel

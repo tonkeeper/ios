@@ -1,11 +1,11 @@
-import BigInt
 import Foundation
 import KeeperCore
 import TKLogging
 
 enum MultichainSwapConfirmationQuoteRefreshError: LoggableError {
     case missingWalletAddress
-    case noNonExpiredRoute(MultichainSwapQuote)
+    case noNonExpiredRoute
+    case walletScreened(providerErrors: String)
 }
 
 extension MultichainSwapConfirmationQuoteRefreshError {
@@ -15,6 +15,17 @@ extension MultichainSwapConfirmationQuoteRefreshError {
             return "type=MultichainSwapConfirmationQuoteRefreshError, case=missingWalletAddress"
         case .noNonExpiredRoute:
             return "type=MultichainSwapConfirmationQuoteRefreshError, case=noNonExpiredRoute"
+        case let .walletScreened(providerErrors):
+            return "type=MultichainSwapConfirmationQuoteRefreshError, case=walletScreened, providerErrors=\(providerErrors)"
+        }
+    }
+
+    var terminalFailure: MultichainSwapExecutionFailure? {
+        switch self {
+        case .missingWalletAddress, .noNonExpiredRoute:
+            return nil
+        case let .walletScreened(providerErrors):
+            return .preparationFailed(kind: .walletScreened, reason: providerErrors)
         }
     }
 }
@@ -40,21 +51,26 @@ struct MultichainSwapConfirmationQuoteRefresher {
         let quote = try await multichainSwapService.createCrossSwapQuote(
             request: MultichainSwapQuoteRequest(
                 sourceAsset: userInput.sendAsset.asset.assetId,
-                sourceAmount: userInput.sourceAmount.description,
                 destinationAsset: userInput.receiveAsset.asset.assetId,
+                amount: userInput.quoteAmount,
                 senderAddress: senderAddress,
                 recipientAddress: recipientAddress,
                 slippageBps: selectedSlippageBps,
-                exactType: MultichainSwapQuoteRequest.exactInputType,
                 aggregators: requestedAggregators,
                 returnDepositAddress: MultichainSwapQuoteRequest.returnDepositAddress(sourceChain: sourceChain),
                 includePayload: true,
                 isMax: userInput.isMax ? true : nil
             ),
-            walletId: swapWallet.walletId
+            walletId: swapWallet.walletId,
+            apiVersion: input.quoteState.route.apiVersion
         )
         guard let route = quote.preferredRoute(at: Date()) else {
-            throw MultichainSwapConfirmationQuoteRefreshError.noNonExpiredRoute(quote)
+            if quote.hasWalletScreenedProviderError {
+                throw MultichainSwapConfirmationQuoteRefreshError.walletScreened(
+                    providerErrors: quote.providerErrorsLogDescription
+                )
+            }
+            throw MultichainSwapConfirmationQuoteRefreshError.noNonExpiredRoute
         }
 
         return MultichainSwapConfirmationQuoteState(

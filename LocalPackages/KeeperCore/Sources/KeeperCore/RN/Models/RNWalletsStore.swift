@@ -145,6 +145,8 @@ public extension RNWallet {
             contract = try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r2)
         case .v3R1:
             contract = try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r1)
+        case .walletTg:
+            contract = WalletTg(publicKey: publicKey.data, network: network)
         }
 
         let kind: WalletKind

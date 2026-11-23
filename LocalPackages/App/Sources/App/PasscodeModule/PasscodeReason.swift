@@ -14,6 +14,7 @@ enum PasscodeReason {
     case enableBiometry
     case migrateWallet
     case collectibleAction
+    case topUpBattery
     case addWallet
 
     var text: String {
@@ -31,6 +32,7 @@ enum PasscodeReason {
         case .enableBiometry: TKLocales.Passcode.Reason.enableBiometry
         case .migrateWallet: TKLocales.Passcode.Reason.migrateWallet
         case .collectibleAction: TKLocales.Passcode.Reason.collectibleAction
+        case .topUpBattery: TKLocales.Passcode.Reason.topupBattery
         case .addWallet: TKLocales.Passcode.Reason.addWallet
         }
     }

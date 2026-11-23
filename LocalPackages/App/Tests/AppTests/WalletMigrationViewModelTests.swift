@@ -1,6 +1,7 @@
 @testable import App
 @testable import KeeperCore
 import TKCore
+import TKTestSupport
 import TonSwift
 import XCTest
 
@@ -19,7 +20,7 @@ final class WalletMigrationViewModelTests: XCTestCase {
         let selectedWalletID = viewModel.selectedWalletId
 
         walletsStore.sendEvent(.didUpdateWalletMetaData(wallet: wallet))
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.invocationCount == 2
         }
         await Task.yield()
@@ -50,12 +51,12 @@ final class WalletMigrationViewModelTests: XCTestCase {
         let startTask = Task {
             await viewModel.start()
         }
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.invocationCount == 1
         }
 
         walletsStore.sendEvent(.didUpdateWalletMetaData(wallet: wallet))
-        await waitUntil {
+        await waitUntil(viewModel) {
             !viewModel.items.isEmpty
         }
         let currentSubtitle = try XCTUnwrap(viewModel.items.first?.subtitle)
@@ -82,7 +83,7 @@ final class WalletMigrationViewModelTests: XCTestCase {
         let startTask = Task {
             await viewModel.start()
         }
-        await waitUntil {
+        await waitUntil(service.changes) {
             await service.invocationCount == 1
         }
 
@@ -214,19 +215,6 @@ private extension WalletMigrationViewModelTests {
             fiatBalance: fiatBalance
         )
     }
-
-    func waitUntil(
-        timeout: TimeInterval = 1,
-        condition: @escaping () async -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !(await condition()), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        if !(await condition()) {
-            XCTFail("Timed out waiting for condition")
-        }
-    }
 }
 
 private actor WalletMigrationServiceMock: WalletMigrationService {
@@ -237,6 +225,7 @@ private actor WalletMigrationServiceMock: WalletMigrationService {
 
     private var handlers: [Handler]
     private(set) var invocationCount = 0
+    nonisolated let changes = TestSignal()
 
     init(handlers: [Handler]) {
         self.handlers = handlers
@@ -266,6 +255,7 @@ private actor WalletMigrationServiceMock: WalletMigrationService {
         currency: Currency
     ) async throws -> [WalletMigrationWalletValue] {
         invocationCount += 1
+        changes.send()
         guard !handlers.isEmpty else {
             throw TestError.unexpectedInvocation
         }

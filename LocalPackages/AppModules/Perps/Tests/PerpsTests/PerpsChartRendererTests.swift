@@ -61,4 +61,41 @@ final class PerpsChartRendererTests: XCTestCase {
 
         XCTAssertEqual(crosshairTime, openedAt)
     }
+
+    func test_prependedHistory_resetsTwoBarsStretchedToFit_butKeepsAFullyZoomedOutRange() {
+        let renderer = PerpsChartRenderer(onCrosshair: { _, _ in })
+        let chart = renderer.makeChart(priceDecimals: 2, resolvedTheme: .dark)
+        chart.frame = CGRect(x: 0, y: 0, width: 390, height: 240)
+        let history = (0 ..< 700).map { index in
+            PerpsChartCandle(
+                openedAt: Date(timeIntervalSince1970: TimeInterval((index + 1) * 300)),
+                open: 1, high: 2, low: 0.5, close: 1.5, volume: nil
+            )
+        }
+        func render(_ candles: ArraySlice<PerpsChartCandle>) {
+            renderer.render(
+                candles: Array(candles),
+                mode: .candle,
+                priceDecimals: 2,
+                markers: [],
+                timeframe: .m5,
+                resolvedTheme: .dark
+            )
+        }
+        func showRange(from: Double, to: Double) {
+            renderer.didVisibleLogicalRangeChange(onTimeScale: chart.timeScale(), parameters: FromToRange(from: from, to: to))
+        }
+
+        render(history.suffix(2))
+        showRange(from: -0.5, to: 1.5)
+        render(history.suffix(500))
+        XCTAssertNil(renderer.lastLogicalRange, "two live bars stretched over the width are not a zoom to keep")
+
+        showRange(from: -0.5, to: 499.5)
+        render(history[...])
+        XCTAssertEqual(renderer.lastLogicalRange?.from, 199.5)
+        XCTAssertEqual(renderer.lastLogicalRange?.to, 699.5)
+
+        renderer.teardown(chart: chart)
+    }
 }

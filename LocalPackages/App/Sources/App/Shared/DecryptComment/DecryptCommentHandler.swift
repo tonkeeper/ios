@@ -13,7 +13,8 @@ enum DecryptCommentHandler {
         parentCoordinator: Coordinator,
         parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
         keeperCoreAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly
+        coreAssembly: TKCore.CoreAssembly,
+        onDecrypting: @escaping @MainActor (_ isDecrypting: Bool) -> Void = { _ in }
     ) {
         let decryptController = keeperCoreAssembly.decryptCommentController()
         let decrypt: () async -> Void = {
@@ -27,6 +28,7 @@ enum DecryptCommentHandler {
                     reason: .decryptComment
                 ) else { return }
 
+                await onDecrypting(true)
                 do {
                     try await decryptController.decryptComment(payload, wallet: wallet, eventId: eventId, passcode: passcode)
                 } catch {
@@ -34,6 +36,7 @@ enum DecryptCommentHandler {
                         ToastPresenter.showToast(configuration: .failed)
                     }
                 }
+                await onDecrypting(false)
             }
         }
 

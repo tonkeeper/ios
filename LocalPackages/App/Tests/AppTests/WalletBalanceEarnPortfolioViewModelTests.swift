@@ -3,21 +3,28 @@ import AppUI
 @testable import KeeperCore
 import KeeperCoreComponents
 import TKCore
-import UIKit
+import TKTestSupport
+import TonSwift
 import XCTest
 
 @MainActor
 final class WalletBalanceEarnPortfolioViewModelTests: XCTestCase {
     private var directory: URL!
-    private var service: EarnPortfolioServiceStub!
     private var analytics: AnalyticsServiceSpy!
+    private var balanceLoader: BalanceLoaderSpy!
+    private var store: EarnPortfolioStore!
+    private var appSettingsStore: AppSettingsStore!
 
     override func setUpWithError() throws {
         try super.setUpWithError()
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("WalletBalanceEarnPortfolioViewModelTests-\(UUID().uuidString)")
-        service = EarnPortfolioServiceStub()
         analytics = AnalyticsServiceSpy()
+        balanceLoader = BalanceLoaderSpy()
+        store = makeStore()
+        appSettingsStore = AppSettingsStore(
+            keeperInfoStore: KeeperInfoStore(keeperInfoRepository: KeeperInfoRepositoryStub(wallet: wallet))
+        )
     }
 
     override func tearDownWithError() throws {
@@ -25,130 +32,119 @@ final class WalletBalanceEarnPortfolioViewModelTests: XCTestCase {
         try super.tearDownWithError()
     }
 
-    func test_walletWithoutAnEvmAddressHasNoPortfolio() {
-        let viewModel = makeViewModel(address: nil)
+    func test_walletWithoutAMultichainWalletHasNoPortfolio() {
+        let viewModel = makeViewModel(wallet: makeWallet(multichainWalletId: nil))
 
-        XCTAssertEqual(viewModel.state, .noEVMAccount)
+        XCTAssertEqual(viewModel.state, .disabled)
     }
 
-    func test_evmAddressArrivingLaterLoadsItsPositions() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: nil)
-        viewModel.didAppear()
+    func test_walletNotSyncedYetHasNoPortfolio() {
+        let viewModel = makeViewModel(wallet: makeWallet(multichainWalletId: multichainWalletId, syncState: .pending))
 
-        viewModel.adopt(address: address)
+        XCTAssertEqual(viewModel.state, .disabled)
+    }
+
+    func test_disabledEarnHidesEvenACachedPortfolio() async {
+        await store.setPortfolio(portfolio, wallet: wallet)
+
+        let viewModel = makeViewModel(isEnabled: false)
+
+        XCTAssertEqual(viewModel.state, .disabled)
+    }
+
+    func test_nothingAnsweredYetIsLoading() {
+        XCTAssertEqual(makeViewModel().state, .loading)
+    }
+
+    func test_cachedPortfolioShowsAtOnce() async {
+        await store.setPortfolio(portfolio, wallet: wallet)
+
+        let viewModel = makeViewModel(store: makeStore())
+
+        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
+    }
+
+    func test_answerForTheWalletIsShown() async {
+        let viewModel = makeViewModel()
+
+        await store.setPortfolio(portfolio, wallet: wallet)
+
+        await waitUntil(viewModel) { viewModel.state != .loading }
+        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
+    }
+
+    func test_answerWithoutPositionsIsEmpty() async {
+        let viewModel = makeViewModel()
+
+        await store.setPortfolio(
+            EarnPortfolio(walletId: multichainWalletId, totalFiat: ["USD": 0], positions: []),
+            wallet: wallet
+        )
+
+        await waitUntil(viewModel) { viewModel.state != .loading }
+        XCTAssertEqual(viewModel.state, .empty)
+    }
+
+    func test_failedRefreshKeepsThePositionsMarkedStale() async {
+        await store.setPortfolio(portfolio, wallet: wallet)
+        let viewModel = makeViewModel()
+
+        await store.setLoadFailed(wallet: wallet)
+
+        await waitUntil(viewModel) { viewModel.state == .positions(self.section(isStale: true)) }
+    }
+
+    func test_failureWithNothingToFallBackOnIsUnavailable() async {
+        let viewModel = makeViewModel()
+
+        await store.setLoadFailed(wallet: wallet)
+
+        await waitUntil(viewModel) { viewModel.state == .unavailable }
+    }
+
+    func test_retryAsksForTheWalletBalanceAsTheUser() async {
+        let viewModel = makeViewModel()
+
+        viewModel.reload()
+
+        await waitUntil(balanceLoader.changes) { self.balanceLoader.reloads.count == 1 }
+        XCTAssertEqual(balanceLoader.reloads.first?.wallet, wallet)
+        XCTAssertEqual(balanceLoader.reloads.first?.priority, .userInitiated)
+    }
+
+    func test_walletFinishingItsSyncAsksForARunAfterTheOneInFlight() async {
+        let viewModel = makeViewModel(wallet: makeWallet(multichainWalletId: multichainWalletId, syncState: .pending))
+
+        viewModel.adopt(wallet: wallet)
 
         XCTAssertEqual(viewModel.state, .loading)
-        await waitForState(of: viewModel) { $0 != .loading }
-        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
-        XCTAssertEqual(service.requestedAddresses, [address])
+        await waitUntil(balanceLoader.changes) { self.balanceLoader.reloads.count == 1 }
+        XCTAssertEqual(balanceLoader.reloads.first?.wallet, wallet)
+        XCTAssertEqual(balanceLoader.reloads.first?.priority, .background)
     }
 
-    func test_answerForAReplacedAddressIsDropped() async {
-        service.holdsRequests = true
-        let viewModel = makeViewModel(address: replacedAddress)
-        let replacedLoad = Task { await viewModel.refresh() }
-        await service.waitForRequests(1)
+    func test_adoptingAnUnchangedWalletAsksNothing() async {
+        let viewModel = makeViewModel()
 
-        viewModel.adopt(address: address)
-        await service.waitForRequests(2)
-        service.answer(address, with: .success([]))
-        await waitForState(of: viewModel) { $0 == .empty }
-        service.answer(replacedAddress, with: .success(positions))
-        await replacedLoad.value
+        viewModel.adopt(wallet: wallet)
+        viewModel.reload()
 
-        XCTAssertEqual(viewModel.state, .empty)
-        XCTAssertEqual(service.requestedAddresses, [replacedAddress, address])
+        await waitUntil(balanceLoader.changes) { !self.balanceLoader.reloads.isEmpty }
+        XCTAssertEqual(balanceLoader.reloads.map(\.priority), [.userInitiated])
     }
 
-    func test_cachedPositionsShowBeforeTheFirstLoad() async throws {
-        try await primeCache()
-        service.result = .failure(URLError(.timedOut))
+    func test_secureModeHidesTheAmountsAsItTurnsOn() async {
+        await store.setPortfolio(portfolio, wallet: wallet)
+        let viewModel = makeViewModel()
 
-        let viewModel = makeViewModel(address: address)
+        appSettingsStore.toggleIsSecureMode()
 
-        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
-    }
-
-    func test_firstLoadStartsWhenTheScreenAppears() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
-
-        viewModel.didAppear()
-
-        await waitForState(of: viewModel) { $0 != .loading }
-        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
-        XCTAssertEqual(service.requestedAddresses, [address])
-    }
-
-    func test_comingBackToTheScreenReloads() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
-        viewModel.didAppear()
-        await waitForState(of: viewModel) { $0 != .loading }
-        service.result = .success([])
-
-        viewModel.didDisappear()
-        viewModel.didAppear()
-
-        await waitForState(of: viewModel) { $0 == .empty }
-        XCTAssertEqual(service.requestedAddresses, [address, address])
-    }
-
-    func test_returningFromTheBackgroundReloadsTheScreenOnDisplay() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
-        viewModel.didAppear()
-        await waitForState(of: viewModel) { $0 != .loading }
-        service.result = .success([])
-
-        NotificationCenter.default.post(name: UIApplication.willEnterForegroundNotification, object: nil)
-
-        await waitForState(of: viewModel) { $0 == .empty }
-        XCTAssertEqual(service.requestedAddresses, [address, address])
-    }
-
-    func test_loadedPositionsAreShown() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
-
-        await viewModel.refresh()
-
-        XCTAssertEqual(viewModel.state, .positions(section(isStale: false)))
-    }
-
-    func test_emptyAnswerIsEmptyOnlyAfterItArrives() async {
-        service.result = .success([])
-        let viewModel = makeViewModel(address: address)
-
-        await viewModel.refresh()
-
-        XCTAssertEqual(viewModel.state, .empty)
-    }
-
-    func test_failureWithACacheMarksItStale() async throws {
-        try await primeCache()
-        service.result = .failure(URLError(.timedOut))
-        let viewModel = makeViewModel(address: address)
-
-        await viewModel.refresh()
-
-        XCTAssertEqual(viewModel.state, .positions(section(isStale: true)))
-    }
-
-    func test_failureWithoutACacheIsUnavailable() async {
-        service.result = .failure(URLError(.timedOut))
-        let viewModel = makeViewModel(address: address)
-
-        await viewModel.refresh()
-
-        XCTAssertEqual(viewModel.state, .unavailable)
+        await waitUntil(viewModel) { viewModel.state == .positions(self.section(total: "* * *", isStale: false)) }
     }
 
     func test_shownPositionsAreReportedOncePerAppearance() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
-        await viewModel.refresh()
+        await store.setPortfolio(portfolio, wallet: wallet)
+        let viewModel = makeViewModel()
 
         viewModel.positionsDidAppear()
         viewModel.positionsDidAppear()
@@ -159,13 +155,15 @@ final class WalletBalanceEarnPortfolioViewModelTests: XCTestCase {
         let args = analytics.events.first?.args
         XCTAssertEqual(args?["from"] as? String, "earn_your_vaults")
         XCTAssertEqual(args?["vaults_count"] as? Int, 1)
-        XCTAssertEqual(args?["balance_usd"] as? Double, 1.92)
+        XCTAssertEqual(args?["balance_usd"] as? Double, 0.2002)
     }
 
     func test_emptyPortfolioIsNotReportedAsTheBlockOfVaults() async {
-        service.result = .success([])
-        let viewModel = makeViewModel(address: address)
-        await viewModel.refresh()
+        await store.setPortfolio(
+            EarnPortfolio(walletId: multichainWalletId, totalFiat: ["USD": 0], positions: []),
+            wallet: wallet
+        )
+        let viewModel = makeViewModel()
 
         viewModel.positionsDidAppear()
 
@@ -173,77 +171,99 @@ final class WalletBalanceEarnPortfolioViewModelTests: XCTestCase {
     }
 
     func test_selectingARowReportsItsPosition() async {
-        service.result = .success(positions)
-        let viewModel = makeViewModel(address: address)
+        await store.setPortfolio(portfolio, wallet: wallet)
+        let viewModel = makeViewModel()
         var selected: EarnPosition?
         viewModel.onSelectPosition = { selected = $0 }
-        await viewModel.refresh()
 
         viewModel.selectRow(id: "mainnet/0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c")
 
-        XCTAssertEqual(selected, positions.first)
+        XCTAssertEqual(selected, portfolio.positions.first)
     }
 }
 
 private extension WalletBalanceEarnPortfolioViewModelTests {
-    var address: String {
-        "0x1111111111111111111111111111111111111111"
+    var multichainWalletId: String {
+        "aiabcdefghijklmnopqrstuvwxyz2345672"
     }
 
-    var replacedAddress: String {
-        "0x2222222222222222222222222222222222222222"
+    var wallet: Wallet {
+        makeWallet(multichainWalletId: multichainWalletId)
     }
 
-    var positions: [EarnPosition] {
-        [
-            EarnPosition(
-                network: "mainnet",
-                vaultId: "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
-                protocolName: "Aave",
-                assetSymbol: "USDC",
-                assetIconURL: nil,
-                balanceUsd: Decimal(string: "1.92")!,
-                earnedUsd: Decimal(string: "0.02")!
-            ),
-        ]
-    }
-
-    var repository: EarnPortfolioRepository {
-        EarnPortfolioRepository(
-            service: service,
-            fileSystemVault: FileSystemVault(fileManager: .default, directory: directory)
+    var portfolio: EarnPortfolio {
+        EarnPortfolio(
+            walletId: multichainWalletId,
+            totalFiat: ["USD": Decimal(string: "0.2002")!],
+            positions: [
+                EarnPosition(
+                    network: "mainnet",
+                    vaultId: "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
+                    protocolName: "Aave",
+                    assetSymbol: "USDC",
+                    assetIconURL: nil,
+                    balanceFiat: ["USD": Decimal(string: "0.2002")!],
+                    earnedFiat: ["USD": Decimal(string: "0.000239")!]
+                ),
+            ]
         )
     }
 
-    func section(isStale: Bool) -> EarnPortfolioSectionState {
-        EarnPortfolioSectionState(totalBalance: "1.92", isStale: isStale, rows: [])
+    func section(total: String = "0.2002", isStale: Bool) -> EarnPortfolioSectionState {
+        EarnPortfolioSectionState(totalBalance: total, isStale: isStale, rows: [])
     }
 
-    func waitForState(
-        of viewModel: WalletBalanceEarnPortfolioViewModel,
-        where isExpected: (WalletBalanceEarnPortfolioViewModel.State) -> Bool
-    ) async {
-        for await state in viewModel.$state.values where isExpected(state) {
-            return
-        }
+    func makeWallet(multichainWalletId: String?, syncState: MultichainWalletSyncState = .synced) -> Wallet {
+        Wallet(
+            id: "wallet",
+            identity: WalletIdentity(
+                network: .mainnet,
+                kind: .Regular(TonSwift.PublicKey(data: Data(repeating: 1, count: 32)), .v5R1)
+            ),
+            metaData: WalletMetaData(label: "Wallet", tintColor: .defaultColor, icon: .icon(.wallet)),
+            setupSettings: WalletSetupSettings(isSetupFinished: true),
+            batterySettings: BatterySettings(),
+            multichain: .multichain(
+                MultichainWalletState(
+                    walletId: multichainWalletId ?? "",
+                    addresses: multichainWalletId == nil
+                        ? []
+                        : [MultichainWalletAddress(chain: .eth, address: "0x7ecebaf27c989adef9ea3dd06d316f6f463a5109")],
+                    syncState: syncState
+                )
+            )
+        )
     }
 
-    var coreAssembly: TKCore.CoreAssembly {
-        TKCore.CoreAssembly()
+    func makeStore() -> EarnPortfolioStore {
+        EarnPortfolioStore(
+            walletsStore: WalletsStore(
+                keeperInfoStore: KeeperInfoStore(
+                    keeperInfoRepository: KeeperInfoRepositoryStub(wallet: wallet)
+                )
+            ),
+            repository: EarnPortfolioRepository(
+                fileSystemVault: FileSystemVault(fileManager: .default, directory: directory)
+            )
+        )
     }
 
-    func primeCache() async throws {
-        service.result = .success(positions)
-        _ = try await repository.loadPositions(address: address)
-    }
-
-    func makeViewModel(address: String?) -> WalletBalanceEarnPortfolioViewModel {
+    func makeViewModel(
+        wallet: Wallet? = nil,
+        isEnabled: Bool = true,
+        store: EarnPortfolioStore? = nil
+    ) -> WalletBalanceEarnPortfolioViewModel {
         WalletBalanceEarnPortfolioViewModel(
-            address: address,
-            repository: repository,
-            mapper: { positions, isStale in
+            wallet: wallet ?? self.wallet,
+            isEnabled: isEnabled,
+            store: store ?? self.store,
+            balanceLoader: balanceLoader,
+            appSettingsStore: appSettingsStore,
+            mapper: { [appSettingsStore] portfolio, isStale in
                 EarnPortfolioSectionState(
-                    totalBalance: "\(positions.reduce(0) { $0 + $1.balanceUsd })",
+                    totalBalance: appSettingsStore?.getState().isSecureMode == true
+                        ? "* * *"
+                        : "\(portfolio.totalFiat["USD"] ?? 0)",
                     isStale: isStale,
                     rows: []
                 )
@@ -253,8 +273,13 @@ private extension WalletBalanceEarnPortfolioViewModelTests {
                 uniqueIdProvider: coreAssembly.uniqueIdProvider,
                 appInfoProvider: coreAssembly.appInfoProvider,
                 keysCountryCodeProvider: coreAssembly.keysCountryCodeProvider
-            )
+            ),
+            limitModel: WalletSectionLimitModel(limit: .initial) { _ in }
         )
+    }
+
+    var coreAssembly: TKCore.CoreAssembly {
+        TKCore.CoreAssembly()
     }
 }
 
@@ -266,30 +291,46 @@ private final class AnalyticsServiceSpy: AnalyticsService {
     }
 }
 
-@MainActor
-private final class EarnPortfolioServiceStub: EarnPortfolioService {
-    var result: Result<[EarnPosition], Error> = .failure(URLError(.unknown))
-    var holdsRequests = false
-    private(set) var requestedAddresses = [String]()
-    private var heldRequests = [String: CheckedContinuation<Result<[EarnPosition], Error>, Never>]()
-    private var requestWaiters = [CheckedContinuation<Void, Never>]()
+private final class BalanceLoaderSpy: BalanceLoader {
+    private(set) var reloads = [(wallet: Wallet, priority: BalanceRefreshPriority)]()
+    let changes = TestSignal()
 
-    func loadPositions(address: String) async throws -> [EarnPosition] {
-        requestedAddresses.append(address)
-        let waiters = requestWaiters
-        requestWaiters = []
-        waiters.forEach { $0.resume() }
-        guard holdsRequests else { return try result.get() }
-        return try await withCheckedContinuation { heldRequests[address] = $0 }.get()
+    func reloadBalance(wallet: Wallet, priority: BalanceRefreshPriority) async -> BalanceRefreshResult {
+        reloads.append((wallet: wallet, priority: priority))
+        changes.send()
+        return .dropped
     }
 
-    func waitForRequests(_ count: Int) async {
-        while requestedAddresses.count < count {
-            await withCheckedContinuation { requestWaiters.append($0) }
-        }
+    func reloadAllWalletsBalance(priority _: BalanceRefreshPriority) async {}
+
+    func setQuiet(_: Bool, owner _: BalanceQuietOwner) {}
+
+    func setRegularPollingPaused(_: Bool) {}
+
+    func setIsRealtimeSubscribed(_: @escaping @Sendable (String) -> Bool) {}
+
+    func addUpdateObserver<T: AnyObject>(_: T, closure _: @escaping (T, BalanceLoaderUpdate) -> Void) {}
+}
+
+private struct KeeperInfoRepositoryStub: KeeperInfoRepository {
+    let wallet: Wallet
+
+    func getKeeperInfo() throws -> KeeperInfo {
+        KeeperInfo(
+            wallets: [wallet],
+            currentWallet: wallet,
+            currency: .defaultCurrency,
+            securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
+            appSettings: KeeperInfo.AppSettings(
+                isSecureMode: false,
+                searchEngine: .duckduckgo,
+                hidesDustBalances: false
+            ),
+            country: .auto
+        )
     }
 
-    func answer(_ address: String, with result: Result<[EarnPosition], Error>) {
-        heldRequests.removeValue(forKey: address)?.resume(returning: result)
-    }
+    func saveKeeperInfo(_: KeeperInfo) throws {}
+
+    func removeKeeperInfo() throws {}
 }

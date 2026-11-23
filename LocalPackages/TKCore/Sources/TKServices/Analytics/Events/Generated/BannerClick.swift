@@ -10,24 +10,30 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Fired when the user taps a home-screen banner that has an action (a deeplink or an external link). Banners without an action do not fire. CTR is banner_click / banner_view matched on banner_id; unique clickers come from the auto-attached user id. The action field is the intended destination, letting CTR and drop-off be segmented by action type without joining to the banner config.  */
+/** Fired when the user taps a banner that has an action (a deeplink or an external link). Banners without an action do not fire. CTR is banner_click / banner_view matched on banner_id; unique clickers come from the auto-attached user id. The action field is the intended destination, letting CTR and drop-off be segmented by action type without joining to the banner config. &#x60;wallet_mode&#x60; distinguishes TON-only from multichain wallets, matching &#x60;wallet_open&#x60;; &#x60;from&#x60; says whether the banner was on the wallet main screen or in the Browser section.  */
 public struct BannerClick: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "banner_click"
     /** Banner identifier from the /banners backend response. */
     public var bannerId: String
     public var action: BannerActionType
+    public var walletMode: WalletMode
+    public var from: BannerPlacement
 
-    public init(eventName: String = "banner_click", bannerId: String, action: BannerActionType) {
+    public init(eventName: String = "banner_click", bannerId: String, action: BannerActionType, walletMode: WalletMode, from: BannerPlacement) {
         self.eventName = eventName
         self.bannerId = bannerId
         self.action = action
+        self.walletMode = walletMode
+        self.from = from
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case bannerId = "banner_id"
         case action
+        case walletMode = "wallet_mode"
+        case from
     }
 
     // Encodable protocol methods
@@ -37,6 +43,8 @@ public struct BannerClick: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(bannerId, forKey: .bannerId)
         try container.encode(action, forKey: .action)
+        try container.encode(walletMode, forKey: .walletMode)
+        try container.encode(from, forKey: .from)
     }
 }
 

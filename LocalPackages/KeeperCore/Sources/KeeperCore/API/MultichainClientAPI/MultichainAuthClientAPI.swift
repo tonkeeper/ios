@@ -43,6 +43,11 @@ protocol MultichainAuthClientAPI: DeviceAuthAPI {
         deviceJWT: String
     ) async throws(MultichainClientAPIError)
     func unsubscribeWalletPush(deviceJWT: String) async throws(MultichainClientAPIError)
+    func registerLiveActivity(
+        _ registration: MultichainLiveActivityRegistration,
+        deviceJWT: String
+    ) async throws(MultichainClientAPIError) -> MultichainLiveActivityRegistrationResult
+    func unregisterLiveActivity(activityId: String, deviceJWT: String) async throws(MultichainClientAPIError)
 }
 
 final class MultichainAuthClientAPIImplementation: MultichainAuthClientAPI {
@@ -254,6 +259,65 @@ final class MultichainAuthClientAPIImplementation: MultichainAuthClientAPI {
 
     func unsubscribeWalletPush(deviceJWT: String) async throws(MultichainClientAPIError) {
         let output = try await apiCall(await makeDeviceAuthClient(deviceJWT).unsubscribeDevicePush())
+        switch output {
+        case .ok:
+            return
+        case let .unauthorized(error):
+            throw try unauthorized(from: error)
+        case let .internalServerError(error):
+            throw try internalError(from: error)
+        case .badGateway:
+            throw MultichainClientAPIError.badStatus(message: Self.pusherUnavailableMessage)
+        case let .undocumented(statusCode, _):
+            throw MultichainClientAPIError.undocumented(statusCode: statusCode)
+        }
+    }
+}
+
+extension MultichainAuthClientAPIImplementation {
+    func registerLiveActivity(
+        _ registration: MultichainLiveActivityRegistration,
+        deviceJWT: String
+    ) async throws(MultichainClientAPIError) -> MultichainLiveActivityRegistrationResult {
+        let contentState: OpenAPIObjectContainer
+        do {
+            contentState = try JSONDecoder().decode(OpenAPIObjectContainer.self, from: registration.contentState)
+        } catch {
+            return .rejected(reason: "live activity content state is not a JSON object")
+        }
+        let titles = registration.finalTitles
+        let body = MultichainAPI.Components.RequestBodies.LiveActivityRegister.json(
+            .init(
+                activity_id: registration.activityId,
+                push_token: registration.pushToken,
+                wallet_id: registration.walletId,
+                content_state: .init(additionalProperties: contentState),
+                final_titles: .init(confirmed: titles.confirmed, failed: titles.failed, dropped: titles.dropped),
+                alert_body: registration.alertBody
+            )
+        )
+        let output = try await apiCall(await makeDeviceAuthClient(deviceJWT).registerLiveActivity(body: body))
+        switch output {
+        case .ok:
+            return .registered
+        case let .badRequest(error):
+            return try .rejected(reason: decodeResponse(error.body.json.error))
+        case let .unauthorized(error):
+            throw try unauthorized(from: error)
+        case let .forbidden(error):
+            return try .rejected(reason: decodeResponse(error.body.json.error))
+        case let .internalServerError(error):
+            throw try internalError(from: error)
+        case .badGateway:
+            throw MultichainClientAPIError.badStatus(message: Self.pusherUnavailableMessage)
+        case let .undocumented(statusCode, _):
+            throw MultichainClientAPIError.undocumented(statusCode: statusCode)
+        }
+    }
+
+    func unregisterLiveActivity(activityId: String, deviceJWT: String) async throws(MultichainClientAPIError) {
+        let body = MultichainAPI.Components.RequestBodies.LiveActivityUnregister.json(.init(activity_id: activityId))
+        let output = try await apiCall(await makeDeviceAuthClient(deviceJWT).unregisterLiveActivity(body: body))
         switch output {
         case .ok:
             return

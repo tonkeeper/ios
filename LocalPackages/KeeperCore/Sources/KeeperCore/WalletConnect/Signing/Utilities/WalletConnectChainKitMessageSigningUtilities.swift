@@ -10,7 +10,7 @@ struct WalletConnectChainKitMessageSigningUtilities {
     func sign(
         client: CryptoKitClient,
         chain: WalletConnectChain,
-        cryptoWallet: CryptoWallet,
+        cryptoWallet: MnemonicWallet,
         message: String,
         kind: WalletConnectEVMMessageKind
     ) async throws(WalletConnectSigningError) -> String {
@@ -30,7 +30,7 @@ struct WalletConnectChainKitMessageSigningUtilities {
     func sign(
         client: CryptoKitClient,
         chain: WalletConnectChain,
-        cryptoWallet: CryptoWallet,
+        cryptoWallet: MnemonicWallet,
         message: String,
         messageType: ChainKit.MessageType
     ) async throws(WalletConnectSigningError) -> String {

@@ -5,16 +5,22 @@ import TKUIKit
 public struct PerpsOpenPositionsCard: View {
     var total: PerpsPositionsTotal?
     let positions: [PerpsPositionRowItem]
+    var more: PerpsMorePositions?
     let onSelect: (Int64) -> Void
+    var onMore: () -> Void
 
     public init(
         total: PerpsPositionsTotal? = nil,
         positions: [PerpsPositionRowItem],
-        onSelect: @escaping (Int64) -> Void
+        more: PerpsMorePositions? = nil,
+        onSelect: @escaping (Int64) -> Void,
+        onMore: @escaping () -> Void = {}
     ) {
         self.total = total
         self.positions = positions
+        self.more = more
         self.onSelect = onSelect
+        self.onMore = onMore
     }
 
     public var body: some View {
@@ -35,9 +41,18 @@ public struct PerpsOpenPositionsCard: View {
                 .buttonStyle(.plain)
                 .applySeparatorIfNeeded(
                     index: index,
-                    total: positions.count,
+                    total: positions.count + (more == nil ? 0 : 1),
                     leadingInset: Layout.separatorLeadingInset
                 )
+            }
+
+            if let more {
+                Button(action: onMore) {
+                    PerpsMorePositionsRow(more: more)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("perps_more_positions")
             }
         }
         .background(
@@ -47,7 +62,7 @@ public struct PerpsOpenPositionsCard: View {
     }
 
     private func totalHeader(_ total: PerpsPositionsTotal) -> some View {
-        let pnlColor: TKColor = total.isPnlPositive ? .accentGreen : .accentRed
+        let pnlColor: TKColor = total.isPnlPositive.map { $0 ? .accentGreen : .accentRed } ?? .textSecondary
         return VStack(alignment: .leading, spacing: 0) {
             Text(TKLocales.Perps.totalAmount)
                 .textStyle(.body2)

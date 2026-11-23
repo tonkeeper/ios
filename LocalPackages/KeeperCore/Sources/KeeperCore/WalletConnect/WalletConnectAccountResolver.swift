@@ -1,5 +1,5 @@
 import Foundation
-import ReownWalletKit
+import WalletConnectSign
 
 struct WalletConnectAccountResolver {
     func accounts(

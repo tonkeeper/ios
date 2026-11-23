@@ -107,23 +107,20 @@ extension BatteryAPI {
     }
 
     func getRechargeMethos(includeRechargeOnly: Bool) async throws(ApiError) -> [BatteryRechargeMethod] {
+        try await rechargeMethods(includeRechargeOnly: includeRechargeOnly, multichain: false)
+            .compactMap { BatteryRechargeMethod(method: $0) }
+    }
+
+    func rechargeMethods(includeRechargeOnly: Bool, multichain: Bool) async throws(ApiError) -> [Components.Schemas.RechargeMethods.methodsPayloadPayload] {
         let client = try await apiClient()
         let response = try await apiCall(
-            await client.getRechargeMethods(
-                query: .init(include_recharge_only: includeRechargeOnly)
-            )
+            await client.getRechargeMethods(query: .init(include_recharge_only: includeRechargeOnly, multichain: multichain))
         )
         switch response {
         case let .ok(ok):
             return try decodeResponse(ok.body.json.methods)
-                .compactMap {
-                    BatteryRechargeMethod(method: $0)
-                }
         case let .default(statusCode, error):
-            throw try .badStatus(
-                status: statusCode,
-                message: decodeResponse(error.body.json.error)
-            )
+            throw try .badStatus(status: statusCode, message: decodeResponse(error.body.json.error))
         }
     }
 
@@ -182,7 +179,7 @@ extension BatteryAPI {
         boc: String,
         proof: String?,
         extraHeaders: [String: String] = [:]
-    ) async throws(ApiError) {
+    ) async throws(ApiError) -> String? {
         let client = try await apiClient(
             authorization: authorization,
             extraHeaders: extraHeaders
@@ -192,11 +189,12 @@ extension BatteryAPI {
                 body: .json(.init(boc: boc, proof: proof))
             )
         )
-        if case let .default(statusCode, error) = response {
-            throw try .badStatus(
-                status: statusCode,
-                message: decodeResponse(error.body.json.error)
-            )
+        switch response {
+        case let .ok(ok):
+            return ok.headers.X_hyphen_Battery_hyphen_Relayer_hyphen_Message_hyphen_Hash
+        case let .default(statusCode, error):
+            let body = try decodeResponse(error.body.json)
+            throw Self.messageRejection(status: statusCode, message: body.error, key: body.error_hyphen_key)
         }
     }
 
@@ -231,6 +229,28 @@ extension BatteryAPI {
         case let .ok(ok):
             return try decodeResponse(ok.body.json.purchases)
                 .compactMap(BatteryPurchase.init(purchase:))
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    func migrateBattery(
+        authorization: BatteryAuthorization,
+        proof: String,
+        fromAddress: String
+    ) async throws(ApiError) -> Components.Schemas.BatteryMigration {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.migrateBattery(
+                body: .json(.init(proof: proof, from_address: fromAddress))
+            )
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
         case let .default(statusCode, error):
             throw try .badStatus(
                 status: statusCode,
@@ -366,6 +386,36 @@ extension BatteryAPI {
 // MARK: - Gasless 2.0
 
 extension BatteryAPI {
+    func purchaseBatteryEstimate(
+        authorization: BatteryAuthorization,
+        request: Components.Schemas.PurchaseBatteryEmulateRequest
+    ) async throws(ApiError) -> Components.Schemas.PurchaseBatteryEstimateResponse {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(await client.purchaseBatteryEstimate(body: .json(request)))
+        switch response {
+        case let .ok(ok): return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
+        case let .default(statusCode, error):
+            throw try .badStatus(status: statusCode, message: decodeResponse(error.body.json.error))
+        }
+    }
+
+    func purchaseBatteryEmulate(
+        authorization: BatteryAuthorization,
+        request: Components.Schemas.PurchaseBatteryEmulateRequest
+    ) async throws(ApiError) -> Components.Schemas.PurchaseBatteryEmulateResponse {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(await client.purchaseBatteryEmulate(body: .json(request)))
+        switch response {
+        case let .ok(ok): return try decodeResponse(ok.body.json)
+        case let .clientError(statusCode, error):
+            throw try Self.gaslessRejection(status: statusCode, error: decodeResponse(error.body.json.error))
+        case let .default(statusCode, error):
+            throw try .badStatus(status: statusCode, message: decodeResponse(error.body.json.error))
+        }
+    }
+
     func gaslessConfig() async throws(ApiError) -> Components.Schemas.GaslessV2Config {
         let client = try await apiClient()
         let response = try await apiCall(

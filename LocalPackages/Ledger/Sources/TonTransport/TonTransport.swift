@@ -1,7 +1,7 @@
 import BigInt
-import BleTransport
 import CryptoKit
 import Foundation
+import LedgerKit
 import TonSwift
 
 public struct LedgerTransfer {
@@ -20,6 +20,7 @@ public enum TonTransportError: Swift.Error, LocalizedError {
     case invalidPayload
     case packageTooLarge(length: Int)
     case signatureIsInvalid
+    case publicKeyMismatch
 
     public var errorDescription: String? {
         switch self {
@@ -33,17 +34,17 @@ public enum TonTransportError: Swift.Error, LocalizedError {
             "Package too large (\(length))"
         case .signatureIsInvalid:
             "Signature is invalid"
+        case .publicKeyMismatch:
+            "The Ledger holds another key for this account"
         }
     }
 }
 
 public class TonTransport {
-    private let transport: BleTransportProtocol
+    private let link: LedgerLink
     private let serialTasks = SerialTasks<Data>()
 
-    static let LEDGER_SYSTEM: UInt8 = 0xB0
     static let LEDGER_CLA: UInt8 = 0xE0
-    static let INS_OPEN_APP: UInt8 = 0xD8
     static let INS_ADDRESS: UInt8 = 0x05
     static let INS_SIGN_TX: UInt8 = 0x06
     static let INS_PROOF: UInt8 = 0x08
@@ -51,8 +52,8 @@ public class TonTransport {
         return version.compare(targetVersion, options: .numeric) != .orderedAscending
     }
 
-    public init(transport: BleTransportProtocol) {
-        self.transport = transport
+    public init(link: LedgerLink) {
+        self.link = link
     }
 
     private func chunks(buf: Data, n: Int) -> [Data] {
@@ -69,59 +70,14 @@ public class TonTransport {
 
     private func doRequest(ins: UInt8, p1: UInt8, p2: UInt8, data: Data) async throws -> Data {
         try await serialTasks.add {
-            let response = try await self.transport.send(
-                system: TonTransport.LEDGER_CLA,
-                command: ins,
-                p1: p1,
-                p2: p2,
-                data: data,
-                responseCodes: nil
-            )
-            return response.subdata(in: 0 ..< response.count - 2)
-        }
-    }
-
-    private func getCurrentApp() async throws -> (String, String) {
-        let data = try await serialTasks.add {
-            let response = try await self.transport.send(
-                system: TonTransport.LEDGER_SYSTEM,
-                command: 0x01,
-                p1: 0x00,
-                p2: 0x00,
-                data: Data(),
-                responseCodes: nil
-            )
-            let data = response.subdata(in: 0 ..< (response.count - 2))
-            guard !data.isEmpty,
-                  data[0] == 0x01
-            else {
-                throw TonTransportError.invalidResponse
+            guard data.count <= 255 else {
+                throw TonTransportError.packageTooLarge(length: data.count)
             }
-            return data
-        }
-
-        let nameLength = Int(data[1])
-        let nameData = data.subdata(in: 2 ..< (2 + nameLength))
-        let name = String(data: nameData, encoding: .utf8) ?? ""
-        let versionLength = Int(data[2 + nameLength])
-        let versionData = data.subdata(in: (3 + nameLength) ..< (3 + nameLength + versionLength))
-        let version = String(data: versionData, encoding: .utf8) ?? ""
-        return (name, version)
-    }
-
-    public func isAppOpen() async throws -> (Bool, String) {
-        let (app, version) = try await getCurrentApp()
-
-        switch app {
-        case "TON":
-            return (true, version)
-        case "BOLOS":
             do {
-                _ = try await doRequest(ins: TonTransport.INS_OPEN_APP, p1: 0x00, p2: 0x00, data: Data("TON".utf8))
-            } catch {}
-            return (false, "")
-        default:
-            return (false, "")
+                return try await self.link.send(cla: TonTransport.LEDGER_CLA, ins: ins, p1: p1, p2: p2, data: data)
+            } catch let error as LedgerStatusError {
+                throw TransportStatusError.fromStatusCode(error.statusWord)
+            }
         }
     }
 
@@ -135,6 +91,15 @@ public class TonTransport {
         let publicKey = PublicKey(data: response)
 
         return LedgerAccount(publicKey: publicKey, revision: .v4R2, path: path)
+    }
+
+    /// Shows the v4R2 address of `path` on the device and waits for the user; returns its public key.
+    public func showAddress(path: AccountPath) async throws -> PublicKey {
+        let response = try await doRequest(ins: TonTransport.INS_ADDRESS, p1: 0x01, p2: 0x00, data: path.data)
+        guard response.count == 32 else {
+            throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+        }
+        return PublicKey(data: response)
     }
 
     public static func buildTransfer(transaction: Transaction) throws -> LedgerTransfer {
@@ -532,11 +497,12 @@ public class TonTransport {
 
     public func signAddressProof(
         path: AccountPath,
+        publicKey: PublicKey,
         domain: String,
         timestamp: UInt64,
         payload: String
     ) async throws -> Data {
-        let publicKey = try await getAccount(path: path).publicKey
+        try await requireKey(publicKey, at: path)
 
         guard let domainData = domain.data(using: .utf8) else {
             throw TonTransportError.invalidDomain
@@ -572,9 +538,8 @@ public class TonTransport {
         return signature
     }
 
-    public func signTransaction(path: AccountPath, transaction: Transaction) async throws -> Data {
-        let account = try await getAccount(path: path)
-        let publicKey = account.publicKey
+    public func signTransaction(path: AccountPath, publicKey: PublicKey, transaction: Transaction) async throws -> Data {
+        try await requireKey(publicKey, at: path)
 
         let transfer: LedgerTransfer = try TonTransport.buildTransfer(transaction: transaction)
 
@@ -601,6 +566,14 @@ public class TonTransport {
         }
 
         return signature
+    }
+
+    /// A Ledger signs with whatever seed it was unlocked with: a second PIN or another passphrase opens
+    /// another wallet, so the key is checked before the user is asked to confirm anything.
+    private func requireKey(_ publicKey: PublicKey, at path: AccountPath) async throws {
+        guard try await getAccount(path: path).publicKey.data == publicKey.data else {
+            throw TonTransportError.publicKeyMismatch
+        }
     }
 }
 

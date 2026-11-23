@@ -7,16 +7,18 @@ private final class PerpsSetLimitPricePreviewViewModel: PerpsSetLimitPriceViewMo
     let referencePriceText = "$67,104.20"
     let fieldPrefix = "$"
     let fieldSuffix: String? = nil
+    let isAmountSigned = false
     let warningText: String? = nil
-    let chipText = "−1.02 %"
+    let isWarningBlocking = true
+    let chipText = "−1.02%"
     let isSetEnabled = true
 
     var quickFills: [PerpsSetLimitPriceQuickFillItem] {
         [
             PerpsSetLimitPriceQuickFillItem(fill: .mid, title: "Mid", isActive: false),
-            PerpsSetLimitPriceQuickFillItem(fill: .p1, title: "− 1 %", isActive: true),
-            PerpsSetLimitPriceQuickFillItem(fill: .p2, title: "− 2 %", isActive: false),
-            PerpsSetLimitPriceQuickFillItem(fill: .p5, title: "− 5 %", isActive: false),
+            PerpsSetLimitPriceQuickFillItem(fill: .p1, title: "−1%", isActive: true),
+            PerpsSetLimitPriceQuickFillItem(fill: .p2, title: "−2%", isActive: false),
+            PerpsSetLimitPriceQuickFillItem(fill: .p5, title: "−5%", isActive: false),
         ]
     }
 

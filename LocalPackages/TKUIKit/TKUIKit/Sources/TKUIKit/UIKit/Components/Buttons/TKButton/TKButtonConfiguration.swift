@@ -20,6 +20,9 @@ public extension TKButton {
         public var loaderStyle: TKLoaderView.Style
         public var borderWidth: CGFloat
         public var borderColors: [TKButtonState: UIColor]
+        /// Under liquid glass, draws the button as a capsule of glass tinted with its background colour,
+        /// greyed out while disabled. Only a large action button does, as in `ButtonView`.
+        public var sitsOnLiquidGlass: Bool
         public var action: (() -> Void)?
 
         public init(
@@ -41,6 +44,7 @@ public extension TKButton {
             loaderStyle: TKLoaderView.Style = .primary,
             borderWidth: CGFloat = 0,
             borderColors: [TKButtonState: UIColor] = [:],
+            sitsOnLiquidGlass: Bool = false,
             action: (() -> Void)? = nil
         ) {
             self.content = content
@@ -61,6 +65,7 @@ public extension TKButton {
             self.loaderStyle = loaderStyle
             self.borderColors = borderColors
             self.borderWidth = borderWidth
+            self.sitsOnLiquidGlass = sitsOnLiquidGlass
             self.action = action
         }
     }
@@ -106,6 +111,7 @@ public extension TKButton.Configuration {
             ],
             cornerRadius: size.cornerRadius,
             loaderSize: size.loaderViewSize,
+            sitsOnLiquidGlass: size == .large,
             action: nil
         )
     }

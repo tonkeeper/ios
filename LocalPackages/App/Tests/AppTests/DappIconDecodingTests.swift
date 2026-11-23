@@ -61,6 +61,43 @@ final class DappIconDecodingTests: XCTestCase {
     }
 
     @MainActor
+    func testRasterizeRendersOneNestedSVG() throws {
+        let svg = Data("""
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'>
+        <svg width='10' height='10'><rect width='10' height='10' fill='#1e4480'/></svg>
+        </svg>
+        """.utf8)
+        let image = try XCTUnwrap(SVGImageRasterizer.rasterize(svgData: svg))
+        XCTAssertGreaterThan(alpha(of: image), 200)
+    }
+
+    func testRasterizeRendersSmallIconWithThreeNestedLevels() {
+        XCTAssertNotNil(SVGImageRasterizer.rasterize(svgData: nestedSVG(depth: 3, padding: 0)))
+    }
+
+    func testRasterizeRejectsLargeIconWithThreeNestedLevels() {
+        XCTAssertNil(SVGImageRasterizer.rasterize(svgData: nestedSVG(depth: 3, padding: 600_000)))
+    }
+
+    private func nestedSVG(depth: Int, padding: Int) -> Data {
+        let svg = "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'>"
+            + "<!--" + String(repeating: "x", count: padding) + "-->"
+            + String(repeating: "<svg width='10' height='10'>", count: depth - 1)
+            + "<rect width='10' height='10' fill='#1e4480'/>"
+            + String(repeating: "</svg>", count: depth)
+        return Data(svg.utf8)
+    }
+
+    @MainActor
+    func testRasterizeRejectsDeeplyNestedSVG() {
+        let depth = 24
+        let svg = String(repeating: "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'>", count: depth)
+            + "<rect width='10' height='10'/>"
+            + String(repeating: "</svg>", count: depth)
+        XCTAssertNil(SVGImageRasterizer.rasterize(svgData: Data(svg.utf8)))
+    }
+
+    @MainActor
     func testProviderRendersDataURISVGToDecodablePNG() throws {
         let uri = "data:image/svg+xml,"
             + "%3csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3e"

@@ -1,7 +1,7 @@
 import TKLogging
 import TonSwift
 
-public enum DerivationType: Codable {
+public enum DerivationType: Codable, Sendable {
     case ton
     case bip39
     case bip39soft

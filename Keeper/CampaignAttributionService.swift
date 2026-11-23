@@ -1,3 +1,4 @@
+import AppsFlyerLib
 import BranchSDK
 import Foundation
 import LinkrunnerKit
@@ -17,6 +18,8 @@ final class CampaignAttributionService {
     private var linkrunnerEnabled = false
     private var linkrunnerReady = false
     private var pendingLinkrunnerURLs: [String] = []
+    private var appsFlyerEnabled = false
+    private var appsFlyerDeepLinkReceiver: AppsFlyerDeepLinkReceiver?
 
     init(store: CampaignAttributionStore = .shared) {
         self.store = store
@@ -27,10 +30,12 @@ final class CampaignAttributionService {
         didStart = true
         startBranch(launchOptions: launchOptions)
         startLinkrunner()
+        startAppsFlyer()
     }
 
     func noteDelivered(_ link: String?) {
         buffer.markDelivered(link)
+        buffer.markDelivered(CampaignAttributionDecoding.appLink(link))
     }
 
     func beginForwarding() {
@@ -56,6 +61,7 @@ final class CampaignAttributionService {
         }
 
         for activity in connectionOptions.userActivities {
+            forwardToAppsFlyer(activity)
             if let url = activity.webpageURL?.absoluteString {
                 forwardToLinkrunner(url)
             }
@@ -69,6 +75,7 @@ final class CampaignAttributionService {
         if branchEnabled {
             BranchScene.shared().scene(scene, continue: userActivity)
         }
+        forwardToAppsFlyer(userActivity)
         if let url = userActivity.webpageURL?.absoluteString {
             forwardToLinkrunner(url)
         }
@@ -126,6 +133,37 @@ final class CampaignAttributionService {
                 await handleLinkrunnerDeeplink(url)
             }
         }
+    }
+
+    private func startAppsFlyer() {
+        guard let devKey = CampaignAttributionCredentials.configured(infoValue("APPSFLYER_DEV_KEY")),
+              let appId = CampaignAttributionCredentials.configured(infoValue("APPSFLYER_APP_ID"))
+        else {
+            Log.i("AppsFlyer attribution is disabled until APPSFLYER_DEV_KEY and APPSFLYER_APP_ID are set")
+            return
+        }
+        let appsFlyer = AppsFlyerLib.shared()
+        appsFlyer.initialize(devKey: devKey, appId: appId)
+        #if DEBUG
+            appsFlyer.isDebug = true
+        #endif
+        appsFlyer.customerUserID = UniqueIdProvider.uniqueInstallId().uuidString
+        let deepLinkReceiver = AppsFlyerDeepLinkReceiver { [weak self] destination in
+            Task { @MainActor in
+                self?.route(destination)
+            }
+        }
+        appsFlyerDeepLinkReceiver = deepLinkReceiver
+        appsFlyer.deepLinkDelegate = deepLinkReceiver
+        appsFlyerEnabled = true
+        appsFlyer.registerSessionReadyListener {
+            AppsFlyerLib.shared().start()
+        }
+    }
+
+    private func forwardToAppsFlyer(_ userActivity: NSUserActivity) {
+        guard appsFlyerEnabled, let url = userActivity.webpageURL, CampaignAttributionDecoding.isOneLink(url) else { return }
+        AppsFlyerLib.shared().continue(userActivity, restorationHandler: nil)
     }
 
     private func forwardToLinkrunner(_ url: String) {
@@ -220,6 +258,27 @@ final class CampaignAttributionService {
         #else
             return false
         #endif
+    }
+}
+
+private final class AppsFlyerDeepLinkReceiver: NSObject, AppsFlyerDeepLinkDelegate {
+    private let onDestination: @Sendable (String) -> Void
+
+    init(onDestination: @escaping @Sendable (String) -> Void) {
+        self.onDestination = onDestination
+    }
+
+    func didResolveDeepLink(_ result: DeepLinkResult) {
+        guard result.status == .found, let deepLink = result.deepLink else { return }
+        let destination = CampaignAttributionDecoding.appsFlyerDestination(
+            isDeferred: deepLink.isDeferred,
+            clickedLink: deepLink.clickEvent["link"] as? String,
+            deepLinkValue: deepLink.deeplinkValue,
+            referralCode: deepLink.clickEvent["deep_link_sub1"] as? String
+        )
+        if let destination {
+            onDestination(destination)
+        }
     }
 }
 

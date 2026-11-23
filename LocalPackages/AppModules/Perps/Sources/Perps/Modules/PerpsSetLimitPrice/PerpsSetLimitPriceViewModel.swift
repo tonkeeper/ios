@@ -4,11 +4,18 @@ import SwiftUI
 import TKLocalize
 
 struct PerpsSetLimitPriceContext {
+    enum PassedAutoClose {
+        case blocks
+        case isRemoved
+    }
+
     let marketId: Int64
     let side: PerpsTradeSide
     let priceDecimals: Int
     let referencePrice: Double
     let initialLimitPrice: Double?
+    var autoClose: PerpsAutoClose?
+    var passedAutoClose: PassedAutoClose = .blocks
 }
 
 @MainActor
@@ -65,7 +72,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
     // MARK: - Derived display
 
     var referencePriceText: String {
-        format.usd(state.referencePrice)
+        format.price(state.referencePrice)
     }
 
     var fieldPrefix: String {
@@ -76,12 +83,12 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
         state.inputMode == .percent ? "%" : nil
     }
 
-    var amountText: String {
-        state.amountText
+    var isAmountSigned: Bool {
+        state.inputMode == .percent
     }
 
-    var activeQuickFill: QuickFill? {
-        state.activeQuickFill
+    var amountText: String {
+        state.amountText
     }
 
     var chipText: String {
@@ -92,7 +99,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
             if abs(offset) < 0.005 { return Self.zeroPercent }
             return format.signedPercent(offset)
         case .percent:
-            return format.usd(limitPrice(for: state) ?? state.referencePrice)
+            return format.price(limitPrice(for: state) ?? state.referencePrice)
         }
     }
 
@@ -101,11 +108,16 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
     }
 
     var warningText: String? {
-        warningText(for: state)
+        priceWarningText(for: state) ?? autoCloseWarningText(for: state)
+    }
+
+    var isWarningBlocking: Bool {
+        priceWarningText(for: state) != nil || context.passedAutoClose == .blocks
     }
 
     var isSetEnabled: Bool {
-        limitPrice(for: state) != nil && warningText(for: state) == nil
+        guard limitPrice(for: state) != nil, priceWarningText(for: state) == nil else { return false }
+        return context.passedAutoClose == .isRemoved || autoCloseWarningText(for: state) == nil
     }
 
     var quickFills: [QuickFillItem] {
@@ -199,7 +211,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
             return TKLocales.Perps.SetLimitPrice.mid
         case .p1, .p2, .p5:
             let sign = context.side == .long ? "−" : "+"
-            return "\(sign)\(Int(fill.percent))\u{2009}%"
+            return "\(sign)\(Int(fill.percent))%"
         }
     }
 
@@ -220,13 +232,38 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
         }
     }
 
-    private func warningText(for state: State) -> String? {
+    private func priceWarningText(for state: State) -> String? {
         guard let limitPrice = limitPrice(for: state), state.referencePrice > 0 else { return nil }
         switch context.side {
         case .long:
             return limitPrice <= state.referencePrice ? nil : TKLocales.Perps.SetLimitPrice.warningAtOrBelowCurrentPrice
         case .short:
             return limitPrice >= state.referencePrice ? nil : TKLocales.Perps.SetLimitPrice.warningAtOrAboveCurrentPrice
+        }
+    }
+
+    private func autoCloseWarningText(for state: State) -> String? {
+        guard let limitPrice = limitPrice(for: state), let autoClose = context.autoClose else { return nil }
+        let passed = PerpsAutoCloseValidation.legsPassed(byLimitPrice: limitPrice, side: context.side, autoClose: autoClose)
+        let isLong = context.side == .long
+        let position: String
+        let removal: String
+        if passed.stopLoss, let price = autoClose.stopLoss?.triggerPrice {
+            position = isLong
+                ? TKLocales.Perps.SetLimitPrice.belowStopLoss(format.price(price))
+                : TKLocales.Perps.SetLimitPrice.aboveStopLoss(format.price(price))
+            removal = TKLocales.Perps.SetLimitPrice.stopLossRemoved
+        } else if passed.takeProfit, let price = autoClose.takeProfit?.triggerPrice {
+            position = isLong
+                ? TKLocales.Perps.SetLimitPrice.aboveTakeProfit(format.price(price))
+                : TKLocales.Perps.SetLimitPrice.belowTakeProfit(format.price(price))
+            removal = TKLocales.Perps.SetLimitPrice.takeProfitRemoved
+        } else {
+            return nil
+        }
+        switch context.passedAutoClose {
+        case .blocks: return position
+        case .isRemoved: return "\(position). \(removal)"
         }
     }
 
@@ -237,7 +274,7 @@ final class PerpsSetLimitPriceViewModel: ObservableObject, PerpsSetLimitPriceVie
         state = next
     }
 
-    private static let zeroPercent = "0\u{2009}%"
+    private static let zeroPercent = "0%"
 
     private func signedPercent(_ text: String) -> Double? {
         let normalized = text

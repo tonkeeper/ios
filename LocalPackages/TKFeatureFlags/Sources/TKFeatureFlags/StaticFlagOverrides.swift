@@ -6,6 +6,7 @@ import UIKit
 public struct StaticFlagOverrides: Codable, Equatable {
     public let featureFlags: [String: Bool]?
     public let bootConfigurationFlags: [String: Bool]?
+    public let perpsAccess: String?
 }
 
 public extension StaticFlagOverrides {
@@ -25,10 +26,10 @@ public extension StaticFlagOverrides {
             let decoded = try JSONDecoder().decode(StaticFlagOverrides.self, from: data)
             let featureCount = decoded.featureFlags?.count ?? 0
             let bootCount = decoded.bootConfigurationFlags?.count ?? 0
-            guard featureCount + bootCount > 0 else {
+            guard featureCount + bootCount > 0 || decoded.perpsAccess != nil else {
                 return nil
             }
-            Log.i("StaticFlagOverrides loaded: \(featureCount) featureFlags, \(bootCount) bootConfigurationFlags")
+            Log.i("StaticFlagOverrides loaded: \(featureCount) featureFlags, \(bootCount) bootConfigurationFlags, perpsAccess \(decoded.perpsAccess ?? "-")")
             return decoded
         } catch {
             Log.w("StaticFlagOverrides: failed to decode \(url.lastPathComponent): \(error)")

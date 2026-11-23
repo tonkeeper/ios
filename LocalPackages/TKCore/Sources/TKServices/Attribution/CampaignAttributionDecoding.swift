@@ -83,10 +83,50 @@ public enum CampaignAttributionDecoding {
         return false
     }
 
+    public static func appsFlyerDestination(
+        isDeferred: Bool,
+        clickedLink: String?,
+        deepLinkValue: String?,
+        referralCode: String?
+    ) -> String? {
+        guard isDeferred || isShortOneLink(clickedLink) else { return nil }
+        return loyaltyDestination(deepLinkValue: deepLinkValue, referralCode: referralCode)
+    }
+
+    public static func isOneLink(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else { return false }
+        return url.host?.lowercased() == "keeper.onelink.me"
+    }
+
+    private static func loyaltyDestination(deepLinkValue: String?, referralCode: String?) -> String? {
+        guard deepLinkValue?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "loyalty" else { return nil }
+        guard let code = referralCode?.trimmingCharacters(in: .whitespacesAndNewlines), !code.isEmpty,
+              let encodedCode = code.addingPercentEncoding(withAllowedCharacters: .urlUnreserved)
+        else {
+            return "tonkeeper://loyalty"
+        }
+        return "tonkeeper://loyalty?referral_code=\(encodedCode)"
+    }
+
+    private static func isShortOneLink(_ link: String?) -> Bool {
+        guard let url = link.flatMap(URL.init(string:)), isOneLink(url) else { return false }
+        return queryValue("deep_link_value", in: url)?.isEmpty ?? true
+    }
+
+    private static func queryValue(_ name: String, in url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == name }?.value
+    }
+
     public static func appLink(_ link: String?) -> String? {
         guard let link else { return nil }
-        guard let url = URL(string: link), isTrackingURL(url) else { return link }
-        return nil
+        guard let url = URL(string: link) else { return link }
+        if isOneLink(url) {
+            return loyaltyDestination(
+                deepLinkValue: queryValue("deep_link_value", in: url),
+                referralCode: queryValue("deep_link_sub1", in: url)
+            )
+        }
+        return isTrackingURL(url) ? nil : link
     }
 
     /// Tracking hosts stay out: the system already delivered that URL.
@@ -125,4 +165,8 @@ public enum CampaignAttributionDecoding {
         let host = url.host?.lowercased()
         return host == "app.tonkeeper.com" || host == "app.tonkeeper.org" || host == "app.keeperwallet.com"
     }
+}
+
+private extension CharacterSet {
+    static let urlUnreserved = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 }

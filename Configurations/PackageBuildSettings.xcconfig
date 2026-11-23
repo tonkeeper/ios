@@ -17,3 +17,9 @@ TK_LIBRARY_EVOLUTION_KeeperCore = YES
 // DerivedData/CompilationCache.noindex replays compiles whose inputs are unchanged: across local archives,
 // and on Xcode Cloud once it restores DerivedData between builds with Clean off (as of October 2026 it doesn't).
 COMPILATION_CACHE_ENABLE_CACHING[config=*Release] = YES
+
+// `-testProductsPath` (an Xcode Cloud Test action) makes every target write a dSYM, also in Debug, where the
+// project sets `dwarf`. The dSYMs are a quarter of the test products that such an action uploads to its test VM,
+// and the tests do not read them. The PR Gate runs its tests on the build VM without that flag, so for it this
+// line changes nothing. Archives build *Release, so they keep dSYMs.
+DEBUG_INFORMATION_FORMAT[config=*Debug] = dwarf

@@ -26,58 +26,6 @@ final class MultichainSwapSlippageServiceTests: XCTestCase {
 
         XCTAssertEqual(service.optionsBps, [])
         XCTAssertEqual(service.defaultBps, 100)
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: nil)), 100)
-    }
-
-    func test_initialSelectedBpsPrefersRouteSlippageWhenItIsAvailableOption() {
-        let service = makeService(
-            sourceAssetId: "eth/mainnet/coin",
-            slippage: slippage(
-                chainId: "eth",
-                optionsBps: [50, 100, 300],
-                defaultBps: 100
-            )
-        )
-
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: 300)), 300)
-    }
-
-    func test_initialSelectedBpsUsesDefaultWhenRouteSlippageIsMissing() {
-        let service = makeService(
-            sourceAssetId: "eth/mainnet/coin",
-            slippage: slippage(
-                chainId: "eth",
-                optionsBps: [50, 100, 300],
-                defaultBps: 100
-            )
-        )
-
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: nil)), 100)
-    }
-
-    func test_initialSelectedBpsUsesDefaultWhenRouteSlippageIsNotAvailableOption() {
-        let service = makeService(
-            sourceAssetId: "eth/mainnet/coin",
-            slippage: slippage(
-                chainId: "eth",
-                optionsBps: [50, 100, 300],
-                defaultBps: 100
-            )
-        )
-
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: 250)), 100)
-    }
-
-    /// The legacy TRON pair has no slippage config, and a SwapKit route reports a negative
-    /// `total_slippage_bps`, which the quote endpoint rejects as a slippage to ask for.
-    func test_initialSelectedBpsIgnoresRouteSlippageWhenConfigIsMissing() {
-        let service = makeService(
-            sourceAssetId: "ton/mainnet/coin",
-            slippage: nil
-        )
-
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: -4136)), 100)
-        XCTAssertEqual(service.initialSelectedBps(route: route(totalSlippageBps: 250)), 100)
     }
 
     func test_sourceAssetIdChainTakesPrecedenceOverSourceChainFallback() {
@@ -135,20 +83,5 @@ private extension MultichainSwapSlippageServiceTests {
                 defaultBps: defaultBps
             ),
         ])
-    }
-
-    func route(totalSlippageBps: Int?) -> MultichainSwapRoute {
-        .init(
-            routeId: "route",
-            aggregator: "aggregator",
-            protocolSlug: "protocol",
-            routeType: "single",
-            estimatedDestinationAmount: "100",
-            minimumDestinationAmount: "99",
-            totalSlippageBps: totalSlippageBps,
-            legs: [],
-            dateExpire: Date(timeIntervalSince1970: 1),
-            riskLevel: "low"
-        )
     }
 }

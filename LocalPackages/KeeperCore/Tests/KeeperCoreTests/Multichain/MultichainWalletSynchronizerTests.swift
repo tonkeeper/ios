@@ -1,6 +1,7 @@
 import BigInt
 import Foundation
 @testable import KeeperCore
+import OperationReviewModels
 import XCTest
 
 final class MultichainWalletSynchronizerTests: XCTestCase {
@@ -190,13 +191,21 @@ private final class MultichainAuthClientAPISpy: MultichainAuthClientAPI, @unchec
     ) async throws(MultichainClientAPIError) {}
 
     func unsubscribeWalletPush(deviceJWT _: String) async throws(MultichainClientAPIError) {}
+    func registerLiveActivity(
+        _: MultichainLiveActivityRegistration,
+        deviceJWT _: String
+    ) async throws(MultichainClientAPIError) -> MultichainLiveActivityRegistrationResult {
+        .registered
+    }
+
+    func unregisterLiveActivity(activityId _: String, deviceJWT _: String) async throws(MultichainClientAPIError) {}
 }
 
 private final class ChainKitServiceFake: ChainKitService, @unchecked Sendable {
     private(set) var signedBatches = [(deviceId: String, challenge: String)]()
 
     func makeWalletRegisterItem(
-        mnemonic _: String,
+        appPrivateKey _: Data,
         deviceId: String,
         challenge: String,
         state: MultichainWalletState
@@ -213,7 +222,7 @@ private final class ChainKitServiceFake: ChainKitService, @unchecked Sendable {
         Data("key-\(mnemonic)".utf8)
     }
 
-    func walletAuthToken(appPrivateKey _: Data, accessToken _: String) -> String {
+    func walletAuthToken(appPrivateKey _: Data, walletId _: String, accessToken _: String) -> String? {
         fatalError("unused")
     }
 
@@ -239,19 +248,43 @@ private final class ChainKitServiceFake: ChainKitService, @unchecked Sendable {
         asset _: MultichainAsset,
         amount _: BigUInt,
         comment _: String?,
+        commentEncryptionKey _: String?,
         isMaxAmount _: Bool
     ) async throws(MultichainTransactionEmulationFailure) -> MultichainTransactionEmulationResult {
         fatalError("unused")
     }
 
     func sendMultichainTransfer(
-        passcodeProvider _: @escaping () async -> String?,
+        signer _: MultichainTransferSigner,
         wallet _: Wallet,
         recipient _: String,
         asset _: MultichainAsset,
         amount _: BigUInt,
         comment _: String?,
+        commentEncryptionKey _: String?,
+        isMaxAmount _: Bool,
+        consent _: OperationConsent
+    ) async throws(MultichainTransactionFailure) -> [String] {
+        fatalError("unused")
+    }
+
+    func emulateOperationTransfer(
+        wallet _: Wallet,
+        recipient _: String,
+        asset _: MultichainAsset,
+        amount _: BigUInt,
+        comment _: String?,
+        commentEncryptionKey _: String?,
         isMaxAmount _: Bool
+    ) async throws(MultichainTransactionEmulationFailure) -> MultichainTransactionEmulationResult {
+        fatalError("unused")
+    }
+
+    func sendOperationTransfer(
+        _: MultichainTransactionEmulationResult,
+        wallet _: Wallet,
+        passcodeProvider _: @escaping () async -> String?,
+        consent _: OperationConsent
     ) async throws(MultichainTransactionFailure) -> [String] {
         fatalError("unused")
     }

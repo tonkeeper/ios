@@ -1,5 +1,8 @@
 import Foundation
+import KeeperCoreSensitive
 import TKFeatureFlags
+import TKLogging
+import TonSwift
 
 public final class Assembly {
     public struct Dependencies {
@@ -41,7 +44,9 @@ public final class Assembly {
     )
     private lazy var secureAssembly = SecureAssembly(
         coreAssembly: coreAssembly,
-        configurationAssembly: configurationAssembly
+        didUnlockMnemonics: { [weak self] mnemonics in
+            await self?.prepareLegacyBatteryMigrations(mnemonics)
+        }
     )
     public lazy var transactionsManagementAssembly = TransactionsManagementAssembly(
         coreAssembly: coreAssembly
@@ -107,8 +112,7 @@ public final class Assembly {
     )
     private lazy var multichainSwapAPIAssembly = MultichainSwapAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
-        apiAssembly: apiAssembly,
-        tkAppSettings: dependencies.tkAppSettings
+        apiAssembly: apiAssembly
     )
     private lazy var multichainRampAPIAssembly = MultichainRampAPIAssembly(
         appInfoProvider: dependencies.appInfoProvider,
@@ -127,7 +131,21 @@ public final class Assembly {
             )
         }
     )
-    private lazy var tonProofTokenService: TonProofTokenService = TonProofTokenServiceImplementation(
+    private lazy var earnAssembly = EarnAssembly(
+        apiAssembly: apiAssembly,
+        appInfoProvider: dependencies.appInfoProvider,
+        configuration: configurationAssembly.configuration,
+        walletsStore: storesAssembly.walletsStore,
+        fileSystemVault: coreAssembly.fileSystemVault(),
+        walletAuth: { [weak self] in
+            guard let self else { return nil }
+            return MultichainWalletAuthDependencies(
+                deviceAuth: deviceAuthService,
+                walletAuthTokenProvider: walletAuthTokenProvider
+            )
+        }
+    )
+    private lazy var tonProofTokenService = TonProofTokenServiceImplementation(
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         tonProofTokenRepository: repositoriesAssembly.tonProofTokenRepository(),
         api: apiAssembly.api
@@ -162,7 +180,8 @@ public final class Assembly {
         tradingAPIAssembly: tradingAPIAssembly,
         appInfoProvider: dependencies.appInfoProvider,
         repositoriesAssembly: repositoriesAssembly,
-        coreAssembly: coreAssembly
+        coreAssembly: coreAssembly,
+        perpsSecurityConfig: PerpsSecurityConfigRepository.live(configuration: configurationAssembly.configuration)
     )
     private lazy var servicesAssembly = ServicesAssembly(
         repositoriesAssembly: repositoriesAssembly,
@@ -203,6 +222,7 @@ public final class Assembly {
         configuration: configurationAssembly.configuration,
         keychainVault: coreAssembly.keychainVault,
         deviceAuthService: deviceAuthService,
+        legacyBatteryMigrationController: legacyBatteryMigrationController,
         walletAuthTokenProvider: walletAuthTokenProvider
     )
     private lazy var walletConnectAssembly = WalletConnectAssembly(
@@ -210,7 +230,8 @@ public final class Assembly {
         coreAssembly: coreAssembly,
         walletsStore: storesAssembly.walletsStore,
         chainKitClient: multichainAssembly.chainKitClient,
-        pendingTransactionsService: servicesAssembly.pendingTransactionsService()
+        pendingTransactionsService: servicesAssembly.pendingTransactionsService(),
+        configuration: configurationAssembly.configuration
     )
     private lazy var deeplinkParser = DeeplinkParser(
         walletConnectDeeplinkValidator: walletConnectAssembly.walletConnectDeeplinkValidator
@@ -223,6 +244,7 @@ public final class Assembly {
         knownAccountsAssembly: knownAccountsAssembly,
         tronAssembly: tronUSDTAssembly,
         configurationAssembly: configurationAssembly,
+        earnAssembly: earnAssembly,
         tkAppSettings: dependencies.tkAppSettings
     )
     private lazy var formattersAssembly = FormattersAssembly()
@@ -249,6 +271,95 @@ public final class Assembly {
         walletAuthTokenProvider: walletAuthTokenProvider
     )
 
+    private lazy var legacyBatteryMigrationController = makeLegacyBatteryMigrationController()
+
+    private func makeLegacyBatteryMigrationController() -> LegacyBatteryMigrationController {
+        let service = batteryAssembly.batteryService()
+        let store = LegacyBatteryMigrationStore(keychainVault: coreAssembly.keychainVault, namespace: coreAssembly.seedProvider())
+        let waiter = WalletMigrationBatteryIdleWaiter(
+            batteryService: service,
+            shouldRetryError: { !LegacyBatteryMigrationController.isAuthorizationError($0) }
+        )
+        let controller = LegacyBatteryMigrationController(dependencies: .init(
+            load: store.load,
+            save: store.save,
+            wallets: { [walletsStore = storesAssembly.walletsStore] in
+                await MainActor.run {
+                    walletsStore.wallets.compactMap { try? JSONEncoder().encode($0) }
+                }
+            },
+            balance: { data in
+                let wallet = try JSONDecoder().decode(Wallet.self, from: data)
+                return try await service.loadBatteryBalance(wallet: LegacyBatteryMigration.sourceWallet(from: wallet))
+            },
+            waitUntilIdle: { data in
+                let wallet = try JSONDecoder().decode(Wallet.self, from: data)
+                return try await waiter.wait(wallet: LegacyBatteryMigration.sourceWallet(from: wallet))
+            },
+            migrate: { data, proof in
+                let wallet = try JSONDecoder().decode(Wallet.self, from: data)
+                _ = try await service.migrateBattery(from: LegacyBatteryMigration.sourceWallet(from: wallet), to: wallet, proof: proof)
+            },
+            refreshBalance: { [weak self] data in
+                await self?.refreshLegacyBatteryMigrationBalance(data)
+            },
+            authorizationAvailable: { [tonProofTokenService] data in
+                guard let wallet = try? JSONDecoder().decode(Wallet.self, from: data),
+                      let token = try? tonProofTokenService.getWalletToken(LegacyBatteryMigration.sourceWallet(from: wallet))
+                else { return false }
+                return !token.isEmpty
+            },
+            refreshAuthorization: { [tonProofTokenService, walletsStore = storesAssembly.walletsStore] data, privateKey in
+                let wallet = try JSONDecoder().decode(Wallet.self, from: data)
+                let source = LegacyBatteryMigration.sourceWallet(from: wallet)
+                let sourceAddress = try source.address.toRaw()
+                let token = try await tonProofTokenService.loadTokenFor(
+                    pair: WalletPrivateKeyPair(wallet: source, privateKey: PrivateKey(data: privateKey)),
+                    shouldKeepToken: {
+                        await MainActor.run {
+                            walletsStore.wallets.contains {
+                                $0.network == .mainnet && $0.kind == .regular && !$0.isWalletTg
+                                    && (try? $0.address.toRaw()) == sourceAddress
+                            }
+                        }
+                    }
+                )
+                guard !token.isEmpty else { throw BatteryAuthorizationError.legacyProofUnavailable }
+            }
+        ))
+        storesAssembly.walletsStore.addObserver(controller) { controller, event in
+            switch event {
+            case let .didDeleteWallet(wallet):
+                let walletId = wallet.id
+                Task { await controller.cancelAuthorization(walletId: walletId) }
+            case .didDeleteAll:
+                Task { await controller.cancelAuthorization() }
+            case .didUpdateWalletMultichain:
+                Task { await controller.resume() }
+            default: break
+            }
+        }
+        return controller
+    }
+
+    @MainActor
+    private func prepareLegacyBatteryMigrations(_ mnemonics: [CoreMnemonicIdentifier: CoreMnemonic]) async {
+        await legacyBatteryMigrationController.prepare(mnemonics: mnemonics)
+    }
+
+    @MainActor
+    private func refreshLegacyBatteryMigrationBalance(_ data: Data) async {
+        guard let snapshot = try? JSONDecoder().decode(Wallet.self, from: data),
+              let walletId = snapshot.multichainWalletId,
+              let wallet = storesAssembly.walletsStore.wallets.first(where: {
+                  $0.kind == .regular && !$0.isWalletTg && $0.multichainWalletId == walletId
+                      && LegacyBatteryMigration.identifier(wallet: $0, walletId: walletId)
+                      == LegacyBatteryMigration.identifier(wallet: snapshot, walletId: walletId)
+              })
+        else { return }
+        _ = await loadersAssembly.balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
+    }
+
     private let dependencies: Dependencies
 
     public init(dependencies: Dependencies) {
@@ -267,6 +378,19 @@ public final class Assembly {
 public extension Assembly {
     var totalAuthDeviceId: String? {
         deviceTokenStore.load()?.deviceId
+    }
+
+    /// Starts the device session refresh at launch, so the first request does not wait a round trip
+    /// for it. A device without an id is skipped: only a real request may register one. The refresh
+    /// can rotate the device, and handling a rotation builds graph parts that read feature flags once,
+    /// so it starts only after `flagsLoad`.
+    func startDeviceSession(after flagsLoad: @escaping () async -> Void) {
+        let deviceAuth = deviceAuthService
+        Task {
+            await flagsLoad()
+            guard await deviceAuth.isDeviceKnown() else { return }
+            _ = try? await deviceAuth.session()
+        }
     }
 
     func rootAssembly() -> RootAssembly {
@@ -295,7 +419,8 @@ public extension Assembly {
             multichainAssembly: multichainAssembly,
             tradingAssembly: tradingAssembly,
             deeplinkParser: deeplinkParser,
-            walletConnectAssembly: walletConnectAssembly
+            walletConnectAssembly: walletConnectAssembly,
+            earnAssembly: earnAssembly
         )
     }
 
@@ -308,7 +433,24 @@ public extension Assembly {
             formattersAssembly: formattersAssembly,
             walletsUpdateAssembly: walletUpdateAssembly,
             apiAssembly: apiAssembly,
-            loadersAssembly: loadersAssembly
+            loadersAssembly: loadersAssembly,
+            tradingAssembly: tradingAssembly
         )
+    }
+
+    /// The wallet screen reads these stores in its first frame, and their first read decodes the disk caches of every
+    /// wallet. The stores are created on the caller's thread, because the assembly getters are not thread-safe;
+    /// their state is read on a background queue, because `Store.state` is.
+    func warmUpWalletScreenStores() {
+        let stores: [() -> Void] = [
+            { [store = storesAssembly.totalBalanceStore] in _ = store.state },
+            { [store = storesAssembly.multichainPortfolioStore] in _ = store.state },
+            { [store = earnAssembly.portfolioStore] in _ = store.state },
+        ]
+        DispatchQueue.global(qos: .userInitiated).async {
+            stores.forEach { $0() }
+            // The assembly holds some stores weakly; the screen takes them once the caller's run loop turn ends.
+            DispatchQueue.main.async { withExtendedLifetime(stores) {} }
+        }
     }
 }

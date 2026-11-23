@@ -48,7 +48,7 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         )
     }
 
-    func testStoppedRecoveryDoesNotRunAgain() async {
+    func testAResolveThatFindsNoAccountAsksForNoRecovery() async {
         let wallet = makeWallet()
         let service = RecoveryAccountReading()
         let recorder = RecoveryRecorder()
@@ -68,31 +68,32 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         await fulfillment(of: [noFurtherRecovery], timeout: 0.5)
     }
 
-    func testAutoCloseRenewalRunsOneAtATimeAndStopsWithTheScope() async {
+    func testAStoreLetGoWhileItWaitsToRetryAResolveIsReleasedAndStopsWaiting() async {
         let service = RecoveryAccountReading()
-        let renewal = RenewalRecorder()
-        let store = PerpsAccountStore(
+        service.failNextRead(inPortfolio: false)
+        let waiting = expectation(description: "the failed resolve waits to retry")
+        let stoppedWaiting = expectation(description: "the wait ended with the store")
+        let (neverElapses, elapse) = AsyncStream<Void>.makeStream()
+        defer { elapse.finish() }
+        var store: PerpsAccountStore? = PerpsAccountStore(
             service: service,
             wallet: makeWallet(),
-            renewAutoClose: { _ in
-                renewal.start()
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 10_000_000)
-                }
-                renewal.cancelled.fulfill()
+            resolveRetryDelays: [1],
+            waitBeforeRetry: { _ in
+                waiting.fulfill()
+                for await _ in neverElapses {}
+                stoppedWaiting.fulfill()
             }
         )
+        weak let released = store
+        store?.resolveIfNeeded()
+        await fulfillment(of: [waiting], timeout: 2)
 
-        store.resolveIfNeeded()
-        await fulfillment(of: [renewal.started], timeout: 2)
-        store.refresh()
-        await store.resolveTaskForTesting?.value
-        XCTAssertEqual(renewal.starts, 1, "a refresh must not start a second renewal while one runs")
+        store = nil
 
-        service.setStatus(.noAccount(ethAddress: "0xabc"))
-        store.refresh()
-
-        await fulfillment(of: [renewal.cancelled], timeout: 2)
+        await fulfillment(of: [stoppedWaiting], timeout: 2)
+        XCTAssertNil(released)
+        XCTAssertEqual(service.statusReads, 1, "a store nobody holds must not retry its resolve")
     }
 
     func testAccountWithoutTradingKeyStillResolvesToActive() async {
@@ -183,7 +184,7 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         let store = PerpsAccountStore(
             service: service,
             wallet: makeWallet(),
-            refreshOrderAccess: {
+            reissueReadOnlyToken: {
                 service.issueToken()
                 return true
             }
@@ -256,7 +257,7 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         )
         store.applyFundingState(.loaded([operation]))
         XCTAssertEqual(store.currentFundingState().operations, [operation])
-        XCTAssertEqual(store.fundingActivity(), PerpsFundingActivity(inFlight: ["deposit"]))
+        XCTAssertEqual(store.fundingActivity().inFlight, ["deposit"])
         guard case .inactive = store.currentWalletState() else { return XCTFail("funding must not activate the account itself") }
 
         service.setStatus(.account(accountIndex: 42))
@@ -266,7 +267,95 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         store.applyFundingState(.loaded([operation]))
         await fulfillment(of: [active], timeout: 2)
         XCTAssertEqual(store.currentFundingState().operations, [operation])
-        XCTAssertEqual(store.fundingActivity(), PerpsFundingActivity(completed: ["deposit"]))
+        XCTAssertEqual(store.fundingActivity().completed, ["deposit"])
+    }
+
+    func testAWithdrawalRefusedForItsNonceIsNotReportedAsSending() {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        func withdraw(_ id: String, failureReason: String?) -> PerpsPendingFundingOperation {
+            PerpsPendingFundingOperation(
+                operationId: id, walletId: "wallet", walletIdentity: "identity", environment: "test",
+                details: .withdraw(PerpsPendingWithdraw(
+                    stage: .unknown, accountIndex: 42, apiKeyIndex: 1, chainId: 304,
+                    assetIndex: 0, routeType: 0, amountUnits: "25000000", failureReason: failureReason
+                ))
+            )
+        }
+
+        store.applyFundingState(.loaded([
+            withdraw("refused", failureReason: PerpsWithdrawService.resignRequiredReason),
+            withdraw("ambiguous", failureReason: nil),
+        ]))
+
+        let activity = store.fundingActivity()
+        XCTAssertEqual(activity.inFlight, ["ambiguous"])
+        XCTAssertEqual(activity.withdrawals, ["refused", "ambiguous"])
+        XCTAssertTrue(activity.pending.isEmpty)
+        XCTAssertTrue(activity.failed.isEmpty)
+    }
+
+    func testFailedDepositsAndRejectedWithdrawalsAreReportedAsFailed() {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let asset = PerpsFundingAsset(assetId: "usdc", symbol: "USDC", decimals: 6)
+        func deposit(_ id: String, _ stage: PerpsDepositStage) -> PerpsPendingFundingOperation {
+            PerpsPendingFundingOperation(
+                operationId: id, walletId: "wallet", walletIdentity: "identity", environment: "test",
+                details: .deposit(PerpsPendingDeposit(
+                    stage: stage, route: .directGateway, beneficiary: "0xabc",
+                    sourceAsset: asset, sourceAmountUnits: "25000000", targetAsset: asset
+                ))
+            )
+        }
+        let withdraw = PerpsPendingFundingOperation(
+            operationId: "rejected", walletId: "wallet", walletIdentity: "identity", environment: "test",
+            details: .withdraw(PerpsPendingWithdraw(
+                stage: .rejected, accountIndex: 42, apiKeyIndex: 1, chainId: 304,
+                assetIndex: 0, routeType: 0, amountUnits: "25000000"
+            ))
+        )
+
+        store.applyFundingState(.loaded([
+            deposit("failed", .failed), deposit("refunded", .refunded), deposit("unconfirmed", .unconfirmed), withdraw,
+        ]))
+
+        XCTAssertEqual(store.fundingActivity().failed, ["failed", "refunded", "rejected"])
+        XCTAssertEqual(store.fundingActivity().withdrawals, ["rejected"])
+    }
+
+    func testAcknowledgedDepositStatusesAreSharedAndRestoredWithoutStaleSnapshotsUndoingThem() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let journal = PerpsPendingJournal(walletId: "wallet", environment: "test", directoryURL: directory)
+        let asset = PerpsFundingAsset(assetId: "usdc", symbol: "USDC", decimals: 6)
+        let operation = PerpsPendingFundingOperation(
+            operationId: "failed", walletId: "wallet", walletIdentity: "identity", environment: "test",
+            details: .deposit(PerpsPendingDeposit(
+                stage: .failed, route: .directGateway, beneficiary: "0xabc",
+                sourceAsset: asset, sourceAmountUnits: "25000000", targetAsset: asset
+            ))
+        )
+        _ = try await journal.saveFundingIfAbsent(operation)
+        let persisted = expectation(description: "outcome acknowledgement persisted")
+        let store = PerpsAccountStore(
+            service: RecoveryAccountReading(), wallet: makeWallet(),
+            persistDepositAcknowledgements: { ids in
+                try await journal.acknowledgeDepositStatuses(ids)
+                persisted.fulfill()
+            }
+        )
+        store.applyFundingState(.loaded([operation]))
+        store.acknowledgeDepositStatuses(["failed", "missing"])
+        XCTAssertEqual(store.fundingActivity().acknowledgedDepositIds, ["failed"])
+        store.applyFundingState(.unavailable(lastKnown: [operation]))
+        XCTAssertEqual(store.fundingActivity().acknowledgedDepositIds, ["failed"])
+        await fulfillment(of: [persisted], timeout: 2)
+
+        let reopenedJournal = PerpsPendingJournal(walletId: "wallet", environment: "test", directoryURL: directory)
+        let restored = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        try restored.applyFundingState(.loaded(await reopenedJournal.allFunding()))
+        XCTAssertEqual(restored.fundingActivity().acknowledgedDepositIds, ["failed"])
+        let otherWallet = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet(id: "other-wallet"))
+        XCTAssertTrue(otherWallet.fundingActivity().acknowledgedDepositIds.isEmpty)
     }
 
     func testADepositIsFoundByTheTransactionThatPaidIt() {
@@ -299,13 +388,13 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
             details: .withdraw(withdraw)
         )
         store.applyFundingState(.loaded([operation]))
-        XCTAssertEqual(store.fundingActivity(), PerpsFundingActivity(inFlight: ["withdraw"]))
+        XCTAssertEqual(store.fundingActivity(), PerpsFundingActivity(inFlight: ["withdraw"], withdrawals: ["withdraw"]))
         XCTAssertEqual(service.statusReads, readsBefore, "nothing is debited before Lighter accepts")
 
         withdraw.stage = .accepted
         operation.details = .withdraw(withdraw)
         store.applyFundingState(.loaded([operation]))
-        XCTAssertEqual(store.fundingActivity(), PerpsFundingActivity(pending: ["withdraw"]))
+        XCTAssertEqual(store.fundingActivity().pending, ["withdraw"])
         await waitUntil { service.statusReads > readsBefore }
         let readsAfterDebit = service.statusReads
 
@@ -313,9 +402,10 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         withdraw.l1TxHash = "0xpayout"
         operation.details = .withdraw(withdraw)
         store.applyFundingState(.loaded([operation]))
+        let settled = store.fundingActivity()
         XCTAssertEqual(
-            store.fundingActivity(),
-            PerpsFundingActivity(completed: ["withdraw"], transactions: ["withdraw": ["0xpayout"]])
+            settled,
+            PerpsFundingActivity(isBalanceRefreshing: settled.isBalanceRefreshing, completed: ["withdraw"], transactions: ["withdraw": ["0xpayout"]], withdrawals: ["withdraw"])
         )
         XCTAssertEqual(service.statusReads, readsAfterDebit, "settling moves no Perps balance")
     }
@@ -325,6 +415,123 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         XCTAssertTrue(condition())
+    }
+
+    func testALifecycleNoticeDoesNotRevertAStateStillWaitingInTheQueue() async {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        store.resolveIfNeeded()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        let gate = DispatchSemaphore(value: 0)
+        store.updateState({ _ in
+            gate.wait()
+            return nil
+        }, completion: nil)
+
+        store.updateState({ _ in
+            .init(newState: .active(PerpsAccount(accountIndex: 42, availableBalance: "105")))
+        }, completion: nil)
+        store.tradeBegan(operationId: "adjust", marketId: 1, .adjusting(.add, baseSizeBefore: 1))
+        gate.signal()
+        await store.flushStateForTesting()
+
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("the account must stay active") }
+        XCTAssertEqual(account.availableBalance, "105")
+    }
+
+    func testAConfirmedMarketOpenShowsTheCountedPosition() {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let opening = PerpsOpeningDescriptor(
+            marketId: 1, symbol: "ETH", side: .long, marginUsd: 3, leverage: 5, isLimit: false, liquidationPrice: 1900
+        )
+        let counted = PerpsCountedPosition(baseSize: 0.0063, entryPrice: 2345.02, leverage: 5, isolatedMarginUsd: 2.953767)
+        store.tradeBegan(operationId: "open", marketId: 1, .opening(opening))
+
+        store.positionCounted(operationId: "open", counted)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .opening(opening), "only a confirmed open is shown")
+
+        store.tradeSettled(operationId: "open", succeeded: true)
+        store.positionCounted(operationId: "open", counted)
+        guard case let .open(summary) = store.lifecycle(marketId: 1) else { return XCTFail("the count stands in") }
+        XCTAssertEqual(summary.baseSize, 0.0063)
+        XCTAssertEqual(summary.entryPrice, 2345.02)
+        XCTAssertEqual(summary.marginUsd, 2.953767)
+        XCTAssertEqual(summary.liquidationPrice, 1900)
+    }
+
+    func testAnOpenWithoutAnEstimateOrAtALimitKeepsWaitingForThePortfolio() {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let counted = PerpsCountedPosition(baseSize: 1, entryPrice: 100, leverage: 5, isolatedMarginUsd: nil)
+        let unestimated = PerpsOpeningDescriptor(marketId: 1, symbol: "ETH", side: .long, marginUsd: 20, leverage: 5, isLimit: false)
+        let limit = PerpsOpeningDescriptor(
+            marketId: 2, symbol: "BTC", side: .long, marginUsd: 20, leverage: 5, isLimit: true, liquidationPrice: 80
+        )
+        store.tradeBegan(operationId: "market", marketId: 1, .opening(unestimated))
+        store.tradeBegan(operationId: "limit", marketId: 2, .opening(limit))
+        store.tradeSettled(operationId: "market", succeeded: true)
+        store.tradeSettled(operationId: "limit", succeeded: true)
+
+        store.positionCounted(operationId: "market", counted)
+        store.positionCounted(operationId: "limit", counted)
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .opening(unestimated))
+        XCTAssertEqual(store.lifecycle(marketId: 2), .opening(limit))
+    }
+
+    func testClosingACountedPositionShowsTheCloseAndLeavesTheMarketFlat() async throws {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let counted = try XCTUnwrap(openCounted(in: store, marketId: 1))
+
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        XCTAssertEqual(store.lifecycle(marketId: 1), .closing(counted))
+
+        store.tradeSettled(operationId: "close", succeeded: true)
+        store.refresh()
+        for _ in 0 ..< 100 where store.lifecycle(marketId: 1) != .flat {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testAPortfolioThatHasNotListedACountedPositionLeavesItsCloseRunning() async throws {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let counted = try XCTUnwrap(openCounted(in: store, marketId: 1))
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+
+        store.refresh()
+        await store.resolveTaskForTesting?.value
+        XCTAssertEqual(store.lifecycle(marketId: 1), .closing(counted))
+
+        store.tradeSettled(operationId: "close", succeeded: true)
+        store.refresh()
+        await store.resolveTaskForTesting?.value
+        XCTAssertEqual(store.lifecycle(marketId: 1), .flat)
+    }
+
+    func testAFailedCloseOfACountedPositionKeepsShowingIt() throws {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let counted = try XCTUnwrap(openCounted(in: store, marketId: 1))
+
+        store.tradeBegan(operationId: "close", marketId: 1, .closing)
+        store.tradeSettled(operationId: "close", succeeded: false)
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .open(counted))
+    }
+
+    func testAdjustingACountedPositionKeepsShowingIt() throws {
+        let store = PerpsAccountStore(service: RecoveryAccountReading(), wallet: makeWallet())
+        let sized = try XCTUnwrap(openCounted(in: store, marketId: 1))
+        let margined = try XCTUnwrap(openCounted(in: store, marketId: 2))
+
+        store.tradeBegan(operationId: "add", marketId: 1, .adjusting(.add, baseSizeBefore: sized.baseSize))
+        store.tradeBegan(
+            operationId: "margin",
+            marketId: 2,
+            .adjustingMargin(.add, allocatedMarginBefore: margined.marginUsd, amountUsd: 1)
+        )
+
+        XCTAssertEqual(store.lifecycle(marketId: 1), .adjusting(sized, .add))
+        XCTAssertEqual(store.lifecycle(marketId: 2), .adjustingMargin(margined, .add, amountUsd: 1))
     }
 
     func testAFailedResolveIsRetriedWithoutAnotherCaller() async {
@@ -400,6 +607,36 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         release.finish()
     }
 
+    func testDepositCompletionWaitsForThePortfolioBalance() async {
+        let service = RecoveryAccountReading()
+        let store = PerpsAccountStore(service: service, wallet: makeWallet())
+        let started = expectation(description: "portfolio read started")
+        let (hold, release) = AsyncStream<Void>.makeStream()
+        defer { release.finish() }
+        service.beforeNextPortfolio {
+            started.fulfill()
+            for await _ in hold {
+                break
+            }
+        }
+        let asset = PerpsFundingAsset(assetId: "usdc", symbol: "USDC", decimals: 6)
+        store.applyFundingState(.loaded([PerpsPendingFundingOperation(
+            operationId: "credited", walletId: "wallet", walletIdentity: "identity", environment: "test",
+            details: .deposit(.init(
+                stage: .credited, route: .directGateway, beneficiary: "0xabc",
+                sourceAsset: asset, sourceAmountUnits: "25000000", targetAsset: asset, accountIndex: 42
+            ))
+        )]))
+        await fulfillment(of: [started], timeout: 2)
+        XCTAssertTrue(store.fundingActivity().isBalanceRefreshing)
+        release.finish()
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
+        XCTAssertFalse(store.fundingActivity().isBalanceRefreshing)
+        guard case let .active(account) = store.currentWalletState() else { return XCTFail("missing account") }
+        XCTAssertEqual(account.availableBalance, "100")
+    }
+
     func testFailedFundingRefreshRetriesOnResumeWithoutAnotherFundingChange() async {
         let service = RecoveryAccountReading()
         let store = PerpsAccountStore(service: service, wallet: makeWallet())
@@ -428,6 +665,8 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
         store.applyFundingState(funding)
         store.retryFundingRefreshIfNeeded()
         await fulfillment(of: [active], timeout: 2)
+        await store.resolveTaskForTesting?.value
+        await store.flushStateForTesting()
         XCTAssertEqual(store.currentFundingState(), funding)
 
         let noFurtherRead = service.expectNoFurtherRead()
@@ -437,6 +676,21 @@ final class PerpsAccountStoreRecoveryTests: XCTestCase {
 }
 
 private extension PerpsAccountStoreRecoveryTests {
+    func openCounted(in store: PerpsAccountStore, marketId: Int64) -> PerpsPositionSummary? {
+        let operationId = "open-\(marketId)"
+        let opening = PerpsOpeningDescriptor(
+            marketId: marketId, symbol: "ETH", side: .long, marginUsd: 3, leverage: 5, isLimit: false, liquidationPrice: 1900
+        )
+        store.tradeBegan(operationId: operationId, marketId: marketId, .opening(opening))
+        store.tradeSettled(operationId: operationId, succeeded: true)
+        store.positionCounted(
+            operationId: operationId,
+            PerpsCountedPosition(baseSize: 0.0063, entryPrice: 2345.02, leverage: 5, isolatedMarginUsd: 2.953767)
+        )
+        guard case let .open(counted) = store.lifecycle(marketId: marketId) else { return nil }
+        return counted
+    }
+
     func makeWallet(id: String = "recovery-wallet", keyByte: UInt8 = 1) -> Wallet {
         let publicKey = TonSwift.PublicKey(data: Data(repeating: keyByte, count: 32))
         return Wallet(
@@ -475,31 +729,12 @@ private final class RecoveryRecorder: @unchecked Sendable {
     }
 }
 
-private final class RenewalRecorder: @unchecked Sendable {
-    let started = XCTestExpectation(description: "renewal started")
-    let cancelled = XCTestExpectation(description: "renewal cancelled with the scope")
-
-    private let lock = NSLock()
-    private var count = 0
-
-    var starts: Int {
-        lock.withLock { count }
-    }
-
-    func start() {
-        let first = lock.withLock {
-            count += 1
-            return count == 1
-        }
-        if first { started.fulfill() }
-    }
-}
-
 private final class RecoveryAccountReading: PerpsAccountReading, @unchecked Sendable {
     private let lock = NSLock()
     private var reads = 0
     private var statusResult: PerpsAccountStatus = .account(accountIndex: 42)
     private var failureInPortfolio: Bool?
+    private var beforePortfolio: (@Sendable () async -> Void)?
     private var portfolioNeedsToken = false
     private var tokenIssued = false
     private var unexpectedRead: XCTestExpectation?
@@ -561,7 +796,17 @@ private final class RecoveryAccountReading: PerpsAccountReading, @unchecked Send
         return lock.withLock { statusResult }
     }
 
+    func beforeNextPortfolio(_ action: @escaping @Sendable () async -> Void) {
+        lock.withLock { beforePortfolio = action }
+    }
+
     func portfolio(wallet _: Wallet) async throws -> PerpsAccountSnapshot? {
+        let before = lock.withLock {
+            let action = beforePortfolio
+            beforePortfolio = nil
+            return action
+        }
+        await before?()
         lock.withLock { unexpectedPortfolioRead }?.fulfill()
         if takeFailure(inPortfolio: true) {
             throw URLError(.notConnectedToInternet)

@@ -9,28 +9,34 @@ import TKLogging
 final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
     private let stages: any SwapPipelineStageProvider
     private let assetDetailsProvider: (String, Wallet) async -> MultichainAssetDetails?
+    /// A chain switched off here keeps its routes unrelayable, so a coin shortage stays fatal there.
+    private let relays: (MultichainChain) -> Bool
     private let feeResolver = SwapFeeResolver()
 
     convenience init(
         mnemonicAccess: MnemonicAccess,
         client: CryptoKitClient,
-        assetDetailsProvider: @escaping (String, Wallet) async -> MultichainAssetDetails? = { _, _ in nil }
+        assetDetailsProvider: @escaping (String, Wallet) async -> MultichainAssetDetails? = { _, _ in nil },
+        relays: @escaping (MultichainChain) -> Bool
     ) {
         self.init(
             stages: SwapPipelineStageProviderImplementation(
                 mnemonicAccess: mnemonicAccess,
                 client: client
             ),
-            assetDetailsProvider: assetDetailsProvider
+            assetDetailsProvider: assetDetailsProvider,
+            relays: relays
         )
     }
 
     init(
         stages: any SwapPipelineStageProvider,
-        assetDetailsProvider: @escaping (String, Wallet) async -> MultichainAssetDetails? = { _, _ in nil }
+        assetDetailsProvider: @escaping (String, Wallet) async -> MultichainAssetDetails? = { _, _ in nil },
+        relays: @escaping (MultichainChain) -> Bool = { _ in true }
     ) {
         self.stages = stages
         self.assetDetailsProvider = assetDetailsProvider
+        self.relays = relays
     }
 
     func prepareSwapPayloads(
@@ -60,7 +66,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
         let main = route.main
         // A route behind an approval has no relayable form: the relayer carries one call, and a
         // swap without its approve ahead of it reverts.
-        let batteryPayload = route.approval == nil ? main.normalized.batteryPayload : nil
+        let batteryPayload = route.approval == nil ? main.normalized.batteryPayload.flatMap { relays($0.chain) ? $0 : nil } : nil
         let mainFee: any Fee
         do {
             mainFee = try await stages.resolveFee(
@@ -90,8 +96,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 mainTransactions: main.normalized.transactions,
                 approvalData: approvalPayload.normalized.approvalData,
                 approvalFee: approvalPayload.normalized.fee,
-                mainFee: mainFee,
-                approvalMode: .exact
+                mainFee: mainFee
             ) else {
                 throw invalidApprovalFailure(approvalPayload)
             }
@@ -140,26 +145,31 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
     }
 
     func executeSwapPayloads(
-        passcodeProvider: @escaping () async -> String?,
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset,
         payloads: MultichainSwapRoutePayloads,
         payloadFees: MultichainSwapPayloadFees,
-        provider: MultichainSwapProvider,
-        approvalMode: MultichainSwapApprovalMode
+        provider: MultichainSwapProvider
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapBroadcastResult {
         Log.multichainSwap.i(
             "ChainKit swap broadcast started",
             extraInfo: swapPayloadsLogInfo(
                 payloads: payloads.all,
                 sourceAsset: sourceAsset,
-                destinationAsset: destinationAsset,
-                additional: ["approvalMode": approvalMode.rawValue]
+                destinationAsset: destinationAsset
             )
         )
-        guard case .Regular = swapWallet.wallet.identity.kind else {
-            throw .internal(reason: "wallet type is not supported for multichain swaps")
+        switch signer {
+        case .mnemonic:
+            guard case .Regular = swapWallet.wallet.identity.kind else {
+                throw .internal(reason: "wallet type is not supported for multichain swaps")
+            }
+        case .device:
+            guard swapWallet.keys == .device else {
+                throw .internal(reason: "only a hardware wallet signs a multichain swap on a device")
+            }
         }
 
         let preflight = try normalizedPayloads(
@@ -186,8 +196,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 mainTransactions: preflightMain.normalized.transactions,
                 approvalData: preflightApproval.normalized.approvalData,
                 approvalFee: payloadFees.fee(for: preflightApproval.payload.payloadId) ?? preflightApproval.normalized.fee,
-                mainFee: mainFee,
-                approvalMode: approvalMode
+                mainFee: mainFee
             ) else {
                 throw invalidApprovalFailure(preflightApproval)
             }
@@ -196,8 +205,8 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
             approvalFee = nil
         }
 
-        let signingWallet = try await stages.unlockSigningWallet(
-            passcodeProvider: passcodeProvider,
+        let signingWallet = try await stages.signingWallet(
+            signer: signer,
             swapWallet: swapWallet
         )
         let sourcePublicKey = try signingWallet.publicKey(
@@ -246,8 +255,7 @@ final class ChainKitSwapPipelineImplementation: ChainKitSwapPipeline {
                 mainTransactions: mainTransactions,
                 approvalData: approvalPayload.normalized.approvalData,
                 approvalFee: approvalFee,
-                mainFee: mainFee,
-                approvalMode: approvalMode
+                mainFee: mainFee
             ) else {
                 throw invalidApprovalFailure(approvalPayload)
             }
@@ -349,6 +357,24 @@ private extension ChainKitSwapPipelineImplementation {
         sourceAsset: MultichainAsset,
         destinationAsset: MultichainAsset
     ) async throws(MultichainSwapExecutionFailure) -> any Fee {
+        if !isRelayable,
+           let shortage = await wholeBalanceFeeShortage(after: failure, main: main, sourceAsset: sourceAsset)
+        {
+            Log.multichainSwap.w(
+                "fee resolution failed on coins that cannot carry the amount and the fee",
+                error: failure,
+                extraInfo: swapPayloadLogInfo(
+                    payload: main.payload,
+                    sourceAsset: sourceAsset,
+                    destinationAsset: destinationAsset,
+                    additional: [
+                        "feeAsset": main.normalized.feeAsset.id,
+                        "requiredFee": shortage.requiredAmount.description,
+                    ]
+                )
+            )
+            throw .insufficientNativeFee(shortage: shortage)
+        }
         let defaultFee: any Fee
         do {
             defaultFee = try await stages.defaultFee(
@@ -396,6 +422,49 @@ private extension ChainKitSwapPipelineImplementation {
             throw shortage
         }
         return defaultFee
+    }
+
+    /// A UTXO chain prices a transfer by picking the coins that pay for it, and has no default fee:
+    /// coins that cannot carry both the amount and the fee fail the pricing itself. On a swap that
+    /// spends the chain's own coin that failure is the shortage, and the fee of sending the whole
+    /// balance is what it asks for: the swap pays no more once its amount leaves room for the fee.
+    func wholeBalanceFeeShortage(
+        after failure: MultichainSwapExecutionFailure,
+        main: PreparedSwapPayload,
+        sourceAsset: MultichainAsset
+    ) async -> MultichainNativeFeeShortage? {
+        guard case .emulationFailed(.insufficientBalance, _) = failure,
+              sourceAsset.isNative,
+              sourceAsset.balance > 0,
+              main.normalized.transactions.count == 1,
+              let transaction = main.normalized.transactions.first
+        else {
+            return nil
+        }
+        let wholeBalance = TransactionSwap(
+            account: transaction.account,
+            amount: BignumBigInteger.Companion.shared.parseString(
+                string: sourceAsset.balance.description,
+                base: 10
+            ),
+            isMax: true,
+            destination: transaction.destination,
+            to: transaction.to,
+            data: transaction.data,
+            initData: transaction.initData,
+            memo: transaction.memo
+        )
+        guard let fee = try? await stages.resolveFee(
+            transactions: [wholeBalance],
+            payloadFee: main.normalized.fee,
+            networkType: main.normalized.networkType,
+            payloadId: main.payload.payloadId
+        ),
+            let amount = try? feeResolver.amount(of: fee)
+        else {
+            return nil
+        }
+        return MultichainNativeFeeShortage(feeAsset: main.normalized.feeAsset, requiredAmount: amount)
     }
 
     /// A wallet that cannot cover the chain's own fee still has a route worth confirming when a

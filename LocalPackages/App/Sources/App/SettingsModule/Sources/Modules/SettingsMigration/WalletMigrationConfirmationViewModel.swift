@@ -95,6 +95,7 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
     private var availableBatteryCharges: Int?
     private var preparationID: UUID?
     private var confirmTask: Task<Void, Never>?
+    private var hasLeftScreen = false
 
     private let onBack: () -> Void
     private let onClose: () -> Void
@@ -263,6 +264,10 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
             confirmTask = nil
         }
 
+        await prepare()
+    }
+
+    private func prepare() async {
         let preparationID = UUID()
         self.preparationID = preparationID
 
@@ -482,11 +487,17 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
     }
 
     func back() {
+        hasLeftScreen = true
         onBack()
     }
 
     func close() {
+        hasLeftScreen = true
         onClose()
+    }
+
+    func didLeaveScreen() {
+        hasLeftScreen = true
     }
 
     func showMigrationInfo() {
@@ -633,6 +644,12 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
             } catch {
                 guard !Task.isCancelled else { return }
                 logConfirmationFailure(error, feeAsset: feeAsset)
+                if Self.failedBeforeSending(error) {
+                    confirmationState = .idle
+                    guard !hasLeftScreen else { return }
+                    await prepare()
+                    return
+                }
                 presentSendFailureReason(error)
                 let isPartial = (error as? WalletMigrationPartFailure)?.isPartial == true
                 confirmationState = .failed
@@ -646,6 +663,18 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
                     confirmationState = .retry
                 }
             }
+        }
+    }
+
+    private static func failedBeforeSending(_ error: Error) -> Bool {
+        guard let failure = error as? WalletMigrationPartFailure else {
+            return !(error is WalletMigrationExecutionError)
+        }
+        switch failure.underlying as? WalletMigrationExecutionError {
+        case nil, .emptyTransactions?:
+            return !failure.isPartial
+        default:
+            return false
         }
     }
 
@@ -1048,7 +1077,7 @@ final class WalletMigrationConfirmationViewModel: ObservableObject {
 
     private func presentInsufficientFee(_ failure: Failure) {
         state = .failed(failure)
-        guard let content = insufficientFeePopupContent(for: failure) else { return }
+        guard !hasLeftScreen, let content = insufficientFeePopupContent(for: failure) else { return }
         onPresentInsufficientFee(content)
     }
 

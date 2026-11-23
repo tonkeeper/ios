@@ -12,6 +12,8 @@ final class TradeCoordinator: RouterCoordinator<NavigationControllerRouter> {
     /// Raw deeplink dispatch, forwarded to `MainCoordinator.handleDeeplink`.
     var didRequestDeeplinkHandling: ((String) -> Void)?
     var didRequestOpenMigration: ((@escaping () -> Void) -> Void)?
+    var didOpenLoyalty: (() -> Void)?
+    var swapStatusTracker: MultichainSwapStatusTracker?
 
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -110,12 +112,15 @@ extension TradeCoordinator {
             favoriteAssetsService: favoriteAssetsService,
             perpsShelfMarketsLoader: perpsShelfMarketsLoader,
             raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
+            loyaltyStore: keeperCoreMainAssembly.loyaltyStore,
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
             signedAmountFormatter: signedAmountFormatter,
-            onOpenAssetList: { [weak self] category, initialCatalogSearchSort in
+            onOpenAssetList: { [weak self] category, initialCatalogSearchSort, initialChain in
                 guard let self else { return }
                 openAssetList(
                     initialCategory: category,
                     initialCatalogSearchSort: initialCatalogSearchSort,
+                    initialChain: initialChain,
                     tradeFlowAnalyticsSource: tradeFlowAnalyticsSource
                 )
             },
@@ -126,7 +131,7 @@ extension TradeCoordinator {
             },
             onOpenPerpsMarket: output.onOpenPerpsMarket.map { onOpenPerpsMarket in
                 { [weak self] marketID in
-                    onOpenPerpsMarket(marketID, self?.router.rootViewController)
+                    onOpenPerpsMarket(marketID, .tradeTab, self?.router.rootViewController)
                 }
             },
             onOpenAssetDetails: { [weak self] preview in
@@ -137,8 +142,15 @@ extension TradeCoordinator {
                     source: .tradeScreen
                 )
             },
-            onOpenRaffle: { [weak self] in
-                self?.openMysteryRaffle()
+            onOpenRaffle: { [weak self] raffleId, presentedFromBanner in
+                if presentedFromBanner {
+                    self?.openMysteryRaffle(raffleId: raffleId)
+                } else {
+                    self?.didRequestDeeplinkHandling?("tonkeeper://raffle/\(raffleId)")
+                }
+            },
+            onOpenLoyalty: { [weak self] in
+                self?.didOpenLoyalty?()
             }
         )
         let viewController = TradeViewController(viewModel: viewModel)
@@ -146,7 +158,7 @@ extension TradeCoordinator {
         router.push(viewController: viewController, animated: false)
     }
 
-    func openMysteryRaffle() {
+    func openMysteryRaffle(raffleId: String) {
         MysteryRaffleCoordinator.presentCurrent(
             from: self,
             rootViewController: router.rootViewController,
@@ -154,6 +166,8 @@ extension TradeCoordinator {
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
             presentedFromBanner: true,
+            raffleId: raffleId,
+            swapStatusTracker: swapStatusTracker,
             openDeeplink: { [weak self] in self?.didRequestDeeplinkHandling?($0) },
             openMigration: { [weak self] onFinish in
                 self?.didRequestOpenMigration?(onFinish) ?? onFinish()
@@ -164,6 +178,7 @@ extension TradeCoordinator {
     func openAssetList(
         initialCategory: TradingAssetCategory,
         initialCatalogSearchSort: MultichainAssetSearchSort = .marketCap,
+        initialChain: MultichainChain? = nil,
         tradeFlowAnalyticsSource: TradeFlowAnalyticsSource,
         on targetNavigationController: UINavigationController? = nil
     ) {
@@ -176,6 +191,7 @@ extension TradeCoordinator {
             openMultichainAssetList(
                 initialCategory: initialCategory,
                 initialCatalogSearchSort: initialCatalogSearchSort,
+                initialChain: initialChain,
                 tradeFlowAnalyticsSource: tradeFlowAnalyticsSource,
                 wallet: wallet,
                 multichainState: multichainState,
@@ -222,6 +238,7 @@ extension TradeCoordinator {
     func openMultichainAssetList(
         initialCategory: TradingAssetCategory,
         initialCatalogSearchSort: MultichainAssetSearchSort,
+        initialChain: MultichainChain?,
         tradeFlowAnalyticsSource: TradeFlowAnalyticsSource,
         wallet: Wallet,
         multichainState: MultichainWalletState,
@@ -240,9 +257,10 @@ extension TradeCoordinator {
             multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             initialCatalogSearchSort: initialCatalogSearchSort,
+            initialChain: initialChain,
             catalogSearching: keeperCoreMainAssembly.perpsAssembly.marketsRepository,
             perpsSearching: perpsRepository,
-            initialCategory: initialCategory
+            initialCategory: PerpsMarketFilter(rawValue: initialCategory.rawValue) ?? .all
         )
         let module = TokenPickerV2Assembly.module(
             title: TKLocales.Trade.Assets.title,
@@ -267,7 +285,7 @@ extension TradeCoordinator {
             )
         }
         module.output.didSelectPerpMarket = { [weak self, weak navigationController] marketID in
-            self?.output.onOpenPerpsMarket?(marketID, navigationController)
+            self?.output.onOpenPerpsMarket?(marketID, .search, navigationController)
         }
 
         module.output.didFinish = { [weak navigationController] in
@@ -350,17 +368,27 @@ extension TradeCoordinator {
         }
 
         let perpPositionViewModel: TradeAssetDetailsPerpPositionViewModel?
-        if wallet.isMultichain, output.onOpenPerpsMarket != nil {
+        if wallet.hasMultichainMnemonic, output.onOpenPerpsMarket != nil {
             let walletScope = keeperCoreMainAssembly.perpsAssembly.walletScope(for: wallet)
             perpPositionViewModel = TradeAssetDetailsPerpPositionViewModel(
                 accountStore: walletScope.accountStore,
                 walletScope: walletScope,
-                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
+                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+                appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
             )
         } else {
             perpPositionViewModel = nil
         }
 
+        let encryptedComments = multichainState.map { _ in
+            MultichainEncryptedComments(
+                wallet: wallet,
+                coordinator: self,
+                presenter: navigationController,
+                keeperCoreAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            )
+        }
         let historySource: TradeAssetDetailsViewModel.HistorySource
         if let multichainState {
             historySource = .multichain(
@@ -368,8 +396,10 @@ extension TradeCoordinator {
                     assetId: preview.assetID,
                     multichainState: multichainState,
                     multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
+                    realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager,
                     amountFormatter: amountFormatter,
-                    dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+                    dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+                    encryptedComments: encryptedComments
                 )
             )
         } else {
@@ -397,8 +427,10 @@ extension TradeCoordinator {
                 multichainState: multichainState,
                 preview: preview,
                 isSwapDisabled: isLegacyTronSwapUnavailable
-                    || keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.isSwapDisable, network: wallet.network),
+                    || keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.isSwapDisable, network: wallet.network)
+                    || keeperCoreMainAssembly.configurationAssembly.configuration.isLedgerDappsLocked(wallet),
                 walletCapabilities: TradeAssetDetailsWalletCapabilities(wallet: wallet),
+                walletName: wallet.emojiLabel,
                 analyticsProvider: analyticsProvider,
                 analyticsSource: source,
                 favoriteAssetsService: favoriteAssetsService,
@@ -433,6 +465,7 @@ extension TradeCoordinator {
                 ),
                 balanceViewModel: balanceViewModel,
                 historySource: historySource,
+                encryptedComments: encryptedComments,
                 tronFeesViewModel: tronFeesViewModel,
                 perpPositionViewModel: perpPositionViewModel,
                 tonStakingAPYProvider: { [keeperCoreMainAssembly] in
@@ -465,6 +498,7 @@ extension TradeCoordinator {
                 onOpenMultichainHistory: { [weak self, weak navigationController] multichainState, assetId in
                     guard let self else { return }
                     openMultichainAssetHistory(
+                        wallet: wallet,
                         multichainState: multichainState,
                         assetId: assetId,
                         on: navigationController
@@ -577,7 +611,7 @@ extension TradeCoordinator {
                     )
                 },
                 onOpenPerpsMarket: { [weak self, weak navigationController] marketID in
-                    self?.output.onOpenPerpsMarket?(marketID, navigationController)
+                    self?.output.onOpenPerpsMarket?(marketID, .assetPage, navigationController)
                 },
                 onTronFees: { [output, wallet] snapshot, trigger in
                     output.onTronUsdtFees(wallet, snapshot, trigger)
@@ -592,10 +626,10 @@ extension TradeCoordinator {
                         navigationController
                     )
                 },
-                earnAssetOffersRepository: keeperCoreMainAssembly.repositoriesAssembly.earnAssetOffersRepository(
-                    isEarnEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.earnEnabled)
-                        && wallet.walletConnectAddress(for: .eth) != nil
-                ),
+                earnAssetOffersRepository: wallet.walletConnectAddress(for: .eth) == nil
+                    || keeperCoreMainAssembly.configurationAssembly.configuration.isLedgerDappsLocked(wallet)
+                    ? nil
+                    : keeperCoreMainAssembly.earnAssembly.assetOffersRepository,
                 onOpenTokenizedInfo: { [weak self] kind in
                     guard let self else { return }
                     openTokenizedAssetInfoPopup(kind: kind)
@@ -669,6 +703,7 @@ extension TradeCoordinator {
     }
 
     func openMultichainAssetHistory(
+        wallet: Wallet,
         multichainState: MultichainWalletState,
         assetId: String,
         on navigationController: UINavigationController?
@@ -687,8 +722,16 @@ extension TradeCoordinator {
             dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
             nftResolver: MultichainActivityNFTResolver(
                 nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
-                network: activeWallet()?.network ?? .mainnet
-            )
+                network: wallet.network
+            ),
+            encryptedComments: MultichainEncryptedComments(
+                wallet: wallet,
+                coordinator: self,
+                presenter: presentingNavigationController,
+                keeperCoreAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            ),
+            appSettingsStore: appSettingsStore
         )
         viewModel.persistHistoryFilters(to: appSettingsStore)
         let viewController = MultichainHistoryViewController(

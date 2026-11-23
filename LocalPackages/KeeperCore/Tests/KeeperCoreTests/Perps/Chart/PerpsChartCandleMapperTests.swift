@@ -30,7 +30,7 @@ final class PerpsChartCandleMapperTests: XCTestCase {
 
     // MARK: Dense Kandelabr array
 
-    func test_wireCandles_skipsEmptyAndKeepsDenseIndexTimestamps() {
+    func test_mapBatch_skipsEmptyAndKeepsDenseIndexTimestamps() {
         let batch = makeBatch(
             startTs: 1_700_000_000_000,
             candles: [
@@ -39,7 +39,7 @@ final class PerpsChartCandleMapperTests: XCTestCase {
                 makeWireCandle(close: "3"),
             ]
         )
-        let mapped = PerpsChartCandleMapper.wireCandles(from: batch, timeframe: .m1)
+        let mapped = PerpsChartCandleMapper.mapBatch(from: batch, timeframe: .m1).candles
         XCTAssertEqual(mapped.map { $0.openedAt.timeIntervalSince1970 }, [
             1_700_000_000,
             1_700_000_120,
@@ -75,7 +75,7 @@ final class PerpsChartCandleMapperTests: XCTestCase {
         )
     }
 
-    func test_wireCandles_dropsInvalidPrices() {
+    func test_mapBatch_dropsInvalidPrices() {
         let batch = makeBatch(
             candles: [
                 makeWireCandle(close: "0"),
@@ -84,9 +84,44 @@ final class PerpsChartCandleMapperTests: XCTestCase {
                 makeWireCandle(open: "1", high: "2", low: "1", close: "1.5"),
             ]
         )
-        let mapped = PerpsChartCandleMapper.wireCandles(from: batch, timeframe: .h1)
+        let mapped = PerpsChartCandleMapper.mapBatch(from: batch, timeframe: .h1).candles
         XCTAssertEqual(mapped.count, 1)
         XCTAssertEqual(mapped.first?.close, 1.5)
+    }
+
+    func test_mapBatch_dropsSlotsOutsideTheSupportedTimeRange() {
+        let step = PerpsChartTimeframe.h1.wireStepMilliseconds
+        let lastSupported: Int64 = 4_102_444_800_000
+        let nearEnd = PerpsChartCandleMapper.mapBatch(
+            from: makeBatch(startTs: lastSupported - step, candles: [
+                makeWireCandle(close: "1"),
+                makeWireCandle(close: "2"),
+                makeWireCandle(close: "3"),
+            ]),
+            timeframe: .h1
+        )
+        XCTAssertEqual(nearEnd.candles.map(\.close), [1, 2])
+        XCTAssertEqual(nearEnd.wireTimestamps, [lastSupported - step, lastSupported])
+        XCTAssertEqual(Set(nearEnd.volumes.keys), [lastSupported - step, lastSupported])
+
+        for startTs in [Int64.max, Int64.max - step, -step, 0] {
+            let batch = PerpsChartCandleMapper.mapBatch(
+                from: makeBatch(startTs: startTs, candles: [makeWireCandle()]),
+                timeframe: .h1
+            )
+            XCTAssertTrue(batch.candles.isEmpty, "start_ts \(startTs)")
+            XCTAssertTrue(batch.wireTimestamps.isEmpty, "start_ts \(startTs)")
+            XCTAssertTrue(batch.volumes.isEmpty, "start_ts \(startTs)")
+        }
+    }
+
+    func test_mergingVolumes_ignoresSlotsOutsideTheSupportedTimeRange() {
+        let merged = PerpsChartCandleMapper.mergingVolumes(
+            from: makeBatch(startTs: .max, candles: [makeWireCandle(volume: "5")]),
+            into: makeBatch(startTs: .max, candles: [makeWireCandle(volume: "7")]),
+            timeframe: .h1
+        )
+        XCTAssertEqual(merged.candles.map(\.v), [nil])
     }
 
     func test_matchesFeed_isCaseInsensitiveOnTicker() {

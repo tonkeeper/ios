@@ -136,12 +136,6 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     func openStakingPoolDetails(pool: StakingListPool, poolSelectionClosure: @escaping (StackingPoolInfo) -> Void) {
         let module = StakingPoolDetailsAssembly.module(pool: pool, keeperCoreMainAssembly: keeperCoreMainAssembly)
 
-        module.view.setupRightCloseButton { [weak self] in
-            self?.didFinish?(self)
-        }
-
-        module.view.setupBackButton()
-
         module.output.didSelectPool = {
             poolSelectionClosure($0)
         }

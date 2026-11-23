@@ -13,6 +13,7 @@ final class EarnFeaturedVaultTests: XCTestCase {
         let vault = try XCTUnwrap(EarnFeaturedVault(network: "base", vaultId: "\(address)-usdc-v2"))
 
         XCTAssertEqual(vault.vaultId, "\(address)-usdc-v2")
+        XCTAssertNotNil(EarnFeaturedVault(network: "base", vaultId: "\(address)-v1.2"))
     }
 
     func testIdentifierCaseIsPreserved() throws {

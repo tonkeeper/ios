@@ -4,44 +4,27 @@ import XCTest
 
 final class EarnFeaturedVaultsRepositoryTests: XCTestCase {
     func testAnswersEmptyWhileEarnIsOff() throws {
-        let repository = try makeRepository(isEarnEnabled: false, isAppStoreEnvironment: false, bootConfigurationJSON: configuredJSON)
+        let repository = try makeRepository(isEarnEnabled: false, bootConfigurationJSON: configuredJSON)
 
         let vaults = repository.featuredVaults()
 
         XCTAssertTrue(vaults.isEmpty)
     }
 
-    func testServesTheConfiguredVaultsInTheAppStore() throws {
-        let repository = try makeRepository(isEarnEnabled: true, isAppStoreEnvironment: true, bootConfigurationJSON: configuredJSON)
+    func testServesTheConfiguredVaults() throws {
+        let repository = try makeRepository(isEarnEnabled: true, bootConfigurationJSON: configuredJSON)
 
         let vaults = repository.featuredVaults()
 
         XCTAssertEqual(vaults, configuredVaults)
     }
 
-    func testAnswersEmptyInTheAppStoreWithoutConfiguredVaults() throws {
-        let repository = try makeRepository(isEarnEnabled: true, isAppStoreEnvironment: true, bootConfigurationJSON: "{}")
+    func testAnswersEmptyWithoutConfiguredVaults() throws {
+        let repository = try makeRepository(isEarnEnabled: true, bootConfigurationJSON: "{}")
 
         let vaults = repository.featuredVaults()
 
         XCTAssertTrue(vaults.isEmpty)
-    }
-
-    func testServesTheConfiguredVaultsOutsideTheAppStore() throws {
-        let repository = try makeRepository(isEarnEnabled: true, isAppStoreEnvironment: false, bootConfigurationJSON: configuredJSON)
-
-        let vaults = repository.featuredVaults()
-
-        XCTAssertEqual(vaults, configuredVaults)
-    }
-
-    func testFallsBackToTheHardcodedListOutsideTheAppStore() throws {
-        let repository = try makeRepository(isEarnEnabled: true, isAppStoreEnvironment: false, bootConfigurationJSON: "{}")
-
-        let vaults = repository.featuredVaults()
-
-        XCTAssertEqual(vaults, EarnHardcodedData.featuredVaults)
-        XCTAssertFalse(vaults.isEmpty)
     }
 }
 
@@ -66,7 +49,6 @@ private extension EarnFeaturedVaultsRepositoryTests {
 
     func makeRepository(
         isEarnEnabled: Bool,
-        isAppStoreEnvironment: Bool,
         bootConfigurationJSON: String
     ) throws -> EarnFeaturedVaultsRepositoryImplementation {
         let mainnet = try JSONDecoder().decode(BootConfiguration.self, from: Data(bootConfigurationJSON.utf8))
@@ -79,7 +61,6 @@ private extension EarnFeaturedVaultsRepositoryTests {
         )
         return EarnFeaturedVaultsRepositoryImplementation(
             isEarnEnabled: isEarnEnabled,
-            isAppStoreEnvironment: isAppStoreEnvironment,
             configuration: configuration
         )
     }

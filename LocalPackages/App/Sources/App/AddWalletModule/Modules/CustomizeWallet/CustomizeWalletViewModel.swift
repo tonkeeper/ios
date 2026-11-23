@@ -88,6 +88,11 @@ final class CustomizeWalletViewModel: ObservableObject, CustomizeWalletModuleOut
         action()
     }
 
+    func resetContinue() {
+        isContinueEnabled = !nameInput.isEmpty
+        isContinueLoading = false
+    }
+
     // MARK: - Data Source
 
     private var emojiDataSource = EmojisDataSource()

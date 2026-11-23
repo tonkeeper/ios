@@ -65,11 +65,11 @@ final class WalletFunnelEventsTests: XCTestCase {
                 from: .walletScreen,
                 walletMode: .multi,
                 addFundsOption: .buyWithFiat,
+                depositScreen: .buyCrypto,
                 buyAsset: "eth/mainnet/coin",
                 sellAsset: "USD",
                 paymentMethod: "card",
                 providerName: "provider",
-                amount: 10,
                 txId: "tx"
             )
         )
@@ -79,6 +79,8 @@ final class WalletFunnelEventsTests: XCTestCase {
         XCTAssertEqual(click["wallet_mode"] as? String, WalletMode.single.rawValue)
         XCTAssertEqual(click["add_funds_option"] as? String, AddFundsOption.receiveTokens.rawValue)
         XCTAssertEqual(provider["wallet_mode"] as? String, WalletMode.multi.rawValue)
+        XCTAssertEqual(provider["deposit_screen"] as? String, DepositScreen.buyCrypto.rawValue)
+        XCTAssertNil(provider["amount"])
         XCTAssertEqual(try eventName(DepositContinueToP2pMarket(from: .walletScreen, walletMode: .multi, addFundsOption: .buyWithFiat)), "deposit_continue_to_p2p_market")
         XCTAssertEqual(
             try eventName(DepositViewReceiveTokens(from: .walletScreen, walletMode: .single, addFundsOption: .receiveTokens, network: .ton)),

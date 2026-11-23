@@ -6,6 +6,7 @@ import UIKit
 import URKit
 
 protocol KeystoneImportScanModuleOutput: AnyObject {
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)? { get set }
     var didScanQRCode: ((_ publicKey: TonSwift.PublicKey, _ xfp: String?, _ path: String?, _ name: String) -> Void)? { get set }
 }
 
@@ -17,13 +18,20 @@ protocol KeystoneImportScanViewModel: AnyObject {
 final class KeystoneImportScanViewModelImplementation: KeystoneImportScanViewModel, KeystoneImportScanModuleOutput {
     // MARK: - KeystoneImportScanModuleOutput
 
+    var didUpdateCameraState: ((ScannerCameraState) -> Void)? {
+        get { scannerViewModuleOutput.didUpdateCameraState }
+        set { scannerViewModuleOutput.didUpdateCameraState = newValue }
+    }
+
     var didScanQRCode: ((TonSwift.PublicKey, String?, String?, String) -> Void)?
 
     // MARK: - KeystoneImportScanViewModel
 
     func viewDidLoad() {
         scannerViewModuleOutput.didScanUR = { [weak self] ur in
+            guard let self, let didScanQRCode else { return false }
             let cryptoHDKey = try CryptoHDKey(cbor: ur.cbor)
+            guard let keyData = cryptoHDKey.keyData else { return false }
 
             var xfp: String? = nil
             var path: String? = nil
@@ -38,10 +46,9 @@ final class KeystoneImportScanViewModelImplementation: KeystoneImportScanViewMod
                 }
             }
 
-            if let keyData = cryptoHDKey.keyData {
-                let publicKey = TonSwift.PublicKey(data: keyData)
-                self?.didScanQRCode?(publicKey, xfp, path, name)
-            }
+            let publicKey = TonSwift.PublicKey(data: keyData)
+            didScanQRCode(publicKey, xfp, path, name)
+            return true
         }
     }
 

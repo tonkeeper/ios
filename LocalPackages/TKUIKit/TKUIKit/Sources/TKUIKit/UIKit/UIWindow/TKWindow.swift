@@ -47,6 +47,15 @@ open class TKWindow: UIWindow {
         }
     }
 
+    override open func buildMenu(with builder: UIMenuBuilder) {
+        if #available(iOS 17.0, *), builder.system == .context,
+           (firstResponderDescendant as? UITextField)?.keyboardType == .decimalPad
+        {
+            builder.remove(menu: .autoFill)
+        }
+        super.buildMenu(with: builder)
+    }
+
     deinit {
         token = nil
         Log.d("TKWindow with window level \(self.windowLevel.rawValue) deinit")
@@ -166,6 +175,12 @@ private final class TouchIndicatorView: UIView {
                 self.removeFromSuperview()
             }
         )
+    }
+}
+
+private extension UIView {
+    var firstResponderDescendant: UIView? {
+        isFirstResponder ? self : subviews.lazy.compactMap(\.firstResponderDescendant).first
     }
 }
 

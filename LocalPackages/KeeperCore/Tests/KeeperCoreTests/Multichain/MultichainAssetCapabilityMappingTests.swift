@@ -17,7 +17,25 @@ final class MultichainAssetCapabilityMappingTests: XCTestCase {
         XCTAssertEqual(details.capabilities, [])
     }
 
-    private static func makeAssetInfo(capabilities: [String]?) -> MultichainAPI.Components.Schemas.AssetInfo {
+    func test_mapsSwapAggregatorsAndDropsUnknownValues() {
+        let details = MultichainAssetDetails(api: Self.makeAssetInfo(
+            capabilities: ["swap"],
+            swapAggregators: ["omniston", "swapsxyz", "swapkit", "relay"]
+        ))
+
+        XCTAssertEqual(details.swapAggregators, [.omniston, .swapsXyz, .swapKit])
+    }
+
+    func test_absentSwapAggregatorsMapToNil() {
+        let details = MultichainAssetDetails(api: Self.makeAssetInfo(capabilities: ["swap"]))
+
+        XCTAssertNil(details.swapAggregators)
+    }
+
+    private static func makeAssetInfo(
+        capabilities: [String]?,
+        swapAggregators: [String]? = nil
+    ) -> MultichainAPI.Components.Schemas.AssetInfo {
         MultichainAPI.Components.Schemas.AssetInfo(
             asset_id: "ton/mainnet/coin",
             name: "Toncoin",
@@ -25,7 +43,9 @@ final class MultichainAssetCapabilityMappingTests: XCTestCase {
             decimals: 9,
             image: "",
             verification: .trusted,
-            capabilities: capabilities.map { .init(capabilities: $0) }
+            capabilities: capabilities.map {
+                .init(capabilities: $0, details: swapAggregators.map { .init(swap: .init(aggregators: $0)) })
+            }
         )
     }
 }

@@ -4,7 +4,7 @@ import TonSwift
 @frozen public enum WalletKind: Codable, Equatable, Hashable {
     case Regular(TonSwift.PublicKey, WalletContractVersion)
     case Lockup(TonSwift.PublicKey, LockupConfig)
-    case Watchonly(ResolvableAddress)
+    case Watchonly(ResolvableAddress, WalletContractVersion? = nil)
     case Signer(TonSwift.PublicKey, WalletContractVersion)
     case SignerDevice(TonSwift.PublicKey, WalletContractVersion)
     case Keystone(TonSwift.PublicKey, String?, String?, WalletContractVersion)
@@ -16,8 +16,8 @@ import TonSwift
             return lpk == rpk && lv == rv
         case let (.Lockup(lpk, lc), .Lockup(rpk, rc)):
             return lpk == rpk && lc == rc
-        case let (.Watchonly(laddress), .Watchonly(raddress)):
-            return laddress == raddress
+        case let (.Watchonly(laddress, lv), .Watchonly(raddress, rv)):
+            return laddress == raddress && lv == rv
         case let (.Signer(lpk, lv), .Signer(rpk, rv)):
             return lpk == rpk && lv == rv
         case let (.SignerDevice(lpk, lv), .SignerDevice(rpk, rv)):
@@ -40,34 +40,53 @@ extension TonSwift.PublicKey: @retroactive Equatable, @retroactive Hashable {
 }
 
 extension WalletKind: CellCodable {
+    private enum Tag: UInt64 {
+        case regular = 0
+        case lockup = 1
+        case watchonly = 2
+        case signer = 3
+        case signerDevice = 4
+        case ledger = 5
+        case keystone = 6
+        case watchonlyWithContractVersion = 7
+
+        static let bitsCount = 5
+    }
+
     public func storeTo(builder: Builder) throws {
         switch self {
         case let .Regular(publicKey, contractVersion):
-            try builder.store(uint: 0, bits: 5)
+            try builder.store(uint: Tag.regular.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             try contractVersion.storeTo(builder: builder)
         case let .Lockup(publicKey, lockupConfig):
-            try builder.store(uint: 1, bits: 5)
+            try builder.store(uint: Tag.lockup.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             try lockupConfig.storeTo(builder: builder)
-        case let .Watchonly(resolvableAddress):
-            try builder.store(uint: 2, bits: 5)
-            try resolvableAddress.storeTo(builder: builder)
+        case let .Watchonly(resolvableAddress, contractVersion):
+            if let contractVersion {
+                try builder.store(uint: Tag.watchonlyWithContractVersion.rawValue, bits: Tag.bitsCount)
+                try resolvableAddress.storeTo(builder: builder)
+                try contractVersion.storeTo(builder: builder)
+            } else {
+                try builder.store(uint: Tag.watchonly.rawValue, bits: Tag.bitsCount)
+                try resolvableAddress.storeTo(builder: builder)
+            }
         case let .Signer(publicKey, contractVersion):
-            try builder.store(uint: 3, bits: 5)
+            try builder.store(uint: Tag.signer.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             try contractVersion.storeTo(builder: builder)
         case let .SignerDevice(publicKey, contractVersion):
-            try builder.store(uint: 4, bits: 5)
+            try builder.store(uint: Tag.signerDevice.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             try contractVersion.storeTo(builder: builder)
         case let .Ledger(publicKey, contractVersion, device):
-            try builder.store(uint: 5, bits: 5)
+            try builder.store(uint: Tag.ledger.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             try contractVersion.storeTo(builder: builder)
             try device.storeTo(builder: builder)
         case let .Keystone(publicKey, xfp, path, contractVersion):
-            try builder.store(uint: 6, bits: 5)
+            try builder.store(uint: Tag.keystone.rawValue, bits: Tag.bitsCount)
             try publicKey.storeTo(builder: builder)
             if let xfp = xfp {
                 let xfpNum: UInt64 = UInt64(xfp)!
@@ -88,33 +107,32 @@ extension WalletKind: CellCodable {
 
     public static func loadFrom(slice: Slice) throws -> WalletKind {
         return try slice.tryLoad { s in
-            let type = try s.loadUint(bits: 5)
-            switch type {
-            case 0:
+            switch try Tag(rawValue: s.loadUint(bits: Tag.bitsCount)) {
+            case .regular:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
                 let contractVersion: WalletContractVersion = try s.loadType()
                 return .Regular(publicKey, contractVersion)
-            case 1:
+            case .lockup:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
                 let lockupConfig: LockupConfig = try s.loadType()
                 return .Lockup(publicKey, lockupConfig)
-            case 2:
+            case .watchonly:
                 let resolvableAddress: ResolvableAddress = try s.loadType()
                 return .Watchonly(resolvableAddress)
-            case 3:
+            case .signer:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
                 let contractVersion: WalletContractVersion = try s.loadType()
                 return .Signer(publicKey, contractVersion)
-            case 4:
+            case .signerDevice:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
                 let contractVersion: WalletContractVersion = try s.loadType()
                 return .SignerDevice(publicKey, contractVersion)
-            case 5:
+            case .ledger:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
                 let contractVersion: WalletContractVersion = try s.loadType()
                 let device: Wallet.LedgerDevice = try s.loadType()
                 return .Ledger(publicKey, contractVersion, device)
-            case 6:
+            case .keystone:
                 let publicKey: TonSwift.PublicKey = try s.loadType()
 
                 var xfp: String? = nil
@@ -132,7 +150,11 @@ extension WalletKind: CellCodable {
                     path = try s.loadSnakeString()
                 }
                 return .Keystone(publicKey, xfp, path, contractVersion)
-            default:
+            case .watchonlyWithContractVersion:
+                let resolvableAddress: ResolvableAddress = try s.loadType()
+                let contractVersion: WalletContractVersion = try s.loadType()
+                return .Watchonly(resolvableAddress, contractVersion)
+            case nil:
                 throw TonError.custom("Invalid WalletKind type")
             }
         }

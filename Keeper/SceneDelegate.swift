@@ -16,21 +16,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        ScreenRenderTracker.shared.launchMark(.sceneConnect)
         TKDevPreferencesManager.shared.showsTouches = TKAppPreferences.showTouches
         let window = TKWindow(windowScene: windowScene)
         let coordinator = App.LaunchCoordinator(
             router: TKCoordinator.WindowRouter(window: window),
-            remoteConfig: TKFirebaseRemoteConfigProvider(
-                requestTimeoutMs: 1500
-            )
+            remoteConfig: AppDelegate.remoteConfig,
+            coreAssembly: AppDelegate.takeLaunchAssembly()
         )
 
-        let isLiveActivityTap = connectionOptions.urlContexts.first.map { TransactionLiveActivityTap.handle($0.url) } ?? false
-        let incomingDeeplink = isLiveActivityTap ? nil : Self.incomingDeeplink(from: connectionOptions)
+        let isWidgetTap = connectionOptions.urlContexts.first.map { Self.handleWidgetTap($0.url, isColdStart: true) } ?? false
+        let incomingDeeplink = isWidgetTap ? nil : Self.incomingDeeplink(from: connectionOptions)
         let attribution = CampaignAttributionService.shared
         attribution.beginForwarding()
         attribution.noteDelivered(incomingDeeplink)
-        if !isLiveActivityTap {
+        if !isWidgetTap {
             attribution.forwardColdStart(scene: scene, connectionOptions: connectionOptions)
         }
         coordinator.start(deeplink: CampaignAttributionDecoding.appLink(incomingDeeplink))
@@ -61,7 +61,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        guard let url = URLContexts.first?.url, !TransactionLiveActivityTap.handle(url) else { return }
+        guard let url = URLContexts.first?.url, !Self.handleWidgetTap(url, isColdStart: false) else { return }
         forward(url.absoluteString) {
             CampaignAttributionService.shared.forwardCustomScheme(scene: scene, urlContexts: URLContexts)
         }
@@ -72,6 +72,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         forward(url.absoluteString) {
             CampaignAttributionService.shared.forwardUniversalLink(scene: scene, userActivity: userActivity)
         }
+    }
+
+    /// Live Activity and widget taps open the app themselves, bypassing the deep link parser and attribution.
+    private static func handleWidgetTap(_ url: URL, isColdStart: Bool) -> Bool {
+        TransactionLiveActivityTap.handle(url, isColdStart: isColdStart) || WalletWidgetTap.handle(url, isColdStart: isColdStart)
     }
 
     private func forward(_ link: String, providerWork: () -> Void) {

@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -5,6 +6,8 @@ import TKUIKit
 struct WalletBalanceMultichainAssetsListView: View {
     @ObservedObject var viewModel: WalletBalanceMultichainAssetsListViewModel
     let showsSkeleton: Bool
+    let rowLimit: Int?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showsSkeleton {
@@ -24,7 +27,7 @@ struct WalletBalanceMultichainAssetsListView: View {
                 case let .rows(rows):
                     listTitle
                     cellsGroup {
-                        assetRows(rows)
+                        assetRows(rowLimit.map { Array(rows.prefix($0)) } ?? rows)
                     }
                 }
             }
@@ -51,15 +54,17 @@ struct WalletBalanceMultichainAssetsListView: View {
                     },
                     commentAction: viewModel.commentAction(for: row)
                 )
-            case let .moreAssets(previewAvatars):
-                WalletBalanceMoreAssetsCell(
+            case let .moreAssets(previewAvatars, limit):
+                WalletSectionMoreCell(
+                    title: TKLocales.WalletBalanceList.MoreAssets.title,
                     previewAvatars: previewAvatars,
+                    limit: limit,
                     showsDivider: showsDivider,
-                    action: {
-                        withAnimation(Layout.expandAnimation) {
-                            viewModel.expandMoreAssets()
-                        }
-                    }
+                    limitMenuIdentifier: "wallet_assets_limit",
+                    onTap: {
+                        viewModel.onTapOpenAssets?()
+                    },
+                    onSelectLimit: viewModel.selectLimit
                 )
             }
         }
@@ -85,7 +90,7 @@ struct WalletBalanceMultichainAssetsListView: View {
     }
 
     private var skeletonRows: some View {
-        ForEach(0 ..< Layout.skeletonRowCount, id: \.self) { _ in
+        ForEach(0 ..< min(viewModel.limit.count, Layout.maxSkeletonRowCount), id: \.self) { _ in
             AssetBalanceRowCell(
                 config: .shimmer,
                 showsDivider: false
@@ -144,7 +149,6 @@ struct WalletBalanceMultichainAssetsListView: View {
 private extension WalletBalanceMultichainAssetsListView {
     enum Layout {
         static let errorTopPadding: CGFloat = 32
-        static let expandAnimation: Animation = .easeInOut(duration: 0.25)
-        static let skeletonRowCount = 10
+        static let maxSkeletonRowCount = 10
     }
 }

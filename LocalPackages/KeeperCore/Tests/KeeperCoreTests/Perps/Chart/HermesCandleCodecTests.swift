@@ -45,6 +45,22 @@ final class HermesCandleCodecTests: XCTestCase {
         XCTAssertEqual(batch.candles.first?.c, "1.5")
     }
 
+    func test_event_decodesSparseAndEmptyCandles() throws {
+        let frame = """
+        {"channel":"candles","message":{"name":"candlesFeedMessage","payload":{"feedId":"BTC/USD/1m","data":{"ticker":"BTC/USD","resolution":"1m","start_ts":1700000000000,"candles":[{"c":"1.5","v":null},{"empty":true}]}}}}
+        """
+        let event = try HermesCandleCodec.event(from: XCTUnwrap(frame.data(using: .utf8)))
+        guard case let .candles(_, batch) = event else {
+            return XCTFail("expected candles, got \(event)")
+        }
+        XCTAssertEqual(batch.candles.count, 2)
+        XCTAssertEqual(batch.candles.first?.c, "1.5")
+        XCTAssertNil(batch.candles.first?.o)
+        XCTAssertNil(batch.candles.first?.v)
+        XCTAssertEqual(batch.candles.last?.empty, true)
+        XCTAssertNil(batch.candles.last?.c)
+    }
+
     func test_event_mapsSuccessfulSubscriptionVariants() throws {
         let cases: [(String, HermesCandleEvent)] = [
             (#"{"channel":"subscribeCandleFeed","message":{"name":"subscribeCandleFeedResponse","reqid":7}}"#, .subscribed(requestId: 7)),

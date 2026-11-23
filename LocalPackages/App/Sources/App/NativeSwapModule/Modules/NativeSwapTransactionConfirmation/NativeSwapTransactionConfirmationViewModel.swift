@@ -33,6 +33,7 @@ protocol NativeSwapTransactionConfirmationViewModel: AnyObject {
     func viewDidLoad()
     func viewDidAppear()
     func viewDidDisappear()
+    func didLeaveScreen()
     func didTapCloseButton()
 }
 
@@ -66,6 +67,21 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         }
     }
 
+    private lazy var confirmSliderView: TKConfirmSliderView = {
+        let view = TKConfirmSliderView()
+        view.handleAccessibilityIdentifier = "confirm_swipe"
+        return view
+    }()
+
+    /// Where the emulation left the swap. It holds the slider only with the emulation on.
+    private enum EmulationOutcome {
+        case pending
+        case passed
+        case failed
+    }
+
+    private var emulationOutcome: EmulationOutcome = .pending
+
     private let wallet: Wallet
     private let confirmationController: TransactionConfirmationController
     private let pendingTransactionsService: PendingTransactionsService
@@ -78,6 +94,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     private let configurationAssembly: ConfigurationAssembly
     private let configuration: Configuration
     private let analyticsProvider: AnalyticsProvider
+    private let isEmulationEnabled: Bool
 
     private var model: NativeSwapTransactionConfirmationModel
 
@@ -97,7 +114,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         batteryCalculation: BatteryCalculation,
         configurationAssembly: ConfigurationAssembly,
         configuration: Configuration,
-        analyticsProvider: AnalyticsProvider
+        analyticsProvider: AnalyticsProvider,
+        isEmulationEnabled: Bool
     ) {
         self.wallet = wallet
         self.sendController = sendController
@@ -112,6 +130,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         self.configurationAssembly = configurationAssembly
         self.configuration = configuration
         self.analyticsProvider = analyticsProvider
+        self.isEmulationEnabled = isEmulationEnabled
         self.model.rateFormatted = getExchangeRateForOneToken()
     }
 
@@ -139,6 +158,12 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
 
     func viewDidDisappear() {}
 
+    /// The emulation's popup or toast belongs to this screen: after Back or Close it would land on whatever the
+    /// user went to.
+    func didLeaveScreen() {
+        updateTask?.cancel()
+    }
+
     func didTapCloseButton() {
         didClose?()
     }
@@ -148,11 +173,16 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         updateTask = Task { [weak self] in
             guard let self else { return }
 
+            emulationOutcome = .pending
             state = .idle
             confirmationController.setLoading()
             let loadingModel = confirmationController.getModel()
             update(with: loadingModel)
 
+            let metadata = redMetadata(
+                feePaidIn: nil,
+                includeAmounts: true
+            )
             let redSession = RedAnalyticsSessionHolder(
                 analytics: analyticsProvider
             )
@@ -160,36 +190,55 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 flow: .swap,
                 operation: .emulate,
                 attemptSource: .nativeUI,
-                otherMetadata: redMetadata(
-                    feePaidIn: nil,
-                    includeAmounts: true
-                )
+                otherMetadata: metadata
             )
             let result = await self.confirmationController.emulate()
             guard !Task.isCancelled else {
                 return redSession.finish(
                     outcome: .cancel,
-                    stage: "emulate"
+                    stage: "emulate",
+                    otherMetadata: metadata
                 )
             }
-            switch result {
-            case .success:
-                redSession.finish(
-                    outcome: .success,
-                    stage: "emulate"
+            let shortage = isEmulationEnabled ? await fundsShortage() : nil
+            guard !Task.isCancelled else {
+                return redSession.finish(
+                    outcome: .cancel,
+                    stage: "emulate",
+                    otherMetadata: metadata
                 )
-            case let .failure(error):
+            }
+            if let shortage {
+                emulationOutcome = .failed
+                redSession.finish(
+                    outcome: .fail,
+                    error: shortage,
+                    stage: "emulate",
+                    otherMetadata: metadata
+                )
+                didProduceInsufficientFundsError?(shortage)
+            } else if case let .failure(error) = result {
+                emulationOutcome = .failed
                 redSession.finish(
                     outcome: .fail,
                     error: error,
-                    stage: "emulate"
+                    stage: "emulate",
+                    otherMetadata: metadata
                 )
                 handleError(error)
+            } else {
+                emulationOutcome = .passed
+                redSession.finish(
+                    outcome: .success,
+                    stage: "emulate",
+                    otherMetadata: metadata
+                )
             }
 
             let model = confirmationController.getModel()
             update(with: model)
 
+            guard !isEmulationEnabled else { return }
             do {
                 try await fundsValidator.validateFundsIfNeeded(
                     wallet: model.wallet,
@@ -202,6 +251,20 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                     didProduceInsufficientFundsError?(error)
                 }
             }
+        }
+    }
+
+    /// The funds the swap lacks, which the emulation reports as its own failure, before the slider. They come
+    /// first even when the emulation failed: TonAPI refuses to emulate what the balance cannot cover.
+    private func fundsShortage() async -> InsufficientFundsError? {
+        do {
+            try await fundsValidator.validateFundsIfNeeded(
+                wallet: wallet,
+                confirmationController: confirmationController
+            )
+            return nil
+        } catch {
+            return error
         }
     }
 
@@ -423,10 +486,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     }
 
     private func makeActionBar(transaction: TransactionConfirmationModel) -> TKPopUp.Item {
-        var items: [TKPopUp.Item] = []
-
-        items.append(makeConfirmSlider(transaction: transaction))
-
+        let isRetry = isEmulationEnabled && emulationOutcome == .failed
         let itemState: TKProcessContainerView.State = {
             switch state {
             case .idle: .idle
@@ -436,8 +496,21 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             }
         }()
 
+        if TKLiquidGlass.isEnabled, !isRetry {
+            confirmSliderView.isEnabled = !isEmulationEnabled || emulationOutcome == .passed
+            confirmSliderView.process = TKActionBarProcess(itemState)
+            confirmSliderView.didConfirm = { [weak self] in
+                self?.confirmAction(transaction: transaction)
+            }
+            return TKPopUp.Component.ConfirmSlider(sliderView: confirmSliderView)
+        }
+
+        let actionItem = isRetry
+            ? makeRetryButton()
+            : makeConfirmSlider(transaction: transaction)
+
         return TKPopUp.Component.Process(
-            items: items,
+            items: [actionItem],
             state: itemState,
             successTitle: TKLocales.Result.success,
             errorTitle: TKLocales.Result.failure,
@@ -466,7 +539,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             configuration: NativeSwapTransactionConfirmationActionView.Configuration(
                 slider: NativeSwapTransactionConfirmationActionView.Configuration.Slider(
                     title: title,
-                    isEnable: true,
+                    isEnable: !isEmulationEnabled || emulationOutcome == .passed,
                     appearance: .standart,
                     didConfirm: { [weak self] in
                         self?.confirmAction(transaction: transaction)
@@ -484,11 +557,27 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         )
     }
 
+    private func makeRetryButton() -> TKPopUp.Item {
+        var configuration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+        configuration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.retry))
+        configuration.action = { [weak self] in
+            self?.update()
+        }
+        return TKPopUp.Component.ButtonGroupComponent(buttons: [
+            TKPopUp.Component.ButtonComponent(buttonConfiguration: configuration),
+        ])
+    }
+
     private func confirmAction(transaction: TransactionConfirmationModel) {
         confirmTask?.cancel()
         confirmTask = Task { [weak self] in
             guard let self else { return }
 
+            let feePaidIn = getFeePaidIn(transaction: transaction)
+            let metadata = redMetadata(
+                feePaidIn: feePaidIn,
+                includeAmounts: true
+            )
             let redSession = RedAnalyticsSessionHolder(
                 analytics: analyticsProvider
             )
@@ -496,27 +585,31 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 flow: .swap,
                 operation: .send,
                 attemptSource: .nativeUI,
-                otherMetadata: redMetadata(
-                    feePaidIn: getFeePaidIn(transaction: transaction),
-                    includeAmounts: true
-                )
+                otherMetadata: metadata
             )
             state = .processing
             let result = await runConfirmAction(
-                transaction: transaction
+                transaction: transaction,
+                feePaidIn: feePaidIn
             )
             switch result {
             case .cancelledByUser:
                 redSession.finish(
                     outcome: .cancel,
-                    stage: "confirm"
+                    stage: "confirm",
+                    otherMetadata: metadata
                 )
                 state = .idle
             case let .insufficientFunds(error):
                 redSession.finish(
                     outcome: .fail,
                     error: error,
-                    stage: "send"
+                    stage: "send",
+                    otherMetadata: metadata
+                )
+                analyticsProvider.log(
+                    event: model.failedEvent(feePaidIn: feePaidIn, error: error),
+                    utm: model.utm
                 )
                 state = .failed
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
@@ -527,15 +620,11 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 redSession.finish(
                     outcome: .fail,
                     error: error,
-                    stage: "send"
+                    stage: "send",
+                    otherMetadata: metadata
                 )
                 analyticsProvider.log(
-                    event: .NativeSwap.failed(
-                        from: model.fromToken.analyticsSymbol,
-                        to: model.toToken.analyticsSymbol,
-                        feeProvider: getFeePaidIn(transaction: transaction),
-                        error: error
-                    ),
+                    event: model.failedEvent(feePaidIn: feePaidIn, error: error),
                     utm: model.utm
                 )
                 state = .failed
@@ -556,7 +645,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             case .success:
                 redSession.finish(
                     outcome: .success,
-                    stage: "send"
+                    stage: "send",
+                    otherMetadata: metadata
                 )
                 state = .success
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -567,11 +657,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 )
                 didConfirmTransaction?()
                 analyticsProvider.log(
-                    event: .NativeSwap.success(
-                        from: model.fromToken.analyticsSymbol,
-                        to: model.toToken.analyticsSymbol,
-                        feeProvider: getFeePaidIn(transaction: transaction)
-                    ),
+                    event: model.successEvent(feePaidIn: feePaidIn),
                     utm: model.utm
                 )
                 analyticsProvider.logSwapCompleted()
@@ -580,25 +666,18 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     }
 
     private func runConfirmAction(
-        transaction: TransactionConfirmationModel
+        transaction: TransactionConfirmationModel,
+        feePaidIn: String
     ) async -> ConfirmActionResult {
         if transaction.isMaxAmountUsed {
             let tokenName = transaction.amount?.token.symbol ?? "Token"
-            let confirmed = await withCheckedContinuation { continuation in
-                didRequestSendAllConfirmation?(tokenName) { confirmed in
-                    continuation.resume(returning: confirmed)
-                }
-            }
+            let confirmed = await UserAnswer.ask { didRequestSendAllConfirmation?(tokenName, $0) }
             guard confirmed else {
                 return .cancelledByUser
             }
         }
         analyticsProvider.log(
-            event: .NativeSwap.confirm(
-                from: model.fromToken.analyticsSymbol,
-                to: model.toToken.analyticsSymbol,
-                feeProvider: getFeePaidIn(transaction: transaction)
-            ),
+            event: model.confirmEvent(feePaidIn: feePaidIn),
             utm: model.utm
         )
         do {
@@ -624,20 +703,9 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     }
 
     private func handleError(_ error: TransactionConfirmationError) {
-        let text: String
-        switch error {
-        case .failedToCalculateFee:
-            text = "Failed to calculate fee"
-        case let .failedToSendTransaction(message):
-            text = message ?? "Failed to send transaction"
-        case let .multichainTransactionFailure(failure):
-            text = failure.transactionConfirmationUserMessage
-        case .failedToSign:
-            text = "Failed to sign"
-        case .cancelledByUser:
-            text = "Cancelled"
+        guard let text = error.userMessage else {
+            return
         }
-
         ToastPresenter.showToast(configuration: .defaultConfiguration(text: text))
     }
 
@@ -815,19 +883,10 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         [
             "from_token": model.fromToken.analyticsSymbol,
             "to_token": model.toToken.analyticsSymbol,
+            "provider_name": model.confirmation.resolverName,
             .feePaidIn: feePaidIn,
-            "from_amount": includeAmounts
-                ? NSDecimalNumber.fromBigUInt(
-                    value: model.fromAmount,
-                    decimals: model.fromToken.fractionDigits
-                ).doubleValue
-                : nil,
-            "to_amount": includeAmounts
-                ? NSDecimalNumber.fromBigUInt(
-                    value: model.toAmount,
-                    decimals: model.toToken.fractionDigits
-                ).doubleValue
-                : nil,
+            "from_amount": includeAmounts ? model.fromAmountValue : nil,
+            "to_amount": includeAmounts ? model.toAmountValue : nil,
         ]
     }
 
@@ -846,9 +905,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             case .cancelled:
                 throw .cancelledByUser
             default:
-                throw .failedToSign(
-                    message: "wallet transfer sign error: \(error.localizedDescription)"
-                )
+                throw .failedToSign(message: error.message)
             }
         }
         return transactions

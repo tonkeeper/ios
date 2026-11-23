@@ -1,7 +1,7 @@
 import Combine
 import Foundation
-@preconcurrency import ReownWalletKit
 import TKLogging
+@preconcurrency import WalletConnectSign
 
 enum WalletConnectRawEvent {
     case proposalReceived(WalletConnectProposalContext)
@@ -95,7 +95,7 @@ extension WalletConnectEventStream {
             continuation.yield(event)
         }
 
-        WalletKit.instance.sessionProposalPublisher
+        Sign.instance.sessionProposalPublisher
             .map { proposal, context in
                 WalletConnectRawEvent.proposalReceived(
                     WalletConnectProposalContext(
@@ -107,32 +107,37 @@ extension WalletConnectEventStream {
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.sessionProposalExpirationPublisher
+        Sign.instance.sessionProposalExpirationPublisher
             .map(WalletConnectRawEvent.proposalExpired)
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.sessionRequestPublisher
+        Sign.instance.sessionRequestPublisher
             .map(WalletConnectRawEvent.requestReceived)
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.requestExpirationPublisher
+        Sign.instance.requestExpirationPublisher
             .map(WalletConnectRawEvent.requestExpired)
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.sessionSettlePublisher
-            .map(WalletConnectRawEvent.sessionSettled)
+        Sign.instance.sessionSettlePublisher
+            .map { WalletConnectRawEvent.sessionSettled($0.session) }
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.sessionDeletePublisher
+        Sign.instance.sessionDeletePublisher
             .map(WalletConnectRawEvent.sessionDeleted)
             .sink(receiveValue: emitIfAlive)
             .store(in: &cancellables)
 
-        WalletKit.instance.logsPublisher
+        let pairingClient = Pair.instance as? PairingClientProtocol
+        if pairingClient == nil {
+            Log.walletConnect.w("pairing client does not expose logs", error: WalletConnectSDKLogError())
+        }
+        Sign.instance.logsPublisher
+            .merge(with: pairingClient?.logsPublisher ?? Empty().eraseToAnyPublisher())
             .sink { log in
                 switch log {
                 case .debug:

@@ -1,14 +1,44 @@
 @testable import KeeperCore
+import PerpsModels
 import TKPerpsAPI
 import XCTest
 
 final class PerpsDepositQuoteTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_700_000_000)
 
+    func testArrivalEstimateComesOnlyFromTheQuote() throws {
+        var response = Fixtures.relayQuote()
+        XCTAssertNil(try PerpsDepositQuoteReader.read(response, request: Fixtures.tonRequest(), security: KeyRegistrationFixture.security, now: now).estimatedDurationSeconds)
+        response.estimated_duration_seconds = 181
+        XCTAssertEqual(try PerpsDepositQuoteReader.read(response, request: Fixtures.tonRequest(), security: KeyRegistrationFixture.security, now: now).estimatedDurationSeconds, 181)
+    }
+
+    /// No fees stated is none taken; a type the wallet does not know counts as the provider's,
+    /// and one unreadable leaves the fees unknown rather than short.
+    func testProviderFeesSplitTheDestinationGasFromTheRest() throws {
+        func providerFees(_ fees: [Components.Schemas.DepositQuoteFee]?) throws -> PerpsDepositProviderFees? {
+            var response = Fixtures.relayQuote()
+            response.fees = fees
+            return try PerpsDepositQuoteReader.read(response, request: Fixtures.tonRequest(), security: KeyRegistrationFixture.security, now: now).providerFees
+        }
+        let stated: [Components.Schemas.DepositQuoteFee] = [
+            .init(_type: "destination_gas", amount_usd: "0.886899"),
+            .init(_type: "provider", amount_usd: "0.023486"),
+            .init(_type: "bridge", amount_usd: "0.1"),
+        ]
+
+        XCTAssertEqual(try providerFees(nil), PerpsDepositProviderFees(destinationGasUsd: 0, providerUsd: 0))
+        XCTAssertEqual(
+            try providerFees(stated),
+            try PerpsDepositProviderFees(destinationGasUsd: XCTUnwrap(Decimal(string: "0.886899")), providerUsd: XCTUnwrap(Decimal(string: "0.123486")))
+        )
+        XCTAssertNil(try providerFees(stated + [.init(_type: "provider", amount_usd: "n/a")]))
+    }
+
     func testARelayQuoteIsReadIntoWhatTheWalletHasToSign() throws {
         let request = Fixtures.tonRequest()
 
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.relayQuote(), request: request, now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.relayQuote(), request: request, security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.route, .crosschainSwap)
         XCTAssertEqual(quote.executionId, "exec-1")
@@ -24,7 +54,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
     func testADirectQuoteCarriesItsApprovalAndNoTracking() throws {
         let request = Fixtures.usdcRequest()
 
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.directQuote(), request: request, now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.directQuote(), request: request, security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.route, .directGateway)
         XCTAssertNil(quote.executionId)
@@ -36,7 +66,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
     func testABeneficiaryInAnotherCaseIsStillOurOwnAddress() throws {
         let quote = Fixtures.relayQuote(destination: Fixtures.beneficiary.uppercased().replacingOccurrences(of: "0X", with: "0x"))
 
-        XCTAssertNoThrow(try PerpsDepositQuoteReader.read(quote, request: Fixtures.tonRequest(), now: now))
+        XCTAssertNoThrow(try PerpsDepositQuoteReader.read(quote, request: Fixtures.tonRequest(), security: KeyRegistrationFixture.security, now: now))
     }
 
     func testAQuoteForSomebodyElsesAccountIsRefused() {
@@ -100,18 +130,34 @@ final class PerpsDepositQuoteTests: XCTestCase {
         assertRefused(Fixtures.relayQuote(executionId: ""), Fixtures.tonRequest(), .missingTracking)
     }
 
-    func testADirectQuoteThatClaimsTrackingIsRefused() {
-        assertRefused(Fixtures.directQuote(executionId: "exec-1"), Fixtures.usdcRequest(), .unexpectedTracking)
-    }
-
-    func testAProviderNameDoesNotDecideTheRoute() throws {
+    func testATrackedQuoteFromUSDCOnEthereumIsABridgeTopUpToFollow() throws {
+        var bridged = Fixtures.directQuote(executionId: "funxyz_1", payloads: [Fixtures.payload(chain: "eth/mainnet", value: "0")])
+        bridged.provider = "funxyz"
         let quote = try PerpsDepositQuoteReader.read(
-            Fixtures.relayQuote(provider: "direct"),
-            request: Fixtures.tonRequest(),
+            bridged,
+            request: Fixtures.usdcRequest(),
+            security: KeyRegistrationFixture.security,
             now: now
         )
 
         XCTAssertEqual(quote.route, .crosschainSwap)
+        XCTAssertEqual(quote.executionId, "funxyz_1")
+    }
+
+    func testAnUntrackedQuoteIsDirectOnlyFromUSDCOnEthereum() {
+        assertRefused(Fixtures.relayQuote(executionId: nil), Fixtures.tonRequest(), .missingTracking)
+    }
+
+    func testATrackedQuoteFromUSDCOnEthereumWithNothingToPollIsRefused() {
+        assertRefused(Fixtures.directQuote(executionId: ""), Fixtures.usdcRequest(), .missingTracking)
+    }
+
+    func testAProviderTheClientDoesNotKnowOrThatContradictsTheRouteIsRefused() {
+        assertRefused(Fixtures.relayQuote(provider: "direct"), Fixtures.tonRequest(), .unexpectedProvider("direct"))
+        assertRefused(Fixtures.relayQuote(provider: "lifi"), Fixtures.tonRequest(), .unexpectedProvider("lifi"))
+        var relayed = Fixtures.directQuote()
+        relayed.provider = "relay"
+        assertRefused(relayed, Fixtures.usdcRequest(), .missingTracking)
     }
 
     func testARelayFillWithoutTrackingIsRefused() {
@@ -148,8 +194,21 @@ final class PerpsDepositQuoteTests: XCTestCase {
         assertRefused(Fixtures.relayQuote(payloads: [payload]), Fixtures.tonRequest(), .malformedOperation("op-1"))
     }
 
+    /// chain-kit signs a TON `main` that names a `token` as a transfer of `value` jetton units,
+    /// which this deposit would otherwise read as a payment of coin.
+    func testATonPayloadNamingAJettonIsRefused() throws {
+        var raw = Fixtures.payload().value
+        var meta = try XCTUnwrap(raw["meta"] as? [String: (any Sendable)?])
+        meta["body"] = nil
+        meta["token"] = "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+        raw["meta"] = meta
+        let payload = try Components.Schemas.QuotePayload(unvalidatedValue: raw)
+
+        assertRefused(Fixtures.relayQuote(payloads: [payload]), Fixtures.tonRequest(), .malformedPayload(payloadId: "p_01"))
+    }
+
     func testAnApproveCallToTheSourceTokenIsReadAsTheApproval() throws {
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.directQuote(), request: Fixtures.usdcRequest(), now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.directQuote(), request: Fixtures.usdcRequest(), security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.payloads.map(\.kind), [.approval, .main])
     }
@@ -189,11 +248,26 @@ final class PerpsDepositQuoteTests: XCTestCase {
                 try PerpsDepositQuoteReader.read(
                     Fixtures.relayQuote(payloads: [Fixtures.payload(mode: mode)]),
                     request: Fixtures.tonRequest(),
+                    security: KeyRegistrationFixture.security,
                     now: now
                 ),
                 "mode \(mode)"
             )
         }
+    }
+
+    func testATonPaymentOfAJettonIsRefused() {
+        let jettonPayment = Components.Schemas.QuotePayload.payload(
+            "p_01",
+            chain: "ton/mainnet",
+            meta: [
+                "to": "EQCrdGsDTqA2t6xRR4N6V4J705F7w_VQbUdHnofsh-8lVIPs",
+                "value": "25000000000",
+                "token": "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
+            ]
+        )
+
+        assertRefused(Fixtures.relayQuote(payloads: [jettonPayment]), Fixtures.tonRequest(), .malformedPayload(payloadId: "p_01"))
     }
 
     /// A token's budget travels in the calldata and an EVM transaction pays its gas
@@ -211,6 +285,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
         let read = try PerpsDepositQuoteReader.read(
             Fixtures.usdtQuote(payloadValue: "0"),
             request: Fixtures.usdtRequest(),
+            security: KeyRegistrationFixture.security,
             now: now
         )
 
@@ -238,8 +313,41 @@ final class PerpsDepositQuoteTests: XCTestCase {
         XCTAssertEqual([btc.nativeSymbol, "\(btc.nativeDecimals)"], ["BTC", "8"])
     }
 
+    func testAJettonAssetIdIsReadOnlyWithItsMastersRawAddress() throws {
+        let usdt = try XCTUnwrap(PerpsFundingAssetId.parse(Fixtures.tonUsdtAsset))
+        XCTAssertEqual(usdt.kind, .token(address: Fixtures.tonUsdtMaster))
+        XCTAssertEqual(usdt.chainId, "ton/mainnet")
+        XCTAssertEqual([usdt.nativeSymbol, "\(usdt.nativeDecimals)"], ["GRAM", "9"])
+
+        XCTAssertNil(PerpsFundingAssetId.parse("ton/mainnet/jetton/not-an-address"))
+    }
+
+    /// The jetton wallet pays its gas from the TON its message carries, so that TON is no overspend.
+    func testAnOmnistonJettonPaymentIsReadWithTheTonItCarries() throws {
+        let read = try PerpsDepositQuoteReader.read(
+            Fixtures.omnistonQuote(),
+            request: Fixtures.tonUsdtRequest(),
+            security: KeyRegistrationFixture.security,
+            now: now
+        )
+
+        XCTAssertEqual(read.provider, .omniston)
+        XCTAssertEqual(read.route, .crosschainSwap)
+        XCTAssertEqual(read.payloads.map(\.kind), [.main])
+        XCTAssertEqual(read.payloads.first?.valueUnits, "400000000")
+        XCTAssertEqual(read.payloads.first?.mode, 3)
+    }
+
+    func testAnOmnistonJettonPaymentAskingForMoreThanItsOwnValueIsRefused() {
+        assertRefused(
+            Fixtures.omnistonQuote(payloads: [.ton("p_main", value: "400000000", bounce: true, mode: 128)]),
+            Fixtures.tonUsdtRequest(),
+            .unboundedSendMode(payloadId: "p_main", mode: 128)
+        )
+    }
+
     func testATronTokenDepositIsReadAsItsApprovalAndItsCall() throws {
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.tronQuote(), request: Fixtures.tronRequest(), now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.tronQuote(), request: Fixtures.tronRequest(), security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.route, .crosschainSwap)
         XCTAssertEqual(quote.payloads.map(\.kind), [.approval, .main])
@@ -249,7 +357,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
 
     func testATronPayloadToAnEvmAddressOrToItsOwnSenderIsRefused() {
         assertRefused(
-            Fixtures.tronQuote(payloads: [.tron("p_01", to: PerpsDepositCalldata.gatewayAddress, data: "deadbeef")]),
+            Fixtures.tronQuote(payloads: [.tron("p_01", to: PaymentFixture.gateway, data: "deadbeef")]),
             Fixtures.tronRequest(),
             .malformedOperation("op-1")
         )
@@ -261,7 +369,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
     }
 
     func testABitcoinDepositIsReadAsOnePrebuiltTransaction() throws {
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.btcQuote(), request: Fixtures.btcRequest(), now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.btcQuote(), request: Fixtures.btcRequest(), security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.payloads.map(\.kind), [.prebuilt])
         XCTAssertEqual(quote.payloads.first?.data, BtcFixture.livePsbt)
@@ -290,7 +398,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
         let opReturn: [UInt8] = [0x6A, 0x01, 0x2A]
         let opTrue: [UInt8] = [0x51]
         let unnamed = Fixtures.btcQuote(payloads: [.btc("p_01", psbt: BtcFixture.psbt(outputs: [(0, opReturn)]))])
-        XCTAssertNoThrow(try PerpsDepositQuoteReader.read(unnamed, request: Fixtures.btcRequest(), now: now))
+        XCTAssertNoThrow(try PerpsDepositQuoteReader.read(unnamed, request: Fixtures.btcRequest(), security: KeyRegistrationFixture.security, now: now))
 
         assertRefused(
             Fixtures.btcQuote(payloads: [.btc("p_01", psbt: BtcFixture.psbt(outputs: [(1000, opTrue)]))]),
@@ -321,7 +429,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
     }
 
     func testAFoldedTokenDepositIsReadAsOneBatchCarryingItsDelegation() throws {
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.foldedQuote(), request: Fixtures.usdtRequest(), now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.foldedQuote(), request: Fixtures.usdtRequest(), security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.payloads.map(\.kind), [.batch])
         XCTAssertEqual(quote.payloads.first?.gasLimitUnits, "180000")
@@ -332,7 +440,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
     }
 
     func testAFoldedDepositForAnAlreadyDelegatedAddressCarriesNoDelegation() throws {
-        let quote = try PerpsDepositQuoteReader.read(Fixtures.foldedQuote(authorization: nil), request: Fixtures.usdtRequest(), now: now)
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.foldedQuote(authorization: nil), request: Fixtures.usdtRequest(), security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(quote.payloads.map(\.kind), [.batch])
         XCTAssertNil(quote.payloads.first?.delegation)
@@ -342,6 +450,72 @@ final class PerpsDepositQuoteTests: XCTestCase {
         let foreign = HermesBatchFixture.authorization(address: "0xd1c44e466b70002ac54fb727ed7cbe8f92c782f1")
 
         assertRefused(Fixtures.foldedQuote(authorization: foreign), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"))
+    }
+
+    func testADelegationIsReadAgainstTheDelegateAndChainsTheBackendSigned() throws {
+        let delegate = "0xd1c44e466b70002ac54fb727ed7cbe8f92c782f1"
+        let signed = PerpsSecurityConfig(
+            version: 3,
+            hermesDelegate: delegate,
+            hermesDelegateChains: ["eth"],
+            changePubKeyContract: KeyRegistrationFixture.changePubKeyContract
+        )
+        let notOnEthereum = PerpsSecurityConfig(
+            version: 3,
+            hermesDelegate: PerpsDepositCalldata.hermesDelegate,
+            hermesDelegateChains: ["bsc", "arb"],
+            changePubKeyContract: KeyRegistrationFixture.changePubKeyContract
+        )
+
+        let quote = try PerpsDepositQuoteReader.read(
+            Fixtures.foldedQuote(authorization: HermesBatchFixture.authorization(address: delegate)),
+            request: Fixtures.usdtRequest(),
+            security: signed,
+            now: now
+        )
+
+        XCTAssertEqual(quote.payloads.first?.delegation, PerpsDepositDelegation(chainId: 1, address: delegate, nonce: 12))
+        assertRefused(Fixtures.foldedQuote(), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"), security: signed)
+        assertRefused(Fixtures.foldedQuote(), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"), security: notOnEthereum)
+        assertRefused(Fixtures.foldedQuote(), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"), security: nil)
+    }
+
+    /// The batch runs the delegate's code as the account even when the address is delegated already.
+    func testAFoldedBatchIsReadOnlyOnAChainTheSignedDelegateRunsOn() throws {
+        let elsewhere = PerpsSecurityConfig(
+            version: 3,
+            hermesDelegate: PerpsDepositCalldata.hermesDelegate,
+            hermesDelegateChains: ["bsc"],
+            changePubKeyContract: KeyRegistrationFixture.changePubKeyContract
+        )
+
+        let quote = try PerpsDepositQuoteReader.read(
+            Fixtures.foldedQuote(authorization: nil),
+            request: Fixtures.usdtRequest(),
+            security: KeyRegistrationFixture.security,
+            now: now
+        )
+
+        XCTAssertEqual(quote.payloads.map(\.kind), [.batch])
+        assertRefused(Fixtures.foldedQuote(authorization: nil), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"), security: elsewhere)
+    }
+
+    func testAFoldedBatchSigningNoDelegationIsReadOnTheBuiltInChainsWithoutASignedBlock() throws {
+        let quote = try PerpsDepositQuoteReader.read(
+            Fixtures.foldedQuote(authorization: nil),
+            request: Fixtures.usdtRequest(),
+            security: nil,
+            now: now
+        )
+
+        XCTAssertEqual(quote.payloads.map(\.kind), [.batch])
+        assertRefused(Fixtures.foldedQuote(authorization: HermesBatchFixture.authorization()), Fixtures.usdtRequest(), .malformedPayload(payloadId: "p_batch"), security: nil)
+    }
+
+    func testADepositNamingNoDelegateNeedsNoSignedBlock() throws {
+        let quote = try PerpsDepositQuoteReader.read(Fixtures.relayQuote(), request: Fixtures.tonRequest(), security: nil, now: now)
+
+        XCTAssertFalse(quote.payloads.contains { $0.kind == .batch || $0.delegation != nil })
     }
 
     func testADelegationForAnotherChainIsRefused() {
@@ -379,7 +553,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
                 assertRefused(quote, request, .malformedPayload(payloadId: "p_batch"))
                 continue
             }
-            let read = try PerpsDepositQuoteReader.read(quote, request: request, now: now)
+            let read = try PerpsDepositQuoteReader.read(quote, request: request, security: KeyRegistrationFixture.security, now: now)
 
             XCTAssertEqual(read.payloads.map(\.kind), [.batch], chain.rawValue)
             XCTAssertNil(read.payloads.first?.gasLimitUnits, chain.rawValue)
@@ -410,7 +584,7 @@ final class PerpsDepositQuoteTests: XCTestCase {
             echoSender: Fixtures.beneficiary,
             payloads: [.evm(
                 "p_01",
-                to: PerpsDepositCalldata.gatewayAddress,
+                to: PaymentFixture.gateway,
                 data: "0xdeadbeef",
                 gas: "180000",
                 authorization: HermesBatchFixture.authorization()
@@ -441,12 +615,12 @@ final class PerpsDepositQuoteTests: XCTestCase {
         let (quote, request) = payment(from: Fixtures.beneficiary)
         let (elsewhere, elsewhereRequest) = payment(from: "0x00000000000000000000000000000000000000aa")
 
-        let read = try PerpsDepositQuoteReader.read(quote, request: request, registration: KeyRegistrationFixture.registration, now: now)
+        let read = try PerpsDepositQuoteReader.read(quote, request: request, registration: KeyRegistrationFixture.registration, security: KeyRegistrationFixture.security, now: now)
 
         XCTAssertEqual(read.payloads.map(\.kind), [.main])
         XCTAssertEqual(read.payloads.first?.delegation, PerpsDepositDelegation(chainId: 1, address: PerpsDepositCalldata.hermesDelegate, nonce: 12))
         assertRefused(quote, request, .malformedPayload(payloadId: "p_01"))
-        XCTAssertThrowsError(try PerpsDepositQuoteReader.read(elsewhere, request: elsewhereRequest, registration: KeyRegistrationFixture.registration, now: now)) {
+        XCTAssertThrowsError(try PerpsDepositQuoteReader.read(elsewhere, request: elsewhereRequest, registration: KeyRegistrationFixture.registration, security: KeyRegistrationFixture.security, now: now)) {
             XCTAssertEqual($0 as? PerpsDepositQuoteError, .malformedPayload(payloadId: "p_01"))
         }
     }
@@ -455,10 +629,11 @@ final class PerpsDepositQuoteTests: XCTestCase {
         _ quote: Components.Schemas.DepositQuote,
         _ request: Components.Schemas.DepositQuoteRequest,
         _ expected: PerpsDepositQuoteError,
+        security: PerpsSecurityConfig? = KeyRegistrationFixture.security,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertThrowsError(try PerpsDepositQuoteReader.read(quote, request: request, now: now), file: file, line: line) { error in
+        XCTAssertThrowsError(try PerpsDepositQuoteReader.read(quote, request: request, security: security, now: now), file: file, line: line) { error in
             XCTAssertEqual(error as? PerpsDepositQuoteError, expected, file: file, line: line)
         }
     }
@@ -476,6 +651,24 @@ private enum Fixtures {
 
     static let usdtAsset = "eth/mainnet/erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"
     static let tronUsdtAsset = "tron/mainnet/trc20/\(TronFixture.usdt)"
+    static let tonUsdtMaster = "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+    static let tonUsdtAsset = "ton/mainnet/jetton/\(tonUsdtMaster)"
+
+    static func tonUsdtRequest() -> Components.Schemas.DepositQuoteRequest {
+        request(sourceAsset: tonUsdtAsset, sourceAmount: "25000000", sender: tonSender)
+    }
+
+    static func omnistonQuote(payloads: [Components.Schemas.QuotePayload]? = nil) -> Components.Schemas.DepositQuote {
+        relayQuote(
+            provider: "omniston",
+            echoAsset: tonUsdtAsset,
+            echoAmount: "25000000",
+            expectedAmount: "24750000",
+            minAmount: "24750000",
+            executionId: "0b9e2f4c-6f3a-4d55-9a3e-3f1c2b7d8e90",
+            payloads: payloads ?? [.ton("p_main", value: "400000000", bounce: true, mode: 3)]
+        )
+    }
 
     static func tronRequest() -> Components.Schemas.DepositQuoteRequest {
         request(sourceAsset: tronUsdtAsset, sourceAmount: "25000000", sender: TronFixture.sender)
@@ -537,8 +730,8 @@ private enum Fixtures {
                 "p_batch",
                 to: beneficiary,
                 data: HermesBatchFixture.execute([
-                    ("0xdac17f958d2ee523a2206206994597c13d831ec7", HermesBatchFixture.approve(spender: PerpsDepositCalldata.gatewayAddress, amountUnits: "25000000")),
-                    (PerpsDepositCalldata.gatewayAddress, "0xdeadbeef"),
+                    ("0xdac17f958d2ee523a2206206994597c13d831ec7", HermesBatchFixture.approve(spender: PaymentFixture.gateway, amountUnits: "25000000")),
+                    (PaymentFixture.gateway, "0xdeadbeef"),
                 ]),
                 gas: gas,
                 authorization: authorization
@@ -566,7 +759,7 @@ private enum Fixtures {
         mode: Int? = 1
     ) -> Components.Schemas.QuotePayload {
         guard chain.hasPrefix("ton/") else {
-            return .evm(payloadId, chain: chain, to: PerpsDepositCalldata.gatewayAddress, value: value, data: "0xdeadbeef")
+            return .evm(payloadId, chain: chain, to: PaymentFixture.gateway, value: value, data: "0xdeadbeef")
         }
         return .ton(payloadId, chain: chain, value: value, mode: mode)
     }

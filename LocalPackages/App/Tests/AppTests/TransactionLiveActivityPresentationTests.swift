@@ -1,4 +1,5 @@
 @testable import App
+import TKLocalize
 import XCTest
 
 @available(iOS 16.2, *)
@@ -7,19 +8,39 @@ final class TransactionLiveActivityPresentationTests: XCTestCase {
     typealias State = TransactionLiveActivityAttributes.ContentState
 
     func test_sendSignsSourceAmountAndOmitsNetworkOfNativeCurrency() {
-        let presentation = make(state(
+        var send = state(
             kind: .send,
             source: .init(network: "TON", currency: "TON", amount: "1.25"),
             destination: .init(network: "TON", currency: "TON", amount: nil),
             counterparty: "UQDGQ7uTp6a4Bq8tCVlq8UlHBq5DBXL4OLllNaD-BdZ_H7CE"
-        ))
+        )
+        send.fiat = "$4.10"
+        let presentation = Presentation(state: send, isStale: false)
 
         XCTAssertEqual(presentation.glyph, .send)
-        XCTAssertEqual(presentation.tone, .pending)
+        XCTAssertEqual(presentation.badge, .arrowUp)
+        XCTAssertEqual(presentation.badgeTone, .pending)
+        XCTAssertEqual(presentation.status, TKLocales.LiveActivity.confirming)
         XCTAssertEqual(presentation.amount, .init(text: "\u{2212}1.25 TON", style: .primary))
-        XCTAssertNil(presentation.secondaryAmount)
-        XCTAssertEqual(presentation.subtitle, "UQDG...H7CE")
-        XCTAssertEqual(presentation.compactValues, ["1.25 TON", "1.25", "TON"])
+        XCTAssertEqual(presentation.secondaryAmount, .init(text: "$4.10", style: .secondary))
+        XCTAssertEqual(presentation.subtitle, TKLocales.LiveActivity.to("UQDG...H7CE"))
+        XCTAssertEqual(presentation.compactValues, ["\u{2212}1.25 TON", "\u{2212}1.25", "TON"])
+    }
+
+    func test_nativeCoinOmitsItsNetwork() {
+        let gram = make(state(
+            kind: .send,
+            source: .init(network: "TON", currency: "GRAM", amount: "1.25"),
+            counterparty: "UQDGQ7uTp6a4Bq8tCVlq8UlHBq5DBXL4OLllNaD-BdZ_H7CE"
+        ))
+        let usdt = make(state(
+            kind: .send,
+            source: .init(network: "TON", currency: "USDT", amount: "5"),
+            counterparty: "UQDGQ7uTp6a4Bq8tCVlq8UlHBq5DBXL4OLllNaD-BdZ_H7CE"
+        ))
+
+        XCTAssertEqual(gram.subtitle, TKLocales.LiveActivity.to("UQDG...H7CE"))
+        XCTAssertEqual(usdt.subtitle, TKLocales.LiveActivity.onNetwork(TKLocales.LiveActivity.to("UQDG...H7CE"), "TON"))
     }
 
     func test_receiveNamesTokenNetworkNextToSender() {
@@ -30,116 +51,156 @@ final class TransactionLiveActivityPresentationTests: XCTestCase {
             counterparty: "TP1dnHvtnNypf6Paw5t6JGRdEBYWnm2T5t"
         ))
 
-        XCTAssertEqual(presentation.glyph, .receive)
+        XCTAssertEqual(presentation.badge, .arrowDown)
         XCTAssertEqual(presentation.amount, .init(text: "+72 USDT", style: .positive))
-        XCTAssertEqual(presentation.subtitle, "TRON · TP1d...2T5t")
+        XCTAssertNil(presentation.secondaryAmount)
+        XCTAssertEqual(
+            presentation.subtitle,
+            TKLocales.LiveActivity.onNetwork(TKLocales.LiveActivity.from("TP1d...2T5t"), "TRON")
+        )
     }
 
-    func test_swapLeadsWithReceivedAmountAndShowsRouteOnlyAcrossChains() {
-        let sameChain = make(state(
+    func test_swapLeadsWithReceivedAmountAndNamesWhatChanges() {
+        let tokens = make(state(
             kind: .swap,
             source: .init(network: "TON", currency: "USDT", amount: "12.5"),
             destination: .init(network: "TON", currency: "TON", amount: "4.5")
         ), detail: "USDT → TON")
-        let crossChain = make(state(
+        let networks = make(state(
             kind: .swap,
-            source: .init(network: "TON", currency: "USDT", amount: "12.5"),
-            destination: .init(network: "BTC", currency: "BTC", amount: "0.0001")
+            source: .init(network: "TON", currency: "USDT", amount: "25"),
+            destination: .init(network: "TRON", currency: "USDT", amount: "24.8")
         ))
 
-        XCTAssertEqual(sameChain.amount, .init(text: "+4.5 TON", style: .positive))
-        XCTAssertEqual(sameChain.secondaryAmount, .init(text: "\u{2212}12.5 USDT", style: .secondary))
-        XCTAssertNil(sameChain.subtitle)
-        XCTAssertEqual(crossChain.subtitle, "TON → BTC")
-        XCTAssertEqual(crossChain.compactValues, ["0.0001 BTC", "0.0001", "BTC"])
+        XCTAssertEqual(tokens.badge, .swap)
+        XCTAssertEqual(tokens.amount, .init(text: "+4.5 TON", style: .positive))
+        XCTAssertEqual(tokens.secondaryAmount, .init(text: "\u{2212}12.5 USDT", style: .secondary))
+        XCTAssertEqual(tokens.subtitle, "USDT → TON")
+        XCTAssertEqual(networks.subtitle, "TON → TRON")
+        XCTAssertEqual(networks.compactValues, ["+24.8 USDT", "+24.8", "USDT"])
+    }
+
+    func test_perpsOperationsReadAsDepositWithdrawalOrTrade() {
+        let deposit = make(state(
+            kind: .deposit,
+            source: .init(network: "TON", currency: "GRAM", amount: "25"),
+            destination: .init(network: "ETH", currency: "USDC", amount: "72.5")
+        ), chain: "PERPS")
+        var withdrawalState = state(
+            kind: .withdrawal,
+            source: .init(network: "PERPS", currency: "USDC", amount: "50"),
+            destination: .init(network: "ETH", currency: "USDC", amount: nil)
+        )
+        withdrawalState.fiat = "$50.00"
+        let withdrawal = make(withdrawalState, chain: "PERPS")
+        let open = make(state(kind: .open, destination: .init(network: "PERPS", currency: "BTC", amount: "0.015")), chain: "PERPS")
+        let close = make(state(kind: .close, destination: .init(network: "PERPS", currency: "ETH", amount: "0.42")), chain: "PERPS")
+
+        XCTAssertEqual(deposit.glyph, .perps)
+        XCTAssertEqual(deposit.badge, .trayArrowDown)
+        XCTAssertEqual(deposit.amount, .init(text: "+72.5 USDC", style: .positive))
+        XCTAssertEqual(deposit.secondaryAmount, .init(text: "\u{2212}25 GRAM", style: .secondary))
+        XCTAssertEqual(deposit.subtitle, "GRAM → USDC")
+        XCTAssertEqual(withdrawal.badge, .trayArrowUp)
+        XCTAssertEqual(withdrawal.amount, .init(text: "+50 USDC", style: .positive))
+        XCTAssertEqual(withdrawal.secondaryAmount, .init(text: "$50.00", style: .secondary))
+        XCTAssertEqual(withdrawal.subtitle, "\(TKLocales.LiveActivity.perps) → \(TKLocales.Receive.Multichain.Networks.Ethereum.title)")
+        XCTAssertEqual(open.badge, .arrowUp)
+        XCTAssertEqual(open.amount, .init(text: "0.015 BTC", style: .primary))
+        XCTAssertEqual(open.subtitle, TKLocales.LiveActivity.perps)
+        XCTAssertEqual(close.badge, .arrowDown)
     }
 
     func test_unmovedFundsLoseTheirDirectionalColor() {
-        for status in [State.Status.failed, .dropped, .unknown] {
-            let presentation = make(state(
+        for status in [State.Status.failed, .dropped] {
+            let send = make(state(status: status, kind: .send, source: .init(network: "TON", currency: "TON", amount: "1")))
+            let receive = make(state(status: status, kind: .receive, destination: .init(network: "TON", currency: "TON", amount: "1")))
+            let swap = make(state(
                 status: status,
-                kind: .receive,
-                destination: .init(network: "TON", currency: "TON", amount: "3")
+                kind: .swap,
+                source: .init(network: "TON", currency: "USDT", amount: "12.5"),
+                destination: .init(network: "TON", currency: "TON", amount: "4.5")
             ))
 
-            XCTAssertEqual(presentation.glyph, status == .unknown ? .unknown : .failed)
-            XCTAssertEqual(presentation.tone, status == .unknown ? .neutral : .failure)
-            XCTAssertEqual(presentation.amount?.style, .secondary)
-            XCTAssertEqual(presentation.amount?.text, status == .unknown ? "3 TON" : "+3 TON")
+            XCTAssertEqual(send.amount, .init(text: "\u{2212}1 TON", style: .secondary), "\(status)")
+            XCTAssertEqual(receive.amount, .init(text: "1 TON", style: .primary), "\(status)")
+            XCTAssertEqual(swap.amount, .init(text: "+4.5 TON", style: .secondary), "\(status)")
         }
+        let unknown = make(state(status: .unknown, kind: .send, source: .init(network: "TON", currency: "TON", amount: "1")))
+        XCTAssertEqual(unknown.amount, .init(text: "1 TON", style: .primary))
     }
 
-    func test_staleNoticeOnlyWhilePending() {
-        XCTAssertTrue(make(state(kind: .send), isStale: true).showsStaleNotice)
-        XCTAssertFalse(make(state(status: .confirmed, kind: .send), isStale: true).showsStaleNotice)
-        XCTAssertFalse(make(state(status: .unknown, kind: .send), isStale: true).showsStaleNotice)
-        XCTAssertFalse(make(state(kind: .send), isStale: false).showsStaleNotice)
+    func test_statusLineBadgeAndToneFollowTheStatus() {
+        let pending = make(state(kind: .send))
+        let stale = make(state(kind: .send), isStale: true)
+        let confirmed = make(state(status: .confirmed, kind: .send))
+        let failed = make(state(status: .failed, kind: .send))
+        let dropped = make(state(status: .dropped, kind: .receive))
+        let unknown = make(state(status: .unknown, kind: .send))
+        let staleOutcome = make(state(status: .confirmed, kind: .send), isStale: true)
+
+        XCTAssertEqual(pending.statusTone, .neutral)
+        XCTAssertEqual(stale.status, TKLocales.LiveActivity.noUpdatesFor(5))
+        XCTAssertEqual([stale.statusTone, stale.badgeTone, stale.progress.tone], [.warning, .warning, .warning])
+        XCTAssertEqual(stale.badge, .clock)
+        XCTAssertEqual(confirmed.status, TKLocales.LiveActivity.confirmed)
+        XCTAssertEqual([confirmed.badge, failed.badge, unknown.badge], [.done, .cross, .question])
+        XCTAssertEqual([confirmed.statusTone, failed.statusTone, unknown.statusTone], [.success, .failure, .neutral])
+        XCTAssertEqual(failed.status, TKLocales.State.failed)
+        XCTAssertEqual(dropped.subtitle, TKLocales.LiveActivity.droppedByNetwork)
+        XCTAssertEqual(unknown.subtitle, TKLocales.LiveActivity.checkStatusInHistory)
+        XCTAssertEqual(staleOutcome.badge, .done)
     }
 
-    func test_perpsTradeDropsDetailAlreadyShownAsCurrency() {
-        let presentation = make(
-            state(kind: .other, destination: .init(network: "PERPS", currency: "BTC", amount: "0.5")),
-            chain: "PERPS",
-            detail: "BTC"
+    func test_stageNamesTheStatusAndFillsItsSegmentByHalf() {
+        let stage = State.Stage(index: 2, count: 3, title: "Converting to USDC")
+        let staged = make(state(kind: .deposit, stage: stage))
+        let overflow = make(state(kind: .deposit, stage: .init(index: 5, count: 3, title: nil)))
+        let legacy = make(state(kind: .swap, stage: .init(index: 2, count: 4)))
+        var settledState = state(status: .confirmed, kind: .deposit)
+        settledState.steps = 3
+        let settled = make(settledState)
+        var unknownState = state(status: .unknown, kind: .deposit)
+        unknownState.steps = 3
+        let single = make(state(kind: .send))
+
+        XCTAssertEqual(staged.status, "Converting to USDC")
+        XCTAssertEqual(staged.progress, .init(steps: 3, filled: 1.5, tone: .pending))
+        XCTAssertEqual(overflow.progress.filled, 2.5)
+        XCTAssertEqual(legacy.status, TKLocales.LiveActivity.confirming)
+        XCTAssertEqual(legacy.progress.steps, 4)
+        XCTAssertEqual(settled.progress, .init(steps: 3, filled: 3, tone: .success))
+        XCTAssertEqual(make(unknownState).progress, .init(steps: 3, filled: 0, tone: .neutral))
+        XCTAssertEqual(single.progress, .init(steps: 1, filled: 0.5, tone: .pending))
+    }
+
+    func test_hiddenBalanceShowsOnlyAPlaceholder() {
+        var hidden = state(
+            kind: .send,
+            source: .init(network: "TRON", currency: "USDT", amount: nil),
+            counterparty: nil
         )
+        hidden.isRedacted = true
 
-        XCTAssertEqual(presentation.glyph, .perps)
-        XCTAssertEqual(presentation.amount, .init(text: "0.5 BTC", style: .primary))
-        XCTAssertNil(presentation.subtitle)
+        let presentation = make(hidden)
+
+        XCTAssertEqual(presentation.amount, .init(text: Presentation.hiddenAmount, style: .primary))
+        XCTAssertNil(presentation.secondaryAmount)
+        XCTAssertEqual(presentation.compactValues, [Presentation.hiddenAmount])
+        XCTAssertEqual(
+            presentation.subtitle,
+            TKLocales.LiveActivity.onNetwork(TKLocales.LiveActivity.to(Presentation.hiddenAmount), "TRON")
+        )
     }
 
-    func test_pushStartedStateWithoutKindReadsAsExchange() {
-        let presentation = make(state(
-            kind: nil,
-            source: .init(network: "TON", currency: "USDT", amount: "12.5"),
-            destination: .init(network: "BTC", currency: "BTC", amount: "0.0001")
-        ), chain: "BTC", detail: "USDT → BTC")
+    func test_queueShowsOnlyWhilePending() {
+        var pending = state(kind: .send)
+        pending.queuedCount = 2
+        var confirmed = pending
+        confirmed.status = .confirmed
 
-        XCTAssertEqual(presentation.glyph, .pending)
-        XCTAssertEqual(presentation.amount, .init(text: "+0.0001 BTC", style: .positive))
-        XCTAssertEqual(presentation.secondaryAmount, .init(text: "\u{2212}12.5 USDT", style: .secondary))
-        XCTAssertEqual(presentation.subtitle, "TON → BTC")
-    }
-
-    func test_compactValuesFallBackToCurrencyThenChainWithoutAmounts() {
-        let withCurrency = make(state(
-            kind: .other,
-            source: .init(network: "PERPS", currency: "USDC", amount: nil),
-            destination: .init(network: "ETH", currency: "USDC", amount: "")
-        ), chain: "PERPS", detail: "Withdraw")
-        let bare = make(state(kind: .other), chain: "TRON")
-
-        XCTAssertNil(withCurrency.amount)
-        XCTAssertEqual(withCurrency.compactValues, ["USDC"])
-        XCTAssertEqual(withCurrency.subtitle, "PERPS → ETH")
-        XCTAssertEqual(bare.compactValues, ["TRON"])
-        XCTAssertNil(bare.subtitle)
-    }
-
-    func test_compactValuesNeverRepeatAnAmountWithoutCurrency() {
-        let presentation = make(state(kind: .receive, destination: .init(network: "TON", currency: nil, amount: "5")))
-
-        XCTAssertEqual(presentation.compactValues, ["5", "TON"])
-    }
-
-    func test_compactValuesUseUpdatedDestinationNetworkWhenIndexed() {
-        let presentation = make(state(
-            kind: .swap,
-            source: .init(network: "TON", currency: nil, amount: nil),
-            destination: .init(network: "BTC", currency: nil, amount: nil)
-        ), chain: "TON")
-
-        XCTAssertEqual(presentation.compactValues, ["BTC"])
-    }
-
-    func test_ringFillsWithTheStagesReachedOnlyWhilePending() {
-        let staged = state(kind: .other, stage: .init(index: 2, count: 4))
-
-        XCTAssertEqual(make(staged).progress, 0.5)
-        XCTAssertEqual(make(state(kind: .other, stage: .init(index: 5, count: 4))).progress, 1)
-        XCTAssertEqual(make(state(kind: .other, stage: .init(index: 1, count: 0))).progress, 1)
-        XCTAssertNil(make(state(kind: .other)).progress)
-        XCTAssertNil(make(state(status: .confirmed, kind: .other, stage: .init(index: 3, count: 4))).progress)
+        XCTAssertEqual(make(pending).queuedCount, 2)
+        XCTAssertEqual(make(confirmed).queuedCount, 0)
     }
 
     private func make(
@@ -148,24 +209,10 @@ final class TransactionLiveActivityPresentationTests: XCTestCase {
         detail: String? = nil,
         isStale: Bool = false
     ) -> Presentation {
-        Presentation(
-            state: State(
-                transactionId: state.transactionId,
-                chain: chain,
-                detail: detail,
-                status: state.status,
-                title: state.title,
-                updatedAt: state.updatedAt,
-                source: state.source,
-                destination: state.destination,
-                kind: state.kind,
-                wallet: state.wallet,
-                counterpartyAddress: state.counterpartyAddress,
-                stage: state.stage,
-                perpsMarketId: state.perpsMarketId
-            ),
-            isStale: isStale
-        )
+        var state = state
+        state.chain = chain
+        state.detail = detail
+        return Presentation(state: state, isStale: isStale)
     }
 
     private func state(

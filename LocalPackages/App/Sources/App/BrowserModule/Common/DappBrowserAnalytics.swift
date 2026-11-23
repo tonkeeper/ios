@@ -206,11 +206,11 @@ final class DappBrowserAnalyticsController {
         case .arb:
             return .arb
         case .bsc:
-            return .bnb
+            return .bsc
         case .sol:
             return .sol
         case .polygon:
-            return .pol
+            return .polygon
         case .avax:
             return .avax
         case .robinhood:

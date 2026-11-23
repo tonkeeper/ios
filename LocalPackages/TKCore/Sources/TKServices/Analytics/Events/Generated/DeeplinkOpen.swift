@@ -10,12 +10,13 @@ import Foundation
 import AnyCodable
 #endif
 
-/** A link opened the app: a &#x60;tonkeeper://&#x60; / &#x60;ton://&#x60; app link, or a universal &#x60;https://app.tonkeeper.com/...&#x60; link — either launching the app or arriving while it was already running. Sent once per link, before the app routes it, so links the app cannot use are visible too (&#x60;link_type: unknown&#x60;). A push tap is not counted here: it reports &#x60;push_click&#x60;, and links opened from inside the app (banners, stories, dapps) report their own placement events.  */
+/** A link opened the app: a &#x60;tonkeeper://&#x60; / &#x60;ton://&#x60; app link, a universal &#x60;https://app.tonkeeper.com/...&#x60; link, or an AppsFlyer campaign link (OneLink: &#x60;keeper.onelink.me&#x60;, &#x60;go.tonkeeper.com&#x60;) — either launching the app or arriving while it was already running. Sent once per link, before the app routes it, so links the app cannot use are visible too (&#x60;link_type: unknown&#x60;). A campaign link is reported with the screen its &#x60;deep_link_value&#x60; names (none is &#x60;main&#x60;, a name the app does not know is &#x60;unknown&#x60;) and with its utm. A push tap is not counted here: it reports &#x60;push_click&#x60;, and links opened from inside the app (banners, stories, dapps) report their own placement events.  */
 public struct DeeplinkOpen: Codable, JSONEncodable, Hashable {
 
     public enum From: String, Codable, CaseIterable {
         case appLink = "app_link"
         case universalLink = "universal_link"
+        case deferredLink = "deferred_link"
     }
     public enum LinkType: String, Codable, CaseIterable {
         case transfer = "transfer"
@@ -41,14 +42,15 @@ public struct DeeplinkOpen: Codable, JSONEncodable, Hashable {
         case addWallet = "add_wallet"
         case main = "main"
         case raffle = "raffle"
+        case perps = "perps"
         case unknown = "unknown"
     }
     public var eventName: String = "deeplink_open"
-    /** How the link reached the app: `app_link` for a custom URL scheme (`tonkeeper://`, `ton://`, `tc://`), `universal_link` for an `https://` link resolved through the associated domain.  */
+    /** How the link reached the app: `app_link` for a custom URL scheme (`tonkeeper://`, `ton://`, `tc://`), `universal_link` for an `https://` link resolved through the associated domain, a campaign link tapped with the app installed included. `deferred_link` is a campaign link tapped while the app was not installed: the store install carried it, and AppsFlyer hands it to the app on the first launch, so it always comes with `is_cold_start: true`. The event is sent when the link arrives; with no wallet yet, the screen it names opens once the user creates or imports one. The same install also sends its own `install_attribution`: count the install there and the deferred click here, never the two together.  */
     public var from: From
-    /** What the link asks the app to open, taken from the parsed link. `main` is a bare link with no destination; `unknown` is a link the app could not parse, which is what a broken campaign link looks like.  */
+    /** What the link asks the app to open, taken from the parsed link. `main` is a bare link with no destination; `unknown` is a link the app could not parse, which is what a broken campaign link looks like. `perps` is the Perps section and the links into it (a market, its orders).  */
     public var linkType: LinkType
-    /** `true` when the link launched the app, `false` when it arrived while the app was already running.  */
+    /** `true` when the entry that produced this event launched the app — a cold start; `false` when the app was already running.  */
     public var isColdStart: Bool
 
     public init(eventName: String = "deeplink_open", from: From, linkType: LinkType, isColdStart: Bool) {

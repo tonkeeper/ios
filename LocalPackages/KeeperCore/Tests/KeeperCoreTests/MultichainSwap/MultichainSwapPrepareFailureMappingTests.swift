@@ -22,6 +22,18 @@ final class MultichainSwapPrepareFailureMappingTests: XCTestCase {
         )
     }
 
+    func test_walletScreened_isReportedAsSuchAndNotAsABadNodeAnswer() {
+        let failure = SwapExecutionFailureMapper.failure(
+            from: MultichainSwapAPIError.badRequest(
+                message: "wallet blocked by the provider's compliance screening: Access denied due to wallet screening restrictions.",
+                code: "wallet_screened",
+                requestId: "88c6799c"
+            )
+        )
+
+        XCTAssertEqual(kind(of: failure), .walletScreened)
+    }
+
     func test_minAmountNotMet_isReportedAsAnAmountTooSmall() {
         XCTAssertEqual(kind(of: mapped(code: "min_amount_not_met")), .dustAmount)
     }

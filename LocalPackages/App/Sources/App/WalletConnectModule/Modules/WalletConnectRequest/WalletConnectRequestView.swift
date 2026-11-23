@@ -1,3 +1,4 @@
+import AppUI
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -23,6 +24,9 @@ struct WalletConnectRequestScreen: View {
             actionBar
         }
         .background(.backgroundPage)
+        .task {
+            await viewModel.load()
+        }
     }
 }
 
@@ -84,9 +88,29 @@ private extension WalletConnectRequestScreen {
 
     var actionBar: some View {
         VStack(spacing: 0) {
+            actionBarContent
+                .frame(height: Layout.actionBarHeight)
+                .padding(.horizontal, Layout.actionHorizontalPadding)
+        }
+        .background(.backgroundPage.opacity(0.96), ignoresSafeAreaEdges: .bottom)
+    }
+
+    @ViewBuilder
+    var actionBarContent: some View {
+        if TKLiquidGlass.isEnabled {
+            TKConfirmSlider(
+                appearance: TKConfirmSlider.Appearance(TKSlider.Appearance(review: viewModel.review)),
+                isEnabled: viewModel.canApprove,
+                process: viewModel.actionBarState.sliderProcess,
+                handleAccessibilityIdentifier: "confirm_swipe",
+                onConfirm: viewModel.approve
+            )
+            .opacity(viewModel.canApprove || viewModel.actionBarState != .idle ? 1 : 0)
+        } else {
             ZStack {
                 WalletConnectRequestConfirmSliderRepresentable(
                     title: sliderTitle,
+                    appearance: TKSlider.Appearance(review: viewModel.review),
                     isEnabled: viewModel.actionBarState == .idle && viewModel.canApprove,
                     onConfirm: viewModel.approve
                 )
@@ -95,10 +119,7 @@ private extension WalletConnectRequestScreen {
 
                 actionBarOverlay
             }
-            .frame(height: Layout.actionBarHeight)
-            .padding(.horizontal, Layout.actionHorizontalPadding)
         }
-        .background(.backgroundPage.opacity(0.96), ignoresSafeAreaEdges: .bottom)
     }
 
     @ViewBuilder
@@ -112,9 +133,11 @@ private extension WalletConnectRequestScreen {
                 preset: .medium
             )
         case .success:
-            WalletConnectRequestActionResultView(state: .success)
+            TKResultSwiftUIView(state: .success, title: TKLocales.Result.success)
+                .frame(maxWidth: .infinity, minHeight: Layout.resultHeight)
         case .failure:
-            WalletConnectRequestActionResultView(state: .failure)
+            TKResultSwiftUIView(state: .failure, title: TKLocales.Result.failure)
+                .frame(maxWidth: .infinity, minHeight: Layout.resultHeight)
         }
     }
 
@@ -146,6 +169,7 @@ private extension WalletConnectRequestScreen {
         static let scrollBottomPadding: CGFloat = 104
         static let actionBarHeight: CGFloat = 88
         static let actionHorizontalPadding: CGFloat = 16
+        static let resultHeight: CGFloat = 56
     }
 }
 
@@ -561,12 +585,13 @@ private struct WalletConnectRequestDetailCell: View {
 
 private struct WalletConnectRequestConfirmSliderRepresentable: UIViewRepresentable {
     let title: NSAttributedString
+    let appearance: TKSlider.Appearance
     let isEnabled: Bool
     let onConfirm: () -> Void
 
     func makeUIView(context: Context) -> TKSlider {
         let slider = TKSlider()
-        slider.appearance = .standart
+        slider.appearance = appearance
         slider.title = title
         slider.isEnable = isEnabled
         slider.didConfirm = onConfirm
@@ -576,65 +601,19 @@ private struct WalletConnectRequestConfirmSliderRepresentable: UIViewRepresentab
 
     func updateUIView(_ uiView: TKSlider, context: Context) {
         uiView.title = title
+        uiView.appearance = appearance
         uiView.isEnable = isEnabled
         uiView.didConfirm = onConfirm
     }
 }
 
-private struct WalletConnectRequestActionResultView: View {
-    enum State {
-        case success
-        case failure
-
-        var title: String {
-            switch self {
-            case .success:
-                TKLocales.Result.success
-            case .failure:
-                TKLocales.Result.failure
-            }
+private extension WalletConnectRequestActionBarState {
+    var sliderProcess: TKActionBarProcess {
+        switch self {
+        case .idle: .idle
+        case .loading: .processing
+        case .success: .success
+        case .failure: .failure
         }
-
-        var tintColor: TKColor {
-            switch self {
-            case .success:
-                .accentGreen
-            case .failure:
-                .accentRed
-            }
-        }
-
-        var icon: UIImage {
-            switch self {
-            case .success:
-                .TKUIKit.Icons.Size32.checkmarkCircle
-            case .failure:
-                .TKUIKit.Icons.Size32.exclamationmarkCircle
-            }
-        }
-    }
-
-    let state: State
-
-    var body: some View {
-        VStack(spacing: Layout.spacing) {
-            SwiftUI.Image(uiImage: state.icon)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: Layout.iconSize, height: Layout.iconSize)
-
-            Text(state.title)
-                .textStyle(.label2)
-                .lineLimit(1)
-        }
-        .foregroundStyle(state.tintColor)
-        .frame(maxWidth: .infinity, minHeight: Layout.height)
-    }
-
-    enum Layout {
-        static let iconSize: CGFloat = 32
-        static let spacing: CGFloat = 4
-        static let height: CGFloat = 56
     }
 }

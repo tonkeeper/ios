@@ -97,7 +97,9 @@ public struct BannerItemView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, Layout.textImageSpacing)
-                bannerImage(width: geometry.size.width * Layout.imageWidthRatio)
+                // Artwork wider than the slot runs under the text, clipped only by the card.
+                bannerImage(width: Layout.imageWidth)
+                    .zIndex(-1)
             }
             .frame(width: geometry.size.width, height: height, alignment: .top)
         }
@@ -127,13 +129,15 @@ public struct BannerItemView: View {
     @ViewBuilder
     private func bannerImage(width: CGFloat) -> some View {
         if let imageURL = item.imageURL {
-            TKRemoteImage(url: imageURL, downsampleSize: CGSize(width: width, height: height)) {
+            TKRemoteImage(url: imageURL, contentMode: .fit) {
                 ShimmerSwiftUIView(config: ShimmerSwiftUIView.Config(color: .backgroundContentTint))
+                    .frame(width: width, height: height)
             } failure: {
                 defaultBannerImage(width: width)
             }
-            .frame(width: width, height: height)
-            .clipped()
+            .frame(height: height)
+            .fixedSize(horizontal: true, vertical: false)
+            .frame(width: width, height: height, alignment: .trailing)
         } else {
             defaultBannerImage(width: width)
         }
@@ -182,7 +186,7 @@ public struct BannerItemView: View {
     }
 
     private func defaultBannerImage(width: CGFloat) -> some View {
-        Image(uiImage: .TKUIKit.Artwork.Banners.multichain)
+        Image(uiImage: item.image ?? .TKUIKit.Artwork.Banners.multichain)
             .resizable()
             .scaledToFill()
             .frame(width: width, height: height)
@@ -192,7 +196,7 @@ public struct BannerItemView: View {
 
 extension BannerItemView {
     enum Layout {
-        static let imageWidthRatio: CGFloat = 1.0 / 3.0
+        static let imageWidth: CGFloat = 134
         // Banner is a fixed 90pt: 14 + 2 title lines (40) + 4 + 2 subtitle lines (32) fills it
         // exactly, so both texts can wrap without being clipped (matches the Figma spec).
         static let titleTopPadding: CGFloat = 13

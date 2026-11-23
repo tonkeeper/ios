@@ -68,6 +68,11 @@ public struct TransactionCellPreviews: View {
                         id: "never-gonna",
                         text: "Never gonna give you up\nNever gonna let you down"
                     ),
+                    .init(
+                        id: "encrypted",
+                        text: "Encrypted comment",
+                        encryptedLength: 24
+                    ),
                 ]
             ),
             simpleItem(

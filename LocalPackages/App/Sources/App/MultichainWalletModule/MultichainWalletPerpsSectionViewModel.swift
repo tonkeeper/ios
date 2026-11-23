@@ -2,20 +2,21 @@ import Foundation
 import KeeperCore
 import Perps
 import PerpsModels
+import TKCore
 
 @MainActor
 final class MultichainWalletPerpsSectionViewModel: ObservableObject {
     enum Content {
         case hidden
         case shelf([PerpsShelfMarketViewData])
-        case positions([PerpsPositionRowItem])
+        case positions(PerpsPositionsPreview)
     }
 
     @Published private(set) var content: Content = .hidden
     @Published private(set) var balanceText: String?
 
-    var onOpenPerps: (() -> Void)?
-    var onOpenMarket: ((Int64) -> Void)?
+    var onOpenPerps: ((PerpsEntryPoint) -> Void)?
+    var onOpenMarket: ((Int64, PerpsEntryPoint) -> Void)?
 
     /// Held, not read: the assembly caches scopes weakly, so this is what keeps the wallet
     /// home and the perps screens on one account store for as long as the section exists.
@@ -30,7 +31,7 @@ final class MultichainWalletPerpsSectionViewModel: ObservableObject {
     private let marketsStore: any PerpsMarketsStoring
     private let shelfMarketsLoader: () async throws -> [PerpsMarketSummary]
     private let itemsMapper: TradeItemsMapper
-    private let format = PerpsFormatting.live
+    private let format: PerpsFormatting
 
     private var iconURLsByMarketId: [Int64: URL] = [:]
     private var requestedIconMarketIds: Set<Int64> = []
@@ -57,6 +58,7 @@ final class MultichainWalletPerpsSectionViewModel: ObservableObject {
         self.portfolioStore = portfolioStore
         self.currencyStore = currencyStore
         self.appSettingsStore = appSettingsStore
+        format = .live(appSettingsStore: appSettingsStore)
         self.amountFormatter = amountFormatter
         self.accountStore = accountStore
         self.marketsStore = marketsStore
@@ -74,7 +76,7 @@ final class MultichainWalletPerpsSectionViewModel: ObservableObject {
         accountStore.resolveIfNeeded()
         // The balance only moves on a full portfolio read, and the store now stays resolved
         // for as long as any perps screen holds it, so entering the screen is what refreshes it.
-        if case .active = accountStore.currentWalletState() { accountStore.refresh() }
+        if case .active = accountStore.currentWalletState() { accountStore.refreshOnAppear() }
         applyAccount(accountStore.currentWalletState())
     }
 
@@ -102,11 +104,11 @@ final class MultichainWalletPerpsSectionViewModel: ObservableObject {
     }
 
     func openPerps() {
-        onOpenPerps?()
+        onOpenPerps?(entryPoint)
     }
 
     func openMarket(_ marketId: Int64) {
-        onOpenMarket?(marketId)
+        onOpenMarket?(marketId, entryPoint)
     }
 
     deinit {
@@ -118,21 +120,31 @@ final class MultichainWalletPerpsSectionViewModel: ObservableObject {
 }
 
 private extension MultichainWalletPerpsSectionViewModel {
+    var entryPoint: PerpsEntryPoint {
+        if case .positions = content { .mainPositions } else { .mainCarousel }
+    }
+
     func observeAccountStore() {
         accountStore.addChangeObserver(self) { observer in
-            Task { @MainActor in observer.applyAccount(observer.accountStore.currentWalletState()) }
+            Task { @MainActor in observer.applyCurrentAccountOnScreen() }
         }
         portfolioStore.addObserver(self) { observer, event in
             guard case let .didUpdatePortfolio(wallet) = event else { return }
             Task { @MainActor in
                 guard wallet == observer.wallet else { return }
-                observer.applyAccount(observer.accountStore.currentWalletState())
+                observer.applyCurrentAccountOnScreen()
             }
         }
         appSettingsStore.addObserver(self) { observer, event in
             guard case .didUpdateIsSecureMode = event else { return }
-            Task { @MainActor in observer.applyAccount(observer.accountStore.currentWalletState()) }
+            Task { @MainActor in observer.applyCurrentAccountOnScreen() }
         }
+    }
+
+    /// The perps screens pushed over the wallet home keep the account store busy; `onAppear` catches up.
+    func applyCurrentAccountOnScreen() {
+        guard isOnScreen else { return }
+        applyAccount(accountStore.currentWalletState())
     }
 
     func perpsBalanceText() -> String? {
@@ -169,11 +181,10 @@ private extension MultichainWalletPerpsSectionViewModel {
             return
         }
         requestMissingIcons(for: account.positions)
-        content = .positions(PerpsPositionRowMapping.rows(
+        content = .positions(PerpsPositionRowMapping.preview(
             from: account.positions,
             format: format,
-            iconURL: { iconURLsByMarketId[$0] },
-            hiddenValueText: appSettingsStore.getState().isSecureMode ? .secureModeValueShort : nil
+            iconURL: { iconURLsByMarketId[$0] }
         ))
     }
 

@@ -268,8 +268,6 @@ private extension RampCoordinator {
         pickerModule.output.didTapClose = { [weak self] in
             self?.finishRampFlow()
         }
-        pickerModule.view.setupBackButton()
-
         navigationController.pushViewController(pickerModule.view, animated: true)
     }
 
@@ -334,8 +332,6 @@ private extension RampCoordinator {
         pickerModule.output.didTapClose = { [weak self] in
             self?.finishRampFlow()
         }
-        pickerModule.view.setupBackButton()
-
         navigationController.pushViewController(pickerModule.view, animated: true)
     }
 
@@ -353,8 +349,6 @@ private extension RampCoordinator {
         pickerModule.output.didTapClose = { [weak self] in
             self?.finishRampFlow()
         }
-        pickerModule.view.setupBackButton()
-
         navigationController.pushViewController(pickerModule.view, animated: true)
     }
 
@@ -470,8 +464,7 @@ private extension RampCoordinator {
         module.output.didTapContinue = { [weak self] context, _, widgetURL in
             guard let self, let widgetURL else { return }
 
-            let amount = NSDecimalNumber(decimal: context.amount).floatValue
-            self.fireDepositClickRampInsertAmountContinue(amount: amount, providerName: context.providerName)
+            self.fireDepositClickRampInsertAmountContinue(providerName: context.providerName)
 
             self.openOnRampProviderFlow(url: widgetURL, asset: asset, context: context)
         }
@@ -503,7 +496,6 @@ private extension RampCoordinator {
 
     func openOnRampProviderFlow(url: URL, asset: RampAsset, context: RampOnrampContinueContext) {
         logViewOnrampFlowIfNeeded(asset: asset, context: context)
-        flowContext.amount = NSDecimalNumber(decimal: context.amount).floatValue
         flowContext.providerName = context.providerName
         fireDepositContinueToRampProvider(txId: context.txId)
         didTapOpenMerchant?(url)
@@ -539,8 +531,6 @@ private extension RampCoordinator {
         pickerModule.output.didTapClose = { [weak self] in
             self?.finishRampFlow()
         }
-        pickerModule.view.setupBackButton()
-
         navigationController.pushViewController(pickerModule.view, animated: true)
     }
 

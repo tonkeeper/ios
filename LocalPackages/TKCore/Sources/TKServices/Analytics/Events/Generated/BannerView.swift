@@ -10,21 +10,27 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Fired when a promo banner on the wallet home screen becomes the front, fully-visible item of the banner deck (an impression). The deck is a swipeable stack where only the front banner is fully visible, so only the front banner counts; deduped per appearance, so swiping back to a banner already seen in this appearance does not re-fire. Geo and user id are auto-attached by the Aptabase SDK. Together with banner_click this yields impressions, CTR (clicks / views matched on banner_id) and unique viewers / clickers (via the auto-attached user id).  */
+/** Fired when a promo banner becomes the front, fully-visible item of the banner deck (an impression). The deck is a swipeable stack where only the front banner is fully visible, so only the front banner counts; deduped per appearance, so swiping back to a banner already seen in this appearance does not re-fire. The deck is rendered on the wallet main screen and in the Browser section — &#x60;from&#x60; says which surface fired. Geo and user id are auto-attached by the Aptabase SDK. Together with banner_click this yields impressions, CTR (clicks / views matched on banner_id) and unique viewers / clickers (via the auto-attached user id). &#x60;wallet_mode&#x60; distinguishes TON-only from multichain wallets, matching &#x60;wallet_open&#x60;.  */
 public struct BannerView: Codable, JSONEncodable, Hashable {
 
     public var eventName: String = "banner_view"
     /** Banner identifier from the /banners backend response. */
     public var bannerId: String
+    public var walletMode: WalletMode
+    public var from: BannerPlacement
 
-    public init(eventName: String = "banner_view", bannerId: String) {
+    public init(eventName: String = "banner_view", bannerId: String, walletMode: WalletMode, from: BannerPlacement) {
         self.eventName = eventName
         self.bannerId = bannerId
+        self.walletMode = walletMode
+        self.from = from
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case bannerId = "banner_id"
+        case walletMode = "wallet_mode"
+        case from
     }
 
     // Encodable protocol methods
@@ -33,6 +39,8 @@ public struct BannerView: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(eventName, forKey: .eventName)
         try container.encode(bannerId, forKey: .bannerId)
+        try container.encode(walletMode, forKey: .walletMode)
+        try container.encode(from, forKey: .from)
     }
 }
 

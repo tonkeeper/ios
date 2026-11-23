@@ -1,4 +1,3 @@
-import PerpsModels
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -29,6 +28,7 @@ struct PerpsAssetPageHeader: View {
 
             HStack {
                 PerpsAssetHeaderButton(icon: .TKUIKit.Icons.Size16.chevronLeft, action: onBack)
+                    .accessibilityIdentifier("perps_asset_back")
                 Spacer()
             }
             .padding(.horizontal, Layout.headerSide)
@@ -81,7 +81,7 @@ struct PerpsAssetTradeToast: View {
             SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.checkmarkCircle)
                 .renderingMode(.template)
                 .foregroundStyle(.accentGreen)
-        case .failure:
+        case .failure, .unknown:
             SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.exclamationMarkCircle)
                 .renderingMode(.template)
                 .foregroundStyle(.accentRed)
@@ -90,18 +90,125 @@ struct PerpsAssetTradeToast: View {
 
     private var text: String {
         switch toast {
-        case let .progress(text), let .success(text), let .failure(text): text
+        case let .progress(text), let .success(text), let .unknown(text), let .failure(text): text
         }
     }
 }
 
-struct PerpsAssetLoadingView: View {
+struct PerpsAssetLoadingView<ChartViewModel: PerpsChartViewModeling>: View {
+    let hasPosition: Bool
+    let chartViewModel: ChartViewModel
+
     var body: some View {
-        VStack {
-            Spacer()
-            CircularLoader(mode: .indeterminate, preset: .medium)
-            Spacer()
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                market
+                PerpsChartView(viewModel: chartViewModel, markers: [])
+                    .accessibilityHidden(true)
+                PerpsAssetSeparator()
+                if hasPosition {
+                    position
+                    history
+                }
+                info
+            }
         }
+        .allowsHitTesting(false)
+        .accessibilityIdentifier("perps_asset_loading")
+    }
+
+    private var market: some View {
+        VStack(alignment: .leading, spacing: Layout.marketIconSpacing) {
+            PerpsSkeletonCircle(side: Layout.iconSide)
+            VStack(alignment: .leading, spacing: Layout.skeletonLineSpacing) {
+                PerpsSkeletonBar(width: 120, height: 24)
+                HStack(spacing: Layout.deltaSpacing) {
+                    PerpsSkeletonBar(width: 48)
+                    PerpsSkeletonBar(width: 40)
+                }
+            }
+            .frame(minHeight: Layout.marketContentHeight, alignment: .top)
+        }
+        .padding(.top, Layout.marketTopPadding)
+        .padding(.bottom, Layout.marketBottomPadding)
+        .padding(.horizontal, Layout.marketHorizontalPadding)
+    }
+
+    private var position: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(TKLocales.Perps.Asset.yourPosition)
+                .textStyle(.label1)
+                .foregroundStyle(.textPrimary)
+                .padding(.horizontal, Layout.listInset)
+                .padding(.vertical, Layout.sectionTitleVerticalPadding)
+            VStack(alignment: .leading, spacing: Layout.skeletonLineSpacing) {
+                PerpsSkeletonBar(width: 80, height: 24)
+                HStack(spacing: Layout.deltaSpacing) {
+                    PerpsSkeletonBar(width: 40)
+                    PerpsSkeletonBar(width: 32)
+                }
+            }
+            .padding(Layout.cellPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .asCellsGroup()
+            .padding(.bottom, Layout.positionCardSpacing)
+            rows([
+                (TKLocales.Perps.Asset.size, TKLocales.Perps.Asset.Size.hint),
+                (TKLocales.Perps.Asset.liquidationPrice, TKLocales.Perps.Asset.LiquidationPrice.hint),
+                (TKLocales.Perps.Asset.markPrice, TKLocales.Perps.Asset.MarkPrice.hint),
+                (TKLocales.Perps.Asset.entryPrice, TKLocales.Perps.Asset.EntryPrice.hint),
+                (TKLocales.Perps.Asset.funding, TKLocales.Perps.Asset.FundingRate.hint),
+            ])
+        }
+        .padding(.bottom, Layout.sectionBottomPadding)
+    }
+
+    private var history: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ListTitleView(config: .text(TKLocales.Perps.Asset.transactionHistory))
+                .padding(.horizontal, Layout.listInset)
+            VStack(spacing: 0) {
+                ForEach(0 ..< 3, id: \.self) { index in
+                    if index > 0 {
+                        PerpsAssetSeparator(inset: Layout.cellPadding)
+                    }
+                    PerpsSkeletonRow(leading: [[77], [60]], trailing: [50, 68])
+                }
+            }
+            .asCellsGroup()
+        }
+        .padding(.bottom, Layout.sectionBottomPadding)
+    }
+
+    private var info: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ListTitleView(config: .text(TKLocales.Perps.Asset.info))
+                .padding(.horizontal, Layout.listInset)
+            rows([
+                (TKLocales.Perps.Asset.volume24h, TKLocales.Perps.Asset.Volume24h.hint),
+                (TKLocales.Perps.openInterest, TKLocales.Perps.Asset.OpenInterest.hint),
+                (TKLocales.Perps.Asset.funding, TKLocales.Perps.Asset.FundingRate.hint),
+            ])
+        }
+        .padding(.bottom, Layout.sectionBottomPadding)
+    }
+
+    private func rows(_ labels: [(String, String)]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                if index > 0 {
+                    PerpsAssetSeparator(inset: Layout.cellPadding)
+                }
+                HStack(spacing: 0) {
+                    PerpsAssetInfoLabel(label.0, hint: label.1)
+                    Spacer(minLength: Layout.rowGap)
+                    PerpsSkeletonBar(width: 64)
+                }
+                .padding(.horizontal, Layout.cellPadding)
+                .padding(.vertical, Layout.cellLabelVerticalPadding)
+            }
+        }
+        .asCellsGroup()
     }
 }
 
@@ -134,8 +241,9 @@ struct PerpsAssetFailedView: View {
 
 struct PerpsAssetPageReadyView<ChartViewModel: PerpsChartViewModeling>: View {
     let ready: PerpsAssetPageReady
-    @ObservedObject var chartViewModel: ChartViewModel
+    let chartViewModel: ChartViewModel
     let chartMarkers: [PerpsChartPositionMarker]
+    let showsLoyaltyBanner: Bool
     let safeAreaBottom: CGFloat
     @Binding var showSizeInToken: Bool
     let onShare: () -> Void
@@ -145,6 +253,8 @@ struct PerpsAssetPageReadyView<ChartViewModel: PerpsChartViewModeling>: View {
     let onSeeAllHistory: () -> Void
     let onSelectHistory: (String) -> Void
     let onRiskDisclosure: () -> Void
+    let onOpenLoyalty: () -> Void
+    let onDismissLoyaltyBanner: () -> Void
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -152,14 +262,15 @@ struct PerpsAssetPageReadyView<ChartViewModel: PerpsChartViewModeling>: View {
                 PerpsAssetMarketSection(ready: ready, chartViewModel: chartViewModel)
                 PerpsChartView(viewModel: chartViewModel, markers: chartMarkers)
                 PerpsAssetSeparator()
+                if showsLoyaltyBanner {
+                    PerpsAssetLoyaltyBanner(onOpen: onOpenLoyalty, onDismiss: onDismissLoyaltyBanner)
+                }
                 positionAndOrders
                 if !ready.history.isEmpty {
                     PerpsAssetHistorySection(history: ready.history, onSeeAll: onSeeAllHistory, onSelect: onSelectHistory)
                 }
                 PerpsAssetInfoSection(ready: ready)
-                if let about = ready.about {
-                    PerpsAssetAboutSection(about: about)
-                }
+                PerpsAssetAboutSection(about: ready.about)
                 PerpsAssetRiskDisclosureFootnote(action: onRiskDisclosure)
             }
             .padding(.bottom, safeAreaBottom + Layout.actionBarHeight + Layout.bottomPadding)
@@ -198,6 +309,27 @@ struct PerpsAssetPageReadyView<ChartViewModel: PerpsChartViewModeling>: View {
                 onAutoClose: onAutoClose
             )
         }
+    }
+}
+
+struct PerpsAssetLoyaltyBanner: View {
+    let onOpen: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        BannerItemView(
+            item: BannerItem(
+                id: "loyalty",
+                title: TKLocales.Loyalty.Banner.title,
+                actionTitle: TKLocales.Loyalty.Banner.action,
+                image: .TKUIKit.Artwork.Banners.loyalty,
+                action: onOpen
+            ),
+            height: Layout.bannerHeight,
+            onTapDismiss: onDismiss
+        )
+        .padding(.horizontal, Layout.listInset)
+        .padding(.bottom, Layout.sectionBottomPadding)
     }
 }
 
@@ -258,10 +390,10 @@ private struct PerpsAssetPriceChangeBlock: View {
     let price: String
     let percent: String
     let amount: String
-    let isPositive: Bool
+    let isPositive: Bool?
 
     var body: some View {
-        let changeColor: TKColor = isPositive ? .accentGreen : .accentRed
+        let changeColor: TKColor = isPositive.map { $0 ? .accentGreen : .accentRed } ?? .textSecondary
         VStack(alignment: .leading, spacing: Layout.priceDeltaSpacing) {
             Text(price)
                 .textStyle(.h2)
@@ -467,11 +599,17 @@ private struct PerpsAssetInfoSection: View {
 private struct PerpsAssetInfoRow: View {
     let label: String
     let value: String
-    let hint: String
+    var hint: String?
 
     var body: some View {
         HStack(spacing: 0) {
-            PerpsAssetInfoLabel(label, hint: hint)
+            if let hint {
+                PerpsAssetInfoLabel(label, hint: hint)
+            } else {
+                Text(label)
+                    .textStyle(.body1)
+                    .foregroundStyle(.textSecondary)
+            }
             Spacer(minLength: Layout.rowGap)
             Text(value)
                 .textStyle(.label1)
@@ -553,15 +691,18 @@ private struct PerpsAssetRiskDisclosureFootnote: View {
                 SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.informationCircle)
                     .renderingMode(.template)
                     .foregroundStyle(.iconSecondary)
-                Text(TKLocales.Perps.RiskDisclosure.view)
+                Text(TKLocales.Perps.RiskDisclosure.footnote)
                     .textStyle(.body2)
                     .foregroundStyle(.textSecondary)
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, Layout.listInset)
             .padding(.bottom, Layout.sectionBottomPadding)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("perps_risk_disclosure")
     }
 }
 
@@ -628,7 +769,7 @@ private struct PerpsAssetPnlCard: View {
     let position: PerpsAssetPagePosition
 
     var body: some View {
-        let pnlColor: TKColor = position.isPnlPositive ? .accentGreen : .accentRed
+        let pnlColor: TKColor = position.isPnlPositive.map { $0 ? .accentGreen : .accentRed } ?? .textSecondary
         VStack(alignment: .leading, spacing: Layout.priceDeltaSpacing) {
             HStack(alignment: .top) {
                 Text(position.valueText)
@@ -810,6 +951,7 @@ private struct PerpsAssetAccentRow: View {
             }
             .padding(.horizontal, Layout.cellPadding)
             .padding(.vertical, Layout.cellLabelVerticalPadding)
+            .contentShape(Rectangle())
         }
     }
 }
@@ -831,9 +973,31 @@ struct PerpsAssetLimitOrdersSection: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(!isEnabled)
+                PerpsAssetLimitOrderAutoCloseCard(order: order)
             }
         }
         .padding(.bottom, Layout.sectionBottomPadding)
+    }
+}
+
+private struct PerpsAssetLimitOrderAutoCloseCard: View {
+    let order: PerpsAssetPageLimitOrder
+
+    var body: some View {
+        if order.takeProfitText != nil || order.stopLossText != nil {
+            VStack(spacing: 0) {
+                if let takeProfit = order.takeProfitText {
+                    PerpsAssetInfoRow(label: TKLocales.Perps.Asset.takeProfit, value: takeProfit)
+                }
+                if order.takeProfitText != nil, order.stopLossText != nil {
+                    PerpsAssetSeparator(inset: Layout.cellPadding)
+                }
+                if let stopLoss = order.stopLossText {
+                    PerpsAssetInfoRow(label: TKLocales.Perps.Asset.stopLoss, value: stopLoss)
+                }
+            }
+            .asCellsGroup()
+        }
     }
 }
 
@@ -933,7 +1097,7 @@ private struct PerpsAssetOrderRow: View {
                         if let percent = order.percentText {
                             Text(percent)
                                 .textStyle(.body3)
-                                .foregroundStyle(order.isPositive ? .accentGreen : .accentRed)
+                                .foregroundStyle(order.isPositive.map { $0 ? TKColor.accentGreen : TKColor.accentRed } ?? .textSecondary)
                         }
                     }
                 }
@@ -941,6 +1105,7 @@ private struct PerpsAssetOrderRow: View {
             .padding(.horizontal, Layout.cellPadding)
             .padding(.top, Layout.cellLabelVerticalPadding)
             .padding(.bottom, Layout.cellCaptionVerticalPadding)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -967,6 +1132,7 @@ private struct PerpsAssetHistorySection: View {
                     }
                     Button { onSelect(row.id) } label: {
                         PerpsAssetHistoryRow(row: row)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -1035,39 +1201,40 @@ struct PerpsAssetStickyActions: View {
     let onCancelLimitOrder: (Int64) -> Void
 
     var body: some View {
-        switch actions {
-        case .hidden:
-            EmptyView()
-        case let .longShort(enabled):
-            stickyBar {
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.long, appearance: .primary, isEnabled: enabled, action: onLong)
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.short, appearance: .primary, isEnabled: enabled, action: onShort)
-            }
-        case let .editCashOut(editEnabled, cashOutEnabled):
-            stickyBar {
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: editEnabled, action: onEdit)
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.cashOut, appearance: .primary, isEnabled: cashOutEnabled, action: onCashOut)
-            }
-        case let .editCancelLimitOrder(orderIndex, enabled):
-            stickyBar {
-                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: enabled, isBusy: isLimitOrderBusy) {
-                    onEditLimitOrder(orderIndex)
-                }
-                PerpsAssetStickyButton(title: TKLocales.Actions.cancel, appearance: .primary, isEnabled: enabled, isBusy: isLimitOrderBusy) {
-                    onCancelLimitOrder(orderIndex)
-                }
-            }
-        }
-    }
-
-    private func stickyBar(@ViewBuilder buttons: () -> some View) -> some View {
+        let (leading, trailing) = buttons
         VStack {
             Spacer()
             HStack(spacing: Layout.actionSpacing) {
-                buttons()
+                leading
+                trailing
             }
             .padding(Layout.cellPadding)
             .tkScrim(.backgroundPage, edge: .bottom)
+        }
+        .animation(.easeInOut(duration: 0.2), value: actions)
+    }
+
+    private var buttons: (PerpsAssetStickyButton, PerpsAssetStickyButton) {
+        switch actions {
+        case let .longShort(enabled):
+            (
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.long, appearance: .primary, isEnabled: enabled, action: onLong),
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.short, appearance: .primary, isEnabled: enabled, action: onShort)
+            )
+        case let .editCashOut(editEnabled, cashOutEnabled):
+            (
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: editEnabled, action: onEdit),
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.cashOut, appearance: .primary, isEnabled: cashOutEnabled, action: onCashOut)
+            )
+        case let .editCancelLimitOrder(orderIndex, editEnabled, cancelEnabled):
+            (
+                PerpsAssetStickyButton(title: TKLocales.Perps.Asset.edit, appearance: .tertiary, isEnabled: editEnabled, isBusy: isLimitOrderBusy) {
+                    onEditLimitOrder(orderIndex)
+                },
+                PerpsAssetStickyButton(title: TKLocales.Actions.cancel, appearance: .primary, isEnabled: cancelEnabled, isBusy: isLimitOrderBusy) {
+                    onCancelLimitOrder(orderIndex)
+                }
+            )
         }
     }
 }
@@ -1138,6 +1305,7 @@ private enum Layout {
     static let deltaAmountOpacity: Double = 0.48
     static let iconSide: CGFloat = 56
     static let marketContentHeight: CGFloat = 72
+    static let skeletonLineSpacing: CGFloat = 8
     static let tagRowSpacing: CGFloat = 3
     static let readoutRowSpacing: CGFloat = 4
     static let crosshairValueSpacing: CGFloat = 6
@@ -1149,6 +1317,8 @@ private enum Layout {
     static let aboutCollapsedLines = 3
 
     static let positionCardSpacing: CGFloat = 8
+
+    static let bannerHeight: CGFloat = 90
 
     static let actionSpacing: CGFloat = 12
     static let actionBarHeight: CGFloat = 88

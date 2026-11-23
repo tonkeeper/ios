@@ -32,7 +32,7 @@ private extension ChooseWalletKindScreen {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(TKLocales.ChooseWalletKind.description)
+            Text(viewModel.description)
                 .textStyle(.body1)
                 .foregroundStyle(.textSecondary)
                 .multilineTextAlignment(.center)

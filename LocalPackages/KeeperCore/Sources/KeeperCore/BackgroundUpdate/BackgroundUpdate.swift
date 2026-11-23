@@ -421,6 +421,9 @@ public extension Swift.Error {
         case let deviceAuthError as DeviceAuthError:
             guard case .cancelled = deviceAuthError else { return false }
             return true
+        case let error as BatteryAuthorizationError:
+            guard case let .deviceSessionFailure(underlying) = error else { return false }
+            return underlying.isCancelledError
         default:
             return false
         }

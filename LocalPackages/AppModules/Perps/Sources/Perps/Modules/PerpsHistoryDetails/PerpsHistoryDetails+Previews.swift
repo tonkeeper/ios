@@ -21,7 +21,8 @@ private func previewEvent(_ kind: PerpsHistoryEvent.Kind, side: PerpsTradeSide, 
         pnlPercent: pnlPercent,
         fundingUsd: pnl == nil || kind == .reduced ? nil : -0.82,
         feeUsd: 0.144,
-        fee: .init(value: 0.144, symbol: "USDC")
+        fee: .init(value: 0.144, symbol: "USDC"),
+        loyaltyReward: kind == .opened ? "82" : nil
     )
 }
 
@@ -31,7 +32,8 @@ private func previewDetails(_ event: PerpsHistoryEvent) -> some View {
             event: event,
             market: nil,
             format: .preview,
-            onShare: event.isClosing ? {} : nil
+            onShare: event.isClosing ? {} : nil,
+            onOpenLoyalty: {}
         ),
         onOpenTransaction: { _, _ in },
         onCopy: { _ in }

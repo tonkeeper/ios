@@ -57,6 +57,8 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
     }
 
     func openConfirmation() {
+        let isEmulationEnabled = keeperCoreMainAssembly.configurationAssembly.configuration
+            .featureEnabled(.nativeSwapEmulationEnabled)
         let transactionConfirmationController = keeperCoreMainAssembly.nativeSwapTransactionConfirmationController(
             wallet: wallet,
             confirmation: model.confirmation,
@@ -66,7 +68,8 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
             transferService: keeperCoreMainAssembly.transferAssembly.transferService(),
             tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
             balanceService: keeperCoreMainAssembly.servicesAssembly.balanceService(),
-            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository()
+            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository(),
+            isEmulationEnabled: isEmulationEnabled
         )
 
         let module = NativeSwapTransactionConfirmationAssembly.module(
@@ -74,7 +77,8 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
             model: model,
             transactionConfirmationController: transactionConfirmationController,
             keeperCoreAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            coreAssembly: coreAssembly,
+            isEmulationEnabled: isEmulationEnabled
         )
 
         module.output.didRequireSign = { [weak self] transferData, wallet throws(WalletTransferSignError) in

@@ -1,12 +1,22 @@
 @testable import App
+import AppUI
 import BigInt
+import Combine
 import Foundation
 @testable import KeeperCore
+import OperationReviewModels
+import TKCore
 import TKLocalize
+import TKTestSupport
 import TonSwift
 import XCTest
 
+/// Announces each change a wait in this file reads: the view model's, a spy's or a callback's.
+private let changed = TestSignal()
+
 final class MultichainSwapConfirmationViewModelTests: XCTestCase {
+    private var subscriptions = Set<AnyCancellable>()
+
     @MainActor
     func test_displayMakerFormatsConfirmationDetailsAndNetworkFeeStates() {
         let maker = MultichainSwapConfirmationDisplayMaker(
@@ -44,28 +54,340 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             selectedSlippageBps: 75
         )
 
-        XCTAssertEqual(display.sendLine, "1 ETH")
-        XCTAssertEqual(display.receiveLine, "2.5 TON")
         XCTAssertTrue(display.rateLine.hasPrefix("1 ETH ≈ "))
         XCTAssertTrue(display.rateLine.hasSuffix(" TON"))
         XCTAssertTrue(display.rateLine.contains("2.5") || display.rateLine.contains("2,5"))
         XCTAssertEqual(display.slippageLine, maker.percentLine(bps: 75))
-        XCTAssertEqual(display.minimumReceivedLine, "2.45 TON")
-        XCTAssertEqual(display.priceImpactValue?.contains("2.5"), true)
-        XCTAssertTrue(display.networkFeeValue.contains("ETH"))
-        XCTAssertNotEqual(display.networkFeeValue, TKLocales.MultichainSwap.Screen.Confirm.Value.calculating)
-        XCTAssertFalse(display.networkFeeSubtitle.isEmpty)
+        XCTAssertEqual(display.minimumReceivedLine, "≈ 2.45 TON")
+        XCTAssertNil(display.minimumReceivedFiatLine)
+        XCTAssertEqual(display.networkFeeValue, "≈ 0.0021")
+        XCTAssertEqual(display.networkFeeMethod, "ETH")
+        XCTAssertEqual(display.networkFeeSubtitle, TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.estimatedTime(5))
+        XCTAssertFalse(display.isNetworkFeeShortage)
         XCTAssertEqual(
             loadingDisplay.networkFeeValue,
             TKLocales.MultichainSwap.Screen.Confirm.Value.calculating
         )
+    }
 
-        let displayWithoutValueDifference = maker.make(
-            input: makeInput(route: makeRoute(valueDifferenceBps: nil)),
-            networkFees: [networkFee()],
-            selectedSlippageBps: 75
+    /// The minimum received has its fiat value; the fee is shown in what pays it, as the swap settings
+    /// draw it.
+    @MainActor
+    func test_displayMakerShowsFiatForMinimumReceivedAndTheFeeInItsAsset() {
+        let maker = MultichainSwapConfirmationDisplayMaker(
+            amountFormatter: makeAmountFormatter()
         )
-        XCTAssertNil(displayWithoutValueDifference.priceImpactValue)
+        let input = makeInput(
+            sendAsset: asset(symbol: "ETH", decimals: 18, usdPrice: 2000),
+            receiveAsset: asset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9, usdPrice: 5)
+        )
+
+        let display = maker.make(
+            input: input,
+            networkFees: [networkFee()],
+            feeOptions: [nativeOption()],
+            selectedFeeOption: nativeOption(),
+            selectedSlippageBps: 100
+        )
+
+        let minimumReceivedFiat = display.minimumReceivedFiatLine ?? ""
+        XCTAssertTrue(minimumReceivedFiat.hasPrefix("≈ $"), minimumReceivedFiat)
+        XCTAssertTrue(minimumReceivedFiat.contains("12.25"), minimumReceivedFiat)
+        XCTAssertEqual(display.networkFeeValue, "≈ 0.0021")
+        XCTAssertEqual(display.networkFeeMethod, "ETH")
+    }
+
+    /// Nothing can pay: a battery says how many charges it has, a coin that it is missing, both in red;
+    /// a battery that pays shows what it locks on top of its fee.
+    @MainActor
+    func test_displayMakerNamesWhatTheFeeIsShortOfAndTheBatteryReserve() {
+        let maker = MultichainSwapConfirmationDisplayMaker(amountFormatter: makeAmountFormatter())
+        let input = makeInput()
+        func display(_ option: MultichainSwapFeeOption) -> MultichainSwapConfirmationDisplay {
+            maker.make(
+                input: input,
+                networkFees: [networkFee()],
+                feeOptions: [option],
+                selectedFeeOption: option,
+                selectedSlippageBps: 100
+            )
+        }
+        let chargesText = "21 \(TKLocales.Battery.Refill.chargesCount(count: 21))"
+
+        // The battery holds 28 and gives 21 back: a fee of 7 and a reserve of 21, as the design draws it.
+        let shortBattery = display(MultichainSwapFeeOption(
+            cost: .batteryCharges(count: 28, excess: 21, isInsufficient: true),
+            availableCharges: 3
+        ))
+        XCTAssertEqual(shortBattery.networkFeeValue, "7 \(TKLocales.Battery.Refill.chargesCount(count: 7))")
+        XCTAssertEqual(shortBattery.networkFeeMethod, TKLocales.Settings.Items.battery)
+        XCTAssertEqual(shortBattery.networkFeeSubtitle, TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnoughCharges("3"))
+        XCTAssertTrue(shortBattery.isNetworkFeeShortage)
+
+        let battery = display(MultichainSwapFeeOption(
+            cost: .batteryCharges(count: 28, excess: 21, isInsufficient: false),
+            availableCharges: 771
+        ))
+        XCTAssertEqual(battery.networkFeeSubtitle, TKLocales.TronUsdtFees.TransactionConfirmation.outOfAvailable("771"))
+        XCTAssertFalse(battery.isNetworkFeeShortage)
+        XCTAssertEqual(shortBattery.temporaryReserve?.value, "≈ \(chargesText)")
+
+        let shortCoin = display(MultichainSwapFeeOption(cost: .native([networkFee()], isInsufficient: true)))
+        XCTAssertEqual(shortCoin.networkFeeSubtitle, TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnough("ETH"))
+        XCTAssertTrue(shortCoin.isNetworkFeeShortage)
+        XCTAssertNil(shortCoin.temporaryReserve)
+
+        let payingBattery = display(MultichainSwapFeeOption(
+            cost: .batteryCharges(count: 28, excess: 21, isInsufficient: false),
+            availableCharges: 771
+        ))
+        XCTAssertFalse(payingBattery.isNetworkFeeShortage)
+        XCTAssertEqual(payingBattery.temporaryReserve?.value, "≈ \(chargesText)")
+        XCTAssertEqual(
+            payingBattery.temporaryReserve?.hint,
+            TKLocales.MultichainSwap.Screen.Confirm.TemporaryReserve.chargesInfo(chargesText)
+        )
+    }
+
+    @MainActor
+    func test_swapStartedFromTheSwapScreenConfirmsTheFirstPlan() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption()]))]
+        )
+        var confirmCount = 0
+        var unavailableCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onConfirmUnavailable: { unavailableCount += 1 }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { confirmCount == 1 }
+        XCTAssertEqual(confirmCount, 1)
+        XCTAssertEqual(unavailableCount, 0)
+    }
+
+    @MainActor
+    func test_swapStartedFromTheSwapScreenOpensTheDetailsWhenThePlanCannotPay() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(isInsufficient: true)])),
+            ]
+        )
+        var confirmCount = 0
+        var unavailableCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onConfirmUnavailable: { unavailableCount += 1 }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { unavailableCount == 1 }
+        XCTAssertEqual(unavailableCount, 1)
+        XCTAssertEqual(confirmCount, 0)
+    }
+
+    /// The price impact warning comes up before the plan is asked for: the swap holds the screen's quote
+    /// from the tap, and backing out of the warning releases it with no plan prepared.
+    @MainActor
+    func test_backingOutOfThePriceImpactWarningPreparesNoPlan() {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption()]))]
+        )
+        var confirmCount = 0
+        var unavailableCount = 0
+        var inFlightChanges = [Bool]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onConfirmUnavailable: { unavailableCount += 1 },
+            onSwapInFlightChange: { inFlightChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        XCTAssertEqual(inFlightChanges, [true])
+        viewModel.cancelConfirm()
+
+        XCTAssertEqual(inFlightChanges, [true, false])
+        XCTAssertEqual(executionService.executionPlanCallCount, 0)
+        XCTAssertEqual(confirmCount, 0)
+        XCTAssertEqual(unavailableCount, 0)
+    }
+
+    @MainActor
+    func test_acceptedPriceImpactCoversOnlyTheRouteItWasGivenFor() {
+        let viewModel = makeViewModel(input: makeInput(route: makeRoute(valueDifferenceBps: -1200)))
+
+        XCTAssertFalse(viewModel.isPriceImpactAccepted)
+        viewModel.acceptPriceImpact()
+        XCTAssertTrue(viewModel.isPriceImpactAccepted)
+
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route", valueDifferenceBps: -1200)))
+
+        XCTAssertFalse(viewModel.isPriceImpactAccepted)
+    }
+
+    /// A swap tapped before its plan goes on with the route a recovery brings, so that route's price impact
+    /// is asked about again before the passcode.
+    @MainActor
+    func test_routeRecoveredForAPendingSwapIsAskedAboutAgain() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.preparationFailed(kind: .internalError, reason: "internal server error")),
+                .success(makeExecutionPlan(routeId: "recovered-route", fees: [networkFee()])),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [
+                .success(MultichainSwapQuote(
+                    quoteId: "recovered-quote",
+                    routes: [makeRoute(routeId: "recovered-route", valueDifferenceBps: -1500)]
+                )),
+            ]
+        )
+        var confirmCount = 0
+        let viewModel = makeViewModel(
+            input: makeInput(route: makeRoute(valueDifferenceBps: -1200)),
+            executionService: executionService,
+            swapService: swapService,
+            onConfirm: { confirmCount += 1 }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.acceptPriceImpact()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { confirmCount == 1 }
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "recovered-route")
+        XCTAssertFalse(viewModel.isPriceImpactAccepted)
+        XCTAssertEqual(viewModel.priceImpactSeverity, .danger)
+    }
+
+    /// The swap was tapped for what the screen's route gives: a route recovered meanwhile that gives less
+    /// is pinned and asked about before the passcode.
+    @MainActor
+    func test_routeRecoveredWithLessToReceiveAsksBeforeTheSwap() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.routeExpired(routeId: "route")),
+                .success(makeExecutionPlan(routeId: "recovered-route", fees: [networkFee()])),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [
+                .success(MultichainSwapQuote(
+                    quoteId: "recovered-quote",
+                    routes: [makeRoute(routeId: "recovered-route", estimatedDestinationAmount: "2400000000")]
+                )),
+            ]
+        )
+        var confirmCount = 0
+        var priceChanges = [String]()
+        var inFlightChanges = [Bool]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            swapService: swapService,
+            onConfirm: { confirmCount += 1 },
+            onPriceChanged: { priceChanges.append($0) },
+            onSwapInFlightChange: { inFlightChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !priceChanges.isEmpty }
+        let receiveSymbol = viewModel.currentConfirmationInput.userInput.receiveAsset.swapDisplaySymbol
+        let amounts = makeAmountFormatter().formatDistinctly(
+            2_400_000_000,
+            2_500_000_000,
+            fractionDigits: 9,
+            accessory: .tokenSymbol(receiveSymbol)
+        )
+        XCTAssertEqual(priceChanges, [TKLocales.MultichainSwap.Screen.Confirm.PriceChanged.receive(amounts.0, amounts.1)])
+        XCTAssertEqual(confirmCount, 0)
+        XCTAssertEqual(inFlightChanges, [true])
+
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+
+        await waitUntil { viewModel.executionState == .completed }
+        XCTAssertEqual(executionService.executedRouteIds, ["recovered-route"])
+    }
+
+    /// A swap by the amount to receive is priced by what it sells, and backing out of the warning sends nothing.
+    @MainActor
+    func test_routeRecoveredSellingMoreForTheAmountToReceiveAsksBeforeTheSwap() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.routeExpired(routeId: "route")),
+                .success(makeExecutionPlan(routeId: "recovered-route", fees: [networkFee()])),
+            ]
+        )
+        let recoveredSourceAmount = oneEth + oneEth / 10
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [
+                .success(MultichainSwapQuote(
+                    quoteId: "recovered-quote",
+                    routes: [makeRoute(routeId: "recovered-route", sourceAmount: recoveredSourceAmount.description)]
+                )),
+            ]
+        )
+        var priceChanges = [String]()
+        var inFlightChanges = [Bool]()
+        let viewModel = makeViewModel(
+            input: makeInput(quoteAmount: .destination(2_500_000_000)),
+            executionService: executionService,
+            swapService: swapService,
+            onPriceChanged: { priceChanges.append($0) },
+            onSwapInFlightChange: { inFlightChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !priceChanges.isEmpty }
+        let sendSymbol = viewModel.currentConfirmationInput.userInput.sendAsset.swapDisplaySymbol
+        let amounts = makeAmountFormatter().formatDistinctly(
+            recoveredSourceAmount,
+            oneEth,
+            fractionDigits: 18,
+            accessory: .tokenSymbol(sendSymbol)
+        )
+        XCTAssertEqual(priceChanges, [TKLocales.MultichainSwap.Screen.Confirm.PriceChanged.send(amounts.0, amounts.1)])
+
+        viewModel.cancelConfirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+
+        XCTAssertEqual(inFlightChanges, [true, false])
+        XCTAssertEqual(executionService.executeCallCount, 0)
+    }
+
+    @MainActor
+    func test_picksFromTheSwapScreenAreKeptAndNewOnesReported() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption(), batteryOption()])),
+            ]
+        )
+        var reportedSlippage = [Int]()
+        let viewModel = makeViewModel(
+            input: makeInput(slippageBps: 50, feeMethod: .battery),
+            executionService: executionService,
+            onSlippageChange: { reportedSlippage.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
+
+        XCTAssertEqual(viewModel.selectedSlippageBps, 50)
+        XCTAssertEqual(viewModel.selectedFeeMethod, .battery)
+        viewModel.selectSlippageBps(100)
+        XCTAssertEqual(reportedSlippage, [100])
     }
 
     func test_priceImpactResolverUsesRouteBpsAndMapsSeverity() {
@@ -105,145 +427,166 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
     func test_viewModelInitialRenderPreservesConfirmationState() {
         let viewModel = makeViewModel()
 
-        XCTAssertEqual(viewModel.display.sendLine, "1 ETH")
-        XCTAssertEqual(viewModel.display.receiveLine, "2.5 TON")
         XCTAssertEqual(viewModel.display.networkFeeValue, TKLocales.MultichainSwap.Screen.Confirm.Value.calculating)
         XCTAssertEqual(viewModel.selectedSlippageBps, 100)
         XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "route")
         XCTAssertEqual(viewModel.executionState, .idle)
+
+        let state = MultichainSwapConfirmationViewStateMapper().map(viewModel)
+        XCTAssertEqual(state.action, .swap(isEnabled: true, isLoading: false))
+        XCTAssertEqual(state.networkFee.value, TKLocales.MultichainSwap.Screen.Confirm.Value.calculating)
+        guard case .countdown = state.quoteProgress else {
+            return XCTFail("Expected the screen's countdown")
+        }
     }
 
     @MainActor
-    func test_slippageSelectionRefreshesQuoteAndRerendersDisplay() async {
-        let refreshedRoute = makeRoute(
-            routeId: "refreshed-route",
-            estimatedDestinationAmount: "3000000000",
-            minimumDestinationAmount: "2900000000",
-            totalSlippageBps: 50
-        )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [refreshedRoute])),
-            ]
-        )
+    func test_slippageSelectionWaitsForTheScreenQuoteAndRerendersDisplay() async {
         let executionService = ConfirmationExecutionServiceSpy()
+        var reportedSlippage = [Int]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService,
-            slippageService: TestSlippageService(
-                optionsBps: [50, 100],
-                defaultBps: 100
-            )
+            onSlippageChange: { reportedSlippage.append($0) }
         )
 
         viewModel.selectSlippageBps(50)
 
-        await waitUntil {
-            viewModel.currentConfirmationInput.quoteState.route.routeId == "refreshed-route"
-        }
-        let requests = swapService.quoteRequests
-        XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(requests.first?.slippageBps, 50)
-        XCTAssertEqual(requests.first?.senderAddress, "0xwallet")
-        XCTAssertEqual(requests.first?.recipientAddress, "tonwallet")
-        XCTAssertEqual(requests.first?.returnDepositAddress, true)
-        XCTAssertEqual(viewModel.display.receiveLine, "3 TON")
-        XCTAssertEqual(viewModel.display.minimumReceivedLine, "2.9 TON")
-        XCTAssertEqual(viewModel.circularProgressRestartToken, 1)
+        XCTAssertEqual(reportedSlippage, [50])
+        XCTAssertEqual(viewModel.quoteStatus, .loading)
+        XCTAssertFalse(viewModel.isSwapEnabled)
+
+        viewModel.updateQuote(freshQuote(route: makeRoute(
+            routeId: "refreshed-route",
+            estimatedDestinationAmount: "3000000000",
+            minimumDestinationAmount: "2900000000",
+            totalSlippageBps: 50
+        )))
+
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "refreshed-route")
+        XCTAssertEqual(viewModel.display.minimumReceivedLine, "≈ 2.9 TON")
+        XCTAssertTrue(viewModel.isSwapEnabled)
+        await waitUntil { executionService.executionPlanCallCount == 1 }
     }
 
     @MainActor
-    func test_slippageRefreshFromTonSourceAsksForFullPayloadInsteadOfDepositAddress() async {
+    func test_staleRouteRecoveryFromTonSourceAsksForFullPayloadInsteadOfDepositAddress() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.routeExpired(routeId: "route")),
+                .success(makeExecutionPlan(fees: [networkFee()])),
+            ]
+        )
         let swapService = ConfirmationSwapServiceSpy(
             quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
+                .success(MultichainSwapQuote(quoteId: "recovered-quote", routes: [makeRoute()])),
             ]
         )
         let viewModel = makeViewModel(
             sendAsset: asset(assetId: "ton/mainnet/coin", symbol: "TON", decimals: 9),
             receiveAsset: asset(assetId: "eth/mainnet/coin", symbol: "ETH", decimals: 18),
+            executionService: executionService,
             swapService: swapService
         )
 
-        viewModel.selectSlippageBps(50)
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { swapService.quoteRequests.count == 1 }
         XCTAssertEqual(swapService.quoteRequests.first?.senderAddress, "tonwallet")
         XCTAssertEqual(swapService.quoteRequests.first?.returnDepositAddress, false)
     }
 
+    /// The quote on screen is the one the failed refresh was meant to replace, so the swap must not
+    /// send it, and nothing moves until the user asks again.
     @MainActor
-    func test_slippageRefreshWithoutRouteLocksTheSwipeWithTheProviderMessage() async {
-        let providerMessage = "insufficient balance for source asset: The specified amount is too low."
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(
-                    MultichainSwapQuote(
-                        quoteId: "empty-quote",
-                        routes: [],
-                        providerErrors: [
-                            MultichainSwapProviderError(
-                                aggregator: "swapsxyz",
-                                code: "provider_error",
-                                message: providerMessage
-                            ),
-                        ]
-                    )
-                ),
+    func test_failedScreenQuoteLocksTheSwapUntilARetryBringsANewOne() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()])),
+                .success(makeExecutionPlan(routeId: "refreshed-route", fees: [networkFee()])),
             ]
         )
+        var refreshRequests = 0
         var preparationFailureMessages = [String]()
         let viewModel = makeViewModel(
-            swapService: swapService,
+            executionService: executionService,
+            onRefreshQuote: { refreshRequests += 1 },
             onPreparationFailed: { preparationFailureMessages.append($0) }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil { viewModel.isConfirmEnabled }
-        viewModel.selectSlippageBps(50)
 
-        await waitUntil { viewModel.quoteFailureMessage != nil }
+        viewModel.updateQuote(.failed(.quote(.unavailable)))
+
         XCTAssertEqual(viewModel.quoteFailureMessage, TKLocales.MultichainSwap.ProviderError.unknown)
-        XCTAssertNotEqual(viewModel.quoteFailureMessage, providerMessage)
-        XCTAssertEqual(swapService.quoteRequests.count, 1)
-        XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertFalse(viewModel.isSwapEnabled)
         XCTAssertEqual(preparationFailureMessages, [])
+
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+        XCTAssertEqual(executionService.executeCallCount, 0)
+        XCTAssertEqual(refreshRequests, 0)
+
+        viewModel.retryQuote()
+
+        XCTAssertEqual(refreshRequests, 1)
+        XCTAssertEqual(viewModel.quoteStatus, .loading)
+
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
+
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertNil(viewModel.quoteFailureMessage)
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "refreshed-route")
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
     }
 
-    /// Reselecting the slippage the screen opened with must not bring back the plan priced before
-    /// the refresh failed.
+    /// The sheet names the reason the swap screen has, rather than one message for every failure.
     @MainActor
-    func test_slippageReselectAfterAFailedRefreshAsksForAFreshQuote() async {
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .failure(.unimplemented),
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
-            ]
-        )
-        let viewModel = makeViewModel(swapService: swapService)
+    func test_failedScreenQuoteNamesItsReason() {
+        let expectations: [(MultichainSwapConfirmationQuoteFailure, String)] = [
+            (.quote(.unavailable), TKLocales.MultichainSwap.ProviderError.unknown),
+            (.quote(.pairUnavailable), TKLocales.NativeSwap.Quote.Rate.pairUnavailable),
+            (.quote(.walletScreened), TKLocales.MultichainSwap.ProviderError.walletScreened),
+            (.quote(.offline), TKLocales.MultichainSwap.Screen.Confirm.Error.networkError),
+            (.insufficientBalance, TKLocales.InsufficientFunds.insufficientBalance),
+        ]
+        for (failure, message) in expectations {
+            let viewModel = makeViewModel()
 
-        viewModel.viewDidLoad()
-        await waitUntil { viewModel.isConfirmEnabled }
+            viewModel.updateQuote(.failed(failure))
+
+            XCTAssertEqual(viewModel.quoteFailureMessage, message)
+            XCTAssertEqual(MultichainSwapConfirmationViewStateMapper().map(viewModel).action, .quoteFailed(message))
+        }
+    }
+
+    @MainActor
+    func test_slippageCanBeChangedAgainAfterAFailedQuote() {
+        var reportedSlippage = [Int]()
+        let viewModel = makeViewModel(onSlippageChange: { reportedSlippage.append($0) })
+
         viewModel.selectSlippageBps(50)
-        await waitUntil { viewModel.quoteFailureMessage != nil }
-
+        viewModel.updateQuote(.failed(.quote(.unavailable)))
         viewModel.selectSlippageBps(100)
 
-        XCTAssertFalse(viewModel.isConfirmEnabled)
-        await waitUntil { swapService.quoteRequests.count == 2 }
-        XCTAssertEqual(swapService.quoteRequests.last?.slippageBps, 100)
+        XCTAssertEqual(reportedSlippage, [50, 100])
+        XCTAssertEqual(viewModel.quoteStatus, .loading)
+        XCTAssertFalse(viewModel.isSwapEnabled)
     }
 
     /// The legacy TRON pair carries no slippage config, and a SwapKit route reports a negative
     /// `total_slippage_bps`; asking with it again fails the quote validation.
     @MainActor
-    func test_quoteRefreshWithoutSlippageConfigAsksWithTheDefaultSlippage() async {
+    func test_staleRouteRecoveryWithoutSlippageConfigAsksWithTheDefaultSlippage() async {
         let executionService = ConfirmationExecutionServiceSpy(
-            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))]
+            executionPlanResults: [
+                .failure(.routeExpired(routeId: "route")),
+                .success(makeExecutionPlan(fees: [networkFee()])),
+            ]
         )
         let swapService = ConfirmationSwapServiceSpy(
             quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
+                .success(MultichainSwapQuote(quoteId: "recovered-quote", routes: [makeRoute()])),
             ]
         )
         let viewModel = makeViewModel(
@@ -255,135 +598,47 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.selectedSlippageBps, 100)
 
-        viewModel.viewDidLoad()
-        await waitUntil { viewModel.isConfirmEnabled }
-        viewModel.notifyCircularProgressCompleted()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { swapService.quoteRequests.count == 1 }
         XCTAssertEqual(swapService.quoteRequests.first?.slippageBps, 100)
     }
 
     @MainActor
-    func test_timerRefreshWithoutRouteLocksTheSwipeWithTheProviderMessage() async {
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(
-                    MultichainSwapQuote(
-                        quoteId: "empty-quote",
-                        routes: [],
-                        providerErrors: [
-                            MultichainSwapProviderError(
-                                aggregator: "swapsxyz",
-                                code: "min_amount_not_met",
-                                message: "amount too small"
-                            ),
-                        ]
-                    )
-                ),
-            ]
-        )
-        var preparationFailureMessages = [String]()
-        let viewModel = makeViewModel(
-            swapService: swapService,
-            onPreparationFailed: { preparationFailureMessages.append($0) }
-        )
-
-        viewModel.viewDidLoad()
-        await waitUntil { viewModel.isConfirmEnabled }
-
-        viewModel.notifyCircularProgressCompleted()
-        await waitUntil { viewModel.quoteFailureMessage != nil }
-
-        XCTAssertEqual(viewModel.quoteFailureMessage, TKLocales.MultichainSwap.ProviderError.minAmountNotMet)
-        XCTAssertFalse(viewModel.isConfirmEnabled)
-        XCTAssertEqual(preparationFailureMessages, [])
-    }
-
-    /// The quote on screen is the one the failed refresh was meant to replace, so the swipe must
-    /// not send it, and nothing moves until the user asks again.
-    @MainActor
-    func test_offlineTimerRefreshLocksTheStaleQuoteUntilARetrySucceeds() async {
-        let executionService = ConfirmationExecutionServiceSpy()
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .failure(.transportError(
-                    diagnostic: MultichainAPIDiagnostic(error: URLError(.notConnectedToInternet))
-                )),
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
-            ]
-        )
-        var preparationFailureMessages = [String]()
-        let viewModel = makeViewModel(
-            executionService: executionService,
-            swapService: swapService,
-            onPreparationFailed: { preparationFailureMessages.append($0) }
-        )
-
-        viewModel.viewDidLoad()
-        await waitUntil { viewModel.isConfirmEnabled }
-
-        viewModel.notifyCircularProgressCompleted()
-        await waitUntil { viewModel.quoteFailureMessage != nil }
-
-        XCTAssertEqual(viewModel.quoteFailureMessage, TKLocales.MultichainSwap.Screen.Confirm.Error.networkError)
-        XCTAssertFalse(viewModel.isConfirmEnabled)
-        XCTAssertEqual(preparationFailureMessages, [])
-
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
-        viewModel.notifyCircularProgressCompleted()
-        try? await Task.sleep(nanoseconds: 50_000_000)
-
-        XCTAssertEqual(executionService.executeCallCount, 0)
-        XCTAssertEqual(swapService.quoteRequests.count, 1)
-
-        viewModel.retryQuote()
-
-        XCTAssertNil(viewModel.quoteFailureMessage)
-        await waitUntil { viewModel.isConfirmEnabled }
-        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.quote.quoteId, "refreshed-quote")
-        XCTAssertEqual(swapService.quoteRequests.count, 2)
-    }
-
-    @MainActor
-    func test_timerRefreshPreparationFailureSendsTheSwapBackForAFreshQuote() async {
+    func test_screenQuotePreparationFailureSendsTheSwapBackForAFreshQuote() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(routeId: "route", fees: [networkFee()])),
                 .failure(.emulationFailed(kind: .insufficientBalance, reason: "insufficient")),
             ]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
-            ]
-        )
         var failedMessages = [String]()
         var preparationFailureMessages = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService,
-            onExecutionFailed: { failedMessages.append($0) },
+            onExecutionFailed: { message, _ in failedMessages.append(message) },
             onPreparationFailed: { preparationFailureMessages.append($0) }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil { viewModel.isConfirmEnabled }
 
-        viewModel.notifyCircularProgressCompleted()
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "fresh-route")))
         await waitUntil { !preparationFailureMessages.isEmpty }
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await viewModel.refreshModel.refreshTask?.value
 
         XCTAssertEqual(
             preparationFailureMessages,
             [TKLocales.MultichainSwap.Screen.Confirm.Error.insufficientBalance]
         )
         XCTAssertEqual(failedMessages, [])
-        XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertFalse(viewModel.isSwapEnabled)
     }
 
+    /// The fee row names the shortage of the chain's coin, and Swap looks blocked while only a tap on it opens the
+    /// deposit: every tap does, and no refresh, a deposit's included, does it on its own.
     @MainActor
-    func test_nativeFeeShortageCanPresentOnceForEachUserInitiatedCalculation() async {
+    func test_nativeFeeShortageOpensFromEverySwapTapAndFromNoRefresh() async {
         let shortage = MultichainNativeFeeShortage(
             asset: asset(symbol: "ETH", decimals: 18).asset,
             requiredAmount: BigUInt(2_100_000_000_000_000)
@@ -391,146 +646,75 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .failure(.insufficientNativeFee(shortage: shortage)),
-                .failure(.insufficientNativeFee(shortage: shortage)),
-                .failure(.insufficientNativeFee(shortage: shortage)),
+                .failure(.insufficientNativeFee(shortage: MultichainNativeFeeShortage(
+                    asset: shortage.asset,
+                    requiredAmount: BigUInt(4_200_000_000_000_000)
+                ))),
             ]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "slippage-quote", routes: [makeRoute()])),
-                .success(MultichainSwapQuote(quoteId: "timer-quote", routes: [makeRoute()])),
-            ]
-        )
-        let presentationGuard = MultichainNativeFeeShortagePopupPresentationGuard()
-        var calculationReasons = [MultichainSwapConfirmationRefreshReason]()
-        var permittedPopupCount = 0
+        var shortages = [MultichainNativeFeeShortage]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService,
-            onInsufficientNativeFee: { _ in
-                if presentationGuard.reservePresentation() {
-                    permittedPopupCount += 1
-                }
-            },
-            onFeeCalculationStarted: { reason in
-                calculationReasons.append(reason)
-                if reason != .timer {
-                    presentationGuard.startNewFeeCalculation()
-                }
-            }
+            onInsufficientNativeFee: { shortages.append($0) }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.display.isNetworkFeeShortage }
 
-        await waitUntil { permittedPopupCount == 1 }
-        viewModel.selectSlippageBps(50)
-        await waitUntil { permittedPopupCount == 2 }
+        XCTAssertEqual(shortages, [])
+        XCTAssertEqual(MultichainSwapConfirmationViewStateMapper().map(viewModel).action, .feeUnpaid)
 
-        viewModel.notifyCircularProgressCompleted()
-        await waitUntil { executionService.executionPlanCallCount == 3 }
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        viewModel.confirm()
+        viewModel.confirm()
 
-        XCTAssertEqual(
-            calculationReasons,
-            [.initial, .slippageChanged, .timer]
-        )
-        XCTAssertEqual(permittedPopupCount, 2)
-    }
-
-    @MainActor
-    func test_feeDepositRefreshCanPresentNativeFeeShortageAgain() async {
-        let shortage = MultichainNativeFeeShortage(
-            asset: asset(symbol: "ETH", decimals: 18).asset,
-            requiredAmount: BigUInt(2_100_000_000_000_000)
-        )
-        let executionService = ConfirmationExecutionServiceSpy(
-            executionPlanResults: [
-                .failure(.insufficientNativeFee(shortage: shortage)),
-                .failure(.insufficientNativeFee(shortage: shortage)),
-            ]
-        )
-        let presentationGuard = MultichainNativeFeeShortagePopupPresentationGuard()
-        var calculationReasons = [MultichainSwapConfirmationRefreshReason]()
-        var permittedPopupCount = 0
-        let viewModel = makeViewModel(
-            executionService: executionService,
-            onInsufficientNativeFee: { _ in
-                if presentationGuard.reservePresentation() {
-                    permittedPopupCount += 1
-                }
-            },
-            onFeeCalculationStarted: { reason in
-                calculationReasons.append(reason)
-                if reason != .timer {
-                    presentationGuard.startNewFeeCalculation()
-                }
-            }
-        )
-
-        viewModel.viewDidLoad()
-        await waitUntil { permittedPopupCount == 1 }
+        XCTAssertEqual(shortages, [shortage, shortage])
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { permittedPopupCount == 2 }
+        await waitUntil { executionService.executionPlanCallCount == 2 && viewModel.display.networkFeeValue == "≈ 0.0042" }
 
-        XCTAssertEqual(calculationReasons, [.initial, .feeDeposit])
-        XCTAssertEqual(executionService.executionPlanCallCount, 2)
+        XCTAssertEqual(shortages.count, 2)
+        XCTAssertEqual(executionService.executeCallCount, 0)
     }
 
     @MainActor
-    func test_slippageSelectionInvalidatesExecutionPlanUntilRefreshCompletes() async {
-        let refreshedRoute = makeRoute(
-            routeId: "refreshed-route",
-            estimatedDestinationAmount: "3000000000",
-            minimumDestinationAmount: "2900000000",
-            totalSlippageBps: 50
-        )
+    func test_slippageSelectionInvalidatesExecutionPlanUntilTheNewQuoteIsPrepared() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(routeId: "route", fees: [networkFee()])),
                 .success(makeExecutionPlan(routeId: "refreshed-route", fees: [networkFee(symbol: "TON", decimals: 9)])),
             ]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [refreshedRoute])),
-            ],
-            quoteDelays: [0.3]
-        )
-        let viewModel = makeViewModel(
-            executionService: executionService,
-            swapService: swapService
-        )
+        let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil {
-            viewModel.isConfirmEnabled
-        }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
 
         viewModel.selectSlippageBps(50)
 
-        XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertFalse(viewModel.isSwapEnabled)
         XCTAssertEqual(
             viewModel.display.networkFeeValue,
             TKLocales.MultichainSwap.Screen.Confirm.Value.calculating
         )
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
         XCTAssertEqual(viewModel.executionState, .idle)
         XCTAssertEqual(executionService.executeCallCount, 0)
         XCTAssertEqual(executionService.executedRouteIds, [])
 
-        await waitUntil(timeout: 2) {
-            viewModel.isConfirmEnabled
-        }
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.updateQuote(freshQuote(route: makeRoute(
+            routeId: "refreshed-route",
+            estimatedDestinationAmount: "3000000000",
+            minimumDestinationAmount: "2900000000",
+            totalSlippageBps: 50
+        )))
+        await waitUntil(timeout: 2) { viewModel.isConfirmEnabled }
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
-        await waitUntil {
-            viewModel.executionState == .completed
-        }
+        await waitUntil { viewModel.executionState == .completed }
         XCTAssertEqual(executionService.executedRouteIds, ["refreshed-route"])
     }
 
@@ -541,13 +725,14 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil {
             executionService.executionPlanCallCount == 1
         }
         await waitUntil {
-            viewModel.display.networkFeeValue.contains("ETH")
+            viewModel.display.networkFeeMethod == "ETH"
+                && viewModel.display.networkFeeValue != TKLocales.MultichainSwap.Screen.Confirm.Value.calculating
         }
     }
 
@@ -566,25 +751,65 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             ]
         )
         var failedMessage: String?
+        var recoveredRouteIds = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
             swapService: swapService,
+            onQuoteRecovered: { recoveredRouteIds.append($0.route.routeId) },
             onPreparationFailed: { failedMessage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { viewModel.isConfirmEnabled }
         XCTAssertNil(failedMessage)
         XCTAssertEqual(swapService.quoteRequests.count, 1)
         XCTAssertEqual(executionService.executionPlanCallCount, 2)
         XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "recovered-route")
+        XCTAssertEqual(recoveredRouteIds, ["recovered-route"])
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
         await waitUntil { viewModel.executionState == .completed }
         XCTAssertEqual(executionService.executedRouteIds, ["recovered-route"])
+    }
+
+    /// A swap quoted by the amount to receive asks for that amount again and sells whatever the
+    /// recovered route sells for it.
+    @MainActor
+    func test_staleRouteRecoveryByTheAmountToReceiveSellsWhatTheFreshRouteQuotes() async {
+        let recoveredRoute = makeRoute(routeId: "recovered-route", sourceAmount: (oneEth / 2).description)
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.preparationFailed(kind: .internalError, reason: "internal server error")),
+                .success(makeExecutionPlan(routeId: "recovered-route", fees: [networkFee()])),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [
+                .success(MultichainSwapQuote(quoteId: "recovered-quote", routes: [recoveredRoute])),
+            ]
+        )
+        var completedInput: MultichainSwapConfirmationInput?
+        let viewModel = makeViewModel(
+            input: makeInput(quoteAmount: .destination(2_500_000_000)),
+            executionService: executionService,
+            swapService: swapService,
+            onExecutionCompleted: { input, _, _ in completedInput = input }
+        )
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertEqual(swapService.quoteRequests.first?.amount, .destination(2_500_000_000))
+        XCTAssertNil(swapService.quoteRequests.first?.isMax)
+
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+
+        await waitUntil { viewModel.executionState == .completed }
+        XCTAssertEqual(completedInput?.sourceAmount, oneEth / 2)
     }
 
     @MainActor
@@ -612,10 +837,10 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onPreparationFailed: { failedMessage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { failedMessage != nil }
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await viewModel.refreshModel.refreshTask?.value
         XCTAssertEqual(recorder.delays, [0.5, 1, 2])
         XCTAssertEqual(swapService.quoteRequests.count, 3)
         XCTAssertEqual(executionService.executionPlanCallCount, 4)
@@ -652,7 +877,7 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onPreparationFailed: { failedMessage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { viewModel.isConfirmEnabled }
         XCTAssertEqual(recorder.delays, [0.5, 1])
@@ -676,7 +901,7 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onPreparationFailed: { failedMessage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { failedMessage != nil }
         XCTAssertEqual(
@@ -688,120 +913,413 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_timerRefreshDoesNotRequestAnotherQuoteForAStaleRoute() async {
+    func test_walletScreenedPreparationIsFinal() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.preparationFailed(kind: .walletScreened, reason: "wallet_screened")),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy()
+        let recorder = RouteRecoveryDelayRecorder()
+        var failedMessages = [String]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            swapService: swapService,
+            routeRecovery: .recording(into: recorder),
+            onPreparationFailed: { failedMessages.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !failedMessages.isEmpty }
+        await viewModel.refreshModel.refreshTask?.value
+        XCTAssertEqual(failedMessages, [TKLocales.MultichainSwap.ProviderError.walletScreened])
+        XCTAssertEqual(recorder.delays, [])
+        XCTAssertTrue(swapService.quoteRequests.isEmpty)
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
+        XCTAssertFalse(viewModel.isConfirmEnabled)
+    }
+
+    @MainActor
+    func test_screenedRouteOnRequoteEndsTheRouteRecovery() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.routeExpired(routeId: "route")),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [
+                .success(MultichainSwapQuote(
+                    quoteId: "screened-quote",
+                    routes: [makeRoute(routeId: "screened-route")],
+                    providerErrors: [
+                        MultichainSwapProviderError(
+                            aggregator: "Aggregator",
+                            code: "wallet_screened",
+                            message: "wallet blocked by the provider's compliance screening"
+                        ),
+                    ]
+                )),
+            ]
+        )
+        let recorder = RouteRecoveryDelayRecorder()
+        var failedMessages = [String]()
+        var recoveredRouteIds = [String]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            swapService: swapService,
+            routeRecovery: .recording(into: recorder),
+            onQuoteRecovered: { recoveredRouteIds.append($0.route.routeId) },
+            onPreparationFailed: { failedMessages.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !failedMessages.isEmpty }
+        await viewModel.refreshModel.refreshTask?.value
+        XCTAssertEqual(failedMessages, [TKLocales.MultichainSwap.ProviderError.walletScreened])
+        XCTAssertEqual(recorder.delays, [0.5])
+        XCTAssertEqual(swapService.quoteRequests.count, 1)
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
+        XCTAssertTrue(recoveredRouteIds.isEmpty)
+        XCTAssertFalse(viewModel.isConfirmEnabled)
+    }
+
+    @MainActor
+    func test_freshScreenQuoteDoesNotRequestAnotherQuoteForAStaleRoute() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(fees: [networkFee()])),
                 .failure(.routeExpired(routeId: "refreshed-route")),
             ]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(
-                    quoteId: "refreshed-quote",
-                    routes: [makeRoute(routeId: "refreshed-route")]
-                )),
-            ]
-        )
+        let swapService = ConfirmationSwapServiceSpy()
+        var failedMessage: String?
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService
+            swapService: swapService,
+            onPreparationFailed: { failedMessage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil { viewModel.isConfirmEnabled }
 
-        viewModel.notifyCircularProgressCompleted()
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
 
-        await waitUntil { executionService.executionPlanCallCount == 2 }
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertEqual(swapService.quoteRequests.count, 1)
+        await waitUntil { failedMessage != nil }
+        XCTAssertTrue(swapService.quoteRequests.isEmpty)
         XCTAssertEqual(executionService.executionPlanCallCount, 2)
     }
 
+    /// A route quoted on `/v3` that has to be quoted again is quoted there again, whatever the flag says now.
     @MainActor
-    func test_executeWithoutPreparedExecutionPlanDoesNotStartExecution() async {
+    func test_aStaleRouteQuotedOnV3IsQuotedAgainOnV3() async {
+        var route = makeRoute()
+        route.apiVersion = .v3
+        let recoveredRoute = makeRoute(routeId: "recovered-route")
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.payloadNotValidated(payloadId: "route", status: "pending")),
+                .success(makeExecutionPlan(routeId: "recovered-route", fees: [networkFee()])),
+            ]
+        )
+        let swapService = ConfirmationSwapServiceSpy(
+            quoteResults: [.success(MultichainSwapQuote(quoteId: "recovered-quote", routes: [recoveredRoute]))]
+        )
+        let viewModel = makeViewModel(input: makeInput(route: route), executionService: executionService, swapService: swapService)
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertEqual(swapService.quoteAPIVersions, [.v3])
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "recovered-route")
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.apiVersion, .v3)
+    }
+
+    /// The backend may price a route again when it builds its operation: the details show, and the swap
+    /// reports, what that operation receives.
+    @MainActor
+    func test_theDetailsShowWhatThePreparedOperationReceives() async throws {
+        let prepared = makeRoute(estimatedDestinationAmount: "2400000000", minimumDestinationAmount: "2350000000")
+        let executionService = try ConfirmationExecutionServiceSpy(executionPlanResults: [.success(makeOperationPlan(preparing: prepared))])
+        let viewModel = makeViewModel(executionService: executionService)
+        let shownBefore = viewModel.display.minimumReceivedLine
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { viewModel.isConfirmEnabled }
+        let route = viewModel.currentConfirmationInput.quoteState.route
+        XCTAssertEqual(route.estimatedDestinationAmount, "2400000000")
+        XCTAssertEqual(route.minimumDestinationAmount, "2350000000")
+        XCTAssertNotEqual(viewModel.display.minimumReceivedLine, shownBefore)
+        XCTAssertEqual(viewModel.display.minimumReceivedLine, makeViewModel(input: makeInput(route: prepared)).display.minimumReceivedLine)
+    }
+
+    /// A plan that arrives for another route than the one shown leaves the one shown as it is.
+    @MainActor
+    func test_aPreparedOperationOfAnotherRouteDoesNotChangeTheRouteShown() async throws {
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeOperationPlan(preparing: makeRoute(routeId: "other", estimatedDestinationAmount: "1")))]
+        )
+        let viewModel = makeViewModel(executionService: executionService)
+
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.estimatedDestinationAmount, "2500000000")
+    }
+
+    /// A swap tapped on the swap screen at its quote is asked about again before the passcode when the
+    /// operation the backend built for it receives less.
+    @MainActor
+    func test_aSwapFromTheSwapScreenAsksWhenItsOperationReceivesLessThanItsQuote() async throws {
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeOperationPlan(preparing: makeRoute(estimatedDestinationAmount: "2400000000")))]
+        )
+        var confirmCount = 0
+        var priceChanges = [String]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onPriceChanged: { priceChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !priceChanges.isEmpty }
+        XCTAssertEqual(confirmCount, 0)
+    }
+
+    /// A swap by the amount to receive sells as quoted, but the operation the backend built for it receives
+    /// less than the amount typed: it is asked about before the passcode too.
+    @MainActor
+    func test_aSwapByTheAmountToReceiveAsksWhenItsOperationReceivesLessThanItsQuote() async throws {
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeOperationPlan(preparing: makeRoute(estimatedDestinationAmount: "2400000000")))]
+        )
+        var confirmCount = 0
+        var priceChanges = [String]()
+        let viewModel = makeViewModel(
+            input: makeInput(quoteAmount: .destination(2_500_000_000)),
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onPriceChanged: { priceChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !priceChanges.isEmpty }
+        let receiveSymbol = viewModel.currentConfirmationInput.userInput.receiveAsset.swapDisplaySymbol
+        let amounts = makeAmountFormatter().formatDistinctly(
+            2_400_000_000,
+            2_500_000_000,
+            fractionDigits: 9,
+            accessory: .tokenSymbol(receiveSymbol)
+        )
+        XCTAssertEqual(priceChanges, [TKLocales.MultichainSwap.Screen.Confirm.PriceChanged.receive(amounts.0, amounts.1)])
+        XCTAssertEqual(confirmCount, 0)
+    }
+
+    /// A quote for an amount to receive may promise more than that amount: an operation that receives less than
+    /// the quote, but not less than the amount typed, goes to the passcode without asking.
+    @MainActor
+    func test_aSwapByTheAmountToReceiveGoesOnWhileItsOperationReceivesTheAmountTyped() async throws {
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeOperationPlan(preparing: makeRoute(estimatedDestinationAmount: "2505000000")))]
+        )
+        var confirmCount = 0
+        var priceChanges = [String]()
+        let viewModel = makeViewModel(
+            input: makeInput(route: makeRoute(estimatedDestinationAmount: "2510000000"), quoteAmount: .destination(2_500_000_000)),
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onPriceChanged: { priceChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { confirmCount == 1 }
+        XCTAssertEqual(priceChanges, [])
+    }
+
+    /// The price impact the user accepted for the route tapped does not cover that route once the operation
+    /// built for it prices it worse: its warning is asked again after the price change.
+    @MainActor
+    func test_anAcceptedPriceImpactIsAskedAgainWhenTheOperationPricesTheRouteWorse() async throws {
+        let prepared = makeRoute(estimatedDestinationAmount: "2400000000", valueDifferenceBps: -600)
+        let executionService = try ConfirmationExecutionServiceSpy(executionPlanResults: [.success(makeOperationPlan(preparing: prepared))])
+        var priceChanges = [String]()
+        let viewModel = makeViewModel(
+            input: makeInput(route: makeRoute(valueDifferenceBps: -350)),
+            executionService: executionService,
+            onPriceChanged: { priceChanges.append($0) }
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.acceptPriceImpact()
+        XCTAssertTrue(viewModel.isPriceImpactAccepted)
+        viewModel.prepareExecutionPlan()
+
+        await waitUntil { !priceChanges.isEmpty }
+        XCTAssertFalse(viewModel.isPriceImpactAccepted)
+        XCTAssertEqual(viewModel.priceImpactSeverity, .danger)
+    }
+
+    @MainActor
+    func test_executeWithoutPreparedExecutionPlanDoesNotStartExecution() {
         let executionService = ConfirmationExecutionServiceSpy()
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
-        // Both the swipe and the send release the slider when there is no plan behind them, so what
-        // matters is that it was released and nothing was sent, not how many times.
-        await waitUntil {
-            viewModel.sliderResetToken > 0
-        }
         XCTAssertEqual(viewModel.executionState, .idle)
         XCTAssertEqual(executionService.executeCallCount, 0)
     }
 
     @MainActor
-    func test_unlimitedApprovalAffectsExecutionAndSuccessState() async {
-        let executionService = ConfirmationExecutionServiceSpy(
-            executionPlanResults: [
-                .success(makeExecutionPlan(fees: [], requiresApproval: true)),
-            ],
-            executeResult: .success(
-                MultichainSwapExecutionResult(
-                    routeId: "route",
-                    txHash: "tx-hash",
-                    broadcastedPayloads: []
-                )
-            )
-        )
-        var completedCount = 0
-        let viewModel = makeViewModel(
-            sendAsset: asset(
-                assetId: "unknown/erc20/usdt",
-                symbol: "USDT",
-                decimals: 6
-            ),
-            executionService: executionService,
-            onExecutionCompleted: { _, _ in
-                completedCount += 1
-            }
-        )
+    func test_swapFromThePricingDetailsReportsSwapClickConfirmThenSuccess() async {
+        let executionService = ConfirmationExecutionServiceSpy()
+        let analytics = AnalyticsServiceSpy()
+        let viewModel = makeViewModel(executionService: executionService, analytics: analytics)
 
-        XCTAssertFalse(viewModel.showsUnlimitedApprovalToggle)
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
-            executionService.executionPlanCallCount == 1
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
         }
-        XCTAssertTrue(viewModel.showsUnlimitedApprovalToggle)
-        viewModel.setUnlimitedApprovalEnabled(true)
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
-
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
         await waitUntil {
             viewModel.executionState == .completed
         }
-        XCTAssertEqual(executionService.approvalModes, [.unlimited])
-        XCTAssertEqual(completedCount, 1)
+
+        XCTAssertEqual(analytics.events.map(\.name), ["swap_click", "swap_confirm", "swap_success"])
+        let click = analytics.events.first?.args ?? [:]
+        XCTAssertEqual(click["asset_from"] as? String, "eth/mainnet/coin")
+        XCTAssertEqual(click["asset_to"] as? String, "ton/mainnet/coin")
+        for event in analytics.events.dropFirst() {
+            XCTAssertEqual(event.args["type"] as? String, "native", event.name)
+            XCTAssertEqual(event.args["wallet_mode"] as? String, "multi", event.name)
+            XCTAssertEqual(event.args["asset_from"] as? String, "eth/mainnet/coin", event.name)
+            XCTAssertEqual(event.args["asset_to"] as? String, "ton/mainnet/coin", event.name)
+            XCTAssertEqual(event.args["fee_asset"] as? String, "coin", event.name)
+            XCTAssertEqual(event.args["provider_name"] as? String, "Aggregator", event.name)
+            XCTAssertEqual(event.args["is_max"] as? Bool, false, event.name)
+        }
     }
 
     @MainActor
-    func test_tokenRouteWithoutApprovalDoesNotShowOrChangeUnlimitedMode() async {
-        let executionService = ConfirmationExecutionServiceSpy(
-            executionPlanResults: [.success(makeExecutionPlan(fees: [], requiresApproval: false))]
+    func test_failedSwapReportsSwapFailedWithTheFailure() async {
+        let failure = MultichainSwapExecutionFailure.broadcastFailed(
+            payloadId: "payload",
+            kind: .networkError,
+            reason: "timed out"
         )
-        let viewModel = makeViewModel(
-            sendAsset: asset(
-                assetId: "unknown/erc20/usdt",
-                symbol: "USDT",
-                decimals: 6
-            ),
-            executionService: executionService
-        )
+        let executionService = ConfirmationExecutionServiceSpy(executeResult: .failure(failure))
+        let analytics = AnalyticsServiceSpy()
+        let viewModel = makeViewModel(executionService: executionService, analytics: analytics)
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
-            executionService.executionPlanCallCount == 1
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
         }
-        viewModel.setUnlimitedApprovalEnabled(true)
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+        await waitUntil {
+            if case .executionFailed = viewModel.executionState {
+                return true
+            }
+            return false
+        }
 
-        XCTAssertFalse(viewModel.showsUnlimitedApprovalToggle)
-        XCTAssertFalse(viewModel.isUnlimitedApprovalEnabled)
+        XCTAssertEqual(analytics.events.map(\.name), ["swap_click", "swap_confirm", "swap_failed"])
+        let failed = analytics.events.last?.args ?? [:]
+        XCTAssertEqual(
+            failed["error_message"] as? String,
+            "type=MultichainSwapExecutionFailure, case=broadcastFailed, kind=\(MultichainSwapExecutionErrorKind.networkError.description)"
+        )
+        XCTAssertEqual(failed["provider_name"] as? String, "Aggregator")
+        XCTAssertEqual(failed["fee_asset"] as? String, "coin")
+        XCTAssertEqual(failed["asset_from"] as? String, "eth/mainnet/coin")
+    }
+
+    @MainActor
+    func test_canceledSwapReportsNoFailure() async {
+        let executionService = ConfirmationExecutionServiceSpy(executeResult: .failure(.canceled))
+        let analytics = AnalyticsServiceSpy()
+        let viewModel = makeViewModel(executionService: executionService, analytics: analytics)
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil {
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
+        }
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { nil }), consent: .refuse)
+        await waitUntil {
+            executionService.executeCallCount == 1 && viewModel.executionState == .idle
+        }
+
+        XCTAssertEqual(analytics.events.map(\.name), ["swap_click", "swap_confirm"])
+    }
+
+    @MainActor
+    func test_swapFromTheSwapScreenLeavesSwapClickToIt() async {
+        let executionService = ConfirmationExecutionServiceSpy()
+        let analytics = AnalyticsServiceSpy()
+        var confirmCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            analytics: analytics
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+        await waitUntil { confirmCount == 1 }
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+        await waitUntil {
+            viewModel.executionState == .completed
+        }
+
+        XCTAssertEqual(analytics.events.map(\.name), ["swap_confirm", "swap_success"])
+    }
+
+    /// The swap screen counted the tap. Its swap could not pay with the battery and went on in the pricing
+    /// details, whose Swap button continues it once the fee is paid rather than starting another.
+    @MainActor
+    func test_swapTheSwapScreenHandsToThePricingDetailsKeepsItsOneClick() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(isInsufficient: true)])),
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption()])),
+            ]
+        )
+        let analytics = AnalyticsServiceSpy()
+        var confirmCount = 0
+        var unavailableCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onConfirmUnavailable: { unavailableCount += 1 },
+            analytics: analytics
+        )
+
+        viewModel.confirmWhenReady()
+        viewModel.prepareExecutionPlan()
+        await waitUntil { unavailableCount == 1 }
+        viewModel.refreshFeeCalculationAfterDeposit()
+        await waitUntil { executionService.executionPlanCallCount == 2 && viewModel.isConfirmEnabled }
+        viewModel.confirm()
+        await waitUntil { confirmCount == 1 }
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+        await waitUntil {
+            viewModel.executionState == .completed
+        }
+
+        XCTAssertEqual(analytics.events.map(\.name), ["swap_confirm", "swap_success"])
     }
 
     @MainActor
@@ -812,17 +1330,17 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         var failedMessage: String?
         let viewModel = makeViewModel(
             executionService: executionService,
-            onExecutionFailed: { message in
+            onExecutionFailed: { message, _ in
                 failedMessage = message
             }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
-            executionService.executionPlanCallCount == 1
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
         }
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
         await waitUntil {
             if case .executionFailed = viewModel.executionState {
@@ -840,7 +1358,7 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_failedExecutionUnlocksSliderAndRetriesOnARefreshedRoute() async {
+    func test_failedExecutionAsksForAFreshQuoteAndRetriesOnIt() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(routeId: "route", fees: [networkFee()])),
@@ -850,90 +1368,67 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
                 .broadcastFailed(payloadId: "main", kind: .unknown, reason: "node rejected")
             )
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(
-                    quoteId: "refreshed-quote",
-                    routes: [makeRoute(routeId: "refreshed-route")]
-                )),
-            ]
-        )
+        var events = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService
+            onRefreshQuote: { events.append("fresh quote") },
+            onExecutionFailed: { _, _ in events.append("failure") }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil { viewModel.isConfirmEnabled }
-        let resetTokenBeforeExecution = viewModel.sliderResetToken
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
         await waitUntil {
             viewModel.executionState == .executionFailed(
                 TKLocales.MultichainSwap.Screen.Confirm.Error.unknown
             )
         }
-        XCTAssertGreaterThan(viewModel.sliderResetToken, resetTokenBeforeExecution)
-        XCTAssertEqual(viewModel.executionState.confirmTitle, TKLocales.Actions.retry)
+        // Without the sheet the failure report ends the confirmation, so the fresh quote is asked for first.
+        XCTAssertEqual(events, ["fresh quote", "failure"])
 
-        await waitUntil {
-            viewModel.currentConfirmationInput.quoteState.route.routeId == "refreshed-route"
-        }
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
         await waitUntil { viewModel.isConfirmEnabled }
-        XCTAssertEqual(viewModel.executionState.confirmTitle, TKLocales.Actions.retry)
-        XCTAssertEqual(swapService.quoteRequests.count, 1)
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
-        await waitUntil { executionService.executeCallCount == 2 }
+        await waitUntil { executionService.executeCallCount == 2 && events.count == 4 }
         XCTAssertEqual(executionService.executedRouteIds, ["route", "refreshed-route"])
     }
 
     @MainActor
-    func test_failedExecutionLocksTheRetryWhenTheRecoveryRefreshFails() async {
+    func test_failedExecutionLocksTheRetryWhenTheFreshQuoteFails() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executeResult: .failure(
                 .broadcastFailed(payloadId: "main", kind: .unknown, reason: "node rejected")
             )
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(
-                    quoteId: "empty-quote",
-                    routes: [],
-                    providerErrors: [
-                        MultichainSwapProviderError(
-                            aggregator: "swapsxyz",
-                            code: "provider_error",
-                            message: "no route"
-                        ),
-                    ]
-                )),
-            ]
-        )
+        var refreshRequests = 0
         var failedMessages = [String]()
         var preparationFailureMessages = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService,
-            onExecutionFailed: { failedMessages.append($0) },
+            onRefreshQuote: { refreshRequests += 1 },
+            onExecutionFailed: { message, _ in failedMessages.append(message) },
             onPreparationFailed: { preparationFailureMessages.append($0) }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil { viewModel.isConfirmEnabled }
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
 
-        await waitUntil { viewModel.quoteFailureMessage != nil }
+        await waitUntil { refreshRequests == 1 }
+        viewModel.updateQuote(.failed(.quote(.unavailable)))
+
         XCTAssertEqual(failedMessages, [TKLocales.MultichainSwap.Screen.Confirm.Error.unknown])
         XCTAssertEqual(viewModel.quoteFailureMessage, TKLocales.MultichainSwap.ProviderError.unknown)
         XCTAssertEqual(preparationFailureMessages, [])
-        XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertFalse(viewModel.isSwapEnabled)
         XCTAssertEqual(executionService.executeCallCount, 1)
     }
 
@@ -948,11 +1443,11 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         var preparationFailureMessages = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            onExecutionFailed: { failedMessages.append($0) },
+            onExecutionFailed: { message, _ in failedMessages.append(message) },
             onPreparationFailed: { preparationFailureMessages.append($0) }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { !preparationFailureMessages.isEmpty }
         XCTAssertFalse(viewModel.isConfirmEnabled)
@@ -981,21 +1476,21 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onInsufficientNativeFee: { presentedShortage = $0 }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
-        await waitUntil {
-            presentedShortage == shortage
-        }
+        await waitUntil { viewModel.display.isNetworkFeeShortage }
+        XCTAssertNil(presentedShortage)
         XCTAssertEqual(preparationFailureMessages, [])
         XCTAssertNotEqual(
             viewModel.display.networkFeeValue,
             TKLocales.MultichainSwap.Screen.Confirm.Value.calculating
         )
-        XCTAssertTrue(viewModel.display.networkFeeValue.contains("ETH"))
+        XCTAssertEqual(viewModel.display.networkFeeMethod, "ETH")
         XCTAssertEqual(
             viewModel.display.networkFeeSubtitle,
-            TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.insufficientNativeToken("ETH")
+            TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnough("ETH")
         )
+        XCTAssertTrue(viewModel.display.isNetworkFeeShortage)
     }
 
     @MainActor
@@ -1008,7 +1503,7 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
             if case .preparationFailed = viewModel.executionState {
                 return true
@@ -1016,7 +1511,7 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             return false
         }
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
 
         await waitUntil { viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.executionState, .idle)
@@ -1031,23 +1526,90 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         var failedMessages = [String]()
         let viewModel = makeViewModel(
             executionService: executionService,
-            onExecutionFailed: { message in
+            onExecutionFailed: { message, _ in
                 failedMessages.append(message)
             }
         )
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
-            executionService.executionPlanCallCount == 1
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
         }
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { nil })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { nil }), consent: .refuse)
 
         await waitUntil {
-            viewModel.sliderResetToken == 1
+            executionService.executeCallCount == 1 && viewModel.executionState == .idle
         }
-        XCTAssertEqual(viewModel.executionState, .idle)
         XCTAssertEqual(failedMessages, [])
+    }
+
+    /// The swap is held to what its quote showed the user selling: the amount entered, not the
+    /// route's echo of it, or for an amount to receive the cap the route puts on it.
+    @MainActor
+    func test_theSwapIsSentWithTheSpendLimitOfItsQuote() async {
+        let cases: [(input: MultichainSwapConfirmationInput, spendLimit: BigUInt)] = [
+            (makeInput(route: makeRoute(sourceAmount: (oneEth + 7).description), quoteAmount: .source(oneEth)), oneEth),
+            (
+                makeInput(
+                    route: makeRoute(sourceAmount: (oneEth * 2).description, maximumSourceAmount: (oneEth * 3).description),
+                    quoteAmount: .destination(2_500_000_000)
+                ),
+                oneEth * 3
+            ),
+        ]
+        for (input, spendLimit) in cases {
+            let executionService = ConfirmationExecutionServiceSpy()
+            let viewModel = makeViewModel(input: input, executionService: executionService)
+
+            viewModel.prepareExecutionPlan()
+            await waitUntil { viewModel.isConfirmEnabled }
+            viewModel.confirm()
+            viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
+            await waitUntil { viewModel.executionState == .completed }
+
+            XCTAssertEqual(executionService.spendLimits, [spendLimit])
+        }
+    }
+
+    /// The swipe's consent answers the review of what a relayed swap signs. A refusal cancels the
+    /// swap: the screen goes back to idle with nothing failed and nothing locked, and the next swipe
+    /// asks again.
+    @MainActor
+    func test_aRefusedReviewLeavesTheSwapIdleAndRetryable() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(charges: 3), nativeOption()])),
+            ],
+            review: flaggedReview
+        )
+        var failedMessages = [String]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onExecutionFailed: { message, _ in
+                failedMessages.append(message)
+            }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: SwipingUser(answering: false).consent())
+        await waitUntil { executionService.executeCallCount == 1 && viewModel.executionState == .idle }
+
+        XCTAssertEqual(failedMessages, [])
+        XCTAssertFalse(viewModel.isRetryUnsafe)
+        XCTAssertTrue(viewModel.isConfirmEnabled)
+
+        let user = SwipingUser(answering: true)
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: user.consent())
+        await waitUntil { viewModel.executionState == .completed }
+
+        let asked = await user.asked
+        XCTAssertEqual(asked, [flaggedReview])
+        XCTAssertEqual(executionService.feeMethods, [.battery, .battery])
     }
 
     func test_confirmationUserMessageMapsSwapFailureReasons() {
@@ -1146,64 +1708,52 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
 
     @MainActor
     func test_cancelledInitialFeeLoadDoesNotOverwriteRefreshedFees() async {
-        let refreshedRoute = makeRoute(routeId: "refreshed-route")
+        let initialPlan = TestGate()
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(fees: [networkFee()])),
                 .success(makeExecutionPlan(fees: [networkFee(symbol: "TON", decimals: 9)])),
             ],
-            executionPlanDelays: [0.3, 0]
+            executionPlanHolds: [initialPlan]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [refreshedRoute])),
-            ]
-        )
-        let viewModel = makeViewModel(
-            executionService: executionService,
-            swapService: swapService
-        )
+        let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
             executionService.executionPlanCallCount == 1
         }
+        let initialLoad = viewModel.refreshModel.refreshTask
         viewModel.selectSlippageBps(50)
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
 
         await waitUntil(timeout: 2) {
-            viewModel.display.networkFeeValue.contains("TON")
+            viewModel.display.networkFeeMethod == "TON"
         }
-        try? await Task.sleep(nanoseconds: 400_000_000)
-        XCTAssertTrue(viewModel.display.networkFeeValue.contains("TON"))
-        XCTAssertFalse(viewModel.display.networkFeeValue.contains("ETH"))
+        await initialPlan.open()
+        await initialLoad?.value
+        XCTAssertEqual(viewModel.display.networkFeeMethod, "TON")
     }
 
     @MainActor
-    func test_circularProgressCompletionDoesNotRefreshQuoteAfterExecutionCompleted() async {
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [
-                .success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()])),
-            ]
-        )
+    func test_screenQuoteChangesAfterACompletedSwapAreIgnored() async {
         let executionService = ConfirmationExecutionServiceSpy()
-        let viewModel = makeViewModel(
-            executionService: executionService,
-            swapService: swapService
-        )
+        let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
+        viewModel.prepareExecutionPlan()
         await waitUntil {
-            executionService.executionPlanCallCount == 1
+            executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled
         }
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "passcode" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "passcode" }), consent: .refuse)
         await waitUntil {
             viewModel.executionState == .completed
         }
 
-        viewModel.notifyCircularProgressCompleted()
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertTrue(swapService.quoteRequests.isEmpty)
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
+        await viewModel.refreshModel.refreshTask?.value
+
+        XCTAssertEqual(viewModel.currentConfirmationInput.quoteState.route.routeId, "route")
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
     }
 
     @MainActor
@@ -1220,8 +1770,8 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
         XCTAssertTrue(viewModel.display.canPickFeeMethod)
@@ -1246,15 +1796,15 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         viewModel.selectFeeOption(nativeOption())
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "1111" })
-        await waitUntil { executionService.executeCallCount == 1 }
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "1111" }), consent: .refuse)
+        await waitUntil { executionService.executeCallCount == 1 && viewModel.executionState == .completed }
 
         XCTAssertEqual(executionService.feeMethods, [.native])
     }
@@ -1280,8 +1830,8 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onRefillBattery: { _ in refillRequests += 1 }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
 
@@ -1312,8 +1862,8 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onDepositNativeFee: { depositedAssetIds.append($0.assetId) }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.requiresBatteryTopUp }
 
         viewModel.selectFeeOption(
             MultichainSwapFeeOption(cost: .native([networkFee()], isInsufficient: true))
@@ -1338,16 +1888,17 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .gram)
         XCTAssertEqual(
             viewModel.display.networkFeeMethod,
             TransactionConfirmationModel.ExtraType.default.feeRowMethodTitle
         )
-        XCTAssertTrue(
-            viewModel.display.networkFeeValue.hasSuffix(MultichainAssetDetails.gram.symbol),
+        XCTAssertTrue(viewModel.display.networkFeeValue.hasPrefix("≈ "), viewModel.display.networkFeeValue)
+        XCTAssertFalse(
+            viewModel.display.networkFeeValue.contains(MultichainAssetDetails.gram.symbol),
             viewModel.display.networkFeeValue
         )
     }
@@ -1374,14 +1925,42 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onDepositNativeFee: { depositedAssetIds.append($0.assetId) }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         viewModel.selectFeeOption(gramOption(isInsufficient: true))
 
         XCTAssertEqual(depositedAssetIds, [MultichainAssetDetails.gram.assetId])
         XCTAssertEqual(refillRequests, 0)
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
+    }
+
+    /// The chain's coin, short of the fee with no other method to pay it, keeps the row it had, and a tap on it
+    /// opens the coin's deposit: a picker of the one method would only lead there.
+    @MainActor
+    func test_loneShortFeeMethodOpensItsDeposit() async {
+        let shortage = MultichainNativeFeeShortage(asset: networkFee().asset, requiredAmount: networkFee().fee)
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.failure(.insufficientNativeFee(shortage: shortage))]
+        )
+        var depositedAssetIds = [String]()
+        var pickerCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onOpenFeePicker: { _ in pickerCount += 1 },
+            onDepositNativeFee: { depositedAssetIds.append($0.assetId) }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.display.isNetworkFeeShortage }
+        let feeRow = MultichainSwapConfirmationViewStateMapper().map(viewModel).networkFee
+        XCTAssertTrue(feeRow.isShortage)
+        XCTAssertFalse(feeRow.canPickMethod)
+
+        viewModel.tapFeeMethod()
+
+        XCTAssertEqual(depositedAssetIds, [shortage.asset.assetId])
+        XCTAssertEqual(pickerCount, 0)
     }
 
     @MainActor
@@ -1410,18 +1989,20 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onInsufficientNativeFee: { _ in shortages += 1 }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
+        await waitUntil { executionService.executionPlanCallCount == 2 && !viewModel.isConfirmEnabled }
 
         XCTAssertEqual(shortages, 0)
+        XCTAssertFalse(viewModel.display.isNetworkFeeShortage)
     }
 
+    /// Battery holds 4 charges and gives 3 back: the swap costs 1, and the 3 are its temporary reserve.
     @MainActor
-    func test_batteryRowSaysHowManyChargesComeBack() async {
+    func test_batteryRowSplitsTheHeldChargesIntoTheFeeAndTheReserve() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(
@@ -1434,15 +2015,14 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
-        XCTAssertTrue(viewModel.display.networkFeeValue.contains("4"))
-        XCTAssertTrue(
-            viewModel.display.networkFeeSubtitle.contains(
-                "3 \(TKLocales.Battery.Refill.refunded(count: 3))"
-            )
+        XCTAssertEqual(viewModel.display.networkFeeValue, "1 \(TKLocales.Battery.Refill.chargesCount(count: 1))")
+        XCTAssertEqual(
+            viewModel.display.temporaryReserve?.value,
+            "≈ 3 \(TKLocales.Battery.Refill.chargesCount(count: 3))"
         )
     }
 
@@ -1460,12 +2040,11 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
-        XCTAssertFalse(
-            viewModel.display.networkFeeSubtitle.contains(TKLocales.Battery.Refill.refunded(count: 4))
-        )
+        XCTAssertNil(viewModel.display.temporaryReserve)
+        XCTAssertEqual(viewModel.display.networkFeeValue, "4 \(TKLocales.Battery.Refill.chargesCount(count: 4))")
     }
 
     @MainActor
@@ -1489,8 +2068,8 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onInsufficientNativeFee: { _ in shortages += 1 }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
         XCTAssertTrue(viewModel.isConfirmEnabled)
@@ -1519,18 +2098,20 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.requiresBatteryTopUp }
 
         XCTAssertFalse(viewModel.isConfirmEnabled)
         XCTAssertEqual(
             viewModel.display.networkFeeSubtitle,
-            TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.insufficientNativeToken("ETH")
+            TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnoughCharges("0")
         )
+        XCTAssertTrue(viewModel.requiresBatteryTopUp)
+        XCTAssertEqual(MultichainSwapConfirmationViewStateMapper().map(viewModel).action, .topUpBattery)
     }
 
     @MainActor
-    func test_nativeShortageIsReportedOnceTheRelayedMethodIsGone() async {
+    func test_swapTapReportsTheNativeShortageOnceTheRelayedMethodIsGone() async {
         let shortage = MultichainNativeFeeShortage(
             asset: networkFee().asset,
             requiredAmount: networkFee().fee
@@ -1563,54 +2144,187 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onInsufficientNativeFee: { shortages.append($0) }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
         XCTAssertTrue(shortages.isEmpty)
 
         // A plan that no longer offers the relayed method really does leave nothing paying.
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
-        XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
+        await waitUntil { viewModel.selectedFeeOption?.method == .native }
+        XCTAssertTrue(shortages.isEmpty)
+
+        viewModel.confirm()
+
+        XCTAssertEqual(shortages, [shortage])
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 3 }
-        await waitUntil {
-            if case .preparationFailed = viewModel.executionState {
-                return true
-            }
-            return false
-        }
+        await waitUntil { executionService.executionPlanCallCount == 3 && viewModel.selectedFeeOption == nil }
+        viewModel.confirm()
 
-        XCTAssertEqual(shortages.count, 1)
+        XCTAssertEqual(shortages, [shortage, shortage])
         XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertTrue(viewModel.isSwapEnabled)
     }
 
+    /// A tap before the fee is priced is taken rather than refused, the way the swap screen's button
+    /// takes it, and the swap goes on as soon as the plan arrives.
     @MainActor
-    func test_abandonedSwipeStartsTheQuoteMovingAgain() async {
+    func test_swapTappedBeforeTheFeeIsPricedWaitsForThePlan() async {
+        let plan = TestGate()
         let executionService = ConfirmationExecutionServiceSpy(
-            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))]
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))],
+            executionPlanHolds: [plan]
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [.success(MultichainSwapQuote(quoteId: "resumed", routes: [makeRoute()]))]
-        )
+        var confirmCount = 0
         let viewModel = makeViewModel(
             executionService: executionService,
-            swapService: swapService
+            onConfirm: { confirmCount += 1 }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
-        XCTAssertTrue(swapService.quoteRequests.isEmpty)
+        viewModel.prepareExecutionPlan()
 
-        viewModel.confirmSwipe()
-        viewModel.resetConfirmSlider()
+        XCTAssertTrue(viewModel.isSwapEnabled)
+        XCTAssertFalse(viewModel.isConfirmEnabled)
 
-        await waitUntil { swapService.quoteRequests.count == 1 }
+        viewModel.confirm()
+        viewModel.confirm()
+
+        XCTAssertTrue(viewModel.isConfirmPending)
+        XCTAssertEqual(
+            MultichainSwapConfirmationViewStateMapper().map(viewModel).action,
+            .swap(isEnabled: true, isLoading: true)
+        )
+        XCTAssertEqual(confirmCount, 0)
+        await plan.open()
+        await waitUntil { confirmCount == 1 }
+        XCTAssertFalse(viewModel.isConfirmPending)
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
     }
 
+    /// Waiting holds the swap screen's quote, so a tap with no plan on its way would wait for good: it asks
+    /// for the plan itself, such as after a refresh that ended without one while a relayed method paid.
     @MainActor
-    func test_batteryShortageIsAnnouncedWhenOnlyARefillCanPay() async {
+    func test_swapTappedWithNoPlanOnItsWayAsksForOne() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(charges: 3), nativeOption()])),
+                .failure(
+                    .insufficientNativeFee(
+                        shortage: MultichainNativeFeeShortage(asset: networkFee().asset, requiredAmount: 1)
+                    )
+                ),
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(charges: 3), nativeOption()])),
+            ]
+        )
+        var confirmCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 }
+        )
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
+        viewModel.refreshFeeCalculationAfterDeposit()
+        await waitUntil { executionService.executionPlanCallCount == 2 && !viewModel.isConfirmEnabled }
+        XCTAssertTrue(viewModel.isSwapEnabled)
+
+        viewModel.confirm()
+
+        XCTAssertTrue(viewModel.isConfirmPending)
+        await waitUntil { confirmCount == 1 }
+        XCTAssertEqual(executionService.executionPlanCallCount, 3)
+    }
+
+    /// A Swap tap waiting for its plan goes on to the passcode once the plan arrives, so the slippage, which
+    /// would bring another quote, holds still meanwhile.
+    @MainActor
+    func test_slippageHoldsStillWhileASwapTapWaitsForItsPlan() {
+        var reportedSlippage = [Int]()
+        let viewModel = makeViewModel(onSlippageChange: { reportedSlippage.append($0) })
+
+        viewModel.confirmWhenReady()
+        viewModel.selectSlippageBps(50)
+
+        XCTAssertFalse(viewModel.canSelectSlippage)
+        XCTAssertEqual(viewModel.selectedSlippageBps, 100)
+        XCTAssertEqual(reportedSlippage, [])
+    }
+
+    /// The quote already on screen only restarts the countdown; a refresh holds the swap until the next
+    /// quote arrives, and that one is priced again.
+    @MainActor
+    func test_swapWaitsWhileTheScreenQuoteRefreshes() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()])),
+                .success(makeExecutionPlan(routeId: "refreshed-route", fees: [networkFee()])),
+            ]
+        )
+        let viewModel = makeViewModel(executionService: executionService)
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
+
+        let restartedCycle = MultichainSwapQuoteRefreshCycle(startDate: Date(), duration: 30)
+        viewModel.updateQuote(.ready(viewModel.currentConfirmationInput, restartedCycle))
+
+        XCTAssertEqual(viewModel.quoteStatus, .ready(restartedCycle))
+        XCTAssertTrue(viewModel.isConfirmEnabled)
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
+
+        viewModel.updateQuote(.loading)
+
+        XCTAssertEqual(viewModel.quoteStatus, .loading)
+        XCTAssertFalse(viewModel.isSwapEnabled)
+
+        viewModel.updateQuote(freshQuote(route: makeRoute(routeId: "refreshed-route")))
+
+        XCTAssertTrue(viewModel.isSwapEnabled)
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
+    }
+
+    /// A swap on its way holds the swap screen's quote, with no gap from the tap to the send, until it
+    /// ends: backed out of, or canceled at the passcode.
+    @MainActor
+    func test_aSwapOnItsWayHoldsTheScreenQuoteUntilItEnds() async {
+        let plan = TestGate()
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))],
+            executionPlanHolds: [plan],
+            executeResult: .failure(.canceled)
+        )
+        var inFlightChanges = [Bool]()
+        var confirmCount = 0
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onConfirm: { confirmCount += 1 },
+            onSwapInFlightChange: { inFlightChanges.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+        viewModel.confirm()
+        await plan.open()
+        await waitUntil { confirmCount == 1 }
+
+        XCTAssertEqual(inFlightChanges, [true])
+
+        viewModel.cancelConfirm()
+
+        XCTAssertEqual(inFlightChanges, [true, false])
+
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { nil }), consent: .refuse)
+        await waitUntil { inFlightChanges.count == 4 }
+
+        XCTAssertEqual(inFlightChanges, [true, false, true, false])
+        XCTAssertEqual(viewModel.executionState, .idle)
+    }
+
+    /// The sheet's button tops the battery up itself, so the battery popup comes only from a swap tapped on
+    /// the swap screen, naming the battery beside the chain's coin.
+    @MainActor
+    func test_batteryShortageOpensFromASwapTappedOnTheSwapScreen() async {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(
@@ -1625,16 +2339,49 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             ]
         )
         var shortages = [MultichainNativeFeeShortage]()
+        var unavailableCount = 0
         let viewModel = makeViewModel(
             executionService: executionService,
+            onConfirmUnavailable: { unavailableCount += 1 },
             onBatteryFeeShortage: { shortages.append($0) }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.requiresBatteryTopUp }
+
+        XCTAssertTrue(shortages.isEmpty)
+
+        viewModel.confirmWhenReady()
 
         XCTAssertEqual(shortages.map(\.asset.symbol), ["ETH"])
         XCTAssertEqual(shortages.first?.requiredAmount, networkFee().fee)
+        XCTAssertEqual(unavailableCount, 0)
+        XCTAssertFalse(viewModel.isConfirmPending)
+    }
+
+    /// A plan that names the coin it falls short of, as `/v3` does beside a relayed method, has the battery
+    /// popup ask for all of it: the fee and the coin the swap sends besides, which the native option leaves out.
+    @MainActor
+    func test_batteryShortageAsksForTheCoinThePlanFallsShortOf() async {
+        var plan = makeExecutionPlan(
+            fees: [networkFee()],
+            feeOptions: [
+                batteryOption(charges: 3, isInsufficient: true),
+                MultichainSwapFeeOption(cost: .native([networkFee()], isInsufficient: true)),
+            ]
+        )
+        plan.nativeFeeShortage = MultichainNativeFeeShortage(asset: networkFee().asset, requiredAmount: networkFee().fee + 80_000_001)
+        var shortages = [MultichainNativeFeeShortage]()
+        let viewModel = makeViewModel(
+            executionService: ConfirmationExecutionServiceSpy(executionPlanResults: [.success(plan)]),
+            onBatteryFeeShortage: { shortages.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.requiresBatteryTopUp }
+        viewModel.confirmWhenReady()
+
+        XCTAssertEqual(shortages.map(\.requiredAmount), [networkFee().fee + 80_000_001])
     }
 
     @MainActor
@@ -1658,8 +2405,8 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onBatteryFeeShortage: { shortages.append($0) }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
         XCTAssertTrue(shortages.isEmpty)
         XCTAssertTrue(viewModel.isConfirmEnabled)
@@ -1680,18 +2427,65 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
                 .broadcastFailed(payloadId: "main", kind: .unknown, reason: "relay did not answer")
             )
         )
-        let viewModel = makeViewModel(executionService: executionService)
+        var retryableFailures = [Bool]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onExecutionFailed: { _, canRetry in retryableFailures.append(canRetry) }
+        )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "1111" })
-        await waitUntil { executionService.executeCallCount == 1 }
-        await waitUntil { !viewModel.isConfirmEnabled }
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "1111" }), consent: .refuse)
+        await waitUntil { executionService.executeCallCount == 1 && !retryableFailures.isEmpty }
 
         XCTAssertFalse(viewModel.isConfirmEnabled)
+        XCTAssertEqual(retryableFailures, [false])
+        XCTAssertEqual(
+            MultichainSwapConfirmationViewStateMapper().map(viewModel).action,
+            .sendFailed(TKLocales.MultichainSwap.Screen.Confirm.Error.statusUnknown)
+        )
+    }
+
+    /// A relayer that refused for lack of funds took nothing, so the swap says so and can go again.
+    @MainActor
+    func test_relayRefusedForLackOfFundsStaysRetryable() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(
+                    makeExecutionPlan(
+                        fees: [networkFee()],
+                        feeOptions: [batteryOption(charges: 3), nativeOption()]
+                    )
+                ),
+            ],
+            executeResult: .failure(
+                .broadcastRefused(payloadId: "main", kind: .insufficientBalance, reason: "battery relay rejected the swap")
+            )
+        )
+        var failureMessages = [String]()
+        var retryableFailures = [Bool]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onExecutionFailed: { message, canRetry in
+                failureMessages.append(message)
+                retryableFailures.append(canRetry)
+            }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
+        XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
+
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "1111" }), consent: .refuse)
+        await waitUntil { !retryableFailures.isEmpty }
+
+        XCTAssertEqual(retryableFailures, [true])
+        XCTAssertEqual(failureMessages, [TKLocales.MultichainSwap.Screen.Confirm.Error.insufficientBalance])
+        XCTAssertFalse(viewModel.isRetryUnsafe)
     }
 
     @MainActor
@@ -1704,21 +2498,58 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
                 .broadcastFailed(payloadId: "main", kind: .unknown, reason: "node rejected")
             )
         )
-        let swapService = ConfirmationSwapServiceSpy(
-            quoteResults: [.success(MultichainSwapQuote(quoteId: "refreshed-quote", routes: [makeRoute()]))]
+        var refreshRequests = 0
+        var retryableFailures = [Bool]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onRefreshQuote: { refreshRequests += 1 },
+            onExecutionFailed: { _, canRetry in retryableFailures.append(canRetry) }
         )
-        let viewModel = makeViewModel(executionService: executionService, swapService: swapService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
 
-        viewModel.confirmSwipe()
-        viewModel.execute(passcodeProvider: { "1111" })
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "1111" }), consent: .refuse)
         await waitUntil { executionService.executeCallCount == 1 }
-        await waitUntil { viewModel.currentConfirmationInput.quoteState.quote.quoteId == "refreshed-quote" }
-        await waitUntil { viewModel.isConfirmEnabled }
+        await waitUntil { refreshRequests == 1 }
+        XCTAssertEqual(retryableFailures, [true])
 
-        XCTAssertEqual(viewModel.executionState.confirmTitle, TKLocales.Actions.retry)
+        viewModel.updateQuote(freshQuote(route: makeRoute(), quoteId: "refreshed-quote"))
+        await waitUntil { viewModel.isConfirmEnabled }
+    }
+
+    /// A shortage of the chain's coin found only at sending outranks the plan that priced the coin as paying:
+    /// the fee row names it in red while the coin stays selected, as every Swap tap now opens its deposit.
+    @MainActor
+    func test_coinShortageFoundAtSendingShowsOnTheFeeRow() async {
+        let shortage = MultichainNativeFeeShortage(asset: networkFee().asset, requiredAmount: networkFee().fee)
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption()])),
+            ],
+            executeResult: .failure(.insufficientNativeFee(shortage: shortage))
+        )
+        var shortages = [MultichainNativeFeeShortage]()
+        let viewModel = makeViewModel(
+            executionService: executionService,
+            onInsufficientNativeFee: { shortages.append($0) }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertFalse(viewModel.display.isNetworkFeeShortage)
+
+        viewModel.confirm()
+        viewModel.execute(signer: .mnemonic(passcodeProvider: { "1111" }), consent: .refuse)
+        await waitUntil { shortages == [shortage] }
+
+        XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
+        XCTAssertTrue(viewModel.display.isNetworkFeeShortage)
+        XCTAssertEqual(
+            viewModel.display.networkFeeSubtitle,
+            TKLocales.MultichainSwap.Screen.Confirm.NetworkFee.notEnough("ETH")
+        )
     }
 
     @MainActor
@@ -1738,13 +2569,13 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .battery)
         viewModel.selectFeeOption(batteryOption(charges: 3))
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
+        await waitUntil { executionService.executionPlanCallCount == 2 && viewModel.selectedFeeOption?.method == .native }
 
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
@@ -1771,11 +2602,11 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
             onOpenFeePicker: { presentation = $0 }
         )
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         XCTAssertEqual(viewModel.selectedFeeMethod, .battery)
 
-        viewModel.openFeeMethodPicker()
+        viewModel.tapFeeMethod()
         let items = (presentation?.dataSource as? any NetworkFeePickerItemsDataSource)?.items ?? []
         XCTAssertEqual(items.map(\.id), ["battery", "native"])
 
@@ -1785,6 +2616,55 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         presentation?.didSelectItem(nativeItem, nil)
 
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
+    }
+
+    /// A picker row names its method as the fee row does and prices what it pays: the battery's charges
+    /// with what it has, the coin by its amount after the fiat value.
+    @MainActor
+    func test_feePickerRowsNameTheMethodAndWhatItPays() async {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(
+                    makeExecutionPlan(
+                        fees: [networkFee()],
+                        feeOptions: [
+                            MultichainSwapFeeOption(
+                                cost: .batteryCharges(count: 28, excess: 21, isInsufficient: false),
+                                availableCharges: 771
+                            ),
+                            nativeOption(),
+                        ]
+                    )
+                ),
+            ]
+        )
+        var presentation: NetworkFeePickerPresentation?
+        let viewModel = makeViewModel(
+            sendAsset: asset(symbol: "ETH", decimals: 18, usdPrice: 2000),
+            executionService: executionService,
+            onOpenFeePicker: { presentation = $0 }
+        )
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
+        viewModel.tapFeeMethod()
+        let items = (presentation?.dataSource as? any NetworkFeePickerItemsDataSource)?.items ?? []
+
+        guard items.count == 2,
+              case let .titled(batteryTitle, batterySubtitle) = items[0].text,
+              case let .titled(coinTitle, coinSubtitle) = items[1].text
+        else {
+            return XCTFail("expected a titled row for each method")
+        }
+        XCTAssertEqual(batteryTitle, TKLocales.Settings.Items.battery)
+        XCTAssertEqual(
+            batterySubtitle,
+            "7 \(TKLocales.Battery.Refill.chargesCount(count: 7)) · "
+                + TKLocales.MultichainSwap.Screen.Confirm.FeePicker.available("771")
+        )
+        XCTAssertEqual(coinTitle, "ETH")
+        XCTAssertTrue(coinSubtitle.hasPrefix("≈ $"), coinSubtitle)
+        XCTAssertTrue(coinSubtitle.hasSuffix(" · 0.0021 ETH"), coinSubtitle)
     }
 
     /// A refresh that produced no plan knows nothing about what can pay, so it must not drop an
@@ -1811,16 +2691,16 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         viewModel.selectFeeOption(nativeOption())
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
+        await waitUntil { executionService.executionPlanCallCount == 2 && !viewModel.isConfirmEnabled }
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 3 }
+        await waitUntil { executionService.executionPlanCallCount == 3 && viewModel.isConfirmEnabled }
 
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
         XCTAssertEqual(viewModel.selectedFeeOption?.method, .native)
@@ -1828,28 +2708,38 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
 
     @MainActor
     func test_routePayloadShapeRefreshesKeepAnExplicitBatteryPick() async {
-        let options = [batteryOption(charges: 3), nativeOption()]
+        let options = [nativeOption(), batteryOption(charges: 3)]
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(routeId: "ton-boc", fees: [networkFee()], feeOptions: options)),
-                .success(makeExecutionPlan(routeId: "alt-vm-deposit", fees: [networkFee()], feeOptions: options)),
+                .success(makeExecutionPlan(
+                    routeId: "alt-vm-deposit",
+                    fees: [networkFee()],
+                    feeOptions: [nativeOption(), batteryOption(charges: 5)]
+                )),
                 .success(makeExecutionPlan(routeId: "ton-boc-again", fees: [networkFee()], feeOptions: options)),
             ]
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         viewModel.selectFeeOption(nativeOption())
         viewModel.selectFeeOption(batteryOption(charges: 3))
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
+        await waitUntil {
+            executionService.executionPlanCallCount == 2
+                && viewModel.display.networkFeeValue == "5 \(TKLocales.Battery.Refill.chargesCount(count: 5))"
+        }
         XCTAssertEqual(viewModel.selectedFeeMethod, .battery)
         XCTAssertTrue(viewModel.display.canPickFeeMethod)
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 3 }
+        await waitUntil {
+            executionService.executionPlanCallCount == 3
+                && viewModel.display.networkFeeValue == "3 \(TKLocales.Battery.Refill.chargesCount(count: 3))"
+        }
         XCTAssertEqual(viewModel.selectedFeeMethod, .battery)
         XCTAssertTrue(viewModel.display.canPickFeeMethod)
     }
@@ -1860,25 +2750,206 @@ final class MultichainSwapConfirmationViewModelTests: XCTestCase {
         let executionService = ConfirmationExecutionServiceSpy(
             executionPlanResults: [
                 .success(makeExecutionPlan(routeId: "ton-boc", fees: [networkFee()], feeOptions: options)),
-                .success(makeExecutionPlan(routeId: "alt-vm-deposit", fees: [networkFee()], feeOptions: options)),
+                .success(makeExecutionPlan(
+                    routeId: "alt-vm-deposit",
+                    fees: [networkFee(symbol: "BNB")],
+                    feeOptions: [batteryOption(charges: 3), nativeOption(fees: [networkFee(symbol: "BNB")])]
+                )),
                 .success(makeExecutionPlan(routeId: "ton-boc-again", fees: [networkFee()], feeOptions: options)),
             ]
         )
         let viewModel = makeViewModel(executionService: executionService)
 
-        viewModel.viewDidLoad()
-        await waitUntil { executionService.executionPlanCallCount == 1 }
+        viewModel.prepareExecutionPlan()
+        await waitUntil { executionService.executionPlanCallCount == 1 && viewModel.isConfirmEnabled }
         viewModel.selectFeeOption(nativeOption())
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 2 }
+        await waitUntil { executionService.executionPlanCallCount == 2 && viewModel.display.networkFeeMethod == "BNB" }
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
         XCTAssertTrue(viewModel.display.canPickFeeMethod)
 
         viewModel.refreshFeeCalculationAfterDeposit()
-        await waitUntil { executionService.executionPlanCallCount == 3 }
+        await waitUntil { executionService.executionPlanCallCount == 3 && viewModel.display.networkFeeMethod == "ETH" }
         XCTAssertEqual(viewModel.selectedFeeMethod, .native)
         XCTAssertTrue(viewModel.display.canPickFeeMethod)
+    }
+
+    /// The fee row and the confirmation ask for the same route at once: it is prepared once, and an ask
+    /// after that reads the plan already prepared.
+    @MainActor
+    func test_planProviderPreparesARouteOnceForEveryoneWhoAsks() async throws {
+        let plan = TestGate()
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))],
+            executionPlanHolds: [plan]
+        )
+        let provider = MultichainSwapPlanProvider(swapWallet: makeSwapWallet(), executionService: executionService)
+        let input = makeInput()
+
+        async let rowPlan = provider.plan(
+            sourceAsset: input.userInput.sendAsset,
+            destinationAsset: input.userInput.receiveAsset,
+            route: input.quoteState.route
+        )
+        async let sheetPlan = provider.plan(
+            sourceAsset: input.userInput.sendAsset,
+            destinationAsset: input.userInput.receiveAsset,
+            route: input.quoteState.route
+        )
+        await waitUntil { executionService.executionPlanCallCount == 1 }
+        await plan.open()
+        _ = try await(rowPlan, sheetPlan)
+        _ = try await provider.plan(
+            sourceAsset: input.userInput.sendAsset,
+            destinationAsset: input.userInput.receiveAsset,
+            route: input.quoteState.route
+        )
+
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
+    }
+
+    /// A failure other than the coin falling short of the fee is not kept: the next ask prepares the route
+    /// again. A deposit prepares it again anyway, and the asks after it read the new plan.
+    @MainActor
+    func test_planProviderPreparesAgainAfterAFailureAndOnRequest() async throws {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.internal(reason: "unavailable")),
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption(isInsufficient: true)])),
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [batteryOption()])),
+            ]
+        )
+        let provider = MultichainSwapPlanProvider(swapWallet: makeSwapWallet(), executionService: executionService)
+        let input = makeInput()
+        func plan(reusingPrepared: Bool = true) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionPlan {
+            try await provider.plan(
+                sourceAsset: input.userInput.sendAsset,
+                destinationAsset: input.userInput.receiveAsset,
+                route: input.quoteState.route,
+                reusingPrepared: reusingPrepared
+            )
+        }
+
+        do {
+            _ = try await plan()
+            XCTFail("Expected the first preparation to fail")
+        } catch {}
+        let shortPlan = try await plan()
+        let depositPlan = try await plan(reusingPrepared: false)
+        let readPlan = try await plan()
+
+        XCTAssertEqual(shortPlan.feeOptions.first?.isInsufficient, true)
+        XCTAssertEqual(depositPlan.feeOptions.first?.isInsufficient, false)
+        XCTAssertEqual(readPlan.feeOptions.first?.isInsufficient, false)
+        XCTAssertEqual(executionService.executionPlanCallCount, 3)
+    }
+
+    /// A route asked for after it expired is prepared again rather than read back, so the preparation can report
+    /// it expired, as for a swap held on the price impact warning past its route's expiry.
+    @MainActor
+    func test_planProviderPreparesAnExpiredRouteAgain() async throws {
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [.success(makeExecutionPlan(fees: [networkFee()]))]
+        )
+        let provider = MultichainSwapPlanProvider(swapWallet: makeSwapWallet(), executionService: executionService)
+        let input = makeInput(route: makeRoute(dateExpire: Date().addingTimeInterval(-1)))
+
+        for _ in 0 ..< 2 {
+            _ = try await provider.plan(
+                sourceAsset: input.userInput.sendAsset,
+                destinationAsset: input.userInput.receiveAsset,
+                route: input.quoteState.route
+            )
+        }
+
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
+    }
+
+    /// The pricing details hold a plan whose operation stopped being signed while its route lives on: Swap does
+    /// not send it, but prepares the route again and confirms the plan that brings.
+    @MainActor
+    func test_aSwapTappedPastItsOperationsDeadlinePreparesTheRouteAgain() async throws {
+        let input = makeInput()
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeOperationPlan(preparing: input.quoteState.route, expiresAt: Date().addingTimeInterval(-1))),
+                .success(makeOperationPlan(preparing: input.quoteState.route)),
+            ]
+        )
+        var confirmCount = 0
+        let viewModel = makeViewModel(input: input, executionService: executionService, onConfirm: { confirmCount += 1 })
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.isConfirmEnabled }
+        viewModel.confirm()
+
+        await waitUntil { confirmCount == 1 }
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
+    }
+
+    /// The operation `/v3` built for a route can stop being signed before the route expires: a route asked for
+    /// past that is prepared again rather than read back with an operation that would fail as expired.
+    @MainActor
+    func test_planProviderPreparesARouteAgainOnceItsOperationExpired() async throws {
+        let input = makeInput()
+        let executionService = try ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .success(makeOperationPlan(preparing: input.quoteState.route, expiresAt: Date().addingTimeInterval(-1))),
+                .success(makeOperationPlan(preparing: input.quoteState.route)),
+            ]
+        )
+        let provider = MultichainSwapPlanProvider(swapWallet: makeSwapWallet(), executionService: executionService)
+        func plan() async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionPlan {
+            try await provider.plan(
+                sourceAsset: input.userInput.sendAsset,
+                destinationAsset: input.userInput.receiveAsset,
+                route: input.quoteState.route
+            )
+        }
+
+        _ = try await plan()
+        let fresh = try await plan()
+        _ = try await plan()
+
+        XCTAssertGreaterThan(try XCTUnwrap(fresh.expiresAt), Date())
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
+    }
+
+    /// The fee row found the chain's coin short of the fee: the pricing details open with that fee instead of
+    /// estimating it again, and a deposit still prepares the route again.
+    @MainActor
+    func test_pricingDetailsOpenWithTheCoinShortageTheFeeRowFound() async {
+        let shortage = MultichainNativeFeeShortage(
+            asset: asset(symbol: "ETH", decimals: 18).asset,
+            requiredAmount: BigUInt(2_100_000_000_000_000)
+        )
+        let executionService = ConfirmationExecutionServiceSpy(
+            executionPlanResults: [
+                .failure(.insufficientNativeFee(shortage: shortage)),
+                .success(makeExecutionPlan(fees: [networkFee()], feeOptions: [nativeOption()])),
+            ]
+        )
+        let planProvider = MultichainSwapPlanProvider(swapWallet: makeSwapWallet(), executionService: executionService)
+        let input = makeInput()
+        do {
+            _ = try await planProvider.plan(
+                sourceAsset: input.userInput.sendAsset,
+                destinationAsset: input.userInput.receiveAsset,
+                route: input.quoteState.route
+            )
+            XCTFail("Expected the coin to fall short of the fee")
+        } catch {}
+        let viewModel = makeViewModel(input: input, executionService: executionService, planProvider: planProvider)
+
+        viewModel.prepareExecutionPlan()
+        await waitUntil { viewModel.display.isNetworkFeeShortage }
+        XCTAssertEqual(executionService.executionPlanCallCount, 1)
+
+        viewModel.refreshFeeCalculationAfterDeposit()
+        await waitUntil { viewModel.isConfirmEnabled }
+        XCTAssertFalse(viewModel.display.isNetworkFeeShortage)
+        XCTAssertEqual(executionService.executionPlanCallCount, 2)
     }
 }
 
@@ -1889,21 +2960,30 @@ private extension MultichainSwapConfirmationViewModelTests {
         receiveAsset: MultichainAsset? = nil,
         input: MultichainSwapConfirmationInput? = nil,
         executionService: ConfirmationExecutionServiceSpy = ConfirmationExecutionServiceSpy(),
+        planProvider: MultichainSwapPlanProvider? = nil,
         swapService: ConfirmationSwapServiceSpy = ConfirmationSwapServiceSpy(),
-        slippageService: (any MultichainSwapSlippageService)? = TestSlippageService(
-            optionsBps: [50, 100],
-            defaultBps: 100
-        ),
+        slippageService: (any MultichainSwapSlippageService)? = TestSlippageService(optionsBps: [50, 100]),
         routeRecovery: MultichainSwapRouteRecovery = .instantLadder,
-        onExecutionCompleted: @escaping (MultichainSwapConfirmationInput, MultichainSwapFeeMethod) -> Void = { _, _ in },
-        onExecutionFailed: @escaping (String) -> Void = { _ in },
+        onConfirm: @escaping () -> Void = {},
+        onPriceChanged: @escaping (String) -> Void = { _ in },
+        onConfirmUnavailable: @escaping () -> Void = {},
+        onSwapInFlightChange: @escaping (Bool) -> Void = { _ in },
+        onRefreshQuote: @escaping () -> Void = {},
+        onQuoteRecovered: @escaping (MultichainSwapConfirmationQuoteState) -> Void = { _ in },
+        onSlippageChange: @escaping (Int) -> Void = { _ in },
+        onExecutionCompleted: @escaping (
+            MultichainSwapConfirmationInput,
+            MultichainSwapFeeMethod,
+            MultichainSwapExecutionResult
+        ) -> Void = { _, _, _ in },
+        onExecutionFailed: @escaping (_ message: String, _ canRetry: Bool) -> Void = { _, _ in },
         onPreparationFailed: @escaping (String) -> Void = { _ in },
         onInsufficientNativeFee: @escaping (MultichainNativeFeeShortage) -> Void = { _ in },
-        onFeeCalculationStarted: @escaping (MultichainSwapConfirmationRefreshReason) -> Void = { _ in },
         onOpenFeePicker: @escaping (NetworkFeePickerPresentation) -> Void = { _ in },
         onRefillBattery: @escaping (@escaping () -> Void) -> Void = { _ in },
         onBatteryFeeShortage: @escaping (MultichainNativeFeeShortage) -> Void = { _ in },
-        onDepositNativeFee: @escaping (MultichainAssetDetails) -> Void = { _ in }
+        onDepositNativeFee: @escaping (MultichainAssetDetails) -> Void = { _ in },
+        analytics: AnalyticsService? = nil
     ) -> MultichainSwapConfirmationViewModel {
         let resolvedSendAsset = sendAsset ?? asset(symbol: "ETH", decimals: 18)
         let resolvedReceiveAsset = receiveAsset ?? asset(
@@ -1911,26 +2991,48 @@ private extension MultichainSwapConfirmationViewModelTests {
             symbol: "TON",
             decimals: 9
         )
-        return MultichainSwapConfirmationViewModel(
+        let viewModel = MultichainSwapConfirmationViewModel(
             swapWallet: makeSwapWallet(),
             confirmationInput: input ?? makeInput(
                 sendAsset: resolvedSendAsset,
                 receiveAsset: resolvedReceiveAsset
             ),
+            quoteRefreshCycle: MultichainSwapQuoteRefreshCycle(startDate: Date(), duration: 30),
             amountFormatter: makeAmountFormatter(),
             executionService: executionService,
+            planProvider: planProvider,
             multichainSwapService: swapService,
             slippageService: slippageService,
             routeRecovery: routeRecovery,
-            onExecutionCompleted: onExecutionCompleted,
-            onExecutionFailed: onExecutionFailed,
-            onPreparationFailed: onPreparationFailed,
-            onInsufficientNativeFee: onInsufficientNativeFee,
-            onFeeCalculationStarted: onFeeCalculationStarted,
-            onOpenFeePicker: onOpenFeePicker,
-            onRefillBattery: onRefillBattery,
-            onBatteryFeeShortage: onBatteryFeeShortage,
-            onDepositNativeFee: onDepositNativeFee
+            swapAnalytics: analytics.map { MultichainSwapAnalytics.logging(to: $0, wallet: makeWallet()) },
+            onConfirm: { onConfirm(); changed.send() },
+            onPriceChanged: { onPriceChanged($0); changed.send() },
+            onConfirmUnavailable: { onConfirmUnavailable(); changed.send() },
+            onSwapInFlightChange: { onSwapInFlightChange($0); changed.send() },
+            onRefreshQuote: { onRefreshQuote(); changed.send() },
+            onQuoteRecovered: { onQuoteRecovered($0); changed.send() },
+            onSlippageChange: { onSlippageChange($0); changed.send() },
+            onExecutionCompleted: { onExecutionCompleted($0, $1, $2); changed.send() },
+            onExecutionFailed: { onExecutionFailed($0, $1); changed.send() },
+            onPreparationFailed: { onPreparationFailed($0); changed.send() },
+            onInsufficientNativeFee: { onInsufficientNativeFee($0); changed.send() },
+            onOpenFeePicker: { onOpenFeePicker($0); changed.send() },
+            onRefillBattery: { onRefillBattery($0); changed.send() },
+            onBatteryFeeShortage: { onBatteryFeeShortage($0); changed.send() },
+            onDepositNativeFee: { onDepositNativeFee($0); changed.send() }
+        )
+        viewModel.objectWillChange.sink { changed.send() }.store(in: &subscriptions)
+        return viewModel
+    }
+
+    /// The swap screen's next quote as it reaches the confirmation.
+    func freshQuote(
+        route: MultichainSwapRoute,
+        quoteId: String = "fresh-quote"
+    ) -> MultichainSwapConfirmationQuoteUpdate {
+        .ready(
+            makeInput(route: route, quoteId: quoteId),
+            MultichainSwapQuoteRefreshCycle(startDate: Date(), duration: 30)
         )
     }
 
@@ -1938,6 +3040,7 @@ private extension MultichainSwapConfirmationViewModelTests {
         sendAsset: MultichainAsset? = nil,
         receiveAsset: MultichainAsset? = nil,
         route: MultichainSwapRoute? = nil,
+        quoteId: String = "quote",
         slippage: MultichainSwapSlippage? = MultichainSwapSlippage(
             chains: [
                 "eth": MultichainSwapSlippageOptions(
@@ -1945,8 +3048,12 @@ private extension MultichainSwapConfirmationViewModelTests {
                     defaultBps: 100
                 ),
             ]
-        )
+        ),
+        slippageBps: Int = 100,
+        feeMethod: MultichainSwapFeeMethod? = nil,
+        quoteAmount: MultichainSwapQuoteAmount? = nil
     ) -> MultichainSwapConfirmationInput {
+        let quoteAmount = quoteAmount ?? .source(oneEth)
         let resolvedSendAsset = sendAsset ?? asset(symbol: "ETH", decimals: 18)
         let resolvedReceiveAsset = receiveAsset ?? asset(
             assetId: "ton/mainnet/coin",
@@ -1956,16 +3063,17 @@ private extension MultichainSwapConfirmationViewModelTests {
         let resolvedRoute = route ?? makeRoute()
         return MultichainSwapConfirmationInput(
             userInput: MultichainSwapConfirmationUserInput(
-                sendAmount: "1",
-                rateText: "1 ETH ≈ 2.5 TON",
-                sourceAmount: oneEth,
+                quoteAmount: quoteAmount,
                 sendAsset: resolvedSendAsset,
                 receiveAsset: resolvedReceiveAsset,
                 slippage: slippage,
-                isMax: false
+                isMax: false,
+                slippageBps: slippageBps,
+                feeMethod: feeMethod,
+                usdFiatRate: nil
             ),
             quoteState: MultichainSwapConfirmationQuoteState(
-                quote: MultichainSwapQuote(quoteId: "quote", routes: [resolvedRoute]),
+                quote: MultichainSwapQuote(quoteId: quoteId, routes: [resolvedRoute]),
                 route: resolvedRoute
             )
         )
@@ -1974,6 +3082,7 @@ private extension MultichainSwapConfirmationViewModelTests {
     func makeRoute(
         routeId: String = "route",
         sourceAmount: String? = nil,
+        maximumSourceAmount: String? = nil,
         estimatedDestinationAmount: String = "2500000000",
         minimumDestinationAmount: String = "2450000000",
         totalSlippageBps: Int? = 100,
@@ -1989,6 +3098,7 @@ private extension MultichainSwapConfirmationViewModelTests {
             protocolSlug: "Protocol",
             routeType: "swap",
             sourceAmount: sourceAmount ?? oneEth.description,
+            maximumSourceAmount: maximumSourceAmount,
             estimatedDestinationAmount: estimatedDestinationAmount,
             minimumDestinationAmount: minimumDestinationAmount,
             estimatedTime: MultichainSwapTimeEstimate(totalSeconds: 300),
@@ -2028,7 +3138,6 @@ private extension MultichainSwapConfirmationViewModelTests {
     func makeExecutionPlan(
         routeId: String = "route",
         fees: [MultichainTransactionEmulationResult],
-        requiresApproval: Bool = false,
         feeOptions: [MultichainSwapFeeOption] = []
     ) -> MultichainSwapExecutionPlan {
         MultichainSwapExecutionPlan(
@@ -2036,9 +3145,41 @@ private extension MultichainSwapConfirmationViewModelTests {
             aggregator: .swapsXyz,
             payloads: .stub,
             networkFees: fees,
-            requiresApproval: requiresApproval,
             feeOptions: feeOptions,
             payloadFees: [:]
+        )
+    }
+
+    /// A plan of the operation `/v3` built for `route`, which it shows as that operation receives.
+    func makeOperationPlan(
+        preparing route: MultichainSwapRoute,
+        expiresAt: Date = Date().addingTimeInterval(60)
+    ) throws -> MultichainSwapExecutionPlan {
+        let operation = try ChainKitOperationSender.parse(
+            id: route.routeId,
+            payloads: #"[{"chain_id":"eth/mainnet","id":"swap","type":"main","version":1,"meta":{"to":"0x1b6257cae4192e62b629efca21771be3d759183d","value":"0"}}]"#
+        )
+        let account = try ChainKitOperationSender.account(
+            of: MultichainWalletAddress(chain: .eth, address: "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"),
+            asset: nil
+        )
+        let fees = [networkFee()]
+        return MultichainSwapExecutionPlan(
+            routeId: route.routeId,
+            aggregator: .swapsXyz,
+            providerRouteId: nil,
+            signs: .operation(MultichainSwapOperation(
+                operation: operation,
+                account: account,
+                signingAccount: account,
+                fees: [],
+                recipient: nil,
+                expiresAt: expiresAt,
+                route: route
+            )),
+            networkFees: fees,
+            feeOptions: [nativeOption(fees: fees)],
+            sourceAmount: route.sourceAmount
         )
     }
 
@@ -2124,16 +3265,12 @@ private extension MultichainSwapConfirmationViewModelTests {
 
     @MainActor
     func waitUntil(
-        timeout: TimeInterval = 1,
-        condition: @escaping () -> Bool
+        timeout: TimeInterval = 5,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        condition: () -> Bool
     ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        if !condition() {
-            XCTFail("Timed out waiting for condition")
-        }
+        await TKTestSupport.waitUntil(changed, timeout: timeout, file: file, line: line) { condition() }
     }
 }
 
@@ -2163,40 +3300,47 @@ private final class RouteRecoveryDelayRecorder {
 
 private struct TestSlippageService: MultichainSwapSlippageService {
     let optionsBps: [Int]
-    let defaultBps: Int
-
-    func initialSelectedBps(route: MultichainSwapRoute) -> Int {
-        if let totalSlippageBps = route.totalSlippageBps,
-           optionsBps.contains(totalSlippageBps)
-        {
-            return totalSlippageBps
-        }
-        return defaultBps
-    }
 }
 
 private final class ConfirmationSwapServiceSpy: MultichainSwapService {
     private(set) var quoteRequests = [MultichainSwapQuoteRequest]()
+    /// The API each quote was asked on, in order.
+    private(set) var quoteAPIVersions = [MultichainSwapAPIVersion]()
     private let quoteResults: [Result<MultichainSwapQuote, MultichainSwapAPIError>]
-    private let quoteDelays: [TimeInterval]
 
-    init(
-        quoteResults: [Result<MultichainSwapQuote, MultichainSwapAPIError>] = [.failure(.unimplemented)],
-        quoteDelays: [TimeInterval] = []
-    ) {
+    init(quoteResults: [Result<MultichainSwapQuote, MultichainSwapAPIError>] = [.failure(.unimplemented)]) {
         self.quoteResults = quoteResults
-        self.quoteDelays = quoteDelays
     }
 
     func createCrossSwapQuote(
         request: MultichainSwapQuoteRequest,
         walletId _: String?
     ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
+        try answer(request, on: .v2)
+    }
+
+    /// Answers as `/v3` does: the same routes, quoted there.
+    func createCrossSwapQuoteV3(
+        request: MultichainSwapQuoteRequest,
+        walletId _: String
+    ) async throws(MultichainSwapAPIError) -> MultichainSwapQuote {
+        var quote = try answer(request, on: .v3)
+        quote.routes = quote.routes.map { route in
+            var route = route
+            route.apiVersion = .v3
+            return route
+        }
+        return quote
+    }
+
+    private func answer(
+        _ request: MultichainSwapQuoteRequest,
+        on apiVersion: MultichainSwapAPIVersion
+    ) throws(MultichainSwapAPIError) -> MultichainSwapQuote {
         let callIndex = quoteRequests.count
         quoteRequests.append(request)
-        if callIndex < quoteDelays.count {
-            try? await Task.sleep(nanoseconds: UInt64(quoteDelays[callIndex] * 1_000_000_000))
-        }
+        quoteAPIVersions.append(apiVersion)
+        changed.send()
         let result = callIndex < quoteResults.count
             ? quoteResults[callIndex]
             : (quoteResults.last ?? .failure(.unimplemented))
@@ -2227,12 +3371,15 @@ private final class ConfirmationSwapServiceSpy: MultichainSwapService {
 private final class ConfirmationExecutionServiceSpy: MultichainSwapExecutionService {
     private(set) var executionPlanCallCount = 0
     private(set) var executeCallCount = 0
-    private(set) var approvalModes = [MultichainSwapApprovalMode]()
     private(set) var feeMethods = [MultichainSwapFeeMethod]()
     private(set) var executedRouteIds = [String]()
+    private(set) var spendLimits = [BigUInt]()
     private let executionPlanResults: [Result<MultichainSwapExecutionPlan, MultichainSwapExecutionFailure>]
-    private let executionPlanDelays: [TimeInterval]
+    private let executionPlanHolds: [TestGate]
     private let executeResult: Result<MultichainSwapExecutionResult, MultichainSwapExecutionFailure>
+    /// What the gate before the relayer finds, put to the consent a relayed swap is sent with: a
+    /// refusal cancels the swap, as the gate's does. The chain's own coin is not reviewed.
+    private let review: OperationReview?
 
     init(
         executionPlanResults: [Result<MultichainSwapExecutionPlan, MultichainSwapExecutionFailure>] = [
@@ -2244,18 +3391,20 @@ private final class ConfirmationExecutionServiceSpy: MultichainSwapExecutionServ
                 payloadFees: [:]
             )),
         ],
-        executionPlanDelays: [TimeInterval] = [],
+        executionPlanHolds: [TestGate] = [],
         executeResult: Result<MultichainSwapExecutionResult, MultichainSwapExecutionFailure> = .success(
             MultichainSwapExecutionResult(
                 routeId: "route",
                 txHash: "tx-hash",
                 broadcastedPayloads: []
             )
-        )
+        ),
+        review: OperationReview? = nil
     ) {
         self.executionPlanResults = executionPlanResults
-        self.executionPlanDelays = executionPlanDelays
+        self.executionPlanHolds = executionPlanHolds
         self.executeResult = executeResult
+        self.review = review
     }
 
     func prepareExecutionPlan(
@@ -2266,8 +3415,9 @@ private final class ConfirmationExecutionServiceSpy: MultichainSwapExecutionServ
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionPlan {
         let callIndex = executionPlanCallCount
         executionPlanCallCount += 1
-        if callIndex < executionPlanDelays.count {
-            try? await Task.sleep(nanoseconds: UInt64(executionPlanDelays[callIndex] * 1_000_000_000))
+        changed.send()
+        if callIndex < executionPlanHolds.count {
+            try? await executionPlanHolds[callIndex].wait()
         }
         let result = callIndex < executionPlanResults.count
             ? executionPlanResults[callIndex]
@@ -2276,24 +3426,62 @@ private final class ConfirmationExecutionServiceSpy: MultichainSwapExecutionServ
     }
 
     func execute(
-        passcodeProvider _: @escaping () async -> String?,
+        signer _: MultichainTransferSigner,
         swapWallet _: MultichainSwapWallet,
         sourceAsset _: MultichainAsset,
         destinationAsset _: MultichainAsset,
         executionPlan: MultichainSwapExecutionPlan,
-        approvalMode: MultichainSwapApprovalMode,
-        feeMethod: MultichainSwapFeeMethod
+        feeMethod: MultichainSwapFeeMethod,
+        spendLimit: BigUInt,
+        consent: OperationConsent
     ) async throws(MultichainSwapExecutionFailure) -> MultichainSwapExecutionResult {
         executeCallCount += 1
         executedRouteIds.append(executionPlan.routeId)
-        approvalModes.append(approvalMode)
         feeMethods.append(feeMethod)
+        spendLimits.append(spendLimit)
+        changed.send()
+        if let review, feeMethod.isRelayed, await !consent(review) {
+            throw .canceled
+        }
         return try executeResult.get()
+    }
+}
+
+private let flaggedReview = OperationReview(
+    id: "relayed-swap",
+    findings: [OperationFinding(id: "finding", kind: "StubWarning", severity: .warning, title: "Finding")]
+)
+
+/// The user a swipe asks: answers every review alike, and keeps what it was asked.
+private actor SwipingUser {
+    private(set) var asked = [OperationReview]()
+    private let answer: Bool
+
+    init(answering answer: Bool) {
+        self.answer = answer
+    }
+
+    nonisolated func consent() -> OperationConsent {
+        OperationConsent { await self.ask($0) }
+    }
+
+    private func ask(_ review: OperationReview) -> Bool {
+        asked.append(review)
+        return answer
     }
 }
 
 private enum StubError: Error {
     case unimplemented
+}
+
+private final class AnalyticsServiceSpy: AnalyticsService {
+    private(set) var events = [(name: String, args: [String: Any])]()
+
+    func logEvent(name: String, args: [String: Any]) {
+        events.append((name: name, args: args))
+        changed.send()
+    }
 }
 
 private extension MultichainSwapAPIError {

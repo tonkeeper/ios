@@ -79,18 +79,13 @@ public final class CookiesController {
     }
 
     private func deleteApp(app: TonConnectApp, wallet: Wallet) {
-        Task {
-            let cookies = await fetchAllCookies()
-            await cookies.asyncNonThrowingForEach { cookie in
-                guard app.manifest.host.contains(cookie.domain) else {
-                    return
-                }
-
-                try? cookiesService.remove(cookie: cookie, wallet: wallet)
-                await MainActor.run {
-                    WKWebsiteDataStore.default().httpCookieStore.delete(cookie)
-                }
+        let connectedHosts = ((try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? [])
+            .map(\.manifest.host)
+        Task { @MainActor in
+            guard let dataStore = try? WKWebsiteDataStore.dapp(walletId: wallet.id) else {
+                return
             }
+            await dataStore.removeSiteData(host: app.manifest.host, keepingHosts: connectedHosts)
         }
     }
 }

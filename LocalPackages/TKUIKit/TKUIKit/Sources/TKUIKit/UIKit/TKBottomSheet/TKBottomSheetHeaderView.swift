@@ -6,10 +6,17 @@ public final class TKBottomSheetHeaderView: UIView {
     private var configuration: TKBottomSheetHeaderConfiguration?
     private var closeAction: () -> Void = {}
     private var hostingController: TKHostingController<AnyView>?
+    /// `TKBottomSheetSystemHeaderView` in place of the hosting controller while liquid glass is on;
+    /// typed loosely for its iOS 26 availability.
+    private var systemHeaderView: UIView?
 
     override public init(frame: CGRect) {
         super.init(frame: frame)
-        setupHostingController()
+        if #available(iOS 26.0, *), TKLiquidGlass.isEnabled {
+            setupSystemHeader()
+        } else {
+            setupHostingController()
+        }
     }
 
     @available(*, unavailable)
@@ -64,6 +71,11 @@ public final class TKBottomSheetHeaderView: UIView {
         withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
         verticalFittingPriority: UILayoutPriority
     ) -> CGSize {
+        if #available(iOS 26.0, *), let systemHeaderView = systemHeaderView as? TKBottomSheetSystemHeaderView {
+            let width = targetSize.width > 0 && targetSize.width.isFinite ? targetSize.width : bounds.width
+            return CGSize(width: width, height: systemHeaderView.height(forWidth: width))
+        }
+
         guard let hostingController else {
             return super.systemLayoutSizeFitting(
                 targetSize,
@@ -111,7 +123,29 @@ private extension TKBottomSheetHeaderView {
         updateRootView()
     }
 
+    @available(iOS 26.0, *)
+    func setupSystemHeader() {
+        backgroundColor = .clear
+        let systemHeaderView = TKBottomSheetSystemHeaderView()
+        addSubview(systemHeaderView)
+        systemHeaderView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        self.systemHeaderView = systemHeaderView
+        updateRootView()
+    }
+
     func updateRootView() {
+        if #available(iOS 26.0, *), let systemHeaderView = systemHeaderView as? TKBottomSheetSystemHeaderView {
+            systemHeaderView.configure(
+                configuration: configuration ?? .init(title: .empty),
+                closeAction: closeAction
+            )
+            invalidateIntrinsicContentSize()
+            setNeedsLayout()
+            return
+        }
+
         hostingController?.content = AnyView(
             TKBottomSheetHeaderContentView(
                 configuration: configuration ?? .init(title: .empty),

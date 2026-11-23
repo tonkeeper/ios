@@ -46,6 +46,8 @@ final class TradeViewModel: ObservableObject {
     }
 
     @Published private(set) var state: ShelvesState
+    /// Why the last shelves load failed, for a revisit of the failed screen.
+    private(set) var shelvesErrorKind: ScreenRenderErrorKind?
     @Published private(set) var favoriteAssets = [TradeShelfAssetViewData]()
     @Published private(set) var perpsShelfMarkets = [PerpsShelfMarketViewData]()
     @Published private(set) var isFavoritesEditing = false
@@ -74,7 +76,24 @@ final class TradeViewModel: ObservableObject {
         Self.makeServices(isPerpsEnabled: isPerpsEnabled)
     }
 
-    @Published private(set) var rafflePresentation: MysteryRafflePresentation?
+    var showsMultichainPerpsCell: Bool {
+        onOpenPerps != nil && (try? walletsStore.activeWallet)?.isMultichain == false
+    }
+
+    @Published private(set) var rafflePresentations = [MysteryRafflePresentation]()
+    @Published private(set) var loyaltyRow: LoyaltyRow?
+
+    struct LoyaltyRow: Equatable {
+        let ohmsText: String?
+    }
+
+    var raffleEntries: [MysteryRafflePresentation] {
+        rafflePresentations.filter(\.shouldShowTradeEntry)
+    }
+
+    var raffleBanners: [MysteryRafflePresentation] {
+        rafflePresentations.filter(\.shouldShowTradeBanner)
+    }
 
     private let analyticsProvider: AnalyticsProvider
     private let analyticsSource: TradeFlowAnalyticsSource
@@ -83,11 +102,14 @@ final class TradeViewModel: ObservableObject {
     private let favoriteAssetsService: TradingFavoriteAssetsService
     private let perpsShelfMarketsLoader: (() async throws -> [PerpsMarketSummary])?
     private var raffleObserver: MysteryRafflePresentationObserver?
-    private let onOpenAssetList: (TradingAssetCategory, MultichainAssetSearchSort) -> Void
+    private let onOpenAssetList: (TradingAssetCategory, MultichainAssetSearchSort, MultichainChain?) -> Void
     private let onOpenPerps: (() -> Void)?
     private let onOpenPerpsMarket: ((Int64) -> Void)?
     private let onOpenAssetDetails: (TradeAssetDetailsViewModel.PreviewContext) -> Void
-    private let onOpenRaffle: () -> Void
+    private let onOpenRaffle: (_ raffleId: String, _ presentedFromBanner: Bool) -> Void
+    private let onOpenLoyalty: () -> Void
+    private let loyaltyStore: LoyaltyStore?
+    private let appSettingsStore: AppSettingsStore?
     private let signedAmountFormatter: AmountFormatter
 
     private var pendingGridID: String?
@@ -97,6 +119,7 @@ final class TradeViewModel: ObservableObject {
     private var favoritesMutationTask: Task<Void, Never>?
     private var perpsShelfMarketsTask: Task<Void, Never>?
     private var perpsShelfGeneration = 0
+    private var foregroundObserver: NSObjectProtocol?
 
     init(
         analyticsProvider: AnalyticsProvider,
@@ -106,12 +129,15 @@ final class TradeViewModel: ObservableObject {
         favoriteAssetsService: TradingFavoriteAssetsService,
         perpsShelfMarketsLoader: (() async throws -> [PerpsMarketSummary])? = nil,
         raffleStore: RaffleStore? = nil,
+        loyaltyStore: LoyaltyStore? = nil,
+        appSettingsStore: AppSettingsStore? = nil,
         signedAmountFormatter: AmountFormatter,
-        onOpenAssetList: @escaping (TradingAssetCategory, MultichainAssetSearchSort) -> Void,
+        onOpenAssetList: @escaping (TradingAssetCategory, MultichainAssetSearchSort, MultichainChain?) -> Void,
         onOpenPerps: (() -> Void)?,
         onOpenPerpsMarket: ((Int64) -> Void)? = nil,
         onOpenAssetDetails: @escaping (TradeAssetDetailsViewModel.PreviewContext) -> Void,
-        onOpenRaffle: @escaping () -> Void = {}
+        onOpenRaffle: @escaping (_ raffleId: String, _ presentedFromBanner: Bool) -> Void = { _, _ in },
+        onOpenLoyalty: @escaping () -> Void = {}
     ) {
         let shelvesMode = Self.shelvesMode(for: try? walletsStore.activeWallet)
         self.analyticsProvider = analyticsProvider
@@ -126,28 +152,56 @@ final class TradeViewModel: ObservableObject {
         self.onOpenPerpsMarket = onOpenPerpsMarket
         self.onOpenAssetDetails = onOpenAssetDetails
         self.onOpenRaffle = onOpenRaffle
+        self.onOpenLoyalty = onOpenLoyalty
+        self.loyaltyStore = loyaltyStore
+        self.appSettingsStore = appSettingsStore
         self.signedAmountFormatter = signedAmountFormatter
         raffleObserver = MysteryRafflePresentationObserver(
             raffleStore: raffleStore
-        ) { [weak self] presentation in
-            self?.rafflePresentation = presentation
+        ) { [weak self] raffles in
+            self?.rafflePresentations = MysteryRafflePresentation.all(from: raffles)
         }
         walletsStore.addObserver(self) { observer, event in
             Task { @MainActor in
                 observer.handleWalletsStoreEvent(event)
             }
         }
+        loyaltyStore?.addObserver(self) { observer, _ in
+            Task { @MainActor in
+                observer.refreshLoyaltyRow()
+            }
+        }
+        appSettingsStore?.addObserver(self) { observer, event in
+            guard case .didUpdateIsSecureMode = event else { return }
+            Task { @MainActor in
+                observer.refreshLoyaltyRow()
+            }
+        }
+        refreshLoyaltyRow()
         reloadPerpsShelfMarkets(for: try? walletsStore.activeWallet)
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isVisible else { return }
+                self.reloadPerpsShelfMarkets(for: try? self.walletsStore.activeWallet)
+            }
+        }
     }
 
     deinit {
         favoritesMarketItemsTask?.cancel()
         perpsShelfMarketsTask?.cancel()
+        foregroundObserver.map(NotificationCenter.default.removeObserver)
     }
 
     func viewDidAppear() {
         isVisible = true
         refreshShelvesIfNeeded()
+        reloadPerpsShelfMarketsIfIdle()
+        reloadLoyalty()
     }
 
     func viewDidDisappear() {
@@ -156,6 +210,7 @@ final class TradeViewModel: ObservableObject {
     }
 
     func refresh() async {
+        reloadLoyalty()
         let perpsTask = reloadPerpsShelfMarkets(for: try? walletsStore.activeWallet)
         let task = startShelvesRefresh(forceFavorites: true)
         await task.value
@@ -164,26 +219,33 @@ final class TradeViewModel: ObservableObject {
 
     func openSearch() {
         exitFavoritesEditing()
-        onOpenAssetList(.all, .marketCap)
+        onOpenAssetList(.all, .marketCap, nil)
     }
 
-    func openRaffle() {
-        analyticsProvider.log(RaffleBannerClick(source: .trade))
+    func openLoyalty() {
         exitFavoritesEditing()
-        onOpenRaffle()
+        onOpenLoyalty()
+    }
+
+    func openRaffle(id: String, presentedFromBanner: Bool) {
+        if presentedFromBanner {
+            analyticsProvider.log(RaffleBannerClick(source: .trade))
+        }
+        exitFavoritesEditing()
+        onOpenRaffle(id, presentedFromBanner)
     }
 
     /// `shouldShowTradeBanner` reads the dismiss store live, so a plain UserDefaults
-    /// write from `tradeBannerDismissed()` doesn't touch `@Published rafflePresentation`
+    /// write from `tradeBannerDismissed()` doesn't touch `@Published rafflePresentations`
     /// and SwiftUI never re-evaluates it. Force the republish explicitly.
-    func dismissRaffleBanner() {
+    func dismissRaffleBanner(id: String) {
         analyticsProvider.log(RaffleBannerDismiss(source: .trade))
-        rafflePresentation?.tradeBannerDismissed()
+        rafflePresentations.first { $0.raffle.id == id }?.tradeBannerDismissed()
         objectWillChange.send()
     }
 
     func raffleBannerDidAppear() {
-        guard rafflePresentation?.shouldShowTradeBanner == true else { return }
+        guard !raffleBanners.isEmpty else { return }
         analyticsProvider.log(RaffleBannerView(source: .trade))
     }
 
@@ -193,19 +255,18 @@ final class TradeViewModel: ObservableObject {
             openPerps()
         case .tokens:
             exitFavoritesEditing()
-            onOpenAssetList(.tokens, .marketCap)
+            onOpenAssetList(.tokens, .marketCap, nil)
         case .stocks:
             exitFavoritesEditing()
-            onOpenAssetList(.stocks, .marketCap)
+            onOpenAssetList(.stocks, .marketCap, nil)
         case .etfs:
             exitFavoritesEditing()
-            onOpenAssetList(.etfs, .marketCap)
+            onOpenAssetList(.etfs, .marketCap, nil)
         }
     }
 
     func openPerps() {
         exitFavoritesEditing()
-        guard isPerpsEnabled else { return }
         onOpenPerps?()
     }
 
@@ -271,7 +332,7 @@ final class TradeViewModel: ObservableObject {
         guard let category = grid.seeAllCategory else {
             return
         }
-        onOpenAssetList(category, grid.initialCatalogSearchSort)
+        onOpenAssetList(category, grid.initialCatalogSearchSort, grid.seeAllChain)
     }
 
     func scrollToTop() {
@@ -339,7 +400,7 @@ private extension TradeViewModel {
     static func makeServices(isPerpsEnabled: Bool) -> [ServiceViewData] {
         var services = [ServiceViewData(kind: .tokens, title: TKLocales.Trade.Assets.Categories.tokens, icon: .TKUIKit.Icons.Size28.tokens)]
         if isPerpsEnabled {
-            services.append(ServiceViewData(kind: .perps, title: TKLocales.Trade.Services.perps, icon: .TKUIKit.Icons.Size28.perps))
+            services.append(ServiceViewData(kind: .perps, title: TKLocales.Trade.Services.perps, icon: .TKUIKit.Icons.Size28.perpsService))
         }
         services += [
             ServiceViewData(kind: .stocks, title: TKLocales.Trade.Assets.Categories.stocks, icon: .TKUIKit.Icons.Size28.trade),
@@ -353,7 +414,7 @@ private extension TradeViewModel {
     }
 
     var isPerpsEnabled: Bool {
-        onOpenPerps != nil && (try? walletsStore.activeWallet)?.isMultichain == true
+        onOpenPerps != nil && (try? walletsStore.activeWallet)?.hasMultichainMnemonic == true
     }
 
     var isPerpsShelfEnabled: Bool {
@@ -369,6 +430,8 @@ private extension TradeViewModel {
         case let .didChangeActiveWallet(from: _, to: wallet):
             updateShelvesMode(for: wallet)
             reloadPerpsShelfMarkets(for: wallet)
+            refreshLoyaltyRow()
+            reloadLoyalty()
         case let .didUpdateWalletMultichain(wallet):
             guard let activeWallet = try? walletsStore.activeWallet,
                   activeWallet.id == wallet.id
@@ -377,8 +440,31 @@ private extension TradeViewModel {
             }
             updateShelvesMode(for: wallet)
             reloadPerpsShelfMarkets(for: wallet)
+            refreshLoyaltyRow()
+            reloadLoyalty()
         default:
             break
+        }
+    }
+
+    private func refreshLoyaltyRow() {
+        guard let loyaltyStore, let wallet = try? walletsStore.activeWallet else {
+            loyaltyRow = nil
+            return
+        }
+        let entry = loyaltyStore.entry(for: wallet)
+        let isSecureMode = appSettingsStore?.getState().isSecureMode ?? false
+        let row = entry.showsSection
+            ? LoyaltyRow(ohmsText: entry.ohms.map { isSecureMode ? .secureModeValueShort : TKLocales.Loyalty.ohms($0) })
+            : nil
+        guard loyaltyRow != row else { return }
+        loyaltyRow = row
+    }
+
+    private func reloadLoyalty() {
+        guard let loyaltyStore, let wallet = try? walletsStore.activeWallet else { return }
+        Task {
+            await loyaltyStore.reload(wallet: wallet)
         }
     }
 
@@ -414,8 +500,13 @@ private extension TradeViewModel {
         return task
     }
 
+    func reloadPerpsShelfMarketsIfIdle() {
+        guard perpsShelfMarketsTask == nil else { return }
+        reloadPerpsShelfMarkets(for: try? walletsStore.activeWallet)
+    }
+
     func isPerpsShelfAvailable(for wallet: Wallet?) -> Bool {
-        wallet?.isMultichain == true
+        wallet?.hasMultichainMnemonic == true
             && onOpenPerps != nil
             && onOpenPerpsMarket != nil
             && perpsShelfMarketsLoader != nil
@@ -482,8 +573,11 @@ private extension TradeViewModel {
         await reloadFavoriteAssets(forceRefresh: forceFavorites)
         guard isCurrentShelvesRefresh(for: mode) else { return }
 
+        let tracker = ScreenRenderTracker.shared
+        tracker.requestStarted(for: .trade)
         do {
             let snapshot = try await shelvesService.loadShelves(for: mode)
+            tracker.requestFinished(for: .trade)
             guard isCurrentShelvesRefresh(for: mode) else { return }
 
             apply(snapshot)
@@ -491,10 +585,16 @@ private extension TradeViewModel {
             guard isCurrentShelvesRefresh(for: mode) else { return }
 
             state = .loaded(state.data)
+            shelvesErrorKind = nil
+            tracker.contentApplied(.fresh, for: .trade)
         } catch {
+            tracker.requestFinished(for: .trade)
             guard isCurrentShelvesRefresh(for: mode) else { return }
 
             state = .failed(state.data)
+            let errorKind = ScreenRenderErrorKind(error)
+            shelvesErrorKind = errorKind
+            tracker.failed(.trade, error: errorKind)
         }
     }
 
@@ -512,6 +612,7 @@ private extension TradeViewModel {
         guard !Task.isCancelled, state.data.mode == mode else { return }
         if let cachedShelves {
             apply(cachedShelves)
+            ScreenRenderTracker.shared.contentApplied(.cached, for: .trade)
         } else {
             updateShelvesData { $0.shelves = [] }
         }
@@ -595,6 +696,7 @@ private extension TradeViewModel {
         favoriteAssets = assets.map {
             itemsMapper.assetViewData($0, isPriceDiffLoading: true)
         }
+        ScreenRenderTracker.shared.mark(.favoritesCached, for: .trade)
 
         guard !assets.isEmpty else {
             pendingFavoriteRemovalIDs.removeAll()
@@ -630,6 +732,7 @@ private extension TradeViewModel {
             return current
         }
         overlayShelvesChanges(marketItems)
+        ScreenRenderTracker.shared.mark(.favoritesFresh, for: .trade)
     }
 
     /// Keeps the displayed 24h change consistent across favorites and shelves.
@@ -724,4 +827,9 @@ private extension TradeViewModel {
         }
         return nil
     }
+}
+
+private extension ScreenRenderMarkName {
+    static let favoritesCached = ScreenRenderMarkName("favorites_cached")
+    static let favoritesFresh = ScreenRenderMarkName("favorites_fresh")
 }

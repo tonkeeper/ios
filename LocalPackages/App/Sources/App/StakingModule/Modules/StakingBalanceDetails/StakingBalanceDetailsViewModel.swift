@@ -1,3 +1,4 @@
+import AppUI
 import BigInt
 import KeeperCore
 import TKCore
@@ -16,12 +17,15 @@ protocol StakingBalanceDetailsModuleOutput: AnyObject {
         _ stakingPoolInfo: StackingPoolInfo,
         _ accountStakingInfo: AccountStackingInfo
     ) -> Void)? { get set }
+    var didTapRewardsHistory: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)? { get set }
 }
 
 protocol StakingBalanceDetailsViewModel: AnyObject {
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
     var didUpdateRewardsViewModel: ((StakingBalanceDetailsRewardsView.Model?) -> Void)? { get set }
+    var didUpdateRewardsHistory: ((StakingRewardsHistorySectionState?) -> Void)? { get set }
+    var didUpdateUpcomingReward: ((StakingUpcomingRewardSectionState?) -> Void)? { get set }
     var didUpdateDetailsTitle: ((TKListTitleView.Model) -> Void)? { get set }
     var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)? { get set }
     var didUpdateDescription: ((NSAttributedString?) -> Void)? { get set }
@@ -32,6 +36,7 @@ protocol StakingBalanceDetailsViewModel: AnyObject {
     var didUpdateButtonsView: ((StakingBalanceDetailsActionBarView.Model) -> Void)? { get set }
 
     func viewDidLoad()
+    func didTapRewardsHistoryButton()
 }
 
 final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsViewModel, StakingBalanceDetailsModuleOutput {
@@ -47,12 +52,15 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
         _ stakingPoolInfo: StackingPoolInfo,
         _ accountStakingInfo: AccountStackingInfo
     ) -> Void)?
+    var didTapRewardsHistory: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)?
 
     // MARK: - StakingViewModel
 
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
     var didUpdateRewardsViewModel: ((StakingBalanceDetailsRewardsView.Model?) -> Void)?
+    var didUpdateRewardsHistory: ((StakingRewardsHistorySectionState?) -> Void)?
+    var didUpdateUpcomingReward: ((StakingUpcomingRewardSectionState?) -> Void)?
     var didUpdateDetailsTitle: ((TKListTitleView.Model) -> Void)?
     var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)?
     var didUpdateDescription: ((NSAttributedString?) -> Void)?
@@ -82,6 +90,8 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
     private let appSettingsStore: AppSettingsStore
     private let amountFormatter: AmountFormatter
     private let configuration: Configuration
+    private let stakingRewardsService: StakingRewardsService
+    private let rewardRowMapper: StakingRewardRowMapper
 
     // MARK: - Init
 
@@ -97,7 +107,9 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
         currencyStore: CurrencyStore,
         appSettingsStore: AppSettingsStore,
         amountFormatter: AmountFormatter,
-        configuration: Configuration
+        configuration: Configuration,
+        stakingRewardsService: StakingRewardsService,
+        rewardRowMapper: StakingRewardRowMapper
     ) {
         self.wallet = wallet
         self.stakingPoolInfo = stakingPoolInfo
@@ -111,6 +123,8 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
         self.appSettingsStore = appSettingsStore
         self.amountFormatter = amountFormatter
         self.configuration = configuration
+        self.stakingRewardsService = stakingRewardsService
+        self.rewardRowMapper = rewardRowMapper
     }
 
     func viewDidLoad() {
@@ -119,7 +133,6 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
             prepareInitialState()
             updateInformation()
             updateDescription()
-            updateRewards()
             updateDetailsTitle()
             updateList()
             updateLinks()
@@ -127,15 +140,95 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
             updateStakeStateView()
             updateButtons()
         }
+        updateRewardBlocks()
+    }
+
+    func didTapRewardsHistoryButton() {
+        didTapRewardsHistory?(wallet, stakingPoolInfo)
     }
 }
 
 private extension StakingBalanceDetailsViewModelImplementation {
-    func updateRewards() {
-        // api call later
-        DispatchQueue.main.async {
-            self.didUpdateRewardsViewModel?(nil)
+    func buildRewardsModel(rewards: StakingCurrentRewards) -> StakingBalanceDetailsRewardsView.Model? {
+        guard rewards.monthly > 0, rewards.yearly > 0 else { return nil }
+
+        let isSecureMode = appSettingsStore.getState().isSecureMode
+        let currency = currencyStore.getState()
+        let rate = tonRatesStore.getState().tonRates.first(where: { $0.currency == currency })
+
+        func card(title: String, amount: BigUInt) -> StakingBalanceDetailsRewardsView.Model.Card {
+            guard !isSecureMode else {
+                return .init(title: title, value: .secureModeValueShort, fiatValue: .secureModeValueShort)
+            }
+            let fiatValue = rate.map {
+                amountFormatter.format(
+                    decimal: RateConverter().convertToDecimal(
+                        amount: amount,
+                        amountFractionLength: TonInfo.fractionDigits,
+                        rate: $0
+                    ),
+                    accessory: .fiat(currency),
+                    style: .fiatBalance
+                )
+            } ?? ""
+            return .init(title: title, value: rewardRowMapper.formatAmount(amount), fiatValue: fiatValue)
         }
+
+        return StakingBalanceDetailsRewardsView.Model(
+            title: TKLocales.StakingBalanceDetails.currentRewards,
+            cards: [
+                card(title: TKLocales.StakingBalanceDetails.monthly, amount: rewards.monthly),
+                card(title: TKLocales.StakingBalanceDetails.yearly, amount: rewards.yearly),
+            ]
+        )
+    }
+
+    func updateRewardBlocks() {
+        guard stakingPoolInfo.implementation.type == .liquidTF,
+              wallet.network == .mainnet,
+              let address = try? wallet.address.toRaw()
+        else {
+            didUpdateUpcomingReward?(nil)
+            didUpdateRewardsHistory?(nil)
+            didUpdateRewardsViewModel?(nil)
+            return
+        }
+
+        Task { @MainActor [weak self, stakingRewardsService, stakingPoolInfo] in
+            async let page = try? stakingRewardsService.loadRewards(
+                address: address,
+                period: .allTime,
+                limit: 3,
+                offset: 0
+            )
+            async let forecast = try? stakingRewardsService.loadRewardsForecast(
+                address: address,
+                apy: stakingPoolInfo.apy
+            )
+            let (loadedPage, loadedForecast) = await(page, forecast)
+            guard let self else { return }
+            let isSecureMode = self.appSettingsStore.getState().isSecureMode
+            self.didUpdateUpcomingReward?(loadedForecast?.upcoming.map {
+                self.rewardRowMapper.mapUpcoming(
+                    reward: $0,
+                    // Unknown when the history failed to load; "Current round" is right for anyone already paid.
+                    isFirstReward: loadedPage?.items.isEmpty ?? false,
+                    isSecureMode: isSecureMode
+                )
+            })
+            self.didUpdateRewardsHistory?(loadedPage.flatMap { self.buildRewardsHistory(page: $0) })
+            self.didUpdateRewardsViewModel?(loadedForecast?.current.flatMap { self.buildRewardsModel(rewards: $0) })
+        }
+    }
+
+    func buildRewardsHistory(page: StakingRewardsPage) -> StakingRewardsHistorySectionState? {
+        guard !page.items.isEmpty else { return nil }
+        let isSecureMode = appSettingsStore.getState().isSecureMode
+        let total = isSecureMode ? .secureModeValueShort : rewardRowMapper.formatAmount(page.total ?? 0)
+        return StakingRewardsHistorySectionState(
+            total: total,
+            rows: page.items.map { rewardRowMapper.map(reward: $0, isSecureMode: isSecureMode) }
+        )
     }
 
     func updateDetailsTitle() {
@@ -191,19 +284,24 @@ private extension StakingBalanceDetailsViewModelImplementation {
         self.jettonBalanceItem = balanceItem?.jetton
     }
 
-    func updateInformation() {
-        guard let balanceItem else {
-            return
-        }
+    var stakeAmount: BigUInt {
+        BigUInt(UInt64(max(balanceItem?.info.amount ?? 0, 0)))
+    }
 
+    var isDustStake: Bool {
+        isStakeDust(amount: stakeAmount, fractionDigits: TonInfo.fractionDigits)
+    }
+
+    func updateInformation() {
         let isSecureMode = appSettingsStore.getState().isSecureMode
+        let isDust = isDustStake
 
         let tokenAmount: String = {
             if isSecureMode {
                 return .secureModeValueShort
             } else {
                 return amountFormatter.format(
-                    amount: BigUInt(UInt64(balanceItem.info.amount)),
+                    amount: isDust ? 0 : stakeAmount,
                     fractionDigits: TonInfo.fractionDigits,
                     accessory: .tokenSymbol(TonInfo.symbol),
                     style: .exactValue
@@ -216,8 +314,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
                 return .secureModeValueShort
             } else {
                 return amountFormatter.format(
-                    decimal: balanceItem.amountConverted,
-                    accessory: .fiat(balanceItem.currency),
+                    decimal: isDust ? 0 : balanceItem?.amountConverted ?? 0,
+                    accessory: .fiat(balanceItem?.currency ?? currencyStore.getState()),
                     style: .fiatBalance
                 )
             }
@@ -398,7 +496,10 @@ private extension StakingBalanceDetailsViewModelImplementation {
             buttons: [
                 StakingBalanceDetailsActionBarView.Model.Button(
                     title: .stakeTitle,
-                    isEnabled: !configuration.flag(\.stakingDisabled, network: wallet.network) && wallet.isStakeEnable,
+                    isEnabled: !configuration.flag(\.stakingDisabled, network: wallet.network)
+                        && configuration.value(\.stakingEnabledProviders)
+                        .contains(stakingPoolInfo.implementation.type.rawValue)
+                        && wallet.isStakeEnable,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapStake?(wallet, stakingPoolInfo)
                     },
@@ -406,7 +507,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
                 ),
                 StakingBalanceDetailsActionBarView.Model.Button(
                     title: .unstakeTitle,
-                    isEnabled: wallet.isStakeEnable,
+                    isEnabled: wallet.isStakeEnable && !isDustStake,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapUnstake?(wallet, stakingPoolInfo)
                     },

@@ -11,6 +11,14 @@ public import struct Foundation.Date
 #endif
 /// A type that performs HTTP operations defined by the OpenAPI document.
 public protocol APIProtocol: Sendable {
+    /// Record measurements taken on the client
+    ///
+    /// Stores measurements the client took itself, such as how long the user waited for a position to open. Send them in the background, in batches of up to 100. Each entry has a type, and the type decides its fields. An unknown type refuses the whole batch with 400: check the list below before sending a new one.
+    /// Nothing else depends on this call, and it changes nothing for the account. A failed call can be sent again as it was: an entry whose id the wallet already sent is skipped, so a repeat is stored once. The stored rows are the record; the server's latency metric is best effort and can miss an entry whose first send was stored but not answered.
+    ///
+    /// - Remark: HTTP `POST /client-metrics`.
+    /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)`.
+    func recordClientMetrics(_ input: Operations.recordClientMetrics.Input) async throws -> Operations.recordClientMetrics.Output
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
@@ -36,17 +44,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /account/bind`.
     /// - Remark: Generated from `#/paths//account/bind/post(bindAccount)`.
     func bindAccount(_ input: Operations.bindAccount.Input) async throws -> Operations.bindAccount.Output
-    /// Report transactions the caller submitted to Lighter
-    ///
-    /// Records transactions the caller has already submitted to Lighter so they can be forwarded to the Argus event stream. This service neither signs nor sends them: the client signs locally, submits to Lighter directly, and reports the result here.
-    /// Only transactions Lighter accepted belong in the body — one that never reached the venue did not happen and must not be reported.
-    /// Report everything the action took, in submission order. Types the event stream does not consume yet are accepted and ignored, so the caller never has to filter: today only ORDER_CREATE is forwarded, and a leverage change reported alongside it is simply dropped.
-    /// A 202 means recorded, not delivered: forwarding is asynchronous.
-    /// Repeating a report is safe but not free. A repeat that arrives before the event has been forwarded is dropped; one that arrives after produces a second event carrying the same event_id. Delivery is therefore at-least-once and consumers must deduplicate on event_id, which is the transaction hash.
-    ///
-    /// - Remark: HTTP `POST /transactions`.
-    /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)`.
-    func reportTransactions(_ input: Operations.reportTransactions.Input) async throws -> Operations.reportTransactions.Output
     /// Relay signed transactions to Lighter
     ///
     /// Submits transactions the client has already signed. This service does not sign: the trading key never leaves the device, and the signature inside each payload is the whole authorization Lighter checks. What is added here is that the payload has to name the account the caller's proved address owns, and that an accepted order is reported to the event stream without the client having to report it.
@@ -74,22 +71,11 @@ public protocol APIProtocol: Sendable {
     /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
     /// The account depends on the app. It is read from the User-Agent, the OS in its brackets: "Keeper/26.10.2 (iOS; 27.0; iPhone)" is iOS, "Tonkeeper/26.10.1 (Android; 16; Pixel 9)" is Android, anything else is the third account. An app without its own account gets the third one too. POST /transactions/send checks orders against the same account, so both calls must carry the same User-Agent.
     /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    /// venue_taker_fee and venue_maker_fee are not signed: they are Lighter's own fee, which it charges on top of ours. A client adds both to show the full fee.
     ///
     /// - Remark: HTTP `GET /integrator`.
     /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
     func getIntegrator(_ input: Operations.getIntegrator.Input) async throws -> Operations.getIntegrator.Output
-    /// Store the caller's Lighter read-only token (deprecated)
-    ///
-    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
-    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
-    /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
-    /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
-    /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- POST /account/bind, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
-    ///
-    /// - Remark: HTTP `POST /account/ro-token`.
-    /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
-    @available(*, deprecated)
-    func saveRoToken(_ input: Operations.saveRoToken.Input) async throws -> Operations.saveRoToken.Output
     /// Mint the caller's Lighter read-only token and store it
     ///
     /// Mints a read-only token at Lighter for the caller's account, stores it encrypted at rest via Vault Transit, and returns it. It replaces the two steps a client used to take -- minting at Lighter itself, then registering the result here -- with one, so a token cannot be minted and then never registered.
@@ -133,6 +119,7 @@ public protocol APIProtocol: Sendable {
     ///
     /// The same position the list carries, plus the take-profit and stop-loss legs attached to it. The legs are open orders on the market, so reading them needs the wallet's Lighter read-only token; this service uses the one the wallet stored through /account/ro-token rather than asking the caller for it again.
     /// auto_close_known says whether the legs were read at all. Without it a null auto_close would mean both "there are none" and "we could not look", and a client would offer to create a take-profit over one that already exists. It is false when the wallet has stored no token, when the stored one has expired, and when the token could not be decrypted.
+    /// close_estimate is what a market close gives now, by the live book. It is only here, not in the list, because it reads the book for each position.
     /// The id comes from the list and is opaque. A market the wallet holds nothing open in is a 404, including one whose position has just closed -- Lighter keeps a zero-size row for it, and a zero-size row is not a position.
     ///
     /// - Remark: HTTP `GET /positions/{id}`.
@@ -187,15 +174,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /screens/trading`.
     /// - Remark: Generated from `#/paths//screens/trading/get(getTradingScreen)`.
     func getTradingScreen(_ input: Operations.getTradingScreen.Input) async throws -> Operations.getTradingScreen.Output
-    /// Portfolio screen (deprecated)
-    ///
-    /// Superseded by /portfolio, which carries a fuller position -- with id, mark price, margin, equity and ROI -- the open orders this one has no room for, and a balance net of what those orders reserve. Frozen: it keeps answering exactly as it does today and gains nothing further, so its available and transferable balances still include that reserve.
-    /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
-    ///
-    /// - Remark: HTTP `GET /screens/portfolio`.
-    /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
-    @available(*, deprecated)
-    func getPortfolioScreen(_ input: Operations.getPortfolioScreen.Input) async throws -> Operations.getPortfolioScreen.Output
     /// Order book truncated to a notional
     ///
     /// The near side of one market's book, cut off at the level where the accumulated cost covers the notional asked about, the fee included. The book is biblios' -- this endpoint forwards to it and reshapes nothing, so every number is the string that service printed.
@@ -244,7 +222,7 @@ public protocol APIProtocol: Sendable {
     /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
     /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
     /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
-    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why output.amount and output.min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees. output.amount and output.min_amount are always equal. A deposit through the gateway on Ethereum is exact, and the slippage the quote allowed for was on the source side. A deposit into an existing account is credited by the aggregator on Lighter directly, without the gateway, and is quoted at the aggregator's floor: at least that much is credited. The whole of source_amount is rarely spent to the last unit.
     /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
     /// Native USDC on Arbitrum, Base or Polygon goes through Lighter's bridge (fun.xyz) instead, provider `funxyz`: the one payload is a plain `transfer` of the whole source_amount to the destination's deposit address on that chain, which the bridge credits to the perps account as it is -- no fee, no swap, output.amount equal to source_amount. The address is the destination's own and the same on every deposit. tracking follows it as any other, by matching the transfer the bridge sees there: same chain, same amount, after the quote. The bridge takes no less than 5 USDC for an account it creates and 3 USDC for one that exists; a smaller amount, a key to register (change_pub_key on an account Lighter does not know), or a bridge that does not answer is quoted through the aggregator as before.
     /// USDC on Ethereum goes through the bridge too, but only to top up an account Lighter already knows, with at least 5 USDC: one transfer instead of the approval and the gateway call. The deposit that creates the account, a smaller amount, or an account Lighter did not answer for stay `direct`, as does any quote when the bridge does not answer.
@@ -294,6 +272,22 @@ public protocol APIProtocol: Sendable {
 
 /// Convenience overloads for operation inputs.
 extension APIProtocol {
+    /// Record measurements taken on the client
+    ///
+    /// Stores measurements the client took itself, such as how long the user waited for a position to open. Send them in the background, in batches of up to 100. Each entry has a type, and the type decides its fields. An unknown type refuses the whole batch with 400: check the list below before sending a new one.
+    /// Nothing else depends on this call, and it changes nothing for the account. A failed call can be sent again as it was: an entry whose id the wallet already sent is skipped, so a repeat is stored once. The stored rows are the record; the server's latency metric is best effort and can miss an entry whose first send was stored but not answered.
+    ///
+    /// - Remark: HTTP `POST /client-metrics`.
+    /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)`.
+    public func recordClientMetrics(
+        headers: Operations.recordClientMetrics.Input.Headers = .init(),
+        body: Operations.recordClientMetrics.Input.Body
+    ) async throws -> Operations.recordClientMetrics.Output {
+        try await recordClientMetrics(Operations.recordClientMetrics.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
@@ -325,25 +319,6 @@ extension APIProtocol {
         body: Operations.bindAccount.Input.Body
     ) async throws -> Operations.bindAccount.Output {
         try await bindAccount(Operations.bindAccount.Input(
-            headers: headers,
-            body: body
-        ))
-    }
-    /// Report transactions the caller submitted to Lighter
-    ///
-    /// Records transactions the caller has already submitted to Lighter so they can be forwarded to the Argus event stream. This service neither signs nor sends them: the client signs locally, submits to Lighter directly, and reports the result here.
-    /// Only transactions Lighter accepted belong in the body — one that never reached the venue did not happen and must not be reported.
-    /// Report everything the action took, in submission order. Types the event stream does not consume yet are accepted and ignored, so the caller never has to filter: today only ORDER_CREATE is forwarded, and a leverage change reported alongside it is simply dropped.
-    /// A 202 means recorded, not delivered: forwarding is asynchronous.
-    /// Repeating a report is safe but not free. A repeat that arrives before the event has been forwarded is dropped; one that arrives after produces a second event carrying the same event_id. Delivery is therefore at-least-once and consumers must deduplicate on event_id, which is the transaction hash.
-    ///
-    /// - Remark: HTTP `POST /transactions`.
-    /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)`.
-    public func reportTransactions(
-        headers: Operations.reportTransactions.Input.Headers = .init(),
-        body: Operations.reportTransactions.Input.Body
-    ) async throws -> Operations.reportTransactions.Output {
-        try await reportTransactions(Operations.reportTransactions.Input(
             headers: headers,
             body: body
         ))
@@ -391,31 +366,12 @@ extension APIProtocol {
     /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
     /// The account depends on the app. It is read from the User-Agent, the OS in its brackets: "Keeper/26.10.2 (iOS; 27.0; iPhone)" is iOS, "Tonkeeper/26.10.1 (Android; 16; Pixel 9)" is Android, anything else is the third account. An app without its own account gets the third one too. POST /transactions/send checks orders against the same account, so both calls must carry the same User-Agent.
     /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    /// venue_taker_fee and venue_maker_fee are not signed: they are Lighter's own fee, which it charges on top of ours. A client adds both to show the full fee.
     ///
     /// - Remark: HTTP `GET /integrator`.
     /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
     public func getIntegrator(headers: Operations.getIntegrator.Input.Headers = .init()) async throws -> Operations.getIntegrator.Output {
         try await getIntegrator(Operations.getIntegrator.Input(headers: headers))
-    }
-    /// Store the caller's Lighter read-only token (deprecated)
-    ///
-    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
-    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
-    /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
-    /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
-    /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- POST /account/bind, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
-    ///
-    /// - Remark: HTTP `POST /account/ro-token`.
-    /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
-    @available(*, deprecated)
-    public func saveRoToken(
-        headers: Operations.saveRoToken.Input.Headers = .init(),
-        body: Operations.saveRoToken.Input.Body
-    ) async throws -> Operations.saveRoToken.Output {
-        try await saveRoToken(Operations.saveRoToken.Input(
-            headers: headers,
-            body: body
-        ))
     }
     /// Mint the caller's Lighter read-only token and store it
     ///
@@ -480,6 +436,7 @@ extension APIProtocol {
     ///
     /// The same position the list carries, plus the take-profit and stop-loss legs attached to it. The legs are open orders on the market, so reading them needs the wallet's Lighter read-only token; this service uses the one the wallet stored through /account/ro-token rather than asking the caller for it again.
     /// auto_close_known says whether the legs were read at all. Without it a null auto_close would mean both "there are none" and "we could not look", and a client would offer to create a take-profit over one that already exists. It is false when the wallet has stored no token, when the stored one has expired, and when the token could not be decrypted.
+    /// close_estimate is what a market close gives now, by the live book. It is only here, not in the list, because it reads the book for each position.
     /// The id comes from the list and is opaque. A market the wallet holds nothing open in is a 404, including one whose position has just closed -- Lighter keeps a zero-size row for it, and a zero-size row is not a position.
     ///
     /// - Remark: HTTP `GET /positions/{id}`.
@@ -572,17 +529,6 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Portfolio screen (deprecated)
-    ///
-    /// Superseded by /portfolio, which carries a fuller position -- with id, mark price, margin, equity and ROI -- the open orders this one has no room for, and a balance net of what those orders reserve. Frozen: it keeps answering exactly as it does today and gains nothing further, so its available and transferable balances still include that reserve.
-    /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
-    ///
-    /// - Remark: HTTP `GET /screens/portfolio`.
-    /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
-    @available(*, deprecated)
-    public func getPortfolioScreen(headers: Operations.getPortfolioScreen.Input.Headers = .init()) async throws -> Operations.getPortfolioScreen.Output {
-        try await getPortfolioScreen(Operations.getPortfolioScreen.Input(headers: headers))
-    }
     /// Order book truncated to a notional
     ///
     /// The near side of one market's book, cut off at the level where the accumulated cost covers the notional asked about, the fee included. The book is biblios' -- this endpoint forwards to it and reshapes nothing, so every number is the string that service printed.
@@ -663,7 +609,7 @@ extension APIProtocol {
     /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
     /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
     /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
-    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why output.amount and output.min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees. output.amount and output.min_amount are always equal. A deposit through the gateway on Ethereum is exact, and the slippage the quote allowed for was on the source side. A deposit into an existing account is credited by the aggregator on Lighter directly, without the gateway, and is quoted at the aggregator's floor: at least that much is credited. The whole of source_amount is rarely spent to the last unit.
     /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
     /// Native USDC on Arbitrum, Base or Polygon goes through Lighter's bridge (fun.xyz) instead, provider `funxyz`: the one payload is a plain `transfer` of the whole source_amount to the destination's deposit address on that chain, which the bridge credits to the perps account as it is -- no fee, no swap, output.amount equal to source_amount. The address is the destination's own and the same on every deposit. tracking follows it as any other, by matching the transfer the bridge sees there: same chain, same amount, after the quote. The bridge takes no less than 5 USDC for an account it creates and 3 USDC for one that exists; a smaller amount, a key to register (change_pub_key on an account Lighter does not know), or a bridge that does not answer is quoted through the aggregator as before.
     /// USDC on Ethereum goes through the bridge too, but only to top up an account Lighter already knows, with at least 5 USDC: one transfer instead of the approval and the gateway call. The deposit that creates the account, a smaller amount, or an account Lighter did not answer for stay `direct`, as does any quote when the bridge does not answer.

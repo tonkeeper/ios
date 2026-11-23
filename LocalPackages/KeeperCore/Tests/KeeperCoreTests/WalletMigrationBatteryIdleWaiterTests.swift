@@ -4,6 +4,24 @@ import TonSwift
 import XCTest
 
 final class WalletMigrationBatteryIdleWaiterTests: XCTestCase {
+    func test_authorizationErrorCanDeferWorkUntilAnotherUnlock() async {
+        let clock = BatteryIdleTestClock()
+        let waiter = WalletMigrationBatteryIdleWaiter(
+            hasPendingTransactions: { _ in throw BatteryAuthorizationError.legacyProofUnavailable },
+            sleep: { clock.advance(by: $0) },
+            now: { clock.now() },
+            shouldRetryError: { !LegacyBatteryMigrationController.isAuthorizationError($0) }
+        )
+
+        do {
+            _ = try await waiter.wait(wallet: .batteryIdleTestWallet)
+            XCTFail("Authorization errors need an ordinary unlock, not a polling loop")
+        } catch {
+            XCTAssertEqual(error as? BatteryAuthorizationError, .legacyProofUnavailable)
+        }
+        XCTAssertEqual(clock.elapsed, 1)
+    }
+
     func test_idleIsDetectedWithinOnePollOfClearing() async throws {
         let clock = BatteryIdleTestClock()
         let hasPending = BatteryIdlePendingStub(clock: clock, clearsAt: 5.5)

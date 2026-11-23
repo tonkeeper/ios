@@ -6,28 +6,37 @@ import TKLogging
 import UIKit
 
 public final class MultichainAssembly {
+    func batteryPurchaser(service: BatteryServiceImplementation) -> BatteryPurchaser {
+        BatteryPurchaser(
+            service: service,
+            relayer: BatteryEVMGaslessRelayer(service: service),
+            sign: chainKitServiceImplementation.signBatteryPurchase
+        )
+    }
+
     public private(set) lazy var chainKitService: ChainKitService = chainKitServiceImplementation
 
     /// Signs the documents of a relayed operation: the same keys `chainKitService` sends with.
     private(set) lazy var relayedOperationSigner: MultichainRelayedOperationSigner = chainKitServiceImplementation
 
-    private lazy var chainKitServiceImplementation: ChainKitServiceImplementation = {
-        let assetBalanceProvider = multichainAssetBalanceProvider
-        return ChainKitServiceImplementation(
-            supportedChains: supportedChains,
-            mnemonicAccess: mnemonicAccess,
-            client: chainKitClient,
-            assetDetailsProvider: { [assetBalanceProvider] assetId, wallet in
-                await assetBalanceProvider
-                    .loadAsset(
-                        for: assetId,
-                        wallet: wallet,
-                        includingHidden: true
-                    )?
-                    .asset
-            }
-        )
-    }()
+    /// The gate every multichain send clears before it signs.
+    private(set) lazy var sendGate = OperationGate(configuration: configuration, validatingWith: chainKitClient)
+
+    /// The gate every relayed swap clears before it signs.
+    private(set) lazy var swapGate = OperationGate(configuration: configuration, validatingWith: chainKitClient)
+
+    private lazy var chainKitServiceImplementation = ChainKitServiceImplementation(
+        supportedChains: supportedChains,
+        mnemonicAccess: mnemonicAccess,
+        client: chainKitClient,
+        gate: sendGate,
+        assetDetailsProvider: assetDetailsProvider
+    )
+
+    /// The wallet's own details of an asset, a hidden one included, which fees are shown with.
+    private lazy var assetDetailsProvider: (String, Wallet) async -> MultichainAssetDetails? = { [multichainAssetBalanceProvider] assetId, wallet in
+        await multichainAssetBalanceProvider.loadAsset(for: assetId, wallet: wallet, includingHidden: true)?.asset
+    }
 
     public private(set) lazy var walletSynchronizer: MultichainWalletSynchronizer = MultichainWalletSynchronizerImplementation(
         chainKitService: chainKitService,
@@ -42,8 +51,14 @@ public final class MultichainAssembly {
     )
 
     /// Set by the app layer: a rotated device id invalidates the push subscription too, and only
-    /// the app layer owns it.
-    public var didChangeDevice: (() -> Void)?
+    /// the app layer owns it. The session starts at launch, before the app layer sets this, so a
+    /// rotation that comes first waits for it.
+    public var didChangeDevice: (() -> Void)? {
+        // On the next main-actor turn: the handler's owner finishes its own setup first.
+        didSet { Task { @MainActor [weak self] in self?.deliverPendingDeviceChange() } }
+    }
+
+    private var hasPendingDeviceChange = false
 
     /// Owns the rotation state; the two hops below keep the assembly's lazy graph and the
     /// app-layer handler on main, which is the only place they may be touched from.
@@ -66,6 +81,13 @@ public final class MultichainAssembly {
         try await walletSynchronizer.sync(mnemonic: mnemonic, state: state)
     }
 
+    private lazy var syncLedgerWallet: (_ state: MultichainWalletState) async throws(MultichainServiceError) -> Void = { [walletSynchronizer, walletAuthTokenProvider] state throws(MultichainServiceError) in
+        guard let appKey = await walletAuthTokenProvider.persistentAppKey(walletId: state.walletId) else {
+            throw .apiError(message: "no app key kept for Ledger wallet \(state.walletId)")
+        }
+        try await walletSynchronizer.sync(appPrivateKey: appKey, state: state)
+    }
+
     public private(set) lazy var walletAddressesEnricher: MultichainWalletEnricher = MultichainWalletEnricherImplementation(
         dependencies: MultichainWalletEnricherDependencies(
             supportedChains: Set(supportedChains),
@@ -79,8 +101,14 @@ public final class MultichainAssembly {
                 try chainKitService.makeWalletState(mnemonic: mnemonic)
             },
             syncWallet: syncWallet,
+            prepareBatteryMigration: { [legacyBatteryMigrationController] _, destination, mnemonic in
+                try await legacyBatteryMigrationController.prepare(wallet: JSONEncoder().encode(destination), mnemonic: mnemonic)
+            },
             saveWallet: { [walletsStore] wallet, multichain in
                 await walletsStore.setWalletMultichain(wallet: wallet, multichain: multichain)
+            },
+            resumeBatteryMigrations: { [legacyBatteryMigrationController] in
+                await legacyBatteryMigrationController.resume()
             }
         )
     )
@@ -106,6 +134,7 @@ public final class MultichainAssembly {
                 try await mnemonicAccess.getMnemonics(wallets: wallets, passcode: passcode)
             },
             syncWallet: syncWallet,
+            syncLedgerWallet: syncLedgerWallet,
             saveWallet: { [walletsStore] wallet, multichain in
                 guard case let .multichain(desired) = multichain else {
                     await walletsStore.setWalletMultichain(wallet: wallet, multichain: multichain)
@@ -159,10 +188,51 @@ public final class MultichainAssembly {
 
     public private(set) lazy var supportedChains: [MultichainChain] = MultichainChain.displayOrder
 
+    /// Adds the chains `keys` reach that a multichain Ledger `wallet` has no address on, and returns them.
+    /// The backend accepts the new addresses before they are saved, as for a mnemonic wallet's new networks.
+    public func addLedgerNetworks(wallet: Wallet, keys: LedgerAppKeys, chains: [MultichainChain]) async throws -> [MultichainChain] {
+        let wallet = walletsStore.getWallet(id: wallet.id) ?? wallet
+        guard wallet.kind == .ledger,
+              let networks = try wallet.multichainWalletState?.addingLedgerNetworks(keys, chains: chains)
+        else {
+            return []
+        }
+        try await MultichainRetry.run { () async throws(MultichainServiceError) in
+            try await self.syncLedgerWallet(networks.state)
+        }
+        await walletsStore.setWalletMultichain(wallet: wallet, multichain: .multichain(networks.state))
+        return networks.added
+    }
+
+    /// Makes a TON-only Ledger wallet multichain in place — the same wallet, name and connections — with the
+    /// addresses and app key `account` yields, and returns the chains it gained; one that would gain none stays as it
+    /// is. The binding pass registers it, as it registers a newly paired multichain Ledger.
+    public func upgradeLedgerWallet(_ wallet: Wallet, account: LedgerMultichainAccount, chains: [MultichainChain]) async throws -> [MultichainChain] {
+        let wallet = walletsStore.getWallet(id: wallet.id) ?? wallet
+        guard case let .Ledger(publicKey, _, _) = wallet.identity.kind, !wallet.isMultichain,
+              let upgrade = try account.upgrade(tonPublicKey: publicKey.data, chains: chains)
+        else {
+            return []
+        }
+        await walletAuthTokenProvider.persistLedgerKeys(seed: upgrade.seed, appKey: upgrade.appPrivateKey, walletId: upgrade.state.walletId)
+        await walletsStore.setWalletMultichain(wallet: wallet, multichain: .multichain(upgrade.state))
+        await walletSyncController.reconcileBindings()
+        return upgrade.added
+    }
+
+    /// QA: makes every multichain Ledger wallet TON-only again, so that its upgrade can be tried once more.
+    public func dropLedgerMultichain() async -> Int {
+        let wallets = walletsStore.wallets.filter { $0.kind == .ledger && $0.isMultichain }
+        for wallet in wallets {
+            await walletsStore.setWalletMultichain(wallet: wallet, multichain: nil)
+        }
+        return wallets.count
+    }
+
     public private(set) lazy var newChainBadgeService: NewChainBadgeService = NewChainBadgeServiceImplementation()
 
     func keepTradingKey(wallet: Wallet, mnemonic: CoreMnemonic) async {
-        guard wallet.kind == .regular, wallet.network == .mainnet, mnemonic.type == .bip39 else { return }
+        guard wallet.kind == .regular, !wallet.isWalletTg, wallet.network == .mainnet, mnemonic.type == .bip39 else { return }
         do {
             let cryptoWallet = try CryptoWallet.Companion.shared.fromMnemonic(mnemonic_: mnemonic.mnemonicWords.joined(separator: " "))
             try await tradingCredentials(wallet: wallet).keepTradingKey(cryptoWallet: cryptoWallet)
@@ -218,22 +288,18 @@ public final class MultichainAssembly {
         return manager
     }()
 
-    private(set) lazy var chainKitSwapPipeline: ChainKitSwapPipeline = {
-        let assetBalanceProvider = multichainAssetBalanceProvider
-        return ChainKitSwapPipelineImplementation(
-            mnemonicAccess: mnemonicAccess,
-            client: chainKitClient,
-            assetDetailsProvider: { [assetBalanceProvider] assetId, wallet in
-                await assetBalanceProvider
-                    .loadAsset(
-                        for: assetId,
-                        wallet: wallet,
-                        includingHidden: true
-                    )?
-                    .asset
-            }
-        )
-    }()
+    private(set) lazy var chainKitSwapPipeline: ChainKitSwapPipeline = ChainKitSwapPipelineImplementation(
+        mnemonicAccess: mnemonicAccess,
+        client: chainKitClient,
+        assetDetailsProvider: assetDetailsProvider,
+        relays: { [configuration] in configuration.relaysGasless(on: $0) }
+    )
+
+    private(set) lazy var swapOperationSteps: MultichainSwapOperationSteps = ChainKitSwapOperationSteps(
+        client: chainKitClient,
+        unlocker: SwapWalletUnlocker(mnemonicAccess: mnemonicAccess),
+        assetDetailsProvider: assetDetailsProvider
+    )
 
     /// The one ChainKit client in the app: it carries the node manifest and the device session
     /// those nodes are resolved under, so a second instance would mean a second, differently
@@ -243,7 +309,8 @@ public final class MultichainAssembly {
             isLogging: !UIApplication.shared.isAppStoreEnvironment,
             logger: ChainKitNetLogger(),
             userAgent: appInfoProvider.userAgent,
-            sessionProvider: ChainKitSessionTokenProvider(deviceAuth: deviceAuthService)
+            sessionProvider: ChainKitSessionTokenProvider(deviceAuth: deviceAuthService),
+            nodeManifestHost: ChainKitNodeManifestHost(configuration: configuration)
         )
         return CryptoKitClient(
             netModule: ModuleNetModule(netConfig: networkConfig)
@@ -263,6 +330,7 @@ public final class MultichainAssembly {
     private let configuration: Configuration
     private let keychainVault: TKKeychainVault
     private let deviceAuthService: DeviceAuthProviding
+    let legacyBatteryMigrationController: LegacyBatteryMigrationController
     let walletAuthTokenProvider: WalletAuthTokenProvider
 
     func walletAuthDependencies() -> MultichainWalletAuthDependencies {
@@ -286,6 +354,7 @@ public final class MultichainAssembly {
         configuration: Configuration,
         keychainVault: TKKeychainVault,
         deviceAuthService: DeviceAuthProviding,
+        legacyBatteryMigrationController: LegacyBatteryMigrationController,
         walletAuthTokenProvider: WalletAuthTokenProvider
     ) {
         self.appInfoProvider = appInfoProvider
@@ -301,7 +370,12 @@ public final class MultichainAssembly {
         self.configuration = configuration
         self.keychainVault = keychainVault
         self.deviceAuthService = deviceAuthService
+        self.legacyBatteryMigrationController = legacyBatteryMigrationController
         self.walletAuthTokenProvider = walletAuthTokenProvider
+    }
+
+    public func resumeLegacyBatteryMigrations() async {
+        await legacyBatteryMigrationController.resume()
     }
 }
 
@@ -314,6 +388,16 @@ private extension MultichainAssembly {
     }
 
     func notifyDidChangeDeviceOnMain() {
-        didChangeDevice?()
+        guard let didChangeDevice else {
+            hasPendingDeviceChange = true
+            return
+        }
+        didChangeDevice()
+    }
+
+    func deliverPendingDeviceChange() {
+        guard hasPendingDeviceChange, let didChangeDevice else { return }
+        hasPendingDeviceChange = false
+        didChangeDevice()
     }
 }

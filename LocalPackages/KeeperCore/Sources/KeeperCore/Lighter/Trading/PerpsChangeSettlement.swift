@@ -18,8 +18,11 @@ enum PerpsChangeSettlement {
         let observed = direction == .add ? current - before : before - current
         guard observed > 0 else { return false }
         guard let expectedDelta else { return true }
-        let tolerance = max(0.000000001, abs(expectedDelta) * 1e-9)
-        return observed + tolerance >= expectedDelta
+        return reaches(observed, expected: expectedDelta)
+    }
+
+    static func reaches(_ amount: Double, expected: Double) -> Bool {
+        amount + max(0.000000001, abs(expected) * 1e-9) >= expected
     }
 
     static func closeMoved(current: Double, before: Double) -> Bool {

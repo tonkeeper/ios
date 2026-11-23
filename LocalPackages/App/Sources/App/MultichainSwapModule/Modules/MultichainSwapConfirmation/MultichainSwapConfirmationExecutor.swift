@@ -1,26 +1,28 @@
 import KeeperCore
+import OperationReviewModels
 
 struct MultichainSwapConfirmationExecutor {
     let executionService: MultichainSwapExecutionService
 
     func execute(
-        passcodeProvider: @escaping () async -> String?,
+        signer: MultichainTransferSigner,
         swapWallet: MultichainSwapWallet,
         input: MultichainSwapConfirmationInput,
         executionPlan: MultichainSwapExecutionPlan,
-        isUnlimitedApprovalEnabled: Bool,
-        feeMethod: MultichainSwapFeeMethod
+        feeMethod: MultichainSwapFeeMethod,
+        consent: OperationConsent
     ) async -> Result<MultichainSwapExecutionResult, MultichainSwapExecutionFailure> {
         do {
             return try .success(
                 await executionService.execute(
-                    passcodeProvider: passcodeProvider,
+                    signer: signer,
                     swapWallet: swapWallet,
                     sourceAsset: input.userInput.sendAsset,
                     destinationAsset: input.userInput.receiveAsset,
                     executionPlan: executionPlan,
-                    approvalMode: isUnlimitedApprovalEnabled ? .unlimited : .exact,
-                    feeMethod: feeMethod
+                    feeMethod: feeMethod,
+                    spendLimit: input.spendLimit,
+                    consent: consent
                 )
             )
         } catch {

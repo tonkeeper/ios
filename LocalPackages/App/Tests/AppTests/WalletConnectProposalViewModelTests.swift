@@ -1,6 +1,7 @@
 @testable import App
 @testable import KeeperCore
 import KeeperCoreComponents
+import TKTestSupport
 import TonSwift
 import UIKit
 import XCTest
@@ -108,7 +109,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
         viewModel.approve()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && approveCount == 1
         }
         XCTAssertEqual(completeCount, 0)
@@ -117,7 +118,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
         viewModel.approve()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && approveCount == 2
         }
         XCTAssertEqual(completeCount, 0)
@@ -139,7 +140,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
         viewModel.reject()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && rejectCount == 1
         }
         XCTAssertEqual(completeCount, 0)
@@ -148,7 +149,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
         viewModel.reject()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && rejectCount == 2
         }
         XCTAssertEqual(completeCount, 0)
@@ -166,18 +167,20 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
                 throw WalletConnectSessionApprovalError.sdk(message: "network", retryable: true)
             }
         }
+        let finished = TestSignal()
         viewModel.didComplete = {
             completeCount += 1
+            finished.send()
         }
 
         viewModel.approve()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && viewModel.canApprove
         }
         viewModel.approve()
 
-        await waitUntil {
+        await waitUntil(finished) {
             completeCount == 1
         }
         XCTAssertEqual(approveCount, 2)
@@ -199,13 +202,15 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         viewModel.didReject = {
             rejectCount += 1
         }
+        let finished = TestSignal()
         viewModel.didComplete = {
             completeCount += 1
+            finished.send()
         }
 
         viewModel.approve()
 
-        await waitUntil {
+        await waitUntil(viewModel) {
             viewModel.actionBarState == .idle && viewModel.canReject
         }
         XCTAssertEqual(approveCount, 1)
@@ -218,7 +223,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
 
         viewModel.reject()
 
-        await waitUntil {
+        await waitUntil(finished) {
             completeCount == 1
         }
         XCTAssertEqual(rejectCount, 1)
@@ -243,7 +248,8 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         )
         let model = WalletConnectWalletsPickerListModel(
             walletsStore: walletsStore,
-            selectedWallet: selectedWallet
+            selectedWallet: selectedWallet,
+            isEligible: \.isMultichainDappsAvailable
         )
 
         let state = model.getState()
@@ -271,11 +277,14 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         let walletsStore = makeWalletsStore(wallets: [selectedWallet])
         let model = WalletConnectWalletsPickerListModel(
             walletsStore: walletsStore,
-            selectedWallet: selectedWallet
+            selectedWallet: selectedWallet,
+            isEligible: \.isMultichainDappsAvailable
         )
         var updatedStates = [WalletsListModelState]()
+        let updated = TestSignal()
         model.didUpdateState = { state in
             updatedStates.append(state)
+            updated.send()
         }
 
         await walletsStore.addWallets([addedWallet])
@@ -286,7 +295,7 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
             ]))
         )
 
-        await waitUntil {
+        await waitUntil(updated) {
             updatedStates.contains { state in
                 state.wallets.map(\.id) == [selectedWallet.id, addedWallet.id]
             }
@@ -303,18 +312,21 @@ final class WalletConnectProposalViewModelTests: XCTestCase {
         let viewModel = makeViewModel()
         var rejectCount = 0
         var completeCount = 0
+        let finished = TestSignal()
 
         viewModel.didReject = {
             rejectCount += 1
+            finished.send()
             throw WalletConnectSessionRejectionError.sdk(message: "network", retryable: true)
         }
         viewModel.didComplete = {
             completeCount += 1
+            finished.send()
         }
 
         viewModel.disappeared()
 
-        await waitUntil {
+        await waitUntil(finished) {
             rejectCount == 1 && completeCount == 1
         }
         XCTAssertFalse(viewModel.canApprove)
@@ -384,20 +396,6 @@ private extension WalletConnectProposalViewModelTests {
         return WalletsStore(
             keeperInfoStore: KeeperInfoStore(keeperInfoRepository: repository)
         )
-    }
-
-    @MainActor
-    func waitUntil(
-        timeout: TimeInterval = 1,
-        condition: @escaping () -> Bool
-    ) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        if !condition() {
-            XCTFail("Timed out waiting for condition")
-        }
     }
 }
 

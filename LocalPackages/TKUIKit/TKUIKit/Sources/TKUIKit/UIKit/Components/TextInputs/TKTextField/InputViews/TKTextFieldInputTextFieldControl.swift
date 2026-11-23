@@ -9,8 +9,16 @@ public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputVie
 
     public var inputText: String {
         get { text ?? "" }
-        set { text = newValue }
+        set { text = animatedAmountView == nil ? newValue : TKAmountDigits.grouped(newValue) }
     }
+
+    override public var text: String? {
+        didSet { setNeedsLayout() }
+    }
+
+    private var animatedAmountView: SwiftUIHostingView?
+    private var animatedAmount: (text: String, font: UIFont)?
+    private var hidesOwnGlyphs = false
 
     public var isActive: Bool {
         isFirstResponder
@@ -36,9 +44,53 @@ public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputVie
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    public func tkNumPadAmountKeyboard() {
+        tkNumPadKeyboard()
+        guard TKNumPadView.isEnabled, animatedAmountView == nil else { return }
+        let view = SwiftUIHostingView()
+        view.alpha = 0
+        view.isUserInteractionEnabled = false
+        view.accessibilityElementsHidden = true
+        addSubview(view)
+        animatedAmountView = view
+        text = TKAmountDigits.grouped(inputText)
+    }
+
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        UIView.performWithoutAnimation(updateAnimatedAmount)
+    }
 }
 
 private extension TKTextInputTextFieldControl {
+    func updateAnimatedAmount() {
+        guard let animatedAmountView else { return }
+        let text = inputText
+        let font = font ?? TKTextStyle.body1.font
+        let rect = isEditing ? editingRect(forBounds: bounds) : textRect(forBounds: bounds)
+        let fits = TKAmountDigits.fits(text, font: font, width: rect.width)
+        let hidesOwn = fits && !text.isEmpty
+        if hidesOwn != hidesOwnGlyphs {
+            hidesOwnGlyphs = hidesOwn
+            textColor = hidesOwn ? .clear : .Text.primary
+        }
+        animatedAmountView.alpha = fits ? 1 : 0
+        animatedAmountView.frame = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: max(rect.width, window?.bounds.width ?? 0),
+            height: rect.height
+        )
+        guard animatedAmount?.text != text || animatedAmount?.font != font else { return }
+        animatedAmount = (text, font)
+        animatedAmountView.setContent {
+            TKAnimatedAmountText(text: text, font: font, color: .textPrimary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+        animatedAmountView.layoutIfNeeded()
+    }
+
     func setup() {
         backgroundColor = .clear
         font = TKTextStyle.body1.font
@@ -58,6 +110,7 @@ private extension TKTextInputTextFieldControl {
     }
 
     @objc func editingChanged() {
+        setNeedsLayout()
         didUpdateText?(text ?? "")
     }
 
@@ -83,15 +136,12 @@ extension TKTextInputTextFieldControl: UITextPasteDelegate {
             item.setDefaultResult()
             return
         }
-        guard let pasteString = UIPasteboard.general.string else {
-            item.setNoResult()
-            return
-        }
-
-        if shouldPaste(pasteString) {
+        Task { @MainActor in
+            guard let pasteString = await UIPasteboard.general.readString(), shouldPaste(pasteString) else {
+                item.setNoResult()
+                return
+            }
             item.setDefaultResult()
-        } else {
-            item.setNoResult()
         }
     }
 }

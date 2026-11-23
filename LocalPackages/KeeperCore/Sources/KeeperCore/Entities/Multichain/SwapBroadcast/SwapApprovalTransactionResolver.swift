@@ -2,10 +2,10 @@ import ChainKit
 
 /// Resolves the ERC20 approve transaction that must precede a router-style swap
 /// (the router pulls tokens via `transferFrom`, so an allowance is required).
-/// Delegates calldata construction to ChainKit's `TransactionHelper` and picks the
-/// exact or unlimited allowance per the user's toggle. When the aggregator did not
-/// price the approve, falls back to the main fee scaled ×1.5 so the lower-nonce
-/// approve is attractive enough to mine before the swap.
+/// Delegates calldata construction to ChainKit's `TransactionHelper`, keeping the
+/// provider's spender and allowance (`txExact`). When the aggregator did not price
+/// the approve, falls back to the main fee scaled ×1.5 so the lower-nonce approve is
+/// attractive enough to mine before the swap.
 struct SwapApprovalTransactionResolver {
     let client: CryptoKitClient
 
@@ -13,8 +13,7 @@ struct SwapApprovalTransactionResolver {
         mainTransactions: [TransactionSwap],
         approvalData: String?,
         approvalFee: Fee?,
-        mainFee: Fee,
-        approvalMode: MultichainSwapApprovalMode
+        mainFee: Fee
     ) -> SwapApprovalTransaction? {
         guard let approvalData,
               mainTransactions.count == 1,
@@ -24,21 +23,13 @@ struct SwapApprovalTransactionResolver {
             return nil
         }
 
-        let transaction: TransactionCall
-        switch approvalMode {
-        case .exact:
-            transaction = transactions.txExact
-        case .unlimited:
-            transaction = transactions.txMax
-        }
-
         return SwapApprovalTransaction(
-            transaction: transaction,
+            transaction: transactions.txExact,
             fee: approvalFee ?? Self.scaledApprovalFee(from: mainFee)
         )
     }
 
-    static func scaledApprovalFee(from fee: Fee) -> Fee {
+    private static func scaledApprovalFee(from fee: Fee) -> Fee {
         if let gas = fee as? FeeGas {
             let price = scaledBignum(gas.price, numerator: 3, denominator: 2)
             return FeeGas(

@@ -45,6 +45,16 @@ public struct HintPosition: Sendable {
         )
     }
 
+    /// Keeps the hint on the visible side of a source cut off at `clippedEdge`, the tail pointing at that edge.
+    func facing(awayFrom clippedEdge: HintClippedEdge?) -> Self {
+        switch (clippedEdge, direction.isAboveSource) {
+        case (.top, true), (.bottom, false):
+            mirroredVertically
+        default:
+            self
+        }
+    }
+
     var cornerOptions: [Self] {
         [
             Self(
@@ -167,6 +177,15 @@ public extension HintPosition {
                 .topCenter
             case .bottomLeft, .bottomCenter, .bottomRight:
                 .bottomCenter
+            }
+        }
+
+        var isAboveSource: Bool {
+            switch self {
+            case .topLeft, .topCenter, .topRight:
+                true
+            case .bottomLeft, .bottomCenter, .bottomRight:
+                false
             }
         }
 

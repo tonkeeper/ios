@@ -103,7 +103,6 @@ public final class TKListContainerView: UIView {
                         case let .copy(copyValue):
                             guard let copyValue = copyValue else { return }
                             UIPasteboard.general.string = copyValue
-                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
                             ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
                         case let .custom(action):
                             action(itemView)

@@ -18,6 +18,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         createModel()
     }
 
+    /// Whether the jetton's transfer carries a payload of its own, as a mintless jetton's claim does.
+    var carriesCustomPayload: Bool {
+        jettonItem.jettonInfo.hasCustomPayload
+    }
+
     func setLoading() {
         extraState = .loading
         extraOptions = []
@@ -144,7 +149,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
             self.emulationResult = nil
             self.extraOptions = []
             await updateFee(emulationResult: nil)
-            return .failure(.failedToCalculateFee)
+            return .failure(.failedToCalculateFee())
         }
     }
 
@@ -315,34 +320,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                 )
             )
         } catch {
-            switch error {
-            case let .firstOption(transferError):
-                switch transferError {
-                case let .sendFailed(message):
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: message
-                        )
-                    )
-                default:
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: transferError.localizedDescription
-                        )
-                    )
-                }
-            case let .secondOption(transactionError):
-                switch transactionError {
-                case .cancelledByUser:
-                    return .failure(.cancelledByUser)
-                default:
-                    return .failure(
-                        .failedToSendTransaction(
-                            message: transactionError.localizedDescription
-                        )
-                    )
-                }
-            }
+            return .failure(TransactionConfirmationError(sendFailure: error))
         }
     }
 
@@ -364,6 +342,10 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
 
     func setExtraTypeForCurrentTransaction(extraType: TransactionConfirmationModel.ExtraType) {
         preferredExtraType = extraType
+    }
+
+    func resetAutomaticFeePreference() {
+        preferredExtraType = nil
     }
 
     var signHandler: ((TransferData, Wallet) async throws(TransactionConfirmationError) -> SignedTransactions)?

@@ -6,6 +6,11 @@ import TKLocalize
 import TKUIKit
 import UIKit
 
+/// A History coordinator that can push its screen without animation.
+protocol HistoryStarting: AnyObject {
+    func start(animated: Bool)
+}
+
 @MainActor
 final class MainHistoryCoordinatorFactory {
     struct Output {
@@ -15,6 +20,7 @@ final class MainHistoryCoordinatorFactory {
         let didOpenDapp: (URL, String?) -> Void
         let didTapAddFunds: (Wallet) -> Void
         let didRequestDepositTon: (Wallet) -> Void
+        let didOpenLoyalty: () -> Void
     }
 
     private let historyModule: HistoryModule
@@ -37,7 +43,7 @@ final class MainHistoryCoordinatorFactory {
     func makeCoordinator(
         wallet: Wallet,
         router: NavigationControllerRouter? = nil,
-        presentationStyle: HistoryPresentationStyle,
+        closeAction: (() -> Void)?,
         fromViewController: UIViewController?,
         pendingEventId: String? = nil
     ) -> RouterCoordinator<NavigationControllerRouter> {
@@ -46,14 +52,14 @@ final class MainHistoryCoordinatorFactory {
                 wallet: wallet,
                 multichainState: multichainState,
                 router: router ?? Self.makeDefaultRouter(),
-                presentationStyle: presentationStyle,
+                closeAction: closeAction,
                 pendingEventId: pendingEventId
             )
         }
 
         return makeLegacyCoordinator(
             router: router,
-            presentationStyle: presentationStyle,
+            closeAction: closeAction,
             fromViewController: fromViewController
         )
     }
@@ -69,12 +75,12 @@ final class MainHistoryCoordinatorFactory {
 private extension MainHistoryCoordinatorFactory {
     func makeLegacyCoordinator(
         router: NavigationControllerRouter?,
-        presentationStyle: HistoryPresentationStyle,
+        closeAction: (() -> Void)?,
         fromViewController: UIViewController?
     ) -> RouterCoordinator<NavigationControllerRouter> {
         let historyCoordinator = historyModule.createHistoryCoordinator(
             routerOrNil: router,
-            presentationStyle: presentationStyle
+            closeAction: closeAction
         )
         historyCoordinator.didOpenTonEventDetails = { [output] wallet, event, network in
             output.didOpenTonEventDetails(
@@ -112,7 +118,7 @@ private extension MainHistoryCoordinatorFactory {
         wallet: Wallet,
         multichainState: MultichainWalletState,
         router: NavigationControllerRouter,
-        presentationStyle: HistoryPresentationStyle,
+        closeAction: (() -> Void)?,
         pendingEventId: String?
     ) -> RouterCoordinator<NavigationControllerRouter> {
         return MultichainHistoryCoordinator(
@@ -121,14 +127,15 @@ private extension MainHistoryCoordinatorFactory {
             multichainState: multichainState,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly,
-            presentationStyle: presentationStyle,
+            closeAction: closeAction,
             pendingEventId: pendingEventId,
             didTapAddFunds: { [output] in
                 output.didTapAddFunds(wallet)
             },
             onOpenTransaction: { [output] url, title in
                 output.didOpenDapp(url, title)
-            }
+            },
+            onOpenLoyalty: output.didOpenLoyalty
         )
     }
 

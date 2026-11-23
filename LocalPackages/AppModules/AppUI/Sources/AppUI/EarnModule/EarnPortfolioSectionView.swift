@@ -7,17 +7,20 @@ public struct EarnPortfolioSectionView: View {
     private let onOpenCatalog: () -> Void
     private let onSelectRow: (AssetBalanceRowCellContent) -> Void
     private let onRetry: () -> Void
+    private let onSelectLimit: (WalletSectionLimit) -> Void
 
     public init(
         state: EarnPortfolioSectionState,
         onOpenCatalog: @escaping () -> Void,
         onSelectRow: @escaping (AssetBalanceRowCellContent) -> Void,
-        onRetry: @escaping () -> Void
+        onRetry: @escaping () -> Void,
+        onSelectLimit: @escaping (WalletSectionLimit) -> Void
     ) {
         self.state = state
         self.onOpenCatalog = onOpenCatalog
         self.onSelectRow = onSelectRow
         self.onRetry = onRetry
+        self.onSelectLimit = onSelectLimit
     }
 
     public var body: some View {
@@ -39,8 +42,19 @@ public struct EarnPortfolioSectionView: View {
                 ForEach(Array(state.rows.enumerated()), id: \.element.id) { index, row in
                     AssetBalanceRowCell(
                         config: .content(row),
-                        showsDivider: state.isStale || index < state.rows.count - 1,
+                        showsDivider: state.isStale || !state.hiddenRows.isEmpty || index < state.rows.count - 1,
                         action: { onSelectRow(row) }
+                    )
+                }
+                if !state.hiddenRows.isEmpty {
+                    WalletSectionMoreCell(
+                        title: TKLocales.Earn.Portfolio.morePositions,
+                        previewAvatars: state.hiddenRows.prefix(2).map(\.avatarImageSource),
+                        limit: state.limit,
+                        showsDivider: state.isStale,
+                        limitMenuIdentifier: "wallet_earn_limit",
+                        onTap: onOpenCatalog,
+                        onSelectLimit: onSelectLimit
                     )
                 }
                 if state.isStale {

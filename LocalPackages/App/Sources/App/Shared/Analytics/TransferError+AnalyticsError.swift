@@ -5,21 +5,9 @@ extension TransferError: AnalyticsError {
         .transferFailed
     }
 
+    /// The text the transfers and the swap report for the same failure.
     var message: String {
-        switch self {
-        case .nothingToSend:
-            "Nothing to send"
-        case .unsupportedTransfer:
-            "Unsupported Transfer"
-        case let .failedToCreateTransferData(message):
-            "Failed to create transfer data due to error: \(message ?? "unknown")"
-        case .noExcessesAddress:
-            "No Excesses Address"
-        case .noJettonWalletAddress:
-            "No Jetton Wallet Address"
-        case let .sendFailed(message):
-            message ?? "Send failed"
-        }
+        TransactionConfirmationError(transferFailure: self).message
     }
 
     var code: Int {

@@ -14,7 +14,7 @@ struct HistoryModule {
 
     func createHistoryCoordinator(
         routerOrNil: NavigationControllerRouter?,
-        presentationStyle: HistoryPresentationStyle
+        closeAction: (() -> Void)?
     ) -> HistoryCoordinator {
         let router: NavigationControllerRouter
         if let routerOrNil {
@@ -32,7 +32,7 @@ struct HistoryModule {
             coreAssembly: dependencies.coreAssembly,
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver(),
-            presentationStyle: presentationStyle
+            closeAction: closeAction
         )
     }
 

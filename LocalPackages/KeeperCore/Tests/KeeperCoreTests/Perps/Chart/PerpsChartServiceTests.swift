@@ -1,7 +1,10 @@
 @testable import KeeperCore
 import PerpsModels
 import TKKandelabrAPI
+import TKTestSupport
 import XCTest
+
+private let changed = TestSignal()
 
 final class PerpsChartServiceTests: XCTestCase {
     func test_watchChart_loadsSnapshotUsingResolvedMarketMetadata() async {
@@ -55,8 +58,14 @@ final class PerpsChartServiceTests: XCTestCase {
         await hermes.emit(makeBatch(close: "120"))
 
         await waitUntil { received.value()?.candles.first?.close == 120 }
+        XCTAssertEqual(received.value()?.isLiveOnly, true)
         XCTAssertFalse(failed.value())
         XCTAssertEqual(hermes.cancelCount, 0)
+
+        await hermes.emitSubscribed()
+
+        await waitUntil { received.value()?.isLiveOnly == false }
+        XCTAssertEqual(received.value()?.candles.first?.close, 100)
         watch.cancel()
     }
 
@@ -121,8 +130,8 @@ final class PerpsChartServiceTests: XCTestCase {
             marketId: 7,
             timeframe: .h1,
             onUpdate: { snapshot in
-                received.set(snapshot)
                 updateCount.update { $0 += 1 }
+                received.set(snapshot)
             },
             onReconnecting: {}
         )
@@ -156,12 +165,46 @@ final class PerpsChartServiceTests: XCTestCase {
         )
         await waitUntil { received.value()?.candles.first?.close == 100 }
 
+        // The first subscription lands after the history, within the same candle period.
+        await hermes.emitSubscribed()
         await hermes.emitSubscribed()
         await waitUntil { kandelabr.snapshotCalls == 2 }
         await hermes.emit(makeBatch(close: "130"))
         await refreshGate.open()
 
         await waitUntil { received.value()?.candles.first?.close == 130 }
+        XCTAssertEqual(kandelabr.snapshotCalls, 2)
+        watch.cancel()
+    }
+
+    func test_watchChart_refreshesWhenACandleClosedBeforeTheFirstSubscription() async {
+        let kandelabr = KandelabrFake(snapshots: [makeBatch(close: "100"), makeBatch(close: "120")])
+        let hermes = HermesFake()
+        let now = Locked(Date(timeIntervalSince1970: 1_700_000_000))
+        let service = makeService(kandelabr: kandelabr, hermes: hermes, now: { now.value() })
+        let loaded = expectation(description: "history")
+        loaded.assertForOverFulfill = false
+        let refreshed = expectation(description: "refreshed history")
+        refreshed.assertForOverFulfill = false
+
+        let watch = service.watchChart(
+            marketId: 7,
+            timeframe: .h1,
+            onUpdate: { snapshot in
+                switch snapshot.candles.first?.close {
+                case 100: loaded.fulfill()
+                case 120: refreshed.fulfill()
+                default: break
+                }
+            },
+            onReconnecting: {}
+        )
+        await fulfillment(of: [loaded], timeout: 2)
+
+        now.update { $0 += 3600 }
+        await hermes.emitSubscribed()
+
+        await fulfillment(of: [refreshed], timeout: 2)
         XCTAssertEqual(kandelabr.snapshotCalls, 2)
         watch.cancel()
     }
@@ -213,6 +256,7 @@ final class PerpsChartServiceTests: XCTestCase {
         await waitUntil { received.value()?.candles.first?.close == 100 }
 
         await hermes.emitSubscribed()
+        await hermes.emitSubscribed()
         await waitUntil { kandelabr.snapshotCalls == 2 }
         await hermes.emitSubscribed()
         await waitUntil { kandelabr.snapshotCalls == 3 }
@@ -238,7 +282,7 @@ final class PerpsChartServiceTests: XCTestCase {
             onUpdate: { received.set($0) },
             onReconnecting: {}
         )
-        await waitUntil { hermes.isWatching }
+        await waitUntil { hermes.isWatching && received.value() != nil }
 
         await hermes.emit(makeBatch(close: "110"))
         await hermes.emit(makeBatch(close: "120"))
@@ -265,7 +309,7 @@ final class PerpsChartServiceTests: XCTestCase {
             onReconnecting: { reconnected.set(true) }
         )
         await waitUntil { received.value() != nil }
-        await waitUntil { hermes.isWatching }
+        await waitUntil { hermes.isWatching && received.value() != nil }
 
         await hermes.emitReconnecting()
         await waitUntil { reconnected.value() }
@@ -333,8 +377,8 @@ final class PerpsChartServiceTests: XCTestCase {
             marketId: 7,
             timeframe: .h1,
             onUpdate: { snapshot in
-                received.set(snapshot)
                 updateCount.update { $0 += 1 }
+                received.set(snapshot)
             },
             onReconnecting: {},
             onFailed: { failed.set(true) }
@@ -441,22 +485,19 @@ private extension PerpsChartServiceTests {
         hermes: HermesFake,
         markets: MarketsReadingFake = MarketsReadingFake(markets: [
             .fake(marketId: 7, symbol: "ETH", ticker: "ETH/USD"),
-        ])
+        ]),
+        now: @escaping @Sendable () -> Date = { Date(timeIntervalSince1970: 1_700_000_000) }
     ) -> PerpsChartService {
         PerpsChartService(
             kandelabr: kandelabr,
             hermes: hermes,
-            marketsRepository: markets
+            marketsRepository: markets,
+            now: now
         )
     }
 
-    func waitUntil(timeout: TimeInterval = 2, _ condition: @escaping () -> Bool) async {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return }
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-        XCTFail("Timed out waiting for condition")
+    func waitUntil(file: StaticString = #filePath, line: UInt = #line, _ condition: () -> Bool) async {
+        await TKTestSupport.waitUntil(changed, file: file, line: line, condition)
     }
 }
 
@@ -492,6 +533,7 @@ private final class Locked<T>: @unchecked Sendable {
 
     func set(_ newValue: T) {
         lock.lock(); _value = newValue; lock.unlock()
+        changed.send()
     }
 
     func value() -> T {
@@ -499,8 +541,8 @@ private final class Locked<T>: @unchecked Sendable {
     }
 
     func update(_ body: (inout T) -> Void) {
-        lock.lock(); defer { lock.unlock() }
-        body(&_value)
+        lock.withLock { body(&_value) }
+        changed.send()
     }
 }
 
@@ -575,6 +617,7 @@ private final class KandelabrFake: KandelabrAPI, @unchecked Sendable {
         let (snapshot, gate, error) = lock.withLock {
             let index = _snapshotCalls
             _snapshotCalls += 1
+            changed.send()
             return (
                 snapshots[min(index, snapshots.count - 1)],
                 index < gates.count ? gates[index] : nil,
@@ -583,6 +626,7 @@ private final class KandelabrFake: KandelabrAPI, @unchecked Sendable {
         }
         await gate?.wait()
         lock.withLock { _completedSnapshotCalls += 1 }
+        changed.send()
         if let error { throw error }
         return [snapshot]
     }
@@ -667,10 +711,12 @@ private final class HermesFake: HermesCandleStreaming, @unchecked Sendable {
         _onReconnecting = onReconnecting
         _onRejected = onRejected
         lock.unlock()
+        changed.send()
         return HermesCandleWatch(
             onCancel: { [weak self] in
                 guard let self else { return }
                 self.lock.lock(); self._cancelCount += 1; self.lock.unlock()
+                changed.send()
             }
         )
     }

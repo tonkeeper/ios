@@ -11,6 +11,7 @@ public struct PerpsSharePositionCardModel: Equatable {
     public let isProfit: Bool
     public let pnlPercentText: String?
     public let entryText: String
+    public let currentLabel: String
     public let currentText: String
     public let dateText: String
 
@@ -24,6 +25,7 @@ public struct PerpsSharePositionCardModel: Equatable {
         isProfit: Bool,
         pnlPercentText: String?,
         entryText: String,
+        currentLabel: String,
         currentText: String,
         dateText: String
     ) {
@@ -36,6 +38,7 @@ public struct PerpsSharePositionCardModel: Equatable {
         self.isProfit = isProfit
         self.pnlPercentText = pnlPercentText
         self.entryText = entryText
+        self.currentLabel = currentLabel
         self.currentText = currentText
         self.dateText = dateText
     }

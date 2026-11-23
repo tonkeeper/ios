@@ -1,3 +1,4 @@
+import Combine
 import TKLocalize
 import TKUIKit
 import UIKit
@@ -16,19 +17,23 @@ final class PerpsSharePositionFlow {
 
     func present(
         _ snapshot: SharePositionSnapshot,
+        updates: AnyPublisher<SharePositionSnapshot, Never> = Empty().eraseToAnyPublisher(),
         from presenter: UIViewController,
         willPresent: (() -> Void)? = nil
     ) {
         guard presenter.presentedViewController == nil else { return }
         let model = PerpsSharePositionPresenter.model(from: snapshot, format: format)
+        let modelUpdates = updates
+            .map { [format] in PerpsSharePositionPresenter.model(from: $0, format: format) }
+            .eraseToAnyPublisher()
         let bottomSheet = TKBottomSheetViewController(
-            contentViewController: PerpsBottomSheetScrollContentViewController(
+            contentViewController: TKBottomSheetScrollHostingController(
                 title: TKLocales.Perps.Asset.sharePosition,
                 subtitle: nil,
                 liveSubtitle: nil
             ) {
-                PerpsSharePositionView(model: model) { [weak self] in
-                    self?.presentSystemShare(model)
+                PerpsSharePositionView(model: model, updates: modelUpdates) { [weak self] in
+                    self?.presentSystemShare($0)
                 }
             }
         )

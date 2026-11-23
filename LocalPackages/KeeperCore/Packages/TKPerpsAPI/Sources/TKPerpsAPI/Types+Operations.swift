@@ -11,6 +11,232 @@ public import struct Foundation.Date
 #endif
 /// API operations, with input and output types, generated from `#/paths` in the OpenAPI document.
 public enum Operations {
+    /// Record measurements taken on the client
+    ///
+    /// Stores measurements the client took itself, such as how long the user waited for a position to open. Send them in the background, in batches of up to 100. Each entry has a type, and the type decides its fields. An unknown type refuses the whole batch with 400: check the list below before sending a new one.
+    /// Nothing else depends on this call, and it changes nothing for the account. A failed call can be sent again as it was: an entry whose id the wallet already sent is skipped, so a repeat is stored once. The stored rows are the record; the server's latency metric is best effort and can miss an entry whose first send was stored but not answered.
+    ///
+    /// - Remark: HTTP `POST /client-metrics`.
+    /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)`.
+    public enum recordClientMetrics {
+        public static let id: Swift.String = "recordClientMetrics"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/client-metrics/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.recordClientMetrics.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.recordClientMetrics.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.recordClientMetrics.Input.Headers
+            /// - Remark: Generated from `#/paths/client-metrics/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/client-metrics/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecordClientMetricsRequest)
+            }
+            public var body: Operations.recordClientMetrics.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.recordClientMetrics.Input.Headers = .init(),
+                body: Operations.recordClientMetrics.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// Stored.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.recordClientMetrics.Output.NoContent)
+            /// Stored.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.recordClientMetrics.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request. Code readonly_token_unavailable is the one that is not about the request's own shape: the wallet has no usable read-only token, so an endpoint that reads nothing without one cannot answer. Not retryable -- it is fixed by issuing a token through /account/ro-token/issue, not by waiting.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
+            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the deviceJWT scheme.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but not entitled to the wallet named in X-Wallet-ID: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
+            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
+            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
+            ///
+            /// - Remark: Generated from `#/paths//client-metrics/post(recordClientMetrics)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Components.Responses.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get the caller's Lighter main account
     ///
     /// Resolves the caller's Lighter main account by the L1 (Ethereum) address bound to the wallet and returns a snapshot: account index, balances, and whether an L2 signing key is registered. The two are independent: status is Lighter's own account status, while has_l2_key is read from the account's API keys. One user maps to exactly one Lighter main account.
@@ -516,235 +742,6 @@ public enum Operations {
             }
         }
     }
-    /// Report transactions the caller submitted to Lighter
-    ///
-    /// Records transactions the caller has already submitted to Lighter so they can be forwarded to the Argus event stream. This service neither signs nor sends them: the client signs locally, submits to Lighter directly, and reports the result here.
-    /// Only transactions Lighter accepted belong in the body — one that never reached the venue did not happen and must not be reported.
-    /// Report everything the action took, in submission order. Types the event stream does not consume yet are accepted and ignored, so the caller never has to filter: today only ORDER_CREATE is forwarded, and a leverage change reported alongside it is simply dropped.
-    /// A 202 means recorded, not delivered: forwarding is asynchronous.
-    /// Repeating a report is safe but not free. A repeat that arrives before the event has been forwarded is dropped; one that arrives after produces a second event carrying the same event_id. Delivery is therefore at-least-once and consumers must deduplicate on event_id, which is the transaction hash.
-    ///
-    /// - Remark: HTTP `POST /transactions`.
-    /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)`.
-    public enum reportTransactions {
-        public static let id: Swift.String = "reportTransactions"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/transactions/POST/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.reportTransactions.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.reportTransactions.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.reportTransactions.Input.Headers
-            /// - Remark: Generated from `#/paths/transactions/POST/requestBody`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/transactions/POST/requestBody/content/application\/json`.
-                case json(Components.Schemas.ReportTransactionsRequest)
-            }
-            public var body: Operations.reportTransactions.Input.Body
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            ///   - body:
-            public init(
-                headers: Operations.reportTransactions.Input.Headers = .init(),
-                body: Operations.reportTransactions.Input.Body
-            ) {
-                self.headers = headers
-                self.body = body
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Accepted: Sendable, Hashable {
-                /// Creates a new `Accepted`.
-                public init() {}
-            }
-            /// Recorded for forwarding.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/202`.
-            ///
-            /// HTTP response code: `202 accepted`.
-            case accepted(Operations.reportTransactions.Output.Accepted)
-            /// Recorded for forwarding.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/202`.
-            ///
-            /// HTTP response code: `202 accepted`.
-            public static var accepted: Self {
-                .accepted(.init())
-            }
-            /// The associated value of the enum case if `self` is `.accepted`.
-            ///
-            /// - Throws: An error if `self` is not `.accepted`.
-            /// - SeeAlso: `.accepted`.
-            public var accepted: Operations.reportTransactions.Output.Accepted {
-                get throws {
-                    switch self {
-                    case let .accepted(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "accepted",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request. Code readonly_token_unavailable is the one that is not about the request's own shape: the wallet has no usable read-only token, so an endpoint that reads nothing without one cannot answer. Not retryable -- it is fixed by issuing a token through /account/ro-token/issue, not by waiting.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
-            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the deviceJWT scheme.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/401`.
-            ///
-            /// HTTP response code: `401 unauthorized`.
-            case unauthorized(Components.Responses.Unauthorized)
-            /// The associated value of the enum case if `self` is `.unauthorized`.
-            ///
-            /// - Throws: An error if `self` is not `.unauthorized`.
-            /// - SeeAlso: `.unauthorized`.
-            public var unauthorized: Components.Responses.Unauthorized {
-                get throws {
-                    switch self {
-                    case let .unauthorized(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "unauthorized",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Authenticated, but not entitled to the wallet named in X-Wallet-ID: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
-            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
-            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/403`.
-            ///
-            /// HTTP response code: `403 forbidden`.
-            case forbidden(Components.Responses.Forbidden)
-            /// The associated value of the enum case if `self` is `.forbidden`.
-            ///
-            /// - Throws: An error if `self` is not `.forbidden`.
-            /// - SeeAlso: `.forbidden`.
-            public var forbidden: Components.Responses.Forbidden {
-                get throws {
-                    switch self {
-                    case let .forbidden(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "forbidden",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
-            ///
-            /// - Remark: Generated from `#/paths//transactions/post(reportTransactions)/responses/503`.
-            ///
-            /// HTTP response code: `503 serviceUnavailable`.
-            case serviceUnavailable(Components.Responses.ServiceUnavailable)
-            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
-            ///
-            /// - Throws: An error if `self` is not `.serviceUnavailable`.
-            /// - SeeAlso: `.serviceUnavailable`.
-            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
-                get throws {
-                    switch self {
-                    case let .serviceUnavailable(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "serviceUnavailable",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
     /// Relay signed transactions to Lighter
     ///
     /// Submits transactions the client has already signed. This service does not sign: the trading key never leaves the device, and the signature inside each payload is the whole authorization Lighter checks. What is added here is that the payload has to name the account the caller's proved address owns, and that an accepted order is reported to the event stream without the client having to report it.
@@ -869,7 +866,7 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; insufficient_funds — the account has too little free margin or balance for it, the same transaction can pass once funds are added or a position is closed; integrator_not_approved — the order carries an integrator fee this account has not approved, or the approval expired: send ApproveIntegrator with the values from GET /integrator, then sign the order again; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account, integrator_fee_mismatch.
+            /// The request was refused, by this service or by Lighter, and details.reason says what to do about it: resign_required — read the nonce again and sign a fresh transaction; order_gone — the order is no longer active, read the state instead of repeating; batch_not_accepted — split the request; invalid_transaction — the signed payload is wrong and repeating it will not help; insufficient_funds — the account has too little free margin or balance for it, the same transaction can pass once funds are added or a position is closed; integrator_not_approved — the order carries an integrator fee this account has not approved, or the approval expired: send ApproveIntegrator with the values from GET /integrator, then sign the order again; withdrawal_rate_limited — the venue allows only a few withdrawals per account in a window (now 3 per 2 hours), the same withdrawal can pass later, repeating it now will not help; lighter_rejected — the venue refused it for a reason this service cannot yet name. Plus the request-shaped ones: empty_batch, malformed_tx_info, foreign_account, integrator_fee_mismatch.
             /// integrator_fee_mismatch means a transaction that can produce a fill (14 CreateOrder, 17 ModifyOrder, 28 CreateGroupedOrders) does not carry exactly the partner attribution this service serves: read GET /integrator and sign in all three values as given. Any other rate is refused, below the served one as well as above it. The account depends on the User-Agent, see GET /integrator.
             /// A refused submission never reached a block; a retry has to be signed again against a fresh nonce.
             ///
@@ -1382,6 +1379,7 @@ public enum Operations {
     /// Answered per wallet, and meant to be read before signing rather than kept for the session: the rate is this service's to set and may one day differ between callers.
     /// The account depends on the app. It is read from the User-Agent, the OS in its brackets: "Keeper/26.10.2 (iOS; 27.0; iPhone)" is iOS, "Tonkeeper/26.10.1 (Android; 16; Pixel 9)" is Android, anything else is the third account. An app without its own account gets the third one too. POST /transactions/send checks orders against the same account, so both calls must carry the same User-Agent.
     /// Spot maximums are always zero. This service trades perpetuals, and approving a spot maximum would grant a permission nothing here uses.
+    /// venue_taker_fee and venue_maker_fee are not signed: they are Lighter's own fee, which it charges on top of ours. A client adds both to show the full fee.
     ///
     /// - Remark: HTTP `GET /integrator`.
     /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)`.
@@ -1558,258 +1556,6 @@ public enum Operations {
             /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
             ///
             /// - Remark: Generated from `#/paths//integrator/get(getIntegrator)/responses/503`.
-            ///
-            /// HTTP response code: `503 serviceUnavailable`.
-            case serviceUnavailable(Components.Responses.ServiceUnavailable)
-            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
-            ///
-            /// - Throws: An error if `self` is not `.serviceUnavailable`.
-            /// - SeeAlso: `.serviceUnavailable`.
-            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
-                get throws {
-                    switch self {
-                    case let .serviceUnavailable(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "serviceUnavailable",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
-    /// Store the caller's Lighter read-only token (deprecated)
-    ///
-    /// Deprecated. Use POST /account/ro-token/issue, which mints the token here instead of taking one the client minted. Kept until clients have moved; it is not otherwise being changed.
-    /// Two things are worse on this path, and neither can be fixed while the token arrives ready-made. A token minted at Lighter and not submitted here is a live read-only credential nobody knows about, and the two calls it takes can always come apart. And Lighter names a token by an id this endpoint never sees, so nothing stored through it can ever be revoked -- superseding it marks it unused here while it stays alive at the venue.
-    /// Persists the caller's Lighter read-only token, encrypted at rest via Vault Transit, and binds the wallet to the Lighter account that token belongs to. The token value travels in the X-Lighter-Auth header; the body carries a signature proving the caller holds the L1 key the account is registered under.
-    /// The token is also tried against Lighter before it is stored: one it does not honour for that account is refused here rather than kept and discovered later, when only the background reconciliation would notice.
-    /// The account index is not taken from the caller. It is read out of the token and accepted only when it is the account this wallet's L1 address owns, which Lighter is the one to say. That address comes from what the wallet proved earlier -- POST /account/bind, usually -- so a signature is needed here only when it has proved nothing yet. Once bound, a wallet keeps its address and account: a proof naming another, or one another wallet holds, answers 409.
-    ///
-    /// - Remark: HTTP `POST /account/ro-token`.
-    /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)`.
-    public enum saveRoToken {
-        public static let id: Swift.String = "saveRoToken"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/account/ro-token/POST/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.saveRoToken.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.saveRoToken.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.saveRoToken.Input.Headers
-            /// - Remark: Generated from `#/paths/account/ro-token/POST/requestBody`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/account/ro-token/POST/requestBody/content/application\/json`.
-                case json(Components.Schemas.SaveRoTokenRequest)
-            }
-            public var body: Operations.saveRoToken.Input.Body
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            ///   - body:
-            public init(
-                headers: Operations.saveRoToken.Input.Headers = .init(),
-                body: Operations.saveRoToken.Input.Body
-            ) {
-                self.headers = headers
-                self.body = body
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct NoContent: Sendable, Hashable {
-                /// Creates a new `NoContent`.
-                public init() {}
-            }
-            /// Token stored (encrypted at rest).
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/204`.
-            ///
-            /// HTTP response code: `204 noContent`.
-            case noContent(Operations.saveRoToken.Output.NoContent)
-            /// Token stored (encrypted at rest).
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/204`.
-            ///
-            /// HTTP response code: `204 noContent`.
-            public static var noContent: Self {
-                .noContent(.init())
-            }
-            /// The associated value of the enum case if `self` is `.noContent`.
-            ///
-            /// - Throws: An error if `self` is not `.noContent`.
-            /// - SeeAlso: `.noContent`.
-            public var noContent: Operations.saveRoToken.Output.NoContent {
-                get throws {
-                    switch self {
-                    case let .noContent(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "noContent",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request. Code readonly_token_unavailable is the one that is not about the request's own shape: the wallet has no usable read-only token, so an endpoint that reads nothing without one cannot answer. Not retryable -- it is fixed by issuing a token through /account/ro-token/issue, not by waiting.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
-            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the deviceJWT scheme.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/401`.
-            ///
-            /// HTTP response code: `401 unauthorized`.
-            case unauthorized(Components.Responses.Unauthorized)
-            /// The associated value of the enum case if `self` is `.unauthorized`.
-            ///
-            /// - Throws: An error if `self` is not `.unauthorized`.
-            /// - SeeAlso: `.unauthorized`.
-            public var unauthorized: Components.Responses.Unauthorized {
-                get throws {
-                    switch self {
-                    case let .unauthorized(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "unauthorized",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Authenticated, but not entitled to the wallet named in X-Wallet-ID: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
-            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
-            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/403`.
-            ///
-            /// HTTP response code: `403 forbidden`.
-            case forbidden(Components.Responses.Forbidden)
-            /// The associated value of the enum case if `self` is `.forbidden`.
-            ///
-            /// - Throws: An error if `self` is not `.forbidden`.
-            /// - SeeAlso: `.forbidden`.
-            public var forbidden: Components.Responses.Forbidden {
-                get throws {
-                    switch self {
-                    case let .forbidden(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "forbidden",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// The request contradicts what is already recorded: a deposit under this operation_id, or the Lighter account a wallet is bound to. Not retryable -- repeating it reproduces the same disagreement.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/409`.
-            ///
-            /// HTTP response code: `409 conflict`.
-            case conflict(Components.Responses.Conflict)
-            /// The associated value of the enum case if `self` is `.conflict`.
-            ///
-            /// - Throws: An error if `self` is not `.conflict`.
-            /// - SeeAlso: `.conflict`.
-            public var conflict: Components.Responses.Conflict {
-                get throws {
-                    switch self {
-                    case let .conflict(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "conflict",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
-            ///
-            /// - Remark: Generated from `#/paths//account/ro-token/post(saveRoToken)/responses/503`.
             ///
             /// HTTP response code: `503 serviceUnavailable`.
             case serviceUnavailable(Components.Responses.ServiceUnavailable)
@@ -2899,6 +2645,7 @@ public enum Operations {
     ///
     /// The same position the list carries, plus the take-profit and stop-loss legs attached to it. The legs are open orders on the market, so reading them needs the wallet's Lighter read-only token; this service uses the one the wallet stored through /account/ro-token rather than asking the caller for it again.
     /// auto_close_known says whether the legs were read at all. Without it a null auto_close would mean both "there are none" and "we could not look", and a client would offer to create a take-profit over one that already exists. It is false when the wallet has stored no token, when the stored one has expired, and when the token could not be decrypted.
+    /// close_estimate is what a market close gives now, by the live book. It is only here, not in the list, because it reads the book for each position.
     /// The id comes from the list and is opaque. A market the wallet holds nothing open in is a 404, including one whose position has just closed -- Lighter keeps a zero-size row for it, and a zero-size row is not a position.
     ///
     /// - Remark: HTTP `GET /positions/{id}`.
@@ -4458,237 +4205,6 @@ public enum Operations {
             }
         }
     }
-    /// Portfolio screen (deprecated)
-    ///
-    /// Superseded by /portfolio, which carries a fuller position -- with id, mark price, margin, equity and ROI -- the open orders this one has no room for, and a balance net of what those orders reserve. Frozen: it keeps answering exactly as it does today and gains nothing further, so its available and transferable balances still include that reserve.
-    /// Returns equity, available, and transferable balances together with all open positions derived from a single account snapshot, so the portfolio screen renders in one call.
-    ///
-    /// - Remark: HTTP `GET /screens/portfolio`.
-    /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)`.
-    public enum getPortfolioScreen {
-        public static let id: Swift.String = "getPortfolioScreen"
-        public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/screens/portfolio/GET/header`.
-            public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPortfolioScreen.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getPortfolioScreen.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            public var headers: Operations.getPortfolioScreen.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            public init(headers: Operations.getPortfolioScreen.Input.Headers = .init()) {
-                self.headers = headers
-            }
-        }
-        @frozen public enum Output: Sendable, Hashable {
-            public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/screens/portfolio/GET/responses/200/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/screens/portfolio/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.PortfolioScreen)
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.PortfolioScreen {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.getPortfolioScreen.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.getPortfolioScreen.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Portfolio screen payload.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.getPortfolioScreen.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            public var ok: Operations.getPortfolioScreen.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Invalid request. Code readonly_token_unavailable is the one that is not about the request's own shape: the wallet has no usable read-only token, so an endpoint that reads nothing without one cannot answer. Not retryable -- it is fixed by issuing a token through /account/ro-token/issue, not by waiting.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/400`.
-            ///
-            /// HTTP response code: `400 badRequest`.
-            case badRequest(Components.Responses.BadRequest)
-            /// The associated value of the enum case if `self` is `.badRequest`.
-            ///
-            /// - Throws: An error if `self` is not `.badRequest`.
-            /// - SeeAlso: `.badRequest`.
-            public var badRequest: Components.Responses.BadRequest {
-                get throws {
-                    switch self {
-                    case let .badRequest(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "badRequest",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Missing or invalid authentication. Code token_expired means the token's own life ended and a refresh answers it; wallet_auth_invalid and operation_proof_invalid mean the session is fine and a signature is not; invalid_token means none of these and the caller has to authenticate again.
-            /// token_revoked (the sessions behind the token were reset, so a refresh answers it only while the device is still logged in) and device_inactive (the device is revoked or was never registered, so it has to register again) can only come from an endpoint that asks multichain-backend. None does today, so both are declared without being produced — see the deviceJWT scheme.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/401`.
-            ///
-            /// HTTP response code: `401 unauthorized`.
-            case unauthorized(Components.Responses.Unauthorized)
-            /// The associated value of the enum case if `self` is `.unauthorized`.
-            ///
-            /// - Throws: An error if `self` is not `.unauthorized`.
-            /// - SeeAlso: `.unauthorized`.
-            public var unauthorized: Components.Responses.Unauthorized {
-                get throws {
-                    switch self {
-                    case let .unauthorized(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "unauthorized",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Authenticated, but not entitled to the wallet named in X-Wallet-ID: multichain-backend does not have it bound to the calling device. Apart from 401 because refreshing the token cannot help, and deliberately indistinguishable from a wallet that does not exist — telling those apart would report whether it does.
-            /// Never produced today: no endpoint asks that registry, so nothing reaches this. A wallet nobody can sign for fails as 401 wallet_auth_invalid instead. Declared on every endpoint all the same, so that one starting to ask is not a change of contract — handle it.
-            /// A device that is itself revoked or unregistered answers 401 device_inactive instead: that is about the caller and not about any wallet, so it can be named, and the client has to register again rather than show a wallet as unavailable.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/403`.
-            ///
-            /// HTTP response code: `403 forbidden`.
-            case forbidden(Components.Responses.Forbidden)
-            /// The associated value of the enum case if `self` is `.forbidden`.
-            ///
-            /// - Throws: An error if `self` is not `.forbidden`.
-            /// - SeeAlso: `.forbidden`.
-            public var forbidden: Components.Responses.Forbidden {
-                get throws {
-                    switch self {
-                    case let .forbidden(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "forbidden",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// This service failed, and the caller cannot fix it by changing the request. Declared on every operation because any of them can reach it.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/500`.
-            ///
-            /// HTTP response code: `500 internalServerError`.
-            case internalServerError(Components.Responses.InternalError)
-            /// The associated value of the enum case if `self` is `.internalServerError`.
-            ///
-            /// - Throws: An error if `self` is not `.internalServerError`.
-            /// - SeeAlso: `.internalServerError`.
-            public var internalServerError: Components.Responses.InternalError {
-                get throws {
-                    switch self {
-                    case let .internalServerError(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "internalServerError",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// A dependency this request needs is unavailable; the request may be retried. Code auth_unavailable means the token was never judged, because the issuer's key set could not be loaded — keep the token and back off rather than refreshing it. Code upstream_unavailable means Lighter did not answer.
-            ///
-            /// - Remark: Generated from `#/paths//screens/portfolio/get(getPortfolioScreen)/responses/503`.
-            ///
-            /// HTTP response code: `503 serviceUnavailable`.
-            case serviceUnavailable(Components.Responses.ServiceUnavailable)
-            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
-            ///
-            /// - Throws: An error if `self` is not `.serviceUnavailable`.
-            /// - SeeAlso: `.serviceUnavailable`.
-            public var serviceUnavailable: Components.Responses.ServiceUnavailable {
-                get throws {
-                    switch self {
-                    case let .serviceUnavailable(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "serviceUnavailable",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        @frozen public enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            public init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            public var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            public static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
     /// Order book truncated to a notional
     ///
     /// The near side of one market's book, cut off at the level where the accumulated cost covers the notional asked about, the fee included. The book is biblios' -- this endpoint forwards to it and reshapes nothing, so every number is the string that service printed.
@@ -5813,7 +5329,7 @@ public enum Operations {
     /// Prices a top-up of the caller's Lighter account paid with an asset on another chain, and returns what the client has to sign to make it happen. Nothing moves here: the quote is an offer, and the payloads are the client's to sign and broadcast from its own wallet.
     /// The money always lands as USDC on Ethereum, because that is where Lighter's gateway is, and the deposit into the gateway is part of the same cross-chain action: the aggregator delivers the USDC and calls the gateway with it, naming destination_address as the account to credit. The client therefore signs only on the source chain.
     /// The pricing is swaps-backend's (`POST /v2/crosschain/quotes` with `destination_target: lighter`): it asks the aggregator, sizes the deposit into the budget and checks the payloads against the quote. This service checks what only it knows -- whose account the deposit credits -- and hands the rest on.
-    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees, which is why output.amount and output.min_amount are equal -- the deposit is exact, and the slippage the quote allowed for was on the source side. The whole of source_amount is rarely spent to the last unit.
+    /// source_amount is a budget, not a price: the payloads returned never ask for more than it, and the deposit is sized to what that amount buys after the aggregator's fees. output.amount and output.min_amount are always equal. A deposit through the gateway on Ethereum is exact, and the slippage the quote allowed for was on the source side. A deposit into an existing account is credited by the aggregator on Lighter directly, without the gateway, and is quoted at the aggregator's floor: at least that much is credited. The whole of source_amount is rarely spent to the last unit.
     /// A source asset that is already USDC on Ethereum needs no aggregator: the payloads are then the approval and the gateway call for the client's own Ethereum key, provider is `direct`, and there is nothing to track.
     /// Native USDC on Arbitrum, Base or Polygon goes through Lighter's bridge (fun.xyz) instead, provider `funxyz`: the one payload is a plain `transfer` of the whole source_amount to the destination's deposit address on that chain, which the bridge credits to the perps account as it is -- no fee, no swap, output.amount equal to source_amount. The address is the destination's own and the same on every deposit. tracking follows it as any other, by matching the transfer the bridge sees there: same chain, same amount, after the quote. The bridge takes no less than 5 USDC for an account it creates and 3 USDC for one that exists; a smaller amount, a key to register (change_pub_key on an account Lighter does not know), or a bridge that does not answer is quoted through the aggregator as before.
     /// USDC on Ethereum goes through the bridge too, but only to top up an account Lighter already knows, with at least 5 USDC: one transfer instead of the approval and the gateway call. The deposit that creates the account, a smaller amount, or an account Lighter did not answer for stay `direct`, as does any quote when the bridge does not answer.

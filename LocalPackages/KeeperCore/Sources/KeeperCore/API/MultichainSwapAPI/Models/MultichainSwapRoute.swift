@@ -8,6 +8,7 @@ public struct MultichainSwapRoute: Sendable, Hashable {
     public var protocolSlug: String?
     public var routeType: String
     public var sourceAmount: String?
+    public var maximumSourceAmount: String?
     public var estimatedDestinationAmount: String
     public var minimumDestinationAmount: String
     public var estimatedTime: MultichainSwapTimeEstimate?
@@ -22,6 +23,8 @@ public struct MultichainSwapRoute: Sendable, Hashable {
     public var dateExpire: Date
     public var riskLevel: String
     public var payloads: [MultichainSwapPreparedPayload]?
+    /// The API the route was quoted on: it is prepared there whatever the flag that picked it says now.
+    public var apiVersion: MultichainSwapAPIVersion
 
     public init(
         routeId: String,
@@ -30,6 +33,7 @@ public struct MultichainSwapRoute: Sendable, Hashable {
         protocolSlug: String? = nil,
         routeType: String,
         sourceAmount: String? = nil,
+        maximumSourceAmount: String? = nil,
         estimatedDestinationAmount: String,
         minimumDestinationAmount: String,
         estimatedTime: MultichainSwapTimeEstimate? = nil,
@@ -43,7 +47,8 @@ public struct MultichainSwapRoute: Sendable, Hashable {
         legs: [MultichainSwapLeg],
         dateExpire: Date,
         riskLevel: String,
-        payloads: [MultichainSwapPreparedPayload]? = nil
+        payloads: [MultichainSwapPreparedPayload]? = nil,
+        apiVersion: MultichainSwapAPIVersion = .v2
     ) {
         self.routeId = routeId
         self.providerRouteId = providerRouteId
@@ -51,6 +56,7 @@ public struct MultichainSwapRoute: Sendable, Hashable {
         self.protocolSlug = protocolSlug
         self.routeType = routeType
         self.sourceAmount = sourceAmount
+        self.maximumSourceAmount = maximumSourceAmount
         self.estimatedDestinationAmount = estimatedDestinationAmount
         self.minimumDestinationAmount = minimumDestinationAmount
         self.estimatedTime = estimatedTime
@@ -65,6 +71,7 @@ public struct MultichainSwapRoute: Sendable, Hashable {
         self.dateExpire = dateExpire
         self.riskLevel = riskLevel
         self.payloads = payloads
+        self.apiVersion = apiVersion
     }
 }
 
@@ -77,6 +84,7 @@ extension MultichainSwapRoute {
             protocolSlug: api._protocol,
             routeType: api.route_type.rawValue,
             sourceAmount: api.source_amount,
+            maximumSourceAmount: api.maximum_source_amount,
             estimatedDestinationAmount: api.estimated_destination_amount,
             minimumDestinationAmount: api.minimum_destination_amount,
             estimatedTime: api.estimated_time.map { MultichainSwapTimeEstimate(api: $0) },
@@ -92,5 +100,35 @@ extension MultichainSwapRoute {
             riskLevel: api.risk_level.rawValue,
             payloads: api.payloads?.map { MultichainSwapPreparedPayload(api: $0) }
         )
+    }
+
+    /// A `/v3` route is a `/v2` one without payloads: `prepareCrossSwapRouteV3` builds its operation.
+    init(api: SwapAPI.Components.Schemas.CrossSwapQuotedRoute) {
+        self.init(
+            api: SwapAPI.Components.Schemas.CrossSwapRoute(
+                route_id: api.route_id,
+                provider_route_id: api.provider_route_id,
+                aggregator: api.aggregator,
+                _protocol: api._protocol,
+                route_type: api.route_type,
+                source_amount: api.source_amount,
+                maximum_source_amount: api.maximum_source_amount,
+                estimated_destination_amount: api.estimated_destination_amount,
+                minimum_destination_amount: api.minimum_destination_amount,
+                estimated_time: api.estimated_time,
+                total_slippage_bps: api.total_slippage_bps,
+                value_difference_bps: api.value_difference_bps,
+                price_impact_bps: api.price_impact_bps,
+                source_usd_price: api.source_usd_price,
+                destination_usd_price: api.destination_usd_price,
+                tags: api.tags,
+                warnings: api.warnings,
+                fees: api.fees,
+                legs: api.legs,
+                date_expire: api.date_expire,
+                risk_level: api.risk_level
+            )
+        )
+        apiVersion = .v3
     }
 }

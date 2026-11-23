@@ -11,33 +11,20 @@ public struct RepositoriesAssembly {
 
     public func earnFeaturedVaultsRepository(
         isEarnEnabled: Bool,
-        isAppStoreEnvironment: Bool,
         configuration: Configuration
     ) -> EarnFeaturedVaultsRepository {
         EarnFeaturedVaultsRepositoryImplementation(
             isEarnEnabled: isEarnEnabled,
-            isAppStoreEnvironment: isAppStoreEnvironment,
             configuration: configuration
-        )
-    }
-
-    public func earnVaultsRepository(isEarnEnabled: Bool) -> EarnVaultsRepository {
-        HardcodedEarnVaultsRepository(isEarnEnabled: isEarnEnabled)
-    }
-
-    public func earnAssetOffersRepository(isEarnEnabled: Bool) -> EarnAssetOffersRepository {
-        HardcodedEarnAssetOffersRepository(isEarnEnabled: isEarnEnabled)
-    }
-
-    public func earnPortfolioRepository(isEarnEnabled: Bool) -> EarnPortfolioRepository {
-        EarnPortfolioRepository(
-            service: HardcodedEarnPortfolioService(isEarnEnabled: isEarnEnabled),
-            fileSystemVault: coreAssembly.fileSystemVault()
         )
     }
 
     public func settingsRepository() -> SettingsRepository {
         SettingsRepository(settingsVault: coreAssembly.settingsVault())
+    }
+
+    public func loyaltyReferralCodeRepository() -> LoyaltyReferralCodeRepository {
+        LoyaltyReferralCodeRepository(userDefaults: .standard)
     }
 
     public func keeperInfoRepository() -> KeeperInfoRepository {
@@ -73,10 +60,6 @@ public struct RepositoriesAssembly {
 
     func nftRepository() -> NFTRepository {
         NFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-    }
-
-    func accountsNftRepository() -> AccountNFTRepository {
-        AccountNFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
     }
 
     func accountNFTsManagementRepository() -> AccountNFTsManagementRepository {

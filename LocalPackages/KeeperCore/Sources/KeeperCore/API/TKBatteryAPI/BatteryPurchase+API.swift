@@ -27,7 +27,7 @@ private extension BatteryPurchase.Kind {
             self = .gift
         case .on_hyphen_the_hyphen_way_hyphen_gift:
             self = .onTheWayGift
-        case .unknown:
+        case .grant, .migration, .migration_hyphen_out, .unknown:
             return nil
         }
     }

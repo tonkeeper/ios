@@ -31,7 +31,6 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
     private let passcodeProvider: () async -> String?
     /// Reviews the same amount again once the quote lapsed or its fee moved.
     private let requote: (() async throws -> PerpsReviewedWithdraw)?
-    private let now: () -> Date
     private var requoteTask: Task<Void, Never>?
 
     init(
@@ -41,8 +40,7 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
         format: PerpsFormatting,
         message: @escaping (Error) -> PerpsWithdrawMessage,
         passcodeProvider: @escaping () async -> String?,
-        requote: (() async throws -> PerpsReviewedWithdraw)? = nil,
-        now: @escaping () -> Date = Date.init
+        requote: (() async throws -> PerpsReviewedWithdraw)? = nil
     ) {
         self.reviewed = reviewed
         self.destination = destination
@@ -51,7 +49,6 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
         self.message = message
         self.passcodeProvider = passcodeProvider
         self.requote = requote
-        self.now = now
     }
 
     deinit {
@@ -93,28 +90,46 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
             PerpsTradeConfirmRow(
                 id: .youReceive,
                 title: TKLocales.Perps.Confirm.youReceive,
-                value: "\(terms.receivesAtLeast ? "≥ " : "")\(terms.receiveAmount) \(terms.receiveSymbol)",
+                value: (terms.receivesAtLeast ? "≥ " : "") + receiveText,
                 subValue: nil
             ),
-            PerpsFundingConfirmRows.networkFee(
-                title: terms.receivesAtLeast ? TKLocales.Perps.Confirm.fee : TKLocales.MultichainSwap.Screen.Confirm.Field.networkFee,
-                fee: terms.networkFee,
-                symbol: terms.networkFeeSymbol,
-                usd: terms.networkFeeUsd,
-                format: format
-            ),
         ]
+        if let recipientAddress = terms.recipientAddress {
+            rows.append(PerpsTradeConfirmRow(
+                id: .recipientAddress,
+                title: TKLocales.ConfirmSend.Recipient.address,
+                value: recipientAddress,
+                subValue: nil
+            ))
+        }
+        if let provider = terms.provider {
+            rows.append(PerpsTradeConfirmRow(
+                id: .provider,
+                title: TKLocales.NativeSwap.Screen.Confirm.Field.provider,
+                value: provider,
+                subValue: nil
+            ))
+        }
+        rows.append(PerpsFundingConfirmRows.networkFee(
+            title: terms.receivesAtLeast ? TKLocales.Perps.Confirm.fee : TKLocales.MultichainSwap.Screen.Confirm.Field.networkFee,
+            fee: terms.networkFee,
+            symbol: terms.networkFeeSymbol,
+            usd: terms.networkFeeUsd,
+            format: format
+        ))
         if let arrivalTime {
             rows.append(arrivalTime)
         }
         return rows
     }
 
+    private var receiveText: String {
+        PerpsFundingAmountInput.decimal(terms.receiveAmount).map { format.tokenCompact($0, symbol: terms.receiveSymbol) }
+            ?? "\(terms.receiveAmount) \(terms.receiveSymbol)"
+    }
+
     private var arrivalTime: PerpsTradeConfirmRow? {
-        if terms.receivesAtLeast {
-            return destination.network == .bitcoin ? nil : PerpsFundingConfirmRows.arrivalTime(minutes: 2)
-        }
-        return terms.withdrawalDelaySeconds.map(PerpsFundingConfirmRows.arrivalTime(seconds:))
+        return terms.estimatedDurationSeconds.map { PerpsFundingConfirmRows.arrivalTime(seconds: $0) }
     }
 
     var noticeText: String? {
@@ -137,25 +152,24 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
     func onDisappear() {}
     func editAutoClose() {}
 
+    /// A quote lapsed by now is renewed by the payment itself, after the passcode.
     func confirm() {
         guard isConfirmationEnabled else { return }
-        if let expiresAt = terms.expiresAt, expiresAt <= now() {
-            requoteOrShow(PerpsWithdrawErrorText.text(for: .quoteExpired))
-            return
-        }
         isPaying = true
         errorText = nil
-        Task { [weak self, reviewed, message, passcodeProvider] in
+        Task { [weak self, destination, reviewed, message, passcodeProvider] in
             guard let passcode = await passcodeProvider() else {
+                PerpsOperationLog.event("unlock", outcome: "cancelled", source: "user", fields: ["flow": "withdraw", "asset_id": destination.assetId])
                 self?.isPaying = false
                 return
             }
             do {
                 let operationId = try await reviewed.pay(passcode)
                 self?.isPaying = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
                 self?.onPaid?(operationId)
             } catch {
-                Log.w("🪵 Perps withdraw: payment failed", error: error)
+                PerpsOperationLog.event("confirm", outcome: "failed", error: error, fields: ["flow": "withdraw", "asset_id": destination.assetId])
                 guard let self else { return }
                 isPaying = false
                 let failure = message(error)
@@ -163,6 +177,7 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
                 if failure == .quoteExpired {
                     requoteOrShow(PerpsWithdrawErrorText.text(for: failure))
                 } else {
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
                     errorText = PerpsWithdrawErrorText.text(for: failure)
                 }
             }
@@ -196,7 +211,7 @@ final class PerpsWithdrawConfirmViewModel: PerpsTradeConfirmViewModeling {
                 isRequoting = false
             } catch {
                 guard let self, !Task.isCancelled else { return }
-                Log.w("🪵 Perps withdraw: requote failed", error: error)
+                PerpsOperationLog.event("requote", outcome: "failed", error: error, fields: ["flow": "withdraw", "asset_id": destination.assetId])
                 errorText = PerpsWithdrawErrorText.text(for: message(error))
                 isRequoting = false
             }

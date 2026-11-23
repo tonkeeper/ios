@@ -1,7 +1,15 @@
 import Foundation
+import PerpsModels
 import TKFeatureFlags
 
 public final class Configuration {
+    var cachedTonAPIConnection: (url: URL, key: String)? {
+        guard let config = availableConfigurations?.mainnet,
+              let url = URL(string: config.tonapiV2Endpoint), url.host != nil
+        else { return nil }
+        return (url, config.tonApiV2Key)
+    }
+
     public var tonapiV2Endpoint: String {
         get async {
             await loadConfigurations().mainnet.tonapiV2Endpoint
@@ -30,14 +38,25 @@ public final class Configuration {
         return configuration(for: network).batteryHost
     }
 
+    /// A cold start takes the host from the last launch's configuration instead of waiting a round trip
+    /// for the load; the load still runs, and its answer serves the requests after it.
     public func multichainHost(network: Network) async -> URL {
-        _ = await loadConfigurations()
+        if !lock.withLock({ isLoaded }), availableConfigurations != nil {
+            Task { _ = await loadConfigurations() }
+        } else {
+            _ = await loadConfigurations()
+        }
         return configuration(for: network).multichain.domain
     }
 
     public func tradingHost(network: Network) async -> URL {
         _ = await loadConfigurations()
         return configuration(for: network).trading.domain
+    }
+
+    public func keeperEarnHost(network: Network) async -> URL {
+        _ = await loadConfigurations()
+        return configuration(for: network).keeperEarn
     }
 
     public var tonApiV2Key: String {
@@ -91,7 +110,7 @@ public final class Configuration {
     }
 
     public var earnUrl: URL {
-        configurations.mainnet.earnUrl ?? EarnHardcodedData.url
+        configurations.mainnet.earnUrl
     }
 
     public var earnFeaturedVaults: [EarnFeaturedVault] {
@@ -177,12 +196,20 @@ public final class Configuration {
         configuration(for: network).isBatteryBeta
     }
 
+    var perpsAccess: PerpsAccess {
+        perpsAccessOverride ?? value(\.perpsAccess)
+    }
+
     public func isTRXOnlyRegion(network: Network) -> Bool {
         configuration(for: network).flags.trxOnlyRegion
     }
 
     public func isDisableBatteryCryptoRechargeModule(network: Network) -> Bool {
         overridableFlag(\.disableBatteryCryptoRechargeModule, key: .disableBatteryCryptoRechargeModule, network: network)
+    }
+
+    public func isDisableBatteryPromoModule(network: Network) -> Bool {
+        overridableFlag(\.disableBatteryPromoModule, key: .disableBatteryPromoModule, network: network)
     }
 
     /// The bundled FlagsOverride.json (dev/CI builds only) wins over keys/all for a
@@ -200,32 +227,39 @@ public final class Configuration {
         return configuration(for: network)[keyPath: keyPath]
     }
 
+    /// The loaded configuration, else the one an earlier launch stored; nil when there is neither.
+    private var availableConfigurations: BootConfigurations? {
+        lock.withLock {
+            if _configurations == nil {
+                _configurations = try? bootConfigurationService.getConfiguration()
+            }
+            return _configurations
+        }
+    }
+
     private var configurations: BootConfigurations {
         get {
-            lock.withLock {
-                if let _configurations {
-                    return _configurations
-                }
-                if let configuration = try? bootConfigurationService.getConfiguration() {
-                    _configurations = configuration
-                    return configuration
-                }
-                return BootConfigurations(mainnet: .empty, testnet: .empty)
-            }
+            availableConfigurations ?? BootConfigurations(mainnet: .empty, testnet: .empty)
         }
         set {
             var observers = [UUID: () -> Void]()
-            lock.withLock {
+            let changed = lock.withLock {
+                let changed = !isLoaded || _configurations != newValue
                 observers = self.observers
                 _configurations = newValue
+                isLoaded = true
+                return changed
             }
+            guard changed else { return }
             observers.forEach { $0.value() }
         }
     }
 
     private var _configurations: BootConfigurations?
+    private var isLoaded = false
 
     private var loadTask: Task<BootConfigurations, Swift.Error>?
+    private var isLoadInFlight = false
     private var observers = [UUID: () -> Void]()
 
     private let lock = NSLock()
@@ -233,15 +267,18 @@ public final class Configuration {
     private let bootConfigurationService: BootConfigurationService
     private let featureFlags: TKFeatureFlags
     private let tkAppSettings: TKAppSettings
+    private let perpsAccessOverride: PerpsAccess?
 
     init(
         bootConfigurationService: BootConfigurationService,
         featureFlags: TKFeatureFlags,
-        tkAppSettings: TKAppSettings
+        tkAppSettings: TKAppSettings,
+        perpsAccessOverride: PerpsAccess? = nil
     ) {
         self.bootConfigurationService = bootConfigurationService
         self.featureFlags = featureFlags
         self.tkAppSettings = tkAppSettings
+        self.perpsAccessOverride = perpsAccessOverride
     }
 
     public func flag(_ keyPath: KeyPath<BootConfiguration.Flags, Bool>, network: Network) -> Bool {
@@ -279,11 +316,36 @@ public final class Configuration {
         resolveFeatureFlag(feature)
     }
 
+    /// The battery's relayer pays fees on Solana only while `solanaGaslessEnabled` is on.
+    public func relaysGasless(on chain: MultichainChain) -> Bool {
+        chain != .sol || featureEnabled(.solanaGaslessEnabled)
+    }
+
+    /// The Perps banner and story share the id `perps` and stay hidden while Perps is off.
+    public func isPromoHidden(id: String) -> Bool {
+        id == "perps" && !featureEnabled(.perpsEnabled)
+    }
+
     private func resolveFeatureFlag(_ feature: FeatureFlag) -> Bool {
+        if let requirement = feature.requirement, !resolveFeatureFlag(requirement) {
+            return false
+        }
         if let devOverride = featureFlags.devOverride(for: feature) {
             return devOverride
         }
+        if isFeatureFlagDisabledByBootConfiguration(feature) {
+            return false
+        }
         return featureFlags[feature]
+    }
+
+    private func isFeatureFlagDisabledByBootConfiguration(_ feature: FeatureFlag) -> Bool {
+        switch feature {
+        case .perpsEnabled:
+            perpsAccess == .hidden
+        default:
+            false
+        }
     }
 
     private func configuration(for network: Network) -> BootConfiguration {
@@ -296,11 +358,24 @@ public final class Configuration {
     }
 
     public func loadConfigurations() async -> BootConfigurations {
-        let task = lock.withLock {
-            if let loadTask: Task<BootConfigurations, any Error> {
+        await loadConfigurations(replacingLoaded: false)
+    }
+
+    public func reloadConfigurations() async -> BootConfigurations {
+        await loadConfigurations(replacingLoaded: true)
+    }
+
+    private func loadConfigurations(replacingLoaded: Bool) async -> BootConfigurations {
+        let task: Task<BootConfigurations, Swift.Error>? = lock.withLock {
+            if !replacingLoaded, isLoaded {
+                return nil
+            }
+            if let loadTask: Task<BootConfigurations, any Error>, isLoadInFlight || !replacingLoaded {
                 return loadTask
             }
+            isLoadInFlight = true
             let task = Task<BootConfigurations, Swift.Error> {
+                defer { self.lock.withLock { self.isLoadInFlight = false } }
                 let configuration = try await bootConfigurationService.loadConfiguration()
                 self.configurations = configuration
                 return configuration
@@ -308,13 +383,14 @@ public final class Configuration {
             self.loadTask = task
             return task
         }
+        guard let task else { return configurations }
 
         do {
             return try await task.value
         } catch {
             // Retry failures without clearing a replacement started by another caller.
             lock.withLock {
-                if self.loadTask == task {
+                if self.loadTask == task, !self.isLoaded {
                     self.loadTask = nil
                 }
             }

@@ -1,84 +1,37 @@
-import KeeperCore
-import TKCore
 import WidgetKit
 
-struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
+/// The app reloads the timeline whenever the snapshot changes, so one entry is enough. The widget asks again
+/// at midnight only to show the data's date.
+@available(iOS 17.0, *)
+struct BalanceWidgetTimelineProvider: AppIntentTimelineProvider {
+    /// Only the medium balance widget lists assets.
+    var loadsAssetIcons = false
+
     func placeholder(in context: Context) -> BalanceWidgetEntry {
-        mockEntry()
+        .placeholder
     }
 
-    func getSnapshot(
-        for configuration: BalanceWidgetIntent,
-        in context: Context,
-        completion: @escaping (BalanceWidgetEntry) -> Void
-    ) {
-        completion(mockEntry())
+    func snapshot(for configuration: BalanceWidgetConfigurationIntent, in context: Context) async -> BalanceWidgetEntry {
+        let entry = await entry(for: configuration, family: context.family)
+        return entry.wallet == nil && context.isPreview ? .placeholder : entry
     }
 
-    func getTimeline(
-        for configuration: BalanceWidgetIntent,
-        in context: Context,
-        completion: @escaping (Timeline<BalanceWidgetEntry>) -> Void
-    ) {
-        let coreAssembly = TKCore.CoreAssembly()
-        let keeperCoreAssembly = KeeperCore.Assembly(
-            dependencies: Assembly.Dependencies(
-                cacheURL: coreAssembly.cacheURL,
-                sharedCacheURL: coreAssembly.sharedCacheURL,
-                appInfoProvider: coreAssembly.appInfoProvider,
-                featureFlags: coreAssembly.featureFlags,
-                seedProvider: { "" }
-            )
-        )
-
-        let widgetAssembly = keeperCoreAssembly.widgetAssembly()
-        let balanceWidgetController = widgetAssembly.balanceWidgetController()
-        let currency: Currency
-        if let configurationCurrencyIdentifier = configuration.currency?.identifier,
-           let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier)
-        {
-            currency = configurationCurrency
-        } else {
-            let currencyCode = keeperCoreAssembly.rootAssembly().storesAssembly.currencyStore.state.code
-            currency = Currency(rawValue: currencyCode) ?? .USD
-        }
-
-        Task {
-            // Nothing the controller holds keeps the assembly alive, and the graph is still
-            // needed after every suspension: `WalletAuthTokenProvider` resolves `ChainKitService`
-            // through the assembly on the first signed request, long after `getTimeline` returned.
-            defer { withExtendedLifetime(keeperCoreAssembly) {} }
-            let entry: BalanceWidgetEntry
-            do {
-                let model = try await balanceWidgetController.loadBalance(
-                    walletIdentifier: configuration.wallet?.identifier,
-                    currency: currency
-                )
-                entry = BalanceWidgetEntry(
-                    date: Date(),
-                    loadResult: .success(model)
-                )
-            } catch let error as BalanceWidgetController.Error {
-                entry = BalanceWidgetEntry(
-                    date: Date(),
-                    loadResult: .failure(error)
-                )
-            }
-            let nextUpdate = Calendar.current.date(byAdding: DateComponents(minute: 30), to: Date())!
-            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-            completion(timeline)
-        }
+    func timeline(for configuration: BalanceWidgetConfigurationIntent, in context: Context) async -> Timeline<BalanceWidgetEntry> {
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: Date()))
+        return await Timeline(entries: [entry(for: configuration, family: context.family)], policy: tomorrow.map { .after($0) } ?? .never)
     }
 
-    private func mockEntry() -> BalanceWidgetEntry {
-        let model = BalanceWidgetController.Model(
-            tonBalance: "0",
-            fiatBalance: "$0",
-            address: "EQDY...naPP"
-        )
-        return BalanceWidgetEntry(
+    private func entry(for configuration: BalanceWidgetConfigurationIntent, family: WidgetFamily) async -> BalanceWidgetEntry {
+        let snapshot = WalletWidgetSnapshot.load()
+        let walletId = configuration.wallet?.walletId
+        let iconURLs = loadsAssetIcons && family == .systemMedium
+            ? snapshot?.wallet(id: walletId)?.topAssets.compactMap(\.iconURL) ?? []
+            : []
+        return await BalanceWidgetEntry(
             date: Date(),
-            loadResult: .success(model)
+            snapshot: snapshot,
+            configuredWalletId: walletId,
+            icons: PriceWidgetLoader.icons(iconURLs)
         )
     }
 }
